@@ -1311,7 +1311,7 @@ func int32Value(v any, def int32) int32 {
 	case float32:
 		return int32(tv)
 	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(tv))
+		n, err := strconv.ParseInt(strings.TrimSpace(tv), 10, 32)
 		if err == nil {
 			return int32(n)
 		}
