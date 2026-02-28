@@ -598,7 +598,8 @@ func (s *xrayStore) ensureGroupLocked(name string, now float64) map[string]any {
 	group := map[string]any{
 		"GroupName":        name,
 		"GroupARN":         xrayGroupARN(name),
-		"FilterExpression": fmt.Sprintf(`service("%s")`, name),
+		// Use Go string literal quoting to avoid unsafe manual quote interpolation.
+		"FilterExpression": "service(" + strconv.Quote(name) + ")",
 		"InsightsConfiguration": map[string]any{
 			"InsightsEnabled":      true,
 			"NotificationsEnabled": false,
