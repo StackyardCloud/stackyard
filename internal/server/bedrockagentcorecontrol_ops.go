@@ -1,0 +1,106 @@
+package server
+
+type bedrockAgentCoreControlOperation struct {
+	Name   string
+	Method string
+	URI    string
+}
+
+// Amazon Bedrock AgentCore Control Plane actions sourced from:
+// https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_Operations.html
+var bedrockAgentCoreControlOperations = []bedrockAgentCoreControlOperation{
+	{Name: "CreateAgentRuntime", Method: "PUT", URI: "/runtimes/"},
+	{Name: "CreateAgentRuntimeEndpoint", Method: "PUT", URI: "/runtimes/{agentRuntimeId}/runtime-endpoints/"},
+	{Name: "CreateApiKeyCredentialProvider", Method: "POST", URI: "/identities/CreateApiKeyCredentialProvider"},
+	{Name: "CreateBrowser", Method: "PUT", URI: "/browsers"},
+	{Name: "CreateBrowserProfile", Method: "PUT", URI: "/browser-profiles"},
+	{Name: "CreateCodeInterpreter", Method: "PUT", URI: "/code-interpreters"},
+	{Name: "CreateEvaluator", Method: "POST", URI: "/evaluators/create"},
+	{Name: "CreateGateway", Method: "POST", URI: "/gateways/"},
+	{Name: "CreateGatewayTarget", Method: "POST", URI: "/gateways/{gatewayIdentifier}/targets/"},
+	{Name: "CreateMemory", Method: "POST", URI: "/memories/create"},
+	{Name: "CreateOauth2CredentialProvider", Method: "POST", URI: "/identities/CreateOauth2CredentialProvider"},
+	{Name: "CreateOnlineEvaluationConfig", Method: "POST", URI: "/online-evaluation-configs/create"},
+	{Name: "CreatePolicy", Method: "POST", URI: "/policy-engines/{policyEngineId}/policies"},
+	{Name: "CreatePolicyEngine", Method: "POST", URI: "/policy-engines"},
+	{Name: "CreateWorkloadIdentity", Method: "POST", URI: "/identities/CreateWorkloadIdentity"},
+	{Name: "DeleteAgentRuntime", Method: "DELETE", URI: "/runtimes/{agentRuntimeId}/?clientToken={clientToken}"},
+	{Name: "DeleteAgentRuntimeEndpoint", Method: "DELETE", URI: "/runtimes/{agentRuntimeId}/runtime-endpoints/{endpointName}/?clientToken={clientToken}"},
+	{Name: "DeleteApiKeyCredentialProvider", Method: "POST", URI: "/identities/DeleteApiKeyCredentialProvider"},
+	{Name: "DeleteBrowser", Method: "DELETE", URI: "/browsers/{browserId}?clientToken={clientToken}"},
+	{Name: "DeleteBrowserProfile", Method: "DELETE", URI: "/browser-profiles/{profileId}?clientToken={clientToken}"},
+	{Name: "DeleteCodeInterpreter", Method: "DELETE", URI: "/code-interpreters/{codeInterpreterId}?clientToken={clientToken}"},
+	{Name: "DeleteEvaluator", Method: "DELETE", URI: "/evaluators/{evaluatorId}"},
+	{Name: "DeleteGateway", Method: "DELETE", URI: "/gateways/{gatewayIdentifier}/"},
+	{Name: "DeleteGatewayTarget", Method: "DELETE", URI: "/gateways/{gatewayIdentifier}/targets/{targetId}/"},
+	{Name: "DeleteMemory", Method: "DELETE", URI: "/memories/{memoryId}/delete?clientToken={clientToken}"},
+	{Name: "DeleteOauth2CredentialProvider", Method: "POST", URI: "/identities/DeleteOauth2CredentialProvider"},
+	{Name: "DeleteOnlineEvaluationConfig", Method: "DELETE", URI: "/online-evaluation-configs/{onlineEvaluationConfigId}"},
+	{Name: "DeletePolicy", Method: "DELETE", URI: "/policy-engines/{policyEngineId}/policies/{policyId}"},
+	{Name: "DeletePolicyEngine", Method: "DELETE", URI: "/policy-engines/{policyEngineId}"},
+	{Name: "DeleteResourcePolicy", Method: "DELETE", URI: "/resourcepolicy/{resourceArn}"},
+	{Name: "DeleteWorkloadIdentity", Method: "POST", URI: "/identities/DeleteWorkloadIdentity"},
+	{Name: "GetAgentRuntime", Method: "GET", URI: "/runtimes/{agentRuntimeId}/?version={agentRuntimeVersion}"},
+	{Name: "GetAgentRuntimeEndpoint", Method: "GET", URI: "/runtimes/{agentRuntimeId}/runtime-endpoints/{endpointName}/"},
+	{Name: "GetApiKeyCredentialProvider", Method: "POST", URI: "/identities/GetApiKeyCredentialProvider"},
+	{Name: "GetBrowser", Method: "GET", URI: "/browsers/{browserId}"},
+	{Name: "GetBrowserProfile", Method: "GET", URI: "/browser-profiles/{profileId}"},
+	{Name: "GetCodeInterpreter", Method: "GET", URI: "/code-interpreters/{codeInterpreterId}"},
+	{Name: "GetEvaluator", Method: "GET", URI: "/evaluators/{evaluatorId}"},
+	{Name: "GetGateway", Method: "GET", URI: "/gateways/{gatewayIdentifier}/"},
+	{Name: "GetGatewayTarget", Method: "GET", URI: "/gateways/{gatewayIdentifier}/targets/{targetId}/"},
+	{Name: "GetMemory", Method: "GET", URI: "/memories/{memoryId}/details?view={view}"},
+	{Name: "GetOauth2CredentialProvider", Method: "POST", URI: "/identities/GetOauth2CredentialProvider"},
+	{Name: "GetOnlineEvaluationConfig", Method: "GET", URI: "/online-evaluation-configs/{onlineEvaluationConfigId}"},
+	{Name: "GetPolicy", Method: "GET", URI: "/policy-engines/{policyEngineId}/policies/{policyId}"},
+	{Name: "GetPolicyEngine", Method: "GET", URI: "/policy-engines/{policyEngineId}"},
+	{Name: "GetPolicyGeneration", Method: "GET", URI: "/policy-engines/{policyEngineId}/policy-generations/{policyGenerationId}"},
+	{Name: "GetResourcePolicy", Method: "GET", URI: "/resourcepolicy/{resourceArn}"},
+	{Name: "GetTokenVault", Method: "POST", URI: "/identities/get-token-vault"},
+	{Name: "GetWorkloadIdentity", Method: "POST", URI: "/identities/GetWorkloadIdentity"},
+	{Name: "ListAgentRuntimeEndpoints", Method: "POST", URI: "/runtimes/{agentRuntimeId}/runtime-endpoints/?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListAgentRuntimes", Method: "POST", URI: "/runtimes/?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListAgentRuntimeVersions", Method: "POST", URI: "/runtimes/{agentRuntimeId}/versions/?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListApiKeyCredentialProviders", Method: "POST", URI: "/identities/ListApiKeyCredentialProviders"},
+	{Name: "ListBrowserProfiles", Method: "POST", URI: "/browser-profiles?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListBrowsers", Method: "POST", URI: "/browsers?maxResults={maxResults}&nextToken={nextToken}&type={type}"},
+	{Name: "ListCodeInterpreters", Method: "POST", URI: "/code-interpreters?maxResults={maxResults}&nextToken={nextToken}&type={type}"},
+	{Name: "ListEvaluators", Method: "POST", URI: "/evaluators?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListGateways", Method: "GET", URI: "/gateways/?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListGatewayTargets", Method: "GET", URI: "/gateways/{gatewayIdentifier}/targets/?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListMemories", Method: "POST", URI: "/memories/"},
+	{Name: "ListOauth2CredentialProviders", Method: "POST", URI: "/identities/ListOauth2CredentialProviders"},
+	{Name: "ListOnlineEvaluationConfigs", Method: "POST", URI: "/online-evaluation-configs?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListPolicies", Method: "GET", URI: "/policy-engines/{policyEngineId}/policies?maxResults={maxResults}&nextToken={nextToken}&targetResourceScope={targetResourceScope}"},
+	{Name: "ListPolicyEngines", Method: "GET", URI: "/policy-engines?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListPolicyGenerationAssets", Method: "GET", URI: "/policy-engines/{policyEngineId}/policy-generations/{policyGenerationId}/assets?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListPolicyGenerations", Method: "GET", URI: "/policy-engines/{policyEngineId}/policy-generations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListTagsForResource", Method: "GET", URI: "/tags/{resourceArn}"},
+	{Name: "ListWorkloadIdentities", Method: "POST", URI: "/identities/ListWorkloadIdentities"},
+	{Name: "PutResourcePolicy", Method: "PUT", URI: "/resourcepolicy/{resourceArn}"},
+	{Name: "SetTokenVaultCMK", Method: "POST", URI: "/identities/set-token-vault-cmk"},
+	{Name: "StartPolicyGeneration", Method: "POST", URI: "/policy-engines/{policyEngineId}/policy-generations"},
+	{Name: "SynchronizeGatewayTargets", Method: "PUT", URI: "/gateways/{gatewayIdentifier}/synchronizeTargets"},
+	{Name: "TagResource", Method: "POST", URI: "/tags/{resourceArn}"},
+	{Name: "UntagResource", Method: "DELETE", URI: "/tags/{resourceArn}?tagKeys={tagKeys}"},
+	{Name: "UpdateAgentRuntime", Method: "PUT", URI: "/runtimes/{agentRuntimeId}/"},
+	{Name: "UpdateAgentRuntimeEndpoint", Method: "PUT", URI: "/runtimes/{agentRuntimeId}/runtime-endpoints/{endpointName}/"},
+	{Name: "UpdateApiKeyCredentialProvider", Method: "POST", URI: "/identities/UpdateApiKeyCredentialProvider"},
+	{Name: "UpdateEvaluator", Method: "PUT", URI: "/evaluators/{evaluatorId}"},
+	{Name: "UpdateGateway", Method: "PUT", URI: "/gateways/{gatewayIdentifier}/"},
+	{Name: "UpdateGatewayTarget", Method: "PUT", URI: "/gateways/{gatewayIdentifier}/targets/{targetId}/"},
+	{Name: "UpdateMemory", Method: "PUT", URI: "/memories/{memoryId}/update"},
+	{Name: "UpdateOauth2CredentialProvider", Method: "POST", URI: "/identities/UpdateOauth2CredentialProvider"},
+	{Name: "UpdateOnlineEvaluationConfig", Method: "PUT", URI: "/online-evaluation-configs/{onlineEvaluationConfigId}"},
+	{Name: "UpdatePolicy", Method: "PUT", URI: "/policy-engines/{policyEngineId}/policies/{policyId}"},
+	{Name: "UpdatePolicyEngine", Method: "PUT", URI: "/policy-engines/{policyEngineId}"},
+	{Name: "UpdateWorkloadIdentity", Method: "POST", URI: "/identities/UpdateWorkloadIdentity"},
+}
+
+var bedrockAgentCoreControlOperationByName = func() map[string]bedrockAgentCoreControlOperation {
+	out := make(map[string]bedrockAgentCoreControlOperation, len(bedrockAgentCoreControlOperations))
+	for _, op := range bedrockAgentCoreControlOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

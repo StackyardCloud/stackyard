@@ -1,0 +1,86 @@
+package server
+
+type ecsOperation struct {
+	Name string
+}
+
+var ecsOperations = []ecsOperation{
+	{Name: "CreateCapacityProvider"},
+	{Name: "CreateCluster"},
+	{Name: "CreateExpressGatewayService"},
+	{Name: "CreateService"},
+	{Name: "CreateTaskSet"},
+	{Name: "DeleteAccountSetting"},
+	{Name: "DeleteAttributes"},
+	{Name: "DeleteCapacityProvider"},
+	{Name: "DeleteCluster"},
+	{Name: "DeleteExpressGatewayService"},
+	{Name: "DeleteService"},
+	{Name: "DeleteTaskDefinitions"},
+	{Name: "DeleteTaskSet"},
+	{Name: "DeregisterContainerInstance"},
+	{Name: "DeregisterTaskDefinition"},
+	{Name: "DescribeCapacityProviders"},
+	{Name: "DescribeClusters"},
+	{Name: "DescribeContainerInstances"},
+	{Name: "DescribeExpressGatewayService"},
+	{Name: "DescribeServiceDeployments"},
+	{Name: "DescribeServiceRevisions"},
+	{Name: "DescribeServices"},
+	{Name: "DescribeTaskDefinition"},
+	{Name: "DescribeTasks"},
+	{Name: "DescribeTaskSets"},
+	{Name: "DiscoverPollEndpoint"},
+	{Name: "ExecuteCommand"},
+	{Name: "GetTaskProtection"},
+	{Name: "ListAccountSettings"},
+	{Name: "ListAttributes"},
+	{Name: "ListClusters"},
+	{Name: "ListContainerInstances"},
+	{Name: "ListServiceDeployments"},
+	{Name: "ListServiceDeploymentsByCreatedAt"},
+	{Name: "ListServiceDeploymentsByServiceRevision"},
+	{Name: "ListServices"},
+	{Name: "ListServicesByLaunchType"},
+	{Name: "ListServicesByNamespace"},
+	{Name: "ListTagsForResource"},
+	{Name: "ListTaskDefinitionFamilies"},
+	{Name: "ListTaskDefinitions"},
+	{Name: "ListTasks"},
+	{Name: "PutAccountSetting"},
+	{Name: "PutAccountSettingDefault"},
+	{Name: "PutAttributes"},
+	{Name: "PutClusterCapacityProviders"},
+	{Name: "RegisterContainerInstance"},
+	{Name: "RegisterTaskDefinition"},
+	{Name: "RunTask"},
+	{Name: "StartTask"},
+	{Name: "StopServiceDeployment"},
+	{Name: "StopTask"},
+	{Name: "SubmitAttachmentStateChanges"},
+	{Name: "SubmitContainerStateChange"},
+	{Name: "SubmitTaskStateChange"},
+	{Name: "SubmitTaskStateChangeByAgent"},
+	{Name: "SubmitTaskStateChangeByManagedAgents"},
+	{Name: "TagResource"},
+	{Name: "UntagResource"},
+	{Name: "UpdateCapacityProvider"},
+	{Name: "UpdateCluster"},
+	{Name: "UpdateClusterSettings"},
+	{Name: "UpdateContainerAgent"},
+	{Name: "UpdateContainerInstancesState"},
+	{Name: "UpdateExpressGatewayService"},
+	{Name: "UpdateService"},
+	{Name: "UpdateServicePrimaryTaskSet"},
+	{Name: "UpdateTaskProtection"},
+	{Name: "UpdateTaskSet"},
+	{Name: "StartTelemetrySession"},
+}
+
+var ecsOperationByName = func() map[string]ecsOperation {
+	out := make(map[string]ecsOperation, len(ecsOperations))
+	for _, op := range ecsOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

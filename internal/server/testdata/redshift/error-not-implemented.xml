@@ -1,0 +1,1 @@
+<ErrorResponse xmlns="http://redshift.amazonaws.com/doc/2012-12-01/"><Error><Type>Receiver</Type><Code>NotImplemented</Code><Message>operation not implemented</Message></Error><RequestId>stackyard-request</RequestId></ErrorResponse>

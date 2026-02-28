@@ -1,0 +1,96 @@
+package server
+
+type transferDataType struct {
+	Name string
+}
+
+// AWS Transfer Family data types sourced from:
+// https://docs.aws.amazon.com/transfer/latest/APIReference/API_Types.html
+var transferDataTypes = []transferDataType{
+	{Name: "As2AsyncMdnConnectorConfig"},
+	{Name: "As2ConnectorConfig"},
+	{Name: "ConnectorEgressConfig"},
+	{Name: "ConnectorFileTransferResult"},
+	{Name: "ConnectorVpcLatticeEgressConfig"},
+	{Name: "CopyStepDetails"},
+	{Name: "CustomDirectoriesType"},
+	{Name: "CustomHttpHeader"},
+	{Name: "CustomStepDetails"},
+	{Name: "DecryptStepDetails"},
+	{Name: "DeleteStepDetails"},
+	{Name: "DescribedAccess"},
+	{Name: "DescribedAgreement"},
+	{Name: "DescribedCertificate"},
+	{Name: "DescribedConnector"},
+	{Name: "DescribedConnectorEgressConfig"},
+	{Name: "DescribedConnectorVpcLatticeEgressConfig"},
+	{Name: "DescribedExecution"},
+	{Name: "DescribedHostKey"},
+	{Name: "DescribedIdentityCenterConfig"},
+	{Name: "DescribedProfile"},
+	{Name: "DescribedSecurityPolicy"},
+	{Name: "DescribedServer"},
+	{Name: "DescribedUser"},
+	{Name: "DescribedWebApp"},
+	{Name: "DescribedWebAppCustomization"},
+	{Name: "DescribedWebAppEndpointDetails"},
+	{Name: "DescribedWebAppIdentityProviderDetails"},
+	{Name: "DescribedWebAppVpcConfig"},
+	{Name: "DescribedWorkflow"},
+	{Name: "EfsFileLocation"},
+	{Name: "EndpointDetails"},
+	{Name: "ExecutionError"},
+	{Name: "ExecutionResults"},
+	{Name: "ExecutionStepResult"},
+	{Name: "FileLocation"},
+	{Name: "HomeDirectoryMapEntry"},
+	{Name: "IdentityCenterConfig"},
+	{Name: "IdentityProviderDetails"},
+	{Name: "InputFileLocation"},
+	{Name: "ListedAccess"},
+	{Name: "ListedAgreement"},
+	{Name: "ListedCertificate"},
+	{Name: "ListedConnector"},
+	{Name: "ListedExecution"},
+	{Name: "ListedHostKey"},
+	{Name: "ListedProfile"},
+	{Name: "ListedServer"},
+	{Name: "ListedUser"},
+	{Name: "ListedWebApp"},
+	{Name: "ListedWorkflow"},
+	{Name: "LoggingConfiguration"},
+	{Name: "PosixProfile"},
+	{Name: "ProtocolDetails"},
+	{Name: "S3FileLocation"},
+	{Name: "S3InputFileLocation"},
+	{Name: "S3StorageOptions"},
+	{Name: "S3Tag"},
+	{Name: "ServiceMetadata"},
+	{Name: "SftpConnectorConfig"},
+	{Name: "SftpConnectorConnectionDetails"},
+	{Name: "SshPublicKey"},
+	{Name: "Tag"},
+	{Name: "TagStepDetails"},
+	{Name: "UpdateConnectorEgressConfig"},
+	{Name: "UpdateConnectorVpcLatticeEgressConfig"},
+	{Name: "UpdateWebAppEndpointDetails"},
+	{Name: "UpdateWebAppIdentityCenterConfig"},
+	{Name: "UpdateWebAppIdentityProviderDetails"},
+	{Name: "UpdateWebAppVpcConfig"},
+	{Name: "UserDetails"},
+	{Name: "WebAppEndpointDetails"},
+	{Name: "WebAppIdentityProviderDetails"},
+	{Name: "WebAppUnits"},
+	{Name: "WebAppVpcConfig"},
+	{Name: "WorkflowDetail"},
+	{Name: "WorkflowDetails"},
+	{Name: "WorkflowStep"},
+}
+
+var transferDataTypeByName = func() map[string]transferDataType {
+	out := make(map[string]transferDataType, len(transferDataTypes))
+	for _, dt := range transferDataTypes {
+		out[dt.Name] = dt
+	}
+	return out
+}()

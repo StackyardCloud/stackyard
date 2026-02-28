@@ -1,0 +1,61 @@
+package server
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
+)
+
+func TestEC2Stage78SDKLifecycle(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(testRegion),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(testAccessKey, testSecretKey, "")),
+	)
+	if err != nil {
+		t.Fatalf("load aws config: %v", err)
+	}
+	client := awsec2.NewFromConfig(cfg, func(o *awsec2.Options) {
+		o.BaseEndpoint = aws.String(ts.URL)
+	})
+
+	out, err := client.AcceptReservedInstancesExchangeQuote(ctx, &awsec2.AcceptReservedInstancesExchangeQuoteInput{
+		ReservedInstanceIds: []string{"ri-00000000000000078"},
+	})
+	if err != nil {
+		t.Fatalf("accept reserved instances exchange quote: %v", err)
+	}
+	if aws.ToString(out.ExchangeId) == "" {
+		t.Fatalf("expected non-empty exchange id")
+	}
+}
+
+func TestEC2Stage78ImplementedActionsDoNotReturnNotImplemented(t *testing.T) {
+	implemented := []string{
+		"AcceptReservedInstancesExchangeQuote",
+	}
+
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	for _, action := range implemented {
+		params := map[string]string{
+			"ReservedInstanceId.1": "ri-00000000000000078",
+		}
+		resp := ec2Request(t, ts, action, params)
+		if resp.StatusCode == http.StatusNotImplemented {
+			t.Fatalf("action %s returned not implemented", action)
+		}
+	}
+}

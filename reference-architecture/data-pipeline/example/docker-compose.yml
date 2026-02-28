@@ -1,0 +1,37 @@
+services:
+  stackyard:
+    build:
+      context: ../../../
+      dockerfile: Dockerfile
+    container_name: stackyard-data-pipeline
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  backend:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - APP_ADDR=:8080
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCOUNT_ID=123456789012
+      - AWS_ACCESS_KEY_ID=stackyard
+      - AWS_SECRET_ACCESS_KEY=stackyard
+      - STACKYARD_DATA_LAKE_BUCKET=stackyard-ra-data-lake
+      - STACKYARD_AUDIT_BUCKET=stackyard-ra-audit
+    ports:
+      - "8081:8080"
+
+  frontend:
+    build:
+      context: ./
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"

@@ -1,0 +1,1 @@
+{"indexes":[{"indexName":"demo-index","indexArn":"arn:aws:s3vectors:us-east-1:123456789012:bucket/demo-bucket/index/demo-index","creationTime":1700000000,"dimension":3,"distanceMetric":"COSINE"}],"nextToken":"token-1"}

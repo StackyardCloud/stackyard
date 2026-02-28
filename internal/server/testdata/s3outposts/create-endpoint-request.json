@@ -1,0 +1,1 @@
+{"OutpostId":"op-0123456789abcdef0","SecurityGroupId":"sg-0123456789abcdef0","SubnetId":"subnet-0123456789abcdef0","AccessType":"CustomerOwnedIp","NetworkType":"IPV4","CustomerOwnedIpv4Pool":"coip-pool-12345678","ClientToken":"token-1"}

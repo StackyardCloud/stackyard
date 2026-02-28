@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  ebs-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/ebs/ebs-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_SNAPSHOT_ID=snap-00000000000000001
+      - STACKYARD_BLOCK_TOKEN=stackyard-block-token

@@ -1,0 +1,95 @@
+package server
+
+type deviceFarmOperation struct {
+	Name string
+}
+
+// AWS Device Farm actions sourced from:
+// https://docs.aws.amazon.com/devicefarm/latest/APIReference/API_Operations.html
+var deviceFarmOperations = []deviceFarmOperation{
+	{Name: "CreateDevicePool"},
+	{Name: "CreateInstanceProfile"},
+	{Name: "CreateNetworkProfile"},
+	{Name: "CreateProject"},
+	{Name: "CreateRemoteAccessSession"},
+	{Name: "CreateTestGridProject"},
+	{Name: "CreateTestGridUrl"},
+	{Name: "CreateUpload"},
+	{Name: "CreateVPCEConfiguration"},
+	{Name: "DeleteDevicePool"},
+	{Name: "DeleteInstanceProfile"},
+	{Name: "DeleteNetworkProfile"},
+	{Name: "DeleteProject"},
+	{Name: "DeleteRemoteAccessSession"},
+	{Name: "DeleteRun"},
+	{Name: "DeleteTestGridProject"},
+	{Name: "DeleteUpload"},
+	{Name: "DeleteVPCEConfiguration"},
+	{Name: "GetAccountSettings"},
+	{Name: "GetDevice"},
+	{Name: "GetDeviceInstance"},
+	{Name: "GetDevicePool"},
+	{Name: "GetDevicePoolCompatibility"},
+	{Name: "GetInstanceProfile"},
+	{Name: "GetJob"},
+	{Name: "GetNetworkProfile"},
+	{Name: "GetOfferingStatus"},
+	{Name: "GetProject"},
+	{Name: "GetRemoteAccessSession"},
+	{Name: "GetRun"},
+	{Name: "GetSuite"},
+	{Name: "GetTest"},
+	{Name: "GetTestGridProject"},
+	{Name: "GetTestGridSession"},
+	{Name: "GetUpload"},
+	{Name: "GetVPCEConfiguration"},
+	{Name: "InstallToRemoteAccessSession"},
+	{Name: "ListArtifacts"},
+	{Name: "ListDeviceInstances"},
+	{Name: "ListDevicePools"},
+	{Name: "ListDevices"},
+	{Name: "ListInstanceProfiles"},
+	{Name: "ListJobs"},
+	{Name: "ListNetworkProfiles"},
+	{Name: "ListOfferingPromotions"},
+	{Name: "ListOfferingTransactions"},
+	{Name: "ListOfferings"},
+	{Name: "ListProjects"},
+	{Name: "ListRemoteAccessSessions"},
+	{Name: "ListRuns"},
+	{Name: "ListSamples"},
+	{Name: "ListSuites"},
+	{Name: "ListTagsForResource"},
+	{Name: "ListTestGridProjects"},
+	{Name: "ListTestGridSessionActions"},
+	{Name: "ListTestGridSessionArtifacts"},
+	{Name: "ListTestGridSessions"},
+	{Name: "ListTests"},
+	{Name: "ListUniqueProblems"},
+	{Name: "ListUploads"},
+	{Name: "ListVPCEConfigurations"},
+	{Name: "PurchaseOffering"},
+	{Name: "RenewOffering"},
+	{Name: "ScheduleRun"},
+	{Name: "StopJob"},
+	{Name: "StopRemoteAccessSession"},
+	{Name: "StopRun"},
+	{Name: "TagResource"},
+	{Name: "UntagResource"},
+	{Name: "UpdateDeviceInstance"},
+	{Name: "UpdateDevicePool"},
+	{Name: "UpdateInstanceProfile"},
+	{Name: "UpdateNetworkProfile"},
+	{Name: "UpdateProject"},
+	{Name: "UpdateTestGridProject"},
+	{Name: "UpdateUpload"},
+	{Name: "UpdateVPCEConfiguration"},
+}
+
+var deviceFarmOperationByName = func() map[string]deviceFarmOperation {
+	out := make(map[string]deviceFarmOperation, len(deviceFarmOperations))
+	for _, op := range deviceFarmOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

@@ -1,0 +1,107 @@
+package server
+
+type protonOperation struct {
+	Name   string
+	Method string
+	URI    string
+}
+
+// AWS Proton operations sourced from:
+// https://docs.aws.amazon.com/proton/latest/APIReference/API_Operations.html
+var protonOperations = []protonOperation{
+	{Name: "AcceptEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "CancelComponentDeployment", Method: "POST", URI: "/"},
+	{Name: "CancelEnvironmentDeployment", Method: "POST", URI: "/"},
+	{Name: "CancelServiceInstanceDeployment", Method: "POST", URI: "/"},
+	{Name: "CancelServicePipelineDeployment", Method: "POST", URI: "/"},
+	{Name: "CreateComponent", Method: "POST", URI: "/"},
+	{Name: "CreateEnvironment", Method: "POST", URI: "/"},
+	{Name: "CreateEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "CreateEnvironmentTemplate", Method: "POST", URI: "/"},
+	{Name: "CreateEnvironmentTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "CreateRepository", Method: "POST", URI: "/"},
+	{Name: "CreateService", Method: "POST", URI: "/"},
+	{Name: "CreateServiceInstance", Method: "POST", URI: "/"},
+	{Name: "CreateServiceSyncConfig", Method: "POST", URI: "/"},
+	{Name: "CreateServiceTemplate", Method: "POST", URI: "/"},
+	{Name: "CreateServiceTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "CreateTemplateSyncConfig", Method: "POST", URI: "/"},
+	{Name: "DeleteComponent", Method: "POST", URI: "/"},
+	{Name: "DeleteDeployment", Method: "POST", URI: "/"},
+	{Name: "DeleteEnvironment", Method: "POST", URI: "/"},
+	{Name: "DeleteEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "DeleteEnvironmentTemplate", Method: "POST", URI: "/"},
+	{Name: "DeleteEnvironmentTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "DeleteRepository", Method: "POST", URI: "/"},
+	{Name: "DeleteService", Method: "POST", URI: "/"},
+	{Name: "DeleteServiceSyncConfig", Method: "POST", URI: "/"},
+	{Name: "DeleteServiceTemplate", Method: "POST", URI: "/"},
+	{Name: "DeleteServiceTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "DeleteTemplateSyncConfig", Method: "POST", URI: "/"},
+	{Name: "GetAccountSettings", Method: "POST", URI: "/"},
+	{Name: "GetComponent", Method: "POST", URI: "/"},
+	{Name: "GetDeployment", Method: "POST", URI: "/"},
+	{Name: "GetEnvironment", Method: "POST", URI: "/"},
+	{Name: "GetEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "GetEnvironmentTemplate", Method: "POST", URI: "/"},
+	{Name: "GetEnvironmentTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "GetRepository", Method: "POST", URI: "/"},
+	{Name: "GetRepositorySyncStatus", Method: "POST", URI: "/"},
+	{Name: "GetResourcesSummary", Method: "POST", URI: "/"},
+	{Name: "GetService", Method: "POST", URI: "/"},
+	{Name: "GetServiceInstance", Method: "POST", URI: "/"},
+	{Name: "GetServiceInstanceSyncStatus", Method: "POST", URI: "/"},
+	{Name: "GetServiceSyncBlockerSummary", Method: "POST", URI: "/"},
+	{Name: "GetServiceSyncConfig", Method: "POST", URI: "/"},
+	{Name: "GetServiceTemplate", Method: "POST", URI: "/"},
+	{Name: "GetServiceTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "GetTemplateSyncConfig", Method: "POST", URI: "/"},
+	{Name: "GetTemplateSyncStatus", Method: "POST", URI: "/"},
+	{Name: "ListComponentOutputs", Method: "POST", URI: "/"},
+	{Name: "ListComponentProvisionedResources", Method: "POST", URI: "/"},
+	{Name: "ListComponents", Method: "POST", URI: "/"},
+	{Name: "ListDeployments", Method: "POST", URI: "/"},
+	{Name: "ListEnvironmentAccountConnections", Method: "POST", URI: "/"},
+	{Name: "ListEnvironmentOutputs", Method: "POST", URI: "/"},
+	{Name: "ListEnvironmentProvisionedResources", Method: "POST", URI: "/"},
+	{Name: "ListEnvironments", Method: "POST", URI: "/"},
+	{Name: "ListEnvironmentTemplates", Method: "POST", URI: "/"},
+	{Name: "ListEnvironmentTemplateVersions", Method: "POST", URI: "/"},
+	{Name: "ListRepositories", Method: "POST", URI: "/"},
+	{Name: "ListRepositorySyncDefinitions", Method: "POST", URI: "/"},
+	{Name: "ListServiceInstanceOutputs", Method: "POST", URI: "/"},
+	{Name: "ListServiceInstanceProvisionedResources", Method: "POST", URI: "/"},
+	{Name: "ListServiceInstances", Method: "POST", URI: "/"},
+	{Name: "ListServicePipelineOutputs", Method: "POST", URI: "/"},
+	{Name: "ListServicePipelineProvisionedResources", Method: "POST", URI: "/"},
+	{Name: "ListServices", Method: "POST", URI: "/"},
+	{Name: "ListServiceTemplates", Method: "POST", URI: "/"},
+	{Name: "ListServiceTemplateVersions", Method: "POST", URI: "/"},
+	{Name: "ListTagsForResource", Method: "POST", URI: "/"},
+	{Name: "NotifyResourceDeploymentStatusChange", Method: "POST", URI: "/"},
+	{Name: "RejectEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "TagResource", Method: "POST", URI: "/"},
+	{Name: "UntagResource", Method: "POST", URI: "/"},
+	{Name: "UpdateAccountSettings", Method: "POST", URI: "/"},
+	{Name: "UpdateComponent", Method: "POST", URI: "/"},
+	{Name: "UpdateEnvironment", Method: "POST", URI: "/"},
+	{Name: "UpdateEnvironmentAccountConnection", Method: "POST", URI: "/"},
+	{Name: "UpdateEnvironmentTemplate", Method: "POST", URI: "/"},
+	{Name: "UpdateEnvironmentTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "UpdateService", Method: "POST", URI: "/"},
+	{Name: "UpdateServiceInstance", Method: "POST", URI: "/"},
+	{Name: "UpdateServicePipeline", Method: "POST", URI: "/"},
+	{Name: "UpdateServiceSyncBlocker", Method: "POST", URI: "/"},
+	{Name: "UpdateServiceSyncConfig", Method: "POST", URI: "/"},
+	{Name: "UpdateServiceTemplate", Method: "POST", URI: "/"},
+	{Name: "UpdateServiceTemplateVersion", Method: "POST", URI: "/"},
+	{Name: "UpdateTemplateSyncConfig", Method: "POST", URI: "/"},
+}
+
+var protonOperationByName = func() map[string]protonOperation {
+	out := make(map[string]protonOperation, len(protonOperations))
+	for _, op := range protonOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

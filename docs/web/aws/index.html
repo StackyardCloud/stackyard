@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stackyard Docs | AWS</title>
+    <meta name="description" content="AWS-focused documentation area for Stackyard local cloud emulation." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="../index.html">
+          <span class="brand-mark">S</span>
+          <span>Stackyard Docs</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="../index.html">Overview</a>
+          <a href="./index.html" aria-current="page">AWS</a>
+          <a href="./services/index.html">Services</a>
+          <a href="../../index.html">Legacy API Page</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="landing-main">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">Docs / AWS</nav>
+
+      <section class="hero reveal">
+        <h1>AWS on Stackyard</h1>
+        <p>
+          Stackyard emulates AWS-compatible service APIs for local integration testing. Use the services catalog to
+          quickly find support scope, examples, and implementation notes.
+        </p>
+        <div class="hero-meta">
+          <span class="pill accent">Service-first documentation</span>
+          <span class="pill neutral">Compatibility-oriented behavior</span>
+        </div>
+      </section>
+
+      <section class="summary-grid reveal">
+        <article class="summary-card">
+          <h2>Service Catalog</h2>
+          <p>
+            Browse all supported services with category filters, quick search, and direct links into implementation
+            detail sections.
+          </p>
+          <p><a class="btn primary" href="./services/index.html">Go To AWS Services</a></p>
+        </article>
+
+        <article class="summary-card">
+          <h2>Current API Surface</h2>
+          <p>
+            The full endpoint and staged implementation plans remain in the main API page while this docs shell expands.
+          </p>
+          <p><a class="btn ghost" href="../../index.html">Open API Surface</a></p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      AWS docs area rooted at <code>docs/web/aws/</code>.
+    </footer>
+
+    <script src="../assets/app.js" defer></script>
+  </body>
+</html>

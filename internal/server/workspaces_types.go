@@ -1,0 +1,98 @@
+package server
+
+type workspacesDataType struct {
+	Name string
+}
+
+// Amazon WorkSpaces Service data types sourced from:
+// https://docs.aws.amazon.com/workspaces/latest/api/API_Types.html
+var workspacesDataTypes = []workspacesDataType{
+	{Name: "AccessEndpoint"},
+	{Name: "AccessEndpointConfig"},
+	{Name: "AccountLink"},
+	{Name: "AccountModification"},
+	{Name: "ActiveDirectoryConfig"},
+	{Name: "ApplicationResourceAssociation"},
+	{Name: "ApplicationSettingsRequest"},
+	{Name: "ApplicationSettingsResponse"},
+	{Name: "AssociationStateReason"},
+	{Name: "BundleResourceAssociation"},
+	{Name: "Capacity"},
+	{Name: "CapacityStatus"},
+	{Name: "CertificateBasedAuthProperties"},
+	{Name: "ClientProperties"},
+	{Name: "ClientPropertiesResult"},
+	{Name: "ComputeType"},
+	{Name: "ConnectClientAddIn"},
+	{Name: "ConnectionAlias"},
+	{Name: "ConnectionAliasAssociation"},
+	{Name: "ConnectionAliasPermission"},
+	{Name: "CustomWorkspaceImageImportErrorDetails"},
+	{Name: "DataReplicationSettings"},
+	{Name: "DefaultClientBrandingAttributes"},
+	{Name: "DefaultImportClientBrandingAttributes"},
+	{Name: "DefaultWorkspaceCreationProperties"},
+	{Name: "DescribeWorkspaceDirectoriesFilter"},
+	{Name: "DescribeWorkspacesPoolsFilter"},
+	{Name: "ErrorDetails"},
+	{Name: "FailedCreateStandbyWorkspacesRequest"},
+	{Name: "FailedCreateWorkspaceRequest"},
+	{Name: "FailedWorkspaceChangeRequest"},
+	{Name: "GlobalAcceleratorForDirectory"},
+	{Name: "GlobalAcceleratorForWorkSpace"},
+	{Name: "IDCConfig"},
+	{Name: "ImagePermission"},
+	{Name: "ImageResourceAssociation"},
+	{Name: "ImageSourceIdentifier"},
+	{Name: "IosClientBrandingAttributes"},
+	{Name: "IosImportClientBrandingAttributes"},
+	{Name: "IpRuleItem"},
+	{Name: "MicrosoftEntraConfig"},
+	{Name: "ModificationState"},
+	{Name: "NetworkAccessConfiguration"},
+	{Name: "OperatingSystem"},
+	{Name: "PendingCreateStandbyWorkspacesRequest"},
+	{Name: "RebootRequest"},
+	{Name: "RebuildRequest"},
+	{Name: "RelatedWorkspaceProperties"},
+	{Name: "RootStorage"},
+	{Name: "SamlProperties"},
+	{Name: "SelfservicePermissions"},
+	{Name: "Snapshot"},
+	{Name: "StandbyWorkspace"},
+	{Name: "StandbyWorkspacesProperties"},
+	{Name: "StartRequest"},
+	{Name: "StopRequest"},
+	{Name: "StorageConnector"},
+	{Name: "StreamingProperties"},
+	{Name: "Tag"},
+	{Name: "TerminateRequest"},
+	{Name: "TimeoutSettings"},
+	{Name: "UpdateResult"},
+	{Name: "UserSetting"},
+	{Name: "UserStorage"},
+	{Name: "WorkSpaceApplication"},
+	{Name: "WorkSpaceApplicationDeployment"},
+	{Name: "Workspace"},
+	{Name: "WorkspaceAccessProperties"},
+	{Name: "WorkspaceBundle"},
+	{Name: "WorkspaceConnectionStatus"},
+	{Name: "WorkspaceCreationProperties"},
+	{Name: "WorkspaceDirectory"},
+	{Name: "WorkspaceImage"},
+	{Name: "WorkspaceProperties"},
+	{Name: "WorkspaceRequest"},
+	{Name: "WorkspaceResourceAssociation"},
+	{Name: "WorkspacesIpGroup"},
+	{Name: "WorkspacesPool"},
+	{Name: "WorkspacesPoolError"},
+	{Name: "WorkspacesPoolSession"},
+}
+
+var workspacesDataTypeByName = func() map[string]workspacesDataType {
+	out := make(map[string]workspacesDataType, len(workspacesDataTypes))
+	for _, dt := range workspacesDataTypes {
+		out[dt.Name] = dt
+	}
+	return out
+}()

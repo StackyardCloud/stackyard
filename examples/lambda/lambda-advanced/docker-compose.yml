@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  lambda-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/lambda/lambda-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_FUNCTION_NAME=lambda-advanced-function
+      - STACKYARD_ALIAS_NAME=live

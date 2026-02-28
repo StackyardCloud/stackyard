@@ -1,0 +1,108 @@
+package server
+
+type cleanRoomsOperation struct {
+	Name   string
+	Method string
+	URI    string
+}
+
+// AWS Clean Rooms actions sourced from:
+// https://docs.aws.amazon.com/clean-rooms/latest/apireference/API_Operations.html
+var cleanRoomsOperations = []cleanRoomsOperation{
+	{Name: "BatchGetCollaborationAnalysisTemplate", Method: "POST", URI: "/collaborations/{collaborationIdentifier}/batch-analysistemplates"},
+	{Name: "BatchGetSchema", Method: "POST", URI: "/collaborations/{collaborationIdentifier}/batch-schema"},
+	{Name: "BatchGetSchemaAnalysisRule", Method: "POST", URI: "/collaborations/{collaborationIdentifier}/batch-schema-analysis-rule"},
+	{Name: "CreateAnalysisTemplate", Method: "POST", URI: "/memberships/{membershipIdentifier}/analysistemplates"},
+	{Name: "CreateCollaboration", Method: "POST", URI: "/collaborations"},
+	{Name: "CreateCollaborationChangeRequest", Method: "POST", URI: "/collaborations/{collaborationIdentifier}/changeRequests"},
+	{Name: "CreateConfiguredAudienceModelAssociation", Method: "POST", URI: "/memberships/{membershipIdentifier}/configuredaudiencemodelassociations"},
+	{Name: "CreateConfiguredTable", Method: "POST", URI: "/configuredTables"},
+	{Name: "CreateConfiguredTableAnalysisRule", Method: "POST", URI: "/configuredTables/{configuredTableIdentifier}/analysisRule"},
+	{Name: "CreateConfiguredTableAssociation", Method: "POST", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations"},
+	{Name: "CreateConfiguredTableAssociationAnalysisRule", Method: "POST", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}/analysisRule"},
+	{Name: "CreateIdMappingTable", Method: "POST", URI: "/memberships/{membershipIdentifier}/idmappingtables"},
+	{Name: "CreateIdNamespaceAssociation", Method: "POST", URI: "/memberships/{membershipIdentifier}/idnamespaceassociations"},
+	{Name: "CreateMembership", Method: "POST", URI: "/memberships"},
+	{Name: "CreatePrivacyBudgetTemplate", Method: "POST", URI: "/memberships/{membershipIdentifier}/privacybudgettemplates"},
+	{Name: "DeleteAnalysisTemplate", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/analysistemplates/{analysisTemplateIdentifier}"},
+	{Name: "DeleteCollaboration", Method: "DELETE", URI: "/collaborations/{collaborationIdentifier}"},
+	{Name: "DeleteConfiguredAudienceModelAssociation", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/configuredaudiencemodelassociations/{configuredAudienceModelAssociationIdentifier}"},
+	{Name: "DeleteConfiguredTable", Method: "DELETE", URI: "/configuredTables/{configuredTableIdentifier}"},
+	{Name: "DeleteConfiguredTableAnalysisRule", Method: "DELETE", URI: "/configuredTables/{configuredTableIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "DeleteConfiguredTableAssociation", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}"},
+	{Name: "DeleteConfiguredTableAssociationAnalysisRule", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "DeleteIdMappingTable", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/idmappingtables/{idMappingTableIdentifier}"},
+	{Name: "DeleteIdNamespaceAssociation", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/idnamespaceassociations/{idNamespaceAssociationIdentifier}"},
+	{Name: "DeleteMember", Method: "DELETE", URI: "/collaborations/{collaborationIdentifier}/member/{accountId}"},
+	{Name: "DeleteMembership", Method: "DELETE", URI: "/memberships/{membershipIdentifier}"},
+	{Name: "DeletePrivacyBudgetTemplate", Method: "DELETE", URI: "/memberships/{membershipIdentifier}/privacybudgettemplates/{privacyBudgetTemplateIdentifier}"},
+	{Name: "GetAnalysisTemplate", Method: "GET", URI: "/memberships/{membershipIdentifier}/analysistemplates/{analysisTemplateIdentifier}"},
+	{Name: "GetCollaboration", Method: "GET", URI: "/collaborations/{collaborationIdentifier}"},
+	{Name: "GetCollaborationAnalysisTemplate", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/analysistemplates/{analysisTemplateArn}"},
+	{Name: "GetCollaborationChangeRequest", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/changeRequests/{changeRequestIdentifier}"},
+	{Name: "GetCollaborationConfiguredAudienceModelAssociation", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/configuredaudiencemodelassociations/{configuredAudienceModelAssociationIdentifier}"},
+	{Name: "GetCollaborationIdNamespaceAssociation", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/idnamespaceassociations/{idNamespaceAssociationIdentifier}"},
+	{Name: "GetCollaborationPrivacyBudgetTemplate", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/privacybudgettemplates/{privacyBudgetTemplateIdentifier}"},
+	{Name: "GetConfiguredAudienceModelAssociation", Method: "GET", URI: "/memberships/{membershipIdentifier}/configuredaudiencemodelassociations/{configuredAudienceModelAssociationIdentifier}"},
+	{Name: "GetConfiguredTable", Method: "GET", URI: "/configuredTables/{configuredTableIdentifier}"},
+	{Name: "GetConfiguredTableAnalysisRule", Method: "GET", URI: "/configuredTables/{configuredTableIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "GetConfiguredTableAssociation", Method: "GET", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}"},
+	{Name: "GetConfiguredTableAssociationAnalysisRule", Method: "GET", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "GetIdMappingTable", Method: "GET", URI: "/memberships/{membershipIdentifier}/idmappingtables/{idMappingTableIdentifier}"},
+	{Name: "GetIdNamespaceAssociation", Method: "GET", URI: "/memberships/{membershipIdentifier}/idnamespaceassociations/{idNamespaceAssociationIdentifier}"},
+	{Name: "GetMembership", Method: "GET", URI: "/memberships/{membershipIdentifier}"},
+	{Name: "GetPrivacyBudgetTemplate", Method: "GET", URI: "/memberships/{membershipIdentifier}/privacybudgettemplates/{privacyBudgetTemplateIdentifier}"},
+	{Name: "GetProtectedJob", Method: "GET", URI: "/memberships/{membershipIdentifier}/protectedJobs/{protectedJobIdentifier}"},
+	{Name: "GetProtectedQuery", Method: "GET", URI: "/memberships/{membershipIdentifier}/protectedQueries/{protectedQueryIdentifier}"},
+	{Name: "GetSchema", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/schemas/{name}"},
+	{Name: "GetSchemaAnalysisRule", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/schemas/{name}/analysisRule/{type}"},
+	{Name: "ListAnalysisTemplates", Method: "GET", URI: "/memberships/{membershipIdentifier}/analysistemplates?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListCollaborationAnalysisTemplates", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/analysistemplates?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListCollaborationChangeRequests", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/changeRequests?maxResults={maxResults}&nextToken={nextToken}&status={status}"},
+	{Name: "ListCollaborationConfiguredAudienceModelAssociations", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/configuredaudiencemodelassociations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListCollaborationIdNamespaceAssociations", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/idnamespaceassociations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListCollaborationPrivacyBudgetTemplates", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/privacybudgettemplates?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListCollaborationPrivacyBudgets", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/privacybudgets?accessBudgetResourceArn={accessBudgetResourceArn}&maxResults={maxResults}&nextToken={nextToken}&privacyBudgetType={privacyBudgetType}"},
+	{Name: "ListCollaborations", Method: "GET", URI: "/collaborations?maxResults={maxResults}&memberStatus={memberStatus}&nextToken={nextToken}"},
+	{Name: "ListConfiguredAudienceModelAssociations", Method: "GET", URI: "/memberships/{membershipIdentifier}/configuredaudiencemodelassociations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListConfiguredTableAssociations", Method: "GET", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListConfiguredTables", Method: "GET", URI: "/configuredTables?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListIdMappingTables", Method: "GET", URI: "/memberships/{membershipIdentifier}/idmappingtables?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListIdNamespaceAssociations", Method: "GET", URI: "/memberships/{membershipIdentifier}/idnamespaceassociations?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListMembers", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/members?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListMemberships", Method: "GET", URI: "/memberships?maxResults={maxResults}&nextToken={nextToken}&status={status}"},
+	{Name: "ListPrivacyBudgetTemplates", Method: "GET", URI: "/memberships/{membershipIdentifier}/privacybudgettemplates?maxResults={maxResults}&nextToken={nextToken}"},
+	{Name: "ListPrivacyBudgets", Method: "GET", URI: "/memberships/{membershipIdentifier}/privacybudgets?accessBudgetResourceArn={accessBudgetResourceArn}&maxResults={maxResults}&nextToken={nextToken}&privacyBudgetType={privacyBudgetType}"},
+	{Name: "ListProtectedJobs", Method: "GET", URI: "/memberships/{membershipIdentifier}/protectedJobs?maxResults={maxResults}&nextToken={nextToken}&status={status}"},
+	{Name: "ListProtectedQueries", Method: "GET", URI: "/memberships/{membershipIdentifier}/protectedQueries?maxResults={maxResults}&nextToken={nextToken}&status={status}"},
+	{Name: "ListSchemas", Method: "GET", URI: "/collaborations/{collaborationIdentifier}/schemas?maxResults={maxResults}&nextToken={nextToken}&schemaType={schemaType}"},
+	{Name: "ListTagsForResource", Method: "GET", URI: "/tags/{resourceArn}"},
+	{Name: "PopulateIdMappingTable", Method: "POST", URI: "/memberships/{membershipIdentifier}/idmappingtables/{idMappingTableIdentifier}/populate"},
+	{Name: "PreviewPrivacyImpact", Method: "POST", URI: "/memberships/{membershipIdentifier}/previewprivacyimpact"},
+	{Name: "StartProtectedJob", Method: "POST", URI: "/memberships/{membershipIdentifier}/protectedJobs"},
+	{Name: "StartProtectedQuery", Method: "POST", URI: "/memberships/{membershipIdentifier}/protectedQueries"},
+	{Name: "TagResource", Method: "POST", URI: "/tags/{resourceArn}"},
+	{Name: "UntagResource", Method: "DELETE", URI: "/tags/{resourceArn}?tagKeys={tagKeys}"},
+	{Name: "UpdateAnalysisTemplate", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/analysistemplates/{analysisTemplateIdentifier}"},
+	{Name: "UpdateCollaboration", Method: "PATCH", URI: "/collaborations/{collaborationIdentifier}"},
+	{Name: "UpdateCollaborationChangeRequest", Method: "PATCH", URI: "/collaborations/{collaborationIdentifier}/changeRequests/{changeRequestIdentifier}"},
+	{Name: "UpdateConfiguredAudienceModelAssociation", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/configuredaudiencemodelassociations/{configuredAudienceModelAssociationIdentifier}"},
+	{Name: "UpdateConfiguredTable", Method: "PATCH", URI: "/configuredTables/{configuredTableIdentifier}"},
+	{Name: "UpdateConfiguredTableAnalysisRule", Method: "PATCH", URI: "/configuredTables/{configuredTableIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "UpdateConfiguredTableAssociation", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}"},
+	{Name: "UpdateConfiguredTableAssociationAnalysisRule", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/configuredTableAssociations/{configuredTableAssociationIdentifier}/analysisRule/{analysisRuleType}"},
+	{Name: "UpdateIdMappingTable", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/idmappingtables/{idMappingTableIdentifier}"},
+	{Name: "UpdateIdNamespaceAssociation", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/idnamespaceassociations/{idNamespaceAssociationIdentifier}"},
+	{Name: "UpdateMembership", Method: "PATCH", URI: "/memberships/{membershipIdentifier}"},
+	{Name: "UpdatePrivacyBudgetTemplate", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/privacybudgettemplates/{privacyBudgetTemplateIdentifier}"},
+	{Name: "UpdateProtectedJob", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/protectedJobs/{protectedJobIdentifier}"},
+	{Name: "UpdateProtectedQuery", Method: "PATCH", URI: "/memberships/{membershipIdentifier}/protectedQueries/{protectedQueryIdentifier}"},
+}
+
+var cleanRoomsOperationByName = func() map[string]cleanRoomsOperation {
+	out := make(map[string]cleanRoomsOperation, len(cleanRoomsOperations))
+	for _, op := range cleanRoomsOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

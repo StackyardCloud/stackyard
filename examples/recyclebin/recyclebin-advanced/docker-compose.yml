@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  recyclebin-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/recyclebin/recyclebin-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_RECYCLEBIN_RULE_ID=rbin-00000001
+      - STACKYARD_RECYCLEBIN_RULE_ARN=arn:aws:rbin:us-east-1:123456789012:rule/rbin-00000001

@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  arc-region-switch-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/arc-region-switch/arc-region-switch-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_ARC_PLAN_ARN=arn:aws:arc-region-switch:us-east-1:123456789012:plan/stackyard-plan

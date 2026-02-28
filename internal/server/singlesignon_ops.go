@@ -1,0 +1,97 @@
+package server
+
+type singleSignOnOperation struct {
+	Name string
+}
+
+// AWS IAM Identity Center (sso-admin) operations sourced from:
+// https://docs.aws.amazon.com/singlesignon/latest/APIReference/API_Operations.html
+var singleSignOnOperations = []singleSignOnOperation{
+	{Name: "AddRegion"},
+	{Name: "AttachCustomerManagedPolicyReferenceToPermissionSet"},
+	{Name: "AttachManagedPolicyToPermissionSet"},
+	{Name: "CreateAccountAssignment"},
+	{Name: "CreateApplication"},
+	{Name: "CreateApplicationAssignment"},
+	{Name: "CreateInstance"},
+	{Name: "CreateInstanceAccessControlAttributeConfiguration"},
+	{Name: "CreatePermissionSet"},
+	{Name: "CreateTrustedTokenIssuer"},
+	{Name: "DeleteAccountAssignment"},
+	{Name: "DeleteApplication"},
+	{Name: "DeleteApplicationAccessScope"},
+	{Name: "DeleteApplicationAssignment"},
+	{Name: "DeleteApplicationAuthenticationMethod"},
+	{Name: "DeleteApplicationGrant"},
+	{Name: "DeleteInlinePolicyFromPermissionSet"},
+	{Name: "DeleteInstance"},
+	{Name: "DeleteInstanceAccessControlAttributeConfiguration"},
+	{Name: "DeletePermissionSet"},
+	{Name: "DeletePermissionsBoundaryFromPermissionSet"},
+	{Name: "DeleteTrustedTokenIssuer"},
+	{Name: "DescribeAccountAssignmentCreationStatus"},
+	{Name: "DescribeAccountAssignmentDeletionStatus"},
+	{Name: "DescribeApplication"},
+	{Name: "DescribeApplicationAssignment"},
+	{Name: "DescribeApplicationProvider"},
+	{Name: "DescribeInstance"},
+	{Name: "DescribeInstanceAccessControlAttributeConfiguration"},
+	{Name: "DescribePermissionSet"},
+	{Name: "DescribePermissionSetProvisioningStatus"},
+	{Name: "DescribeRegion"},
+	{Name: "DescribeTrustedTokenIssuer"},
+	{Name: "DetachCustomerManagedPolicyReferenceFromPermissionSet"},
+	{Name: "DetachManagedPolicyFromPermissionSet"},
+	{Name: "GetApplicationAccessScope"},
+	{Name: "GetApplicationAssignmentConfiguration"},
+	{Name: "GetApplicationAuthenticationMethod"},
+	{Name: "GetApplicationGrant"},
+	{Name: "GetApplicationSessionConfiguration"},
+	{Name: "GetInlinePolicyForPermissionSet"},
+	{Name: "GetPermissionsBoundaryForPermissionSet"},
+	{Name: "ListAccountAssignmentCreationStatus"},
+	{Name: "ListAccountAssignmentDeletionStatus"},
+	{Name: "ListAccountAssignments"},
+	{Name: "ListAccountAssignmentsForPrincipal"},
+	{Name: "ListAccountsForProvisionedPermissionSet"},
+	{Name: "ListApplicationAccessScopes"},
+	{Name: "ListApplicationAssignments"},
+	{Name: "ListApplicationAssignmentsForPrincipal"},
+	{Name: "ListApplicationAuthenticationMethods"},
+	{Name: "ListApplicationGrants"},
+	{Name: "ListApplicationProviders"},
+	{Name: "ListApplications"},
+	{Name: "ListCustomerManagedPolicyReferencesInPermissionSet"},
+	{Name: "ListInstances"},
+	{Name: "ListManagedPoliciesInPermissionSet"},
+	{Name: "ListPermissionSetProvisioningStatus"},
+	{Name: "ListPermissionSets"},
+	{Name: "ListPermissionSetsProvisionedToAccount"},
+	{Name: "ListRegions"},
+	{Name: "ListTagsForResource"},
+	{Name: "ListTrustedTokenIssuers"},
+	{Name: "ProvisionPermissionSet"},
+	{Name: "PutApplicationAccessScope"},
+	{Name: "PutApplicationAssignmentConfiguration"},
+	{Name: "PutApplicationAuthenticationMethod"},
+	{Name: "PutApplicationGrant"},
+	{Name: "PutApplicationSessionConfiguration"},
+	{Name: "PutInlinePolicyToPermissionSet"},
+	{Name: "PutPermissionsBoundaryToPermissionSet"},
+	{Name: "RemoveRegion"},
+	{Name: "TagResource"},
+	{Name: "UntagResource"},
+	{Name: "UpdateApplication"},
+	{Name: "UpdateInstance"},
+	{Name: "UpdateInstanceAccessControlAttributeConfiguration"},
+	{Name: "UpdatePermissionSet"},
+	{Name: "UpdateTrustedTokenIssuer"},
+}
+
+var singleSignOnOperationByName = func() map[string]singleSignOnOperation {
+	out := make(map[string]singleSignOnOperation, len(singleSignOnOperations))
+	for _, op := range singleSignOnOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

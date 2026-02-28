@@ -1,0 +1,76 @@
+v<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stackyard Docs</title>
+    <meta
+      name="description"
+      content="Stackyard documentation portal for AWS-compatible local service emulation."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">S</span>
+          <span>Stackyard Docs</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="./index.html" aria-current="page">Overview</a>
+          <a href="./aws/index.html">AWS</a>
+          <a href="./aws/services/index.html">Services</a>
+          <a href="../index.html">Legacy API Page</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="landing-main">
+      <section class="hero reveal">
+        <h1>Stackyard Documentation</h1>
+        <p>
+          This docs web portal mirrors the LocalStack docs navigation approach, with a focused AWS service catalog for
+          fast local-development lookup.
+        </p>
+        <div class="hero-meta">
+          <span class="pill accent">AWS-compatible APIs</span>
+          <span class="pill neutral">Structured by service domains</span>
+          <span class="pill warn">Built for local integration workflows</span>
+        </div>
+      </section>
+
+      <section class="summary-grid reveal" aria-label="Doc entry points">
+        <article class="landing-card">
+          <h2>AWS Documentation</h2>
+          <p>Start from the AWS docs area for architecture notes and service coverage.</p>
+          <p><a class="btn primary" href="aws/index.html">Open AWS Docs</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>AWS Services Catalog</h2>
+          <p>Browse and filter every supported Stackyard service in one place.</p>
+          <p><a class="btn primary" href="aws/services/index.html">Open Services Page</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>Implementation Details</h2>
+          <p>Jump to per-service staging and endpoint notes in the existing API docs.</p>
+          <p><a class="btn ghost" href="../index.html">Open Legacy API Surface</a></p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      Stackyard docs web preview under <code>docs/web/</code>.
+    </footer>
+
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>

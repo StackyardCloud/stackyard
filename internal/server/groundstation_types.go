@@ -1,0 +1,96 @@
+package server
+
+type groundStationDataType struct {
+	Name string
+}
+
+// AWS Ground Station data types sourced from:
+// https://docs.aws.amazon.com/ground-station/latest/APIReference/API_Types.html
+var groundStationDataTypes = []groundStationDataType{
+	{Name: "AgentDetails"},
+	{Name: "AggregateStatus"},
+	{Name: "AntennaDemodDecodeDetails"},
+	{Name: "AntennaDownlinkConfig"},
+	{Name: "AntennaDownlinkDemodDecodeConfig"},
+	{Name: "AntennaUplinkConfig"},
+	{Name: "AwsGroundStationAgentEndpoint"},
+	{Name: "AzElEphemeris"},
+	{Name: "AzElEphemerisFilter"},
+	{Name: "AzElProgramTrackSettings"},
+	{Name: "AzElSegment"},
+	{Name: "AzElSegments"},
+	{Name: "AzElSegmentsData"},
+	{Name: "ComponentStatusData"},
+	{Name: "ComponentVersion"},
+	{Name: "ConfigDetails"},
+	{Name: "ConfigListItem"},
+	{Name: "ConfigTypeData"},
+	{Name: "ConnectionDetails"},
+	{Name: "ContactData"},
+	{Name: "CreateEndpointDetails"},
+	{Name: "DataflowDetail"},
+	{Name: "DataflowEndpoint"},
+	{Name: "DataflowEndpointConfig"},
+	{Name: "DataflowEndpointListItem"},
+	{Name: "DecodeConfig"},
+	{Name: "DemodulationConfig"},
+	{Name: "Destination"},
+	{Name: "DiscoveryData"},
+	{Name: "DownlinkAwsGroundStationAgentEndpoint"},
+	{Name: "DownlinkAwsGroundStationAgentEndpointDetails"},
+	{Name: "DownlinkConnectionDetails"},
+	{Name: "DownlinkDataflowDetails"},
+	{Name: "Eirp"},
+	{Name: "Elevation"},
+	{Name: "EndpointDetails"},
+	{Name: "EphemerisData"},
+	{Name: "EphemerisDescription"},
+	{Name: "EphemerisErrorReason"},
+	{Name: "EphemerisFilter"},
+	{Name: "EphemerisItem"},
+	{Name: "EphemerisMetaData"},
+	{Name: "EphemerisResponseData"},
+	{Name: "EphemerisTypeDescription"},
+	{Name: "Frequency"},
+	{Name: "FrequencyBandwidth"},
+	{Name: "GroundStationData"},
+	{Name: "IntegerRange"},
+	{Name: "ISO8601TimeRange"},
+	{Name: "KinesisDataStreamData"},
+	{Name: "KmsKey"},
+	{Name: "MissionProfileListItem"},
+	{Name: "OEMEphemeris"},
+	{Name: "ProgramTrackSettings"},
+	{Name: "RangedConnectionDetails"},
+	{Name: "RangedSocketAddress"},
+	{Name: "S3Object"},
+	{Name: "S3RecordingConfig"},
+	{Name: "S3RecordingDetails"},
+	{Name: "SatelliteListItem"},
+	{Name: "SecurityDetails"},
+	{Name: "SocketAddress"},
+	{Name: "Source"},
+	{Name: "SpectrumConfig"},
+	{Name: "TelemetrySinkConfig"},
+	{Name: "TelemetrySinkData"},
+	{Name: "TimeAzEl"},
+	{Name: "TimeRange"},
+	{Name: "TLEData"},
+	{Name: "TLEEphemeris"},
+	{Name: "TrackingConfig"},
+	{Name: "TrackingOverrides"},
+	{Name: "UplinkAwsGroundStationAgentEndpoint"},
+	{Name: "UplinkAwsGroundStationAgentEndpointDetails"},
+	{Name: "UplinkConnectionDetails"},
+	{Name: "UplinkDataflowDetails"},
+	{Name: "UplinkEchoConfig"},
+	{Name: "UplinkSpectrumConfig"},
+}
+
+var groundStationDataTypeByName = func() map[string]groundStationDataType {
+	out := make(map[string]groundStationDataType, len(groundStationDataTypes))
+	for _, dt := range groundStationDataTypes {
+		out[dt.Name] = dt
+	}
+	return out
+}()

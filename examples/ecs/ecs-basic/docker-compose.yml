@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  ecs-basic:
+    build:
+      context: ../../..
+      dockerfile: examples/ecs/ecs-basic/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_CLUSTER_NAME=ecs-basic-cluster
+      - STACKYARD_TASK_FAMILY=ecs-basic-task

@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  athena-basic:
+    build:
+      context: ../../..
+      dockerfile: examples/athena/athena-basic/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_CATALOG=AwsDataCatalog
+      - STACKYARD_DATABASE=demo_athena_basic
+      - STACKYARD_TABLE=demo_table
+      - STACKYARD_WORKGROUP=primary
+      - STACKYARD_QUERY=SELECT 'ok'
+      - STACKYARD_OUTPUT=s3://demo-bucket/output/

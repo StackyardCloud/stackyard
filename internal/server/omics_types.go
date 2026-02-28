@@ -1,0 +1,98 @@
+package server
+
+type omicsDataType struct {
+	Name string
+}
+
+// Amazon HealthOmics data types sourced from:
+// https://docs.aws.amazon.com/omics/latest/APIReference/API_Types.html
+var omicsDataTypes = []omicsDataType{
+	{Name: "ActivateReadSetFilter"},
+	{Name: "ActivateReadSetJobItem"},
+	{Name: "ActivateReadSetSourceItem"},
+	{Name: "AnnotationImportItemDetail"},
+	{Name: "AnnotationImportItemSource"},
+	{Name: "AnnotationImportJobItem"},
+	{Name: "AnnotationStoreItem"},
+	{Name: "AnnotationStoreVersionItem"},
+	{Name: "CompleteReadSetUploadPartListItem"},
+	{Name: "ContainerRegistryMap"},
+	{Name: "DefinitionRepository"},
+	{Name: "DefinitionRepositoryDetails"},
+	{Name: "ETag"},
+	{Name: "ExportReadSet"},
+	{Name: "ExportReadSetDetail"},
+	{Name: "ExportReadSetFilter"},
+	{Name: "ExportReadSetJobDetail"},
+	{Name: "FileInformation"},
+	{Name: "Filter"},
+	{Name: "FormatOptions"},
+	{Name: "ImageDetails"},
+	{Name: "ImageMapping"},
+	{Name: "ImportReadSetFilter"},
+	{Name: "ImportReadSetJobItem"},
+	{Name: "ImportReadSetSourceItem"},
+	{Name: "ImportReferenceFilter"},
+	{Name: "ImportReferenceJobItem"},
+	{Name: "ImportReferenceSourceItem"},
+	{Name: "ListAnnotationImportJobsFilter"},
+	{Name: "ListAnnotationStoresFilter"},
+	{Name: "ListAnnotationStoreVersionsFilter"},
+	{Name: "ListVariantImportJobsFilter"},
+	{Name: "ListVariantStoresFilter"},
+	{Name: "MultipartReadSetUploadListItem"},
+	{Name: "ReadOptions"},
+	{Name: "ReadSetBatchError"},
+	{Name: "ReadSetFiles"},
+	{Name: "ReadSetFilter"},
+	{Name: "ReadSetListItem"},
+	{Name: "ReadSetS3Access"},
+	{Name: "ReadSetUploadPartListFilter"},
+	{Name: "ReadSetUploadPartListItem"},
+	{Name: "ReferenceFiles"},
+	{Name: "ReferenceFilter"},
+	{Name: "ReferenceItem"},
+	{Name: "ReferenceListItem"},
+	{Name: "ReferenceStoreDetail"},
+	{Name: "ReferenceStoreFilter"},
+	{Name: "RegistryMapping"},
+	{Name: "RunCacheListItem"},
+	{Name: "RunGroupListItem"},
+	{Name: "RunListItem"},
+	{Name: "RunLogLocation"},
+	{Name: "S3AccessConfig"},
+	{Name: "SequenceInformation"},
+	{Name: "SequenceStoreDetail"},
+	{Name: "SequenceStoreFilter"},
+	{Name: "SequenceStoreS3Access"},
+	{Name: "ShareDetails"},
+	{Name: "SourceFiles"},
+	{Name: "SourceReference"},
+	{Name: "SseConfig"},
+	{Name: "StartReadSetActivationJobSourceItem"},
+	{Name: "StartReadSetImportJobSourceItem"},
+	{Name: "StartReferenceImportJobSourceItem"},
+	{Name: "StoreOptions"},
+	{Name: "TaskListItem"},
+	{Name: "TsvOptions"},
+	{Name: "TsvStoreOptions"},
+	{Name: "TsvVersionOptions"},
+	{Name: "VariantImportItemDetail"},
+	{Name: "VariantImportItemSource"},
+	{Name: "VariantImportJobItem"},
+	{Name: "VariantStoreItem"},
+	{Name: "VcfOptions"},
+	{Name: "VersionDeleteError"},
+	{Name: "VersionOptions"},
+	{Name: "WorkflowListItem"},
+	{Name: "WorkflowParameter"},
+	{Name: "WorkflowVersionListItem"},
+}
+
+var omicsDataTypeByName = func() map[string]omicsDataType {
+	out := make(map[string]omicsDataType, len(omicsDataTypes))
+	for _, dt := range omicsDataTypes {
+		out[dt.Name] = dt
+	}
+	return out
+}()

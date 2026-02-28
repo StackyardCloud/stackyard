@@ -1,0 +1,107 @@
+package server
+
+type guardDutyOperation struct {
+	Name   string
+	Method string
+	URI    string
+}
+
+// AWS GuardDuty operations sourced from:
+// https://docs.aws.amazon.com/guardduty/latest/APIReference/API_Operations.html
+var guardDutyOperations = []guardDutyOperation{
+	{Name: "AcceptAdministratorInvitation", Method: "POST", URI: "/detector/{detectorId}/administrator"},
+	{Name: "AcceptInvitation", Method: "POST", URI: "/detector/{detectorId}/master"},
+	{Name: "ArchiveFindings", Method: "POST", URI: "/detector/{detectorId}/findings/archive"},
+	{Name: "CreateDetector", Method: "POST", URI: "/detector"},
+	{Name: "CreateFilter", Method: "POST", URI: "/detector/{detectorId}/filter"},
+	{Name: "CreateIPSet", Method: "POST", URI: "/detector/{detectorId}/ipset"},
+	{Name: "CreateMalwareProtectionPlan", Method: "POST", URI: "/malware-protection-plan"},
+	{Name: "CreateMembers", Method: "POST", URI: "/detector/{detectorId}/member"},
+	{Name: "CreatePublishingDestination", Method: "POST", URI: "/detector/{detectorId}/publishingDestination"},
+	{Name: "CreateSampleFindings", Method: "POST", URI: "/detector/{detectorId}/findings/create"},
+	{Name: "CreateThreatEntitySet", Method: "POST", URI: "/detector/{detectorId}/threatentityset"},
+	{Name: "CreateThreatIntelSet", Method: "POST", URI: "/detector/{detectorId}/threatintelset"},
+	{Name: "CreateTrustedEntitySet", Method: "POST", URI: "/detector/{detectorId}/trustedentityset"},
+	{Name: "DeclineInvitations", Method: "POST", URI: "/invitation/decline"},
+	{Name: "DeleteDetector", Method: "DELETE", URI: "/detector/{detectorId}"},
+	{Name: "DeleteFilter", Method: "DELETE", URI: "/detector/{detectorId}/filter/{filterName}"},
+	{Name: "DeleteIPSet", Method: "DELETE", URI: "/detector/{detectorId}/ipset/{ipSetId}"},
+	{Name: "DeleteInvitations", Method: "POST", URI: "/invitation/delete"},
+	{Name: "DeleteMalwareProtectionPlan", Method: "DELETE", URI: "/malware-protection-plan/{malwareProtectionPlanId}"},
+	{Name: "DeleteMembers", Method: "POST", URI: "/detector/{detectorId}/member/delete"},
+	{Name: "DeletePublishingDestination", Method: "DELETE", URI: "/detector/{detectorId}/publishingDestination/{destinationId}"},
+	{Name: "DeleteThreatEntitySet", Method: "DELETE", URI: "/detector/{detectorId}/threatentityset/{threatEntitySetId}"},
+	{Name: "DeleteThreatIntelSet", Method: "DELETE", URI: "/detector/{detectorId}/threatintelset/{threatIntelSetId}"},
+	{Name: "DeleteTrustedEntitySet", Method: "DELETE", URI: "/detector/{detectorId}/trustedentityset/{trustedEntitySetId}"},
+	{Name: "DescribeMalwareScans", Method: "POST", URI: "/detector/{detectorId}/malware-scans"},
+	{Name: "DescribeOrganizationConfiguration", Method: "GET", URI: "/detector/{detectorId}/admin"},
+	{Name: "DescribePublishingDestination", Method: "GET", URI: "/detector/{detectorId}/publishingDestination/{destinationId}"},
+	{Name: "DisableOrganizationAdminAccount", Method: "POST", URI: "/admin/disable"},
+	{Name: "DisassociateFromAdministratorAccount", Method: "POST", URI: "/detector/{detectorId}/administrator/disassociate"},
+	{Name: "DisassociateFromMasterAccount", Method: "POST", URI: "/detector/{detectorId}/master/disassociate"},
+	{Name: "DisassociateMembers", Method: "POST", URI: "/detector/{detectorId}/member/disassociate"},
+	{Name: "EnableOrganizationAdminAccount", Method: "POST", URI: "/admin/enable"},
+	{Name: "GetAdministratorAccount", Method: "GET", URI: "/detector/{detectorId}/administrator"},
+	{Name: "GetCoverageStatistics", Method: "POST", URI: "/detector/{detectorId}/coverage/statistics"},
+	{Name: "GetDetector", Method: "GET", URI: "/detector/{detectorId}"},
+	{Name: "GetFilter", Method: "GET", URI: "/detector/{detectorId}/filter/{filterName}"},
+	{Name: "GetFindings", Method: "POST", URI: "/detector/{detectorId}/findings/get"},
+	{Name: "GetFindingsStatistics", Method: "POST", URI: "/detector/{detectorId}/findings/statistics"},
+	{Name: "GetIPSet", Method: "GET", URI: "/detector/{detectorId}/ipset/{ipSetId}"},
+	{Name: "GetInvitationsCount", Method: "GET", URI: "/invitation/count"},
+	{Name: "GetMalwareProtectionPlan", Method: "GET", URI: "/malware-protection-plan/{malwareProtectionPlanId}"},
+	{Name: "GetMalwareScan", Method: "GET", URI: "/malware-scan/{scanId}"},
+	{Name: "GetMalwareScanSettings", Method: "GET", URI: "/detector/{detectorId}/malware-scan-settings"},
+	{Name: "GetMasterAccount", Method: "GET", URI: "/detector/{detectorId}/master"},
+	{Name: "GetMemberDetectors", Method: "POST", URI: "/detector/{detectorId}/member/detector/get"},
+	{Name: "GetMembers", Method: "POST", URI: "/detector/{detectorId}/member/get"},
+	{Name: "GetOrganizationStatistics", Method: "GET", URI: "/organization/statistics"},
+	{Name: "GetRemainingFreeTrialDays", Method: "POST", URI: "/detector/{detectorId}/freeTrial/daysRemaining"},
+	{Name: "GetThreatEntitySet", Method: "GET", URI: "/detector/{detectorId}/threatentityset/{threatEntitySetId}"},
+	{Name: "GetThreatIntelSet", Method: "GET", URI: "/detector/{detectorId}/threatintelset/{threatIntelSetId}"},
+	{Name: "GetTrustedEntitySet", Method: "GET", URI: "/detector/{detectorId}/trustedentityset/{trustedEntitySetId}"},
+	{Name: "GetUsageStatistics", Method: "POST", URI: "/detector/{detectorId}/usage/statistics"},
+	{Name: "InviteMembers", Method: "POST", URI: "/detector/{detectorId}/member/invite"},
+	{Name: "ListCoverage", Method: "POST", URI: "/detector/{detectorId}/coverage"},
+	{Name: "ListDetectors", Method: "GET", URI: "/detector"},
+	{Name: "ListFilters", Method: "GET", URI: "/detector/{detectorId}/filter"},
+	{Name: "ListFindings", Method: "POST", URI: "/detector/{detectorId}/findings"},
+	{Name: "ListIPSets", Method: "GET", URI: "/detector/{detectorId}/ipset"},
+	{Name: "ListInvitations", Method: "GET", URI: "/invitation"},
+	{Name: "ListMalwareProtectionPlans", Method: "GET", URI: "/malware-protection-plan"},
+	{Name: "ListMalwareScans", Method: "POST", URI: "/malware-scan"},
+	{Name: "ListMembers", Method: "GET", URI: "/detector/{detectorId}/member"},
+	{Name: "ListOrganizationAdminAccounts", Method: "GET", URI: "/admin"},
+	{Name: "ListPublishingDestinations", Method: "GET", URI: "/detector/{detectorId}/publishingDestination"},
+	{Name: "ListTagsForResource", Method: "GET", URI: "/tags/{resourceArn}"},
+	{Name: "ListThreatEntitySets", Method: "GET", URI: "/detector/{detectorId}/threatentityset"},
+	{Name: "ListThreatIntelSets", Method: "GET", URI: "/detector/{detectorId}/threatintelset"},
+	{Name: "ListTrustedEntitySets", Method: "GET", URI: "/detector/{detectorId}/trustedentityset"},
+	{Name: "SendObjectMalwareScan", Method: "POST", URI: "/object-malware-scan/send"},
+	{Name: "StartMalwareScan", Method: "POST", URI: "/malware-scan/start"},
+	{Name: "StartMonitoringMembers", Method: "POST", URI: "/detector/{detectorId}/member/start"},
+	{Name: "StopMonitoringMembers", Method: "POST", URI: "/detector/{detectorId}/member/stop"},
+	{Name: "TagResource", Method: "POST", URI: "/tags/{resourceArn}"},
+	{Name: "UnarchiveFindings", Method: "POST", URI: "/detector/{detectorId}/findings/unarchive"},
+	{Name: "UntagResource", Method: "DELETE", URI: "/tags/{resourceArn}"},
+	{Name: "UpdateDetector", Method: "POST", URI: "/detector/{detectorId}"},
+	{Name: "UpdateFilter", Method: "POST", URI: "/detector/{detectorId}/filter/{filterName}"},
+	{Name: "UpdateFindingsFeedback", Method: "POST", URI: "/detector/{detectorId}/findings/feedback"},
+	{Name: "UpdateIPSet", Method: "POST", URI: "/detector/{detectorId}/ipset/{ipSetId}"},
+	{Name: "UpdateMalwareProtectionPlan", Method: "PATCH", URI: "/malware-protection-plan/{malwareProtectionPlanId}"},
+	{Name: "UpdateMalwareScanSettings", Method: "POST", URI: "/detector/{detectorId}/malware-scan-settings"},
+	{Name: "UpdateMemberDetectors", Method: "POST", URI: "/detector/{detectorId}/member/detector/update"},
+	{Name: "UpdateOrganizationConfiguration", Method: "POST", URI: "/detector/{detectorId}/admin"},
+	{Name: "UpdatePublishingDestination", Method: "POST", URI: "/detector/{detectorId}/publishingDestination/{destinationId}"},
+	{Name: "UpdateThreatEntitySet", Method: "POST", URI: "/detector/{detectorId}/threatentityset/{threatEntitySetId}"},
+	{Name: "UpdateThreatIntelSet", Method: "POST", URI: "/detector/{detectorId}/threatintelset/{threatIntelSetId}"},
+	{Name: "UpdateTrustedEntitySet", Method: "POST", URI: "/detector/{detectorId}/trustedentityset/{trustedEntitySetId}"},
+}
+
+var guardDutyOperationByName = func() map[string]guardDutyOperation {
+	out := make(map[string]guardDutyOperation, len(guardDutyOperations))
+	for _, op := range guardDutyOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

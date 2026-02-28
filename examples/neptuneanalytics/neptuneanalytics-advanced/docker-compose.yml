@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  neptuneanalytics-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/neptuneanalytics/neptuneanalytics-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_NEPTUNEANALYTICS_SOURCE_GRAPH_NAME=stackyard-neptuneanalytics-advanced-source
+      - STACKYARD_NEPTUNEANALYTICS_RESTORED_GRAPH_NAME=stackyard-neptuneanalytics-advanced-restored
+      - STACKYARD_NEPTUNEANALYTICS_IMPORT_GRAPH_NAME=stackyard-neptuneanalytics-advanced-import
+      - STACKYARD_NEPTUNEANALYTICS_SNAPSHOT_NAME=stackyard-neptuneanalytics-advanced-snapshot
+      - STACKYARD_NEPTUNEANALYTICS_IMPORT_SOURCE=s3://stackyard-neptuneanalytics-advanced/import
+      - STACKYARD_NEPTUNEANALYTICS_EXPORT_DESTINATION=s3://stackyard-neptuneanalytics-advanced/export
+      - STACKYARD_NEPTUNEANALYTICS_ROLE_ARN=arn:aws:iam::123456789012:role/stackyard-neptuneanalytics
+      - STACKYARD_NEPTUNEANALYTICS_KMS_KEY_IDENTIFIER=alias/aws/neptune-graph
+      - STACKYARD_NEPTUNEANALYTICS_PRIVATE_ENDPOINT_VPC_ID=vpc-0123456789abcdef0

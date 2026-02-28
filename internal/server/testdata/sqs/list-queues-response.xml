@@ -1,0 +1,1 @@
+<ListQueuesResponse><ListQueuesResult><QueueUrl>{{BASE_URL}}/123456789012/demo</QueueUrl></ListQueuesResult><ResponseMetadata><RequestId>stackyard-request</RequestId></ResponseMetadata></ListQueuesResponse>

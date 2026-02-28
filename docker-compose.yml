@@ -1,0 +1,14 @@
+services:
+  stackyard:
+    container_name: stackyard
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      STACKYARD_ADDR: ":4566"
+      STACKYARD_ACCESS_KEY: "stackyard"
+      STACKYARD_SECRET_KEY: "stackyard"
+      STACKYARD_LOG_LEVEL: "debug"
+    ports:
+      - "4566:4566"
+    restart: unless-stopped

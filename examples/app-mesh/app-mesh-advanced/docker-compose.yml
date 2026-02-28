@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  app-mesh-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/app-mesh/app-mesh-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_MESH_NAME=stackyard-mesh
+      - STACKYARD_VIRTUAL_NODE_NAME=stackyard-node
+      - STACKYARD_VIRTUAL_ROUTER_NAME=stackyard-router
+      - STACKYARD_ROUTE_NAME=stackyard-route
+      - STACKYARD_VIRTUAL_SERVICE_NAME=stackyard.local

@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  secretsmanager-advanced:
+    build:
+      context: ../../..
+      dockerfile: examples/secretsmanager/secretsmanager-advanced/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_SECRET_NAME=stackyard-secret
+      - STACKYARD_SECRET_ID=arn:aws:secretsmanager:us-east-1:123456789012:secret:stackyard-secret-AbCdEf

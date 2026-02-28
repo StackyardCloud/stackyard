@@ -1,0 +1,1 @@
+{"indexName":"demo-index","indexArn":"arn:aws:s3vectors:us-east-1:123456789012:bucket/demo-bucket/index/demo-index","vectorBucketArn":"arn:aws:s3vectors:us-east-1:123456789012:bucket/demo-bucket","dimension":3,"distanceMetric":"COSINE"}
