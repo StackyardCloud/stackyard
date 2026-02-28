@@ -1,0 +1,7 @@
+name: "CodeQL config"
+
+# Keep it minimal; customize later if needed.
+paths-ignore:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
