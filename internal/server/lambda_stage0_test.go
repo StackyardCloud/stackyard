@@ -1,8 +1,12 @@
 package server
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -302,6 +306,90 @@ func TestLambdaStage0AllRoutesAreImplemented(t *testing.T) {
 	}
 }
 
+func TestLambdaInvokeLocalExecutionHeaders(t *testing.T) {
+	srv := New(Config{
+		Addr:                "127.0.0.1:0",
+		AccessKey:           testAccessKey,
+		SecretKey:           testSecretKey,
+		LogLevel:            "error",
+		LambdaExecutionMode: "local",
+		LambdaWorkDir:       t.TempDir(),
+	})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	codeB64 := base64.StdEncoding.EncodeToString(lambdaZipBootstrap(t, `#!/bin/sh
+echo "boom from function" 1>&2
+exit 1
+`))
+
+	createBody := []byte(fmt.Sprintf(`{
+		"FunctionName":"local-fail-fn",
+		"Role":"arn:aws:iam::123456789012:role/lambda-role",
+		"Runtime":"provided.al2",
+		"Handler":"bootstrap",
+		"Code":{"ZipFile":"%s"}
+	}`, codeB64))
+	resp := lambdaRequest(t, ts, http.MethodPost, "/2015-03-31/functions", createBody)
+	assertStatus(t, resp, http.StatusCreated)
+
+	resp = lambdaRequest(t, ts, http.MethodPost, "/2015-03-31/functions/local-fail-fn/invocations", []byte(`{"hello":"world"}`))
+	assertStatus(t, resp, http.StatusOK)
+	if got := strings.TrimSpace(resp.Header.Get("X-Amz-Function-Error")); got != "Unhandled" {
+		t.Fatalf("expected X-Amz-Function-Error=Unhandled, got %q", got)
+	}
+	if got := strings.TrimSpace(resp.Header.Get("X-Amz-Log-Result")); got == "" {
+		t.Fatalf("expected X-Amz-Log-Result header to be present")
+	}
+	body := string(mustBody(t, resp))
+	if !strings.Contains(body, `"errorType":"RuntimeError"`) {
+		t.Fatalf("expected runtime error payload, got %s", body)
+	}
+}
+
+func TestLambdaInvokeLocalExecutionReturnsFunctionPayload(t *testing.T) {
+	srv := New(Config{
+		Addr:                "127.0.0.1:0",
+		AccessKey:           testAccessKey,
+		SecretKey:           testSecretKey,
+		LogLevel:            "error",
+		LambdaExecutionMode: "local",
+		LambdaWorkDir:       t.TempDir(),
+	})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	codeB64 := base64.StdEncoding.EncodeToString(lambdaZipBootstrap(t, `#!/bin/sh
+payload="$(cat)"
+if [ -z "$payload" ]; then
+  payload='{}'
+fi
+printf '{"ok":true,"payload":%s}' "$payload"
+`))
+	createBody := []byte(fmt.Sprintf(`{
+		"FunctionName":"local-ok-fn",
+		"Role":"arn:aws:iam::123456789012:role/lambda-role",
+		"Runtime":"provided.al2",
+		"Handler":"bootstrap",
+		"Code":{"ZipFile":"%s"}
+	}`, codeB64))
+	resp := lambdaRequest(t, ts, http.MethodPost, "/2015-03-31/functions", createBody)
+	assertStatus(t, resp, http.StatusCreated)
+
+	resp = lambdaRequest(t, ts, http.MethodPost, "/2015-03-31/functions/local-ok-fn/invocations", []byte(`{"hello":"world"}`))
+	assertStatus(t, resp, http.StatusOK)
+	if got := strings.TrimSpace(resp.Header.Get("X-Amz-Function-Error")); got != "" {
+		t.Fatalf("expected empty X-Amz-Function-Error header, got %q", got)
+	}
+	body := string(mustBody(t, resp))
+	if !strings.Contains(body, `"ok":true`) {
+		t.Fatalf("expected successful payload body, got %s", body)
+	}
+	if !strings.Contains(body, `"hello":"world"`) {
+		t.Fatalf("expected invocation payload in response, got %s", body)
+	}
+}
+
 func lambdaRouteSamplePath(route lambdaRoute) string {
 	path := route.Pattern
 	replacements := map[string]string{
@@ -327,4 +415,27 @@ func lambdaRouteSamplePath(route lambdaRoute) string {
 		path += "?List=ALL"
 	}
 	return path
+}
+
+func lambdaZipBootstrap(t *testing.T, script string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	header := &zip.FileHeader{
+		Name:   "bootstrap",
+		Method: zip.Deflate,
+	}
+	header.SetMode(0o755)
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		t.Fatalf("create zip header: %v", err)
+	}
+	if _, err := w.Write([]byte(script)); err != nil {
+		t.Fatalf("write script: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip writer: %v", err)
+	}
+	return buf.Bytes()
 }
