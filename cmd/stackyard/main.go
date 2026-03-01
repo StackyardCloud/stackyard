@@ -209,7 +209,11 @@ func startInBackground(opts serveOptions, logFile string, stdout io.Writer) erro
 	if err != nil {
 		return fmt.Errorf("failed to open log file %s: %w", logFile, err)
 	}
-	defer outFile.Close()
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil {
+			fmt.Fprintf(stdout, "warning: failed to close log file %s: %v\n", logFile, closeErr)
+		}
+	}()
 
 	exe, err := os.Executable()
 	if err != nil {

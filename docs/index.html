@@ -14078,6 +14078,39 @@
         
         </details>
         <details class="details">
+        <summary>Invoke Behavior</summary>
+        <p class="note"><code>Invoke</code> supports both deterministic mock mode and local code execution mode.</p>
+        <ul>
+        <li><strong>Execution mode:</strong> Configure <code>STACKYARD_LAMBDA_EXECUTION_MODE=mock|local</code> (or CLI <code>--lambda-execution-mode</code>). Default is <code>mock</code>.</li>
+        <li><strong>Local workspace:</strong> Optionally set <code>STACKYARD_LAMBDA_WORK_DIR</code> (or <code>--lambda-work-dir</code>) to control where code archives are unpacked during local execution.</li>
+        <li><strong>Supported runtimes in local mode:</strong> <code>provided*</code> (bootstrap), <code>python*</code>, and <code>nodejs*</code>.</li>
+        <li><strong>Versioned code fidelity:</strong> <code>PublishVersion</code> snapshots function code; invoking a specific version or alias executes that published snapshot instead of current <code>$LATEST</code>.</li>
+        </ul>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Invocation Type</th>
+        <th>Behavior</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>RequestResponse</code></td>
+        <td>Executes immediately. In <code>local</code> mode, runs unpacked function code and returns function output payload. In <code>mock</code> mode, echoes request payload (or <code>{"statusCode":200}</code> when empty).</td>
+        </tr>
+        <tr>
+        <td><code>Event</code></td>
+        <td>Returns <code>202</code>. In <code>local</code> mode, execution is triggered asynchronously in a background goroutine.</td>
+        </tr>
+        <tr>
+        <td><code>DryRun</code></td>
+        <td>Returns <code>204</code> without executing code.</td>
+        </tr>
+        </tbody>
+        </table>
+        <p class="note">On runtime failures in local mode, Stackyard returns <code>200</code> with error JSON payload and sets <code>X-Amz-Function-Error: Unhandled</code>. Stderr is surfaced in <code>X-Amz-Log-Result</code> (base64).</p>
+        </details>
+        <details class="details">
         <summary>Examples</summary>
         <ul>
         <li><code>lambda-basic</code>: <code>docker compose -f examples/lambda/lambda-basic/docker-compose.yml up --build</code></li>
