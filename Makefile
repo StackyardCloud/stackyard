@@ -1,4 +1,4 @@
-.PHONY: fmt tidy test ci examples-docker coverage-all coverage-all-strict up down restart
+.PHONY: fmt tidy test ci install examples-docker coverage-all coverage-all-strict up down restart
 
 BUILD ?= 0
 VOLUMES ?= 0
@@ -68,6 +68,9 @@ else
 	ci_end=$$(date +%s); \
 	printf "$${cyan}%s$${reset}\n" "[ci] total elapsed=$$((ci_end-ci_start))s"
 endif
+
+install:
+	go install ./cmd/stackyard
 
 examples-docker:
 ifeq ($(OS),Windows_NT)

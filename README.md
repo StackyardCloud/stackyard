@@ -38,10 +38,40 @@ For the most up-to-date catalog and operation/type coverage, use:
 
 ## Quickstart
 
+Install the CLI:
+
+```bash
+go install ./cmd/stackyard
+```
+
+If `stackyard` is not found after install, add your Go bin path to `PATH`.
+
+For the current shell session:
+
+```bash
+export PATH="$PATH:$(go env GOPATH)/bin"
+hash -r
+which stackyard
+stackyard help
+```
+
+For zsh (persist across terminal sessions):
+
+```bash
+echo 'export PATH="$PATH:$(go env GOPATH)/bin"' >> ~/.zshrc
+source ~/.zshrc
+```
+
 Run locally:
 
 ```bash
-go run ./cmd/stackyard -addr :4566
+# starts in background (daemon mode)
+stackyard start --providers aws
+stackyard start --providers aws --port 4566
+stackyard start --providers aws --log-level debug
+
+# stop the background process
+stackyard stop
 ```
 
 Run with Docker Compose:

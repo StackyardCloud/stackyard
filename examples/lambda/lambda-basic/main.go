@@ -1,9 +1,15 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,7 +33,24 @@ func main() {
 		Runtime:      lambdatypes.Runtime("provided.al2"),
 		Handler:      aws.String("bootstrap"),
 		Code: &lambdatypes.FunctionCode{
-			ZipFile: []byte("stackyard-lambda-basic"),
+			ZipFile: bootstrapArchiveFromSource(`package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+)
+
+func main() {
+	body, _ := io.ReadAll(os.Stdin)
+	payload := strings.TrimSpace(string(body))
+	if payload == "" {
+		payload = "{}"
+	}
+	fmt.Printf("{\"ok\":true,\"payload\":%s}", payload)
+}
+`),
 		},
 	})
 	if err != nil {
@@ -43,6 +66,16 @@ func main() {
 		exitf("invoke function: %v", err)
 	}
 	logf("invoke status: %d", invokeOut.StatusCode)
+	if ferr := strings.TrimSpace(aws.ToString(invokeOut.FunctionError)); ferr != "" {
+		exitf("invoke returned function error: %s (payload=%s)", ferr, string(invokeOut.Payload))
+	}
+	if !bytes.Contains(invokeOut.Payload, []byte(`"ok":true`)) {
+		exitf("unexpected invoke payload: %s", string(invokeOut.Payload))
+	}
+	if !bytes.Contains(invokeOut.Payload, []byte(`"hello":"stackyard"`)) {
+		exitf("invoke payload did not include request body: %s", string(invokeOut.Payload))
+	}
+	logf("invoke payload: %s", string(invokeOut.Payload))
 
 	listOut, err := client.ListFunctions(ctx, &lambda.ListFunctionsInput{})
 	if err != nil {
@@ -91,4 +124,47 @@ func exitf(format string, args ...any) {
 
 func logf(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
+}
+
+func bootstrapArchiveFromSource(source string) []byte {
+	dir, err := os.MkdirTemp("", "stackyard-lambda-basic-*")
+	if err != nil {
+		exitf("create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	sourcePath := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(sourcePath, []byte(source), 0o644); err != nil {
+		exitf("write bootstrap source: %v", err)
+	}
+	bootstrapPath := filepath.Join(dir, "bootstrap")
+
+	cmd := exec.Command("go", "build", "-trimpath", "-ldflags=-s -w", "-o", bootstrapPath, sourcePath)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		exitf("build bootstrap binary: %v (%s)", err, strings.TrimSpace(string(output)))
+	}
+	bootstrapBytes, err := os.ReadFile(bootstrapPath)
+	if err != nil {
+		exitf("read bootstrap binary: %v", err)
+	}
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	header := &zip.FileHeader{
+		Name:   "bootstrap",
+		Method: zip.Deflate,
+	}
+	header.SetMode(0o755)
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		exitf("create zip entry: %v", err)
+	}
+	if _, err := io.Copy(w, bytes.NewReader(bootstrapBytes)); err != nil {
+		exitf("write zip entry: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		exitf("close zip: %v", err)
+	}
+	return buf.Bytes()
 }
