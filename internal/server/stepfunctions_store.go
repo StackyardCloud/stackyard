@@ -1,8 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +20,7 @@ type stepFunctionsStore struct {
 	aliases       map[string]map[string]any
 	versions      map[string]map[string]any
 	executions    map[string]map[string]any
+	executionHist map[string][]any
 	mapRuns       map[string]map[string]any
 	tags          map[string]map[string]string
 }
@@ -90,6 +93,9 @@ func newStepFunctionsStore() *stepFunctionsStore {
 		},
 		executions: map[string]map[string]any{
 			execution["executionArn"].(string): execution,
+		},
+		executionHist: map[string][]any{
+			execution["executionArn"].(string): seedExecutionHistory(now, execution["input"].(string), execution["output"].(string), stateMachine["roleArn"].(string)),
 		},
 		mapRuns: map[string]map[string]any{
 			mapRun["mapRunArn"].(string): mapRun,
@@ -228,6 +234,13 @@ func (s *stepFunctionsStore) Handle(action string, payload map[string]any) map[s
 		}
 	case "GetExecutionHistory":
 		execARN := stepFunctionsPayloadString(payload, "executionArn", "arn:aws:states:us-east-1:123456789012:execution:stackyard-sm:stackyard-exec")
+		if events, ok := s.executionHist[execARN]; ok {
+			return map[string]any{
+				"events":       stepFunctionsCloneAny(events),
+				"nextToken":    "",
+				"executionArn": execARN,
+			}
+		}
 		return map[string]any{
 			"events": []any{
 				map[string]any{
@@ -282,28 +295,73 @@ func (s *stepFunctionsStore) Handle(action string, payload map[string]any) map[s
 		smARN := stepFunctionsPayloadString(payload, "stateMachineArn", defaultStateMachineARN)
 		name := stepFunctionsPayloadString(payload, "name", "exec-"+s.nextIdentifierLocked("e"))
 		execARN := fmt.Sprintf("arn:aws:states:us-east-1:123456789012:execution:%s:%s", stepFunctionsStateMachineName(smARN), name)
+		input := stepFunctionsPayloadString(payload, "input", "{}")
+		definition, roleARN := s.resolveStateMachineExecutionConfigLocked(smARN)
+		status, output, failureError, failureCause, events := executeASL(definition, input, roleARN, now)
 		item := map[string]any{
 			"executionArn":    execARN,
 			"stateMachineArn": smARN,
 			"name":            name,
-			"status":          "RUNNING",
+			"status":          status,
 			"startDate":       now,
-			"input":           stepFunctionsPayloadString(payload, "input", "{}"),
+			"input":           input,
+		}
+		if status != "RUNNING" {
+			item["stopDate"] = now
+		}
+		if strings.TrimSpace(output) != "" {
+			item["output"] = output
+		}
+		if strings.TrimSpace(failureError) != "" {
+			item["error"] = failureError
+		}
+		if strings.TrimSpace(failureCause) != "" {
+			item["cause"] = failureCause
 		}
 		s.executions[execARN] = item
+		if len(events) > 0 {
+			s.executionHist[execARN] = events
+		}
 		return map[string]any{"executionArn": execARN, "startDate": now}
 	case "StartSyncExecution":
 		smARN := stepFunctionsPayloadString(payload, "stateMachineArn", defaultStateMachineARN)
 		name := stepFunctionsPayloadString(payload, "name", "sync-"+s.nextIdentifierLocked("e"))
 		execARN := fmt.Sprintf("arn:aws:states:us-east-1:123456789012:execution:%s:%s", stepFunctionsStateMachineName(smARN), name)
+		input := stepFunctionsPayloadString(payload, "input", "{}")
+		definition, roleARN := s.resolveStateMachineExecutionConfigLocked(smARN)
+		status, output, failureError, failureCause, events := executeASL(definition, input, roleARN, now)
+		item := map[string]any{
+			"executionArn":    execARN,
+			"stateMachineArn": smARN,
+			"name":            name,
+			"status":          status,
+			"startDate":       now,
+			"stopDate":        now,
+			"input":           input,
+		}
+		if strings.TrimSpace(output) != "" {
+			item["output"] = output
+		}
+		if strings.TrimSpace(failureError) != "" {
+			item["error"] = failureError
+		}
+		if strings.TrimSpace(failureCause) != "" {
+			item["cause"] = failureCause
+		}
+		s.executions[execARN] = item
+		if len(events) > 0 {
+			s.executionHist[execARN] = events
+		}
 		return map[string]any{
 			"executionArn":    execARN,
 			"stateMachineArn": smARN,
-			"status":          "SUCCEEDED",
+			"status":          status,
 			"startDate":       now,
 			"stopDate":        now,
-			"input":           stepFunctionsPayloadString(payload, "input", "{}"),
-			"output":          "{}",
+			"input":           input,
+			"output":          output,
+			"error":           failureError,
+			"cause":           failureCause,
 			"outputDetails":   map[string]any{"included": true},
 			"billingDetails":  map[string]any{"billedDurationInMilliseconds": int64(1), "billedMemoryUsedInMB": int64(64)},
 		}
@@ -441,6 +499,21 @@ func (s *stepFunctionsStore) ensureExecutionLocked(executionARN string) map[stri
 	}
 	s.executions[executionARN] = item
 	return item
+}
+
+func (s *stepFunctionsStore) resolveStateMachineExecutionConfigLocked(stateMachineARN string) (definition, roleARN string) {
+	sm := s.ensureStateMachineLocked(stateMachineARN)
+	definition = stepFunctionsPayloadString(sm, "definition", `{"StartAt":"Done","States":{"Done":{"Type":"Succeed"}}}`)
+	roleARN = stepFunctionsPayloadString(sm, "roleArn", "arn:aws:iam::123456789012:role/stackyard-step-functions-role")
+
+	if strings.Contains(stateMachineARN, ":stateMachine:") && strings.Count(stateMachineARN, ":") > strings.Count("arn:aws:states:us-east-1:123456789012:stateMachine:stackyard-sm", ":") {
+		baseARN := stateMachineARN[:strings.LastIndex(stateMachineARN, ":")]
+		if base, ok := s.stateMachines[baseARN]; ok {
+			definition = stepFunctionsPayloadString(base, "definition", definition)
+			roleARN = stepFunctionsPayloadString(base, "roleArn", roleARN)
+		}
+	}
+	return definition, roleARN
 }
 
 func (s *stepFunctionsStore) ensureMapRunLocked(mapRunARN string) map[string]any {
@@ -757,4 +830,371 @@ func stepFunctionsExecutionName(arn string) string {
 		return "stackyard-exec"
 	}
 	return arn[last+1:]
+}
+
+type stepFunctionsASLDefinition struct {
+	StartAt string                              `json:"StartAt"`
+	States  map[string]stepFunctionsASLStateDef `json:"States"`
+}
+
+type stepFunctionsASLStateDef struct {
+	Type    string                        `json:"Type"`
+	Next    string                        `json:"Next"`
+	End     bool                          `json:"End"`
+	Result  any                           `json:"Result"`
+	Default string                        `json:"Default"`
+	Choices []stepFunctionsASLChoiceState `json:"Choices"`
+	Error   string                        `json:"Error"`
+	Cause   string                        `json:"Cause"`
+}
+
+type stepFunctionsASLChoiceState struct {
+	Variable      string   `json:"Variable"`
+	StringEquals  *string  `json:"StringEquals"`
+	NumericEquals *float64 `json:"NumericEquals"`
+	BooleanEquals *bool    `json:"BooleanEquals"`
+	Next          string   `json:"Next"`
+}
+
+func seedExecutionHistory(ts, input, output, roleARN string) []any {
+	return []any{
+		map[string]any{
+			"id":              int64(1),
+			"previousEventId": int64(0),
+			"timestamp":       ts,
+			"type":            "ExecutionStarted",
+			"executionStartedEventDetails": map[string]any{
+				"input":   defaultJSONString(input, "{}"),
+				"roleArn": roleARN,
+			},
+		},
+		map[string]any{
+			"id":              int64(2),
+			"previousEventId": int64(1),
+			"timestamp":       ts,
+			"type":            "ExecutionSucceeded",
+			"executionSucceededEventDetails": map[string]any{
+				"output": defaultJSONString(output, "{}"),
+			},
+		},
+	}
+}
+
+func executeASL(definitionJSON, inputJSON, roleARN, ts string) (status, output, failureError, failureCause string, events []any) {
+	output = defaultJSONString(inputJSON, "{}")
+	builder := newStepFunctionsHistoryBuilder(ts)
+	builder.add("ExecutionStarted", map[string]any{
+		"executionStartedEventDetails": map[string]any{
+			"input":   defaultJSONString(inputJSON, "{}"),
+			"roleArn": roleARN,
+		},
+	})
+
+	definition := stepFunctionsASLDefinition{}
+	if err := json.Unmarshal([]byte(definitionJSON), &definition); err != nil {
+		failureError, failureCause = "States.Runtime", "invalid state machine definition JSON"
+		builder.add("ExecutionFailed", map[string]any{
+			"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+		})
+		return "FAILED", "", failureError, failureCause, builder.events
+	}
+	if strings.TrimSpace(definition.StartAt) == "" || len(definition.States) == 0 {
+		failureError, failureCause = "States.Runtime", "missing StartAt/States"
+		builder.add("ExecutionFailed", map[string]any{
+			"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+		})
+		return "FAILED", "", failureError, failureCause, builder.events
+	}
+
+	current := parseJSONAny(inputJSON, map[string]any{})
+	stateName := definition.StartAt
+	for steps := 0; steps < 256; steps++ {
+		state, ok := definition.States[stateName]
+		if !ok {
+			failureError, failureCause = "States.Runtime", "state not found: "+stateName
+			builder.add("ExecutionFailed", map[string]any{
+				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+			})
+			return "FAILED", "", failureError, failureCause, builder.events
+		}
+
+		switch state.Type {
+		case "Pass":
+			builder.add("PassStateEntered", map[string]any{
+				"stateEnteredEventDetails": map[string]any{
+					"name":  stateName,
+					"input": toJSONString(current, "{}"),
+				},
+			})
+			if state.Result != nil {
+				current = stepFunctionsCloneAny(state.Result)
+			}
+			builder.add("PassStateExited", map[string]any{
+				"stateExitedEventDetails": map[string]any{
+					"name":   stateName,
+					"output": toJSONString(current, "{}"),
+				},
+			})
+			if state.End {
+				output = toJSONString(current, "{}")
+				builder.add("ExecutionSucceeded", map[string]any{
+					"executionSucceededEventDetails": map[string]any{"output": output},
+				})
+				return "SUCCEEDED", output, "", "", builder.events
+			}
+			stateName = state.Next
+
+		case "Task":
+			builder.add("TaskStateEntered", map[string]any{
+				"stateEnteredEventDetails": map[string]any{
+					"name":  stateName,
+					"input": toJSONString(current, "{}"),
+				},
+			})
+			if state.Result != nil {
+				current = stepFunctionsCloneAny(state.Result)
+			}
+			builder.add("TaskStateExited", map[string]any{
+				"stateExitedEventDetails": map[string]any{
+					"name":   stateName,
+					"output": toJSONString(current, "{}"),
+				},
+			})
+			if state.End {
+				output = toJSONString(current, "{}")
+				builder.add("ExecutionSucceeded", map[string]any{
+					"executionSucceededEventDetails": map[string]any{"output": output},
+				})
+				return "SUCCEEDED", output, "", "", builder.events
+			}
+			stateName = state.Next
+
+		case "Choice":
+			builder.add("ChoiceStateEntered", map[string]any{
+				"stateEnteredEventDetails": map[string]any{
+					"name":  stateName,
+					"input": toJSONString(current, "{}"),
+				},
+			})
+			next := ""
+			for _, choice := range state.Choices {
+				if matchesChoice(choice, current) {
+					next = choice.Next
+					break
+				}
+			}
+			if strings.TrimSpace(next) == "" {
+				next = state.Default
+			}
+			if strings.TrimSpace(next) == "" {
+				failureError, failureCause = "States.NoChoiceMatched", "no choice matched and no default"
+				builder.add("ExecutionFailed", map[string]any{
+					"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+				})
+				return "FAILED", "", failureError, failureCause, builder.events
+			}
+			builder.add("ChoiceStateExited", map[string]any{
+				"stateExitedEventDetails": map[string]any{
+					"name":   stateName,
+					"output": toJSONString(current, "{}"),
+				},
+			})
+			stateName = next
+
+		case "Wait":
+			builder.add("WaitStateEntered", map[string]any{
+				"stateEnteredEventDetails": map[string]any{
+					"name":  stateName,
+					"input": toJSONString(current, "{}"),
+				},
+			})
+			builder.add("WaitStateExited", map[string]any{
+				"stateExitedEventDetails": map[string]any{
+					"name":   stateName,
+					"output": toJSONString(current, "{}"),
+				},
+			})
+			if state.End {
+				output = toJSONString(current, "{}")
+				builder.add("ExecutionSucceeded", map[string]any{
+					"executionSucceededEventDetails": map[string]any{"output": output},
+				})
+				return "SUCCEEDED", output, "", "", builder.events
+			}
+			stateName = state.Next
+
+		case "Succeed":
+			output = toJSONString(current, "{}")
+			builder.add("ExecutionSucceeded", map[string]any{
+				"executionSucceededEventDetails": map[string]any{"output": output},
+			})
+			return "SUCCEEDED", output, "", "", builder.events
+
+		case "Fail":
+			failureError = defaultIfEmpty(state.Error, "States.Failed")
+			failureCause = defaultIfEmpty(state.Cause, "execution failed")
+			builder.add("ExecutionFailed", map[string]any{
+				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+			})
+			return "FAILED", "", failureError, failureCause, builder.events
+
+		default:
+			failureError, failureCause = "States.Runtime", "unsupported state type: "+state.Type
+			builder.add("ExecutionFailed", map[string]any{
+				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+			})
+			return "FAILED", "", failureError, failureCause, builder.events
+		}
+	}
+
+	failureError, failureCause = "States.Timeout", "state machine exceeded max transitions"
+	builder.add("ExecutionFailed", map[string]any{
+		"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+	})
+	return "FAILED", "", failureError, failureCause, builder.events
+}
+
+type stepFunctionsHistoryBuilder struct {
+	ts     string
+	nextID int64
+	events []any
+}
+
+func newStepFunctionsHistoryBuilder(ts string) *stepFunctionsHistoryBuilder {
+	return &stepFunctionsHistoryBuilder{
+		ts:     ts,
+		nextID: 1,
+		events: make([]any, 0, 8),
+	}
+}
+
+func (b *stepFunctionsHistoryBuilder) add(eventType string, details map[string]any) {
+	id := b.nextID
+	b.nextID++
+	event := map[string]any{
+		"id":        id,
+		"timestamp": b.ts,
+		"type":      eventType,
+	}
+	if id == 1 {
+		event["previousEventId"] = int64(0)
+	} else {
+		event["previousEventId"] = id - 1
+	}
+	for k, v := range details {
+		event[k] = stepFunctionsCloneAny(v)
+	}
+	b.events = append(b.events, event)
+}
+
+func matchesChoice(choice stepFunctionsASLChoiceState, data any) bool {
+	value, ok := readJSONPathValue(data, choice.Variable)
+	if !ok {
+		return false
+	}
+	if choice.StringEquals != nil {
+		v, ok := value.(string)
+		return ok && v == *choice.StringEquals
+	}
+	if choice.BooleanEquals != nil {
+		v, ok := value.(bool)
+		return ok && v == *choice.BooleanEquals
+	}
+	if choice.NumericEquals != nil {
+		n, ok := asFloat(value)
+		return ok && n == *choice.NumericEquals
+	}
+	return false
+}
+
+func readJSONPathValue(data any, path string) (any, bool) {
+	path = strings.TrimSpace(path)
+	if path == "" || path == "$" {
+		return data, true
+	}
+	if !strings.HasPrefix(path, "$.") {
+		return nil, false
+	}
+	parts := strings.Split(path[2:], ".")
+	current := data
+	for _, part := range parts {
+		m, ok := current.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		v, ok := m[part]
+		if !ok {
+			return nil, false
+		}
+		current = v
+	}
+	return current, true
+}
+
+func asFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case json.Number:
+		f, err := n.Float64()
+		return f, err == nil
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(n), 64)
+		return f, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func parseJSONAny(src string, def any) any {
+	src = strings.TrimSpace(src)
+	if src == "" {
+		return stepFunctionsCloneAny(def)
+	}
+	var out any
+	if err := json.Unmarshal([]byte(src), &out); err != nil {
+		return stepFunctionsCloneAny(def)
+	}
+	return out
+}
+
+func toJSONString(v any, def string) string {
+	enc, err := json.Marshal(v)
+	if err != nil {
+		return def
+	}
+	if len(enc) == 0 {
+		return def
+	}
+	return string(enc)
+}
+
+func defaultJSONString(raw, def string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return def
+	}
+	return raw
 }

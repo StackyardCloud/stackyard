@@ -12323,6 +12323,34 @@ def run_subprocess(cmd: Sequence[str], env: dict[str, str]) -> subprocess.Comple
     )
 
 
+_AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE: dict[str, bool] = {}
+
+
+def aws_cli_supports_no_cli_pager(aws_bin: str, env: dict[str, str]) -> bool:
+    cached = _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE.get(aws_bin)
+    if cached is not None:
+        return cached
+
+    cp = run_subprocess([aws_bin, "--version"], env)
+    version_text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
+    match = re.search(r"aws-cli/(\d+)\.", version_text)
+    if match is not None:
+        supports = int(match.group(1)) >= 2
+    else:
+        # Conservatively keep pager disabled when version cannot be detected.
+        supports = True
+
+    _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE[aws_bin] = supports
+    return supports
+
+
+def aws_cli_base_cmd(aws_bin: str, env: dict[str, str]) -> list[str]:
+    cmd = [aws_bin]
+    if aws_cli_supports_no_cli_pager(aws_bin, env):
+        cmd.append("--no-cli-pager")
+    return cmd
+
+
 def is_local_endpoint(endpoint_url: str) -> bool:
     parsed = urlparse.urlparse(endpoint_url)
     host = (parsed.hostname or "").strip().lower()
@@ -12422,7 +12450,7 @@ def ensure_stackyard_up(
 
 
 def discover_cli_operations(aws_bin: str, cli_service: str, env: dict[str, str]) -> list[str]:
-    cp = run_subprocess([aws_bin, "--no-cli-pager", cli_service, "help"], env)
+    cp = run_subprocess([*aws_cli_base_cmd(aws_bin, env), cli_service, "help"], env)
     if cp.returncode != 0:
         raise RuntimeError((cp.stderr or cp.stdout).strip() or f"failed to inspect service '{cli_service}'")
 
@@ -12552,8 +12580,7 @@ def generate_cli_input_payload(
         }, None
 
     cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         endpoint.cli_service,
         endpoint.cli_operation,
         "--generate-cli-skeleton",
@@ -16209,8 +16236,7 @@ def run_aws_json(
     extra_args: Sequence[str] | None = None,
 ) -> dict | None:
     cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         "--output",
         "json",
         "--region",
@@ -46467,8 +46493,7 @@ def run_endpoint(
         with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-lambda-invoke-", suffix=".out", delete=False) as tmp:
             out_path = tmp.name
         cmd = [
-            aws_bin,
-            "--no-cli-pager",
+            *aws_cli_base_cmd(aws_bin, env),
             "--output",
             "json",
             "--region",
@@ -46554,8 +46579,7 @@ def run_endpoint(
     if endpoint.service == "rds" and endpoint.operation == "GenerateDbAuthToken":
         hostname = f"stackyard.cluster-abcdefgh.{region}.rds.amazonaws.com"
         cmd = [
-            aws_bin,
-            "--no-cli-pager",
+            *aws_cli_base_cmd(aws_bin, env),
             "--region",
             region,
             "--endpoint-url",
@@ -47520,8 +47544,7 @@ def run_endpoint(
     if endpoint.service == "s3control" and endpoint.operation not in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS:
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
     base_cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         "--output",
         "json",
         "--region",
@@ -47715,8 +47738,7 @@ def run_endpoint(
         retry_status, retry_detail = classify_failure(text)
         if retry_status == "transport_error" or (retry_status == "service_error" and retry_detail == "SignatureDoesNotMatch"):
             retry_base_cmd = [
-                aws_bin,
-                "--no-cli-pager",
+                *aws_cli_base_cmd(aws_bin, env),
                 "--output",
                 "json",
                 "--region",
