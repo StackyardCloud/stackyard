@@ -47,11 +47,6 @@ func main() {
 		return
 	}
 
-	if isStagedPlanTolerated(body) {
-		logf("ListUsers returned %d: tolerated while staged plan is in progress", status)
-		return
-	}
-
 	exitf("ListUsers returned HTTP %d: %s", status, strings.TrimSpace(string(body)))
 }
 
@@ -90,20 +85,6 @@ func iamQueryRequest(
 		return 0, nil, err
 	}
 	return resp.StatusCode, respBody, nil
-}
-
-func isStagedPlanTolerated(body []byte) bool {
-	combined := strings.ToLower(string(body))
-	return strings.Contains(combined, "notimplemented") ||
-		strings.Contains(combined, "unknownoperation") ||
-		strings.Contains(combined, "invalidaction") ||
-		strings.Contains(combined, "validation") ||
-		strings.Contains(combined, "accessdenied") ||
-		strings.Contains(combined, "signaturedoesnotmatch") ||
-		strings.Contains(combined, "service mismatch") ||
-		strings.Contains(combined, "methodnotallowed") ||
-		strings.Contains(combined, "invalidrequest") ||
-		strings.Contains(combined, "not found")
 }
 
 func hashSHA256(payload []byte) string {
