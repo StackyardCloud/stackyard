@@ -33519,7 +33519,7 @@ def hydrate_payload_with_service_state(
         identity_policy_name = str(state.get("identity_policy_name") or SES_DEFAULT_IDENTITY_POLICY_NAME)
         identity_policy_document = str(state.get("identity_policy_document") or SES_DEFAULT_IDENTITY_POLICY_DOCUMENT)
         mail_from_domain = str(state.get("mail_from_domain") or SES_DEFAULT_MAIL_FROM_DOMAIN)
-        sns_topic_arn = str(state.get("sns_topic_arn") or SES_DEFAULT_SNS_TOPIC_ARN)
+        ses_sns_topic_arn = str(state.get("sns_topic_arn") or SES_DEFAULT_SNS_TOPIC_ARN)
         original_message_id = str(state.get("original_message_id") or SES_DEFAULT_ORIGINAL_MESSAGE_ID)
 
         set_key_if_present_case_insensitive(hydrated, "NextToken", "")
@@ -33560,7 +33560,7 @@ def hydrate_payload_with_service_state(
                         "Name": event_destination_name,
                         "Enabled": True,
                         "MatchingEventTypes": ["send"],
-                        "SNSDestination": {"TopicARN": sns_topic_arn},
+                        "SNSDestination": {"TopicARN": ses_sns_topic_arn},
                     },
                 }
             )
@@ -33815,7 +33815,7 @@ def hydrate_payload_with_service_state(
                         "Name": destination_name,
                         "Enabled": True,
                         "MatchingEventTypes": ["send"],
-                        "SNSDestination": {"TopicARN": sns_topic_arn},
+                        "SNSDestination": {"TopicARN": ses_sns_topic_arn},
                     },
                 }
             )
@@ -33923,7 +33923,7 @@ def hydrate_payload_with_service_state(
 
         if op == "SetIdentityNotificationTopic":
             ses_ensure_domain_identity(aws_bin, endpoint_url, region, env)
-            _replace_payload({"Identity": domain_identity, "NotificationType": "Bounce", "SnsTopic": sns_topic_arn})
+            _replace_payload({"Identity": domain_identity, "NotificationType": "Bounce", "SnsTopic": ses_sns_topic_arn})
             return hydrated
 
         if op == "SetReceiptRulePosition":
@@ -35225,7 +35225,7 @@ def hydrate_payload_with_service_state(
         resource_arn = str(state["resource_arn"])
         node_type = str(state["node_type"])
         role_arn = str(state["iam_role_arn"])
-        sns_topic_arn = str(state["sns_topic_arn"])
+        redshift_sns_topic_arn = str(state["sns_topic_arn"])
         db_name = str(state["db_name"])
         master_username = str(state["master_username"])
         master_password = str(state["master_password"])
@@ -35308,7 +35308,7 @@ def hydrate_payload_with_service_state(
             _replace_payload(
                 {
                     "SubscriptionName": event_subscription_name,
-                    "SnsTopicArn": sns_topic_arn,
+                    "SnsTopicArn": redshift_sns_topic_arn,
                     "SourceType": "cluster",
                     "SourceIds": [cluster_identifier],
                     "Severity": "INFO",
