@@ -391,6 +391,12 @@ func (s *Server) handleLambdaRESTRouter(w http.ResponseWriter, r *http.Request) 
 		if result.ExecutedVersion != "" {
 			w.Header().Set("X-Amz-Executed-Version", result.ExecutedVersion)
 		}
+		if strings.TrimSpace(result.FunctionError) != "" {
+			w.Header().Set("X-Amz-Function-Error", result.FunctionError)
+		}
+		if strings.TrimSpace(result.LogResult) != "" {
+			w.Header().Set("X-Amz-Log-Result", result.LogResult)
+		}
 		w.WriteHeader(result.StatusCode)
 		if len(result.Payload) > 0 {
 			_, _ = w.Write(result.Payload)

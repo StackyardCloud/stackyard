@@ -1,6 +1,10 @@
 package lambda
 
-import "testing"
+import (
+	"archive/zip"
+	"bytes"
+	"testing"
+)
 
 func TestServiceLifecycle(t *testing.T) {
 	svc := NewService()
@@ -196,4 +200,170 @@ func TestServiceErrors(t *testing.T) {
 	if _, err := svc.ListTags("arn:aws:lambda:us-east-1:123456789012:function:missing"); err != ErrNotFound {
 		t.Fatalf("expected not found for list tags, got %v", err)
 	}
+}
+
+func TestServiceInvokeLocalProvidedRuntime(t *testing.T) {
+	t.Parallel()
+
+	svc := NewServiceWithConfig(ServiceConfig{
+		ExecutionMode: ExecutionModeLocal,
+		WorkDir:       t.TempDir(),
+	})
+
+	code := zipBootstrapCode(t, `#!/bin/sh
+set -eu
+payload="$(cat)"
+if [ -z "${payload}" ]; then
+  payload='{}'
+fi
+printf '{"ok":true,"payload":%s}' "$payload"
+`)
+
+	if _, err := svc.CreateFunction(
+		"demo-local",
+		"arn:aws:iam::123456789012:role/lambda-role",
+		"bootstrap",
+		"provided.al2",
+		"demo local function",
+		3,
+		128,
+		code,
+		nil,
+		nil,
+	); err != nil {
+		t.Fatalf("create function: %v", err)
+	}
+
+	resp, err := svc.Invoke("demo-local", "", "RequestResponse", []byte(`{"hello":"world"}`))
+	if err != nil {
+		t.Fatalf("invoke function: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+	}
+	if resp.FunctionError != "" {
+		t.Fatalf("expected no function error, got %q", resp.FunctionError)
+	}
+	if !bytes.Contains(resp.Payload, []byte(`"ok":true`)) {
+		t.Fatalf("expected success payload, got %s", string(resp.Payload))
+	}
+	if !bytes.Contains(resp.Payload, []byte(`"hello":"world"`)) {
+		t.Fatalf("expected invocation payload echoed back, got %s", string(resp.Payload))
+	}
+}
+
+func TestServiceInvokeLocalPublishedVersionUsesVersionedCode(t *testing.T) {
+	t.Parallel()
+
+	svc := NewServiceWithConfig(ServiceConfig{
+		ExecutionMode: ExecutionModeLocal,
+		WorkDir:       t.TempDir(),
+	})
+
+	if _, err := svc.CreateFunction(
+		"demo-versioned",
+		"arn:aws:iam::123456789012:role/lambda-role",
+		"bootstrap",
+		"provided.al2",
+		"demo versioned function",
+		3,
+		128,
+		zipBootstrapCode(t, `#!/bin/sh
+printf '{"version":"v1"}'
+`),
+		nil,
+		nil,
+	); err != nil {
+		t.Fatalf("create function: %v", err)
+	}
+
+	if _, err := svc.PublishVersion("demo-versioned", "snapshot v1"); err != nil {
+		t.Fatalf("publish version: %v", err)
+	}
+	if _, err := svc.UpdateFunctionCode("demo-versioned", "", zipBootstrapCode(t, `#!/bin/sh
+printf '{"version":"v2"}'
+`), false); err != nil {
+		t.Fatalf("update function code: %v", err)
+	}
+
+	v1Resp, err := svc.Invoke("demo-versioned", "1", "RequestResponse", nil)
+	if err != nil {
+		t.Fatalf("invoke version 1: %v", err)
+	}
+	if string(v1Resp.Payload) != `{"version":"v1"}` {
+		t.Fatalf("expected version 1 payload, got %s", string(v1Resp.Payload))
+	}
+	if v1Resp.ExecutedVersion != "1" {
+		t.Fatalf("expected executed version 1, got %q", v1Resp.ExecutedVersion)
+	}
+
+	latestResp, err := svc.Invoke("demo-versioned", "", "RequestResponse", nil)
+	if err != nil {
+		t.Fatalf("invoke latest: %v", err)
+	}
+	if string(latestResp.Payload) != `{"version":"v2"}` {
+		t.Fatalf("expected latest payload to use updated code, got %s", string(latestResp.Payload))
+	}
+	if latestResp.ExecutedVersion != "$LATEST" {
+		t.Fatalf("expected executed version $LATEST, got %q", latestResp.ExecutedVersion)
+	}
+}
+
+func TestServiceInvokeLocalInvalidArchiveReturnsFunctionError(t *testing.T) {
+	t.Parallel()
+
+	svc := NewServiceWithConfig(ServiceConfig{
+		ExecutionMode: ExecutionModeLocal,
+		WorkDir:       t.TempDir(),
+	})
+
+	if _, err := svc.CreateFunction(
+		"bad-archive",
+		"arn:aws:iam::123456789012:role/lambda-role",
+		"bootstrap",
+		"provided.al2",
+		"invalid archive",
+		3,
+		128,
+		[]byte("not-a-zip"),
+		nil,
+		nil,
+	); err != nil {
+		t.Fatalf("create function: %v", err)
+	}
+
+	resp, err := svc.Invoke("bad-archive", "", "RequestResponse", nil)
+	if err != nil {
+		t.Fatalf("invoke function: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected status code 200, got %d", resp.StatusCode)
+	}
+	if resp.FunctionError != "Unhandled" {
+		t.Fatalf("expected FunctionError Unhandled, got %q", resp.FunctionError)
+	}
+}
+
+func zipBootstrapCode(t *testing.T, script string) []byte {
+	t.Helper()
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+
+	header := &zip.FileHeader{
+		Name:   "bootstrap",
+		Method: zip.Deflate,
+	}
+	header.SetMode(0o755)
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		t.Fatalf("create bootstrap header: %v", err)
+	}
+	if _, err := w.Write([]byte(script)); err != nil {
+		t.Fatalf("write bootstrap script: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("close zip writer: %v", err)
+	}
+	return buf.Bytes()
 }
