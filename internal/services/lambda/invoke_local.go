@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -128,16 +129,21 @@ func unpackLambdaArchive(code []byte, dest string) error {
 	if err != nil {
 		return err
 	}
+	destRoot, err := filepath.Abs(dest)
+	if err != nil {
+		return err
+	}
 	for _, file := range reader.File {
-		name := filepath.Clean(file.Name)
+		name := path.Clean(strings.TrimSpace(strings.ReplaceAll(file.Name, "\\", "/")))
 		if name == "." || name == "" {
 			continue
 		}
-		if filepath.IsAbs(name) || strings.HasPrefix(name, ".."+string(filepath.Separator)) || name == ".." {
+		if strings.HasPrefix(name, "/") || name == ".." || strings.HasPrefix(name, "../") {
 			return fmt.Errorf("invalid archive entry path %q", file.Name)
 		}
-		target := filepath.Join(dest, name)
-		if target != dest && !strings.HasPrefix(target, dest+string(filepath.Separator)) {
+		target := filepath.Join(destRoot, filepath.FromSlash(name))
+		rel, err := filepath.Rel(destRoot, target)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return fmt.Errorf("invalid archive entry path %q", file.Name)
 		}
 		if file.FileInfo().IsDir() {
