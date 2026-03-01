@@ -691,7 +691,7 @@ const SERVICE_CATALOG = [
     id: "lambda",
     name: "Lambda",
     category: "compute",
-    summary: "Test function lifecycle, invocation, and event source integrations.",
+    summary: "Test function lifecycle plus Invoke in mock or local execution mode with real zip code support.",
     docsHref: "../../../index.html#lambda",
     exampleHref: "../../../../examples/lambda/lambda-basic/docker-compose.yml"
   },

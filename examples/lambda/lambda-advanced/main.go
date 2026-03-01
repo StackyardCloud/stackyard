@@ -1,9 +1,15 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,7 +33,7 @@ func main() {
 		Role:         aws.String("arn:aws:iam::123456789012:role/lambda-role"),
 		Runtime:      lambdatypes.Runtime("provided.al2"),
 		Handler:      aws.String("bootstrap"),
-		Code:         &lambdatypes.FunctionCode{ZipFile: []byte("stackyard-lambda-advanced-v1")},
+		Code:         &lambdatypes.FunctionCode{ZipFile: bootstrapArchiveFromSource(versionedBootstrapSource("v1"))},
 		Tags:         map[string]string{"env": "dev"},
 	})
 	if err != nil {
@@ -45,7 +51,7 @@ func main() {
 
 	if _, err := client.UpdateFunctionCode(ctx, &lambda.UpdateFunctionCodeInput{
 		FunctionName: aws.String(functionName),
-		ZipFile:      []byte("stackyard-lambda-advanced-v2"),
+		ZipFile:      bootstrapArchiveFromSource(versionedBootstrapSource("v2")),
 	}); err != nil {
 		exitf("update function code: %v", err)
 	}
@@ -106,6 +112,13 @@ func main() {
 		exitf("invoke alias: %v", err)
 	}
 	logf("invoke status: %d", invokeOut.StatusCode)
+	if ferr := strings.TrimSpace(aws.ToString(invokeOut.FunctionError)); ferr != "" {
+		exitf("invoke returned function error: %s (payload=%s)", ferr, string(invokeOut.Payload))
+	}
+	if !bytes.Contains(invokeOut.Payload, []byte(`"version":"v2"`)) {
+		exitf("unexpected invoke payload: %s", string(invokeOut.Payload))
+	}
+	logf("invoke payload: %s", string(invokeOut.Payload))
 
 	versionsOut, err := client.ListVersionsByFunction(ctx, &lambda.ListVersionsByFunctionInput{
 		FunctionName: aws.String(functionName),
@@ -185,4 +198,55 @@ func exitf(format string, args ...any) {
 
 func logf(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
+}
+
+func versionedBootstrapSource(version string) string {
+	return "package main\n\n" +
+		"import \"fmt\"\n\n" +
+		"func main() {\n" +
+		"\tfmt.Print(`{\"version\":\"" + version + "\"}`)\n" +
+		"}\n"
+}
+
+func bootstrapArchiveFromSource(source string) []byte {
+	dir, err := os.MkdirTemp("", "stackyard-lambda-advanced-*")
+	if err != nil {
+		exitf("create temp dir: %v", err)
+	}
+	defer os.RemoveAll(dir)
+
+	sourcePath := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(sourcePath, []byte(source), 0o644); err != nil {
+		exitf("write bootstrap source: %v", err)
+	}
+	bootstrapPath := filepath.Join(dir, "bootstrap")
+
+	cmd := exec.Command("go", "build", "-trimpath", "-ldflags=-s -w", "-o", bootstrapPath, sourcePath)
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		exitf("build bootstrap binary: %v (%s)", err, strings.TrimSpace(string(output)))
+	}
+	bootstrapBytes, err := os.ReadFile(bootstrapPath)
+	if err != nil {
+		exitf("read bootstrap binary: %v", err)
+	}
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	header := &zip.FileHeader{
+		Name:   "bootstrap",
+		Method: zip.Deflate,
+	}
+	header.SetMode(0o755)
+	w, err := zw.CreateHeader(header)
+	if err != nil {
+		exitf("create zip entry: %v", err)
+	}
+	if _, err := io.Copy(w, bytes.NewReader(bootstrapBytes)); err != nil {
+		exitf("write zip entry: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		exitf("close zip: %v", err)
+	}
+	return buf.Bytes()
 }

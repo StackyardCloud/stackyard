@@ -19,11 +19,14 @@ var (
 	ErrInvalidParameter = errors.New("invalid parameter")
 	ErrAlreadyExists    = errors.New("resource already exists")
 	ErrNotFound         = errors.New("resource not found")
+	ErrInvocationFailed = errors.New("invocation failed")
 )
 
 const (
-	DefaultRegion    = "us-east-1"
-	DefaultAccountID = "123456789012"
+	DefaultRegion      = "us-east-1"
+	DefaultAccountID   = "123456789012"
+	ExecutionModeMock  = "mock"
+	ExecutionModeLocal = "local"
 )
 
 type Function struct {
@@ -65,26 +68,40 @@ type PermissionStatement struct {
 }
 
 type functionRecord struct {
-	latest   *Function
-	code     []byte
-	nextVer  int64
-	versions map[string]*Function
-	aliases  map[string]*Alias
-	policy   map[string]map[string]PermissionStatement
-	tags     map[string]string
+	latest      *Function
+	code        []byte
+	versionCode map[string][]byte
+	nextVer     int64
+	versions    map[string]*Function
+	aliases     map[string]*Alias
+	policy      map[string]map[string]PermissionStatement
+	tags        map[string]string
+}
+
+type ServiceConfig struct {
+	ExecutionMode string
+	WorkDir       string
 }
 
 type Service struct {
-	mu        sync.Mutex
-	seq       uint64
-	functions map[string]*functionRecord
-	extras    *extraState
+	mu            sync.Mutex
+	seq           uint64
+	functions     map[string]*functionRecord
+	extras        *extraState
+	executionMode string
+	workDir       string
 }
 
 func NewService() *Service {
+	return NewServiceWithConfig(ServiceConfig{})
+}
+
+func NewServiceWithConfig(cfg ServiceConfig) *Service {
 	return &Service{
-		functions: map[string]*functionRecord{},
-		extras:    newExtraState(),
+		functions:     map[string]*functionRecord{},
+		extras:        newExtraState(),
+		executionMode: normalizeExecutionMode(cfg.ExecutionMode),
+		workDir:       strings.TrimSpace(cfg.WorkDir),
 	}
 }
 
@@ -131,13 +148,14 @@ func (s *Service) CreateFunction(name, role, handler, runtime, description strin
 		Architectures: normalizeArchitectures(architectures),
 	}
 	s.functions[name] = &functionRecord{
-		latest:   fn,
-		code:     append([]byte(nil), code...),
-		nextVer:  1,
-		versions: map[string]*Function{},
-		aliases:  map[string]*Alias{},
-		policy:   map[string]map[string]PermissionStatement{},
-		tags:     cloneStringMap(tags),
+		latest:      fn,
+		code:        append([]byte(nil), code...),
+		versionCode: map[string][]byte{},
+		nextVer:     1,
+		versions:    map[string]*Function{},
+		aliases:     map[string]*Alias{},
+		policy:      map[string]map[string]PermissionStatement{},
+		tags:        cloneStringMap(tags),
 	}
 	return cloneFunction(fn), nil
 }
@@ -168,6 +186,7 @@ func (s *Service) DeleteFunction(ref, qualifier string) error {
 	}
 	if _, ok := rec.versions[q]; ok {
 		delete(rec.versions, q)
+		delete(rec.versionCode, q)
 		return nil
 	}
 	return ErrNotFound
@@ -577,15 +596,22 @@ type InvokeResult struct {
 	StatusCode      int
 	ExecutedVersion string
 	Payload         []byte
+	FunctionError   string
+	LogResult       string
 }
 
 func (s *Service) Invoke(ref, qualifier, invocationType string, payload []byte) (InvokeResult, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	_, fn, err := s.resolveFunctionLocked(ref, qualifier)
+	rec, fn, err := s.resolveFunctionLocked(ref, qualifier)
 	if err != nil {
+		s.mu.Unlock()
 		return InvokeResult{}, err
 	}
+	code := s.resolveFunctionCodeLocked(rec, fn)
+	executionMode := s.executionMode
+	workDir := s.workDir
+	s.mu.Unlock()
+
 	itype := strings.TrimSpace(invocationType)
 	if itype == "" {
 		itype = "RequestResponse"
@@ -594,11 +620,28 @@ func (s *Service) Invoke(ref, qualifier, invocationType string, payload []byte) 
 	case "DryRun":
 		return InvokeResult{StatusCode: 204, ExecutedVersion: fn.Version}, nil
 	case "Event":
+		if executionMode == ExecutionModeLocal {
+			fnCopy := fn
+			codeCopy := append([]byte(nil), code...)
+			payloadCopy := append([]byte(nil), payload...)
+			go func() {
+				_, _ = invokeLocal(fnCopy, codeCopy, payloadCopy, workDir)
+			}()
+		}
 		return InvokeResult{StatusCode: 202, ExecutedVersion: fn.Version}, nil
 	case "RequestResponse":
 		// continue
 	default:
 		return InvokeResult{}, ErrInvalidParameter
+	}
+
+	if executionMode == ExecutionModeLocal {
+		result, err := invokeLocal(fn, code, payload, workDir)
+		if err != nil {
+			return InvokeResult{}, err
+		}
+		result.ExecutedVersion = fn.Version
+		return result, nil
 	}
 
 	respPayload := payload
@@ -610,6 +653,20 @@ func (s *Service) Invoke(ref, qualifier, invocationType string, payload []byte) 
 		ExecutedVersion: fn.Version,
 		Payload:         append([]byte(nil), respPayload...),
 	}, nil
+}
+
+func (s *Service) resolveFunctionCodeLocked(rec *functionRecord, fn Function) []byte {
+	if rec == nil {
+		return nil
+	}
+	version := strings.TrimSpace(fn.Version)
+	if version == "" || version == "$LATEST" {
+		return append([]byte(nil), rec.code...)
+	}
+	if code, ok := rec.versionCode[version]; ok {
+		return append([]byte(nil), code...)
+	}
+	return append([]byte(nil), rec.code...)
 }
 
 func (s *Service) resolveFunctionLocked(ref, qualifier string) (*functionRecord, Function, error) {
@@ -691,6 +748,7 @@ func (s *Service) publishVersionLocked(rec *functionRecord, description string) 
 		clone.Description = strings.TrimSpace(description)
 	}
 	rec.versions[version] = &clone
+	rec.versionCode[version] = append([]byte(nil), rec.code...)
 	return &clone
 }
 
@@ -741,6 +799,15 @@ func normalizeArchitectures(in []string) []string {
 		return []string{"x86_64"}
 	}
 	return out
+}
+
+func normalizeExecutionMode(in string) string {
+	switch strings.ToLower(strings.TrimSpace(in)) {
+	case ExecutionModeLocal:
+		return ExecutionModeLocal
+	default:
+		return ExecutionModeMock
+	}
 }
 
 func functionARN(name string) string {
