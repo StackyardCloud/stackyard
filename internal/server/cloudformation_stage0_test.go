@@ -113,3 +113,49 @@ func TestCloudFormationStage0AllCatalogActionsDoNotReturnNotImplemented(t *testi
 		}
 	}
 }
+
+func TestCloudFormationChangeSetLifecycle(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	stackName := "stage1-stack"
+	changeSetName := "stage1-changeset"
+
+	resp := cloudFormationRequest(t, ts, "CreateStack", url.Values{
+		"StackName":    []string{stackName},
+		"TemplateBody": []string{`{"AWSTemplateFormatVersion":"2010-09-09","Resources":{}}`},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = cloudFormationRequest(t, ts, "CreateChangeSet", url.Values{
+		"ChangeSetName": []string{changeSetName},
+		"StackName":     []string{stackName},
+		"TemplateBody":  []string{`{"AWSTemplateFormatVersion":"2010-09-09","Resources":{}}`},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	body := string(mustBody(t, resp))
+	if !strings.Contains(body, changeSetName) {
+		t.Fatalf("expected CreateChangeSet response to include %s, got %s", changeSetName, body)
+	}
+
+	resp = cloudFormationRequest(t, ts, "ExecuteChangeSet", url.Values{
+		"ChangeSetName": []string{changeSetName},
+		"StackName":     []string{stackName},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	body = string(mustBody(t, resp))
+	if !strings.Contains(body, "ChangeSetId") {
+		t.Fatalf("expected ExecuteChangeSet response to include ChangeSetId, got %s", body)
+	}
+
+	resp = cloudFormationRequest(t, ts, "DeleteChangeSet", url.Values{
+		"ChangeSetName": []string{changeSetName},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = cloudFormationRequest(t, ts, "ListChangeSets", url.Values{
+		"StackName": []string{stackName},
+	})
+	assertStatus(t, resp, http.StatusOK)
+}

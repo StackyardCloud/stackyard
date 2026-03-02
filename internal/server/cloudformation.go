@@ -239,6 +239,25 @@ func (s *cloudFormationStore) Handle(action string, form url.Values) map[string]
 			"IncludeNestedStacks": false,
 		}
 
+	case "DeleteChangeSet":
+		name := cloudFormationFormString(form, "ChangeSetName", "")
+		if name != "" {
+			delete(s.changeSets, name)
+		}
+		return map[string]any{}
+
+	case "ExecuteChangeSet":
+		name := cloudFormationFormString(form, "ChangeSetName", "stackyard-changeset")
+		id := s.changeSets[name]
+		if id == "" {
+			id = fmt.Sprintf("arn:aws:cloudformation:us-east-1:123456789012:changeSet/%s/%s", name, s.nextTokenLocked(12))
+			s.changeSets[name] = id
+		}
+		return map[string]any{
+			"ChangeSetId": id,
+			"StackId":     cloudFormationFormString(form, "StackName", "arn:aws:cloudformation:us-east-1:123456789012:stack/stackyard-default/000000000001"),
+		}
+
 	case "ListChangeSets":
 		items := []any{
 			map[string]any{
@@ -327,37 +346,7 @@ func (s *cloudFormationStore) Handle(action string, form url.Values) map[string]
 		return map[string]any{"Url": "https://calculator.aws/#stackyard"}
 	}
 
-	switch {
-	case strings.HasPrefix(action, "List"):
-		return map[string]any{"NextToken": ""}
-	case strings.HasPrefix(action, "Describe"):
-		return map[string]any{}
-	case strings.HasPrefix(action, "Get"):
-		return map[string]any{}
-	case strings.HasPrefix(action, "Create"):
-		return map[string]any{"Id": "stackyard-" + strings.ToLower(action)}
-	case strings.HasPrefix(action, "Update"),
-		strings.HasPrefix(action, "Delete"),
-		strings.HasPrefix(action, "Execute"),
-		strings.HasPrefix(action, "Cancel"),
-		strings.HasPrefix(action, "Continue"),
-		strings.HasPrefix(action, "Activate"),
-		strings.HasPrefix(action, "Deactivate"),
-		strings.HasPrefix(action, "Detect"),
-		strings.HasPrefix(action, "Import"),
-		strings.HasPrefix(action, "Publish"),
-		strings.HasPrefix(action, "Record"),
-		strings.HasPrefix(action, "Register"),
-		strings.HasPrefix(action, "Rollback"),
-		strings.HasPrefix(action, "Set"),
-		strings.HasPrefix(action, "Signal"),
-		strings.HasPrefix(action, "Start"),
-		strings.HasPrefix(action, "Stop"),
-		strings.HasPrefix(action, "Test"):
-		return map[string]any{}
-	default:
-		return map[string]any{}
-	}
+	return cloudFormationDefaultResponse(action)
 }
 
 func (s *cloudFormationStore) nextTokenLocked(width int) string {
@@ -372,6 +361,105 @@ func cloudFormationFormString(form url.Values, key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func cloudFormationDefaultResponse(action string) map[string]any {
+	switch action {
+	case "ListExports":
+		return map[string]any{"Exports": []any{}, "NextToken": ""}
+	case "ListGeneratedTemplates":
+		return map[string]any{"Summaries": []any{}, "NextToken": ""}
+	case "ListHookResults":
+		return map[string]any{"HookResults": []any{}, "NextToken": ""}
+	case "ListImports":
+		return map[string]any{"Imports": []any{}, "NextToken": ""}
+	case "ListResourceScanRelatedResources", "ListResourceScanResources":
+		return map[string]any{"Resources": []any{}, "NextToken": ""}
+	case "ListResourceScans":
+		return map[string]any{"ResourceScanSummaries": []any{}, "NextToken": ""}
+	case "ListStackInstanceResourceDrifts", "ListStackInstances":
+		return map[string]any{"Summaries": []any{}, "NextToken": ""}
+	case "ListStackRefactorActions":
+		return map[string]any{"StackRefactorActions": []any{}, "NextToken": ""}
+	case "ListStackRefactors":
+		return map[string]any{"StackRefactorSummaries": []any{}, "NextToken": ""}
+	case "ListStackResources":
+		return map[string]any{"StackResourceSummaries": []any{}, "NextToken": ""}
+	case "ListStackSetAutoDeploymentTargets", "ListStackSetOperationResults", "ListStackSetOperations":
+		return map[string]any{"Summaries": []any{}, "NextToken": ""}
+	case "ListTypeRegistrations":
+		return map[string]any{"TypeRegistrations": []any{}, "NextToken": ""}
+	case "ListTypes":
+		return map[string]any{"TypeSummaries": []any{}, "NextToken": ""}
+	case "ListTypeVersions":
+		return map[string]any{"TypeVersionSummaries": []any{}, "NextToken": ""}
+
+	case "DescribeChangeSetHooks":
+		return map[string]any{"ChangeSetId": "stackyard-changeset", "Hooks": []any{}}
+	case "DescribeEvents", "DescribeStackEvents":
+		return map[string]any{"StackEvents": []any{}}
+	case "DescribeGeneratedTemplate":
+		return map[string]any{"GeneratedTemplateId": "stackyard-template", "Status": "COMPLETE"}
+	case "DescribeOrganizationsAccess":
+		return map[string]any{"Status": "ENABLED"}
+	case "DescribePublisher":
+		return map[string]any{"PublisherId": "stackyard-publisher", "IdentityProvider": "AWS_Marketplace"}
+	case "DescribeResourceScan":
+		return map[string]any{"ResourceScanId": "stackyard-scan", "Status": "COMPLETE"}
+	case "DescribeStackDriftDetectionStatus":
+		return map[string]any{"DetectionStatus": "DETECTION_COMPLETE", "StackDriftStatus": "IN_SYNC"}
+	case "DescribeStackInstance":
+		return map[string]any{"StackInstance": map[string]any{"Status": "CURRENT", "DriftStatus": "NOT_CHECKED"}}
+	case "DescribeStackRefactor":
+		return map[string]any{"StackRefactorId": "stackyard-refactor", "ExecutionStatus": "AVAILABLE"}
+	case "DescribeStackResource":
+		return map[string]any{"StackResourceDetail": map[string]any{}}
+	case "DescribeStackResourceDrifts":
+		return map[string]any{"StackResourceDrifts": []any{}, "NextToken": ""}
+	case "DescribeStackResources":
+		return map[string]any{"StackResources": []any{}}
+	case "DescribeStackSetOperation":
+		return map[string]any{"StackSetOperation": map[string]any{"Status": "SUCCEEDED"}}
+	case "DescribeType":
+		return map[string]any{"Type": "RESOURCE", "Arn": "arn:aws:cloudformation:us-east-1:123456789012:type/resource/Stackyard::Demo::Type"}
+	case "DescribeTypeRegistration":
+		return map[string]any{"ProgressStatus": "COMPLETE", "TypeVersionArn": "arn:aws:cloudformation:us-east-1:123456789012:type/resource/Stackyard::Demo::Type/1"}
+
+	case "GetGeneratedTemplate":
+		return map[string]any{"TemplateBody": "{\"AWSTemplateFormatVersion\":\"2010-09-09\",\"Resources\":{}}"}
+	case "GetHookResult":
+		return map[string]any{"TargetName": "stackyard-hook", "TargetType": "RESOURCE"}
+	case "GetStackPolicy":
+		return map[string]any{"StackPolicyBody": "{\"Statement\":[]}"}
+
+	case "CreateGeneratedTemplate":
+		return map[string]any{"GeneratedTemplateId": "stackyard-generated-template"}
+	case "CreateStackInstances", "UpdateStackInstances":
+		return map[string]any{"OperationId": "stackyard-operation"}
+	case "CreateStackRefactor":
+		return map[string]any{"StackRefactorId": "stackyard-refactor"}
+	case "ImportStacksToStackSet":
+		return map[string]any{"OperationId": "stackyard-import"}
+	case "ActivateType", "RegisterType":
+		return map[string]any{"Arn": "arn:aws:cloudformation:us-east-1:123456789012:type/resource/Stackyard::Demo::Type"}
+	case "PublishType":
+		return map[string]any{"TypeVersionArn": "arn:aws:cloudformation:us-east-1:123456789012:type/resource/Stackyard::Demo::Type/1"}
+	case "RegisterPublisher":
+		return map[string]any{"PublisherId": "stackyard-publisher"}
+	case "StartResourceScan":
+		return map[string]any{"ResourceScanId": "stackyard-scan"}
+	}
+
+	switch {
+	case strings.HasPrefix(action, "List"):
+		return map[string]any{"NextToken": ""}
+	case strings.HasPrefix(action, "Describe"), strings.HasPrefix(action, "Get"):
+		return map[string]any{}
+	case strings.HasPrefix(action, "Create"):
+		return map[string]any{"Id": "stackyard-" + strings.ToLower(action)}
+	default:
+		return map[string]any{}
+	}
 }
 
 func respondCloudFormationXML(w http.ResponseWriter, status int, action string, result map[string]any) {

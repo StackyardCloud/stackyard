@@ -62,12 +62,6 @@ func runCall(ctx context.Context, endpoint, region string, creds aws.Credentials
 		return nil
 	}
 
-	errType := extractErrorType(body)
-	if errType == "NotImplementedException" || strings.Contains(strings.TrimSpace(string(body)), "NotImplemented") {
-		logf("%s returned %d (%s): expected while staged plan is in progress", call.Action, status, errType)
-		return nil
-	}
-
 	trimmed := strings.TrimSpace(string(body))
 	if trimmed == "" {
 		trimmed = "<empty body>"
@@ -119,20 +113,6 @@ func configRequest(
 		return 0, nil, err
 	}
 	return resp.StatusCode, respBody, nil
-}
-
-func extractErrorType(body []byte) string {
-	payload := map[string]any{}
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return ""
-	}
-	if v, ok := payload["__type"].(string); ok {
-		return strings.TrimSpace(v)
-	}
-	if v, ok := payload["code"].(string); ok {
-		return strings.TrimSpace(v)
-	}
-	return ""
 }
 
 func hashSHA256(payload []byte) string {
