@@ -881,7 +881,6 @@ func seedExecutionHistory(ts, input, output, roleARN string) []any {
 }
 
 func executeASL(definitionJSON, inputJSON, roleARN, ts string) (status, output, failureError, failureCause string, events []any) {
-	output = defaultJSONString(inputJSON, "{}")
 	builder := newStepFunctionsHistoryBuilder(ts)
 	builder.add("ExecutionStarted", map[string]any{
 		"executionStartedEventDetails": map[string]any{
