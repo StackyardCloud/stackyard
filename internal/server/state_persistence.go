@@ -420,8 +420,11 @@ func appendStateJournalEntry(path string, entry persistedRequest) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	return json.NewEncoder(file).Encode(entry)
+	if err := json.NewEncoder(file).Encode(entry); err != nil {
+		_ = file.Close()
+		return err
+	}
+	return file.Close()
 }
 
 func writeStateJournal(path string, entries []persistedRequest) error {
