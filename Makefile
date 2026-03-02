@@ -1,4 +1,4 @@
-.PHONY: fmt tidy test ci install examples-docker coverage-all coverage-all-strict up down restart
+.PHONY: fmt tidy test ci install examples-docker coverage-all coverage-all-strict provider-contracts up down restart
 
 BUILD ?= 0
 VOLUMES ?= 0
@@ -20,7 +20,7 @@ endif
 
 ci:
 ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop'; $$ciStart=Get-Date; function Log-CI([string]$$msg){ Write-Host $$msg -ForegroundColor Cyan }; function Run-Step([string]$$name,[scriptblock]$$block){ $$stepStart=Get-Date; Log-CI ('[ci] step=' + $$name + ' start'); & $$block; $$elapsed=[int]((Get-Date)-$$stepStart).TotalSeconds; Log-CI ('[ci] step=' + $$name + ' complete elapsed=' + $$elapsed + 's') }; Run-Step 'fmt' { & '$(MAKE)' fmt }; Run-Step 'tidy' { & '$(MAKE)' tidy }; Run-Step 'test-packages' { $$packages = go list ./... | Where-Object { $$_ -notmatch '/examples(/|$)' }; Write-Host 'Running CI tests (excluding examples/)...'; go test $$packages }; Run-Step 'act' { if (Test-Path .github/workflows) { if (Get-Command act -ErrorAction SilentlyContinue) { act -j test -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest } else { Log-CI '[ci] step=act skipped (not found)' } } else { Log-CI '[ci] step=act skipped (.github/workflows not found)' } }; Run-Step 'examples-docker' { & '$(MAKE)' examples-docker }; Run-Step 'coverage-all' { & '$(MAKE)' coverage-all }; $$total=[int]((Get-Date)-$$ciStart).TotalSeconds; Log-CI ('[ci] total elapsed=' + $$total + 's')"
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop'; $$ciStart=Get-Date; function Log-CI([string]$$msg){ Write-Host $$msg -ForegroundColor Cyan }; function Run-Step([string]$$name,[scriptblock]$$block){ $$stepStart=Get-Date; Log-CI ('[ci] step=' + $$name + ' start'); & $$block; $$elapsed=[int]((Get-Date)-$$stepStart).TotalSeconds; Log-CI ('[ci] step=' + $$name + ' complete elapsed=' + $$elapsed + 's') }; Run-Step 'fmt' { & '$(MAKE)' fmt }; Run-Step 'tidy' { & '$(MAKE)' tidy }; Run-Step 'test-packages' { $$packages = go list ./... | Where-Object { $$_ -notmatch '/examples(/|$)' }; Write-Host 'Running CI tests (excluding examples/)...'; go test $$packages }; Run-Step 'provider-contracts' { & '$(MAKE)' provider-contracts }; Run-Step 'act' { if (Test-Path .github/workflows) { if (Get-Command act -ErrorAction SilentlyContinue) { act -j test -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest } else { Log-CI '[ci] step=act skipped (not found)' } } else { Log-CI '[ci] step=act skipped (.github/workflows not found)' } }; Run-Step 'examples-docker' { & '$(MAKE)' examples-docker }; Run-Step 'coverage-all' { & '$(MAKE)' coverage-all }; $$total=[int]((Get-Date)-$$ciStart).TotalSeconds; Log-CI ('[ci] total elapsed=' + $$total + 's')"
 else
 	@set -e; \
 	ci_start=$$(date +%s); \
@@ -42,6 +42,11 @@ else
 	go list ./... | grep -vE '^github.com/stackyard/stackyard/examples(/|$$)' | xargs go test; \
 	step_end=$$(date +%s); \
 	printf "$${cyan}%s$${reset}\n" "[ci] step=test-packages complete elapsed=$$((step_end-step_start))s"; \
+	step_start=$$(date +%s); \
+	printf "$${cyan}%s$${reset}\n" "[ci] step=provider-contracts start"; \
+	$(MAKE) provider-contracts; \
+	step_end=$$(date +%s); \
+	printf "$${cyan}%s$${reset}\n" "[ci] step=provider-contracts complete elapsed=$$((step_end-step_start))s"; \
 	step_start=$$(date +%s); \
 	printf "$${cyan}%s$${reset}\n" "[ci] step=act start"; \
 	if [ -d .github/workflows ]; then \

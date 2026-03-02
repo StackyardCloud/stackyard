@@ -3,17 +3,17 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
 
-function Wait-StackyardHealth {
+function Wait-StackyardReady {
   param(
-    [int]$Attempts = 60,
+    [string[]]$ComposeArgs,
+    [int]$Attempts = 90,
     [int]$DelaySec = 1
   )
 
-  $url = 'http://localhost:4566/_stackyard/health'
   for ($i = 0; $i -lt $Attempts; $i++) {
     try {
-      $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
-      if ($resp.StatusCode -eq 200) {
+      $logs = docker compose @ComposeArgs logs --no-color stackyard 2>$null
+      if ($logs -match 'stackyard listening on') {
         return $true
       }
     } catch {
@@ -24,8 +24,26 @@ function Wait-StackyardHealth {
   return $false
 }
 
+function New-StackyardOverrideFile {
+  $overridePath = [System.IO.Path]::GetTempFileName()
+  $yaml = @"
+services:
+  stackyard:
+    container_name: !reset null
+    ports: !reset []
+"@
+  Set-Content -Path $overridePath -Value $yaml -Encoding utf8
+  return $overridePath
+}
+
 $composeFiles = @()
-if ($env:RUN_ALL_EXAMPLES -eq '1') {
+if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
+  $singleCompose = $env:EXAMPLE_COMPOSE
+  if (-not (Test-Path $singleCompose)) {
+    throw "EXAMPLE_COMPOSE file not found: $singleCompose"
+  }
+  $composeFiles = @(Get-Item $singleCompose)
+} elseif ($env:RUN_ALL_EXAMPLES -eq '1') {
   $composeFiles = Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Filter 'docker-compose.yml' -Recurse -File |
     Where-Object { $_.FullName -match [regex]::Escape((Join-Path 'examples' '')) + '.+[\\/].+[\\/]docker-compose\.yml$' } |
     Sort-Object FullName
@@ -68,9 +86,10 @@ foreach ($compose in $composeFiles) {
   $composePath = $compose.FullName
   Write-Host "==> Running example compose: $composePath"
 
-  $composeImages = @(docker compose -f $composePath config --images 2>$null | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+  $baseComposeArgs = @('-f', $composePath)
+  $composeImages = @(docker compose @baseComposeArgs config --images 2>$null | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
 
-  $services = docker compose -f $composePath config --services
+  $services = docker compose @baseComposeArgs config --services
   if (-not $services -or $services.Count -eq 0) {
     throw "No services found in $composePath"
   }
@@ -82,34 +101,36 @@ foreach ($compose in $composeFiles) {
   $hasStackyard = $services -contains 'stackyard'
   $nonStackyardCount = ($services | Where-Object { $_ -ne 'stackyard' }).Count
 
+  $composeArgs = @('-f', $composePath)
+  $overrideFile = $null
+  if ($hasStackyard) {
+    $overrideFile = New-StackyardOverrideFile
+    $composeArgs += @('-f', $overrideFile)
+  }
+
   try {
-    docker compose -f $composePath down --remove-orphans -v | Out-Null
+    docker compose @composeArgs down --remove-orphans -v | Out-Null
   } catch {
     # ignore teardown errors before run
   }
 
   $status = 0
   if ($hasStackyard -and $nonStackyardCount -eq 1 -and $exitService -ne 'stackyard') {
-    try {
-      docker rm -f stackyard | Out-Null
-    } catch {
-      # ignore if container doesn't exist
-    }
-    docker compose -f $composePath up -d --build stackyard
+    docker compose @composeArgs up -d --build stackyard
     if ($LASTEXITCODE -ne 0) {
       $status = $LASTEXITCODE
-    } elseif (-not (Wait-StackyardHealth)) {
+    } elseif (-not (Wait-StackyardReady -ComposeArgs $composeArgs)) {
       Write-Host "Stackyard health check failed for compose: $composePath"
-      docker compose -f $composePath logs stackyard
+      docker compose @composeArgs logs stackyard
       $status = 1
     } else {
-      docker compose -f $composePath up --build --no-deps --abort-on-container-exit --exit-code-from $exitService $exitService
+      docker compose @composeArgs up --build --no-deps --abort-on-container-exit --exit-code-from $exitService $exitService
       if ($LASTEXITCODE -ne 0) {
         $status = $LASTEXITCODE
       }
     }
   } else {
-    docker compose -f $composePath up --build --abort-on-container-exit --exit-code-from $exitService
+    docker compose @composeArgs up --build --abort-on-container-exit --exit-code-from $exitService
     if ($LASTEXITCODE -ne 0) {
       $status = $LASTEXITCODE
     }
@@ -117,17 +138,23 @@ foreach ($compose in $composeFiles) {
 
   if ($status -ne 0) {
     try {
-      docker compose -f $composePath down --remove-orphans -v | Out-Null
+      docker compose @composeArgs down --remove-orphans -v | Out-Null
     } catch {
       # ignore teardown errors on failure path
+    }
+    if ($overrideFile -and (Test-Path $overrideFile)) {
+      Remove-Item -Force $overrideFile
     }
     throw "Example compose failed: $composePath (exit code $status)"
   }
 
   try {
-    docker compose -f $composePath down --remove-orphans -v | Out-Null
+    docker compose @composeArgs down --remove-orphans -v | Out-Null
   } catch {
     # ignore teardown errors after successful run
+  }
+  if ($overrideFile -and (Test-Path $overrideFile)) {
+    Remove-Item -Force $overrideFile
   }
 
   foreach ($image in $composeImages) {

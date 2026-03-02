@@ -325,15 +325,25 @@ type Server struct {
 	rds                              *rds.Service
 	redshiftMu                       sync.Mutex
 	redshift                         *redshiftStore
+	enabledProviders                 []string
+	enabledProviderSet               map[string]struct{}
+	providerStorageMu                sync.Mutex
+	gcpStorageBuckets                map[string]*providerBucket
+	azureStorageAccounts             map[string]map[string]*providerBucket
+	ociStorageNamespaces             map[string]map[string]*providerBucket
+	awsAuthValidator                 awsRequestAuthValidator
+	providerAuthValidators           map[string]providerRequestAuthValidator
 	accessKey                        string
 	secretKey                        string
 	logLevel                         string
+	state                            *statePersistence
 }
 
 type accessLogContextKey string
 
 const (
 	skipAccessLogDeliveryKey  accessLogContextKey = "skipAccessLogDelivery"
+	skipSigV4ValidationKey    accessLogContextKey = "skipSigV4Validation"
 	s3ControlNamespace        string              = "http://awss3control.amazonaws.com/doc/2018-08-20/"
 	redshiftNamespace         string              = "http://redshift.amazonaws.com/doc/2012-12-01/"
 	snsNamespace              string              = "http://sns.amazonaws.com/doc/2010-03-31/"
@@ -344,12 +354,20 @@ const (
 )
 
 type Config struct {
-	Addr                string
-	AccessKey           string
-	SecretKey           string
-	LogLevel            string
-	LambdaExecutionMode string
-	LambdaWorkDir       string
+	Addr                 string
+	Providers            []string
+	AccessKey            string
+	SecretKey            string
+	LogLevel             string
+	GCPAuthMode          string
+	AzureAuthMode        string
+	OCIAuthMode          string
+	LambdaExecutionMode  string
+	LambdaWorkDir        string
+	PersistenceEnabled   bool
+	StateDir             string
+	SnapshotLoadStrategy string
+	SnapshotSaveStrategy string
 }
 
 func New(cfg Config) *Server {
@@ -365,6 +383,7 @@ func New(cfg Config) *Server {
 	if cfg.LogLevel == "" {
 		cfg.LogLevel = "info"
 	}
+	enabledProviders := normalizeEnabledProviders(cfg.Providers)
 
 	s := &Server{
 		acm:                           acm.NewService(),
@@ -627,14 +646,28 @@ func New(cfg Config) *Server {
 		ec2:                              ec2.NewService(),
 		rds:                              rds.NewService(),
 		redshift:                         newRedshiftStore(),
+		enabledProviders:                 enabledProviders,
+		enabledProviderSet:               toProviderSet(enabledProviders),
+		gcpStorageBuckets:                map[string]*providerBucket{},
+		azureStorageAccounts:             map[string]map[string]*providerBucket{},
+		ociStorageNamespaces:             map[string]map[string]*providerBucket{},
 		accessKey:                        cfg.AccessKey,
 		secretKey:                        cfg.SecretKey,
 		logLevel:                         strings.ToLower(cfg.LogLevel),
+		state:                            newStatePersistence(cfg),
 	}
+	s.awsAuthValidator = &awsSigV4AuthAdapter{server: s}
+	s.providerAuthValidators = newProviderAuthValidators(cfg)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /_stackyard/health", s.handleHealth)
+	mux.HandleFunc("GET /_stackyard/providers", s.handleProviders)
 	mux.HandleFunc("GET /_stackyard/debug/request", s.handleDebugRequest)
+	mux.HandleFunc("GET /_stackyard/state", s.handleStateInfo)
+	mux.HandleFunc("GET /_stackyard/state/snapshots", s.handleStateSnapshotList)
+	mux.HandleFunc("POST /_stackyard/state/snapshots/{name}", s.handleStateSnapshotCreate)
+	mux.HandleFunc("POST /_stackyard/state/snapshots/{name}/restore", s.handleStateSnapshotRestore)
+	mux.HandleFunc("DELETE /_stackyard/state/snapshots/{name}", s.handleStateSnapshotDelete)
 
 	mux.HandleFunc("PUT /s3/buckets/{bucket}", s.handleS3CreateBucket)
 	mux.HandleFunc("GET /s3/buckets", s.handleS3ListBuckets)
@@ -647,13 +680,22 @@ func New(cfg Config) *Server {
 	mux.HandleFunc("POST /sqs/messages/{queue}", s.handleSQSSendMessage)
 	mux.HandleFunc("POST /sqs/messages/{queue}/receive", s.handleSQSReceiveMessage)
 
-	// AWS-style S3 endpoints (XML + SigV4).
-	mux.HandleFunc("/", s.handleS3AWSRouter)
+	// Provider routing (AWS compatibility + new provider namespaces).
+	mux.HandleFunc("/", s.handleProviderRouter)
 
+	handler := s.loggingMiddleware(mux)
+	if s.state != nil {
+		handler = s.state.middleware(handler)
+	}
 	s.httpServer = &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           s.loggingMiddleware(mux),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
+	}
+	if s.state != nil {
+		if err := s.state.restore(s.httpServer.Handler); err != nil {
+			log.Printf("state restore failed: %v", err)
+		}
 	}
 
 	return s
@@ -677,10 +719,12 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 		s.deliverS3AccessLog(r, wrapped, duration)
 
 		if s.logLevel == "debug" || s.logLevel == "verbose" {
-			log.Printf("%s %s %s -> %d (%d bytes) in %s host=%s ua=%q",
+			endpoint := endpointForDebugLog(r)
+			log.Printf("%s %s query=%q endpoint=%q -> %d (%d bytes) in %s host=%s ua=%q",
 				r.Method,
 				r.URL.Path,
 				r.URL.RawQuery,
+				endpoint,
 				wrapped.status,
 				wrapped.bytes,
 				duration.String(),
@@ -702,12 +746,79 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func endpointForDebugLog(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if target := strings.TrimSpace(r.Header.Get("X-Amz-Target")); target != "" {
+		return target
+	}
+	if action := actionFromValuesForLog(r.URL.Query()); action != "" {
+		return "Action:" + action
+	}
+	if action := actionFromValuesForLog(r.Form); action != "" {
+		return "Action:" + action
+	}
+	if action := actionFromValuesForLog(r.PostForm); action != "" {
+		return "Action:" + action
+	}
+	if action := actionFromRequestBodyForLog(r); action != "" {
+		return "Action:" + action
+	}
+	return r.Method + " " + rawRequestPath(r)
+}
+
+func actionFromValuesForLog(values url.Values) string {
+	if len(values) == 0 {
+		return ""
+	}
+	if action := strings.TrimSpace(values.Get("Action")); action != "" {
+		return action
+	}
+	for key, list := range values {
+		if !strings.EqualFold(key, "Action") || len(list) == 0 {
+			continue
+		}
+		if action := strings.TrimSpace(list[0]); action != "" {
+			return action
+		}
+	}
+	return ""
+}
+
+func actionFromRequestBodyForLog(r *http.Request) string {
+	if r == nil || r.Body == nil {
+		return ""
+	}
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if !strings.Contains(contentType, "application/x-www-form-urlencoded") {
+		return ""
+	}
+	body, err := readBodyBytes(r)
+	if err != nil || len(body) == 0 {
+		return ""
+	}
+	values, err := url.ParseQuery(string(body))
+	if err != nil {
+		return ""
+	}
+	return actionFromValuesForLog(values)
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]any{
 		"name":      "stackyard",
 		"status":    "ok",
 		"timestamp": time.Now().UTC(),
+		"providers": s.enabledProviders,
 		"services":  []string{"acm", "apigateway", "apigatewayv2", "appconfig", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "awscostmanagement", "billingconductor", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "devicefarm", "fis", "firehose", "flink", "kinesis", "kendra", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "transcribe", "xray", "wellarchitected", "wickr", "translate", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "simspaceweaver", "savingsplans", "tnb", "pinpoint", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "lexv2", "location", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "route53", "directconnect", "cloudmap", "cloudhsm", "cloudtrail", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codebuild", "config", "detective", "dms", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspectorv2", "m2", "mgn", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codedeploy", "codepipeline", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dsql", "ebs", "ec2", "ec2autoscaling", "ecs", "ecr", "eks", "elasticbeanstalk", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "organizations", "quicksetup", "ram", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "rds", "redshiftserverless", "s3", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf"},
+	})
+}
+
+func (s *Server) handleProviders(w http.ResponseWriter, _ *http.Request) {
+	respondJSON(w, http.StatusOK, map[string]any{
+		"enabled":   s.enabledProviders,
+		"supported": supportedProviders(),
 	})
 }
 
@@ -720,11 +831,109 @@ func (s *Server) handleDebugRequest(w http.ResponseWriter, r *http.Request) {
 		headers[k] = v[0]
 	}
 	respondJSON(w, http.StatusOK, map[string]any{
-		"method":   r.Method,
-		"path":     r.URL.Path,
-		"rawQuery": r.URL.RawQuery,
-		"host":     r.Host,
-		"headers":  headers,
+		"method":    r.Method,
+		"path":      r.URL.Path,
+		"rawQuery":  r.URL.RawQuery,
+		"host":      r.Host,
+		"headers":   headers,
+		"providers": s.enabledProviders,
+	})
+}
+
+func (s *Server) providerEnabled(provider string) bool {
+	_, ok := s.enabledProviderSet[provider]
+	return ok
+}
+
+func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
+	switch providerFromPath(rawRequestPath(r)) {
+	case providerGCP:
+		if !s.providerEnabled(providerGCP) {
+			respondProviderDisabled(w, providerGCP, s.enabledProviders)
+			return
+		}
+		if !s.validateProviderRequestAuth(w, r, providerGCP) {
+			return
+		}
+		if s.handleGCPObjectStorageRouter(w, r) {
+			return
+		}
+		s.handleProviderStubRouter(w, r, providerGCP)
+	case providerAzure:
+		if !s.providerEnabled(providerAzure) {
+			respondProviderDisabled(w, providerAzure, s.enabledProviders)
+			return
+		}
+		if !s.validateProviderRequestAuth(w, r, providerAzure) {
+			return
+		}
+		if s.handleAzureBlobRouter(w, r) {
+			return
+		}
+		s.handleProviderStubRouter(w, r, providerAzure)
+	case providerOCI:
+		if !s.providerEnabled(providerOCI) {
+			respondProviderDisabled(w, providerOCI, s.enabledProviders)
+			return
+		}
+		if !s.validateProviderRequestAuth(w, r, providerOCI) {
+			return
+		}
+		if s.handleOCIObjectStorageRouter(w, r) {
+			return
+		}
+		s.handleProviderStubRouter(w, r, providerOCI)
+	default:
+		if !s.providerEnabled(providerAWS) {
+			respondProviderDisabled(w, providerAWS, s.enabledProviders)
+			return
+		}
+		s.handleS3AWSRouter(w, r)
+	}
+}
+
+func (s *Server) validateProviderRequestAuth(w http.ResponseWriter, r *http.Request, provider string) bool {
+	if skipSigV4Validation(r) {
+		return true
+	}
+	if s == nil {
+		return true
+	}
+	validator, ok := s.providerAuthValidators[provider]
+	if !ok || validator == nil {
+		return true
+	}
+	okAuth, status, code, message := validator.Validate(r)
+	if okAuth {
+		return true
+	}
+	respondJSON(w, status, map[string]any{
+		"error":    code,
+		"message":  message,
+		"provider": provider,
+	})
+	return false
+}
+
+func (s *Server) handleProviderStubRouter(w http.ResponseWriter, r *http.Request, provider string) {
+	respondProviderNotImplemented(w, provider, rawRequestPath(r))
+}
+
+func respondProviderDisabled(w http.ResponseWriter, provider string, enabled []string) {
+	respondJSON(w, http.StatusBadRequest, map[string]any{
+		"error":             "ProviderDisabled",
+		"message":           fmt.Sprintf("provider %q is not enabled", provider),
+		"provider":          provider,
+		"enabled_providers": enabled,
+	})
+}
+
+func respondProviderNotImplemented(w http.ResponseWriter, provider, path string) {
+	respondJSON(w, http.StatusNotImplemented, map[string]any{
+		"error":    "NotImplemented",
+		"message":  fmt.Sprintf("%s emulation foundation is enabled but this route is not implemented yet", provider),
+		"provider": provider,
+		"path":     path,
 	})
 }
 
@@ -28655,6 +28864,16 @@ func (s *Server) validateSigV4(r *http.Request) (bool, int, string, string, bool
 }
 
 func (s *Server) validateSigV4WithService(r *http.Request, requiredService string) (bool, int, string, string, bool) {
+	if s != nil && s.awsAuthValidator != nil {
+		return s.awsAuthValidator.ValidateWithService(r, requiredService)
+	}
+	return s.validateSigV4WithServiceCore(r, requiredService)
+}
+
+func (s *Server) validateSigV4WithServiceCore(r *http.Request, requiredService string) (bool, int, string, string, bool) {
+	if skipSigV4Validation(r) {
+		return true, 0, "", "", true
+	}
 	auth := r.Header.Get("Authorization")
 	authPresent := strings.TrimSpace(auth) != "" || r.URL.Query().Get("X-Amz-Algorithm") != "" || r.URL.Query().Get("X-Amz-Credential") != ""
 	req, err := parseSigV4Authorization(auth)
@@ -29629,6 +29848,15 @@ func skipAccessLogDelivery(r *http.Request) bool {
 		return true
 	}
 	val := r.Context().Value(skipAccessLogDeliveryKey)
+	shouldSkip, ok := val.(bool)
+	return ok && shouldSkip
+}
+
+func skipSigV4Validation(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	val := r.Context().Value(skipSigV4ValidationKey)
 	shouldSkip, ok := val.(bool)
 	return ok && shouldSkip
 }

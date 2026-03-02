@@ -4,13 +4,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-wait_for_stackyard_health() {
-  local attempts=60
+wait_for_stackyard_ready() {
+  local attempts=90
   local delay=1
-  local url="http://localhost:4566/_stackyard/health"
   local i
+  local -a compose_args=("$@")
+  if [ "${#compose_args[@]}" -eq 0 ]; then
+    return 1
+  fi
   for i in $(seq 1 "$attempts"); do
-    if curl -fsS "$url" >/dev/null 2>&1; then
+    if docker compose "${compose_args[@]}" logs --no-color stackyard 2>/dev/null | grep -q "stackyard listening on"; then
       return 0
     fi
     sleep "$delay"
@@ -18,8 +21,26 @@ wait_for_stackyard_health() {
   return 1
 }
 
+build_stackyard_override_file() {
+  local file
+  file="$(mktemp)"
+  cat >"$file" <<EOF
+services:
+  stackyard:
+    container_name: !reset null
+    ports: !reset []
+EOF
+  echo "$file"
+}
+
 compose_files=()
-if [ "${RUN_ALL_EXAMPLES:-0}" = "1" ]; then
+if [ -n "${EXAMPLE_COMPOSE:-}" ]; then
+  if [ ! -f "${EXAMPLE_COMPOSE}" ]; then
+    echo "EXAMPLE_COMPOSE file not found: ${EXAMPLE_COMPOSE}"
+    exit 1
+  fi
+  compose_files+=("${EXAMPLE_COMPOSE}")
+elif [ "${RUN_ALL_EXAMPLES:-0}" = "1" ]; then
   while IFS= read -r compose_file; do
     compose_files+=("$compose_file")
   done < <(find examples -mindepth 2 -maxdepth 3 -type f -name 'docker-compose.yml' | sort)
@@ -106,25 +127,34 @@ for compose_file in "${compose_files[@]}"; do
     fi
   done
 
-  docker compose -f "$compose_file" down --remove-orphans -v >/dev/null 2>&1 || true
+  compose_args=(-f "$compose_file")
+  override_file=""
+  if [ "$has_stackyard" -eq 1 ]; then
+    override_file="$(build_stackyard_override_file)"
+    compose_args+=(-f "$override_file")
+  fi
+
+  docker compose "${compose_args[@]}" down --remove-orphans -v >/dev/null 2>&1 || true
 
   status=0
   if [ "$has_stackyard" -eq 1 ] && [ "$non_stackyard_count" -eq 1 ] && [ "$exit_service" != "stackyard" ]; then
-    docker rm -f stackyard >/dev/null 2>&1 || true
-    docker compose -f "$compose_file" up -d --build stackyard || status=$?
-    if [ "$status" -eq 0 ] && ! wait_for_stackyard_health; then
+    docker compose "${compose_args[@]}" up -d --build stackyard || status=$?
+    if [ "$status" -eq 0 ] && ! wait_for_stackyard_ready "${compose_args[@]}"; then
       echo "Stackyard health check failed for compose: $compose_file"
-      docker compose -f "$compose_file" logs stackyard || true
+      docker compose "${compose_args[@]}" logs stackyard || true
       status=1
     fi
     if [ "$status" -eq 0 ]; then
-      docker compose -f "$compose_file" up --build --no-deps --abort-on-container-exit --exit-code-from "$exit_service" "$exit_service" || status=$?
+      docker compose "${compose_args[@]}" up --build --no-deps --abort-on-container-exit --exit-code-from "$exit_service" "$exit_service" || status=$?
     fi
   else
-    docker compose -f "$compose_file" up --build --abort-on-container-exit --exit-code-from "$exit_service" || status=$?
+    docker compose "${compose_args[@]}" up --build --abort-on-container-exit --exit-code-from "$exit_service" || status=$?
   fi
 
-  docker compose -f "$compose_file" down --remove-orphans -v >/dev/null 2>&1 || true
+  docker compose "${compose_args[@]}" down --remove-orphans -v >/dev/null 2>&1 || true
+  if [ -n "$override_file" ]; then
+    rm -f "$override_file"
+  fi
 
   if [ "$status" -ne 0 ]; then
     echo "Example compose failed: $compose_file (exit code $status)"
