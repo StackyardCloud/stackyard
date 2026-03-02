@@ -475,7 +475,7 @@ func (a *app) replayDLQ(ctx context.Context, w http.ResponseWriter, r *http.Requ
 
 	request := map[string]any{}
 	_ = decodeJSON(r, &request)
-	maxMessages := int32(intValue(request["max_messages"], 10))
+	maxMessages := int32Value(request["max_messages"], 10)
 	if maxMessages < 1 {
 		maxMessages = 1
 	}
@@ -1192,6 +1192,47 @@ func intValue(v any, fallback int) int {
 			return fallback
 		}
 		return parsed
+	default:
+		return fallback
+	}
+}
+
+func int32Value(v any, fallback int32) int32 {
+	const (
+		maxInt32Value = 2147483647
+		minInt32Value = -2147483648
+	)
+
+	switch typed := v.(type) {
+	case int32:
+		return typed
+	case int:
+		if typed > maxInt32Value || typed < minInt32Value {
+			return fallback
+		}
+		return int32(typed)
+	case int64:
+		if typed > maxInt32Value || typed < minInt32Value {
+			return fallback
+		}
+		return int32(typed)
+	case float64:
+		if typed > maxInt32Value || typed < minInt32Value {
+			return fallback
+		}
+		return int32(typed)
+	case json.Number:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(typed.String()), 10, 32)
+		if err != nil {
+			return fallback
+		}
+		return int32(parsed)
+	case string:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(typed), 10, 32)
+		if err != nil {
+			return fallback
+		}
+		return int32(parsed)
 	default:
 		return fallback
 	}
