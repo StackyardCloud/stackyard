@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../
+      dockerfile: Dockerfile
+    container_name: stackyard-data-mesh
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  backend:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - APP_ADDR=:8080
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCOUNT_ID=123456789012
+      - AWS_ACCESS_KEY_ID=stackyard
+      - AWS_SECRET_ACCESS_KEY=stackyard
+      - DATA_MESH_DOMAIN_PREFIX=ra-data-mesh
+    ports:
+      - "8082:8080"

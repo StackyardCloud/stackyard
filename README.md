@@ -36,6 +36,7 @@ For the most up-to-date catalog and operation/type coverage, use:
 - Runnable examples (basic + advanced): `examples/`
 - Endpoint coverage tooling: `scripts/awscli-endpoint-coverage.py`
 - Generated docs site: `docs/index.html`
+- Multi-cloud foundation notes: `docs/multi-cloud-foundation.md`
 - Reference architecture examples: `reference-architecture/`
 
 ## Quickstart
@@ -69,12 +70,36 @@ Run locally:
 ```bash
 # starts in background (daemon mode)
 stackyard start --providers aws
+stackyard start --providers aws,gcp,azure,oci
 stackyard start --providers aws --port 4566
 stackyard start --providers aws --log-level debug
 
 # stop the background process
 stackyard stop
 ```
+
+Provider support status:
+
+- `aws`: broad emulation coverage
+- `gcp`, `azure`, `oci`: foundational routing plus object storage SDK paths enabled; broader service emulation in progress
+
+Foundational object storage routes for non-AWS providers:
+
+- `gcp`: JSON API bucket/object create, list, and get via `/gcp/storage/v1/*` and `/gcp/upload/storage/v1/*`
+- `azure`: Blob container/blob create, list, get, and head via `/azure/{account}/*`
+- `oci`: Object Storage namespace, bucket, and object lifecycle via `/oci/n/*`
+
+SDK endpoint override base URLs:
+
+- GCP Cloud Storage SDK: `http://localhost:4566/gcp`
+- Azure Blob SDK: `http://localhost:4566/azure/<storage-account>`
+- OCI Object Storage SDK: `http://localhost:4566/oci`
+
+Provider auth modes (configurable via CLI flags or env vars):
+
+- GCP: `emulator` (default), `bearer_tolerant`, `bearer_required`
+- Azure: `shared_key_or_sas` (default), `shared_key`, `sas`, `disabled`
+- OCI: `signature` (default), `disabled`
 
 Run with Docker Compose:
 
@@ -128,6 +153,7 @@ Stackyard validates behavior through:
 - service-level staged Go tests in `internal/server/*_test.go`
 - smoke scripts in `scripts/`
 - contract-style endpoint coverage checks using AWS CLI skeletons
+- provider contract checks for GCP/Azure/OCI foundation routes (`make provider-contracts`)
 
 This project aims for practical local compatibility, not complete protocol parity for every AWS feature.
 
