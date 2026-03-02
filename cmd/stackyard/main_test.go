@@ -111,12 +111,34 @@ func TestParseStartOptions_RejectsUnsupportedProvider(t *testing.T) {
 	t.Parallel()
 
 	_, err := parseStartOptions(
-		[]string{"--providers", "aws,gcp"},
+		[]string{"--providers", "aws,digitalocean"},
 		&bytes.Buffer{},
 		envFromMap(nil),
 	)
 	if err == nil {
 		t.Fatalf("expected error for unsupported provider")
+	}
+}
+
+func TestParseStartOptions_AcceptsMultipleProviders(t *testing.T) {
+	t.Parallel()
+
+	opts, err := parseStartOptions(
+		[]string{"--providers", "aws,gcp,azure,oci"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err != nil {
+		t.Fatalf("parseStartOptions returned error: %v", err)
+	}
+	want := []string{"aws", "gcp", "azure", "oci"}
+	if len(opts.providers) != len(want) {
+		t.Fatalf("expected %d providers, got %#v", len(want), opts.providers)
+	}
+	for i := range want {
+		if opts.providers[i] != want[i] {
+			t.Fatalf("expected provider %d to be %q, got %q", i, want[i], opts.providers[i])
+		}
 	}
 }
 
@@ -132,13 +154,16 @@ func TestRunHelpIncludesFlagOptions(t *testing.T) {
 	out := stdout.String()
 	for _, want := range []string{
 		"--providers string",
-		"Options: aws",
+		"Options: aws, gcp, azure, oci",
 		"--port int",
 		"1-65535",
 		"--log-level string",
 		"debug, info, warn, error",
 		"--aws-access-key string",
 		"--aws-secret-key string",
+		"--gcp-auth-mode string",
+		"--azure-auth-mode string",
+		"--oci-auth-mode string",
 		"--lambda-execution-mode",
 		"mock, local",
 	} {
@@ -161,7 +186,7 @@ func TestRunHelpStartShowsStartUsage(t *testing.T) {
 	if !strings.Contains(out, "stackyard start [flags]") {
 		t.Fatalf("expected start usage in help output, got: %s", out)
 	}
-	if !strings.Contains(out, "Options: aws") {
+	if !strings.Contains(out, "Options: aws, gcp, azure, oci") {
 		t.Fatalf("expected provider options in start help output, got: %s", out)
 	}
 	if !strings.Contains(out, "--aws-access-key string") {
@@ -188,6 +213,64 @@ func TestParseStartOptions_AWSCredentialFlags(t *testing.T) {
 	}
 }
 
+func TestParseStartOptions_ProviderAuthModeFlags(t *testing.T) {
+	t.Parallel()
+
+	opts, err := parseStartOptions(
+		[]string{
+			"--providers", "aws,gcp,azure,oci",
+			"--gcp-auth-mode", "bearer_required",
+			"--azure-auth-mode", "shared_key",
+			"--oci-auth-mode", "disabled",
+		},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err != nil {
+		t.Fatalf("parseStartOptions returned error: %v", err)
+	}
+	if opts.gcpAuthMode != "bearer_required" {
+		t.Fatalf("expected gcp auth mode bearer_required, got %q", opts.gcpAuthMode)
+	}
+	if opts.azureAuthMode != "shared_key" {
+		t.Fatalf("expected azure auth mode shared_key, got %q", opts.azureAuthMode)
+	}
+	if opts.ociAuthMode != "disabled" {
+		t.Fatalf("expected oci auth mode disabled, got %q", opts.ociAuthMode)
+	}
+}
+
+func TestParseStartOptions_RejectsInvalidProviderAuthModes(t *testing.T) {
+	t.Parallel()
+
+	_, err := parseStartOptions(
+		[]string{"--providers", "aws,gcp", "--gcp-auth-mode", "oauth"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected invalid gcp auth mode error")
+	}
+
+	_, err = parseStartOptions(
+		[]string{"--providers", "aws,azure", "--azure-auth-mode", "aad"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected invalid azure auth mode error")
+	}
+
+	_, err = parseStartOptions(
+		[]string{"--providers", "aws,oci", "--oci-auth-mode", "instance_principal"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected invalid oci auth mode error")
+	}
+}
+
 func TestParseStartOptions_LambdaFlags(t *testing.T) {
 	t.Parallel()
 
@@ -208,6 +291,59 @@ func TestParseStartOptions_LambdaFlags(t *testing.T) {
 	}
 	if opts.lambdaWorkDir != "/tmp/stackyard-lambda-work" {
 		t.Fatalf("expected lambda work dir /tmp/stackyard-lambda-work, got %q", opts.lambdaWorkDir)
+	}
+}
+
+func TestParseStartOptions_PersistenceFlags(t *testing.T) {
+	t.Parallel()
+
+	opts, err := parseStartOptions(
+		[]string{
+			"--providers", "aws",
+			"--persist-state",
+			"--state-dir", "/tmp/stackyard-state",
+			"--snapshot-load-strategy", "manual",
+			"--snapshot-save-strategy", "on_shutdown",
+		},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err != nil {
+		t.Fatalf("parseStartOptions returned error: %v", err)
+	}
+	if !opts.persistenceEnabled {
+		t.Fatalf("expected persist-state true")
+	}
+	if opts.stateDir != "/tmp/stackyard-state" {
+		t.Fatalf("expected state dir /tmp/stackyard-state, got %q", opts.stateDir)
+	}
+	if opts.snapshotLoadStrategy != "manual" {
+		t.Fatalf("expected snapshot load strategy manual, got %q", opts.snapshotLoadStrategy)
+	}
+	if opts.snapshotSaveStrategy != "on_shutdown" {
+		t.Fatalf("expected snapshot save strategy on_shutdown, got %q", opts.snapshotSaveStrategy)
+	}
+}
+
+func TestParseStartOptions_RejectsInvalidSnapshotStrategies(t *testing.T) {
+	t.Parallel()
+
+	_, err := parseStartOptions(
+		[]string{"--providers", "aws", "--snapshot-load-strategy", "eager"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected invalid snapshot load strategy error")
+	}
+
+	_, err = parseStartOptions(
+		[]string{"--providers", "aws", "--snapshot-save-strategy", "never"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected invalid snapshot save strategy error")
 	}
 }
 

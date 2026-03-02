@@ -22,7 +22,15 @@ const (
 	defaultPort            = 4566
 	defaultShutdownTimeout = 10 * time.Second
 	startupWaitTimeout     = 5 * time.Second
+	supportedProvidersText = "aws, gcp, azure, oci"
 )
+
+var supportedProviders = map[string]struct{}{
+	"aws":   {},
+	"gcp":   {},
+	"azure": {},
+	"oci":   {},
+}
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr, os.Getenv); err != nil {
@@ -80,14 +88,21 @@ func runStartCommand(args []string, stdout, stderr io.Writer, getenv func(string
 	}
 
 	serveOpts := serveOptions{
-		providers:           opts.providers,
-		addr:                opts.addr,
-		accessKey:           opts.accessKey,
-		secretKey:           opts.secretKey,
-		logLevel:            opts.logLevel,
-		pidFile:             opts.pidFile,
-		lambdaExecutionMode: opts.lambdaExecutionMode,
-		lambdaWorkDir:       opts.lambdaWorkDir,
+		providers:            opts.providers,
+		addr:                 opts.addr,
+		accessKey:            opts.accessKey,
+		secretKey:            opts.secretKey,
+		logLevel:             opts.logLevel,
+		gcpAuthMode:          opts.gcpAuthMode,
+		azureAuthMode:        opts.azureAuthMode,
+		ociAuthMode:          opts.ociAuthMode,
+		pidFile:              opts.pidFile,
+		lambdaExecutionMode:  opts.lambdaExecutionMode,
+		lambdaWorkDir:        opts.lambdaWorkDir,
+		persistenceEnabled:   opts.persistenceEnabled,
+		stateDir:             opts.stateDir,
+		snapshotLoadStrategy: opts.snapshotLoadStrategy,
+		snapshotSaveStrategy: opts.snapshotSaveStrategy,
 	}
 
 	if opts.foreground {
@@ -149,12 +164,20 @@ func runServe(opts serveOptions) error {
 	)
 
 	cfg := server.Config{
-		Addr:                opts.addr,
-		AccessKey:           opts.accessKey,
-		SecretKey:           opts.secretKey,
-		LogLevel:            opts.logLevel,
-		LambdaExecutionMode: opts.lambdaExecutionMode,
-		LambdaWorkDir:       opts.lambdaWorkDir,
+		Addr:                 opts.addr,
+		Providers:            opts.providers,
+		AccessKey:            opts.accessKey,
+		SecretKey:            opts.secretKey,
+		LogLevel:             opts.logLevel,
+		GCPAuthMode:          opts.gcpAuthMode,
+		AzureAuthMode:        opts.azureAuthMode,
+		OCIAuthMode:          opts.ociAuthMode,
+		LambdaExecutionMode:  opts.lambdaExecutionMode,
+		LambdaWorkDir:        opts.lambdaWorkDir,
+		PersistenceEnabled:   opts.persistenceEnabled,
+		StateDir:             opts.stateDir,
+		SnapshotLoadStrategy: opts.snapshotLoadStrategy,
+		SnapshotSaveStrategy: opts.snapshotSaveStrategy,
 	}
 	srv := server.New(cfg)
 
@@ -186,6 +209,9 @@ func runServe(opts serveOptions) error {
 			return nil
 		case <-sigCh:
 			log.Printf("stackyard received interrupt; exiting")
+			if err := srv.Close(); err != nil {
+				return fmt.Errorf("server shutdown failed: %w", err)
+			}
 			return nil
 		}
 	}
@@ -227,8 +253,15 @@ func startInBackground(opts serveOptions, logFile string, stdout io.Writer) erro
 		"--log-level", opts.logLevel,
 		"--aws-access-key", opts.accessKey,
 		"--aws-secret-key", opts.secretKey,
+		"--gcp-auth-mode", opts.gcpAuthMode,
+		"--azure-auth-mode", opts.azureAuthMode,
+		"--oci-auth-mode", opts.ociAuthMode,
 		"--lambda-execution-mode", opts.lambdaExecutionMode,
 		"--lambda-work-dir", opts.lambdaWorkDir,
+		"--persist-state", strconv.FormatBool(opts.persistenceEnabled),
+		"--state-dir", opts.stateDir,
+		"--snapshot-load-strategy", opts.snapshotLoadStrategy,
+		"--snapshot-save-strategy", opts.snapshotSaveStrategy,
 		"--pid-file", opts.pidFile,
 	}
 	cmd := exec.Command(exe, argv...)
@@ -253,27 +286,41 @@ func startInBackground(opts serveOptions, logFile string, stdout io.Writer) erro
 }
 
 type serveOptions struct {
-	providers           []string
-	addr                string
-	accessKey           string
-	secretKey           string
-	logLevel            string
-	pidFile             string
-	lambdaExecutionMode string
-	lambdaWorkDir       string
+	providers            []string
+	addr                 string
+	accessKey            string
+	secretKey            string
+	logLevel             string
+	gcpAuthMode          string
+	azureAuthMode        string
+	ociAuthMode          string
+	pidFile              string
+	lambdaExecutionMode  string
+	lambdaWorkDir        string
+	persistenceEnabled   bool
+	stateDir             string
+	snapshotLoadStrategy string
+	snapshotSaveStrategy string
 }
 
 type startOptions struct {
-	providers           []string
-	addr                string
-	accessKey           string
-	secretKey           string
-	logLevel            string
-	foreground          bool
-	pidFile             string
-	logFile             string
-	lambdaExecutionMode string
-	lambdaWorkDir       string
+	providers            []string
+	addr                 string
+	accessKey            string
+	secretKey            string
+	logLevel             string
+	gcpAuthMode          string
+	azureAuthMode        string
+	ociAuthMode          string
+	foreground           bool
+	pidFile              string
+	logFile              string
+	lambdaExecutionMode  string
+	lambdaWorkDir        string
+	persistenceEnabled   bool
+	stateDir             string
+	snapshotLoadStrategy string
+	snapshotSaveStrategy string
 }
 
 type stopOptions struct {
@@ -282,14 +329,21 @@ type stopOptions struct {
 }
 
 type serveFlagValues struct {
-	providersValue      string
-	addr                string
-	port                int
-	accessKey           string
-	secretKey           string
-	logLevel            string
-	lambdaExecutionMode string
-	lambdaWorkDir       string
+	providersValue       string
+	addr                 string
+	port                 int
+	accessKey            string
+	secretKey            string
+	logLevel             string
+	gcpAuthMode          string
+	azureAuthMode        string
+	ociAuthMode          string
+	lambdaExecutionMode  string
+	lambdaWorkDir        string
+	persistenceEnabled   bool
+	stateDir             string
+	snapshotLoadStrategy string
+	snapshotSaveStrategy string
 }
 
 func parseStartOptions(args []string, stderr io.Writer, getenv func(string) string) (startOptions, error) {
@@ -332,16 +386,23 @@ func parseStartOptions(args []string, stderr io.Writer, getenv func(string) stri
 	}
 
 	return startOptions{
-		providers:           serveOpts.providers,
-		addr:                serveOpts.addr,
-		accessKey:           serveOpts.accessKey,
-		secretKey:           serveOpts.secretKey,
-		logLevel:            serveOpts.logLevel,
-		foreground:          foreground,
-		pidFile:             pidFile,
-		logFile:             logFile,
-		lambdaExecutionMode: serveOpts.lambdaExecutionMode,
-		lambdaWorkDir:       serveOpts.lambdaWorkDir,
+		providers:            serveOpts.providers,
+		addr:                 serveOpts.addr,
+		accessKey:            serveOpts.accessKey,
+		secretKey:            serveOpts.secretKey,
+		logLevel:             serveOpts.logLevel,
+		gcpAuthMode:          serveOpts.gcpAuthMode,
+		azureAuthMode:        serveOpts.azureAuthMode,
+		ociAuthMode:          serveOpts.ociAuthMode,
+		foreground:           foreground,
+		pidFile:              pidFile,
+		logFile:              logFile,
+		lambdaExecutionMode:  serveOpts.lambdaExecutionMode,
+		lambdaWorkDir:        serveOpts.lambdaWorkDir,
+		persistenceEnabled:   serveOpts.persistenceEnabled,
+		stateDir:             serveOpts.stateDir,
+		snapshotLoadStrategy: serveOpts.snapshotLoadStrategy,
+		snapshotSaveStrategy: serveOpts.snapshotSaveStrategy,
 	}, nil
 }
 
@@ -401,23 +462,37 @@ func parseStopOptions(args []string, stderr io.Writer, getenv func(string) strin
 
 func bindServeFlags(fs *flag.FlagSet, getenv func(string) string) *serveFlagValues {
 	values := &serveFlagValues{
-		providersValue:      envOrDefault(getenv, "STACKYARD_PROVIDERS", "aws"),
-		addr:                strings.TrimSpace(getenv("STACKYARD_ADDR")),
-		port:                envInt(getenv, "STACKYARD_PORT", defaultPort),
-		accessKey:           envOrDefault(getenv, "STACKYARD_ACCESS_KEY", "stackyard"),
-		secretKey:           envOrDefault(getenv, "STACKYARD_SECRET_KEY", "stackyard"),
-		logLevel:            envOrDefault(getenv, "STACKYARD_LOG_LEVEL", "info"),
-		lambdaExecutionMode: envOrDefault(getenv, "STACKYARD_LAMBDA_EXECUTION_MODE", "mock"),
-		lambdaWorkDir:       strings.TrimSpace(getenv("STACKYARD_LAMBDA_WORK_DIR")),
+		providersValue:       envOrDefault(getenv, "STACKYARD_PROVIDERS", "aws"),
+		addr:                 strings.TrimSpace(getenv("STACKYARD_ADDR")),
+		port:                 envInt(getenv, "STACKYARD_PORT", defaultPort),
+		accessKey:            envOrDefault(getenv, "STACKYARD_ACCESS_KEY", "stackyard"),
+		secretKey:            envOrDefault(getenv, "STACKYARD_SECRET_KEY", "stackyard"),
+		logLevel:             envOrDefault(getenv, "STACKYARD_LOG_LEVEL", "info"),
+		gcpAuthMode:          envOrDefault(getenv, "STACKYARD_GCP_AUTH_MODE", "emulator"),
+		azureAuthMode:        envOrDefault(getenv, "STACKYARD_AZURE_AUTH_MODE", "shared_key_or_sas"),
+		ociAuthMode:          envOrDefault(getenv, "STACKYARD_OCI_AUTH_MODE", "signature"),
+		lambdaExecutionMode:  envOrDefault(getenv, "STACKYARD_LAMBDA_EXECUTION_MODE", "mock"),
+		lambdaWorkDir:        strings.TrimSpace(getenv("STACKYARD_LAMBDA_WORK_DIR")),
+		persistenceEnabled:   envBool(getenv, "STACKYARD_PERSISTENCE", false),
+		stateDir:             strings.TrimSpace(getenv("STACKYARD_STATE_DIR")),
+		snapshotLoadStrategy: envOrDefault(getenv, "STACKYARD_SNAPSHOT_LOAD_STRATEGY", "on_startup"),
+		snapshotSaveStrategy: envOrDefault(getenv, "STACKYARD_SNAPSHOT_SAVE_STRATEGY", "on_request"),
 	}
-	fs.StringVar(&values.providersValue, "providers", values.providersValue, "Comma-separated providers to enable (currently: aws)")
+	fs.StringVar(&values.providersValue, "providers", values.providersValue, "Comma-separated providers to enable (currently: "+supportedProvidersText+")")
 	fs.StringVar(&values.addr, "addr", values.addr, "HTTP listen address (example: :4566)")
 	fs.IntVar(&values.port, "port", values.port, "HTTP listen port (used when --addr is not provided)")
 	fs.StringVar(&values.accessKey, "aws-access-key", values.accessKey, "Access key expected by SigV4 validation")
 	fs.StringVar(&values.secretKey, "aws-secret-key", values.secretKey, "Secret key expected by SigV4 validation")
 	fs.StringVar(&values.logLevel, "log-level", values.logLevel, "Log level (debug, info, warn, error)")
+	fs.StringVar(&values.gcpAuthMode, "gcp-auth-mode", values.gcpAuthMode, "GCP request auth mode (emulator, bearer_tolerant, bearer_required)")
+	fs.StringVar(&values.azureAuthMode, "azure-auth-mode", values.azureAuthMode, "Azure request auth mode (shared_key_or_sas, shared_key, sas, disabled)")
+	fs.StringVar(&values.ociAuthMode, "oci-auth-mode", values.ociAuthMode, "OCI request auth mode (signature, disabled)")
 	fs.StringVar(&values.lambdaExecutionMode, "lambda-execution-mode", values.lambdaExecutionMode, "Lambda invoke behavior (mock, local)")
 	fs.StringVar(&values.lambdaWorkDir, "lambda-work-dir", values.lambdaWorkDir, "Lambda local execution workspace directory")
+	fs.BoolVar(&values.persistenceEnabled, "persist-state", values.persistenceEnabled, "Enable persistent state journal and startup replay")
+	fs.StringVar(&values.stateDir, "state-dir", values.stateDir, "Persistent state directory")
+	fs.StringVar(&values.snapshotLoadStrategy, "snapshot-load-strategy", values.snapshotLoadStrategy, "Snapshot load strategy (on_startup, manual)")
+	fs.StringVar(&values.snapshotSaveStrategy, "snapshot-save-strategy", values.snapshotSaveStrategy, "Snapshot save strategy (on_request, on_shutdown, manual)")
 	return values
 }
 
@@ -450,6 +525,30 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 	if err != nil {
 		return serveOptions{}, err
 	}
+	gcpAuthMode := strings.ToLower(strings.TrimSpace(values.gcpAuthMode))
+	switch gcpAuthMode {
+	case "", "emulator":
+		gcpAuthMode = "emulator"
+	case "bearer_tolerant", "bearer_required":
+	default:
+		return serveOptions{}, fmt.Errorf("unsupported --gcp-auth-mode %q (supported: emulator, bearer_tolerant, bearer_required)", values.gcpAuthMode)
+	}
+	azureAuthMode := strings.ToLower(strings.TrimSpace(values.azureAuthMode))
+	switch azureAuthMode {
+	case "", "shared_key_or_sas":
+		azureAuthMode = "shared_key_or_sas"
+	case "shared_key", "sas", "disabled":
+	default:
+		return serveOptions{}, fmt.Errorf("unsupported --azure-auth-mode %q (supported: shared_key_or_sas, shared_key, sas, disabled)", values.azureAuthMode)
+	}
+	ociAuthMode := strings.ToLower(strings.TrimSpace(values.ociAuthMode))
+	switch ociAuthMode {
+	case "", "signature":
+		ociAuthMode = "signature"
+	case "disabled":
+	default:
+		return serveOptions{}, fmt.Errorf("unsupported --oci-auth-mode %q (supported: signature, disabled)", values.ociAuthMode)
+	}
 	lambdaExecutionMode := strings.ToLower(strings.TrimSpace(values.lambdaExecutionMode))
 	switch lambdaExecutionMode {
 	case "", "mock":
@@ -458,15 +557,38 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 	default:
 		return serveOptions{}, fmt.Errorf("unsupported --lambda-execution-mode %q (supported: mock, local)", values.lambdaExecutionMode)
 	}
+	snapshotLoadStrategy := strings.ToLower(strings.TrimSpace(values.snapshotLoadStrategy))
+	switch snapshotLoadStrategy {
+	case "", "on_startup":
+		snapshotLoadStrategy = "on_startup"
+	case "manual":
+	default:
+		return serveOptions{}, fmt.Errorf("unsupported --snapshot-load-strategy %q (supported: on_startup, manual)", values.snapshotLoadStrategy)
+	}
+	snapshotSaveStrategy := strings.ToLower(strings.TrimSpace(values.snapshotSaveStrategy))
+	switch snapshotSaveStrategy {
+	case "", "on_request":
+		snapshotSaveStrategy = "on_request"
+	case "on_shutdown", "manual":
+	default:
+		return serveOptions{}, fmt.Errorf("unsupported --snapshot-save-strategy %q (supported: on_request, on_shutdown, manual)", values.snapshotSaveStrategy)
+	}
 
 	return serveOptions{
-		providers:           providers,
-		addr:                resolvedAddr,
-		accessKey:           values.accessKey,
-		secretKey:           values.secretKey,
-		logLevel:            values.logLevel,
-		lambdaExecutionMode: lambdaExecutionMode,
-		lambdaWorkDir:       strings.TrimSpace(values.lambdaWorkDir),
+		providers:            providers,
+		addr:                 resolvedAddr,
+		accessKey:            values.accessKey,
+		secretKey:            values.secretKey,
+		logLevel:             values.logLevel,
+		gcpAuthMode:          gcpAuthMode,
+		azureAuthMode:        azureAuthMode,
+		ociAuthMode:          ociAuthMode,
+		lambdaExecutionMode:  lambdaExecutionMode,
+		lambdaWorkDir:        strings.TrimSpace(values.lambdaWorkDir),
+		persistenceEnabled:   values.persistenceEnabled,
+		stateDir:             strings.TrimSpace(values.stateDir),
+		snapshotLoadStrategy: snapshotLoadStrategy,
+		snapshotSaveStrategy: snapshotSaveStrategy,
 	}, nil
 }
 
@@ -482,14 +604,14 @@ func parseProviders(raw string) ([]string, error) {
 		if _, ok := seen[p]; ok {
 			continue
 		}
-		if p != "aws" {
-			return nil, fmt.Errorf("unsupported provider %q (supported: aws)", p)
+		if _, ok := supportedProviders[p]; !ok {
+			return nil, fmt.Errorf("unsupported provider %q (supported: %s)", p, supportedProvidersText)
 		}
 		seen[p] = struct{}{}
 		out = append(out, p)
 	}
 	if len(out) == 0 {
-		return nil, errors.New("at least one provider must be set (supported: aws)")
+		return nil, fmt.Errorf("at least one provider must be set (supported: %s)", supportedProvidersText)
 	}
 	return out, nil
 }
@@ -573,6 +695,20 @@ func envInt(getenv func(string) string, key string, fallback int) int {
 	return n
 }
 
+func envBool(getenv func(string) string, key string, fallback bool) bool {
+	raw := strings.ToLower(strings.TrimSpace(getenv(key)))
+	switch raw {
+	case "":
+		return fallback
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
+}
+
 func writeRootUsage(w io.Writer) {
 	fmt.Fprint(w, rootUsageText())
 }
@@ -592,7 +728,7 @@ Commands:
 
 Start Flags:
   --providers string       Comma-separated providers to enable.
-                           Options: aws
+                           Options: aws, gcp, azure, oci
   --port int               HTTP listen port (used when --addr is not provided).
                            Options: 1-65535 (default 4566)
   --addr string            HTTP listen address.
@@ -603,11 +739,25 @@ Start Flags:
                            Options: any non-empty string (default stackyard)
   --aws-secret-key string  Secret key expected by SigV4 validation.
                            Options: any non-empty string (default stackyard)
+  --gcp-auth-mode string   GCP request auth mode.
+                           Options: emulator, bearer_tolerant, bearer_required (default emulator)
+  --azure-auth-mode string Azure request auth mode.
+                           Options: shared_key_or_sas, shared_key, sas, disabled (default shared_key_or_sas)
+  --oci-auth-mode string   OCI request auth mode.
+                           Options: signature, disabled (default signature)
   --lambda-execution-mode string
                            Lambda invoke behavior.
                            Options: mock, local (default mock)
   --lambda-work-dir string Lambda local execution workspace directory.
                            Options: absolute or relative path
+  --persist-state          Enable persistent state journal and startup replay
+  --state-dir string       Persistent state directory (default OS temp dir)
+  --snapshot-load-strategy string
+                           Snapshot load strategy.
+                           Options: on_startup, manual (default on_startup)
+  --snapshot-save-strategy string
+                           Snapshot save strategy.
+                           Options: on_request, on_shutdown, manual (default on_request)
   --foreground             Run in foreground instead of background mode
   --pid-file string        PID file used by start/stop lifecycle (default OS temp dir)
   --log-file string        Daemon log file path (default OS temp dir)
@@ -618,9 +768,11 @@ Stop Flags:
 
 Examples:
   stackyard start --providers aws
+  stackyard start --providers aws,gcp,azure,oci
   stackyard start --providers aws --port 4566
   stackyard start --providers aws --log-level debug
   stackyard start --providers aws --lambda-execution-mode local
+  stackyard start --providers aws --persist-state --state-dir /tmp/stackyard-state
   stackyard stop
   stackyard help start
 `
@@ -635,7 +787,7 @@ Behavior:
 
 Flags:
   --providers string       Comma-separated providers to enable.
-                           Options: aws
+                           Options: aws, gcp, azure, oci
   --port int               HTTP listen port (used when --addr is not provided).
                            Options: 1-65535 (default 4566)
   --addr string            HTTP listen address (example: :4566).
@@ -646,19 +798,30 @@ Flags:
                            Options: any non-empty string
   --aws-secret-key string  Secret key expected by SigV4 validation.
                            Options: any non-empty string
+  --gcp-auth-mode string   GCP request auth mode (emulator, bearer_tolerant, bearer_required)
+  --azure-auth-mode string Azure request auth mode (shared_key_or_sas, shared_key, sas, disabled)
+  --oci-auth-mode string   OCI request auth mode (signature, disabled)
   --lambda-execution-mode string
                            Lambda invoke behavior.
                            Options: mock, local
   --lambda-work-dir string Lambda local execution workspace directory
+  --persist-state          Enable persistent state journal and startup replay
+  --state-dir string       Persistent state directory
+  --snapshot-load-strategy string
+                           Snapshot load strategy (on_startup, manual)
+  --snapshot-save-strategy string
+                           Snapshot save strategy (on_request, on_shutdown, manual)
   --foreground             Run in foreground instead of daemon mode
   --pid-file string        PID file path used for stop command
   --log-file string        Background log file path
 
 Examples:
   stackyard start --providers aws
+  stackyard start --providers aws,gcp,azure,oci
   stackyard start --providers aws --port 4566
   stackyard start --providers aws --log-level debug
   stackyard start --providers aws --lambda-execution-mode local
+  stackyard start --providers aws --persist-state --state-dir /tmp/stackyard-state
   stackyard start --providers aws --foreground
 `
 }
