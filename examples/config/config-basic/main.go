@@ -40,13 +40,6 @@ func main() {
 		fmt.Println(strings.TrimSpace(string(body)))
 		return
 	}
-
-	errType := extractErrorType(body)
-	if errType == "NotImplementedException" || strings.Contains(strings.TrimSpace(string(body)), "NotImplemented") {
-		logf("DescribeConfigurationRecorders returned %d (%s): expected while staged plan is in progress", status, errType)
-		return
-	}
-
 	exitf("DescribeConfigurationRecorders returned HTTP %d: %s", status, strings.TrimSpace(string(body)))
 }
 
@@ -94,20 +87,6 @@ func configRequest(
 		return 0, nil, err
 	}
 	return resp.StatusCode, respBody, nil
-}
-
-func extractErrorType(body []byte) string {
-	payload := map[string]any{}
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return ""
-	}
-	if v, ok := payload["__type"].(string); ok {
-		return strings.TrimSpace(v)
-	}
-	if v, ok := payload["code"].(string); ok {
-		return strings.TrimSpace(v)
-	}
-	return ""
 }
 
 func hashSHA256(payload []byte) string {

@@ -12323,6 +12323,34 @@ def run_subprocess(cmd: Sequence[str], env: dict[str, str]) -> subprocess.Comple
     )
 
 
+_AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE: dict[str, bool] = {}
+
+
+def aws_cli_supports_no_cli_pager(aws_bin: str, env: dict[str, str]) -> bool:
+    cached = _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE.get(aws_bin)
+    if cached is not None:
+        return cached
+
+    cp = run_subprocess([aws_bin, "--version"], env)
+    version_text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
+    match = re.search(r"aws-cli/(\d+)\.", version_text)
+    if match is not None:
+        supports = int(match.group(1)) >= 2
+    else:
+        # Conservatively keep pager disabled when version cannot be detected.
+        supports = True
+
+    _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE[aws_bin] = supports
+    return supports
+
+
+def aws_cli_base_cmd(aws_bin: str, env: dict[str, str]) -> list[str]:
+    cmd = [aws_bin]
+    if aws_cli_supports_no_cli_pager(aws_bin, env):
+        cmd.append("--no-cli-pager")
+    return cmd
+
+
 def is_local_endpoint(endpoint_url: str) -> bool:
     parsed = urlparse.urlparse(endpoint_url)
     host = (parsed.hostname or "").strip().lower()
@@ -12422,7 +12450,7 @@ def ensure_stackyard_up(
 
 
 def discover_cli_operations(aws_bin: str, cli_service: str, env: dict[str, str]) -> list[str]:
-    cp = run_subprocess([aws_bin, "--no-cli-pager", cli_service, "help"], env)
+    cp = run_subprocess([*aws_cli_base_cmd(aws_bin, env), cli_service, "help"], env)
     if cp.returncode != 0:
         raise RuntimeError((cp.stderr or cp.stdout).strip() or f"failed to inspect service '{cli_service}'")
 
@@ -12496,6 +12524,15 @@ def force_common_fields(payload):
     return payload
 
 
+def is_cli_operation_unavailable_error(text: str) -> bool:
+    lowered = text.lower()
+    if "invalid choice" in lowered:
+        return True
+    if "unknown operation" in lowered:
+        return True
+    return False
+
+
 def generate_cli_input_payload(
     aws_bin: str,
     endpoint: Endpoint,
@@ -12552,8 +12589,7 @@ def generate_cli_input_payload(
         }, None
 
     cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         endpoint.cli_service,
         endpoint.cli_operation,
         "--generate-cli-skeleton",
@@ -12563,7 +12599,7 @@ def generate_cli_input_payload(
     combined = f"{cp.stdout}\n{cp.stderr}".strip()
     if cp.returncode != 0:
         text = combined
-        if "Invalid choice" in text or "Unknown options" in text:
+        if is_cli_operation_unavailable_error(text) or "unknown options" in text.lower():
             return None, "unavailable_in_cli"
         return None, f"skeleton_error: {text}"
 
@@ -16209,8 +16245,7 @@ def run_aws_json(
     extra_args: Sequence[str] | None = None,
 ) -> dict | None:
     cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         "--output",
         "json",
         "--region",
@@ -33519,7 +33554,7 @@ def hydrate_payload_with_service_state(
         identity_policy_name = str(state.get("identity_policy_name") or SES_DEFAULT_IDENTITY_POLICY_NAME)
         identity_policy_document = str(state.get("identity_policy_document") or SES_DEFAULT_IDENTITY_POLICY_DOCUMENT)
         mail_from_domain = str(state.get("mail_from_domain") or SES_DEFAULT_MAIL_FROM_DOMAIN)
-        sns_topic_arn = str(state.get("sns_topic_arn") or SES_DEFAULT_SNS_TOPIC_ARN)
+        ses_sns_topic_arn = str(state.get("sns_topic_arn") or SES_DEFAULT_SNS_TOPIC_ARN)
         original_message_id = str(state.get("original_message_id") or SES_DEFAULT_ORIGINAL_MESSAGE_ID)
 
         set_key_if_present_case_insensitive(hydrated, "NextToken", "")
@@ -33560,7 +33595,7 @@ def hydrate_payload_with_service_state(
                         "Name": event_destination_name,
                         "Enabled": True,
                         "MatchingEventTypes": ["send"],
-                        "SNSDestination": {"TopicARN": sns_topic_arn},
+                        "SNSDestination": {"TopicARN": ses_sns_topic_arn},
                     },
                 }
             )
@@ -33815,7 +33850,7 @@ def hydrate_payload_with_service_state(
                         "Name": destination_name,
                         "Enabled": True,
                         "MatchingEventTypes": ["send"],
-                        "SNSDestination": {"TopicARN": sns_topic_arn},
+                        "SNSDestination": {"TopicARN": ses_sns_topic_arn},
                     },
                 }
             )
@@ -33923,7 +33958,7 @@ def hydrate_payload_with_service_state(
 
         if op == "SetIdentityNotificationTopic":
             ses_ensure_domain_identity(aws_bin, endpoint_url, region, env)
-            _replace_payload({"Identity": domain_identity, "NotificationType": "Bounce", "SnsTopic": sns_topic_arn})
+            _replace_payload({"Identity": domain_identity, "NotificationType": "Bounce", "SnsTopic": ses_sns_topic_arn})
             return hydrated
 
         if op == "SetReceiptRulePosition":
@@ -35225,7 +35260,7 @@ def hydrate_payload_with_service_state(
         resource_arn = str(state["resource_arn"])
         node_type = str(state["node_type"])
         role_arn = str(state["iam_role_arn"])
-        sns_topic_arn = str(state["sns_topic_arn"])
+        redshift_sns_topic_arn = str(state["sns_topic_arn"])
         db_name = str(state["db_name"])
         master_username = str(state["master_username"])
         master_password = str(state["master_password"])
@@ -35308,7 +35343,7 @@ def hydrate_payload_with_service_state(
             _replace_payload(
                 {
                     "SubscriptionName": event_subscription_name,
-                    "SnsTopicArn": sns_topic_arn,
+                    "SnsTopicArn": redshift_sns_topic_arn,
                     "SourceType": "cluster",
                     "SourceIds": [cluster_identifier],
                     "Severity": "INFO",
@@ -45751,6 +45786,7 @@ def try_repair_payload_for_validation(payload, validation_text: str) -> bool:
 
 def classify_failure(text: str) -> tuple[str, str]:
     content = text.strip()
+    lowered = content.lower()
     not_impl = extract_not_implemented_marker(content)
     if not_impl:
         return "not_implemented", not_impl
@@ -45762,15 +45798,21 @@ def classify_failure(text: str) -> tuple[str, str]:
             return "not_implemented", code
         return "service_error", code
 
-    if "Could not connect to the endpoint URL" in content or "Connection refused" in content:
+    if (
+        "could not connect to the endpoint url" in lowered
+        or "connect timeout on endpoint url" in lowered
+        or "connection timed out" in lowered
+        or "connection refused" in lowered
+        or "the operation was canceled" in lowered
+    ):
         return "transport_error", "connection"
-    if "Invalid choice" in content and "argument operation" in content:
+    if is_cli_operation_unavailable_error(content):
         return "unavailable_in_cli", "invalid choice"
-    if "Parameter validation failed" in content:
+    if "parameter validation failed" in lowered:
         return "client_error", "parameter validation"
-    if "Unknown options" in content or "usage: aws" in content or "aws: error:" in content:
+    if "unknown options" in lowered or "usage: aws" in lowered or "aws: error:" in lowered:
         return "client_error", "aws cli usage"
-    if "Unable to locate credentials" in content or "InvalidClientTokenId" in content:
+    if "unable to locate credentials" in lowered or "invalidclienttokenid" in lowered:
         return "auth_error", "credentials"
 
     return "unknown_error", content.splitlines()[-1] if content else "unknown"
@@ -46467,8 +46509,7 @@ def run_endpoint(
         with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-lambda-invoke-", suffix=".out", delete=False) as tmp:
             out_path = tmp.name
         cmd = [
-            aws_bin,
-            "--no-cli-pager",
+            *aws_cli_base_cmd(aws_bin, env),
             "--output",
             "json",
             "--region",
@@ -46554,8 +46595,7 @@ def run_endpoint(
     if endpoint.service == "rds" and endpoint.operation == "GenerateDbAuthToken":
         hostname = f"stackyard.cluster-abcdefgh.{region}.rds.amazonaws.com"
         cmd = [
-            aws_bin,
-            "--no-cli-pager",
+            *aws_cli_base_cmd(aws_bin, env),
             "--region",
             region,
             "--endpoint-url",
@@ -46621,6 +46661,12 @@ def run_endpoint(
         "DescribeServiceDeployments",
         "DescribeServiceRevisions",
         "ListAttributes",
+        "ListServiceDeploymentsByCreatedAt",
+        "ListServiceDeploymentsByServiceRevision",
+        "ListServicesByLaunchType",
+        "StartTelemetrySession",
+        "SubmitTaskStateChangeByAgent",
+        "SubmitTaskStateChangeByManagedAgents",
     }:
         # These ECS operations currently require request shapes that diverge from the local awscli model.
         input_err = "unavailable_in_cli"
@@ -47520,8 +47566,7 @@ def run_endpoint(
     if endpoint.service == "s3control" and endpoint.operation not in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS:
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
     base_cmd = [
-        aws_bin,
-        "--no-cli-pager",
+        *aws_cli_base_cmd(aws_bin, env),
         "--output",
         "json",
         "--region",
@@ -47715,8 +47760,7 @@ def run_endpoint(
         retry_status, retry_detail = classify_failure(text)
         if retry_status == "transport_error" or (retry_status == "service_error" and retry_detail == "SignatureDoesNotMatch"):
             retry_base_cmd = [
-                aws_bin,
-                "--no-cli-pager",
+                *aws_cli_base_cmd(aws_bin, env),
                 "--output",
                 "json",
                 "--region",

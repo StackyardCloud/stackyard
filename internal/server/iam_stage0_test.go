@@ -104,3 +104,90 @@ func TestIAMStage0AllCatalogActionsDoNotReturnNotImplemented(t *testing.T) {
 		}
 	}
 }
+
+func TestIAMUserGroupPolicyLifecycle(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	resp := iamRequest(t, ts, "CreateUser", url.Values{
+		"UserName": []string{"stage1-user"},
+		"Path":     []string{"/engineering/"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	if body := string(mustBody(t, resp)); !strings.Contains(body, "stage1-user") {
+		t.Fatalf("expected CreateUser response to include stage1-user, got %s", body)
+	}
+
+	resp = iamRequest(t, ts, "CreateGroup", url.Values{
+		"GroupName": []string{"stage1-group"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = iamRequest(t, ts, "AddUserToGroup", url.Values{
+		"UserName":  []string{"stage1-user"},
+		"GroupName": []string{"stage1-group"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = iamRequest(t, ts, "ListGroupsForUser", url.Values{
+		"UserName": []string{"stage1-user"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	if body := string(mustBody(t, resp)); !strings.Contains(body, "stage1-group") {
+		t.Fatalf("expected ListGroupsForUser response to include stage1-group, got %s", body)
+	}
+
+	resp = iamRequest(t, ts, "CreatePolicy", url.Values{
+		"PolicyName":     []string{"stage1-policy"},
+		"PolicyDocument": []string{`{"Version":"2012-10-17","Statement":[]}`},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	policyARN := "arn:aws:iam::123456789012:policy/stage1-policy"
+
+	resp = iamRequest(t, ts, "AttachUserPolicy", url.Values{
+		"UserName":  []string{"stage1-user"},
+		"PolicyArn": []string{policyARN},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = iamRequest(t, ts, "ListAttachedUserPolicies", url.Values{
+		"UserName": []string{"stage1-user"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	if body := string(mustBody(t, resp)); !strings.Contains(body, "stage1-policy") {
+		t.Fatalf("expected ListAttachedUserPolicies response to include stage1-policy, got %s", body)
+	}
+
+	resp = iamRequest(t, ts, "DetachUserPolicy", url.Values{
+		"UserName":  []string{"stage1-user"},
+		"PolicyArn": []string{policyARN},
+	})
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = iamRequest(t, ts, "ListAttachedUserPolicies", url.Values{
+		"UserName": []string{"stage1-user"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	if body := string(mustBody(t, resp)); strings.Contains(body, "stage1-policy") {
+		t.Fatalf("expected detached policy to be absent, got %s", body)
+	}
+
+	resp = iamRequest(t, ts, "RemoveUserFromGroup", url.Values{
+		"UserName":  []string{"stage1-user"},
+		"GroupName": []string{"stage1-group"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	resp = iamRequest(t, ts, "DeleteGroup", url.Values{
+		"GroupName": []string{"stage1-group"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	resp = iamRequest(t, ts, "DeletePolicy", url.Values{
+		"PolicyArn": []string{policyARN},
+	})
+	assertStatus(t, resp, http.StatusOK)
+	resp = iamRequest(t, ts, "DeleteUser", url.Values{
+		"UserName": []string{"stage1-user"},
+	})
+	assertStatus(t, resp, http.StatusOK)
+}
