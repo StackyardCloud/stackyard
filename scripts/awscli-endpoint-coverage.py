@@ -12524,6 +12524,15 @@ def force_common_fields(payload):
     return payload
 
 
+def is_cli_operation_unavailable_error(text: str) -> bool:
+    lowered = text.lower()
+    if "invalid choice" in lowered:
+        return True
+    if "unknown operation" in lowered:
+        return True
+    return False
+
+
 def generate_cli_input_payload(
     aws_bin: str,
     endpoint: Endpoint,
@@ -12590,7 +12599,7 @@ def generate_cli_input_payload(
     combined = f"{cp.stdout}\n{cp.stderr}".strip()
     if cp.returncode != 0:
         text = combined
-        if "Invalid choice" in text or "Unknown options" in text:
+        if is_cli_operation_unavailable_error(text) or "unknown options" in text.lower():
             return None, "unavailable_in_cli"
         return None, f"skeleton_error: {text}"
 
@@ -45777,6 +45786,7 @@ def try_repair_payload_for_validation(payload, validation_text: str) -> bool:
 
 def classify_failure(text: str) -> tuple[str, str]:
     content = text.strip()
+    lowered = content.lower()
     not_impl = extract_not_implemented_marker(content)
     if not_impl:
         return "not_implemented", not_impl
@@ -45788,15 +45798,21 @@ def classify_failure(text: str) -> tuple[str, str]:
             return "not_implemented", code
         return "service_error", code
 
-    if "Could not connect to the endpoint URL" in content or "Connection refused" in content:
+    if (
+        "could not connect to the endpoint url" in lowered
+        or "connect timeout on endpoint url" in lowered
+        or "connection timed out" in lowered
+        or "connection refused" in lowered
+        or "the operation was canceled" in lowered
+    ):
         return "transport_error", "connection"
-    if "Invalid choice" in content and "argument operation" in content:
+    if is_cli_operation_unavailable_error(content):
         return "unavailable_in_cli", "invalid choice"
-    if "Parameter validation failed" in content:
+    if "parameter validation failed" in lowered:
         return "client_error", "parameter validation"
-    if "Unknown options" in content or "usage: aws" in content or "aws: error:" in content:
+    if "unknown options" in lowered or "usage: aws" in lowered or "aws: error:" in lowered:
         return "client_error", "aws cli usage"
-    if "Unable to locate credentials" in content or "InvalidClientTokenId" in content:
+    if "unable to locate credentials" in lowered or "invalidclienttokenid" in lowered:
         return "auth_error", "credentials"
 
     return "unknown_error", content.splitlines()[-1] if content else "unknown"
@@ -46645,6 +46661,12 @@ def run_endpoint(
         "DescribeServiceDeployments",
         "DescribeServiceRevisions",
         "ListAttributes",
+        "ListServiceDeploymentsByCreatedAt",
+        "ListServiceDeploymentsByServiceRevision",
+        "ListServicesByLaunchType",
+        "StartTelemetrySession",
+        "SubmitTaskStateChangeByAgent",
+        "SubmitTaskStateChangeByManagedAgents",
     }:
         # These ECS operations currently require request shapes that diverge from the local awscli model.
         input_err = "unavailable_in_cli"
