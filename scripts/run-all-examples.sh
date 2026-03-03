@@ -69,26 +69,7 @@ else
     service_dirs+=("$service_dir")
   done < <(find "$EXAMPLES_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
 
-  preferred_variant="${EXAMPLE_VARIANT:-advanced}"
   for service_dir in "${service_dirs[@]}"; do
-    service_name="$(basename "$service_dir")"
-    preferred_compose="$service_dir/$service_name-$preferred_variant/docker-compose.yml"
-    if [ -f "$preferred_compose" ]; then
-      compose_files+=("$preferred_compose")
-      continue
-    fi
-
-    if [ "$preferred_variant" = "advanced" ]; then
-      fallback_variant="basic"
-    else
-      fallback_variant="advanced"
-    fi
-    fallback_compose="$service_dir/$service_name-$fallback_variant/docker-compose.yml"
-    if [ -f "$fallback_compose" ]; then
-      compose_files+=("$fallback_compose")
-      continue
-    fi
-
     first_compose=""
     while IFS= read -r compose_file; do
       first_compose="$compose_file"

@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  sesv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/sesv2/sesv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_SOURCE_EMAIL=sender@example.com
+      - STACKYARD_DEST_EMAIL=recipient@example.com
+      - STACKYARD_DOMAIN=example.com
+      - STACKYARD_CONFIG_SET=demo-config
+      - STACKYARD_TEMPLATE=welcome-template
+      - STACKYARD_CONTACT_LIST=audience

@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  ecr:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/ecr/ecr/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_REPOSITORY_NAME=ecr-repo
+      - STACKYARD_CACHE_PREFIX=ecr-cache
+      - STACKYARD_TEMPLATE_PREFIX=ecr-template

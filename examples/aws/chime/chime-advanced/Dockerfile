@@ -1,5 +1,0 @@
-FROM golang:1.23-alpine
-WORKDIR /app
-COPY . .
-RUN go build -o /chime-advanced ./examples/aws/chime/chime-advanced
-ENTRYPOINT ["/chime-advanced"]

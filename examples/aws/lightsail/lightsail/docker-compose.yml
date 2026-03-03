@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  lightsail:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/lightsail/lightsail/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AVAILABILITY_ZONE=us-east-1a
+      - STACKYARD_INSTANCE_NAME=lightsail-instance
+      - STACKYARD_SNAPSHOT_NAME=lightsail-snapshot
+      - STACKYARD_STATIC_IP_NAME=lightsail-ip

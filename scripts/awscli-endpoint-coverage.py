@@ -1322,7 +1322,7 @@ SERVICE_ALIASES = {
     "awswafv2": "wafv2",
     "amazonwafv2": "wafv2",
     "shieldadvanced": "shieldadvanced",
-    "shield-advanced": "shieldadvanced",
+    "shield": "shieldadvanced",
     "shield advanced": "shieldadvanced",
     "shield": "shieldadvanced",
     "awsshieldadvanced": "shieldadvanced",

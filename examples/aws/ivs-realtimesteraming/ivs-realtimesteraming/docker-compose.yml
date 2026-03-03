@@ -1,0 +1,19 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  ivs-realtimesteraming:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/ivs-realtimesteraming/ivs-realtimesteraming/Dockerfile
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+    depends_on:
+      - stackyard

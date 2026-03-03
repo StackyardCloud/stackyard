@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  arc-zonal-shift:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/arc-zonal-shift/arc-zonal-shift/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_ARC_ZONAL_RESOURCE_IDENTIFIER=arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/stackyard/50dc6c495c0c9188

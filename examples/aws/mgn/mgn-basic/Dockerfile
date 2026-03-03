@@ -1,5 +1,0 @@
-FROM golang:1.23-alpine
-WORKDIR /app
-COPY . .
-RUN go build -o /mgn-basic ./examples/aws/mgn/mgn-basic
-ENTRYPOINT ["/mgn-basic"]

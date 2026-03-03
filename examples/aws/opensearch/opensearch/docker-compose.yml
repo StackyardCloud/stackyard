@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  opensearch:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/opensearch/opensearch/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_DOMAIN_NAME=opensearch-domain
+      - STACKYARD_DOMAIN_ARN=arn:aws:es:us-east-1:123456789012:domain/opensearch-domain
