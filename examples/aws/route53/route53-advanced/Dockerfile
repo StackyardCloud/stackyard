@@ -1,0 +1,5 @@
+FROM golang:1.23-alpine
+WORKDIR /app
+COPY . .
+RUN go build -o /route53-advanced ./examples/aws/route53/route53-advanced
+ENTRYPOINT ["/route53-advanced"]

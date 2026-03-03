@@ -33,10 +33,11 @@ For the most up-to-date catalog and operation/type coverage, use:
 
 - Server entrypoint: `cmd/stackyard`
 - Service handlers/stores/tests: `internal/server`
-- Runnable examples (basic + advanced): `examples/`
+- Runnable examples (basic + advanced): `examples/aws/`
 - Endpoint coverage tooling: `scripts/awscli-endpoint-coverage.py`
 - Generated docs site: `docs/index.html`
 - Multi-cloud foundation notes: `docs/multi-cloud-foundation.md`
+- GCP Generative Language staged plan: `docs/gcp-generativelanguage-apiv1-plan.md`
 - Reference architecture examples: `reference-architecture/`
 
 ## Quickstart
@@ -88,6 +89,10 @@ Foundational object storage routes for non-AWS providers:
 - `gcp`: JSON API bucket/object create, list, and get via `/gcp/storage/v1/*` and `/gcp/upload/storage/v1/*`
 - `azure`: Blob container/blob create, list, get, and head via `/azure/{account}/*`
 - `oci`: Object Storage namespace, bucket, and object lifecycle via `/oci/n/*`
+
+Planned non-AWS expansion:
+
+- `gcp generativelanguage/apiv1`: staged implementation for model discovery and generative RPCs (`docs/gcp-generativelanguage-apiv1-plan.md`)
 
 SDK endpoint override base URLs:
 
@@ -144,7 +149,12 @@ Each service typically includes:
 - `*-basic`: minimal happy-path usage
 - `*-advanced`: broader lifecycle/workflow coverage
 
-See `examples/` for service-specific Dockerfiles and compose files.
+See `examples/aws/` and `examples/gcp/` for service-specific Dockerfiles and compose files.
+
+New GCP Generative Language example scaffolds:
+
+- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1-basic`
+- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1-advanced`
 
 ## Testing and Compatibility
 

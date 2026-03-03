@@ -855,6 +855,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if !s.validateProviderRequestAuth(w, r, providerGCP) {
 			return
 		}
+		if s.handleGCPGenerativeLanguageRouter(w, r) {
+			return
+		}
 		if s.handleGCPObjectStorageRouter(w, r) {
 			return
 		}
