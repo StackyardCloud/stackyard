@@ -1,0 +1,20 @@
+name: Docker Runs (GCP)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  examples-docker-gcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run GCP examples docker suite
+        run: make examples-docker-gcp

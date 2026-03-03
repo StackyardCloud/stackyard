@@ -1,0 +1,25 @@
+name: Docker Runs (OCI)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  examples-docker-oci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run OCI examples docker suite
+        run: |
+          if [ -d examples/oci ]; then
+            make examples-docker-oci
+          else
+            echo "No OCI examples found under examples/oci; skipping."
+          fi

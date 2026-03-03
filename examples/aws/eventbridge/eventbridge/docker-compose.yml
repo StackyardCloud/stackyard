@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  eventbridge:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/eventbridge/eventbridge/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_EVENT_BUS=demo-eventbridge
+      - STACKYARD_RULE=demo-rule
+      - STACKYARD_TARGET_ARN=arn:aws:lambda:us-east-1:123456789012:function:demo

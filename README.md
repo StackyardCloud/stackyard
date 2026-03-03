@@ -33,10 +33,11 @@ For the most up-to-date catalog and operation/type coverage, use:
 
 - Server entrypoint: `cmd/stackyard`
 - Service handlers/stores/tests: `internal/server`
-- Runnable examples (basic + advanced): `examples/`
+- Runnable examples: `examples/aws/`
 - Endpoint coverage tooling: `scripts/awscli-endpoint-coverage.py`
 - Generated docs site: `docs/index.html`
 - Multi-cloud foundation notes: `docs/multi-cloud-foundation.md`
+- GCP Generative Language staged plan: `docs/gcp-generativelanguage-apiv1-plan.md`
 - Reference architecture examples: `reference-architecture/`
 
 ## Quickstart
@@ -89,6 +90,10 @@ Foundational object storage routes for non-AWS providers:
 - `azure`: Blob container/blob create, list, get, and head via `/azure/{account}/*`
 - `oci`: Object Storage namespace, bucket, and object lifecycle via `/oci/n/*`
 
+Planned non-AWS expansion:
+
+- `gcp generativelanguage/apiv1`: staged implementation for model discovery and generative RPCs (`docs/gcp-generativelanguage-apiv1-plan.md`)
+
 SDK endpoint override base URLs:
 
 - GCP Cloud Storage SDK: `http://localhost:4566/gcp`
@@ -134,17 +139,19 @@ make ci
 
 Additional automation:
 
-- Run all Docker examples: `make examples-docker`
+- Run all provider Docker examples (`aws`, `gcp`, `azure`, `oci`): `make examples-docker`
+- Run one provider only: `make examples-docker-aws` (also `-gcp`, `-azure`, `-oci`)
 - Run endpoint coverage: `make coverage-all`
 
 ## Examples
 
-Each service typically includes:
+Each service typically includes one runnable compose example.
 
-- `*-basic`: minimal happy-path usage
-- `*-advanced`: broader lifecycle/workflow coverage
+See `examples/aws/` and `examples/gcp/` for service-specific Dockerfiles and compose files.
 
-See `examples/` for service-specific Dockerfiles and compose files.
+GCP Generative Language example scaffold:
+
+- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1`
 
 ## Testing and Compatibility
 
@@ -184,7 +191,7 @@ Typical pattern for adding or expanding emulation:
 2. Add protocol-aware candidate/router parsing
 3. Add in-memory store behavior by stage
 4. Add stage tests
-5. Add basic/advanced examples
+5. Add or update example compose
 6. Add service entry to coverage script
 7. Update docs index
 

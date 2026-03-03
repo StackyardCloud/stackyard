@@ -4,6 +4,25 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+PROVIDER_NAME="$(printf '%s' "${PROVIDER:-aws}" | tr '[:upper:]' '[:lower:]')"
+EXAMPLES_ROOT="examples/${PROVIDER_NAME}"
+
+if [ ! -d "$EXAMPLES_ROOT" ]; then
+  if [ "${ALLOW_MISSING_PROVIDER_DIR:-0}" = "1" ]; then
+    echo "Skipping provider '${PROVIDER_NAME}': examples directory not found at ${EXAMPLES_ROOT}"
+    exit 0
+  fi
+  echo "Provider examples directory not found: ${EXAMPLES_ROOT}"
+  available_providers=()
+  while IFS= read -r provider_dir; do
+    available_providers+=("$(basename "$provider_dir")")
+  done < <(find examples -mindepth 1 -maxdepth 1 -type d | sort)
+  if [ "${#available_providers[@]}" -gt 0 ]; then
+    echo "Available providers: ${available_providers[*]}"
+  fi
+  exit 1
+fi
+
 wait_for_stackyard_ready() {
   local attempts=90
   local delay=1
@@ -43,33 +62,14 @@ if [ -n "${EXAMPLE_COMPOSE:-}" ]; then
 elif [ "${RUN_ALL_EXAMPLES:-0}" = "1" ]; then
   while IFS= read -r compose_file; do
     compose_files+=("$compose_file")
-  done < <(find examples -mindepth 2 -maxdepth 3 -type f -name 'docker-compose.yml' | sort)
+  done < <(find "$EXAMPLES_ROOT" -mindepth 2 -maxdepth 3 -type f -name 'docker-compose.yml' | sort)
 else
   service_dirs=()
   while IFS= read -r service_dir; do
     service_dirs+=("$service_dir")
-  done < <(find examples -mindepth 1 -maxdepth 1 -type d | sort)
+  done < <(find "$EXAMPLES_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
 
-  preferred_variant="${EXAMPLE_VARIANT:-advanced}"
   for service_dir in "${service_dirs[@]}"; do
-    service_name="$(basename "$service_dir")"
-    preferred_compose="$service_dir/$service_name-$preferred_variant/docker-compose.yml"
-    if [ -f "$preferred_compose" ]; then
-      compose_files+=("$preferred_compose")
-      continue
-    fi
-
-    if [ "$preferred_variant" = "advanced" ]; then
-      fallback_variant="basic"
-    else
-      fallback_variant="advanced"
-    fi
-    fallback_compose="$service_dir/$service_name-$fallback_variant/docker-compose.yml"
-    if [ -f "$fallback_compose" ]; then
-      compose_files+=("$fallback_compose")
-      continue
-    fi
-
     first_compose=""
     while IFS= read -r compose_file; do
       first_compose="$compose_file"
@@ -83,7 +83,7 @@ else
 fi
 
 if [ "${#compose_files[@]}" -eq 0 ]; then
-  echo "No example docker-compose files found under examples/*/*/docker-compose.yml"
+  echo "No example docker-compose files found under ${EXAMPLES_ROOT}/*/*/docker-compose.yml"
   exit 0
 fi
 

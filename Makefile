@@ -1,7 +1,8 @@
-.PHONY: fmt tidy test ci install examples-docker coverage-all coverage-all-strict provider-contracts up down restart
+.PHONY: fmt tidy test ci install examples-docker examples-docker-provider examples-docker-aws examples-docker-gcp examples-docker-azure examples-docker-oci coverage-all coverage-all-strict provider-contracts up down restart
 
 BUILD ?= 0
 VOLUMES ?= 0
+PROVIDER ?= aws
 COVERAGE_FAIL_ON ?= not_implemented,service_error,client_error,contract_error,transport_error,skeleton_error,unknown_error,auth_error
 
 fmt:
@@ -79,10 +80,33 @@ install:
 
 examples-docker:
 ifeq ($(OS),Windows_NT)
-	powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-examples.ps1
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop'; $$providers=@('aws','gcp','azure','oci'); foreach($$p in $$providers){ Write-Host ('==> Running provider examples: ' + $$p) -ForegroundColor Cyan; & '$(MAKE)' examples-docker-provider PROVIDER=$$p ALLOW_MISSING_PROVIDER_DIR=1 }"
 else
-	bash ./scripts/run-all-examples.sh
+	@set -e; \
+	for provider in aws gcp azure oci; do \
+		echo "==> Running provider examples: $$provider"; \
+		$(MAKE) examples-docker-provider PROVIDER=$$provider ALLOW_MISSING_PROVIDER_DIR=1; \
+	done
 endif
+
+examples-docker-provider:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -ExecutionPolicy Bypass -Command "$$env:ALLOW_MISSING_PROVIDER_DIR='$(ALLOW_MISSING_PROVIDER_DIR)'; & '.\scripts\run-all-examples.ps1' -Provider '$(PROVIDER)'"
+else
+	PROVIDER=$(PROVIDER) ALLOW_MISSING_PROVIDER_DIR=$(ALLOW_MISSING_PROVIDER_DIR) bash ./scripts/run-all-examples.sh
+endif
+
+examples-docker-aws:
+	$(MAKE) examples-docker-provider PROVIDER=aws
+
+examples-docker-gcp:
+	$(MAKE) examples-docker-provider PROVIDER=gcp
+
+examples-docker-azure:
+	$(MAKE) examples-docker-provider PROVIDER=azure
+
+examples-docker-oci:
+	$(MAKE) examples-docker-provider PROVIDER=oci
 
 coverage-all:
 ifeq ($(OS),Windows_NT)

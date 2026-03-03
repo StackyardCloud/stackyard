@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  privateca:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/privateca/privateca/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_CA_ARN=arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/stackyard
+      - STACKYARD_CERT_ARN=arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/stackyard/certificate/0000000001

@@ -1,7 +1,25 @@
+param(
+  [string]$Provider = $env:PROVIDER
+)
+
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
+if ([string]::IsNullOrWhiteSpace($Provider)) {
+  $Provider = 'aws'
+}
+$Provider = $Provider.ToLowerInvariant()
+$examplesRoot = Join-Path $repoRoot (Join-Path 'examples' $Provider)
+if (-not (Test-Path $examplesRoot -PathType Container)) {
+  if ($env:ALLOW_MISSING_PROVIDER_DIR -eq '1') {
+    Write-Host "Skipping provider '$Provider': examples directory not found at $examplesRoot"
+    exit 0
+  }
+  $availableProviders = @(Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+  $availableText = if ($availableProviders.Count -gt 0) { $availableProviders -join ', ' } else { '(none found)' }
+  throw "Provider examples directory not found: $examplesRoot`nAvailable providers: $availableText"
+}
 
 function Wait-StackyardReady {
   param(
@@ -44,30 +62,11 @@ if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
   }
   $composeFiles = @(Get-Item $singleCompose)
 } elseif ($env:RUN_ALL_EXAMPLES -eq '1') {
-  $composeFiles = Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Filter 'docker-compose.yml' -Recurse -File |
-    Where-Object { $_.FullName -match [regex]::Escape((Join-Path 'examples' '')) + '.+[\\/].+[\\/]docker-compose\.yml$' } |
+  $composeFiles = Get-ChildItem -Path $examplesRoot -Filter 'docker-compose.yml' -Recurse -File |
     Sort-Object FullName
 } else {
-  $serviceDirs = Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Directory | Sort-Object FullName
-  $preferredVariant = $env:EXAMPLE_VARIANT
-  if ([string]::IsNullOrWhiteSpace($preferredVariant)) {
-    $preferredVariant = 'advanced'
-  }
+  $serviceDirs = Get-ChildItem -Path $examplesRoot -Directory | Sort-Object FullName
   foreach ($serviceDir in $serviceDirs) {
-    $serviceName = $serviceDir.Name
-    $preferredCompose = Join-Path $serviceDir.FullName (Join-Path "$serviceName-$preferredVariant" 'docker-compose.yml')
-    if (Test-Path $preferredCompose) {
-      $composeFiles += Get-Item $preferredCompose
-      continue
-    }
-
-    $fallbackVariant = if ($preferredVariant -ieq 'advanced') { 'basic' } else { 'advanced' }
-    $fallbackCompose = Join-Path $serviceDir.FullName (Join-Path "$serviceName-$fallbackVariant" 'docker-compose.yml')
-    if (Test-Path $fallbackCompose) {
-      $composeFiles += Get-Item $fallbackCompose
-      continue
-    }
-
     $firstCompose = Get-ChildItem -Path $serviceDir.FullName -Filter 'docker-compose.yml' -Recurse -File |
       Sort-Object FullName |
       Select-Object -First 1
@@ -78,7 +77,7 @@ if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
 }
 
 if (-not $composeFiles -or $composeFiles.Count -eq 0) {
-  Write-Host 'No example docker-compose files found under examples/*/*/docker-compose.yml'
+  Write-Host "No example docker-compose files found under $examplesRoot/*/*/docker-compose.yml"
   exit 0
 }
 
