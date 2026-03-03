@@ -1,8 +1,25 @@
+param(
+  [string]$Provider = $env:PROVIDER
+)
+
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
-$examplesRoot = Join-Path $repoRoot 'examples/aws'
+if ([string]::IsNullOrWhiteSpace($Provider)) {
+  $Provider = 'aws'
+}
+$Provider = $Provider.ToLowerInvariant()
+$examplesRoot = Join-Path $repoRoot (Join-Path 'examples' $Provider)
+if (-not (Test-Path $examplesRoot -PathType Container)) {
+  if ($env:ALLOW_MISSING_PROVIDER_DIR -eq '1') {
+    Write-Host "Skipping provider '$Provider': examples directory not found at $examplesRoot"
+    exit 0
+  }
+  $availableProviders = @(Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Directory | Select-Object -ExpandProperty Name | Sort-Object)
+  $availableText = if ($availableProviders.Count -gt 0) { $availableProviders -join ', ' } else { '(none found)' }
+  throw "Provider examples directory not found: $examplesRoot`nAvailable providers: $availableText"
+}
 
 function Wait-StackyardReady {
   param(

@@ -4,7 +4,24 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-EXAMPLES_ROOT="examples/aws"
+PROVIDER_NAME="$(printf '%s' "${PROVIDER:-aws}" | tr '[:upper:]' '[:lower:]')"
+EXAMPLES_ROOT="examples/${PROVIDER_NAME}"
+
+if [ ! -d "$EXAMPLES_ROOT" ]; then
+  if [ "${ALLOW_MISSING_PROVIDER_DIR:-0}" = "1" ]; then
+    echo "Skipping provider '${PROVIDER_NAME}': examples directory not found at ${EXAMPLES_ROOT}"
+    exit 0
+  fi
+  echo "Provider examples directory not found: ${EXAMPLES_ROOT}"
+  available_providers=()
+  while IFS= read -r provider_dir; do
+    available_providers+=("$(basename "$provider_dir")")
+  done < <(find examples -mindepth 1 -maxdepth 1 -type d | sort)
+  if [ "${#available_providers[@]}" -gt 0 ]; then
+    echo "Available providers: ${available_providers[*]}"
+  fi
+  exit 1
+fi
 
 wait_for_stackyard_ready() {
   local attempts=90

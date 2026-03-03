@@ -139,7 +139,8 @@ make ci
 
 Additional automation:
 
-- Run all Docker examples: `make examples-docker`
+- Run all provider Docker examples (`aws`, `gcp`, `azure`, `oci`): `make examples-docker`
+- Run one provider only: `make examples-docker-aws` (also `-gcp`, `-azure`, `-oci`)
 - Run endpoint coverage: `make coverage-all`
 
 ## Examples
