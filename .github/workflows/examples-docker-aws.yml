@@ -1,4 +1,4 @@
-name: Docker Runs
+name: Docker Runs (AWS)
 
 on:
   push:
@@ -9,12 +9,12 @@ permissions:
   contents: read
 
 jobs:
-  examples-docker:
+  examples-docker-aws:
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run examples docker suite
-        run: make examples-docker
+      - name: Run AWS examples docker suite
+        run: make examples-docker-aws

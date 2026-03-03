@@ -1,0 +1,25 @@
+name: Docker Runs (Azure)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  examples-docker-azure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Azure examples docker suite
+        run: |
+          if [ -d examples/azure ]; then
+            make examples-docker-azure
+          else
+            echo "No Azure examples found under examples/azure; skipping."
+          fi
