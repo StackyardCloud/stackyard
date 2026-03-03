@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+EXAMPLES_ROOT="examples/aws"
+
 wait_for_stackyard_ready() {
   local attempts=90
   local delay=1
@@ -43,12 +45,12 @@ if [ -n "${EXAMPLE_COMPOSE:-}" ]; then
 elif [ "${RUN_ALL_EXAMPLES:-0}" = "1" ]; then
   while IFS= read -r compose_file; do
     compose_files+=("$compose_file")
-  done < <(find examples -mindepth 2 -maxdepth 3 -type f -name 'docker-compose.yml' | sort)
+  done < <(find "$EXAMPLES_ROOT" -mindepth 2 -maxdepth 3 -type f -name 'docker-compose.yml' | sort)
 else
   service_dirs=()
   while IFS= read -r service_dir; do
     service_dirs+=("$service_dir")
-  done < <(find examples -mindepth 1 -maxdepth 1 -type d | sort)
+  done < <(find "$EXAMPLES_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
 
   preferred_variant="${EXAMPLE_VARIANT:-advanced}"
   for service_dir in "${service_dirs[@]}"; do
@@ -83,7 +85,7 @@ else
 fi
 
 if [ "${#compose_files[@]}" -eq 0 ]; then
-  echo "No example docker-compose files found under examples/*/*/docker-compose.yml"
+  echo "No example docker-compose files found under ${EXAMPLES_ROOT}/*/*/docker-compose.yml"
   exit 0
 fi
 

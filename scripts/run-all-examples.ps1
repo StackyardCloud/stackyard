@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
+$examplesRoot = Join-Path $repoRoot 'examples/aws'
 
 function Wait-StackyardReady {
   param(
@@ -44,11 +45,10 @@ if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
   }
   $composeFiles = @(Get-Item $singleCompose)
 } elseif ($env:RUN_ALL_EXAMPLES -eq '1') {
-  $composeFiles = Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Filter 'docker-compose.yml' -Recurse -File |
-    Where-Object { $_.FullName -match [regex]::Escape((Join-Path 'examples' '')) + '.+[\\/].+[\\/]docker-compose\.yml$' } |
+  $composeFiles = Get-ChildItem -Path $examplesRoot -Filter 'docker-compose.yml' -Recurse -File |
     Sort-Object FullName
 } else {
-  $serviceDirs = Get-ChildItem -Path (Join-Path $repoRoot 'examples') -Directory | Sort-Object FullName
+  $serviceDirs = Get-ChildItem -Path $examplesRoot -Directory | Sort-Object FullName
   $preferredVariant = $env:EXAMPLE_VARIANT
   if ([string]::IsNullOrWhiteSpace($preferredVariant)) {
     $preferredVariant = 'advanced'
@@ -78,7 +78,7 @@ if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
 }
 
 if (-not $composeFiles -or $composeFiles.Count -eq 0) {
-  Write-Host 'No example docker-compose files found under examples/*/*/docker-compose.yml'
+  Write-Host "No example docker-compose files found under $examplesRoot/*/*/docker-compose.yml"
   exit 0
 }
 

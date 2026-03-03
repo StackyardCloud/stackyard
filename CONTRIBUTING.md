@@ -51,8 +51,8 @@ Please include:
 
 If your PR adds a **new emulated service**, you are expected to also:
 
-- Add or update `examples/<service>/<service>-basic`
-- Add or update `examples/<service>/<service>-advanced`
+- Add or update `examples/aws/<service>/<service>-basic`
+- Add or update `examples/aws/<service>/<service>-advanced`
 - Add the service to `scripts/awscli-endpoint-coverage.py`
 - Verify no endpoints for that service return `NotImplemented` in advanced example and coverage runs
 

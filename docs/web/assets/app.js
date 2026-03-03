@@ -5,7 +5,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Issue, import, and inspect certificates with AWS-compatible ACM APIs.",
     docsHref: "../../../index.html#acm",
-    exampleHref: "../../../../examples/acm/acm-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/acm/acm-basic/docker-compose.yml"
   },
   {
     id: "apigateway",
@@ -13,7 +13,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for REST APIs, resources, methods, integrations, deployments, stages, usage plans, domain names, and tagging APIs.",
     docsHref: "../../../index.html#apigateway",
-    exampleHref: "../../../../examples/apigateway/apigateway-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/apigateway/apigateway-basic/docker-compose.yml"
   },
   {
     id: "apigatewayv2",
@@ -21,7 +21,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for HTTP/WebSocket APIs, routes, integrations, stages, mappings, portals, and tagging APIs.",
     docsHref: "../../../index.html#apigatewayv2",
-    exampleHref: "../../../../examples/apigatewayv2/apigatewayv2-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/apigatewayv2/apigatewayv2-basic/docker-compose.yml"
   },
   {
     id: "appconfig",
@@ -29,7 +29,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate application, environment, deployment, extension, and hosted-config control plane APIs.",
     docsHref: "../../../index.html#appconfig",
-    exampleHref: "../../../../examples/appconfig/appconfig-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/appconfig/appconfig-basic/docker-compose.yml"
   },
   {
     id: "athena",
@@ -37,7 +37,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Query S3-backed datasets with familiar Athena request flows.",
     docsHref: null,
-    exampleHref: "../../../../examples/athena/athena-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/athena/athena-basic/docker-compose.yml"
   },
   {
     id: "aurora-dsql",
@@ -45,7 +45,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Use Aurora DSQL endpoints for distributed SQL integration testing.",
     docsHref: "../../../index.html#aurora-dsql",
-    exampleHref: "../../../../examples/aurora-dsql/aurora-dsql-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/aurora-dsql/aurora-dsql-basic/docker-compose.yml"
   },
   {
     id: "augmented-ai",
@@ -53,7 +53,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate human loop runtime workflows for start, stop, describe, list, and delete APIs.",
     docsHref: "../../../index.html#augmented-ai",
-    exampleHref: "../../../../examples/augmented-ai/augmented-ai-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/augmented-ai/augmented-ai-basic/docker-compose.yml"
   },
   {
     id: "batch",
@@ -61,7 +61,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Model job queues, job definitions, and execution lifecycles.",
     docsHref: "../../../index.html#batch",
-    exampleHref: "../../../../examples/batch/batch-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/batch/batch-basic/docker-compose.yml"
   },
   {
     id: "bedrock",
@@ -69,7 +69,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate foundation model catalog, guardrails, jobs, and provisioning control-plane APIs.",
     docsHref: "../../../index.html#bedrock",
-    exampleHref: "../../../../examples/bedrock/bedrock-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/bedrock/bedrock-basic/docker-compose.yml"
   },
   {
     id: "cloudcontrolapi",
@@ -77,7 +77,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate Cloud Control resource CRUD, progress tracking, and request status flows.",
     docsHref: "../../../index.html#cloudcontrolapi",
-    exampleHref: "../../../../examples/cloudcontrolapi/cloudcontrolapi-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudcontrolapi/cloudcontrolapi-basic/docker-compose.yml"
   },
   {
     id: "controlcatalog",
@@ -85,7 +85,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for control catalog, domains, objectives, and mapping-discovery APIs.",
     docsHref: "../../../index.html#controlcatalog",
-    exampleHref: "../../../../examples/controlcatalog/controlcatalog-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/controlcatalog/controlcatalog-basic/docker-compose.yml"
   },
   {
     id: "controltower",
@@ -93,7 +93,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for landing zone, baseline, control, operation-history, and tagging APIs.",
     docsHref: "../../../index.html#controltower",
-    exampleHref: "../../../../examples/controltower/controltower-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/controltower/controltower-basic/docker-compose.yml"
   },
   {
     id: "cloudformation",
@@ -101,7 +101,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate stack lifecycle, change sets, stack sets, registry types, and drift workflows.",
     docsHref: "../../../index.html#cloudformation",
-    exampleHref: "../../../../examples/cloudformation/cloudformation-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudformation/cloudformation-basic/docker-compose.yml"
   },
   {
     id: "cloud-map",
@@ -109,7 +109,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for namespace/service lifecycle, instance registration/discovery, operations tracking, and tagging APIs.",
     docsHref: "../../../index.html#cloud-map",
-    exampleHref: "../../../../examples/cloud-map/cloud-map-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloud-map/cloud-map-basic/docker-compose.yml"
   },
   {
     id: "cloudfront",
@@ -117,7 +117,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for distributions, policies, security primitives, invalidations, edge compute, and tagging APIs.",
     docsHref: "../../../index.html#cloudfront",
-    exampleHref: "../../../../examples/cloudfront/cloudfront-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudfront/cloudfront-basic/docker-compose.yml"
   },
   {
     id: "directconnect",
@@ -125,7 +125,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for physical links, LAGs, virtual interfaces, direct-connect gateways, and routing/security workflows.",
     docsHref: "../../../index.html#directconnect",
-    exampleHref: "../../../../examples/directconnect/directconnect-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/directconnect/directconnect-basic/docker-compose.yml"
   },
   {
     id: "config",
@@ -133,7 +133,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for recorder, rule, remediation, conformance, aggregation, and query APIs.",
     docsHref: "../../../index.html#config",
-    exampleHref: "../../../../examples/config/config-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/config/config-basic/docker-compose.yml"
   },
   {
     id: "cloudtrail",
@@ -141,7 +141,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate trail lifecycle, event data stores, channels, import/query, and policy APIs.",
     docsHref: "../../../index.html#cloudtrail",
-    exampleHref: "../../../../examples/cloudtrail/cloudtrail-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudtrail/cloudtrail-basic/docker-compose.yml"
   },
   {
     id: "cloudwatch",
@@ -149,7 +149,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate alarms, metrics, dashboards, anomaly detectors, insight rules, and metric stream APIs.",
     docsHref: "../../../index.html#cloudwatch",
-    exampleHref: "../../../../examples/cloudwatch/cloudwatch-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatch/cloudwatch-basic/docker-compose.yml"
   },
   {
     id: "cloudwatchlogs",
@@ -157,7 +157,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate log groups/streams, log event ingestion/search, query/export lifecycle, delivery, policies, and tagging APIs.",
     docsHref: "../../../index.html#cloudwatchlogs",
-    exampleHref: "../../../../examples/cloudwatchlogs/cloudwatchlogs-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatchlogs/cloudwatchlogs-basic/docker-compose.yml"
   },
   {
     id: "cloudwatchrum",
@@ -165,7 +165,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate app monitor lifecycle, RUM metric definitions, policy, event ingestion, and tagging APIs.",
     docsHref: "../../../index.html#cloudwatchrum",
-    exampleHref: "../../../../examples/cloudwatchrum/cloudwatchrum-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatchrum/cloudwatchrum-basic/docker-compose.yml"
   },
   {
     id: "cloudwatch-observability-admin",
@@ -173,7 +173,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan telemetry pipeline/rule lifecycle, org-level evaluation/centralization workflows, integrations, and tagging APIs.",
     docsHref: "../../../index.html#cloudwatch-observability-admin",
-    exampleHref: "../../../../examples/cloudwatch-observability-admin/cloudwatch-observability-admin-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatch-observability-admin/cloudwatch-observability-admin-basic/docker-compose.yml"
   },
   {
     id: "oam",
@@ -181,7 +181,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate link/sink lifecycle, sink policies, and cross-account observability tagging APIs.",
     docsHref: "../../../index.html#oam",
-    exampleHref: "../../../../examples/oam/oam-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/oam/oam-basic/docker-compose.yml"
   },
   {
     id: "applicationsignals",
@@ -189,7 +189,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate SLO, service graph, grouping, audits, exclusion windows, and tagging APIs.",
     docsHref: "../../../index.html#applicationsignals",
-    exampleHref: "../../../../examples/applicationsignals/applicationsignals-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/applicationsignals/applicationsignals-basic/docker-compose.yml"
   },
   {
     id: "networkflowmonitor",
@@ -197,7 +197,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate monitor/scope lifecycle, top-contributor queries, and tagging APIs.",
     docsHref: "../../../index.html#networkflowmonitor",
-    exampleHref: "../../../../examples/networkflowmonitor/networkflowmonitor-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/networkflowmonitor/networkflowmonitor-basic/docker-compose.yml"
   },
   {
     id: "internet-monitor",
@@ -205,7 +205,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate monitor lifecycle, internet/health events, queries, and tagging APIs.",
     docsHref: "../../../index.html#internet-monitor",
-    exampleHref: "../../../../examples/internet-monitor/internet-monitor-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/internet-monitor/internet-monitor-basic/docker-compose.yml"
   },
   {
     id: "network-synthetic-monitor",
@@ -213,7 +213,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate monitor/probe lifecycle and tagging APIs for Network Synthetic Monitor.",
     docsHref: "../../../index.html#network-synthetic-monitor",
-    exampleHref: "../../../../examples/network-synthetic-monitor/network-synthetic-monitor-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/network-synthetic-monitor/network-synthetic-monitor-basic/docker-compose.yml"
   },
   {
     id: "cloudwatchsynthetics",
@@ -221,7 +221,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate canary lifecycle, dry-run execution, group associations, and tagging APIs.",
     docsHref: "../../../index.html#cloudwatchsynthetics",
-    exampleHref: "../../../../examples/cloudwatchsynthetics/cloudwatchsynthetics-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatchsynthetics/cloudwatchsynthetics-basic/docker-compose.yml"
   },
   {
     id: "cloudwatchapplicationinsights",
@@ -229,7 +229,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Stage application/component/workload lifecycle, problem analysis, and log pattern APIs.",
     docsHref: "../../../index.html#cloudwatchapplicationinsights",
-    exampleHref: "../../../../examples/cloudwatchapplicationinsights/cloudwatchapplicationinsights-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatchapplicationinsights/cloudwatchapplicationinsights-basic/docker-compose.yml"
   },
   {
     id: "cloudwatchinvestigations",
@@ -237,7 +237,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate investigation-group lifecycle, policy, and tagging API workflows.",
     docsHref: "../../../index.html#cloudwatchinvestigations",
-    exampleHref: "../../../../examples/cloudwatchinvestigations/cloudwatchinvestigations-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudwatchinvestigations/cloudwatchinvestigations-basic/docker-compose.yml"
   },
   {
     id: "codeartifact",
@@ -245,7 +245,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate package domain, repository, package-group, and version API workflows.",
     docsHref: "../../../index.html#codeartifact",
-    exampleHref: "../../../../examples/codeartifact/codeartifact-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codeartifact/codeartifact-basic/docker-compose.yml"
   },
   {
     id: "codebuild",
@@ -253,7 +253,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate project, build, report, fleet, sandbox, and webhook API flows.",
     docsHref: "../../../index.html#codebuild",
-    exampleHref: "../../../../examples/codebuild/codebuild-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codebuild/codebuild-basic/docker-compose.yml"
   },
   {
     id: "codecatalyst",
@@ -261,7 +261,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate spaces, projects, repositories, dev environments, workflows, and access tokens.",
     docsHref: "../../../index.html#codecatalyst",
-    exampleHref: "../../../../examples/codecatalyst/codecatalyst-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codecatalyst/codecatalyst-basic/docker-compose.yml"
   },
   {
     id: "connect",
@@ -269,7 +269,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for instance, user, flow, contact, workspace, search, and tagging APIs.",
     docsHref: "../../../index.html#connect",
-    exampleHref: "../../../../examples/connect/connect-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/connect/connect-basic/docker-compose.yml"
   },
   {
     id: "dlm",
@@ -277,7 +277,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for lifecycle policy CRUD, filtering, and tagging APIs.",
     docsHref: "../../../index.html#dlm",
-    exampleHref: "../../../../examples/dlm/dlm-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/dlm/dlm-basic/docker-compose.yml"
   },
   {
     id: "datazone",
@@ -285,7 +285,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for domains, projects, environments, governance, subscriptions, lineage, and tagging APIs.",
     docsHref: "../../../index.html#datazone",
-    exampleHref: "../../../../examples/datazone/datazone-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/datazone/datazone-basic/docker-compose.yml"
   },
   {
     id: "elasticache",
@@ -293,7 +293,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for query actions spanning cluster, replication, serverless, migration, and tagging workflows.",
     docsHref: "../../../index.html#elasticache",
-    exampleHref: "../../../../examples/elasticache/elasticache-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/elasticache/elasticache-basic/docker-compose.yml"
   },
   {
     id: "emr",
@@ -301,7 +301,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for cluster lifecycle, step execution, scaling controls, Studio APIs, and tagging workflows.",
     docsHref: "../../../index.html#emr",
-    exampleHref: "../../../../examples/emr/emr-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/emr/emr-basic/docker-compose.yml"
   },
   {
     id: "emr-on-eks",
@@ -309,7 +309,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for virtual clusters, job runs, managed endpoints, job templates, and tagging APIs.",
     docsHref: "../../../index.html#emr-on-eks",
-    exampleHref: "../../../../examples/emr-on-eks/emr-on-eks-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/emr-on-eks/emr-on-eks-basic/docker-compose.yml"
   },
   {
     id: "emr-serverless",
@@ -317,7 +317,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for application lifecycle, job runs, dashboard access, and tagging APIs.",
     docsHref: "../../../index.html#emr-serverless",
-    exampleHref: "../../../../examples/emr-serverless/emr-serverless-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/emr-serverless/emr-serverless-basic/docker-compose.yml"
   },
   {
     id: "firehose",
@@ -325,7 +325,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for delivery stream lifecycle, ingestion, encryption, destination updates, and tagging APIs.",
     docsHref: "../../../index.html#firehose",
-    exampleHref: "../../../../examples/firehose/firehose-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/firehose/firehose-basic/docker-compose.yml"
   },
   {
     id: "finspace",
@@ -333,7 +333,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for datasets, changesets, data views, users, permission groups, and credentials APIs.",
     docsHref: "../../../index.html#finspace",
-    exampleHref: "../../../../examples/finspace/finspace-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/finspace/finspace-basic/docker-compose.yml"
   },
   {
     id: "finspace-management",
@@ -341,7 +341,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for environments, Kx clusters/databases/dataviews, users, networking, and tagging APIs.",
     docsHref: "../../../index.html#finspace-management",
-    exampleHref: "../../../../examples/finspace-management/finspace-management-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/finspace-management/finspace-management-basic/docker-compose.yml"
   },
   {
     id: "gameliftstreams",
@@ -349,7 +349,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for applications, stream groups, stream sessions, connection/export workflows, and tagging APIs.",
     docsHref: "../../../index.html#gameliftstreams",
-    exampleHref: "../../../../examples/gameliftstreams/gameliftstreams-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/gameliftstreams/gameliftstreams-basic/docker-compose.yml"
   },
   {
     id: "kendra",
@@ -357,7 +357,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for indices, data sources, FAQs, thesauri, document ingestion, query workflows, and tagging APIs.",
     docsHref: "../../../index.html#kendra",
-    exampleHref: "../../../../examples/kendra/kendra-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/kendra/kendra-basic/docker-compose.yml"
   },
   {
     id: "kinesis",
@@ -365,7 +365,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for stream lifecycle, shard scaling, record ingest/read APIs, consumer management, and policy/tagging workflows.",
     docsHref: "../../../index.html#kinesis",
-    exampleHref: "../../../../examples/kinesis/kinesis-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/kinesis/kinesis-basic/docker-compose.yml"
   },
   {
     id: "kinesisvideostreams",
@@ -373,7 +373,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for stream/channel lifecycle, endpoint discovery, edge workflows, retention, and tagging APIs.",
     docsHref: "../../../index.html#kinesis-video-streams",
-    exampleHref: "../../../../examples/kinesisvideostreams/kinesisvideostreams-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/kinesisvideostreams/kinesisvideostreams-basic/docker-compose.yml"
   },
   {
     id: "mq",
@@ -381,7 +381,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for broker lifecycle, engine/instance options, configuration revisions, users, reboot/promote, and tagging APIs.",
     docsHref: "../../../index.html#mq",
-    exampleHref: "../../../../examples/mq/mq-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mq/mq-basic/docker-compose.yml"
   },
   {
     id: "msk",
@@ -389,7 +389,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for MSK API v2 cluster create/list/describe and cluster-operation read/list workflows.",
     docsHref: "../../../index.html#msk",
-    exampleHref: "../../../../examples/msk/msk-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/msk/msk-basic/docker-compose.yml"
   },
   {
     id: "msk-connect",
@@ -397,7 +397,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for connector, custom plugin, worker configuration, operation history, and tagging workflows.",
     docsHref: "../../../index.html#msk-connect",
-    exampleHref: "../../../../examples/msk-connect/msk-connect-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/msk-connect/msk-connect-basic/docker-compose.yml"
   },
   {
     id: "mwaa",
@@ -405,7 +405,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for environment lifecycle, token issuance, Airflow REST proxy, metrics ingestion, and tagging APIs.",
     docsHref: "../../../index.html#mwaa",
-    exampleHref: "../../../../examples/mwaa/mwaa-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mwaa/mwaa-basic/docker-compose.yml"
   },
   {
     id: "mwaa-serverless",
@@ -413,7 +413,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged coverage for workflow lifecycle, run execution/control, task-instance reads, versioning, and tagging APIs.",
     docsHref: "../../../index.html#mwaa-serverless",
-    exampleHref: "../../../../examples/mwaa-serverless/mwaa-serverless-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mwaa-serverless/mwaa-serverless-basic/docker-compose.yml"
   },
   {
     id: "qdeveloper",
@@ -421,7 +421,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate account preferences, chat channel configurations, custom actions, and associations.",
     docsHref: "../../../index.html#qdeveloper",
-    exampleHref: "../../../../examples/qdeveloper/qdeveloper-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/qdeveloper/qdeveloper-basic/docker-compose.yml"
   },
   {
     id: "codeguru",
@@ -429,7 +429,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate repository associations, code reviews, recommendations, metrics, and tagging APIs.",
     docsHref: "../../../index.html#codeguru",
-    exampleHref: "../../../../examples/codeguru/codeguru-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codeguru/codeguru-basic/docker-compose.yml"
   },
   {
     id: "codeguru-profiler",
@@ -437,7 +437,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate profiling group, agent profile ingestion, findings, recommendation, and policy APIs.",
     docsHref: "../../../index.html#codeguru-profiler",
-    exampleHref: "../../../../examples/codeguru-profiler/codeguru-profiler-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codeguru-profiler/codeguru-profiler-basic/docker-compose.yml"
   },
   {
     id: "comprehend",
@@ -445,7 +445,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate text analysis, batch jobs, model endpoints, flywheels, and tagging workflows.",
     docsHref: "../../../index.html#comprehend",
-    exampleHref: "../../../../examples/comprehend/comprehend-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/comprehend/comprehend-basic/docker-compose.yml"
   },
   {
     id: "comprehend-medical",
@@ -453,7 +453,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate clinical text extraction, ontology inference, and async medical analysis job workflows.",
     docsHref: "../../../index.html#comprehend-medical",
-    exampleHref: "../../../../examples/comprehend-medical/comprehend-medical-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/comprehend-medical/comprehend-medical-basic/docker-compose.yml"
   },
   {
     id: "devops-guru",
@@ -461,7 +461,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate insights, anomalies, recommendations, resource collections, and integration configuration APIs.",
     docsHref: "../../../index.html#devops-guru",
-    exampleHref: "../../../../examples/devops-guru/devops-guru-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/devops-guru/devops-guru-basic/docker-compose.yml"
   },
   {
     id: "codepipeline",
@@ -469,7 +469,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Stage and validate pipeline, execution, action type, job, and webhook API flows.",
     docsHref: "../../../index.html#codepipeline",
-    exampleHref: "../../../../examples/codepipeline/codepipeline-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codepipeline/codepipeline-basic/docker-compose.yml"
   },
   {
     id: "organizations",
@@ -477,7 +477,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Stage and validate organization hierarchy, policy, handshake, and delegated-admin control plane APIs.",
     docsHref: "../../../index.html#organizations",
-    exampleHref: "../../../../examples/organizations/organizations-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/organizations/organizations-basic/docker-compose.yml"
   },
   {
     id: "codedeploy",
@@ -485,7 +485,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate deployment applications, groups, targets, and revision workflows.",
     docsHref: "../../../index.html#codedeploy",
-    exampleHref: "../../../../examples/codedeploy/codedeploy-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/codedeploy/codedeploy-basic/docker-compose.yml"
   },
   {
     id: "cloudhsm",
@@ -493,7 +493,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Test cluster, HSM, and backup orchestration flows locally.",
     docsHref: "../../../index.html#cloudhsm",
-    exampleHref: "../../../../examples/cloudhsm/cloudhsm-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cloudhsm/cloudhsm-basic/docker-compose.yml"
   },
   {
     id: "cognito-user-pools",
@@ -501,7 +501,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Plan and validate user pool auth, federation, and identity workflows.",
     docsHref: "../../../index.html#cognito-user-pools",
-    exampleHref: "../../../../examples/cognitouserpools/cognitouserpools-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cognitouserpools/cognitouserpools-basic/docker-compose.yml"
   },
   {
     id: "cognito",
@@ -509,7 +509,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Emulate identity pool, token, credential, role mapping, and tagging workflows.",
     docsHref: "../../../index.html#cognito",
-    exampleHref: "../../../../examples/cognito/cognito-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cognito/cognito-basic/docker-compose.yml"
   },
   {
     id: "cognitosync",
@@ -517,7 +517,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Plan and validate identity-pool dataset sync, subscriptions, and record flows.",
     docsHref: "../../../index.html#cognitosync",
-    exampleHref: "../../../../examples/cognitosync/cognitosync-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/cognitosync/cognitosync-basic/docker-compose.yml"
   },
   {
     id: "dynamodb",
@@ -525,7 +525,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Exercise table, item, and query-style DynamoDB operations.",
     docsHref: "../../../index.html#dynamodb",
-    exampleHref: "../../../../examples/dynamodb/dynamodb-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/dynamodb/dynamodb-basic/docker-compose.yml"
   },
   {
     id: "ebs",
@@ -533,7 +533,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Simulate block storage lifecycle calls used by EC2 workflows.",
     docsHref: null,
-    exampleHref: "../../../../examples/ebs/ebs-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ebs/ebs-basic/docker-compose.yml"
   },
   {
     id: "ec2",
@@ -541,7 +541,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Coverage for instance, networking, and lifecycle operations.",
     docsHref: "../../../index.html#ec2",
-    exampleHref: "../../../../examples/ec2/ec2-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ec2/ec2-basic/docker-compose.yml"
   },
   {
     id: "ec2-autoscaling",
@@ -549,7 +549,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Plan and validate Auto Scaling group, launch configuration, policy, lifecycle, refresh, and traffic source workflows.",
     docsHref: "../../../index.html#ec2-autoscaling",
-    exampleHref: "../../../../examples/ec2-autoscaling/ec2-autoscaling-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ec2-autoscaling/ec2-autoscaling-basic/docker-compose.yml"
   },
   {
     id: "elasticloadbalancing",
@@ -557,7 +557,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Plan staged coverage for load balancers, listeners, rules, target groups, trust stores, and tagging workflows.",
     docsHref: "../../../index.html#elasticloadbalancing",
-    exampleHref: "../../../../examples/elasticloadbalancing/elasticloadbalancing-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/elasticloadbalancing/elasticloadbalancing-basic/docker-compose.yml"
   },
   {
     id: "elasticloadbalancingv2",
@@ -565,7 +565,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Plan staged coverage for Classic ELB load balancers, listeners, health checks, policies, and tags.",
     docsHref: "../../../index.html#elasticloadbalancingv2",
-    exampleHref: "../../../../examples/elasticloadbalancingv2/elasticloadbalancingv2-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/elasticloadbalancingv2/elasticloadbalancingv2-basic/docker-compose.yml"
   },
   {
     id: "aws-autoscaling",
@@ -573,7 +573,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Plan and validate scaling plan lifecycle, resource projections, and forecast datapoint workflows.",
     docsHref: "../../../index.html#aws-autoscaling",
-    exampleHref: "../../../../examples/aws-autoscaling/aws-autoscaling-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/aws-autoscaling/aws-autoscaling-basic/docker-compose.yml"
   },
   {
     id: "compute-optimizer",
@@ -581,7 +581,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Plan and validate enrollment, recommendation, export, and automation API workflows.",
     docsHref: "../../../index.html#compute-optimizer",
-    exampleHref: "../../../../examples/compute-optimizer/compute-optimizer-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/compute-optimizer/compute-optimizer-basic/docker-compose.yml"
   },
   {
     id: "ecr",
@@ -589,7 +589,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Work with repositories, image metadata, and container registry APIs.",
     docsHref: "../../../index.html#ecr",
-    exampleHref: "../../../../examples/ecr/ecr-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ecr/ecr-basic/docker-compose.yml"
   },
   {
     id: "ecs",
@@ -597,7 +597,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Validate cluster, task definition, and service control planes.",
     docsHref: "../../../index.html#ecs",
-    exampleHref: "../../../../examples/ecs/ecs-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ecs/ecs-basic/docker-compose.yml"
   },
   {
     id: "eks",
@@ -605,7 +605,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Run Kubernetes cluster management scenarios in local integration tests.",
     docsHref: "../../../index.html#eks",
-    exampleHref: "../../../../examples/eks/eks-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/eks/eks-basic/docker-compose.yml"
   },
   {
     id: "elasticbeanstalk",
@@ -621,7 +621,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Create rules, buses, and event targets for routing workflows.",
     docsHref: "../../../index.html#eventbridge",
-    exampleHref: "../../../../examples/eventbridge/eventbridge-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/eventbridge/eventbridge-basic/docker-compose.yml"
   },
   {
     id: "iot",
@@ -629,7 +629,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate IoT Core thing, policy, cert, jobs, rules, audit, and fleet management APIs.",
     docsHref: "../../../index.html#iot",
-    exampleHref: "../../../../examples/iot/iot-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iot/iot-basic/docker-compose.yml"
   },
   {
     id: "iot-events",
@@ -637,7 +637,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate detector model, alarm model, input, analysis, and tagging API workflows.",
     docsHref: "../../../index.html#iot-events",
-    exampleHref: "../../../../examples/iotevents/iotevents-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iotevents/iotevents-basic/docker-compose.yml"
   },
   {
     id: "iot-greengrass",
@@ -645,7 +645,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate edge deployment, component, core-device, connectivity, and tagging API workflows.",
     docsHref: "../../../index.html#iot-greengrass",
-    exampleHref: "../../../../examples/iot-greengrass/iot-greengrass-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iot-greengrass/iot-greengrass-basic/docker-compose.yml"
   },
   {
     id: "iot-wireless",
@@ -653,7 +653,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate wireless device, gateway, destination, FUOTA, multicast, and positioning API workflows.",
     docsHref: "../../../index.html#iot-wireless",
-    exampleHref: "../../../../examples/iot-wireless/iot-wireless-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iot-wireless/iot-wireless-basic/docker-compose.yml"
   },
   {
     id: "iot-sitewise",
@@ -661,7 +661,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate industrial asset, model, portal, project, gateway, and time-series API workflows.",
     docsHref: "../../../index.html#iot-sitewise",
-    exampleHref: "../../../../examples/iot-sitewise/iot-sitewise-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iot-sitewise/iot-sitewise-basic/docker-compose.yml"
   },
   {
     id: "iot-twinmaker",
@@ -669,7 +669,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate workspace, entity, component, scene, and sync APIs for digital twin workflows.",
     docsHref: "../../../index.html#iot-twinmaker",
-    exampleHref: "../../../../examples/iot-twinmaker/iot-twinmaker-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/iot-twinmaker/iot-twinmaker-basic/docker-compose.yml"
   },
   {
     id: "keyspaces",
@@ -677,7 +677,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Use Cassandra-compatible control plane calls through AWS APIs.",
     docsHref: "../../../index.html#keyspaces",
-    exampleHref: "../../../../examples/keyspaces/keyspaces-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/keyspaces/keyspaces-basic/docker-compose.yml"
   },
   {
     id: "kms",
@@ -685,7 +685,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Manage keys, aliases, policies, and cryptographic requests.",
     docsHref: "../../../index.html#kms",
-    exampleHref: "../../../../examples/kms/kms-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/kms/kms-basic/docker-compose.yml"
   },
   {
     id: "lambda",
@@ -693,7 +693,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Test function lifecycle plus Invoke in mock or local execution mode with real zip code support.",
     docsHref: "../../../index.html#lambda",
-    exampleHref: "../../../../examples/lambda/lambda-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/lambda/lambda-basic/docker-compose.yml"
   },
   {
     id: "lightsail",
@@ -701,7 +701,7 @@ const SERVICE_CATALOG = [
     category: "compute",
     summary: "Exercise simplified VPS and networking APIs for app environments.",
     docsHref: "../../../index.html#lightsail",
-    exampleHref: "../../../../examples/lightsail/lightsail-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/lightsail/lightsail-basic/docker-compose.yml"
   },
   {
     id: "license-manager",
@@ -709,7 +709,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Emulate license configuration, grant, token, conversion task, asset ruleset, and reporting APIs.",
     docsHref: "../../../index.html#license-manager",
-    exampleHref: "../../../../examples/license-manager/license-manager-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/license-manager/license-manager-basic/docker-compose.yml"
   },
   {
     id: "license-manager-linux-subscriptions",
@@ -717,7 +717,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Emulate Linux subscription providers, inventory discovery, service settings, and resource tagging APIs.",
     docsHref: "../../../index.html#license-manager-linux-subscriptions",
-    exampleHref: "../../../../examples/license-manager-linux-subscriptions/license-manager-linux-subscriptions-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/license-manager-linux-subscriptions/license-manager-linux-subscriptions-basic/docker-compose.yml"
   },
   {
     id: "license-manager-user-subscriptions",
@@ -725,7 +725,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Emulate identity providers, license server endpoints, user associations, product subscriptions, and tagging APIs.",
     docsHref: "../../../index.html#license-manager-user-subscriptions",
-    exampleHref: "../../../../examples/license-manager-user-subscriptions/license-manager-user-subscriptions-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/license-manager-user-subscriptions/license-manager-user-subscriptions-basic/docker-compose.yml"
   },
   {
     id: "neptune",
@@ -733,7 +733,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Run graph database control-plane workflows over Neptune query APIs.",
     docsHref: "../../../index.html#neptune",
-    exampleHref: "../../../../examples/neptune/neptune-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/neptune/neptune-basic/docker-compose.yml"
   },
   {
     id: "omics",
@@ -741,7 +741,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate genomic stores, workflows, runs, import/export jobs, multipart uploads, and sharing APIs.",
     docsHref: "../../../index.html#omics",
-    exampleHref: "../../../../examples/omics/omics-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/omics/omics-basic/docker-compose.yml"
   },
   {
     id: "health",
@@ -749,7 +749,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for account and organization health events, entities, aggregates, and service-access APIs.",
     docsHref: "../../../index.html#health",
-    exampleHref: "../../../../examples/health/health-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/health/health-basic/docker-compose.yml"
   },
   {
     id: "grafana",
@@ -757,7 +757,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate workspace lifecycle, auth/config, service accounts, permissions, licenses, versions, and tagging APIs.",
     docsHref: "../../../index.html#grafana",
-    exampleHref: "../../../../examples/grafana/grafana-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/grafana/grafana-basic/docker-compose.yml"
   },
   {
     id: "prometheus",
@@ -765,7 +765,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for workspaces, rule groups, Alertmanager, scrapers, anomaly detectors, logging, and tagging APIs.",
     docsHref: "../../../index.html#prometheus",
-    exampleHref: "../../../../examples/prometheus/prometheus-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/prometheus/prometheus-basic/docker-compose.yml"
   },
   {
     id: "mpa",
@@ -773,7 +773,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Plan staged emulation for approval teams, sessions, identity sources, policies, resource policies, and tagging APIs.",
     docsHref: "../../../index.html#mpa",
-    exampleHref: "../../../../examples/mpa/mpa-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mpa/mpa-basic/docker-compose.yml"
   },
   {
     id: "proton",
@@ -781,7 +781,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for environments, services, templates, repositories, deployments, sync workflows, and tagging APIs.",
     docsHref: "../../../index.html#proton",
-    exampleHref: "../../../../examples/proton/proton-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/proton/proton-basic/docker-compose.yml"
   },
   {
     id: "healthlake",
@@ -789,7 +789,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate FHIR datastore lifecycle, import/export jobs, and resource tagging APIs.",
     docsHref: "../../../index.html#healthlake",
-    exampleHref: "../../../../examples/healthlake/healthlake-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/healthlake/healthlake-basic/docker-compose.yml"
   },
   {
     id: "healthimaging",
@@ -797,7 +797,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan and validate medical image datastores, DICOM import workflows, image set lifecycle, and tagging APIs.",
     docsHref: "../../../index.html#healthimaging",
-    exampleHref: "../../../../examples/healthimaging/healthimaging-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/healthimaging/healthimaging-basic/docker-compose.yml"
   },
   {
     id: "neptuneanalytics",
@@ -805,7 +805,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Emulate Neptune Analytics graph lifecycle, query, import/export, and tagging APIs (stages 0-6).",
     docsHref: "../../../index.html#neptuneanalytics",
-    exampleHref: "../../../../examples/neptuneanalytics/neptuneanalytics-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/neptuneanalytics/neptuneanalytics-basic/docker-compose.yml"
   },
   {
     id: "neptunedata",
@@ -813,7 +813,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Exercise graph data-plane requests for Gremlin, openCypher, loader, statistics/streams, ML workflows, and fast reset APIs (stages 0-6).",
     docsHref: "../../../index.html#neptunedata",
-    exampleHref: "../../../../examples/neptunedata/neptunedata-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/neptunedata/neptunedata-basic/docker-compose.yml"
   },
   {
     id: "opensearch",
@@ -821,7 +821,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Model domain provisioning and service-level OpenSearch controls.",
     docsHref: "../../../index.html#opensearch",
-    exampleHref: "../../../../examples/opensearch/opensearch-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/opensearch/opensearch-basic/docker-compose.yml"
   },
   {
     id: "privateca",
@@ -829,7 +829,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Operate private certificate authorities and issuance workflows.",
     docsHref: "../../../index.html#privateca",
-    exampleHref: "../../../../examples/privateca/privateca-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/privateca/privateca-basic/docker-compose.yml"
   },
   {
     id: "rds",
@@ -837,7 +837,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Automate relational database instance and cluster management.",
     docsHref: "../../../index.html#rds",
-    exampleHref: "../../../../examples/rds/rds-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/rds/rds-basic/docker-compose.yml"
   },
   {
     id: "redshift",
@@ -845,7 +845,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Validate warehouse lifecycle and metadata operations.",
     docsHref: "../../../index.html#redshift",
-    exampleHref: "../../../../examples/redshift/redshift-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/redshift/redshift-basic/docker-compose.yml"
   },
   {
     id: "ram",
@@ -853,7 +853,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for resource shares, invitations, permissions, and association workflows.",
     docsHref: "../../../index.html#ram",
-    exampleHref: "../../../../examples/ram/ram-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ram/ram-basic/docker-compose.yml"
   },
   {
     id: "resource-groups",
@@ -861,7 +861,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for group lifecycle, group queries, resource membership, and tagging APIs.",
     docsHref: "../../../index.html#resource-groups",
-    exampleHref: "../../../../examples/resource-groups/resource-groups-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/resource-groups/resource-groups-basic/docker-compose.yml"
   },
   {
     id: "resourcegroupstaggingapi",
@@ -869,7 +869,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for tag discovery, compliance reporting, and bulk tag mutation APIs.",
     docsHref: "../../../index.html#resourcegroupstaggingapi",
-    exampleHref: "../../../../examples/resourcegroupstagging/resourcegroupstagging-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/resourcegroupstagging/resourcegroupstagging-basic/docker-compose.yml"
   },
   {
     id: "resource-explorer",
@@ -877,7 +877,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Manage index/view lifecycle, search, listing, and tagging APIs with local emulation.",
     docsHref: "../../../index.html#resource-explorer",
-    exampleHref: "../../../../examples/resource-explorer/resource-explorer-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/resource-explorer/resource-explorer-basic/docker-compose.yml"
   },
   {
     id: "resilience-hub",
@@ -885,7 +885,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for app lifecycle, resiliency policy workflows, assessments, recommendations, and tagging APIs.",
     docsHref: "../../../index.html#resilience-hub",
-    exampleHref: "../../../../examples/resilience-hub/resilience-hub-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/resilience-hub/resilience-hub-basic/docker-compose.yml"
   },
   {
     id: "s3",
@@ -893,7 +893,7 @@ const SERVICE_CATALOG = [
     category: "storage",
     summary: "Exercise bucket/object APIs with AWS-compatible signatures.",
     docsHref: "../../../index.html#s3",
-    exampleHref: "../../../../examples/s3/s3-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/s3/s3-basic/docker-compose.yml"
   },
   {
     id: "s3-control",
@@ -933,7 +933,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Store, rotate, and retrieve secret values during local testing.",
     docsHref: "../../../index.html#secretsmanager",
-    exampleHref: "../../../../examples/secretsmanager/secretsmanager-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/secretsmanager/secretsmanager-basic/docker-compose.yml"
   },
   {
     id: "servicequotas",
@@ -941,7 +941,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for quota discovery, quota requests, templates, auto-management, and tagging APIs.",
     docsHref: "../../../index.html#servicequotas",
-    exampleHref: "../../../../examples/servicequotas/servicequotas-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/servicequotas/servicequotas-basic/docker-compose.yml"
   },
   {
     id: "support",
@@ -949,7 +949,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for support cases, communications, attachments, create-case options, and Trusted Advisor APIs.",
     docsHref: "../../../index.html#support",
-    exampleHref: "../../../../examples/support/support-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/support/support-basic/docker-compose.yml"
   },
   {
     id: "marketplace",
@@ -957,7 +957,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for catalog change sets, agreements, metering, entitlements, deployment parameters, and reporting APIs.",
     docsHref: "../../../index.html#marketplace",
-    exampleHref: "../../../../examples/marketplace/marketplace-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/marketplace/marketplace-basic/docker-compose.yml"
   },
   {
     id: "partner-central",
@@ -965,7 +965,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for opportunities, engagements, invitations, resource snapshots, settings, and broader Partner Central account/channel workflows.",
     docsHref: "../../../index.html#partner-central",
-    exampleHref: "../../../../examples/partner-central/partner-central-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/partner-central/partner-central-basic/docker-compose.yml"
   },
   {
     id: "m2",
@@ -973,7 +973,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for application, environment, deployment, dataset import/export, and batch-job lifecycle APIs.",
     docsHref: "../../../index.html#m2",
-    exampleHref: "../../../../examples/m2/m2-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/m2/m2-basic/docker-compose.yml"
   },
   {
     id: "ivs-lowlatency",
@@ -981,7 +981,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for channels, stream keys, recording configurations, playback key pairs/policies, stream runtime/session, and tagging APIs.",
     docsHref: "../../../index.html#ivs-lowlatency",
-    exampleHref: "../../../../examples/ivs-lowlatency/ivs-lowlatency-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ivs-lowlatency/ivs-lowlatency-basic/docker-compose.yml"
   },
   {
     id: "ivs-multitrack",
@@ -989,7 +989,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for multitrack ingest discovery and client configuration APIs used by broadcast integrations.",
     docsHref: "../../../index.html#ivs-multitrack",
-    exampleHref: "../../../../examples/ivs-multitrack/ivs-multitrack-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ivs-multitrack/ivs-multitrack-basic/docker-compose.yml"
   },
   {
     id: "ivs-realtimesteraming",
@@ -997,7 +997,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for stage/session orchestration, participant workflows, compositions, configuration APIs, and tagging.",
     docsHref: "../../../index.html#ivs-realtimesteraming",
-    exampleHref: "../../../../examples/ivs-realtimesteraming/ivs-realtimesteraming-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ivs-realtimesteraming/ivs-realtimesteraming-basic/docker-compose.yml"
   },
   {
     id: "ivs-chat",
@@ -1005,7 +1005,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for chat rooms, chat tokens, moderation controls, logging configurations, and tagging APIs.",
     docsHref: "../../../index.html#ivs-chat",
-    exampleHref: "../../../../examples/ivs-chat/ivs-chat-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ivs-chat/ivs-chat-basic/docker-compose.yml"
   },
   {
     id: "ivs-chatmessaging",
@@ -1013,7 +1013,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for message publishing, moderation delete/disconnect APIs, and message/event schema parity.",
     docsHref: "../../../index.html#ivs-chatmessaging",
-    exampleHref: "../../../../examples/ivs-chatmessaging/ivs-chatmessaging-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ivs-chatmessaging/ivs-chatmessaging-basic/docker-compose.yml"
   },
 
   {
@@ -1022,7 +1022,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for channel groups, channels, origin endpoints, harvest jobs, policy controls, resets, and tagging APIs.",
     docsHref: "../../../index.html#mediapackage",
-    exampleHref: "../../../../examples/mediapackage/mediapackage-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mediapackage/mediapackage-basic/docker-compose.yml"
   },
   {
     id: "mediaconnect",
@@ -1030,7 +1030,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for flows, bridges, gateways, router inputs/outputs/interfaces, entitlements, reservations, and tagging APIs.",
     docsHref: "../../../index.html#mediaconnect",
-    exampleHref: "../../../../examples/mediaconnect/mediaconnect-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mediaconnect/mediaconnect-basic/docker-compose.yml"
   },
   {
     id: "ground-station",
@@ -1038,7 +1038,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for configs, endpoint groups, ephemerides, mission profiles, contacts, agents, and tagging APIs.",
     docsHref: "../../../index.html#ground-station",
-    exampleHref: "../../../../examples/ground-station/ground-station-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ground-station/ground-station-basic/docker-compose.yml"
   },
   {
     id: "mediatailor",
@@ -1046,7 +1046,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for channels, programs, source locations, live and VOD sources, playback configs, prefetch schedules, and tagging APIs.",
     docsHref: "../../../index.html#mediatailor",
-    exampleHref: "../../../../examples/mediatailor/mediatailor-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mediatailor/mediatailor-basic/docker-compose.yml"
   },
   {
     id: "deadline-cloud",
@@ -1054,7 +1054,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for farms, fleets, queues, workers, jobs, sessions, limits, associations, and tagging APIs.",
     docsHref: "../../../index.html#deadline-cloud",
-    exampleHref: "../../../../examples/deadline-cloud/deadline-cloud-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/deadline-cloud/deadline-cloud-basic/docker-compose.yml"
   },
   {
     id: "migrationhub-refactor-spaces",
@@ -1062,7 +1062,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for environment/application/service/route lifecycle, resource policies, VPC mappings, and tagging APIs.",
     docsHref: "../../../index.html#migrationhub-refactor-spaces",
-    exampleHref: "../../../../examples/migrationhub-refactor-spaces/migrationhub-refactor-spaces-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/migrationhub-refactor-spaces/migrationhub-refactor-spaces-basic/docker-compose.yml"
   },
   {
     id: "migrationhub-orchestrator",
@@ -1070,7 +1070,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for migration templates, workflows, step groups, steps, retry/start/stop controls, plugin discovery, and tagging APIs.",
     docsHref: "../../../index.html#migrationhub-orchestrator",
-    exampleHref: "../../../../examples/migrationhub-orchestrator/migrationhub-orchestrator-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/migrationhub-orchestrator/migrationhub-orchestrator-basic/docker-compose.yml"
   },
   {
     id: "migrationhub-strategy",
@@ -1078,7 +1078,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for assessment orchestration, portfolio preferences, application/server insights, recommendation reports, and collector/import workflows.",
     docsHref: "../../../index.html#migrationhub-strategy",
-    exampleHref: "../../../../examples/migrationhub-strategy/migrationhub-strategy-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/migrationhub-strategy/migrationhub-strategy-basic/docker-compose.yml"
   },
   {
     id: "mgn",
@@ -1086,7 +1086,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for source server lifecycle, replication controls, application/wave grouping, import/export workflows, and cutover orchestration.",
     docsHref: "../../../index.html#mgn",
-    exampleHref: "../../../../examples/mgn/mgn-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/mgn/mgn-basic/docker-compose.yml"
   },
   {
     id: "supportapp",
@@ -1094,7 +1094,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for Slack workspace registration, channel configuration, and account alias workflows.",
     docsHref: "../../../index.html#supportapp",
-    exampleHref: "../../../../examples/supportapp/supportapp-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/supportapp/supportapp-basic/docker-compose.yml"
   },
   {
     id: "trustedadvisor",
@@ -1102,7 +1102,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for recommendation lifecycle, resource exclusions, checks, and organization recommendation workflows.",
     docsHref: "../../../index.html#trustedadvisor",
-    exampleHref: "../../../../examples/trustedadvisor/trustedadvisor-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/trustedadvisor/trustedadvisor-basic/docker-compose.yml"
   },
   {
     id: "usernotifications",
@@ -1110,7 +1110,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for notification hubs, configurations, events, managed notifications, channels, organizational units, and tagging APIs.",
     docsHref: "../../../index.html#usernotifications",
-    exampleHref: "../../../../examples/usernotifications/usernotifications-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/usernotifications/usernotifications-basic/docker-compose.yml"
   },
   {
     id: "systems-manager",
@@ -1118,7 +1118,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for parameter store, automation, command execution, OpsCenter, session, and maintenance APIs.",
     docsHref: "../../../index.html#systems-manager",
-    exampleHref: "../../../../examples/systems-manager/systems-manager-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/systems-manager/systems-manager-basic/docker-compose.yml"
   },
   {
     id: "ssmsap",
@@ -1126,7 +1126,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for SAP application lifecycle, configuration checks, operation telemetry, permission, and tagging APIs.",
     docsHref: "../../../index.html#ssmsap",
-    exampleHref: "../../../../examples/ssmsap/ssmsap-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ssmsap/ssmsap-basic/docker-compose.yml"
   },
   {
     id: "quick-setup",
@@ -1134,7 +1134,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for configuration managers, configuration definitions, service settings, type discovery, and tagging APIs.",
     docsHref: "../../../index.html#quick-setup",
-    exampleHref: "../../../../examples/quick-setup/quick-setup-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/quick-setup/quick-setup-basic/docker-compose.yml"
   },
   {
     id: "incident-manager",
@@ -1142,7 +1142,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for incident records, response plans, timeline events, contacts, engagements, and on-call rotations.",
     docsHref: "../../../index.html#incident-manager",
-    exampleHref: "../../../../examples/incident-manager/incident-manager-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/incident-manager/incident-manager-basic/docker-compose.yml"
   },
   {
     id: "ssm-guiconnect",
@@ -1150,7 +1150,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Plan staged emulation for connection recording preference lifecycle APIs.",
     docsHref: "../../../index.html#ssm-guiconnect",
-    exampleHref: "../../../../examples/ssm-guiconnect/ssm-guiconnect-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ssm-guiconnect/ssm-guiconnect-basic/docker-compose.yml"
   },
   {
     id: "ses",
@@ -1158,7 +1158,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Run email identity and sending flows in a local AWS environment.",
     docsHref: "../../../index.html#ses",
-    exampleHref: "../../../../examples/ses/ses-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/ses/ses-basic/docker-compose.yml"
   },
   {
     id: "ses-v2",
@@ -1166,7 +1166,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Use the newer SESv2 API surface for account-level messaging controls.",
     docsHref: "../../../index.html#ses-v2",
-    exampleHref: "../../../../examples/sesv2/sesv2-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/sesv2/sesv2-basic/docker-compose.yml"
   },
   {
     id: "signer",
@@ -1174,7 +1174,7 @@ const SERVICE_CATALOG = [
     category: "security",
     summary: "Manage code-signing profiles and signing jobs.",
     docsHref: "../../../index.html#signer",
-    exampleHref: "../../../../examples/signer/signer-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/signer/signer-basic/docker-compose.yml"
   },
   {
     id: "sns",
@@ -1182,7 +1182,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Create topics, subscriptions, and publish notifications.",
     docsHref: "../../../index.html#sns",
-    exampleHref: "../../../../examples/sns/sns-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/sns/sns-basic/docker-compose.yml"
   },
   {
     id: "sqs",
@@ -1190,7 +1190,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Queue messages with JSON and query-protocol compatible endpoints.",
     docsHref: "../../../index.html#sqs-json",
-    exampleHref: "../../../../examples/sqs/sqs-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/sqs/sqs-basic/docker-compose.yml"
   },
   {
     id: "swf",
@@ -1198,7 +1198,7 @@ const SERVICE_CATALOG = [
     category: "integration",
     summary: "Emulate workflow domains, activity tasks, and decision flows.",
     docsHref: "../../../index.html#swf",
-    exampleHref: "../../../../examples/swf/swf-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/swf/swf-basic/docker-compose.yml"
   },
   {
     id: "timestream-influxdb",
@@ -1206,7 +1206,7 @@ const SERVICE_CATALOG = [
     category: "database",
     summary: "Exercise DB cluster/instance control plane APIs for InfluxDB on Timestream.",
     docsHref: "../../../index.html#timestream-influxdb",
-    exampleHref: "../../../../examples/timestream/timestream-basic/docker-compose.yml"
+    exampleHref: "../../../../examples/aws/timestream/timestream-basic/docker-compose.yml"
   }
 ];
 

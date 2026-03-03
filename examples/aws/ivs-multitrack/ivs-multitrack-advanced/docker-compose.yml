@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  ivs-multitrack-advanced:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/ivs-multitrack/ivs-multitrack-advanced/Dockerfile
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+    depends_on:
+      - stackyard
