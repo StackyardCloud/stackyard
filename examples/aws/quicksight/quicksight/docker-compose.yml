@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  quicksight:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/quicksight/quicksight/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCOUNT_ID=123456789012
+      - STACKYARD_QUICKSIGHT_NAMESPACE=default

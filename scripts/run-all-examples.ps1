@@ -66,25 +66,7 @@ if (-not [string]::IsNullOrWhiteSpace($env:EXAMPLE_COMPOSE)) {
     Sort-Object FullName
 } else {
   $serviceDirs = Get-ChildItem -Path $examplesRoot -Directory | Sort-Object FullName
-  $preferredVariant = $env:EXAMPLE_VARIANT
-  if ([string]::IsNullOrWhiteSpace($preferredVariant)) {
-    $preferredVariant = 'advanced'
-  }
   foreach ($serviceDir in $serviceDirs) {
-    $serviceName = $serviceDir.Name
-    $preferredCompose = Join-Path $serviceDir.FullName (Join-Path "$serviceName-$preferredVariant" 'docker-compose.yml')
-    if (Test-Path $preferredCompose) {
-      $composeFiles += Get-Item $preferredCompose
-      continue
-    }
-
-    $fallbackVariant = if ($preferredVariant -ieq 'advanced') { 'basic' } else { 'advanced' }
-    $fallbackCompose = Join-Path $serviceDir.FullName (Join-Path "$serviceName-$fallbackVariant" 'docker-compose.yml')
-    if (Test-Path $fallbackCompose) {
-      $composeFiles += Get-Item $fallbackCompose
-      continue
-    }
-
     $firstCompose = Get-ChildItem -Path $serviceDir.FullName -Filter 'docker-compose.yml' -Recurse -File |
       Sort-Object FullName |
       Select-Object -First 1

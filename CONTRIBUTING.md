@@ -37,7 +37,7 @@ For service work, follow this order:
 2. Implement candidate/router parsing
 3. Implement staged store behavior
 4. Add stage tests (`stage0` for catalog/unknown action, then lifecycle stages)
-5. Add or update basic/advanced examples
+5. Add or update examples
 6. Update docs (`docs/index.html`) and coverage script if needed
 
 ## Pull Request Expectations
@@ -51,10 +51,9 @@ Please include:
 
 If your PR adds a **new emulated service**, you are expected to also:
 
-- Add or update `examples/aws/<service>/<service>-basic`
-- Add or update `examples/aws/<service>/<service>-advanced`
+- Add or update `examples/aws/<service>/<service>`
 - Add the service to `scripts/awscli-endpoint-coverage.py`
-- Verify no endpoints for that service return `NotImplemented` in advanced example and coverage runs
+- Verify no endpoints for that service return `NotImplemented` in example and coverage runs
 
 Before opening a PR, run:
 

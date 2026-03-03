@@ -33,7 +33,7 @@ For the most up-to-date catalog and operation/type coverage, use:
 
 - Server entrypoint: `cmd/stackyard`
 - Service handlers/stores/tests: `internal/server`
-- Runnable examples (basic + advanced): `examples/aws/`
+- Runnable examples: `examples/aws/`
 - Endpoint coverage tooling: `scripts/awscli-endpoint-coverage.py`
 - Generated docs site: `docs/index.html`
 - Multi-cloud foundation notes: `docs/multi-cloud-foundation.md`
@@ -145,17 +145,13 @@ Additional automation:
 
 ## Examples
 
-Each service typically includes:
-
-- `*-basic`: minimal happy-path usage
-- `*-advanced`: broader lifecycle/workflow coverage
+Each service typically includes one runnable compose example.
 
 See `examples/aws/` and `examples/gcp/` for service-specific Dockerfiles and compose files.
 
-New GCP Generative Language example scaffolds:
+GCP Generative Language example scaffold:
 
-- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1-basic`
-- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1-advanced`
+- `examples/gcp/generativelanguage-apiv1/generativelanguage-apiv1`
 
 ## Testing and Compatibility
 
@@ -195,7 +191,7 @@ Typical pattern for adding or expanding emulation:
 2. Add protocol-aware candidate/router parsing
 3. Add in-memory store behavior by stage
 4. Add stage tests
-5. Add basic/advanced examples
+5. Add or update example compose
 6. Add service entry to coverage script
 7. Update docs index
 
