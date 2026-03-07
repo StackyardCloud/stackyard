@@ -672,6 +672,9 @@ func gcpSpannerExecutorInt32(body map[string]any, keys ...string) (int32, bool) 
 		if !valid {
 			return 0, false
 		}
+		if value < -2147483648 || value > 2147483647 {
+			return 0, false
+		}
 		return int32(value), true
 	}
 	return 0, false

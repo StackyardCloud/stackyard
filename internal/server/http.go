@@ -780,12 +780,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 				r.UserAgent(),
 			)
 			if s.logLevel == "verbose" {
-				for k, v := range r.Header {
-					if len(v) == 0 {
-						continue
-					}
-					log.Printf("header %s: %s", k, v[0])
-				}
+				log.Printf("request headers redacted (count=%d)", len(r.Header))
 			}
 			return
 		}

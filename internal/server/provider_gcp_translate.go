@@ -319,7 +319,6 @@ func mapGCPTranslateRESTToMethod(r *http.Request, path string) (string, gcpTrans
 			return "", gcpTranslateRouteContext{}, false, false
 		}
 		if strings.HasSuffix(rest, ":adaptiveMtTranslate") && r.Method == http.MethodPost {
-			ctx.Parent = ctx.Parent
 			ctx.Name = ctx.Parent + "/adaptiveMtDatasets/" + strings.TrimSuffix(rest, ":adaptiveMtTranslate")
 			return "AdaptiveMtTranslate", ctx, true, true
 		}
