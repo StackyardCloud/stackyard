@@ -196,9 +196,27 @@ func marshalProtoMessage(msg proto.Message) ([]byte, bool) {
 }
 
 func writeGRPCUnaryResponse(w http.ResponseWriter, payload []byte, grpcStatus, grpcMessage string) {
-	frame := make([]byte, 5+len(payload))
+	payloadLen := len(payload)
+	if uint64(payloadLen) > uint64(^uint32(0)) {
+		// gRPC unary frames use a uint32 payload length prefix; clamp oversized payloads.
+		payload = nil
+		payloadLen = 0
+		grpcStatus = "13"
+		grpcMessage = "response payload exceeds gRPC frame limits"
+	}
+
+	frameLen, ok := grpcUnaryFrameLength(payloadLen)
+	if !ok {
+		payload = nil
+		payloadLen = 0
+		frameLen = grpcUnaryFrameHeaderLen
+		grpcStatus = "13"
+		grpcMessage = "response payload exceeds gRPC frame limits"
+	}
+
+	frame := make([]byte, frameLen)
 	frame[0] = 0 // uncompressed
-	binary.BigEndian.PutUint32(frame[1:5], uint32(len(payload)))
+	binary.BigEndian.PutUint32(frame[1:5], uint32(payloadLen))
 	copy(frame[5:], payload)
 
 	header := w.Header()
@@ -210,4 +228,17 @@ func writeGRPCUnaryResponse(w http.ResponseWriter, payload []byte, grpcStatus, g
 	// Declared trailers are set after writing the response body.
 	header.Set("Grpc-Status", grpcStatus)
 	header.Set("Grpc-Message", grpcMessage)
+}
+
+const grpcUnaryFrameHeaderLen = 5
+
+func grpcUnaryFrameLength(payloadLen int) (int, bool) {
+	if payloadLen < 0 {
+		return 0, false
+	}
+	maxInt := int(^uint(0) >> 1)
+	if payloadLen > maxInt-grpcUnaryFrameHeaderLen {
+		return 0, false
+	}
+	return grpcUnaryFrameHeaderLen + payloadLen, true
 }

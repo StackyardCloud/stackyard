@@ -73,3 +73,42 @@ func TestDebugLoggingIncludesEndpoint(t *testing.T) {
 		t.Fatalf("expected debug logs to include endpoint label, got %q", got)
 	}
 }
+
+func TestVerboseLoggingRedactsHeaderValues(t *testing.T) {
+	srv := New(Config{
+		Addr:      "127.0.0.1:0",
+		AccessKey: testAccessKey,
+		SecretKey: testSecretKey,
+		LogLevel:  "verbose",
+	})
+	req := httptest.NewRequest(http.MethodPost, "http://stackyard.local/", nil)
+	req.Header.Set("Authorization", "Bearer super-secret-token")
+	req.Header.Set("X-Amz-Security-Token", "secret-session-token")
+	rec := httptest.NewRecorder()
+
+	var logs bytes.Buffer
+	originalWriter := log.Writer()
+	originalFlags := log.Flags()
+	originalPrefix := log.Prefix()
+	log.SetOutput(&logs)
+	log.SetFlags(0)
+	log.SetPrefix("")
+	t.Cleanup(func() {
+		log.SetOutput(originalWriter)
+		log.SetFlags(originalFlags)
+		log.SetPrefix(originalPrefix)
+	})
+
+	handler := srv.loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	handler.ServeHTTP(rec, req)
+
+	got := logs.String()
+	if !strings.Contains(got, "request headers redacted") {
+		t.Fatalf("expected verbose logs to include redaction marker, got %q", got)
+	}
+	if strings.Contains(got, "super-secret-token") || strings.Contains(got, "secret-session-token") {
+		t.Fatalf("expected verbose logs to omit raw header values, got %q", got)
+	}
+}

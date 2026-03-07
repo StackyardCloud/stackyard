@@ -816,7 +816,7 @@ func gcpWebRiskThreatTypeFromAny(value any) (int32, bool) {
 		if text == "" {
 			return 0, false
 		}
-		if parsed, err := strconv.Atoi(text); err == nil {
+		if parsed, err := strconv.ParseInt(text, 10, 32); err == nil {
 			return gcpWebRiskNormalizeThreatType(int32(parsed))
 		}
 		normalized := strings.ToUpper(text)
