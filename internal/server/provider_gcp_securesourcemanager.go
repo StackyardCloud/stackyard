@@ -231,6 +231,9 @@ func isGCPSecureSourceManagerLocationRequest(r *http.Request, path string) bool 
 }
 
 func isGCPSecureSourceManagerPath(path string, hasHint bool) bool {
+	if !hasHint {
+		return false
+	}
 	if _, _, tail, ok := parseGCPSecureSourceManagerLocationTail(path); ok && len(tail) > 0 {
 		switch tail[0] {
 		case "instances", "repositories", "operations":

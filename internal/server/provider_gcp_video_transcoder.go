@@ -129,13 +129,26 @@ func isGCPVideoTranscoderPath(path string, includeHint bool) bool {
 	if strings.HasPrefix(path, gcpVideoTranscoderGRPCPathPrefix) {
 		return true
 	}
-	if _, _, _, ok := parseGCPVideoTranscoderLocationTail(path); ok {
-		return true
+	if !includeHint {
+		return false
 	}
 	if _, _, _, ok := parseGCPProjectLocationPath(path); ok {
-		return includeHint
+		return true
 	}
-	return includeHint && strings.HasPrefix(path, "/gcp/v1/projects/")
+	_, _, tail, ok := parseGCPVideoTranscoderLocationTail(path)
+	if !ok {
+		return strings.HasPrefix(path, "/gcp/v1/projects/")
+	}
+	parts := gcpVideoTranscoderTailParts(tail)
+	if len(parts) == 0 {
+		return true
+	}
+	switch parts[0] {
+	case "jobs", "jobTemplates":
+		return true
+	default:
+		return true
+	}
 }
 
 func mapGCPVideoTranscoderRESTToMethod(r *http.Request, path string) (string, gcpVideoTranscoderRouteContext, bool, bool) {

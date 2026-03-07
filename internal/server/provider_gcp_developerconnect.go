@@ -10,7 +10,7 @@ import (
 
 func (s *Server) handleGCPDeveloperConnectRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !isGCPDeveloperConnectPath(path) {
+	if !isGCPDeveloperConnectPath(path, hasGCPDeveloperConnectHint(r)) {
 		return false
 	}
 
@@ -101,7 +101,7 @@ func hasGCPDeveloperConnectHint(r *http.Request) bool {
 	return strings.Contains(userAgent, "stackyard-developerconnect-apiv1")
 }
 
-func isGCPDeveloperConnectPath(path string) bool {
+func isGCPDeveloperConnectPath(path string, includeHint bool) bool {
 	if !strings.HasPrefix(path, "/gcp/v1/projects/") || !strings.Contains(path, "/locations/") {
 		return false
 	}
@@ -124,13 +124,13 @@ func isGCPDeveloperConnectPath(path string) bool {
 		return true
 	}
 	if _, _, ok := parseGCPDeveloperConnectOperationsCollectionPath(path); ok {
-		return true
+		return includeHint
 	}
 	if _, _, _, ok := parseGCPDeveloperConnectOperationPath(path); ok {
-		return true
+		return includeHint
 	}
 	_, _, _, _, ok := parseGCPDeveloperConnectOperationActionPath(path)
-	return ok
+	return includeHint && ok
 }
 
 func handleGCPDeveloperConnectListConnections(w http.ResponseWriter, r *http.Request, path string) bool {

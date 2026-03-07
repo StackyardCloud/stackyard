@@ -9,7 +9,7 @@ import (
 
 func (s *Server) handleGCPAPIGatewayRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !isGCPAPIGatewayPath(path) {
+	if !isGCPAPIGatewayPath(path, hasGCPAPIGatewayHint(r)) {
 		return false
 	}
 
@@ -43,7 +43,17 @@ func (s *Server) handleGCPAPIGatewayRouter(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func isGCPAPIGatewayPath(path string) bool {
+func hasGCPAPIGatewayHint(r *http.Request) bool {
+	service := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service")))
+	switch service {
+	case "apigateway", "api-gateway", "api_gateway", "apigateway-apiv1", "apigateway_apiv1":
+		return true
+	}
+	ua := strings.ToLower(strings.TrimSpace(r.Header.Get("User-Agent")))
+	return strings.Contains(ua, "stackyard-apigateway-apiv1")
+}
+
+func isGCPAPIGatewayPath(path string, includeHint bool) bool {
 	if _, ok := parseGCPAPIGatewayParentCollectionPath(path, "apis"); ok {
 		return true
 	}
@@ -57,10 +67,10 @@ func isGCPAPIGatewayPath(path string) bool {
 		return true
 	}
 	if _, ok := parseGCPAPIGatewayParentCollectionPath(path, "gateways"); ok {
-		return true
+		return includeHint
 	}
 	_, _, ok := parseGCPAPIGatewayResourcePath(path, "gateways")
-	return ok
+	return includeHint && ok
 }
 
 func handleGCPAPIGatewayListApis(w http.ResponseWriter, r *http.Request, path string) bool {

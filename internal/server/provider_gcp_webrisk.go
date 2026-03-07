@@ -108,18 +108,28 @@ func isGCPWebRiskRESTPath(path string, includeHint bool) bool {
 		return true
 	}
 	if _, tail, ok := parseGCPWebRiskProjectTail(path); ok {
-		if isGCPWebRiskSubmissionsCollectionTail(tail) ||
-			isGCPWebRiskSubmitURITail(tail) ||
-			isGCPWebRiskOperationsCollectionTail(tail) ||
-			isGCPWebRiskOperationResourceTail(tail) ||
-			isGCPWebRiskOperationActionTail(tail, "cancel") {
+		if isGCPWebRiskSubmissionsCollectionTail(tail) || isGCPWebRiskSubmitURITail(tail) {
 			return true
+		}
+		if isGCPWebRiskOperationsCollectionTail(tail) {
+			return includeHint
+		}
+		if isGCPWebRiskOperationResourceTail(tail) {
+			return includeHint || isGCPWebRiskOperationID(tail[1])
+		}
+		if operationID, action, ok := parseGCPWebRiskOperationActionTail(tail); ok && action == "cancel" {
+			return includeHint || isGCPWebRiskOperationID(operationID)
 		}
 	}
 	if includeHint && strings.HasPrefix(path, "/gcp/v1/projects/") {
 		return true
 	}
 	return false
+}
+
+func isGCPWebRiskOperationID(operationID string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(operationID))
+	return strings.HasPrefix(normalized, "submituri.") || strings.HasPrefix(normalized, "submituri-") || strings.HasPrefix(normalized, "webrisk-")
 }
 
 func isGCPWebRiskGRPCPath(path string) bool {

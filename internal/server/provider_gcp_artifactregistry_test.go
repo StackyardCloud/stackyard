@@ -29,7 +29,9 @@ func TestGCPArtifactRegistryRouter_ListRepositoriesInvalidPageSize(t *testing.T)
 	t.Parallel()
 
 	ts := newGCPArtifactRegistryContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/repositories?pageSize=bad", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/repositories?pageSize=bad", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "artifactregistry",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp artifactregistry router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -44,7 +46,8 @@ func TestGCPArtifactRegistryRouter_CreateRepositoryInvalidJSON(t *testing.T) {
 
 	ts := newGCPArtifactRegistryContractServer(t)
 	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/repositories?repositoryId=team-repo", []byte(`{"repository"`), map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "artifactregistry",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp artifactregistry router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
@@ -60,7 +63,8 @@ func TestGCPArtifactRegistryRouter_CreateRepositoryRequiresRepositoryID(t *testi
 
 	ts := newGCPArtifactRegistryContractServer(t)
 	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/repositories", []byte(`{"repository":{"format":"DOCKER"}}`), map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "artifactregistry",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp artifactregistry router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
@@ -75,7 +79,9 @@ func TestGCPArtifactRegistryRouter_ListTagsPageTokenOutOfRange(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPArtifactRegistryContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/tags?pageToken=99", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/tags?pageToken=99", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "artifactregistry",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp artifactregistry router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -101,7 +107,9 @@ func newGCPArtifactRegistryContractServer(t *testing.T) *httptest.Server {
 func assertGCPArtifactRegistrySuccess(t *testing.T, ts *httptest.Server, method, path string, payload []byte, expectBodyFragment string) {
 	t.Helper()
 
-	headers := map[string]string{}
+	headers := map[string]string{
+		"X-Stackyard-GCP-Service": "artifactregistry",
+	}
 	if payload != nil {
 		headers["Content-Type"] = "application/json"
 	}

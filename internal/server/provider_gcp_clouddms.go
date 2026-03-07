@@ -10,6 +10,7 @@ import (
 
 func (s *Server) handleGCPCloudDMSRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
+	hasHint := hasGCPCloudDMSHint(r)
 	if strings.HasPrefix(path, "/gcp/google.cloud.clouddms.v1.DataMigrationService/") {
 		switch r.Method {
 		case http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete:
@@ -19,10 +20,7 @@ func (s *Server) handleGCPCloudDMSRouter(w http.ResponseWriter, r *http.Request)
 			return false
 		}
 	}
-	if !isGCPCloudDMSPath(path) {
-		return false
-	}
-	if isGCPCloudDMSSharedPath(path) && !hasGCPCloudDMSHint(r) {
+	if !isGCPCloudDMSPathWithHint(path, hasHint) {
 		return false
 	}
 
@@ -108,8 +106,15 @@ func (s *Server) handleGCPCloudDMSRouter(w http.ResponseWriter, r *http.Request)
 }
 
 func isGCPCloudDMSPath(path string) bool {
+	return isGCPCloudDMSPathWithHint(path, false)
+}
+
+func isGCPCloudDMSPathWithHint(path string, includeHint bool) bool {
 	normalized := normalizeGCPCloudDMSActionSegment(path)
 	if !strings.HasPrefix(normalized, "/gcp/v1/projects/") || !strings.Contains(normalized, "/locations/") {
+		return false
+	}
+	if !includeHint {
 		return false
 	}
 	markers := []string{

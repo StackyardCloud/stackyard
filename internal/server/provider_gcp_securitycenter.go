@@ -284,9 +284,9 @@ func isGCPSecurityCenterPath(path string, includeAmbiguous bool) bool {
 		strings.Contains(path, "/effectiveCustomModules") ||
 		strings.Contains(path, ":bulkMute") ||
 		strings.Contains(path, ":validateCustomModule") ||
-		strings.Contains(path, ":getIamPolicy") ||
-		strings.Contains(path, ":setIamPolicy") ||
-		strings.Contains(path, ":testIamPermissions") {
+		isGCPSecurityCenterIAMActionPath(path, "getIamPolicy") ||
+		isGCPSecurityCenterIAMActionPath(path, "setIamPolicy") ||
+		isGCPSecurityCenterIAMActionPath(path, "testIamPermissions") {
 		return true
 	}
 
@@ -1586,7 +1586,50 @@ func isGCPSecurityCenterIAMActionPath(path, action string) bool {
 		return false
 	}
 	resource, gotAction, ok := splitGCPSecurityCenterActionSegment(body)
-	return ok && gotAction == action && strings.TrimSpace(resource) != ""
+	if !ok || gotAction != action || strings.TrimSpace(resource) == "" {
+		return false
+	}
+	return isGCPSecurityCenterIAMResource(resource)
+}
+
+func isGCPSecurityCenterIAMResource(resource string) bool {
+	parts := strings.Split(strings.Trim(resource, "/"), "/")
+	if len(parts) < 4 {
+		return false
+	}
+	scope := strings.TrimSpace(parts[0])
+	scopeID := strings.TrimSpace(parts[1])
+	if (scope != "organizations" && scope != "folders" && scope != "projects") || scopeID == "" {
+		return false
+	}
+
+	tail := parts[2:]
+	switch tail[0] {
+	case "sources":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "muteConfigs":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "notificationConfigs":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "organizationSettings":
+		return len(tail) == 1
+	case "bigQueryExports":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "simulations":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "resourceValueConfigs":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "valuedResources":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "attackPaths":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "customModules":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	case "effectiveCustomModules":
+		return len(tail) >= 2 && strings.TrimSpace(tail[1]) != ""
+	default:
+		return false
+	}
 }
 
 func isGCPSecurityCenterOperationsCollectionTail(tail []string) bool {

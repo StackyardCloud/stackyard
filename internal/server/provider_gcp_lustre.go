@@ -34,6 +34,10 @@ func isGCPLustrePath(path string) bool {
 	if isGCPLustreLocationDiscoveryPath(path) {
 		return true
 	}
+	_, location, _, ok := parseGCPLustreLocationTail(path)
+	if !ok || !isGCPLustreSupportedLocation(location) {
+		return false
+	}
 	if !strings.Contains(path, "/locations/") {
 		return false
 	}
@@ -54,6 +58,23 @@ func isGCPLustreLocationDiscoveryPath(path string) bool {
 		return false
 	}
 	return len(parts) == 5 || len(parts) == 6
+}
+
+func parseGCPLustreLocationTail(path string) (project, location string, tail []string, ok bool) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) < 7 || parts[0] != "gcp" || parts[1] != "v1" || parts[2] != "projects" || parts[4] != "locations" {
+		return "", "", nil, false
+	}
+	project = strings.TrimSpace(parts[3])
+	location = strings.TrimSpace(parts[5])
+	if project == "" || location == "" {
+		return "", "", nil, false
+	}
+	return project, location, parts[6:], true
+}
+
+func isGCPLustreSupportedLocation(location string) bool {
+	return strings.EqualFold(strings.TrimSpace(location), "us-central1")
 }
 
 func handleGCPContractProbe_lustre(w http.ResponseWriter, r *http.Request) bool {

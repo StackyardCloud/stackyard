@@ -1227,12 +1227,12 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if isGCPAPIGatewayPath(rawRequestPath(r)) {
+		if isGCPAPIGatewayPath(rawRequestPath(r), hasGCPAPIGatewayHint(r)) {
 			if s.handleGCPAPIGatewayRouter(w, r) {
 				return
 			}
 		}
-		if isGCPArtifactRegistryPath(rawRequestPath(r)) {
+		if isGCPArtifactRegistryPath(rawRequestPath(r), hasGCPArtifactRegistryHint(r)) {
 			if s.handleGCPArtifactRegistryRouter(w, r) {
 				return
 			}
@@ -1242,7 +1242,7 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if isGCPContainerPath(rawRequestPath(r)) {
+		if isGCPContainerPathWithHint(rawRequestPath(r), hasGCPContainerHint(r)) {
 			if s.handleGCPContainerRouter(w, r) {
 				return
 			}

@@ -10,7 +10,7 @@ import (
 
 func (s *Server) handleGCPCloudBuildRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !isGCPCloudBuildPath(path) {
+	if !isGCPCloudBuildPath(path, hasGCPCloudBuildHint(r)) {
 		return false
 	}
 
@@ -98,7 +98,17 @@ func (s *Server) handleGCPCloudBuildRouter(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func isGCPCloudBuildPath(path string) bool {
+func hasGCPCloudBuildHint(r *http.Request) bool {
+	service := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service")))
+	switch service {
+	case "cloudbuild", "cloud-build", "cloud_build", "cloudbuild-apiv2", "cloudbuild_apiv2":
+		return true
+	}
+	ua := strings.ToLower(strings.TrimSpace(r.Header.Get("User-Agent")))
+	return strings.Contains(ua, "stackyard-cloudbuild-apiv2")
+}
+
+func isGCPCloudBuildPath(path string, includeHint bool) bool {
 	if !strings.HasPrefix(path, "/gcp/v2/projects/") || !strings.Contains(path, "/locations/") {
 		return false
 	}
@@ -131,11 +141,16 @@ func isGCPCloudBuildPath(path string) bool {
 			return true
 		}
 	}
-	if _, _, _, action, ok := parseGCPCloudBuildOperationActionPath(path); ok && action == "cancel" {
-		return true
+	if _, _, operationID, action, ok := parseGCPCloudBuildOperationActionPath(path); ok && action == "cancel" {
+		return includeHint || isGCPCloudBuildOperationID(operationID)
 	}
-	_, _, _, _, ok := parseGCPCloudBuildOperationPath(path)
-	return ok
+	_, _, operationID, _, ok := parseGCPCloudBuildOperationPath(path)
+	return ok && (includeHint || isGCPCloudBuildOperationID(operationID))
+}
+
+func isGCPCloudBuildOperationID(operationID string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(operationID))
+	return strings.HasPrefix(normalized, "cloudbuild.") || strings.Contains(normalized, ".cloudbuild.")
 }
 
 func handleGCPCloudBuildListConnections(w http.ResponseWriter, r *http.Request, path string) bool {

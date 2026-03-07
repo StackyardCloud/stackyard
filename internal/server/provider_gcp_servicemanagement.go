@@ -141,8 +141,8 @@ func isGCPServiceManagementPath(path string, includeHint bool) bool {
 	if parseGCPServiceManagementGenerateConfigReportPath(path) {
 		return true
 	}
-	if _, _, ok := parseGCPServiceManagementIAMActionPath(path); ok {
-		return true
+	if resource, _, ok := parseGCPServiceManagementIAMActionPath(path); ok {
+		return includeHint || isGCPServiceManagementIAMResource(resource)
 	}
 	if parseGCPServiceManagementOperationsCollectionPath(path) {
 		return includeHint
@@ -673,6 +673,15 @@ func parseGCPServiceManagementIAMActionPath(path string) (resource, action strin
 	return resource, action, true
 }
 
+func isGCPServiceManagementIAMResource(resource string) bool {
+	resource = strings.Trim(resource, "/")
+	parts := strings.Split(resource, "/")
+	if len(parts) != 2 || parts[0] != "services" {
+		return false
+	}
+	return isGCPServiceManagementServiceName(parts[1])
+}
+
 func parseGCPServiceManagementOperationsCollectionPath(path string) bool {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	return len(parts) == 3 && parts[0] == "gcp" && parts[1] == "v1" && parts[2] == "operations"
@@ -978,7 +987,7 @@ func handleGCPContractProbe_servicemanagement(w http.ResponseWriter, r *http.Req
 	}
 
 	path := normalizeGCPServiceManagementPath(rawRequestPath(r))
-	if !isGCPServiceManagementPath(path, true) {
+	if !isGCPServiceManagementPath(path, false) {
 		return false
 	}
 

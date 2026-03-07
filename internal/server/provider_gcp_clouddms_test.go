@@ -62,7 +62,9 @@ func TestGCPCloudDMSRouter_ListMigrationJobsInvalidPageSize(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPCloudDMSContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/migrationJobs?pageSize=bad", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/migrationJobs?pageSize=bad", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "clouddms",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp clouddms router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -76,7 +78,10 @@ func TestGCPCloudDMSRouter_CreateMigrationJobRequiresBody(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPCloudDMSContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/migrationJobs?migrationJobId=team-job", []byte(`{}`), map[string]string{"Content-Type": "application/json"})
+	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/migrationJobs?migrationJobId=team-job", []byte(`{}`), map[string]string{
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "clouddms",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp clouddms router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}

@@ -144,7 +144,10 @@ func isGCPSpannerAdminInstancePath(path string, includeHint bool) bool {
 	if _, _, _, ok := parseGCPSpannerAdminInstanceOperationPath(path); ok {
 		return true
 	}
-	if _, _, ok := parseGCPSpannerAdminInstanceOperationsCollectionPath(path); ok {
+	if _, scope, ok := parseGCPSpannerAdminInstanceOperationsCollectionPath(path); ok {
+		if scope == "project" {
+			return includeHint
+		}
 		return true
 	}
 	if _, _, _, ok := parseGCPSpannerAdminInstanceOperationActionPath(path, "cancel"); ok {

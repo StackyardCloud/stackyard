@@ -10,7 +10,7 @@ import (
 
 func (s *Server) handleGCPContainerRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !isGCPContainerPath(path) {
+	if !isGCPContainerPathWithHint(path, hasGCPContainerHint(r)) {
 		return false
 	}
 
@@ -77,8 +77,25 @@ func (s *Server) handleGCPContainerRouter(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func hasGCPContainerHint(r *http.Request) bool {
+	service := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service")))
+	switch service {
+	case "container", "container-apiv1", "container_apiv1", "gke", "kubernetes", "kubernetesengine":
+		return true
+	}
+	ua := strings.ToLower(strings.TrimSpace(r.Header.Get("User-Agent")))
+	return strings.Contains(ua, "stackyard-container-apiv1") || strings.Contains(ua, "cloud.google.com/go/container")
+}
+
 func isGCPContainerPath(path string) bool {
+	return isGCPContainerPathWithHint(path, false)
+}
+
+func isGCPContainerPathWithHint(path string, includeHint bool) bool {
 	if !strings.HasPrefix(path, "/gcp/v1/projects/") {
+		return false
+	}
+	if !includeHint {
 		return false
 	}
 	if _, _, ok := parseGCPContainerClustersCollectionPath(path); ok {

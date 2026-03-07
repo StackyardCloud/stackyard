@@ -69,7 +69,7 @@ func isGCPAutoMLPath(path string) bool {
 		strings.Contains(path, ":exportData") ||
 		strings.Contains(path, ":deploy") ||
 		strings.Contains(path, ":undeploy") ||
-		strings.Contains(path, ":export") ||
+		(strings.Contains(path, "/models/") && strings.Contains(path, ":export")) ||
 		strings.Contains(path, ":predict") ||
 		strings.Contains(path, ":batchPredict")
 }
