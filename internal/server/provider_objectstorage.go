@@ -14,36 +14,37 @@ import (
 const defaultOCINamespace = "stackyard"
 
 type providerBucket struct {
-	Name      string
-	CreatedAt time.Time
-	Objects   map[string]providerObject
+	Name              string
+	CreatedAt         time.Time
+	ProjectID         string
+	Location          string
+	StorageClass      string
+	Metageneration    int64
+	ETag              string
+	VersioningEnabled bool
+	Objects           map[string]providerObject
+	ACL               map[string]string
+	DefaultObjectACL  map[string]string
+	IAMPolicy         map[string]any
+	Notifications     map[string]map[string]any
 }
 
 type providerObject struct {
-	Name      string
-	UpdatedAt time.Time
-	Data      []byte
+	Name           string
+	UpdatedAt      time.Time
+	CreatedAt      time.Time
+	ContentType    string
+	Metadata       map[string]string
+	Generation     int64
+	Metageneration int64
+	ETag           string
+	Deleted        bool
+	ACL            map[string]string
+	Data           []byte
 }
 
 func (s *Server) handleGCPObjectStorageRouter(w http.ResponseWriter, r *http.Request) bool {
-	path := rawRequestPath(r)
-	if r.Method == http.MethodPost && path == "/gcp/storage/v1/b" {
-		s.handleGCPCreateBucket(w, r)
-		return true
-	}
-	if r.Method == http.MethodGet && path == "/gcp/storage/v1/b" {
-		s.handleGCPListBuckets(w)
-		return true
-	}
-	if r.Method == http.MethodPost && strings.HasPrefix(path, "/gcp/upload/storage/v1/b/") {
-		s.handleGCPUploadObject(w, r, path)
-		return true
-	}
-	if strings.HasPrefix(path, "/gcp/storage/v1/b/") {
-		s.handleGCPBucketPath(w, r, path)
-		return true
-	}
-	return false
+	return s.handleGCPStorageRouter(w, r)
 }
 
 func (s *Server) handleGCPCreateBucket(w http.ResponseWriter, r *http.Request) {

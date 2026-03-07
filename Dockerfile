@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /src
 
@@ -12,7 +12,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=builder /out/stackyard /stackyard
 
-EXPOSE 4566
+EXPOSE 4566 4567
 ENV STACKYARD_ADDR=:4566
+ENV STACKYARD_GCP_FOUNDATION_MODE=success
 
 ENTRYPOINT ["/stackyard"]

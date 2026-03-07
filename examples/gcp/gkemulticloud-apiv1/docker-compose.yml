@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  gkemulticloud-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/gkemulticloud-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-west1
+      - STACKYARD_GCP_GKEMULTICLOUD_ATTACHED_CLUSTER_ID=attached-a
+      - STACKYARD_GCP_GKEMULTICLOUD_AWS_CLUSTER_ID=aws-a
+      - STACKYARD_GCP_GKEMULTICLOUD_AZURE_CLIENT_ID=azure-client-a
+      - STACKYARD_GCP_GKEMULTICLOUD_AZURE_CLUSTER_ID=azure-a
+      - STACKYARD_GCP_GKEMULTICLOUD_OPERATION_ID=op-1
+      - STACKYARD_GCP_GKEMULTICLOUD_FLEET_MEMBERSHIP_ID=membership-a

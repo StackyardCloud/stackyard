@@ -1,5 +1,9 @@
 # Data Mesh Reference Architecture Example
 
+Canonical provider-scoped path for this AWS variant:
+
+- `reference-architecture/data-mesh/aws/example`
+
 This example implements a runnable local version of the `reference-architecture/data-mesh/docs` pack against Stackyard.
 
 It focuses on the documented minimum viable environment behaviors:

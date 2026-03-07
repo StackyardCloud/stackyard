@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  clouddms-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/clouddms-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_GRPC_ENDPOINT=stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_DMS_MIGRATION_JOB_ID=team-job
+      - STACKYARD_GCP_DMS_CONNECTION_PROFILE_ID=team-profile
+      - STACKYARD_GCP_DMS_PRIVATE_CONNECTION_ID=team-private-connection
+      - STACKYARD_GCP_DMS_CONVERSION_WORKSPACE_ID=team-workspace
+      - STACKYARD_GCP_DMS_MAPPING_RULE_ID=team-rule

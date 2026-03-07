@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stackyard GCP API Surface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="web/index.html">
+        <span class="brand-mark">S</span>
+        <span>Stackyard Docs</span>
+      </a>
+      <nav class="top-nav" aria-label="Primary navigation">
+        <a href="index.html">AWS API Surface</a>
+        <a href="gcp.html" aria-current="page">GCP API Surface</a>
+        <a href="web/index.html">Web Docs</a>
+        <a href="web/aws/services/index.html">AWS Services</a>
+        <a href="web/gcp/services/index.html">GCP Services</a>
+        <a href="web/tree/index.html">Service Tree</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="badge">Stackyard Legacy GCP API</span>
+        <h1>GCP Service Navigator</h1>
+        <p>Browse GCP service coverage, staged plans, and runnable examples.</p>
+      </div>
+      <div class="sidebar-search">
+        <label for="service-filter">Filter services</label>
+        <input id="service-filter" type="search" placeholder="Type to filter navigation..." />
+      </div>
+      <nav class="nav" data-service-nav></nav>
+    </aside>
+
+    <div class="content">
+      <header class="page-header">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">Docs / GCP API Surface</nav>
+        <span class="badge">Stackyard GCP API Surface</span>
+        <h1>GCP Services and Endpoint Coverage</h1>
+        <p>
+          Base URL is the Stackyard listener (default <code>http://localhost:4566</code>). This page lists GCP
+          service coverage, capability gates, and links to staged implementation plans and SDK Docker examples.
+        </p>
+        <p class="note">
+          For the new docs experience, see <a href="web/gcp/services/index.html">Stackyard Web Docs: GCP Services</a>.
+        </p>
+        <div class="service-meta">
+          <span class="meta-pill"><span data-provider-services>0</span> provider services</span>
+          <span class="meta-pill"><span data-services-listed>0</span> listed services</span>
+          <span class="meta-pill"><span data-plan-count>0</span> staged plans linked</span>
+          <span class="meta-pill"><span data-example-count>0</span> example projects linked</span>
+          <span class="meta-pill"><span data-contract-strict>0</span> strict contract-gate services</span>
+          <span class="meta-pill"><span data-io-strict>0</span> strict I/O-gate services</span>
+        </div>
+      </header>
+
+      <main id="gcp-service-sections"></main>
+
+      <footer>
+        Generated from local coverage and examples under <code>examples/gcp/</code> and <code>docs/gcp-*-plan.md</code>.
+      </footer>
+    </div>
+  </div>
+
+  <script src="web/assets/gcp-catalog.js" defer></script>
+  <script src="gcp-api-app.js" defer></script>
+</body>
+</html>

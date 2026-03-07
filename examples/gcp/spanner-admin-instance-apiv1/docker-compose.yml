@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  spanner-admin-instance-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/spanner-admin-instance-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_SPANNER_INSTANCE=stackyard-instance
+      - STACKYARD_GCP_SPANNER_INSTANCE_CONFIG=custom-stackyard-primary
+      - STACKYARD_GCP_SPANNER_INSTANCE_CONFIG_NEW=custom-stackyard-new
+      - STACKYARD_GCP_SPANNER_INSTANCE_NEW=stackyard-instance-new
+      - STACKYARD_GCP_SPANNER_INSTANCE_PARTITION=partition-a
+      - STACKYARD_GCP_SPANNER_INSTANCE_PARTITION_NEW=partition-new

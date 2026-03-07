@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  shopping-merchant-conversions-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/shopping-merchant-conversions-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_MERCHANT_CONVERSIONS_ACCOUNT_ID=123456
+      - STACKYARD_GCP_MERCHANT_CONVERSIONS_GA_PROPERTY_ID=2001
+      - STACKYARD_GCP_MERCHANT_CONVERSIONS_DISPLAY_NAME=Primary Destination
+      - STACKYARD_GCP_MERCHANT_CONVERSIONS_CURRENCY=USD

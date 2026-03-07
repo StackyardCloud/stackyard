@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -20,6 +21,7 @@ import (
 
 const (
 	defaultPort            = 4566
+	defaultHTTP2Port       = 4567
 	defaultShutdownTimeout = 10 * time.Second
 	startupWaitTimeout     = 5 * time.Second
 	supportedProvidersText = "aws, gcp, azure, oci"
@@ -90,6 +92,7 @@ func runStartCommand(args []string, stdout, stderr io.Writer, getenv func(string
 	serveOpts := serveOptions{
 		providers:            opts.providers,
 		addr:                 opts.addr,
+		h2Addr:               opts.h2Addr,
 		accessKey:            opts.accessKey,
 		secretKey:            opts.secretKey,
 		logLevel:             opts.logLevel,
@@ -156,15 +159,17 @@ func runServeCommand(args []string, stderr io.Writer, getenv func(string) string
 func runServe(opts serveOptions) error {
 	providers := strings.Join(opts.providers, ",")
 	log.Printf(
-		"stackyard starting providers=%s addr=%s log-level=%s lambda-execution-mode=%s",
+		"stackyard starting providers=%s addr=%s h2-addr=%s log-level=%s lambda-execution-mode=%s",
 		providers,
 		opts.addr,
+		opts.h2Addr,
 		opts.logLevel,
 		opts.lambdaExecutionMode,
 	)
 
 	cfg := server.Config{
 		Addr:                 opts.addr,
+		H2Addr:               opts.h2Addr,
 		Providers:            opts.providers,
 		AccessKey:            opts.accessKey,
 		SecretKey:            opts.secretKey,
@@ -194,7 +199,7 @@ func runServe(opts serveOptions) error {
 	go func() {
 		errCh <- srv.ListenAndServe()
 	}()
-	log.Printf("stackyard listening on %s", opts.addr)
+	log.Printf("stackyard listening on http/1.1=%s http/2=%s", opts.addr, opts.h2Addr)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
@@ -250,6 +255,7 @@ func startInBackground(opts serveOptions, logFile string, stdout io.Writer) erro
 		"serve",
 		"--providers", strings.Join(opts.providers, ","),
 		"--addr", opts.addr,
+		"--h2-addr", opts.h2Addr,
 		"--log-level", opts.logLevel,
 		"--aws-access-key", opts.accessKey,
 		"--aws-secret-key", opts.secretKey,
@@ -288,6 +294,7 @@ func startInBackground(opts serveOptions, logFile string, stdout io.Writer) erro
 type serveOptions struct {
 	providers            []string
 	addr                 string
+	h2Addr               string
 	accessKey            string
 	secretKey            string
 	logLevel             string
@@ -306,6 +313,7 @@ type serveOptions struct {
 type startOptions struct {
 	providers            []string
 	addr                 string
+	h2Addr               string
 	accessKey            string
 	secretKey            string
 	logLevel             string
@@ -332,6 +340,8 @@ type serveFlagValues struct {
 	providersValue       string
 	addr                 string
 	port                 int
+	h2Addr               string
+	h2Port               int
 	accessKey            string
 	secretKey            string
 	logLevel             string
@@ -388,6 +398,7 @@ func parseStartOptions(args []string, stderr io.Writer, getenv func(string) stri
 	return startOptions{
 		providers:            serveOpts.providers,
 		addr:                 serveOpts.addr,
+		h2Addr:               serveOpts.h2Addr,
 		accessKey:            serveOpts.accessKey,
 		secretKey:            serveOpts.secretKey,
 		logLevel:             serveOpts.logLevel,
@@ -465,6 +476,8 @@ func bindServeFlags(fs *flag.FlagSet, getenv func(string) string) *serveFlagValu
 		providersValue:       envOrDefault(getenv, "STACKYARD_PROVIDERS", "aws"),
 		addr:                 strings.TrimSpace(getenv("STACKYARD_ADDR")),
 		port:                 envInt(getenv, "STACKYARD_PORT", defaultPort),
+		h2Addr:               strings.TrimSpace(getenv("STACKYARD_H2_ADDR")),
+		h2Port:               envInt(getenv, "STACKYARD_H2_PORT", defaultHTTP2Port),
 		accessKey:            envOrDefault(getenv, "STACKYARD_ACCESS_KEY", "stackyard"),
 		secretKey:            envOrDefault(getenv, "STACKYARD_SECRET_KEY", "stackyard"),
 		logLevel:             envOrDefault(getenv, "STACKYARD_LOG_LEVEL", "info"),
@@ -481,6 +494,8 @@ func bindServeFlags(fs *flag.FlagSet, getenv func(string) string) *serveFlagValu
 	fs.StringVar(&values.providersValue, "providers", values.providersValue, "Comma-separated providers to enable (currently: "+supportedProvidersText+")")
 	fs.StringVar(&values.addr, "addr", values.addr, "HTTP listen address (example: :4566)")
 	fs.IntVar(&values.port, "port", values.port, "HTTP listen port (used when --addr is not provided)")
+	fs.StringVar(&values.h2Addr, "h2-addr", values.h2Addr, "HTTP/2 listen address for gRPC clients (example: :4567)")
+	fs.IntVar(&values.h2Port, "h2-port", values.h2Port, "HTTP/2 listen port (used when --h2-addr is not provided)")
 	fs.StringVar(&values.accessKey, "aws-access-key", values.accessKey, "Access key expected by SigV4 validation")
 	fs.StringVar(&values.secretKey, "aws-secret-key", values.secretKey, "Secret key expected by SigV4 validation")
 	fs.StringVar(&values.logLevel, "log-level", values.logLevel, "Log level (debug, info, warn, error)")
@@ -500,14 +515,23 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 	if values.port < 1 || values.port > 65535 {
 		return serveOptions{}, fmt.Errorf("invalid --port %d: must be between 1 and 65535", values.port)
 	}
+	if values.h2Port < 1 || values.h2Port > 65535 {
+		return serveOptions{}, fmt.Errorf("invalid --h2-port %d: must be between 1 and 65535", values.h2Port)
+	}
 
-	var addrSet, portSet bool
+	var addrSet, portSet, h2AddrSet, h2PortSet bool
 	fs.Visit(func(f *flag.Flag) {
 		if f.Name == "addr" {
 			addrSet = true
 		}
 		if f.Name == "port" {
 			portSet = true
+		}
+		if f.Name == "h2-addr" {
+			h2AddrSet = true
+		}
+		if f.Name == "h2-port" {
+			h2PortSet = true
 		}
 	})
 
@@ -519,6 +543,21 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 		case resolvedAddr == "":
 			resolvedAddr = ":" + strconv.Itoa(values.port)
 		}
+	}
+	resolvedH2Addr := strings.TrimSpace(values.h2Addr)
+	if !h2AddrSet {
+		switch {
+		case h2PortSet:
+			resolvedH2Addr = resolveSiblingPortAddr(resolvedAddr, values.h2Port)
+		case resolvedH2Addr == "":
+			resolvedH2Addr = resolveSiblingPortAddr(resolvedAddr, values.h2Port)
+		}
+	}
+	if h2AddrSet && resolvedH2Addr == "" {
+		return serveOptions{}, errors.New("--h2-addr must not be empty")
+	}
+	if resolvedH2Addr == resolvedAddr {
+		return serveOptions{}, errors.New("--h2-addr must differ from --addr")
 	}
 
 	providers, err := parseProviders(values.providersValue)
@@ -577,6 +616,7 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 	return serveOptions{
 		providers:            providers,
 		addr:                 resolvedAddr,
+		h2Addr:               resolvedH2Addr,
 		accessKey:            values.accessKey,
 		secretKey:            values.secretKey,
 		logLevel:             values.logLevel,
@@ -614,6 +654,18 @@ func parseProviders(raw string) ([]string, error) {
 		return nil, fmt.Errorf("at least one provider must be set (supported: %s)", supportedProvidersText)
 	}
 	return out, nil
+}
+
+func resolveSiblingPortAddr(addr string, port int) string {
+	trimmed := strings.TrimSpace(addr)
+	if trimmed == "" {
+		return ":" + strconv.Itoa(port)
+	}
+	host, _, err := net.SplitHostPort(trimmed)
+	if err != nil {
+		return ":" + strconv.Itoa(port)
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
 }
 
 func readPID(path string) (int, error) {
@@ -733,6 +785,10 @@ Start Flags:
                            Options: 1-65535 (default 4566)
   --addr string            HTTP listen address.
                            Options: host:port or :port; when set, overrides --port
+  --h2-port int            HTTP/2 listen port (used when --h2-addr is not provided).
+                           Options: 1-65535 (default 4567)
+  --h2-addr string         HTTP/2 listen address for gRPC clients.
+                           Options: host:port or :port; when set, overrides --h2-port
   --log-level string       Server log verbosity level.
                            Options: debug, info, warn, error (default info)
   --aws-access-key string  Access key expected by SigV4 validation.
@@ -770,6 +826,7 @@ Examples:
   stackyard start --providers aws
   stackyard start --providers aws,gcp,azure,oci
   stackyard start --providers aws --port 4566
+  stackyard start --providers aws --h2-port 4567
   stackyard start --providers aws --log-level debug
   stackyard start --providers aws --lambda-execution-mode local
   stackyard start --providers aws --persist-state --state-dir /tmp/stackyard-state
@@ -792,6 +849,10 @@ Flags:
                            Options: 1-65535 (default 4566)
   --addr string            HTTP listen address (example: :4566).
                            Options: host:port or :port; when set, overrides --port
+  --h2-port int            HTTP/2 listen port (used when --h2-addr is not provided).
+                           Options: 1-65535 (default 4567)
+  --h2-addr string         HTTP/2 listen address for gRPC clients (example: :4567).
+                           Options: host:port or :port; when set, overrides --h2-port
   --log-level string       Log level.
                            Options: debug, info, warn, error
   --aws-access-key string  Access key expected by SigV4 validation.
@@ -819,6 +880,7 @@ Examples:
   stackyard start --providers aws
   stackyard start --providers aws,gcp,azure,oci
   stackyard start --providers aws --port 4566
+  stackyard start --providers aws --h2-port 4567
   stackyard start --providers aws --log-level debug
   stackyard start --providers aws --lambda-execution-mode local
   stackyard start --providers aws --persist-state --state-dir /tmp/stackyard-state

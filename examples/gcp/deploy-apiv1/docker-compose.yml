@@ -1,0 +1,30 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  deploy-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/deploy-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_DEPLOY_PIPELINE_ID=team-pipeline
+      - STACKYARD_GCP_DEPLOY_TARGET_ID=team-target
+      - STACKYARD_GCP_DEPLOY_RELEASE_ID=release-1
+      - STACKYARD_GCP_DEPLOY_ROLLOUT_ID=rollout-1
+      - STACKYARD_GCP_DEPLOY_JOBRUN_ID=job-1
+      - STACKYARD_GCP_DEPLOY_POLICY_ID=policy-1
+      - STACKYARD_GCP_DEPLOY_OPERATION_ID=op-1

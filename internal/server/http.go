@@ -21,7 +21,9 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -63,10 +65,13 @@ import (
 	"github.com/stackyard/stackyard/internal/services/sqs"
 	"github.com/stackyard/stackyard/internal/services/swf"
 	"github.com/stackyard/stackyard/internal/services/timestreaminfluxdb"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type Server struct {
 	httpServer                       *http.Server
+	http2Server                      *http.Server
 	acm                              *acm.Service
 	apigateway                       *apiGatewayStore
 	apigatewayv2                     *apiGatewayV2Store
@@ -329,6 +334,9 @@ type Server struct {
 	enabledProviderSet               map[string]struct{}
 	providerStorageMu                sync.Mutex
 	gcpStorageBuckets                map[string]*providerBucket
+	gcpStorageHMACKeys               map[string]map[string]*gcpStorageHMACKey
+	gcpStorageNextGeneration         int64
+	gcpStorageNextHMACKeyID          int64
 	azureStorageAccounts             map[string]map[string]*providerBucket
 	ociStorageNamespaces             map[string]map[string]*providerBucket
 	awsAuthValidator                 awsRequestAuthValidator
@@ -355,6 +363,7 @@ const (
 
 type Config struct {
 	Addr                 string
+	H2Addr               string
 	Providers            []string
 	AccessKey            string
 	SecretKey            string
@@ -373,6 +382,9 @@ type Config struct {
 func New(cfg Config) *Server {
 	if cfg.Addr == "" {
 		cfg.Addr = ":4566"
+	}
+	if cfg.H2Addr == "" {
+		cfg.H2Addr = siblingPortAddr(cfg.Addr, "4567")
 	}
 	if cfg.AccessKey == "" {
 		cfg.AccessKey = "stackyard"
@@ -649,6 +661,9 @@ func New(cfg Config) *Server {
 		enabledProviders:                 enabledProviders,
 		enabledProviderSet:               toProviderSet(enabledProviders),
 		gcpStorageBuckets:                map[string]*providerBucket{},
+		gcpStorageHMACKeys:               map[string]map[string]*gcpStorageHMACKey{},
+		gcpStorageNextGeneration:         1000,
+		gcpStorageNextHMACKeyID:          0,
 		azureStorageAccounts:             map[string]map[string]*providerBucket{},
 		ociStorageNamespaces:             map[string]map[string]*providerBucket{},
 		accessKey:                        cfg.AccessKey,
@@ -687,13 +702,20 @@ func New(cfg Config) *Server {
 	if s.state != nil {
 		handler = s.state.middleware(handler)
 	}
+	grpcCompatibleHandler := grpcCompatibilityMiddleware(handler)
+	h2Handler := h2c.NewHandler(grpcCompatibleHandler, &http2.Server{})
 	s.httpServer = &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           handler,
+		Handler:           h2Handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	s.http2Server = &http.Server{
+		Addr:              cfg.H2Addr,
+		Handler:           h2Handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	if s.state != nil {
-		if err := s.state.restore(s.httpServer.Handler); err != nil {
+		if err := s.state.restore(handler); err != nil {
 			log.Printf("state restore failed: %v", err)
 		}
 	}
@@ -702,7 +724,33 @@ func New(cfg Config) *Server {
 }
 
 func (s *Server) ListenAndServe() error {
-	return s.httpServer.ListenAndServe()
+	if s.http2Server == nil {
+		return s.httpServer.ListenAndServe()
+	}
+
+	errCh := make(chan error, 2)
+	go func() {
+		errCh <- normalizeListenerErr(s.httpServer.ListenAndServe())
+	}()
+	go func() {
+		errCh <- normalizeListenerErr(s.http2Server.ListenAndServe())
+	}()
+
+	var firstErr error
+	for i := 0; i < 2; i++ {
+		err := <-errCh
+		if err == nil {
+			continue
+		}
+		if firstErr == nil {
+			firstErr = err
+			_ = s.httpServer.Close()
+			_ = s.http2Server.Close()
+			continue
+		}
+		return fmt.Errorf("%v; additional listener error: %w", firstErr, err)
+	}
+	return firstErr
 }
 
 func (s *Server) Handler() http.Handler {
@@ -766,6 +814,80 @@ func endpointForDebugLog(r *http.Request) string {
 		return "Action:" + action
 	}
 	return r.Method + " " + rawRequestPath(r)
+}
+
+func normalizeListenerErr(err error) error {
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+
+func siblingPortAddr(addr, port string) string {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(addr))
+	if err != nil {
+		return ":" + port
+	}
+	return net.JoinHostPort(host, port)
+}
+
+func grpcCompatibilityMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isGRPCRequest(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		var grpcReqBody []byte
+		if r.Body != nil && grpcFoundationNeedsRequestBody(rawRequestPath(r)) {
+			body, err := io.ReadAll(r.Body)
+			if err == nil {
+				grpcReqBody = body
+				r.Body = io.NopCloser(bytes.NewReader(body))
+			} else {
+				r.Body = io.NopCloser(bytes.NewReader(nil))
+			}
+		}
+
+		rr := httptest.NewRecorder()
+		next.ServeHTTP(rr, r)
+
+		contentType := strings.ToLower(strings.TrimSpace(rr.Header().Get("Content-Type")))
+		if strings.HasPrefix(contentType, "application/grpc") {
+			copyRecordedResponse(w, rr)
+			return
+		}
+		if isGCPFoundationSuccessMode() && providerFromPath(rawRequestPath(r)) == providerGCP {
+			if maybeWriteKnownGRPCSuccess(w, r, rr, grpcReqBody) {
+				return
+			}
+			writeGRPCUnaryResponse(w, nil, "0", "")
+			return
+		}
+		if maybeWriteKnownGRPCSuccess(w, r, rr, grpcReqBody) {
+			return
+		}
+
+		// gRPC clients require HTTP/2 with gRPC content type and grpc-status fields.
+		writeGRPCUnaryResponse(w, nil, "12", "stackyard-route-not-implemented")
+	})
+}
+
+func copyRecordedResponse(w http.ResponseWriter, rr *httptest.ResponseRecorder) {
+	for key, values := range rr.Header() {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(rr.Code)
+	_, _ = w.Write(rr.Body.Bytes())
+}
+
+func isGRPCRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type"))), "application/grpc")
 }
 
 func actionFromValuesForLog(values url.Values) string {
@@ -846,6 +968,10 @@ func (s *Server) providerEnabled(provider string) bool {
 }
 
 func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
+	if s.handleGCPComputeMetadataRouter(w, r) {
+		return
+	}
+
 	switch providerFromPath(rawRequestPath(r)) {
 	case providerGCP:
 		if !s.providerEnabled(providerGCP) {
@@ -855,7 +981,785 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if !s.validateProviderRequestAuth(w, r, providerGCP) {
 			return
 		}
+		if s.handleGCPWorkstationsRouter(w, r) {
+			return
+		}
+		if s.handleGCPWorkflowExecutionsRouter(w, r) {
+			return
+		}
+		if s.handleGCPWorkflowsRouter(w, r) {
+			return
+		}
+		path := rawRequestPath(r)
+		if handleGCPContractProbeGeneric(w, r) {
+			return
+		}
+		// VM Migration has generic resource tails (sources/groups/operations) that
+		// overlap other GCP routers. Route it early when it is explicitly hinted
+		// or when handling the VmMigration gRPC bridge namespace.
+		if strings.HasPrefix(path, gcpVMMigrationGRPCPathPrefix) || hasGCPVMMigrationHint(r) {
+			if s.handleGCPVMMigrationRouter(w, r) {
+				return
+			}
+		}
+		// VMware Engine uses broad /projects/*/locations/* resource trees and a
+		// dedicated gRPC namespace; route it early on explicit hint or gRPC path
+		// to avoid overlap with other project/location routers.
+		if strings.HasPrefix(path, gcpVMwareEngineGRPCPathPrefix) || hasGCPVMwareEngineHint(r) {
+			if s.handleGCPVMwareEngineRouter(w, r) {
+				return
+			}
+		}
+		// Serverless VPC Access uses connectors and operations under broad
+		// project/location resource trees; route it early when explicitly hinted
+		// or when handling its gRPC bridge namespace.
+		if strings.HasPrefix(path, gcpVPCAccessGRPCPathPrefix) || hasGCPVPCAccessHint(r) {
+			if s.handleGCPVPCAccessRouter(w, r) {
+				return
+			}
+		}
+		// Web Risk exposes global endpoints plus project-scoped operations and
+		// should be routed early when explicitly hinted (or via gRPC bridge)
+		// to avoid collisions with other routers that also claim /projects/*/operations.
+		if strings.HasPrefix(path, gcpWebRiskGRPCPathPrefix) || hasGCPWebRiskHint(r) {
+			if s.handleGCPWebRiskRouter(w, r) {
+				return
+			}
+		}
+		// Web Security Scanner routes use broad project-scoped scan config/run
+		// trees and should be handled early when explicitly hinted or when the
+		// gRPC bridge namespace is targeted.
+		if strings.HasPrefix(path, gcpWebSecurityScannerGRPCPathPrefix) || hasGCPWebSecurityScannerHint(r) {
+			if s.handleGCPWebSecurityScannerRouter(w, r) {
+				return
+			}
+		}
+		// Telco Automation includes action-style routes with colon suffixes and
+		// project/location discovery endpoints; handle it early to avoid broad
+		// GCP routers claiming those paths first.
+		if s.handleGCPTelcoAutomationRouter(w, r) {
+			return
+		}
+		// Text-to-Speech uses operation-style resources under
+		// /projects/*/locations/*/operations and long-audio action routes; keep
+		// dispatch early to avoid broad routers claiming these paths first.
+		if s.handleGCPTextToSpeechRouter(w, r) {
+			return
+		}
+		// Video Intelligence has operation resources under
+		// /projects/*/locations/* plus videos:annotate and should be checked
+		// ahead of other broad video routers.
+		if s.handleGCPVideoIntelligenceRouter(w, r) {
+			return
+		}
+		// Vision uses product search resource trees under
+		// /projects/*/locations/* and should run before broader routers.
+		if s.handleGCPVisionRouter(w, r) {
+			return
+		}
+		// Vision AI exposes multiple service families under
+		// /google.cloud.visionai.v1.* plus location/operation resources.
+		// Dispatch it before broader video/location routers.
+		if s.handleGCPVisionAIRouter(w, r) {
+			return
+		}
+		// Video Transcoder routes share broad /projects/*/locations/* trees and
+		// should be checked before other video routers that also claim location
+		// resource tails.
+		if s.handleGCPVideoTranscoderRouter(w, r) {
+			return
+		}
+		// Video Stitcher uses similarly broad resource trees under
+		// /projects/*/locations/* and action-style operation routes; keep this
+		// ahead of Live Stream so livestream's broad path matcher does not claim
+		// stitcher resource trees first.
+		if s.handleGCPVideoStitcherRouter(w, r) {
+			return
+		}
+		// Live Stream has broad channel/input/asset resource trees under
+		// /projects/*/locations/* and action-style routes with colon suffixes.
+		if s.handleGCPVideoLivestreamRouter(w, r) {
+			return
+		}
+		// Translation V3 has broad /v3/projects/*/locations/* resource and
+		// action-style routes; keep dispatch early to avoid ambiguous capture.
+		if s.handleGCPTranslateRouter(w, r) {
+			return
+		}
+		if s.handleGCPTPURouter(w, r) {
+			return
+		}
+		if s.handleGCPTraceV1Router(w, r) {
+			return
+		}
+		if s.handleGCPTraceRouter(w, r) {
+			return
+		}
+		if s.handleGCPStorageBatchOperationsRouter(w, r) {
+			return
+		}
+		if s.handleGCPStorageTransferRouter(w, r) {
+			return
+		}
+		if s.handleGCPStreetViewPublishRouter(w, r) {
+			return
+		}
+		if s.handleGCPStorageInsightsRouter(w, r) {
+			return
+		}
+		// Spanner Admin Database shares "/instances/..." URI shapes with other
+		// staged routers; handle it early to avoid ambiguous fallthrough.
+		if s.handleGCPSpannerAdminDatabaseRouter(w, r) {
+			return
+		}
+		// Spanner Admin Instance also uses "/instances/..." paths and should be
+		// handled before broader routers for deterministic dispatch.
+		if s.handleGCPSpannerAdminInstanceRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecurityPrivateCARouter(w, r) {
+			return
+		}
+		if s.handleGCPSecurityPublicCARouter(w, r) {
+			return
+		}
+		if hasGCPRedisHint(r) {
+			if s.handleGCPRedisRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPRedisClusterHint(r) {
+			if s.handleGCPRedisClusterRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPResourceManagerHint(r) {
+			if s.handleGCPResourceManagerRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPSecurityCenterHint(r) {
+			if s.handleGCPSecurityCenterRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPSecurityCenterManagementHint(r) {
+			if s.handleGCPSecurityCenterManagementRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPSecurityPostureHint(r) {
+			if s.handleGCPSecurityPostureRouter(w, r) {
+				return
+			}
+		}
+		if s.handleGCPRapidMigrationAssessmentRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecureSourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPServiceManagementRouter(w, r) {
+			return
+		}
+		if isGCPChroniclePath(path) {
+			if s.handleGCPChronicleRouter(w, r) {
+				return
+			}
+		}
+		if isGCPIAMPath(path) {
+			if s.handleGCPIAMRouter(w, r) {
+				return
+			}
+		}
+		if isGCPIAMV2Path(path) {
+			if s.handleGCPIAMV2Router(w, r) {
+				return
+			}
+		}
+		if isGCPIAMCredentialsPath(path) {
+			if s.handleGCPIAMCredentialsRouter(w, r) {
+				return
+			}
+		}
+		if isGCPDialogflowPath(path) {
+			if s.handleGCPDialogflowRouter(w, r) {
+				return
+			}
+		}
+		if isGCPDialogflowCXPath(path) {
+			if s.handleGCPDialogflowCXRouter(w, r) {
+				return
+			}
+		}
+		if isGCPDiscoveryEnginePath(path) {
+			if s.handleGCPDiscoveryEngineRouter(w, r) {
+				return
+			}
+		}
+		if isGCPDocumentAIPath(path) {
+			if s.handleGCPDocumentAIRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPCloudDeployHint(r) {
+			if s.handleGCPCloudDeployRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPDeveloperConnectHint(r) {
+			if s.handleGCPDeveloperConnectRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPDataprocHint(r) {
+			if s.handleGCPDataprocRouter(w, r) {
+				return
+			}
+		}
+		if hasGCPConfigDeliveryHint(r) {
+			if s.handleGCPConfigDeliveryRouter(w, r) {
+				return
+			}
+		}
+		if shouldHandleGCPMapsRouteOptimizationRequest(r) {
+			if s.handleGCPMapsRouteOptimizationRouter(w, r) {
+				return
+			}
+		}
+		if isGCPAPIGatewayPath(rawRequestPath(r)) {
+			if s.handleGCPAPIGatewayRouter(w, r) {
+				return
+			}
+		}
+		if isGCPArtifactRegistryPath(rawRequestPath(r)) {
+			if s.handleGCPArtifactRegistryRouter(w, r) {
+				return
+			}
+		}
+		if isGCPAutoMLPath(rawRequestPath(r)) {
+			if s.handleGCPAutoMLRouter(w, r) {
+				return
+			}
+		}
+		if isGCPContainerPath(rawRequestPath(r)) {
+			if s.handleGCPContainerRouter(w, r) {
+				return
+			}
+		}
+		if isGCPDataflowPath(rawRequestPath(r)) {
+			if s.handleGCPDataflowRouter(w, r) {
+				return
+			}
+		}
+		if s.handleGCPConfidentialComputingRouter(w, r) {
+			return
+		}
+		if s.handleGCPInfrastructureManagerRouter(w, r) {
+			return
+		}
 		if s.handleGCPGenerativeLanguageRouter(w, r) {
+			return
+		}
+		if s.handleGCPGeminiDataAnalyticsRouter(w, r) {
+			return
+		}
+		if s.handleGCPApigeeConnectRouter(w, r) {
+			return
+		}
+		if s.handleGCPAPIHubRouter(w, r) {
+			return
+		}
+		if s.handleGCPAPIKeysRouter(w, r) {
+			return
+		}
+		if s.handleGCPRecaptchaEnterpriseRouter(w, r) {
+			return
+		}
+		if s.handleGCPRecommendationEngineRouter(w, r) {
+			return
+		}
+		if s.handleGCPTalentRouter(w, r) {
+			return
+		}
+		if s.handleGCPRecommenderRouter(w, r) {
+			return
+		}
+		if s.handleGCPRetailRouter(w, r) {
+			return
+		}
+		if s.handleGCPRunRouter(w, r) {
+			return
+		}
+		if s.handleGCPSupportRouter(w, r) {
+			return
+		}
+		if s.handleGCPServiceControlRouter(w, r) {
+			return
+		}
+		if s.handleGCPWebRiskRouter(w, r) {
+			return
+		}
+		if s.handleGCPWebSecurityScannerRouter(w, r) {
+			return
+		}
+		if s.handleGCPServiceUsageRouter(w, r) {
+			return
+		}
+		if s.handleGCPServiceHealthRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecretManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecurityCenterRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecurityCenterManagementRouter(w, r) {
+			return
+		}
+		if s.handleGCPSecurityPostureRouter(w, r) {
+			return
+		}
+		if s.handleGCPSchedulerRouter(w, r) {
+			return
+		}
+		if s.handleGCPSpannerExecutorRouter(w, r) {
+			return
+		}
+		if s.handleGCPSpannerAdapterRouter(w, r) {
+			return
+		}
+		if s.handleGCPSpannerRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingCSSRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantAccountsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantConversionsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantDatasourcesRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantInventoriesRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantIssueresolutionRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantNotificationsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantOrdertrackingRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantProductsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantPromotionsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantReportsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantReviewsRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantQuotaRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantProductstudioRouter(w, r) {
+			return
+		}
+		if s.handleGCPShoppingMerchantLFPRouter(w, r) {
+			return
+		}
+		if s.handleGCPShellRouter(w, r) {
+			return
+		}
+		if s.handleGCPSpeechV2Router(w, r) {
+			return
+		}
+		if s.handleGCPSpeechRouter(w, r) {
+			return
+		}
+		if s.handleGCPServiceDirectoryRouter(w, r) {
+			return
+		}
+		if s.handleGCPWorkspaceEventsSubscriptionsRouter(w, r) {
+			return
+		}
+		if s.handleGCPMeetRouter(w, r) {
+			return
+		}
+		if s.handleGCPChatRouter(w, r) {
+			return
+		}
+		if s.handleGCPChronicleRouter(w, r) {
+			return
+		}
+		if s.handleGCPBigtableRouter(w, r) {
+			return
+		}
+		if s.handleGCPCertificateManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudChannelRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudControlsPartnerRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudDMSRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudProfilerRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudQuotasRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudTasksRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudBuildRouter(w, r) {
+			return
+		}
+		if s.handleGCPDatastoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataflowRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataformRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataQNARouter(w, r) {
+			return
+		}
+		if s.handleGCPDatastoreAdminRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudDeployRouter(w, r) {
+			return
+		}
+		if s.handleGCPDialogflowRouter(w, r) {
+			return
+		}
+		if s.handleGCPDialogflowCXRouter(w, r) {
+			return
+		}
+		if s.handleGCPDeviceStreamingRouter(w, r) {
+			return
+		}
+		if s.handleGCPDeveloperConnectRouter(w, r) {
+			return
+		}
+		if s.handleGCPDatastreamRouter(w, r) {
+			return
+		}
+		if s.handleGCPFirestoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPDiscoveryEngineRouter(w, r) {
+			return
+		}
+		if s.handleGCPDocumentAIRouter(w, r) {
+			return
+		}
+		if s.handleGCPDomainsRouter(w, r) {
+			return
+		}
+		if s.handleGCPEdgeContainerRouter(w, r) {
+			return
+		}
+		if s.handleGCPEdgeNetworkRouter(w, r) {
+			return
+		}
+		if s.handleGCPEssentialContactsRouter(w, r) {
+			return
+		}
+		if s.handleGCPEventarcRouter(w, r) {
+			return
+		}
+		if s.handleGCPEventarcPublishingRouter(w, r) {
+			return
+		}
+		if s.handleGCPFilestoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPFinancialServicesRouter(w, r) {
+			return
+		}
+		if s.handleGCPGameServicesRouter(w, r) {
+			return
+		}
+		if s.handleGCPCloudFunctionsV2Router(w, r) {
+			return
+		}
+		if s.handleGCPCloudFunctionsRouter(w, r) {
+			return
+		}
+		if s.handleGCPErrorReportingRouter(w, r) {
+			return
+		}
+		if s.handleGCPDLPRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataFusionRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataplexRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataprocV2Router(w, r) {
+			return
+		}
+		if s.handleGCPDataprocRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataLabelingRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataCatalogRouter(w, r) {
+			return
+		}
+		if s.handleGCPDataCatalogLineageRouter(w, r) {
+			return
+		}
+		if s.handleGCPCommerceConsumerProcurementRouter(w, r) {
+			return
+		}
+		if s.handleGCPConfigDeliveryRouter(w, r) {
+			return
+		}
+		if s.handleGCPRedisRouter(w, r) {
+			return
+		}
+		if s.handleGCPRedisClusterRouter(w, r) {
+			return
+		}
+		if s.handleGCPResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPContainerRouter(w, r) {
+			return
+		}
+		if s.handleGCPGKEConnectGatewayRouter(w, r) {
+			return
+		}
+		if s.handleGCPGKEHubRouter(w, r) {
+			return
+		}
+		if s.handleGCPGKEMultiCloudRouter(w, r) {
+			return
+		}
+		if s.handleGCPGKEBackupRouter(w, r) {
+			return
+		}
+		if s.handleGCPComputeRouter(w, r) {
+			return
+		}
+		if s.handleGCPArtifactRegistryRouter(w, r) {
+			return
+		}
+		if s.handleGCPAutoMLRouter(w, r) {
+			return
+		}
+		if s.handleGCPAppEngineRouter(w, r) {
+			return
+		}
+		if s.handleGCPIDSRouter(w, r) {
+			return
+		}
+		if s.handleGCPKMSInventoryRouter(w, r) {
+			return
+		}
+		if s.handleGCPKMSRouter(w, r) {
+			return
+		}
+		if s.handleGCPIoTRouter(w, r) {
+			return
+		}
+		if s.handleGCPLanguageRouter(w, r) {
+			return
+		}
+		if s.handleGCPLanguageV2Router(w, r) {
+			return
+		}
+		if s.handleGCPLifeSciencesRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsAreaInsightsRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsAddressValidationRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsFleetEngineRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsFleetEngineDeliveryRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsPlacesRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsRouteOptimizationRouter(w, r) {
+			return
+		}
+		if s.handleGCPOptimizationRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsRoutingRouter(w, r) {
+			return
+		}
+		if s.handleGCPMapsSolarRouter(w, r) {
+			return
+		}
+		if s.handleGCPMediaTranslationRouter(w, r) {
+			return
+		}
+		if s.handleGCPMetastoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPMigrationCenterRouter(w, r) {
+			return
+		}
+		if s.handleGCPModelArmorRouter(w, r) {
+			return
+		}
+		if s.handleGCPNetAppRouter(w, r) {
+			return
+		}
+		if s.handleGCPNotebooksV2Router(w, r) {
+			return
+		}
+		if s.handleGCPOsConfigRouter(w, r) {
+			return
+		}
+		if s.handleGCPOsLoginRouter(w, r) {
+			return
+		}
+		if s.handleGCPOsConfigAgentEndpointRouter(w, r) {
+			return
+		}
+		if s.handleGCPOrgPolicyRouter(w, r) {
+			return
+		}
+		if s.handleGCPOracleDatabaseRouter(w, r) {
+			return
+		}
+		if s.handleGCPNotebooksRouter(w, r) {
+			return
+		}
+		if s.handleGCPMonitoringDashboardRouter(w, r) {
+			return
+		}
+		if s.handleGCPMetricsScopeRouter(w, r) {
+			return
+		}
+		if s.handleGCPMonitoringRouter(w, r) {
+			return
+		}
+		if s.handleGCPLoggingRouter(w, r) {
+			return
+		}
+		if s.handleGCPLustreRouter(w, r) {
+			return
+		}
+		if s.handleGCPParallelstoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPParameterManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPPrivateCatalogRouter(w, r) {
+			return
+		}
+		if s.handleGCPPrivilegedAccessManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPPubSubRouter(w, r) {
+			return
+		}
+		if s.handleGCPPubSubLiteRouter(w, r) {
+			return
+		}
+		if s.handleGCPPhishingProtectionRouter(w, r) {
+			return
+		}
+		if s.handleGCPPolicySimulatorRouter(w, r) {
+			return
+		}
+		if s.handleGCPPolicyTroubleshooterRouter(w, r) {
+			return
+		}
+		if s.handleGCPPolicyTroubleshooterIAMRouter(w, r) {
+			return
+		}
+		if s.handleGCPManagedKafkaRouter(w, r) {
+			return
+		}
+		if s.handleGCPManagedKafkaSchemaRegistryRouter(w, r) {
+			return
+		}
+		if s.handleGCPManagedIdentitiesRouter(w, r) {
+			return
+		}
+		if s.handleGCPMemorystoreRouter(w, r) {
+			return
+		}
+		if s.handleGCPMemcacheRouter(w, r) {
+			return
+		}
+		if s.handleGCPNetworkServicesRouter(w, r) {
+			return
+		}
+		if s.handleGCPNetworkConnectivityRouter(w, r) {
+			return
+		}
+		if s.handleGCPNetworkManagementRouter(w, r) {
+			return
+		}
+		if s.handleGCPNetworkSecurityRouter(w, r) {
+			return
+		}
+		if s.handleGCPLocationFinderRouter(w, r) {
+			return
+		}
+		if s.handleGCPLicenseManagerRouter(w, r) {
+			return
+		}
+		if s.handleGCPIdentityToolkitRouter(w, r) {
+			return
+		}
+		if s.handleGCPIAPRouter(w, r) {
+			return
+		}
+		if s.handleGCPIAMRouter(w, r) {
+			return
+		}
+		if s.handleGCPIAMV2Router(w, r) {
+			return
+		}
+		if s.handleGCPIAMV3Router(w, r) {
+			return
+		}
+		if s.handleGCPIAMAdminRouter(w, r) {
+			return
+		}
+		if s.handleGCPIAMCredentialsRouter(w, r) {
+			return
+		}
+		if s.handleGCPAPIGatewayRouter(w, r) {
+			return
+		}
+		if s.handleGCPAiplatformRouter(w, r) {
 			return
 		}
 		if s.handleGCPObjectStorageRouter(w, r) {
@@ -932,12 +1836,75 @@ func respondProviderDisabled(w http.ResponseWriter, provider string, enabled []s
 }
 
 func respondProviderNotImplemented(w http.ResponseWriter, provider, path string) {
+	if provider == providerGCP && isGCPFoundationSuccessMode() {
+		respondProviderFoundationSuccess(w, provider, path)
+		return
+	}
 	respondJSON(w, http.StatusNotImplemented, map[string]any{
 		"error":    "NotImplemented",
 		"message":  fmt.Sprintf("%s emulation foundation is enabled but this route is not implemented yet", provider),
 		"provider": provider,
 		"path":     path,
 	})
+}
+
+func respondProviderFoundationSuccess(w http.ResponseWriter, provider, path string) {
+	if provider == providerGCP {
+		if isGCPFoundationJSONArrayPath(path) {
+			respondJSON(w, http.StatusOK, []any{})
+			return
+		}
+		// Keep staged GCP emulation broadly compatible with generated clients by
+		// returning an empty JSON object, which safely unmarshals into most response
+		// message types (including list/get/create operation envelopes).
+		respondJSON(w, http.StatusOK, map[string]any{})
+		return
+	}
+	payload := map[string]any{
+		"status":   "ok",
+		"provider": provider,
+		"path":     path,
+	}
+	if strings.Contains(strings.ToLower(path), "list") {
+		payload["items"] = []any{}
+	}
+	respondJSON(w, http.StatusOK, payload)
+}
+
+func isGCPFoundationJSONArrayPath(path string) bool {
+	switch {
+	case strings.Contains(path, "/documents:batchGet"):
+		return true
+	case strings.Contains(path, "/documents:runQuery"):
+		return true
+	case strings.Contains(path, "/documents:runAggregationQuery"):
+		return true
+	case strings.Contains(path, "/google.firestore.v1.Firestore/BatchGetDocuments"):
+		return true
+	case strings.Contains(path, "/google.firestore.v1.Firestore/RunQuery"):
+		return true
+	case strings.Contains(path, "/google.firestore.v1.Firestore/RunAggregationQuery"):
+		return true
+	case strings.Contains(path, ":streamGenerateContent"):
+		return true
+	case strings.Contains(path, "/google.ai.generativelanguage.v1beta.GenerativeService/StreamGenerateContent"):
+		return true
+	case strings.Contains(path, ":computeRouteMatrix"):
+		return true
+	case strings.Contains(path, "/google.maps.routing.v2.Routes/ComputeRouteMatrix"):
+		return true
+	case strings.Contains(path, "/locations/") && strings.HasSuffix(path, ":chat"):
+		return true
+	case strings.Contains(path, "/google.cloud.geminidataanalytics.v1beta.DataChatService/Chat"):
+		return true
+	default:
+		return false
+	}
+}
+
+func isGCPFoundationSuccessMode() bool {
+	mode := strings.ToLower(strings.TrimSpace(os.Getenv("STACKYARD_GCP_FOUNDATION_MODE")))
+	return mode == "success"
 }
 
 func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {

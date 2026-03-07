@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  vmwareengine-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/vmwareengine-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_PRIVATE_CLOUD_ID=private-cloud-1
+      - STACKYARD_GCP_CLUSTER_ID=cluster-1
+      - STACKYARD_GCP_NETWORK_POLICY_ID=network-policy-1
+      - STACKYARD_GCP_VMWARE_ENGINE_NETWORK_ID=vmware-engine-network-1
+      - STACKYARD_GCP_PRIVATE_CONNECTION_ID=private-connection-1

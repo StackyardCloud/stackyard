@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  retail-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/retail-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=global
+      - STACKYARD_GCP_CATALOG_ID=default_catalog
+      - STACKYARD_GCP_BRANCH_ID=default_branch
+      - STACKYARD_GCP_PRODUCT_ID=product-1
+      - STACKYARD_GCP_SERVING_CONFIG_ID=default_config
+      - STACKYARD_GCP_CONTROL_ID=control-1
+      - STACKYARD_GCP_MODEL_ID=model-1
+      - STACKYARD_GCP_PLACEMENT_ID=default_search

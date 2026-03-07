@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  streetview-publish-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/streetview-publish-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_STREETVIEW_PHOTO_ID=photo-1
+      - STACKYARD_GCP_STREETVIEW_SEQUENCE_ID=sequence-1

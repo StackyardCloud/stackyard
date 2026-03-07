@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  logging-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/logging-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOGGING_LOG_ID=stackyard%2Fapp
+      - STACKYARD_GCP_LOGGING_SINK_ID=export-a
+      - STACKYARD_GCP_LOGGING_EXCLUSION_ID=exclude-debug
+      - STACKYARD_GCP_LOGGING_METRIC_ID=error_count

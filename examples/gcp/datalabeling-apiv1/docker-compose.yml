@@ -1,0 +1,30 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  datalabeling-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/datalabeling-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_DATALABELING_DATASET_ID=team-dataset
+      - STACKYARD_GCP_DATALABELING_ANNOTATED_DATASET_ID=annotated-1
+      - STACKYARD_GCP_DATALABELING_DATA_ITEM_ID=item-1
+      - STACKYARD_GCP_DATALABELING_EXAMPLE_ID=example-1
+      - STACKYARD_GCP_DATALABELING_ANNOTATION_SPEC_SET_ID=spec-set-1
+      - STACKYARD_GCP_DATALABELING_INSTRUCTION_ID=instruction-1
+      - STACKYARD_GCP_DATALABELING_EVALUATION_ID=evaluation-1
+      - STACKYARD_GCP_DATALABELING_EVALUATION_JOB_ID=job-1

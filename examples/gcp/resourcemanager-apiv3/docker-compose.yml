@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  resourcemanager-apiv3:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/resourcemanager-apiv3/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_FOLDER_PARENT=organizations/123456
+      - STACKYARD_GCP_FOLDER_NAME=folders/1001
+      - STACKYARD_GCP_DESTINATION_PARENT=folders/2000
+      - STACKYARD_GCP_PROJECT_NAME=projects/415104041262
+      - STACKYARD_GCP_PROJECT_PARENT=organizations/123456
+      - STACKYARD_GCP_TAG_KEY_NAME=tagKeys/2001
+      - STACKYARD_GCP_TAG_VALUE_NAME=tagValues/3001
+      - STACKYARD_GCP_TAG_BINDING_PARENT=//cloudresourcemanager.googleapis.com/projects/415104041262
+      - STACKYARD_GCP_TAG_KEY_NAMESPACED=123456/env
+      - STACKYARD_GCP_TAG_VALUE_NAMESPACED=123456/env/prod

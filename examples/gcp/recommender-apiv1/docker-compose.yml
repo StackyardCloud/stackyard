@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  recommender-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/recommender-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_INSIGHT_TYPE=google.iam.policy.Insight
+      - STACKYARD_GCP_RECOMMENDER=google.compute.instance.MachineTypeRecommender
+      - STACKYARD_GCP_INSIGHT_ID=insight-1
+      - STACKYARD_GCP_RECOMMENDATION_ID=recommendation-1

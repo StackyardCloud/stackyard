@@ -1,0 +1,31 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  eventarc-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/eventarc-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_EVENTARC_TRIGGER_ID=team-trigger
+      - STACKYARD_GCP_EVENTARC_CHANNEL_ID=team-channel
+      - STACKYARD_GCP_EVENTARC_CONNECTION_ID=team-connection
+      - STACKYARD_GCP_EVENTARC_MESSAGE_BUS_ID=team-bus
+      - STACKYARD_GCP_EVENTARC_ENROLLMENT_ID=team-enrollment
+      - STACKYARD_GCP_EVENTARC_PIPELINE_ID=team-pipeline
+      - STACKYARD_GCP_EVENTARC_GOOGLE_API_SOURCE_ID=team-source
+      - STACKYARD_GCP_EVENTARC_OPERATION_ID=op-1

@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  documentai-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/documentai-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us
+      - STACKYARD_GCP_DOCUMENTAI_PROCESSOR_ID=proc-1
+      - STACKYARD_GCP_DOCUMENTAI_PROCESSOR_TYPE_ID=FORM_PARSER_PROCESSOR
+      - STACKYARD_GCP_DOCUMENTAI_PROCESSOR_VERSION_ID=ver-1
+      - STACKYARD_GCP_DOCUMENTAI_EVALUATION_ID=eval-1
+      - STACKYARD_GCP_DOCUMENTAI_OPERATION_ID=op-1

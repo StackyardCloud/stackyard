@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  telcoautomation-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/telcoautomation-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_CLUSTER_ID=cluster-1
+      - STACKYARD_GCP_EDGE_SLM_ID=edgeslm-1
+      - STACKYARD_GCP_BLUEPRINT_ID=blueprint-draft
+      - STACKYARD_GCP_DEPLOYMENT_ID=deployment-draft
+      - STACKYARD_GCP_HYDRATED_ID=hydrated-draft
+

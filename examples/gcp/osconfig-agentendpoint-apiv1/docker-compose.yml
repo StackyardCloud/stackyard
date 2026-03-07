@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  osconfig-agentendpoint-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/osconfig-agentendpoint-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_OSCONFIG_INSTANCE_ID_TOKEN=stackyard-instance-token
+      - STACKYARD_GCP_OSCONFIG_AGENT_VERSION=stackyard-agent/0.1.0
+      - STACKYARD_GCP_OSCONFIG_TASK_ID=task-1
+      - STACKYARD_GCP_OSCONFIG_INVENTORY_CHECKSUM=inventory-checksum-1
+      - STACKYARD_GCP_OSCONFIG_VM_INVENTORY_CHECKSUM=vm-inventory-checksum-1

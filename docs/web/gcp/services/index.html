@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stackyard Docs | GCP Services</title>
+    <meta
+      name="description"
+      content="Stackyard GCP services catalog for local cloud API emulation and capability tracking."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="../../index.html">
+          <span class="brand-mark">S</span>
+          <span>Stackyard Docs</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="../../index.html">Overview</a>
+          <a href="../../aws/index.html">AWS</a>
+          <a href="../../aws/services/index.html">AWS Services</a>
+          <a href="../index.html">GCP</a>
+          <a href="./index.html" aria-current="page">GCP Services</a>
+          <a href="../../tree/index.html">Service Tree</a>
+          <a href="../../../gcp.html">Legacy GCP API</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="docs-shell">
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <section class="sidebar-card">
+          <p class="sidebar-title">Navigation</p>
+          <nav class="sidebar-links">
+            <a href="../../index.html">Docs Overview</a>
+            <a href="../index.html">GCP Overview</a>
+            <a href="./index.html" aria-current="page">GCP Services</a>
+            <a href="../../tree/index.html">Service Tree</a>
+            <a href="../../../gcp.html">Legacy GCP API Surface</a>
+          </nav>
+        </section>
+
+        <section class="sidebar-card">
+          <h2>Service Index</h2>
+          <nav class="service-nav" data-service-nav aria-label="Service index"></nav>
+        </section>
+      </aside>
+
+      <main class="content">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">Docs / GCP / Services</nav>
+
+        <section class="hero reveal" id="catalog-overview">
+          <h1>GCP Services in Stackyard</h1>
+          <p>
+            Browse Stackyard's GCP-compatible services, filter by capability domain, and jump directly into staged
+            implementation plans and runnable SDK examples.
+          </p>
+          <div class="hero-meta">
+            <span class="pill accent"><span data-total-services>0</span> services listed</span>
+            <span class="pill neutral"><span data-example-services>0</span> with SDK examples</span>
+            <span class="pill warn"><span data-documented-services>0</span> with staged plans</span>
+            <span class="pill neutral"><span data-full-gates>0</span> provider services at full contract gates</span>
+          </div>
+        </section>
+
+        <section class="filters reveal" aria-label="Service filters">
+          <div class="search-wrap">
+            <input
+              type="search"
+              placeholder="Search services, categories, IDs, or capabilities"
+              aria-label="Search services"
+              data-service-search
+            />
+          </div>
+          <div class="filter-chips" data-filter-chips></div>
+          <p class="filter-meta" data-visible-count>Showing 0 services</p>
+        </section>
+
+        <div class="service-catalog" data-services></div>
+      </main>
+
+      <aside class="toc" aria-label="On this page">
+        <section class="toc-card">
+          <h2>On this page</h2>
+          <p>Quick jumps for the GCP catalog sections.</p>
+          <nav class="toc-links">
+            <a href="#catalog-overview">Overview</a>
+            <a href="#category-compute">Compute & Runtimes</a>
+            <a href="#category-storage">Storage</a>
+            <a href="#category-database">Data & Databases</a>
+            <a href="#category-security">Security & Identity</a>
+            <a href="#category-networking">Networking & Edge</a>
+            <a href="#category-ai">AI & ML</a>
+            <a href="#category-integration">Integration & Operations</a>
+          </nav>
+        </section>
+      </aside>
+    </div>
+
+    <footer>
+      GCP service source data generated from local provider coverage and examples under <code>examples/gcp/</code>.
+    </footer>
+
+    <script src="../../assets/gcp-catalog.js" defer></script>
+    <script src="../../assets/gcp-app.js" defer></script>
+  </body>
+</html>

@@ -18,3 +18,5 @@ jobs:
           ./scripts/ci.sh
       - name: Run provider contract tests
         run: make provider-contracts
+      - name: Run GCP contract coverage gate
+        run: make coverage-gcp-contracts-strict

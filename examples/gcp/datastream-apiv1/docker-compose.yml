@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  datastream-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/datastream-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_DATASTREAM_CONNECTION_PROFILE_ID=source-profile
+      - STACKYARD_GCP_DATASTREAM_STREAM_ID=orders-stream
+      - STACKYARD_GCP_DATASTREAM_OBJECT_ID=orders
+      - STACKYARD_GCP_DATASTREAM_PRIVATE_CONNECTION_ID=private-link
+      - STACKYARD_GCP_DATASTREAM_ROUTE_ID=route-1

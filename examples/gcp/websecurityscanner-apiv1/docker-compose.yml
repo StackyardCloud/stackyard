@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  websecurityscanner-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/websecurityscanner-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_SCAN_CONFIG_ID=scan-config-1
+      - STACKYARD_GCP_SCAN_RUN_ID=scan-run-1
+      - STACKYARD_GCP_FINDING_ID=finding-1
