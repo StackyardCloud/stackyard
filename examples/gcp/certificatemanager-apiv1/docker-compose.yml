@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  certificatemanager-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/certificatemanager-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_LOCATION=projects/stackyard/locations/global
+      - STACKYARD_GCP_CERTIFICATE_ID=team-certificate
+      - STACKYARD_GCP_CERTIFICATE_MAP_ID=team-map
+      - STACKYARD_GCP_CERTIFICATE_MAP_ENTRY_ID=entry-1
+      - STACKYARD_GCP_DNS_AUTHORIZATION_ID=team-dns-auth
+      - STACKYARD_GCP_TRUST_CONFIG_ID=team-trust
+      - STACKYARD_GCP_ISSUANCE_CONFIG_ID=team-issuance

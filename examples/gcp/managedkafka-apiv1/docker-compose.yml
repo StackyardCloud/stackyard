@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  managedkafka-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/managedkafka-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_MANAGEDKAFKA_CLUSTER_ID=cluster-a
+      - STACKYARD_GCP_MANAGEDKAFKA_TOPIC_ID=orders
+      - STACKYARD_GCP_MANAGEDKAFKA_CONSUMER_GROUP_ID=cg-a
+      - STACKYARD_GCP_MANAGEDKAFKA_ACL_ID=allTopics
+      - STACKYARD_GCP_MANAGEDKAFKA_OPERATION_ID=op-1

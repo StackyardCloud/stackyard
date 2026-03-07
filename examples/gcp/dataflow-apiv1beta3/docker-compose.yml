@@ -1,0 +1,31 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  dataflow-apiv1beta3:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/dataflow-apiv1beta3/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_DATAFLOW_JOB_ID=team-job
+      - STACKYARD_GCP_DATAFLOW_STAGE_ID=stage-a
+      - STACKYARD_GCP_DATAFLOW_SNAPSHOT_ID=snap-1
+      - STACKYARD_GCP_DATAFLOW_TEMPLATE_GCS_PATH=gs://stackyard/templates/wordcount
+      - STACKYARD_GCP_DATAFLOW_TEMPLATE_JOB_NAME=template-job
+      - STACKYARD_GCP_DATAFLOW_LAUNCH_TEMPLATE_JOB_NAME=launch-template-job
+      - STACKYARD_GCP_DATAFLOW_FLEX_TEMPLATE_JOB_NAME=flex-template-job
+      - STACKYARD_GCP_DATAFLOW_FLEX_TEMPLATE_SPEC_GCS_PATH=gs://stackyard/flex/containerSpec.json

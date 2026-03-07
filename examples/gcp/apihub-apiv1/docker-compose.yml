@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  apihub-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/apihub-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_LOCATION=projects/stackyard/locations/us-central1
+      - STACKYARD_GCP_API_ID=team-api
+      - STACKYARD_GCP_VERSION_ID=v1
+      - STACKYARD_GCP_DEFINITION_ID=openapi
+      - STACKYARD_GCP_OPERATION_ID=get-orders

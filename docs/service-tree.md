@@ -1,0 +1,10258 @@
+- root
+  - provider: aws
+    - category: Compute & Containers
+      - service: AWS Auto Scaling (aws-autoscaling)
+        - endpoint: Action:CreateScalingPlan
+        - endpoint: Action:DeleteScalingPlan
+        - endpoint: Action:DescribeScalingPlanResources
+        - endpoint: Action:DescribeScalingPlans
+        - endpoint: Action:GetScalingPlanResourceForecastData
+        - endpoint: Action:UpdateScalingPlan
+      - service: Batch (batch)
+        - endpoint: Action:CancelJob
+        - endpoint: Action:CreateComputeEnvironment
+        - endpoint: Action:CreateConsumableResource
+        - endpoint: Action:CreateJobQueue
+        - endpoint: Action:CreateSchedulingPolicy
+        - endpoint: Action:CreateServiceEnvironment
+        - endpoint: Action:DeleteComputeEnvironment
+        - endpoint: Action:DeleteConsumableResource
+        - endpoint: Action:DeleteJobQueue
+        - endpoint: Action:DeleteSchedulingPolicy
+        - endpoint: Action:DeleteServiceEnvironment
+        - endpoint: Action:DeregisterJobDefinition
+        - endpoint: Action:DescribeComputeEnvironments
+        - endpoint: Action:DescribeConsumableResource
+        - endpoint: Action:DescribeJobDefinitions
+        - endpoint: Action:DescribeJobQueues
+        - endpoint: Action:DescribeJobs
+        - endpoint: Action:DescribeSchedulingPolicies
+        - endpoint: Action:DescribeServiceEnvironments
+        - endpoint: Action:DescribeServiceJob
+        - endpoint: Action:GetJobQueueSnapshot
+        - endpoint: Action:ListConsumableResources
+        - endpoint: Action:ListJobs
+        - endpoint: Action:ListJobsByConsumableResource
+        - endpoint: Action:ListSchedulingPolicies
+        - endpoint: Action:ListServiceJobs
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RegisterJobDefinition
+        - endpoint: Action:SubmitJob
+        - endpoint: Action:SubmitServiceJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:TerminateJob
+        - endpoint: Action:TerminateServiceJob
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateComputeEnvironment
+        - endpoint: Action:UpdateConsumableResource
+        - endpoint: Action:UpdateJobQueue
+        - endpoint: Action:UpdateSchedulingPolicy
+        - endpoint: Action:UpdateServiceEnvironment
+      - service: Compute Optimizer (compute-optimizer)
+        - endpoint: Action:DeleteRecommendationPreferences
+        - endpoint: Action:DescribeRecommendationExportJobs
+        - endpoint: Action:ExportAutoScalingGroupRecommendations
+        - endpoint: Action:ExportEBSVolumeRecommendations
+        - endpoint: Action:ExportEC2InstanceRecommendations
+        - endpoint: Action:ExportECSServiceRecommendations
+        - endpoint: Action:ExportIdleRecommendations
+        - endpoint: Action:ExportLambdaFunctionRecommendations
+        - endpoint: Action:ExportLicenseRecommendations
+        - endpoint: Action:ExportRDSDatabaseRecommendations
+        - endpoint: Action:GetAutoScalingGroupRecommendations
+        - endpoint: Action:GetEBSVolumeRecommendations
+        - endpoint: Action:GetEC2InstanceRecommendations
+        - endpoint: Action:GetEC2RecommendationProjectedMetrics
+        - endpoint: Action:GetECSServiceRecommendationProjectedMetrics
+        - endpoint: Action:GetECSServiceRecommendations
+        - endpoint: Action:GetEffectiveRecommendationPreferences
+        - endpoint: Action:GetEnrollmentStatus
+        - endpoint: Action:GetEnrollmentStatusesForOrganization
+        - endpoint: Action:GetIdleRecommendations
+        - endpoint: Action:GetLambdaFunctionRecommendations
+        - endpoint: Action:GetLicenseRecommendations
+        - endpoint: Action:GetRDSDatabaseRecommendationProjectedMetrics
+        - endpoint: Action:GetRDSDatabaseRecommendations
+        - endpoint: Action:GetRecommendationPreferences
+        - endpoint: Action:GetRecommendationSummaries
+        - endpoint: Action:PutRecommendationPreferences
+        - endpoint: Action:UpdateEnrollmentStatus
+        - endpoint: Action:automation_AssociateAccounts
+        - endpoint: Action:automation_CreateAutomationRule
+        - endpoint: Action:automation_DeleteAutomationRule
+        - endpoint: Action:automation_DisassociateAccounts
+        - endpoint: Action:automation_GetAutomationEvent
+        - endpoint: Action:automation_GetAutomationRule
+        - endpoint: Action:automation_GetEnrollmentConfiguration
+        - endpoint: Action:automation_ListAccounts
+        - endpoint: Action:automation_ListAutomationEventSteps
+        - endpoint: Action:automation_ListAutomationEventSummaries
+        - endpoint: Action:automation_ListAutomationEvents
+        - endpoint: Action:automation_ListAutomationRulePreview
+        - endpoint: Action:automation_ListAutomationRulePreviewSummaries
+        - endpoint: Action:automation_ListAutomationRules
+        - endpoint: Action:automation_ListRecommendedActionSummaries
+        - endpoint: Action:automation_ListRecommendedActions
+        - endpoint: Action:automation_ListTagsForResource
+        - endpoint: Action:automation_RollbackAutomationEvent
+        - endpoint: Action:automation_StartAutomationEvent
+        - endpoint: Action:automation_TagResource
+        - endpoint: Action:automation_UntagResource
+        - endpoint: Action:automation_UpdateAutomationRule
+        - endpoint: Action:automation_UpdateEnrollmentConfiguration
+      - service: EBS (ebs)
+        - endpoint: Action:CompleteSnapshot
+        - endpoint: Action:GetSnapshotBlock
+        - endpoint: Action:ListChangedBlocks
+        - endpoint: Action:ListSnapshotBlocks
+        - endpoint: Action:PutSnapshotBlock
+        - endpoint: Action:StartSnapshot
+      - service: EC2 (ec2)
+        - endpoint: Action:AcceptAddressTransfer
+        - endpoint: Action:AcceptCapacityReservationBillingOwnership
+        - endpoint: Action:AcceptReservedInstancesExchangeQuote
+        - endpoint: Action:AcceptTransitGatewayMulticastDomainAssociations
+        - endpoint: Action:AcceptTransitGatewayPeeringAttachment
+        - endpoint: Action:AcceptTransitGatewayVpcAttachment
+        - endpoint: Action:AcceptVpcEndpointConnections
+        - endpoint: Action:AcceptVpcPeeringConnection
+        - endpoint: Action:AdvertiseByoipCidr
+        - endpoint: Action:AllocateAddress
+        - endpoint: Action:AllocateHosts
+        - endpoint: Action:AllocateIpamPoolCidr
+        - endpoint: Action:ApplySecurityGroupsToClientVpnTargetNetwork
+        - endpoint: Action:AssignIpv6Addresses
+        - endpoint: Action:AssignPrivateIpAddresses
+        - endpoint: Action:AssignPrivateNatGatewayAddress
+        - endpoint: Action:AssociateAddress
+        - endpoint: Action:AssociateCapacityReservationBillingOwner
+        - endpoint: Action:AssociateClientVpnTargetNetwork
+        - endpoint: Action:AssociateDhcpOptions
+        - endpoint: Action:AssociateEnclaveCertificateIamRole
+        - endpoint: Action:AssociateIamInstanceProfile
+        - endpoint: Action:AssociateInstanceEventWindow
+        - endpoint: Action:AssociateIpamByoasn
+        - endpoint: Action:AssociateIpamResourceDiscovery
+        - endpoint: Action:AssociateNatGatewayAddress
+        - endpoint: Action:AssociateRouteServer
+        - endpoint: Action:AssociateRouteTable
+        - endpoint: Action:AssociateSecurityGroupVpc
+        - endpoint: Action:AssociateSubnetCidrBlock
+        - endpoint: Action:AssociateTransitGatewayMulticastDomain
+        - endpoint: Action:AssociateTransitGatewayPolicyTable
+        - endpoint: Action:AssociateTransitGatewayRouteTable
+        - endpoint: Action:AssociateTrunkInterface
+        - endpoint: Action:AssociateVpcCidrBlock
+        - endpoint: Action:AttachClassicLinkVpc
+        - endpoint: Action:AttachInternetGateway
+        - endpoint: Action:AttachNetworkInterface
+        - endpoint: Action:AttachVerifiedAccessTrustProvider
+        - endpoint: Action:AttachVolume
+        - endpoint: Action:AttachVpnGateway
+        - endpoint: Action:AuthorizeClientVpnIngress
+        - endpoint: Action:AuthorizeSecurityGroupEgress
+        - endpoint: Action:AuthorizeSecurityGroupIngress
+        - endpoint: Action:BundleInstance
+        - endpoint: Action:CancelBundleTask
+        - endpoint: Action:CancelCapacityReservation
+        - endpoint: Action:CancelCapacityReservationFleets
+        - endpoint: Action:CancelConversionTask
+        - endpoint: Action:CancelDeclarativePoliciesReport
+        - endpoint: Action:CancelExportTask
+        - endpoint: Action:CancelImageLaunchPermission
+        - endpoint: Action:CancelImportTask
+        - endpoint: Action:CancelReservedInstancesListing
+        - endpoint: Action:CancelSpotFleetRequests
+        - endpoint: Action:CancelSpotInstanceRequests
+        - endpoint: Action:ConfirmProductInstance
+        - endpoint: Action:CopyFpgaImage
+        - endpoint: Action:CopyImage
+        - endpoint: Action:CopySnapshot
+        - endpoint: Action:CreateCapacityReservation
+        - endpoint: Action:CreateCapacityReservationBySplitting
+        - endpoint: Action:CreateCapacityReservationFleet
+        - endpoint: Action:CreateCarrierGateway
+        - endpoint: Action:CreateClientVpnEndpoint
+        - endpoint: Action:CreateClientVpnRoute
+        - endpoint: Action:CreateCoipCidr
+        - endpoint: Action:CreateCoipPool
+        - endpoint: Action:CreateCustomerGateway
+        - endpoint: Action:CreateDefaultSubnet
+        - endpoint: Action:CreateDefaultVpc
+        - endpoint: Action:CreateDelegateMacVolumeOwnershipTask
+        - endpoint: Action:CreateDhcpOptions
+        - endpoint: Action:CreateEgressOnlyInternetGateway
+        - endpoint: Action:CreateFleet
+        - endpoint: Action:CreateFlowLogs
+        - endpoint: Action:CreateFpgaImage
+        - endpoint: Action:CreateImage
+        - endpoint: Action:CreateInstanceConnectEndpoint
+        - endpoint: Action:CreateInstanceEventWindow
+        - endpoint: Action:CreateInstanceExportTask
+        - endpoint: Action:CreateInternetGateway
+        - endpoint: Action:CreateIpam
+        - endpoint: Action:CreateIpamExternalResourceVerificationToken
+        - endpoint: Action:CreateIpamPool
+        - endpoint: Action:CreateIpamResourceDiscovery
+        - endpoint: Action:CreateIpamScope
+        - endpoint: Action:CreateKeyPair
+        - endpoint: Action:CreateLaunchTemplate
+        - endpoint: Action:CreateLaunchTemplateVersion
+        - endpoint: Action:CreateLocalGatewayRoute
+        - endpoint: Action:CreateLocalGatewayRouteTable
+        - endpoint: Action:CreateLocalGatewayRouteTableVirtualInterfaceGroupAssociation
+        - endpoint: Action:CreateLocalGatewayRouteTableVpcAssociation
+        - endpoint: Action:CreateLocalGatewayVirtualInterface
+        - endpoint: Action:CreateLocalGatewayVirtualInterfaceGroup
+        - endpoint: Action:CreateMacSystemIntegrityProtectionModificationTask
+        - endpoint: Action:CreateManagedPrefixList
+        - endpoint: Action:CreateNatGateway
+        - endpoint: Action:CreateNetworkAcl
+        - endpoint: Action:CreateNetworkAclEntry
+        - endpoint: Action:CreateNetworkInsightsAccessScope
+        - endpoint: Action:CreateNetworkInsightsPath
+        - endpoint: Action:CreateNetworkInterface
+        - endpoint: Action:CreateNetworkInterfacePermission
+        - endpoint: Action:CreatePlacementGroup
+        - endpoint: Action:CreatePublicIpv4Pool
+        - endpoint: Action:CreateReplaceRootVolumeTask
+        - endpoint: Action:CreateReservedInstancesListing
+        - endpoint: Action:CreateRestoreImageTask
+        - endpoint: Action:CreateRoute
+        - endpoint: Action:CreateRouteServer
+        - endpoint: Action:CreateRouteServerEndpoint
+        - endpoint: Action:CreateRouteServerPeer
+        - endpoint: Action:CreateRouteTable
+        - endpoint: Action:CreateSecurityGroup
+        - endpoint: Action:CreateSnapshot
+        - endpoint: Action:CreateSnapshots
+        - endpoint: Action:CreateSpotDatafeedSubscription
+        - endpoint: Action:CreateStoreImageTask
+        - endpoint: Action:CreateSubnet
+        - endpoint: Action:CreateSubnetCidrReservation
+        - endpoint: Action:CreateTags
+        - endpoint: Action:CreateTrafficMirrorFilter
+        - endpoint: Action:CreateTrafficMirrorFilterRule
+        - endpoint: Action:CreateTrafficMirrorSession
+        - endpoint: Action:CreateTrafficMirrorTarget
+        - endpoint: Action:CreateTransitGateway
+        - endpoint: Action:CreateTransitGatewayConnect
+        - endpoint: Action:CreateTransitGatewayConnectPeer
+        - endpoint: Action:CreateTransitGatewayMulticastDomain
+        - endpoint: Action:CreateTransitGatewayPeeringAttachment
+        - endpoint: Action:CreateTransitGatewayPolicyTable
+        - endpoint: Action:CreateTransitGatewayPrefixListReference
+        - endpoint: Action:CreateTransitGatewayRoute
+        - endpoint: Action:CreateTransitGatewayRouteTable
+        - endpoint: Action:CreateTransitGatewayRouteTableAnnouncement
+        - endpoint: Action:CreateTransitGatewayVpcAttachment
+        - endpoint: Action:CreateVerifiedAccessEndpoint
+        - endpoint: Action:CreateVerifiedAccessGroup
+        - endpoint: Action:CreateVerifiedAccessInstance
+        - endpoint: Action:CreateVerifiedAccessTrustProvider
+        - endpoint: Action:CreateVolume
+        - endpoint: Action:CreateVpc
+        - endpoint: Action:CreateVpcBlockPublicAccessExclusion
+        - endpoint: Action:CreateVpcEndpoint
+        - endpoint: Action:CreateVpcEndpointConnectionNotification
+        - endpoint: Action:CreateVpcEndpointServiceConfiguration
+        - endpoint: Action:CreateVpcPeeringConnection
+        - endpoint: Action:CreateVpnConnection
+        - endpoint: Action:CreateVpnConnectionRoute
+        - endpoint: Action:CreateVpnGateway
+        - endpoint: Action:DeleteCarrierGateway
+        - endpoint: Action:DeleteClientVpnEndpoint
+        - endpoint: Action:DeleteClientVpnRoute
+        - endpoint: Action:DeleteCoipCidr
+        - endpoint: Action:DeleteCoipPool
+        - endpoint: Action:DeleteCustomerGateway
+        - endpoint: Action:DeleteDhcpOptions
+        - endpoint: Action:DeleteEgressOnlyInternetGateway
+        - endpoint: Action:DeleteFleets
+        - endpoint: Action:DeleteFlowLogs
+        - endpoint: Action:DeleteFpgaImage
+        - endpoint: Action:DeleteInstanceConnectEndpoint
+        - endpoint: Action:DeleteInstanceEventWindow
+        - endpoint: Action:DeleteInternetGateway
+        - endpoint: Action:DeleteIpam
+        - endpoint: Action:DeleteIpamExternalResourceVerificationToken
+        - endpoint: Action:DeleteIpamPool
+        - endpoint: Action:DeleteIpamResourceDiscovery
+        - endpoint: Action:DeleteIpamScope
+        - endpoint: Action:DeleteKeyPair
+        - endpoint: Action:DeleteLaunchTemplate
+        - endpoint: Action:DeleteLaunchTemplateVersions
+        - endpoint: Action:DeleteLocalGatewayRoute
+        - endpoint: Action:DeleteLocalGatewayRouteTable
+        - endpoint: Action:DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociation
+        - endpoint: Action:DeleteLocalGatewayRouteTableVpcAssociation
+        - endpoint: Action:DeleteLocalGatewayVirtualInterface
+        - endpoint: Action:DeleteLocalGatewayVirtualInterfaceGroup
+        - endpoint: Action:DeleteManagedPrefixList
+        - endpoint: Action:DeleteNatGateway
+        - endpoint: Action:DeleteNetworkAcl
+        - endpoint: Action:DeleteNetworkAclEntry
+        - endpoint: Action:DeleteNetworkInsightsAccessScope
+        - endpoint: Action:DeleteNetworkInsightsAccessScopeAnalysis
+        - endpoint: Action:DeleteNetworkInsightsAnalysis
+        - endpoint: Action:DeleteNetworkInsightsPath
+        - endpoint: Action:DeleteNetworkInterface
+        - endpoint: Action:DeleteNetworkInterfacePermission
+        - endpoint: Action:DeletePlacementGroup
+        - endpoint: Action:DeletePublicIpv4Pool
+        - endpoint: Action:DeleteQueuedReservedInstances
+        - endpoint: Action:DeleteRoute
+        - endpoint: Action:DeleteRouteServer
+        - endpoint: Action:DeleteRouteServerEndpoint
+        - endpoint: Action:DeleteRouteServerPeer
+        - endpoint: Action:DeleteRouteTable
+        - endpoint: Action:DeleteSecurityGroup
+        - endpoint: Action:DeleteSnapshot
+        - endpoint: Action:DeleteSpotDatafeedSubscription
+        - endpoint: Action:DeleteSubnet
+        - endpoint: Action:DeleteSubnetCidrReservation
+        - endpoint: Action:DeleteTags
+        - endpoint: Action:DeleteTrafficMirrorFilter
+        - endpoint: Action:DeleteTrafficMirrorFilterRule
+        - endpoint: Action:DeleteTrafficMirrorSession
+        - endpoint: Action:DeleteTrafficMirrorTarget
+        - endpoint: Action:DeleteTransitGateway
+        - endpoint: Action:DeleteTransitGatewayConnect
+        - endpoint: Action:DeleteTransitGatewayConnectPeer
+        - endpoint: Action:DeleteTransitGatewayMulticastDomain
+        - endpoint: Action:DeleteTransitGatewayPeeringAttachment
+        - endpoint: Action:DeleteTransitGatewayPolicyTable
+        - endpoint: Action:DeleteTransitGatewayPrefixListReference
+        - endpoint: Action:DeleteTransitGatewayRoute
+        - endpoint: Action:DeleteTransitGatewayRouteTable
+        - endpoint: Action:DeleteTransitGatewayRouteTableAnnouncement
+        - endpoint: Action:DeleteTransitGatewayVpcAttachment
+        - endpoint: Action:DeleteVerifiedAccessEndpoint
+        - endpoint: Action:DeleteVerifiedAccessGroup
+        - endpoint: Action:DeleteVerifiedAccessInstance
+        - endpoint: Action:DeleteVerifiedAccessTrustProvider
+        - endpoint: Action:DeleteVolume
+        - endpoint: Action:DeleteVpc
+        - endpoint: Action:DeleteVpcBlockPublicAccessExclusion
+        - endpoint: Action:DeleteVpcEndpointConnectionNotifications
+        - endpoint: Action:DeleteVpcEndpointServiceConfigurations
+        - endpoint: Action:DeleteVpcEndpoints
+        - endpoint: Action:DeleteVpcPeeringConnection
+        - endpoint: Action:DeleteVpnConnection
+        - endpoint: Action:DeleteVpnConnectionRoute
+        - endpoint: Action:DeleteVpnGateway
+        - endpoint: Action:DeprovisionByoipCidr
+        - endpoint: Action:DeprovisionIpamByoasn
+        - endpoint: Action:DeprovisionIpamPoolCidr
+        - endpoint: Action:DeprovisionPublicIpv4PoolCidr
+        - endpoint: Action:DeregisterImage
+        - endpoint: Action:DeregisterInstanceEventNotificationAttributes
+        - endpoint: Action:DeregisterTransitGatewayMulticastGroupMembers
+        - endpoint: Action:DeregisterTransitGatewayMulticastGroupSources
+        - endpoint: Action:DescribeAccountAttributes
+        - endpoint: Action:DescribeAddressTransfers
+        - endpoint: Action:DescribeAddresses
+        - endpoint: Action:DescribeAddressesAttribute
+        - endpoint: Action:DescribeAggregateIdFormat
+        - endpoint: Action:DescribeAvailabilityZones
+        - endpoint: Action:DescribeAwsNetworkPerformanceMetricSubscriptions
+        - endpoint: Action:DescribeBundleTasks
+        - endpoint: Action:DescribeByoipCidrs
+        - endpoint: Action:DescribeCapacityBlockExtensionHistory
+        - endpoint: Action:DescribeCapacityBlockExtensionOfferings
+        - endpoint: Action:DescribeCapacityBlockOfferings
+        - endpoint: Action:DescribeCapacityBlockStatus
+        - endpoint: Action:DescribeCapacityBlocks
+        - endpoint: Action:DescribeCapacityReservationBillingRequests
+        - endpoint: Action:DescribeCapacityReservationFleets
+        - endpoint: Action:DescribeCapacityReservations
+        - endpoint: Action:DescribeCarrierGateways
+        - endpoint: Action:DescribeClassicLinkInstances
+        - endpoint: Action:DescribeClientVpnAuthorizationRules
+        - endpoint: Action:DescribeClientVpnConnections
+        - endpoint: Action:DescribeClientVpnEndpoints
+        - endpoint: Action:DescribeClientVpnRoutes
+        - endpoint: Action:DescribeClientVpnTargetNetworks
+        - endpoint: Action:DescribeCoipPools
+        - endpoint: Action:DescribeConversionTasks
+        - endpoint: Action:DescribeCustomerGateways
+        - endpoint: Action:DescribeDeclarativePoliciesReports
+        - endpoint: Action:DescribeDhcpOptions
+        - endpoint: Action:DescribeEgressOnlyInternetGateways
+        - endpoint: Action:DescribeElasticGpus
+        - endpoint: Action:DescribeExportImageTasks
+        - endpoint: Action:DescribeExportTasks
+        - endpoint: Action:DescribeFastLaunchImages
+        - endpoint: Action:DescribeFastSnapshotRestores
+        - endpoint: Action:DescribeFleetHistory
+        - endpoint: Action:DescribeFleetInstances
+        - endpoint: Action:DescribeFleets
+        - endpoint: Action:DescribeFlowLogs
+        - endpoint: Action:DescribeFpgaImageAttribute
+        - endpoint: Action:DescribeFpgaImages
+        - endpoint: Action:DescribeHostReservationOfferings
+        - endpoint: Action:DescribeHostReservations
+        - endpoint: Action:DescribeHosts
+        - endpoint: Action:DescribeIamInstanceProfileAssociations
+        - endpoint: Action:DescribeIdFormat
+        - endpoint: Action:DescribeIdentityIdFormat
+        - endpoint: Action:DescribeImageAttribute
+        - endpoint: Action:DescribeImages
+        - endpoint: Action:DescribeImportImageTasks
+        - endpoint: Action:DescribeImportSnapshotTasks
+        - endpoint: Action:DescribeInstanceAttribute
+        - endpoint: Action:DescribeInstanceConnectEndpoints
+        - endpoint: Action:DescribeInstanceCreditSpecifications
+        - endpoint: Action:DescribeInstanceEventNotificationAttributes
+        - endpoint: Action:DescribeInstanceEventWindows
+        - endpoint: Action:DescribeInstanceImageMetadata
+        - endpoint: Action:DescribeInstanceStatus
+        - endpoint: Action:DescribeInstanceTopology
+        - endpoint: Action:DescribeInstanceTypeOfferings
+        - endpoint: Action:DescribeInstanceTypes
+        - endpoint: Action:DescribeInstances
+        - endpoint: Action:DescribeInternetGateways
+        - endpoint: Action:DescribeIpamByoasn
+        - endpoint: Action:DescribeIpamExternalResourceVerificationTokens
+        - endpoint: Action:DescribeIpamPools
+        - endpoint: Action:DescribeIpamResourceDiscoveries
+        - endpoint: Action:DescribeIpamResourceDiscoveryAssociations
+        - endpoint: Action:DescribeIpamScopes
+        - endpoint: Action:DescribeIpams
+        - endpoint: Action:DescribeIpv6Pools
+        - endpoint: Action:DescribeKeyPairs
+        - endpoint: Action:DescribeLaunchTemplateVersions
+        - endpoint: Action:DescribeLaunchTemplates
+        - endpoint: Action:DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations
+        - endpoint: Action:DescribeLocalGatewayRouteTableVpcAssociations
+        - endpoint: Action:DescribeLocalGatewayRouteTables
+        - endpoint: Action:DescribeLocalGatewayVirtualInterfaceGroups
+        - endpoint: Action:DescribeLocalGatewayVirtualInterfaces
+        - endpoint: Action:DescribeLocalGateways
+        - endpoint: Action:DescribeLockedSnapshots
+        - endpoint: Action:DescribeMacHosts
+        - endpoint: Action:DescribeMacModificationTasks
+        - endpoint: Action:DescribeManagedPrefixLists
+        - endpoint: Action:DescribeMovingAddresses
+        - endpoint: Action:DescribeNatGateways
+        - endpoint: Action:DescribeNetworkAcls
+        - endpoint: Action:DescribeNetworkInsightsAccessScopeAnalyses
+        - endpoint: Action:DescribeNetworkInsightsAccessScopes
+        - endpoint: Action:DescribeNetworkInsightsAnalyses
+        - endpoint: Action:DescribeNetworkInsightsPaths
+        - endpoint: Action:DescribeNetworkInterfaceAttribute
+        - endpoint: Action:DescribeNetworkInterfacePermissions
+        - endpoint: Action:DescribeNetworkInterfaces
+        - endpoint: Action:DescribeOutpostLags
+        - endpoint: Action:DescribePlacementGroups
+        - endpoint: Action:DescribePrefixLists
+        - endpoint: Action:DescribePrincipalIdFormat
+        - endpoint: Action:DescribePublicIpv4Pools
+        - endpoint: Action:DescribeRegions
+        - endpoint: Action:DescribeReplaceRootVolumeTasks
+        - endpoint: Action:DescribeReservedInstances
+        - endpoint: Action:DescribeReservedInstancesListings
+        - endpoint: Action:DescribeReservedInstancesModifications
+        - endpoint: Action:DescribeReservedInstancesOfferings
+        - endpoint: Action:DescribeRouteServerEndpoints
+        - endpoint: Action:DescribeRouteServerPeers
+        - endpoint: Action:DescribeRouteServers
+        - endpoint: Action:DescribeRouteTables
+        - endpoint: Action:DescribeScheduledInstanceAvailability
+        - endpoint: Action:DescribeScheduledInstances
+        - endpoint: Action:DescribeSecurityGroupReferences
+        - endpoint: Action:DescribeSecurityGroupRules
+        - endpoint: Action:DescribeSecurityGroupVpcAssociations
+        - endpoint: Action:DescribeSecurityGroups
+        - endpoint: Action:DescribeServiceLinkVirtualInterfaces
+        - endpoint: Action:DescribeSnapshotAttribute
+        - endpoint: Action:DescribeSnapshotTierStatus
+        - endpoint: Action:DescribeSnapshots
+        - endpoint: Action:DescribeSpotDatafeedSubscription
+        - endpoint: Action:DescribeSpotFleetInstances
+        - endpoint: Action:DescribeSpotFleetRequestHistory
+        - endpoint: Action:DescribeSpotFleetRequests
+        - endpoint: Action:DescribeSpotInstanceRequests
+        - endpoint: Action:DescribeSpotPriceHistory
+        - endpoint: Action:DescribeStaleSecurityGroups
+        - endpoint: Action:DescribeStoreImageTasks
+        - endpoint: Action:DescribeSubnets
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DescribeTrafficMirrorFilterRules
+        - endpoint: Action:DescribeTrafficMirrorFilters
+        - endpoint: Action:DescribeTrafficMirrorSessions
+        - endpoint: Action:DescribeTrafficMirrorTargets
+        - endpoint: Action:DescribeTransitGatewayAttachments
+        - endpoint: Action:DescribeTransitGatewayConnectPeers
+        - endpoint: Action:DescribeTransitGatewayConnects
+        - endpoint: Action:DescribeTransitGatewayMulticastDomains
+        - endpoint: Action:DescribeTransitGatewayPeeringAttachments
+        - endpoint: Action:DescribeTransitGatewayPolicyTables
+        - endpoint: Action:DescribeTransitGatewayRouteTableAnnouncements
+        - endpoint: Action:DescribeTransitGatewayRouteTables
+        - endpoint: Action:DescribeTransitGatewayVpcAttachments
+        - endpoint: Action:DescribeTransitGateways
+        - endpoint: Action:DescribeTrunkInterfaceAssociations
+        - endpoint: Action:DescribeVerifiedAccessEndpoints
+        - endpoint: Action:DescribeVerifiedAccessGroups
+        - endpoint: Action:DescribeVerifiedAccessInstanceLoggingConfigurations
+        - endpoint: Action:DescribeVerifiedAccessInstances
+        - endpoint: Action:DescribeVerifiedAccessTrustProviders
+        - endpoint: Action:DescribeVolumeAttribute
+        - endpoint: Action:DescribeVolumeStatus
+        - endpoint: Action:DescribeVolumes
+        - endpoint: Action:DescribeVolumesModifications
+        - endpoint: Action:DescribeVpcAttribute
+        - endpoint: Action:DescribeVpcBlockPublicAccessExclusions
+        - endpoint: Action:DescribeVpcBlockPublicAccessOptions
+        - endpoint: Action:DescribeVpcClassicLink
+        - endpoint: Action:DescribeVpcClassicLinkDnsSupport
+        - endpoint: Action:DescribeVpcEndpointAssociations
+        - endpoint: Action:DescribeVpcEndpointConnectionNotifications
+        - endpoint: Action:DescribeVpcEndpointConnections
+        - endpoint: Action:DescribeVpcEndpointServiceConfigurations
+        - endpoint: Action:DescribeVpcEndpointServicePermissions
+        - endpoint: Action:DescribeVpcEndpointServices
+        - endpoint: Action:DescribeVpcEndpoints
+        - endpoint: Action:DescribeVpcPeeringConnections
+        - endpoint: Action:DescribeVpcs
+        - endpoint: Action:DescribeVpnConnections
+        - endpoint: Action:DescribeVpnGateways
+        - endpoint: Action:DetachClassicLinkVpc
+        - endpoint: Action:DetachInternetGateway
+        - endpoint: Action:DetachNetworkInterface
+        - endpoint: Action:DetachVerifiedAccessTrustProvider
+        - endpoint: Action:DetachVolume
+        - endpoint: Action:DetachVpnGateway
+        - endpoint: Action:DisableAddressTransfer
+        - endpoint: Action:DisableAllowedImagesSettings
+        - endpoint: Action:DisableAwsNetworkPerformanceMetricSubscription
+        - endpoint: Action:DisableEbsEncryptionByDefault
+        - endpoint: Action:DisableFastLaunch
+        - endpoint: Action:DisableFastSnapshotRestores
+        - endpoint: Action:DisableImage
+        - endpoint: Action:DisableImageBlockPublicAccess
+        - endpoint: Action:DisableImageDeprecation
+        - endpoint: Action:DisableImageDeregistrationProtection
+        - endpoint: Action:DisableIpamOrganizationAdminAccount
+        - endpoint: Action:DisableRouteServerPropagation
+        - endpoint: Action:DisableSerialConsoleAccess
+        - endpoint: Action:DisableSnapshotBlockPublicAccess
+        - endpoint: Action:DisableTransitGatewayRouteTablePropagation
+        - endpoint: Action:DisableVgwRoutePropagation
+        - endpoint: Action:DisableVpcClassicLink
+        - endpoint: Action:DisableVpcClassicLinkDnsSupport
+        - endpoint: Action:DisassociateAddress
+        - endpoint: Action:DisassociateCapacityReservationBillingOwner
+        - endpoint: Action:DisassociateClientVpnTargetNetwork
+        - endpoint: Action:DisassociateEnclaveCertificateIamRole
+        - endpoint: Action:DisassociateIamInstanceProfile
+        - endpoint: Action:DisassociateInstanceEventWindow
+        - endpoint: Action:DisassociateIpamByoasn
+        - endpoint: Action:DisassociateIpamResourceDiscovery
+        - endpoint: Action:DisassociateNatGatewayAddress
+        - endpoint: Action:DisassociateRouteServer
+        - endpoint: Action:DisassociateRouteTable
+        - endpoint: Action:DisassociateSecurityGroupVpc
+        - endpoint: Action:DisassociateSubnetCidrBlock
+        - endpoint: Action:DisassociateTransitGatewayMulticastDomain
+        - endpoint: Action:DisassociateTransitGatewayPolicyTable
+        - endpoint: Action:DisassociateTransitGatewayRouteTable
+        - endpoint: Action:DisassociateTrunkInterface
+        - endpoint: Action:DisassociateVpcCidrBlock
+        - endpoint: Action:EnableAddressTransfer
+        - endpoint: Action:EnableAllowedImagesSettings
+        - endpoint: Action:EnableAwsNetworkPerformanceMetricSubscription
+        - endpoint: Action:EnableEbsEncryptionByDefault
+        - endpoint: Action:EnableFastLaunch
+        - endpoint: Action:EnableFastSnapshotRestores
+        - endpoint: Action:EnableImage
+        - endpoint: Action:EnableImageBlockPublicAccess
+        - endpoint: Action:EnableImageDeprecation
+        - endpoint: Action:EnableImageDeregistrationProtection
+        - endpoint: Action:EnableIpamOrganizationAdminAccount
+        - endpoint: Action:EnableReachabilityAnalyzerOrganizationSharing
+        - endpoint: Action:EnableRouteServerPropagation
+        - endpoint: Action:EnableSerialConsoleAccess
+        - endpoint: Action:EnableSnapshotBlockPublicAccess
+        - endpoint: Action:EnableTransitGatewayRouteTablePropagation
+        - endpoint: Action:EnableVgwRoutePropagation
+        - endpoint: Action:EnableVolumeIO
+        - endpoint: Action:EnableVpcClassicLink
+        - endpoint: Action:EnableVpcClassicLinkDnsSupport
+        - endpoint: Action:ExportClientVpnClientCertificateRevocationList
+        - endpoint: Action:ExportClientVpnClientConfiguration
+        - endpoint: Action:ExportImage
+        - endpoint: Action:ExportTransitGatewayRoutes
+        - endpoint: Action:ExportVerifiedAccessInstanceClientConfiguration
+        - endpoint: Action:GetActiveVpnTunnelStatus
+        - endpoint: Action:GetAllowedImagesSettings
+        - endpoint: Action:GetAssociatedEnclaveCertificateIamRoles
+        - endpoint: Action:GetAssociatedIpv6PoolCidrs
+        - endpoint: Action:GetAwsNetworkPerformanceData
+        - endpoint: Action:GetCapacityReservationUsage
+        - endpoint: Action:GetCoipPoolUsage
+        - endpoint: Action:GetConsoleOutput
+        - endpoint: Action:GetConsoleScreenshot
+        - endpoint: Action:GetDeclarativePoliciesReportSummary
+        - endpoint: Action:GetDefaultCreditSpecification
+        - endpoint: Action:GetEbsDefaultKmsKeyId
+        - endpoint: Action:GetEbsEncryptionByDefault
+        - endpoint: Action:GetFlowLogsIntegrationTemplate
+        - endpoint: Action:GetGroupsForCapacityReservation
+        - endpoint: Action:GetHostReservationPurchasePreview
+        - endpoint: Action:GetImageBlockPublicAccessState
+        - endpoint: Action:GetInstanceMetadataDefaults
+        - endpoint: Action:GetInstanceTpmEkPub
+        - endpoint: Action:GetInstanceTypesFromInstanceRequirements
+        - endpoint: Action:GetInstanceUefiData
+        - endpoint: Action:GetIpamAddressHistory
+        - endpoint: Action:GetIpamDiscoveredAccounts
+        - endpoint: Action:GetIpamDiscoveredPublicAddresses
+        - endpoint: Action:GetIpamDiscoveredResourceCidrs
+        - endpoint: Action:GetIpamPoolAllocations
+        - endpoint: Action:GetIpamPoolCidrs
+        - endpoint: Action:GetIpamResourceCidrs
+        - endpoint: Action:GetLaunchTemplateData
+        - endpoint: Action:GetManagedPrefixListAssociations
+        - endpoint: Action:GetManagedPrefixListEntries
+        - endpoint: Action:GetNetworkInsightsAccessScopeAnalysisFindings
+        - endpoint: Action:GetNetworkInsightsAccessScopeContent
+        - endpoint: Action:GetPasswordData
+        - endpoint: Action:GetReservedInstancesExchangeQuote
+        - endpoint: Action:GetRouteServerAssociations
+        - endpoint: Action:GetRouteServerPropagations
+        - endpoint: Action:GetRouteServerRoutingDatabase
+        - endpoint: Action:GetSecurityGroupsForVpc
+        - endpoint: Action:GetSerialConsoleAccessStatus
+        - endpoint: Action:GetSnapshotBlockPublicAccessState
+        - endpoint: Action:GetSpotPlacementScores
+        - endpoint: Action:GetSubnetCidrReservations
+        - endpoint: Action:GetTransitGatewayAttachmentPropagations
+        - endpoint: Action:GetTransitGatewayMulticastDomainAssociations
+        - endpoint: Action:GetTransitGatewayPolicyTableAssociations
+        - endpoint: Action:GetTransitGatewayPolicyTableEntries
+        - endpoint: Action:GetTransitGatewayPrefixListReferences
+        - endpoint: Action:GetTransitGatewayRouteTableAssociations
+        - endpoint: Action:GetTransitGatewayRouteTablePropagations
+        - endpoint: Action:GetVerifiedAccessEndpointPolicy
+        - endpoint: Action:GetVerifiedAccessEndpointTargets
+        - endpoint: Action:GetVerifiedAccessGroupPolicy
+        - endpoint: Action:GetVpnConnectionDeviceSampleConfiguration
+        - endpoint: Action:GetVpnConnectionDeviceTypes
+        - endpoint: Action:GetVpnTunnelReplacementStatus
+        - endpoint: Action:ImportClientVpnClientCertificateRevocationList
+        - endpoint: Action:ImportImage
+        - endpoint: Action:ImportInstance
+        - endpoint: Action:ImportKeyPair
+        - endpoint: Action:ImportSnapshot
+        - endpoint: Action:ImportVolume
+        - endpoint: Action:ListImagesInRecycleBin
+        - endpoint: Action:ListSnapshotsInRecycleBin
+        - endpoint: Action:LockSnapshot
+        - endpoint: Action:ModifyAddressAttribute
+        - endpoint: Action:ModifyAvailabilityZoneGroup
+        - endpoint: Action:ModifyCapacityReservation
+        - endpoint: Action:ModifyCapacityReservationFleet
+        - endpoint: Action:ModifyClientVpnEndpoint
+        - endpoint: Action:ModifyDefaultCreditSpecification
+        - endpoint: Action:ModifyEbsDefaultKmsKeyId
+        - endpoint: Action:ModifyFleet
+        - endpoint: Action:ModifyFpgaImageAttribute
+        - endpoint: Action:ModifyHosts
+        - endpoint: Action:ModifyIdFormat
+        - endpoint: Action:ModifyIdentityIdFormat
+        - endpoint: Action:ModifyImageAttribute
+        - endpoint: Action:ModifyInstanceAttribute
+        - endpoint: Action:ModifyInstanceCapacityReservationAttributes
+        - endpoint: Action:ModifyInstanceConnectEndpoint
+        - endpoint: Action:ModifyInstanceCpuOptions
+        - endpoint: Action:ModifyInstanceCreditSpecification
+        - endpoint: Action:ModifyInstanceEventStartTime
+        - endpoint: Action:ModifyInstanceEventWindow
+        - endpoint: Action:ModifyInstanceMaintenanceOptions
+        - endpoint: Action:ModifyInstanceMetadataDefaults
+        - endpoint: Action:ModifyInstanceMetadataOptions
+        - endpoint: Action:ModifyInstanceNetworkPerformanceOptions
+        - endpoint: Action:ModifyInstancePlacement
+        - endpoint: Action:ModifyIpam
+        - endpoint: Action:ModifyIpamPool
+        - endpoint: Action:ModifyIpamResourceCidr
+        - endpoint: Action:ModifyIpamResourceDiscovery
+        - endpoint: Action:ModifyIpamScope
+        - endpoint: Action:ModifyLaunchTemplate
+        - endpoint: Action:ModifyLocalGatewayRoute
+        - endpoint: Action:ModifyManagedPrefixList
+        - endpoint: Action:ModifyNetworkInterfaceAttribute
+        - endpoint: Action:ModifyPrivateDnsNameOptions
+        - endpoint: Action:ModifyPublicIpDnsNameOptions
+        - endpoint: Action:ModifyReservedInstances
+        - endpoint: Action:ModifyRouteServer
+        - endpoint: Action:ModifySecurityGroupRules
+        - endpoint: Action:ModifySnapshotAttribute
+        - endpoint: Action:ModifySnapshotTier
+        - endpoint: Action:ModifySpotFleetRequest
+        - endpoint: Action:ModifySubnetAttribute
+        - endpoint: Action:ModifyTrafficMirrorFilterNetworkServices
+        - endpoint: Action:ModifyTrafficMirrorFilterRule
+        - endpoint: Action:ModifyTrafficMirrorSession
+        - endpoint: Action:ModifyTransitGateway
+        - endpoint: Action:ModifyTransitGatewayPrefixListReference
+        - endpoint: Action:ModifyTransitGatewayVpcAttachment
+        - endpoint: Action:ModifyVerifiedAccessEndpoint
+        - endpoint: Action:ModifyVerifiedAccessEndpointPolicy
+        - endpoint: Action:ModifyVerifiedAccessGroup
+        - endpoint: Action:ModifyVerifiedAccessGroupPolicy
+        - endpoint: Action:ModifyVerifiedAccessInstance
+        - endpoint: Action:ModifyVerifiedAccessInstanceLoggingConfiguration
+        - endpoint: Action:ModifyVerifiedAccessTrustProvider
+        - endpoint: Action:ModifyVolume
+        - endpoint: Action:ModifyVolumeAttribute
+        - endpoint: Action:ModifyVpcAttribute
+        - endpoint: Action:ModifyVpcBlockPublicAccessExclusion
+        - endpoint: Action:ModifyVpcBlockPublicAccessOptions
+        - endpoint: Action:ModifyVpcEndpoint
+        - endpoint: Action:ModifyVpcEndpointConnectionNotification
+        - endpoint: Action:ModifyVpcEndpointServiceConfiguration
+        - endpoint: Action:ModifyVpcEndpointServicePayerResponsibility
+        - endpoint: Action:ModifyVpcEndpointServicePermissions
+        - endpoint: Action:ModifyVpcPeeringConnectionOptions
+        - endpoint: Action:ModifyVpcTenancy
+        - endpoint: Action:ModifyVpnConnection
+        - endpoint: Action:ModifyVpnConnectionOptions
+        - endpoint: Action:ModifyVpnTunnelCertificate
+        - endpoint: Action:ModifyVpnTunnelOptions
+        - endpoint: Action:MonitorInstances
+        - endpoint: Action:MoveAddressToVpc
+        - endpoint: Action:MoveByoipCidrToIpam
+        - endpoint: Action:MoveCapacityReservationInstances
+        - endpoint: Action:ProvisionByoipCidr
+        - endpoint: Action:ProvisionIpamByoasn
+        - endpoint: Action:ProvisionIpamPoolCidr
+        - endpoint: Action:ProvisionPublicIpv4PoolCidr
+        - endpoint: Action:PurchaseCapacityBlock
+        - endpoint: Action:PurchaseCapacityBlockExtension
+        - endpoint: Action:PurchaseHostReservation
+        - endpoint: Action:PurchaseReservedInstancesOffering
+        - endpoint: Action:PurchaseScheduledInstances
+        - endpoint: Action:RebootInstances
+        - endpoint: Action:RegisterImage
+        - endpoint: Action:RegisterInstanceEventNotificationAttributes
+        - endpoint: Action:RegisterTransitGatewayMulticastGroupMembers
+        - endpoint: Action:RegisterTransitGatewayMulticastGroupSources
+        - endpoint: Action:RejectCapacityReservationBillingOwnership
+        - endpoint: Action:RejectTransitGatewayMulticastDomainAssociations
+        - endpoint: Action:RejectTransitGatewayPeeringAttachment
+        - endpoint: Action:RejectTransitGatewayVpcAttachment
+        - endpoint: Action:RejectVpcEndpointConnections
+        - endpoint: Action:RejectVpcPeeringConnection
+        - endpoint: Action:ReleaseAddress
+        - endpoint: Action:ReleaseHosts
+        - endpoint: Action:ReleaseIpamPoolAllocation
+        - endpoint: Action:ReplaceIamInstanceProfileAssociation
+        - endpoint: Action:ReplaceImageCriteriaInAllowedImagesSettings
+        - endpoint: Action:ReplaceNetworkAclAssociation
+        - endpoint: Action:ReplaceNetworkAclEntry
+        - endpoint: Action:ReplaceRoute
+        - endpoint: Action:ReplaceRouteTableAssociation
+        - endpoint: Action:ReplaceTransitGatewayRoute
+        - endpoint: Action:ReplaceVpnTunnel
+        - endpoint: Action:ReportInstanceStatus
+        - endpoint: Action:RequestSpotFleet
+        - endpoint: Action:RequestSpotInstances
+        - endpoint: Action:ResetAddressAttribute
+        - endpoint: Action:ResetEbsDefaultKmsKeyId
+        - endpoint: Action:ResetFpgaImageAttribute
+        - endpoint: Action:ResetImageAttribute
+        - endpoint: Action:ResetInstanceAttribute
+        - endpoint: Action:ResetNetworkInterfaceAttribute
+        - endpoint: Action:ResetSnapshotAttribute
+        - endpoint: Action:RestoreAddressToClassic
+        - endpoint: Action:RestoreImageFromRecycleBin
+        - endpoint: Action:RestoreManagedPrefixListVersion
+        - endpoint: Action:RestoreSnapshotFromRecycleBin
+        - endpoint: Action:RestoreSnapshotTier
+        - endpoint: Action:RevokeClientVpnIngress
+        - endpoint: Action:RevokeSecurityGroupEgress
+        - endpoint: Action:RevokeSecurityGroupIngress
+        - endpoint: Action:RunInstances
+        - endpoint: Action:RunScheduledInstances
+        - endpoint: Action:SearchLocalGatewayRoutes
+        - endpoint: Action:SearchTransitGatewayMulticastGroups
+        - endpoint: Action:SearchTransitGatewayRoutes
+        - endpoint: Action:SendDiagnosticInterrupt
+        - endpoint: Action:StartDeclarativePoliciesReport
+        - endpoint: Action:StartInstances
+        - endpoint: Action:StartNetworkInsightsAccessScopeAnalysis
+        - endpoint: Action:StartNetworkInsightsAnalysis
+        - endpoint: Action:StartVpcEndpointServicePrivateDnsVerification
+        - endpoint: Action:StopInstances
+        - endpoint: Action:TerminateClientVpnConnections
+        - endpoint: Action:TerminateInstances
+        - endpoint: Action:UnassignIpv6Addresses
+        - endpoint: Action:UnassignPrivateIpAddresses
+        - endpoint: Action:UnassignPrivateNatGatewayAddress
+        - endpoint: Action:UnlockSnapshot
+        - endpoint: Action:UnmonitorInstances
+        - endpoint: Action:UpdateSecurityGroupRuleDescriptionsEgress
+        - endpoint: Action:UpdateSecurityGroupRuleDescriptionsIngress
+        - endpoint: Action:WithdrawByoipCidr
+      - service: EC2 Auto Scaling (ec2-autoscaling)
+        - endpoint: Action:AttachInstances
+        - endpoint: Action:AttachLoadBalancerTargetGroups
+        - endpoint: Action:AttachLoadBalancers
+        - endpoint: Action:AttachTrafficSources
+        - endpoint: Action:BatchDeleteScheduledAction
+        - endpoint: Action:BatchPutScheduledUpdateGroupAction
+        - endpoint: Action:CancelInstanceRefresh
+        - endpoint: Action:CompleteLifecycleAction
+        - endpoint: Action:CreateAutoScalingGroup
+        - endpoint: Action:CreateLaunchConfiguration
+        - endpoint: Action:CreateOrUpdateTags
+        - endpoint: Action:DeleteAutoScalingGroup
+        - endpoint: Action:DeleteLaunchConfiguration
+        - endpoint: Action:DeleteLifecycleHook
+        - endpoint: Action:DeleteNotificationConfiguration
+        - endpoint: Action:DeletePolicy
+        - endpoint: Action:DeleteScheduledAction
+        - endpoint: Action:DeleteTags
+        - endpoint: Action:DeleteWarmPool
+        - endpoint: Action:DescribeAccountLimits
+        - endpoint: Action:DescribeAdjustmentTypes
+        - endpoint: Action:DescribeAutoScalingGroups
+        - endpoint: Action:DescribeAutoScalingInstances
+        - endpoint: Action:DescribeAutoScalingNotificationTypes
+        - endpoint: Action:DescribeInstanceRefreshes
+        - endpoint: Action:DescribeLaunchConfigurations
+        - endpoint: Action:DescribeLifecycleHookTypes
+        - endpoint: Action:DescribeLifecycleHooks
+        - endpoint: Action:DescribeLoadBalancerTargetGroups
+        - endpoint: Action:DescribeLoadBalancers
+        - endpoint: Action:DescribeMetricCollectionTypes
+        - endpoint: Action:DescribeNotificationConfigurations
+        - endpoint: Action:DescribePolicies
+        - endpoint: Action:DescribeScalingActivities
+        - endpoint: Action:DescribeScalingProcessTypes
+        - endpoint: Action:DescribeScheduledActions
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DescribeTerminationPolicyTypes
+        - endpoint: Action:DescribeTrafficSources
+        - endpoint: Action:DescribeWarmPool
+        - endpoint: Action:DetachInstances
+        - endpoint: Action:DetachLoadBalancerTargetGroups
+        - endpoint: Action:DetachLoadBalancers
+        - endpoint: Action:DetachTrafficSources
+        - endpoint: Action:DisableMetricsCollection
+        - endpoint: Action:EnableMetricsCollection
+        - endpoint: Action:EnterStandby
+        - endpoint: Action:ExecutePolicy
+        - endpoint: Action:ExitStandby
+        - endpoint: Action:GetPredictiveScalingForecast
+        - endpoint: Action:LaunchInstances
+        - endpoint: Action:PutLifecycleHook
+        - endpoint: Action:PutNotificationConfiguration
+        - endpoint: Action:PutScalingPolicy
+        - endpoint: Action:PutScheduledUpdateGroupAction
+        - endpoint: Action:PutWarmPool
+        - endpoint: Action:RecordLifecycleActionHeartbeat
+        - endpoint: Action:ResumeProcesses
+        - endpoint: Action:RollbackInstanceRefresh
+        - endpoint: Action:SetDesiredCapacity
+        - endpoint: Action:SetInstanceHealth
+        - endpoint: Action:SetInstanceProtection
+        - endpoint: Action:StartInstanceRefresh
+        - endpoint: Action:SuspendProcesses
+        - endpoint: Action:TerminateInstanceInAutoScalingGroup
+        - endpoint: Action:UpdateAutoScalingGroup
+      - service: ECR (ecr)
+        - endpoint: Action:BatchCheckLayerAvailability
+        - endpoint: Action:BatchDeleteImage
+        - endpoint: Action:BatchGetImage
+        - endpoint: Action:BatchGetRepositoryScanningConfiguration
+        - endpoint: Action:CompleteLayerUpload
+        - endpoint: Action:CreatePullThroughCacheRule
+        - endpoint: Action:CreateRepository
+        - endpoint: Action:CreateRepositoryCreationTemplate
+        - endpoint: Action:DeleteLifecyclePolicy
+        - endpoint: Action:DeletePullThroughCacheRule
+        - endpoint: Action:DeleteRegistryPolicy
+        - endpoint: Action:DeleteRepository
+        - endpoint: Action:DeleteRepositoryCreationTemplate
+        - endpoint: Action:DeleteRepositoryPolicy
+        - endpoint: Action:DeleteSigningConfiguration
+        - endpoint: Action:DeregisterPullTimeUpdateExclusion
+        - endpoint: Action:DescribeImageReplicationStatus
+        - endpoint: Action:DescribeImageScanFindings
+        - endpoint: Action:DescribeImageSigningStatus
+        - endpoint: Action:DescribeImages
+        - endpoint: Action:DescribePullThroughCacheRules
+        - endpoint: Action:DescribeRegistry
+        - endpoint: Action:DescribeRepositories
+        - endpoint: Action:DescribeRepositoryCreationTemplates
+        - endpoint: Action:GetAccountSetting
+        - endpoint: Action:GetAuthorizationToken
+        - endpoint: Action:GetDownloadUrlForLayer
+        - endpoint: Action:GetLifecyclePolicy
+        - endpoint: Action:GetLifecyclePolicyPreview
+        - endpoint: Action:GetRegistryPolicy
+        - endpoint: Action:GetRegistryScanningConfiguration
+        - endpoint: Action:GetRepositoryPolicy
+        - endpoint: Action:GetSigningConfiguration
+        - endpoint: Action:InitiateLayerUpload
+        - endpoint: Action:ListImageReferrers
+        - endpoint: Action:ListImages
+        - endpoint: Action:ListPullTimeUpdateExclusions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutAccountSetting
+        - endpoint: Action:PutImage
+        - endpoint: Action:PutImageScanningConfiguration
+        - endpoint: Action:PutImageTagMutability
+        - endpoint: Action:PutLifecyclePolicy
+        - endpoint: Action:PutRegistryPolicy
+        - endpoint: Action:PutRegistryScanningConfiguration
+        - endpoint: Action:PutReplicationConfiguration
+        - endpoint: Action:PutSigningConfiguration
+        - endpoint: Action:RegisterPullTimeUpdateExclusion
+        - endpoint: Action:SetRepositoryPolicy
+        - endpoint: Action:StartImageScan
+        - endpoint: Action:StartLifecyclePolicyPreview
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateImageStorageClass
+        - endpoint: Action:UpdatePullThroughCacheRule
+        - endpoint: Action:UpdateRepositoryCreationTemplate
+        - endpoint: Action:UploadLayerPart
+        - endpoint: Action:ValidatePullThroughCacheRule
+      - service: ECS (ecs)
+        - endpoint: Action:CreateCapacityProvider
+        - endpoint: Action:CreateCluster
+        - endpoint: Action:CreateExpressGatewayService
+        - endpoint: Action:CreateService
+        - endpoint: Action:CreateTaskSet
+        - endpoint: Action:DeleteAccountSetting
+        - endpoint: Action:DeleteAttributes
+        - endpoint: Action:DeleteCapacityProvider
+        - endpoint: Action:DeleteCluster
+        - endpoint: Action:DeleteExpressGatewayService
+        - endpoint: Action:DeleteService
+        - endpoint: Action:DeleteTaskDefinitions
+        - endpoint: Action:DeleteTaskSet
+        - endpoint: Action:DeregisterContainerInstance
+        - endpoint: Action:DeregisterTaskDefinition
+        - endpoint: Action:DescribeCapacityProviders
+        - endpoint: Action:DescribeClusters
+        - endpoint: Action:DescribeContainerInstances
+        - endpoint: Action:DescribeExpressGatewayService
+        - endpoint: Action:DescribeServiceDeployments
+        - endpoint: Action:DescribeServiceRevisions
+        - endpoint: Action:DescribeServices
+        - endpoint: Action:DescribeTaskDefinition
+        - endpoint: Action:DescribeTaskSets
+        - endpoint: Action:DescribeTasks
+        - endpoint: Action:DiscoverPollEndpoint
+        - endpoint: Action:ExecuteCommand
+        - endpoint: Action:GetTaskProtection
+        - endpoint: Action:ListAccountSettings
+        - endpoint: Action:ListAttributes
+        - endpoint: Action:ListClusters
+        - endpoint: Action:ListContainerInstances
+        - endpoint: Action:ListServiceDeployments
+        - endpoint: Action:ListServiceDeploymentsByCreatedAt
+        - endpoint: Action:ListServiceDeploymentsByServiceRevision
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListServicesByLaunchType
+        - endpoint: Action:ListServicesByNamespace
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTaskDefinitionFamilies
+        - endpoint: Action:ListTaskDefinitions
+        - endpoint: Action:ListTasks
+        - endpoint: Action:PutAccountSetting
+        - endpoint: Action:PutAccountSettingDefault
+        - endpoint: Action:PutAttributes
+        - endpoint: Action:PutClusterCapacityProviders
+        - endpoint: Action:RegisterContainerInstance
+        - endpoint: Action:RegisterTaskDefinition
+        - endpoint: Action:RunTask
+        - endpoint: Action:StartTask
+        - endpoint: Action:StartTelemetrySession
+        - endpoint: Action:StopServiceDeployment
+        - endpoint: Action:StopTask
+        - endpoint: Action:SubmitAttachmentStateChanges
+        - endpoint: Action:SubmitContainerStateChange
+        - endpoint: Action:SubmitTaskStateChange
+        - endpoint: Action:SubmitTaskStateChangeByAgent
+        - endpoint: Action:SubmitTaskStateChangeByManagedAgents
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateCapacityProvider
+        - endpoint: Action:UpdateCluster
+        - endpoint: Action:UpdateClusterSettings
+        - endpoint: Action:UpdateContainerAgent
+        - endpoint: Action:UpdateContainerInstancesState
+        - endpoint: Action:UpdateExpressGatewayService
+        - endpoint: Action:UpdateService
+        - endpoint: Action:UpdateServicePrimaryTaskSet
+        - endpoint: Action:UpdateTaskProtection
+        - endpoint: Action:UpdateTaskSet
+      - service: EKS (eks)
+        - endpoint: Action:AssociateAccessPolicy
+        - endpoint: Action:AssociateEncryptionConfig
+        - endpoint: Action:AssociateIdentityProviderConfig
+        - endpoint: Action:CreateAccessEntry
+        - endpoint: Action:CreateAddon
+        - endpoint: Action:CreateCapability
+        - endpoint: Action:CreateCluster
+        - endpoint: Action:CreateEksAnywhereSubscription
+        - endpoint: Action:CreateFargateProfile
+        - endpoint: Action:CreateNodegroup
+        - endpoint: Action:CreatePodIdentityAssociation
+        - endpoint: Action:DeleteAccessEntry
+        - endpoint: Action:DeleteAddon
+        - endpoint: Action:DeleteCapability
+        - endpoint: Action:DeleteCluster
+        - endpoint: Action:DeleteEksAnywhereSubscription
+        - endpoint: Action:DeleteFargateProfile
+        - endpoint: Action:DeleteNodegroup
+        - endpoint: Action:DeletePodIdentityAssociation
+        - endpoint: Action:DeregisterCluster
+        - endpoint: Action:DescribeAccessEntry
+        - endpoint: Action:DescribeAddon
+        - endpoint: Action:DescribeAddonConfiguration
+        - endpoint: Action:DescribeAddonVersions
+        - endpoint: Action:DescribeCapability
+        - endpoint: Action:DescribeCluster
+        - endpoint: Action:DescribeClusterVersions
+        - endpoint: Action:DescribeEksAnywhereSubscription
+        - endpoint: Action:DescribeFargateProfile
+        - endpoint: Action:DescribeIdentityProviderConfig
+        - endpoint: Action:DescribeInsight
+        - endpoint: Action:DescribeInsightsRefresh
+        - endpoint: Action:DescribeNodegroup
+        - endpoint: Action:DescribePodIdentityAssociation
+        - endpoint: Action:DescribeUpdate
+        - endpoint: Action:DisassociateAccessPolicy
+        - endpoint: Action:DisassociateIdentityProviderConfig
+        - endpoint: Action:ListAccessEntries
+        - endpoint: Action:ListAccessPolicies
+        - endpoint: Action:ListAddons
+        - endpoint: Action:ListAssociatedAccessPolicies
+        - endpoint: Action:ListCapabilities
+        - endpoint: Action:ListClusters
+        - endpoint: Action:ListEksAnywhereSubscriptions
+        - endpoint: Action:ListFargateProfiles
+        - endpoint: Action:ListIdentityProviderConfigs
+        - endpoint: Action:ListInsights
+        - endpoint: Action:ListNodegroups
+        - endpoint: Action:ListPodIdentityAssociations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListUpdates
+        - endpoint: Action:RegisterCluster
+        - endpoint: Action:StartInsightsRefresh
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccessEntry
+        - endpoint: Action:UpdateAddon
+        - endpoint: Action:UpdateCapability
+        - endpoint: Action:UpdateClusterConfig
+        - endpoint: Action:UpdateClusterVersion
+        - endpoint: Action:UpdateEksAnywhereSubscription
+        - endpoint: Action:UpdateNodegroupConfig
+        - endpoint: Action:UpdateNodegroupVersion
+        - endpoint: Action:UpdatePodIdentityAssociation
+      - service: Elastic Beanstalk (elasticbeanstalk)
+        - endpoint: Action:AbortEnvironmentUpdate
+        - endpoint: Action:ApplyEnvironmentManagedAction
+        - endpoint: Action:AssociateEnvironmentOperationsRole
+        - endpoint: Action:CheckDNSAvailability
+        - endpoint: Action:ComposeEnvironments
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateApplicationVersion
+        - endpoint: Action:CreateConfigurationTemplate
+        - endpoint: Action:CreateEnvironment
+        - endpoint: Action:CreatePlatformVersion
+        - endpoint: Action:CreateStorageLocation
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteApplicationVersion
+        - endpoint: Action:DeleteConfigurationTemplate
+        - endpoint: Action:DeleteEnvironmentConfiguration
+        - endpoint: Action:DeletePlatformVersion
+        - endpoint: Action:DescribeAccountAttributes
+        - endpoint: Action:DescribeApplicationVersions
+        - endpoint: Action:DescribeApplications
+        - endpoint: Action:DescribeConfigurationOptions
+        - endpoint: Action:DescribeConfigurationSettings
+        - endpoint: Action:DescribeEnvironmentHealth
+        - endpoint: Action:DescribeEnvironmentManagedActionHistory
+        - endpoint: Action:DescribeEnvironmentManagedActions
+        - endpoint: Action:DescribeEnvironmentResources
+        - endpoint: Action:DescribeEnvironments
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeInstancesHealth
+        - endpoint: Action:DescribePlatformVersion
+        - endpoint: Action:DisassociateEnvironmentOperationsRole
+        - endpoint: Action:ListAvailableSolutionStacks
+        - endpoint: Action:ListPlatformBranches
+        - endpoint: Action:ListPlatformVersions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RebuildEnvironment
+        - endpoint: Action:RequestEnvironmentInfo
+        - endpoint: Action:RestartAppServer
+        - endpoint: Action:RetrieveEnvironmentInfo
+        - endpoint: Action:SwapEnvironmentCNAMEs
+        - endpoint: Action:TerminateEnvironment
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateApplicationResourceLifecycle
+        - endpoint: Action:UpdateApplicationVersion
+        - endpoint: Action:UpdateConfigurationTemplate
+        - endpoint: Action:UpdateEnvironment
+        - endpoint: Action:UpdateTagsForResource
+        - endpoint: Action:ValidateConfigurationSettings
+      - service: Elastic Load Balancing (ELB Classic) (elasticloadbalancingv2)
+        - endpoint: Action:AddTags
+        - endpoint: Action:ApplySecurityGroupsToLoadBalancer
+        - endpoint: Action:AttachLoadBalancerToSubnets
+        - endpoint: Action:ConfigureHealthCheck
+        - endpoint: Action:CreateAppCookieStickinessPolicy
+        - endpoint: Action:CreateLBCookieStickinessPolicy
+        - endpoint: Action:CreateLoadBalancer
+        - endpoint: Action:CreateLoadBalancerListeners
+        - endpoint: Action:CreateLoadBalancerPolicy
+        - endpoint: Action:DeleteLoadBalancer
+        - endpoint: Action:DeleteLoadBalancerListeners
+        - endpoint: Action:DeleteLoadBalancerPolicy
+        - endpoint: Action:DeregisterInstancesFromLoadBalancer
+        - endpoint: Action:DescribeAccountLimits
+        - endpoint: Action:DescribeInstanceHealth
+        - endpoint: Action:DescribeLoadBalancerAttributes
+        - endpoint: Action:DescribeLoadBalancerPolicies
+        - endpoint: Action:DescribeLoadBalancerPolicyTypes
+        - endpoint: Action:DescribeLoadBalancers
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DetachLoadBalancerFromSubnets
+        - endpoint: Action:DisableAvailabilityZonesForLoadBalancer
+        - endpoint: Action:EnableAvailabilityZonesForLoadBalancer
+        - endpoint: Action:ModifyLoadBalancerAttributes
+        - endpoint: Action:RegisterInstancesWithLoadBalancer
+        - endpoint: Action:RemoveTags
+        - endpoint: Action:SetLoadBalancerListenerSSLCertificate
+        - endpoint: Action:SetLoadBalancerPoliciesForBackendServer
+        - endpoint: Action:SetLoadBalancerPoliciesOfListener
+      - service: Elastic Load Balancing (ELB) (elasticloadbalancing)
+        - endpoint: Action:AddListenerCertificates
+        - endpoint: Action:AddTags
+        - endpoint: Action:AddTrustStoreRevocations
+        - endpoint: Action:CreateListener
+        - endpoint: Action:CreateLoadBalancer
+        - endpoint: Action:CreateRule
+        - endpoint: Action:CreateTargetGroup
+        - endpoint: Action:CreateTrustStore
+        - endpoint: Action:DeleteListener
+        - endpoint: Action:DeleteLoadBalancer
+        - endpoint: Action:DeleteRule
+        - endpoint: Action:DeleteSharedTrustStoreAssociation
+        - endpoint: Action:DeleteTargetGroup
+        - endpoint: Action:DeleteTrustStore
+        - endpoint: Action:DeregisterTargets
+        - endpoint: Action:DescribeAccountLimits
+        - endpoint: Action:DescribeCapacityReservation
+        - endpoint: Action:DescribeListenerAttributes
+        - endpoint: Action:DescribeListenerCertificates
+        - endpoint: Action:DescribeListeners
+        - endpoint: Action:DescribeLoadBalancerAttributes
+        - endpoint: Action:DescribeLoadBalancers
+        - endpoint: Action:DescribeRules
+        - endpoint: Action:DescribeSSLPolicies
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DescribeTargetGroupAttributes
+        - endpoint: Action:DescribeTargetGroups
+        - endpoint: Action:DescribeTargetHealth
+        - endpoint: Action:DescribeTrustStoreAssociations
+        - endpoint: Action:DescribeTrustStoreRevocations
+        - endpoint: Action:DescribeTrustStores
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetTrustStoreCaCertificatesBundle
+        - endpoint: Action:GetTrustStoreRevocationContent
+        - endpoint: Action:ModifyCapacityReservation
+        - endpoint: Action:ModifyIpPools
+        - endpoint: Action:ModifyListener
+        - endpoint: Action:ModifyListenerAttributes
+        - endpoint: Action:ModifyLoadBalancerAttributes
+        - endpoint: Action:ModifyRule
+        - endpoint: Action:ModifyTargetGroup
+        - endpoint: Action:ModifyTargetGroupAttributes
+        - endpoint: Action:ModifyTrustStore
+        - endpoint: Action:RegisterTargets
+        - endpoint: Action:RemoveListenerCertificates
+        - endpoint: Action:RemoveTags
+        - endpoint: Action:RemoveTrustStoreRevocations
+        - endpoint: Action:SetIpAddressType
+        - endpoint: Action:SetRulePriorities
+        - endpoint: Action:SetSecurityGroups
+        - endpoint: Action:SetSubnets
+      - service: Lambda (lambda)
+        - endpoint: Action:AddLayerVersionPermission
+        - endpoint: Action:AddPermission
+        - endpoint: Action:CheckpointDurableExecution
+        - endpoint: Action:CreateAlias
+        - endpoint: Action:CreateCapacityProvider
+        - endpoint: Action:CreateCodeSigningConfig
+        - endpoint: Action:CreateEventSourceMapping
+        - endpoint: Action:CreateFunction
+        - endpoint: Action:CreateFunctionUrlConfig
+        - endpoint: Action:DeleteAlias
+        - endpoint: Action:DeleteCapacityProvider
+        - endpoint: Action:DeleteCodeSigningConfig
+        - endpoint: Action:DeleteEventSourceMapping
+        - endpoint: Action:DeleteFunction
+        - endpoint: Action:DeleteFunctionCodeSigningConfig
+        - endpoint: Action:DeleteFunctionConcurrency
+        - endpoint: Action:DeleteFunctionEventInvokeConfig
+        - endpoint: Action:DeleteFunctionUrlConfig
+        - endpoint: Action:DeleteLayerVersion
+        - endpoint: Action:DeleteProvisionedConcurrencyConfig
+        - endpoint: Action:GetAccountSettings
+        - endpoint: Action:GetAlias
+        - endpoint: Action:GetCapacityProvider
+        - endpoint: Action:GetCodeSigningConfig
+        - endpoint: Action:GetDurableExecution
+        - endpoint: Action:GetDurableExecutionHistory
+        - endpoint: Action:GetDurableExecutionState
+        - endpoint: Action:GetEventSourceMapping
+        - endpoint: Action:GetFunction
+        - endpoint: Action:GetFunctionCodeSigningConfig
+        - endpoint: Action:GetFunctionConcurrency
+        - endpoint: Action:GetFunctionConfiguration
+        - endpoint: Action:GetFunctionEventInvokeConfig
+        - endpoint: Action:GetFunctionRecursionConfig
+        - endpoint: Action:GetFunctionScalingConfig
+        - endpoint: Action:GetFunctionUrlConfig
+        - endpoint: Action:GetLayerVersion
+        - endpoint: Action:GetLayerVersionByArn
+        - endpoint: Action:GetLayerVersionPolicy
+        - endpoint: Action:GetPolicy
+        - endpoint: Action:GetProvisionedConcurrencyConfig
+        - endpoint: Action:GetRuntimeManagementConfig
+        - endpoint: Action:Invoke
+        - endpoint: Action:InvokeAsync
+        - endpoint: Action:InvokeWithResponseStream
+        - endpoint: Action:ListAliases
+        - endpoint: Action:ListCapacityProviders
+        - endpoint: Action:ListCodeSigningConfigs
+        - endpoint: Action:ListDurableExecutionsByFunction
+        - endpoint: Action:ListEventSourceMappings
+        - endpoint: Action:ListFunctionEventInvokeConfigs
+        - endpoint: Action:ListFunctionUrlConfigs
+        - endpoint: Action:ListFunctionVersionsByCapacityProvider
+        - endpoint: Action:ListFunctions
+        - endpoint: Action:ListFunctionsByCodeSigningConfig
+        - endpoint: Action:ListLayerVersions
+        - endpoint: Action:ListLayers
+        - endpoint: Action:ListProvisionedConcurrencyConfigs
+        - endpoint: Action:ListTags
+        - endpoint: Action:ListVersionsByFunction
+        - endpoint: Action:PublishLayerVersion
+        - endpoint: Action:PublishVersion
+        - endpoint: Action:PutFunctionCodeSigningConfig
+        - endpoint: Action:PutFunctionConcurrency
+        - endpoint: Action:PutFunctionEventInvokeConfig
+        - endpoint: Action:PutFunctionRecursionConfig
+        - endpoint: Action:PutFunctionScalingConfig
+        - endpoint: Action:PutProvisionedConcurrencyConfig
+        - endpoint: Action:PutRuntimeManagementConfig
+        - endpoint: Action:RemoveLayerVersionPermission
+        - endpoint: Action:RemovePermission
+        - endpoint: Action:SendDurableExecutionCallbackFailure
+        - endpoint: Action:SendDurableExecutionCallbackHeartbeat
+        - endpoint: Action:SendDurableExecutionCallbackSuccess
+        - endpoint: Action:StopDurableExecution
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAlias
+        - endpoint: Action:UpdateCapacityProvider
+        - endpoint: Action:UpdateCodeSigningConfig
+        - endpoint: Action:UpdateEventSourceMapping
+        - endpoint: Action:UpdateFunctionCode
+        - endpoint: Action:UpdateFunctionConfiguration
+        - endpoint: Action:UpdateFunctionEventInvokeConfig
+        - endpoint: Action:UpdateFunctionUrlConfig
+      - service: Lightsail (lightsail)
+        - endpoint: Action:AllocateStaticIp
+        - endpoint: Action:AttachCertificateToDistribution
+        - endpoint: Action:AttachDisk
+        - endpoint: Action:AttachInstancesToLoadBalancer
+        - endpoint: Action:AttachLoadBalancerTlsCertificate
+        - endpoint: Action:AttachStaticIp
+        - endpoint: Action:CloseInstancePublicPorts
+        - endpoint: Action:CopySnapshot
+        - endpoint: Action:CreateBucket
+        - endpoint: Action:CreateBucketAccessKey
+        - endpoint: Action:CreateCertificate
+        - endpoint: Action:CreateCloudFormationStack
+        - endpoint: Action:CreateContactMethod
+        - endpoint: Action:CreateContainerService
+        - endpoint: Action:CreateContainerServiceDeployment
+        - endpoint: Action:CreateContainerServiceRegistryLogin
+        - endpoint: Action:CreateDisk
+        - endpoint: Action:CreateDiskFromSnapshot
+        - endpoint: Action:CreateDiskSnapshot
+        - endpoint: Action:CreateDistribution
+        - endpoint: Action:CreateDomain
+        - endpoint: Action:CreateDomainEntry
+        - endpoint: Action:CreateGUISessionAccessDetails
+        - endpoint: Action:CreateInstanceSnapshot
+        - endpoint: Action:CreateInstances
+        - endpoint: Action:CreateInstancesFromSnapshot
+        - endpoint: Action:CreateKeyPair
+        - endpoint: Action:CreateLoadBalancer
+        - endpoint: Action:CreateLoadBalancerTlsCertificate
+        - endpoint: Action:CreateRelationalDatabase
+        - endpoint: Action:CreateRelationalDatabaseFromSnapshot
+        - endpoint: Action:CreateRelationalDatabaseSnapshot
+        - endpoint: Action:DeleteAlarm
+        - endpoint: Action:DeleteAutoSnapshot
+        - endpoint: Action:DeleteBucket
+        - endpoint: Action:DeleteBucketAccessKey
+        - endpoint: Action:DeleteCertificate
+        - endpoint: Action:DeleteContactMethod
+        - endpoint: Action:DeleteContainerImage
+        - endpoint: Action:DeleteContainerService
+        - endpoint: Action:DeleteDisk
+        - endpoint: Action:DeleteDiskSnapshot
+        - endpoint: Action:DeleteDistribution
+        - endpoint: Action:DeleteDomain
+        - endpoint: Action:DeleteDomainEntry
+        - endpoint: Action:DeleteInstance
+        - endpoint: Action:DeleteInstanceSnapshot
+        - endpoint: Action:DeleteKeyPair
+        - endpoint: Action:DeleteKnownHostKeys
+        - endpoint: Action:DeleteLoadBalancer
+        - endpoint: Action:DeleteLoadBalancerTlsCertificate
+        - endpoint: Action:DeleteRelationalDatabase
+        - endpoint: Action:DeleteRelationalDatabaseSnapshot
+        - endpoint: Action:DetachCertificateFromDistribution
+        - endpoint: Action:DetachDisk
+        - endpoint: Action:DetachInstancesFromLoadBalancer
+        - endpoint: Action:DetachStaticIp
+        - endpoint: Action:DisableAddOn
+        - endpoint: Action:DownloadDefaultKeyPair
+        - endpoint: Action:EnableAddOn
+        - endpoint: Action:ExportSnapshot
+        - endpoint: Action:GetActiveNames
+        - endpoint: Action:GetAlarms
+        - endpoint: Action:GetAutoSnapshots
+        - endpoint: Action:GetBlueprints
+        - endpoint: Action:GetBucketAccessKeys
+        - endpoint: Action:GetBucketBundles
+        - endpoint: Action:GetBucketMetricData
+        - endpoint: Action:GetBuckets
+        - endpoint: Action:GetBundles
+        - endpoint: Action:GetCertificates
+        - endpoint: Action:GetCloudFormationStackRecords
+        - endpoint: Action:GetContactMethods
+        - endpoint: Action:GetContainerAPIMetadata
+        - endpoint: Action:GetContainerImages
+        - endpoint: Action:GetContainerLog
+        - endpoint: Action:GetContainerServiceDeployments
+        - endpoint: Action:GetContainerServiceMetricData
+        - endpoint: Action:GetContainerServicePowers
+        - endpoint: Action:GetContainerServices
+        - endpoint: Action:GetCostEstimate
+        - endpoint: Action:GetDisk
+        - endpoint: Action:GetDiskSnapshot
+        - endpoint: Action:GetDiskSnapshots
+        - endpoint: Action:GetDisks
+        - endpoint: Action:GetDistributionBundles
+        - endpoint: Action:GetDistributionLatestCacheReset
+        - endpoint: Action:GetDistributionMetricData
+        - endpoint: Action:GetDistributions
+        - endpoint: Action:GetDomain
+        - endpoint: Action:GetDomains
+        - endpoint: Action:GetExportSnapshotRecords
+        - endpoint: Action:GetInstance
+        - endpoint: Action:GetInstanceAccessDetails
+        - endpoint: Action:GetInstanceMetricData
+        - endpoint: Action:GetInstancePortStates
+        - endpoint: Action:GetInstanceSnapshot
+        - endpoint: Action:GetInstanceSnapshots
+        - endpoint: Action:GetInstanceState
+        - endpoint: Action:GetInstances
+        - endpoint: Action:GetKeyPair
+        - endpoint: Action:GetKeyPairs
+        - endpoint: Action:GetLoadBalancer
+        - endpoint: Action:GetLoadBalancerMetricData
+        - endpoint: Action:GetLoadBalancerTlsCertificates
+        - endpoint: Action:GetLoadBalancerTlsPolicies
+        - endpoint: Action:GetLoadBalancers
+        - endpoint: Action:GetOperation
+        - endpoint: Action:GetOperations
+        - endpoint: Action:GetOperationsForResource
+        - endpoint: Action:GetRegions
+        - endpoint: Action:GetRelationalDatabase
+        - endpoint: Action:GetRelationalDatabaseBlueprints
+        - endpoint: Action:GetRelationalDatabaseBundles
+        - endpoint: Action:GetRelationalDatabaseEvents
+        - endpoint: Action:GetRelationalDatabaseLogEvents
+        - endpoint: Action:GetRelationalDatabaseLogStreams
+        - endpoint: Action:GetRelationalDatabaseMasterUserPassword
+        - endpoint: Action:GetRelationalDatabaseMetricData
+        - endpoint: Action:GetRelationalDatabaseParameters
+        - endpoint: Action:GetRelationalDatabaseSnapshot
+        - endpoint: Action:GetRelationalDatabaseSnapshots
+        - endpoint: Action:GetRelationalDatabases
+        - endpoint: Action:GetSetupHistory
+        - endpoint: Action:GetStaticIp
+        - endpoint: Action:GetStaticIps
+        - endpoint: Action:ImportKeyPair
+        - endpoint: Action:IsVpcPeered
+        - endpoint: Action:OpenInstancePublicPorts
+        - endpoint: Action:PeerVpc
+        - endpoint: Action:PutAlarm
+        - endpoint: Action:PutInstancePublicPorts
+        - endpoint: Action:RebootInstance
+        - endpoint: Action:RebootRelationalDatabase
+        - endpoint: Action:RegisterContainerImage
+        - endpoint: Action:ReleaseStaticIp
+        - endpoint: Action:ResetDistributionCache
+        - endpoint: Action:SendContactMethodVerification
+        - endpoint: Action:SetIpAddressType
+        - endpoint: Action:SetResourceAccessForBucket
+        - endpoint: Action:SetupInstanceHttps
+        - endpoint: Action:StartGUISession
+        - endpoint: Action:StartInstance
+        - endpoint: Action:StartRelationalDatabase
+        - endpoint: Action:StopGUISession
+        - endpoint: Action:StopInstance
+        - endpoint: Action:StopRelationalDatabase
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestAlarm
+        - endpoint: Action:UnpeerVpc
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateBucket
+        - endpoint: Action:UpdateBucketBundle
+        - endpoint: Action:UpdateContainerService
+        - endpoint: Action:UpdateDistribution
+        - endpoint: Action:UpdateDistributionBundle
+        - endpoint: Action:UpdateDomainEntry
+        - endpoint: Action:UpdateInstanceMetadataOptions
+        - endpoint: Action:UpdateLoadBalancerAttribute
+        - endpoint: Action:UpdateRelationalDatabase
+        - endpoint: Action:UpdateRelationalDatabaseParameters
+    - category: Databases & Analytics
+      - service: Athena (athena)
+        - endpoint: Action:BatchGetNamedQuery
+        - endpoint: Action:BatchGetPreparedStatement
+        - endpoint: Action:BatchGetQueryExecution
+        - endpoint: Action:CancelCapacityReservation
+        - endpoint: Action:CreateCapacityReservation
+        - endpoint: Action:CreateDataCatalog
+        - endpoint: Action:CreateDatabase
+        - endpoint: Action:CreateNamedQuery
+        - endpoint: Action:CreateNotebook
+        - endpoint: Action:CreatePreparedStatement
+        - endpoint: Action:CreatePresignedNotebookUrl
+        - endpoint: Action:CreateTable
+        - endpoint: Action:CreateWorkGroup
+        - endpoint: Action:DeleteCapacityReservation
+        - endpoint: Action:DeleteDataCatalog
+        - endpoint: Action:DeleteDatabase
+        - endpoint: Action:DeleteNamedQuery
+        - endpoint: Action:DeleteNotebook
+        - endpoint: Action:DeletePreparedStatement
+        - endpoint: Action:DeleteTable
+        - endpoint: Action:DeleteWorkGroup
+        - endpoint: Action:ExportNotebook
+        - endpoint: Action:GetCalculationExecution
+        - endpoint: Action:GetCalculationExecutionCode
+        - endpoint: Action:GetCalculationExecutionStatus
+        - endpoint: Action:GetCapacityAssignmentConfiguration
+        - endpoint: Action:GetCapacityReservation
+        - endpoint: Action:GetDataCatalog
+        - endpoint: Action:GetDatabase
+        - endpoint: Action:GetNamedQuery
+        - endpoint: Action:GetNotebookMetadata
+        - endpoint: Action:GetPreparedStatement
+        - endpoint: Action:GetQueryExecution
+        - endpoint: Action:GetQueryResults
+        - endpoint: Action:GetQueryRuntimeStatistics
+        - endpoint: Action:GetSession
+        - endpoint: Action:GetSessionStatus
+        - endpoint: Action:GetTableMetadata
+        - endpoint: Action:GetWorkGroup
+        - endpoint: Action:ImportNotebook
+        - endpoint: Action:ListApplicationDPUSizes
+        - endpoint: Action:ListApplicationDpuSizes
+        - endpoint: Action:ListCalculationExecutions
+        - endpoint: Action:ListCapacityReservations
+        - endpoint: Action:ListDataCatalogs
+        - endpoint: Action:ListDatabases
+        - endpoint: Action:ListEngineVersions
+        - endpoint: Action:ListExecutors
+        - endpoint: Action:ListNamedQueries
+        - endpoint: Action:ListNotebookMetadata
+        - endpoint: Action:ListNotebookSessions
+        - endpoint: Action:ListPreparedStatements
+        - endpoint: Action:ListQueryExecutions
+        - endpoint: Action:ListSessions
+        - endpoint: Action:ListTableMetadata
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWorkGroups
+        - endpoint: Action:PutCapacityAssignmentConfiguration
+        - endpoint: Action:StartCalculationExecution
+        - endpoint: Action:StartQueryExecution
+        - endpoint: Action:StartSession
+        - endpoint: Action:StopCalculationExecution
+        - endpoint: Action:StopQueryExecution
+        - endpoint: Action:TagResource
+        - endpoint: Action:TerminateSession
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateCapacityReservation
+        - endpoint: Action:UpdateDataCatalog
+        - endpoint: Action:UpdateDatabase
+        - endpoint: Action:UpdateNamedQuery
+        - endpoint: Action:UpdateNotebook
+        - endpoint: Action:UpdateNotebookMetadata
+        - endpoint: Action:UpdatePreparedStatement
+        - endpoint: Action:UpdateTable
+        - endpoint: Action:UpdateWorkGroup
+      - service: Aurora DSQL (aurora-dsql)
+        - endpoint: Action:CreateCluster
+        - endpoint: Action:DeleteCluster
+        - endpoint: Action:DeleteClusterPolicy
+        - endpoint: Action:GetCluster
+        - endpoint: Action:GetClusterPolicy
+        - endpoint: Action:GetVpcEndpointServiceName
+        - endpoint: Action:ListClusters
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutClusterPolicy
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateCluster
+      - service: DynamoDB (dynamodb)
+        - endpoint: Action:BatchExecuteStatement
+        - endpoint: Action:BatchGetItem
+        - endpoint: Action:BatchWriteItem
+        - endpoint: Action:CreateBackup
+        - endpoint: Action:CreateGlobalTable
+        - endpoint: Action:CreateTable
+        - endpoint: Action:DeleteBackup
+        - endpoint: Action:DeleteItem
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteTable
+        - endpoint: Action:DescribeBackup
+        - endpoint: Action:DescribeContinuousBackups
+        - endpoint: Action:DescribeContributorInsights
+        - endpoint: Action:DescribeEndpoints
+        - endpoint: Action:DescribeExport
+        - endpoint: Action:DescribeGlobalTable
+        - endpoint: Action:DescribeGlobalTableSettings
+        - endpoint: Action:DescribeImport
+        - endpoint: Action:DescribeKinesisStreamingDestination
+        - endpoint: Action:DescribeLimits
+        - endpoint: Action:DescribeTable
+        - endpoint: Action:DescribeTableReplicaAutoScaling
+        - endpoint: Action:DescribeTimeToLive
+        - endpoint: Action:DisableKinesisStreamingDestination
+        - endpoint: Action:EnableKinesisStreamingDestination
+        - endpoint: Action:ExecuteStatement
+        - endpoint: Action:ExecuteTransaction
+        - endpoint: Action:ExportTableToPointInTime
+        - endpoint: Action:GetItem
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:ImportTable
+        - endpoint: Action:ListBackups
+        - endpoint: Action:ListContributorInsights
+        - endpoint: Action:ListExports
+        - endpoint: Action:ListGlobalTables
+        - endpoint: Action:ListImports
+        - endpoint: Action:ListTables
+        - endpoint: Action:ListTagsOfResource
+        - endpoint: Action:PutItem
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:Query
+        - endpoint: Action:RestoreTableFromBackup
+        - endpoint: Action:RestoreTableToPointInTime
+        - endpoint: Action:Scan
+        - endpoint: Action:TagResource
+        - endpoint: Action:TransactGetItems
+        - endpoint: Action:TransactWriteItems
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateContinuousBackups
+        - endpoint: Action:UpdateContributorInsights
+        - endpoint: Action:UpdateGlobalTable
+        - endpoint: Action:UpdateGlobalTableSettings
+        - endpoint: Action:UpdateItem
+        - endpoint: Action:UpdateKinesisStreamingDestination
+        - endpoint: Action:UpdateTable
+        - endpoint: Action:UpdateTableReplicaAutoScaling
+        - endpoint: Action:UpdateTimeToLive
+      - service: Keyspaces (keyspaces)
+        - endpoint: Action:CreateKeyspace
+        - endpoint: Action:CreateTable
+        - endpoint: Action:CreateType
+        - endpoint: Action:DeleteKeyspace
+        - endpoint: Action:DeleteTable
+        - endpoint: Action:DeleteType
+        - endpoint: Action:GetKeyspace
+        - endpoint: Action:GetTable
+        - endpoint: Action:GetTableAutoScalingSettings
+        - endpoint: Action:GetType
+        - endpoint: Action:ListKeyspaces
+        - endpoint: Action:ListTables
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTypes
+        - endpoint: Action:RestoreTable
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateKeyspace
+        - endpoint: Action:UpdateTable
+      - service: Neptune (neptune)
+        - endpoint: Action:AddRoleToDBCluster
+        - endpoint: Action:AddSourceIdentifierToSubscription
+        - endpoint: Action:AddTagsToResource
+        - endpoint: Action:ApplyPendingMaintenanceAction
+        - endpoint: Action:CopyDBClusterParameterGroup
+        - endpoint: Action:CopyDBClusterSnapshot
+        - endpoint: Action:CopyDBParameterGroup
+        - endpoint: Action:CreateDBCluster
+        - endpoint: Action:CreateDBClusterEndpoint
+        - endpoint: Action:CreateDBClusterParameterGroup
+        - endpoint: Action:CreateDBClusterSnapshot
+        - endpoint: Action:CreateDBInstance
+        - endpoint: Action:CreateDBParameterGroup
+        - endpoint: Action:CreateDBSubnetGroup
+        - endpoint: Action:CreateEventSubscription
+        - endpoint: Action:CreateGlobalCluster
+        - endpoint: Action:DeleteDBCluster
+        - endpoint: Action:DeleteDBClusterEndpoint
+        - endpoint: Action:DeleteDBClusterParameterGroup
+        - endpoint: Action:DeleteDBClusterSnapshot
+        - endpoint: Action:DeleteDBInstance
+        - endpoint: Action:DeleteDBParameterGroup
+        - endpoint: Action:DeleteDBSubnetGroup
+        - endpoint: Action:DeleteEventSubscription
+        - endpoint: Action:DeleteGlobalCluster
+        - endpoint: Action:DescribeDBClusterEndpoints
+        - endpoint: Action:DescribeDBClusterParameterGroups
+        - endpoint: Action:DescribeDBClusterParameters
+        - endpoint: Action:DescribeDBClusterSnapshotAttributes
+        - endpoint: Action:DescribeDBClusterSnapshots
+        - endpoint: Action:DescribeDBClusters
+        - endpoint: Action:DescribeDBEngineVersions
+        - endpoint: Action:DescribeDBInstances
+        - endpoint: Action:DescribeDBParameterGroups
+        - endpoint: Action:DescribeDBParameters
+        - endpoint: Action:DescribeDBSubnetGroups
+        - endpoint: Action:DescribeEngineDefaultClusterParameters
+        - endpoint: Action:DescribeEngineDefaultParameters
+        - endpoint: Action:DescribeEventCategories
+        - endpoint: Action:DescribeEventSubscriptions
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeGlobalClusters
+        - endpoint: Action:DescribeOrderableDBInstanceOptions
+        - endpoint: Action:DescribePendingMaintenanceActions
+        - endpoint: Action:DescribeValidDBInstanceModifications
+        - endpoint: Action:FailoverDBCluster
+        - endpoint: Action:FailoverGlobalCluster
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ModifyDBCluster
+        - endpoint: Action:ModifyDBClusterEndpoint
+        - endpoint: Action:ModifyDBClusterParameterGroup
+        - endpoint: Action:ModifyDBClusterSnapshotAttribute
+        - endpoint: Action:ModifyDBInstance
+        - endpoint: Action:ModifyDBParameterGroup
+        - endpoint: Action:ModifyDBSubnetGroup
+        - endpoint: Action:ModifyEventSubscription
+        - endpoint: Action:ModifyGlobalCluster
+        - endpoint: Action:PromoteReadReplicaDBCluster
+        - endpoint: Action:RebootDBInstance
+        - endpoint: Action:RemoveFromGlobalCluster
+        - endpoint: Action:RemoveRoleFromDBCluster
+        - endpoint: Action:RemoveSourceIdentifierFromSubscription
+        - endpoint: Action:RemoveTagsFromResource
+        - endpoint: Action:ResetDBClusterParameterGroup
+        - endpoint: Action:ResetDBParameterGroup
+        - endpoint: Action:RestoreDBClusterFromSnapshot
+        - endpoint: Action:RestoreDBClusterToPointInTime
+        - endpoint: Action:StartDBCluster
+        - endpoint: Action:StopDBCluster
+        - endpoint: Action:SwitchoverGlobalCluster
+      - service: Neptune Analytics API (neptuneanalytics)
+        - endpoint: Action:CancelExportTask
+        - endpoint: Action:CancelImportTask
+        - endpoint: Action:CancelQuery
+        - endpoint: Action:CreateGraph
+        - endpoint: Action:CreateGraphSnapshot
+        - endpoint: Action:CreateGraphUsingImportTask
+        - endpoint: Action:CreatePrivateGraphEndpoint
+        - endpoint: Action:DeleteGraph
+        - endpoint: Action:DeleteGraphSnapshot
+        - endpoint: Action:DeletePrivateGraphEndpoint
+        - endpoint: Action:ExecuteQuery
+        - endpoint: Action:GetExportTask
+        - endpoint: Action:GetGraph
+        - endpoint: Action:GetGraphSnapshot
+        - endpoint: Action:GetGraphSummary
+        - endpoint: Action:GetImportTask
+        - endpoint: Action:GetPrivateGraphEndpoint
+        - endpoint: Action:GetQuery
+        - endpoint: Action:ListExportTasks
+        - endpoint: Action:ListGraphSnapshots
+        - endpoint: Action:ListGraphs
+        - endpoint: Action:ListImportTasks
+        - endpoint: Action:ListPrivateGraphEndpoints
+        - endpoint: Action:ListQueries
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ResetGraph
+        - endpoint: Action:RestoreGraphFromSnapshot
+        - endpoint: Action:StartExportTask
+        - endpoint: Action:StartGraph
+        - endpoint: Action:StartImportTask
+        - endpoint: Action:StopGraph
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateGraph
+      - service: Neptune Data API (neptunedata)
+        - endpoint: Action:CancelGremlinQuery
+        - endpoint: Action:CancelLoaderJob
+        - endpoint: Action:CancelMLDataProcessingJob
+        - endpoint: Action:CancelMLModelTrainingJob
+        - endpoint: Action:CancelMLModelTransformJob
+        - endpoint: Action:CancelOpenCypherQuery
+        - endpoint: Action:CreateMLEndpoint
+        - endpoint: Action:DeleteMLEndpoint
+        - endpoint: Action:DeletePropertygraphStatistics
+        - endpoint: Action:DeleteSparqlStatistics
+        - endpoint: Action:ExecuteFastReset
+        - endpoint: Action:ExecuteGremlinExplainQuery
+        - endpoint: Action:ExecuteGremlinProfileQuery
+        - endpoint: Action:ExecuteGremlinQuery
+        - endpoint: Action:ExecuteOpenCypherExplainQuery
+        - endpoint: Action:ExecuteOpenCypherQuery
+        - endpoint: Action:GetEngineStatus
+        - endpoint: Action:GetGremlinQueryStatus
+        - endpoint: Action:GetLoaderJobStatus
+        - endpoint: Action:GetMLDataProcessingJob
+        - endpoint: Action:GetMLEndpoint
+        - endpoint: Action:GetMLModelTrainingJob
+        - endpoint: Action:GetMLModelTransformJob
+        - endpoint: Action:GetOpenCypherQueryStatus
+        - endpoint: Action:GetPropertygraphStatistics
+        - endpoint: Action:GetPropertygraphStream
+        - endpoint: Action:GetPropertygraphSummary
+        - endpoint: Action:GetRDFGraphSummary
+        - endpoint: Action:GetSparqlStatistics
+        - endpoint: Action:GetSparqlStream
+        - endpoint: Action:ListGremlinQueries
+        - endpoint: Action:ListLoaderJobs
+        - endpoint: Action:ListMLDataProcessingJobs
+        - endpoint: Action:ListMLEndpoints
+        - endpoint: Action:ListMLModelTrainingJobs
+        - endpoint: Action:ListMLModelTransformJobs
+        - endpoint: Action:ListOpenCypherQueries
+        - endpoint: Action:ManagePropertygraphStatistics
+        - endpoint: Action:ManageSparqlStatistics
+        - endpoint: Action:StartLoaderJob
+        - endpoint: Action:StartMLDataProcessingJob
+        - endpoint: Action:StartMLModelTrainingJob
+        - endpoint: Action:StartMLModelTransformJob
+      - service: OpenSearch (opensearch)
+        - endpoint: Action:AcceptInboundConnection
+        - endpoint: Action:AddDataSource
+        - endpoint: Action:AddDirectQueryDataSource
+        - endpoint: Action:AddTags
+        - endpoint: Action:AssociatePackage
+        - endpoint: Action:AssociatePackages
+        - endpoint: Action:AuthorizeVpcEndpointAccess
+        - endpoint: Action:CancelDomainConfigChange
+        - endpoint: Action:CancelServiceSoftwareUpdate
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateDomain
+        - endpoint: Action:CreateIndex
+        - endpoint: Action:CreateOutboundConnection
+        - endpoint: Action:CreatePackage
+        - endpoint: Action:CreateVpcEndpoint
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteDataSource
+        - endpoint: Action:DeleteDirectQueryDataSource
+        - endpoint: Action:DeleteDomain
+        - endpoint: Action:DeleteInboundConnection
+        - endpoint: Action:DeleteIndex
+        - endpoint: Action:DeleteOutboundConnection
+        - endpoint: Action:DeletePackage
+        - endpoint: Action:DeleteVpcEndpoint
+        - endpoint: Action:DescribeDomain
+        - endpoint: Action:DescribeDomainAutoTunes
+        - endpoint: Action:DescribeDomainChangeProgress
+        - endpoint: Action:DescribeDomainConfig
+        - endpoint: Action:DescribeDomainHealth
+        - endpoint: Action:DescribeDomainNodes
+        - endpoint: Action:DescribeDomains
+        - endpoint: Action:DescribeDryRunProgress
+        - endpoint: Action:DescribeInboundConnections
+        - endpoint: Action:DescribeInstanceTypeLimits
+        - endpoint: Action:DescribeOutboundConnections
+        - endpoint: Action:DescribePackages
+        - endpoint: Action:DescribeReservedInstanceOfferings
+        - endpoint: Action:DescribeReservedInstances
+        - endpoint: Action:DescribeVpcEndpoints
+        - endpoint: Action:DissociatePackage
+        - endpoint: Action:DissociatePackages
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetCompatibleVersions
+        - endpoint: Action:GetDataSource
+        - endpoint: Action:GetDefaultApplicationSetting
+        - endpoint: Action:GetDirectQueryDataSource
+        - endpoint: Action:GetDomainMaintenanceStatus
+        - endpoint: Action:GetIndex
+        - endpoint: Action:GetPackageVersionHistory
+        - endpoint: Action:GetUpgradeHistory
+        - endpoint: Action:GetUpgradeStatus
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListDataSources
+        - endpoint: Action:ListDirectQueryDataSources
+        - endpoint: Action:ListDomainMaintenances
+        - endpoint: Action:ListDomainNames
+        - endpoint: Action:ListDomainsForPackage
+        - endpoint: Action:ListInstanceTypeDetails
+        - endpoint: Action:ListPackagesForDomain
+        - endpoint: Action:ListScheduledActions
+        - endpoint: Action:ListTags
+        - endpoint: Action:ListVersions
+        - endpoint: Action:ListVpcEndpointAccess
+        - endpoint: Action:ListVpcEndpoints
+        - endpoint: Action:ListVpcEndpointsForDomain
+        - endpoint: Action:PurchaseReservedInstanceOffering
+        - endpoint: Action:PutDefaultApplicationSetting
+        - endpoint: Action:RejectInboundConnection
+        - endpoint: Action:RemoveTags
+        - endpoint: Action:RevokeVpcEndpointAccess
+        - endpoint: Action:StartDomainMaintenance
+        - endpoint: Action:StartServiceSoftwareUpdate
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateDataSource
+        - endpoint: Action:UpdateDirectQueryDataSource
+        - endpoint: Action:UpdateDomainConfig
+        - endpoint: Action:UpdateIndex
+        - endpoint: Action:UpdatePackage
+        - endpoint: Action:UpdatePackageScope
+        - endpoint: Action:UpdateScheduledAction
+        - endpoint: Action:UpdateVpcEndpoint
+        - endpoint: Action:UpgradeDomain
+      - service: RDS (rds)
+        - endpoint: Action:AddRoleToDBCluster
+        - endpoint: Action:AddRoleToDBInstance
+        - endpoint: Action:AddSourceIdentifierToSubscription
+        - endpoint: Action:AddTagsToResource
+        - endpoint: Action:ApplyPendingMaintenanceAction
+        - endpoint: Action:AuthorizeDBSecurityGroupIngress
+        - endpoint: Action:BacktrackDBCluster
+        - endpoint: Action:CancelExportTask
+        - endpoint: Action:CopyDBClusterParameterGroup
+        - endpoint: Action:CopyDBClusterSnapshot
+        - endpoint: Action:CopyDBParameterGroup
+        - endpoint: Action:CopyDBSnapshot
+        - endpoint: Action:CopyOptionGroup
+        - endpoint: Action:CreateBlueGreenDeployment
+        - endpoint: Action:CreateCustomDBEngineVersion
+        - endpoint: Action:CreateDBCluster
+        - endpoint: Action:CreateDBClusterEndpoint
+        - endpoint: Action:CreateDBClusterParameterGroup
+        - endpoint: Action:CreateDBClusterSnapshot
+        - endpoint: Action:CreateDBInstance
+        - endpoint: Action:CreateDBInstanceReadReplica
+        - endpoint: Action:CreateDBParameterGroup
+        - endpoint: Action:CreateDBProxy
+        - endpoint: Action:CreateDBProxyEndpoint
+        - endpoint: Action:CreateDBSecurityGroup
+        - endpoint: Action:CreateDBShardGroup
+        - endpoint: Action:CreateDBSnapshot
+        - endpoint: Action:CreateDBSubnetGroup
+        - endpoint: Action:CreateEventSubscription
+        - endpoint: Action:CreateGlobalCluster
+        - endpoint: Action:CreateIntegration
+        - endpoint: Action:CreateOptionGroup
+        - endpoint: Action:CreateTenantDatabase
+        - endpoint: Action:DeleteBlueGreenDeployment
+        - endpoint: Action:DeleteCustomDBEngineVersion
+        - endpoint: Action:DeleteDBCluster
+        - endpoint: Action:DeleteDBClusterAutomatedBackup
+        - endpoint: Action:DeleteDBClusterEndpoint
+        - endpoint: Action:DeleteDBClusterParameterGroup
+        - endpoint: Action:DeleteDBClusterSnapshot
+        - endpoint: Action:DeleteDBInstance
+        - endpoint: Action:DeleteDBInstanceAutomatedBackup
+        - endpoint: Action:DeleteDBParameterGroup
+        - endpoint: Action:DeleteDBProxy
+        - endpoint: Action:DeleteDBProxyEndpoint
+        - endpoint: Action:DeleteDBSecurityGroup
+        - endpoint: Action:DeleteDBShardGroup
+        - endpoint: Action:DeleteDBSnapshot
+        - endpoint: Action:DeleteDBSubnetGroup
+        - endpoint: Action:DeleteEventSubscription
+        - endpoint: Action:DeleteGlobalCluster
+        - endpoint: Action:DeleteIntegration
+        - endpoint: Action:DeleteOptionGroup
+        - endpoint: Action:DeleteTenantDatabase
+        - endpoint: Action:DeregisterDBProxyTargets
+        - endpoint: Action:DescribeAccountAttributes
+        - endpoint: Action:DescribeBlueGreenDeployments
+        - endpoint: Action:DescribeCertificates
+        - endpoint: Action:DescribeDBClusterAutomatedBackups
+        - endpoint: Action:DescribeDBClusterBacktracks
+        - endpoint: Action:DescribeDBClusterEndpoints
+        - endpoint: Action:DescribeDBClusterParameterGroups
+        - endpoint: Action:DescribeDBClusterParameters
+        - endpoint: Action:DescribeDBClusterSnapshotAttributes
+        - endpoint: Action:DescribeDBClusterSnapshots
+        - endpoint: Action:DescribeDBClusters
+        - endpoint: Action:DescribeDBEngineVersions
+        - endpoint: Action:DescribeDBInstanceAutomatedBackups
+        - endpoint: Action:DescribeDBInstances
+        - endpoint: Action:DescribeDBLogFiles
+        - endpoint: Action:DescribeDBMajorEngineVersions
+        - endpoint: Action:DescribeDBParameterGroups
+        - endpoint: Action:DescribeDBParameters
+        - endpoint: Action:DescribeDBProxies
+        - endpoint: Action:DescribeDBProxyEndpoints
+        - endpoint: Action:DescribeDBProxyTargetGroups
+        - endpoint: Action:DescribeDBProxyTargets
+        - endpoint: Action:DescribeDBRecommendations
+        - endpoint: Action:DescribeDBSecurityGroups
+        - endpoint: Action:DescribeDBShardGroups
+        - endpoint: Action:DescribeDBSnapshotAttributes
+        - endpoint: Action:DescribeDBSnapshotTenantDatabases
+        - endpoint: Action:DescribeDBSnapshots
+        - endpoint: Action:DescribeDBSubnetGroups
+        - endpoint: Action:DescribeEngineDefaultClusterParameters
+        - endpoint: Action:DescribeEngineDefaultParameters
+        - endpoint: Action:DescribeEventCategories
+        - endpoint: Action:DescribeEventSubscriptions
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeExportTasks
+        - endpoint: Action:DescribeGlobalClusters
+        - endpoint: Action:DescribeIntegrations
+        - endpoint: Action:DescribeOptionGroupOptions
+        - endpoint: Action:DescribeOptionGroups
+        - endpoint: Action:DescribeOrderableDBInstanceOptions
+        - endpoint: Action:DescribePendingMaintenanceActions
+        - endpoint: Action:DescribeReservedDBInstances
+        - endpoint: Action:DescribeReservedDBInstancesOfferings
+        - endpoint: Action:DescribeSourceRegions
+        - endpoint: Action:DescribeTenantDatabases
+        - endpoint: Action:DescribeValidDBInstanceModifications
+        - endpoint: Action:DisableHttpEndpoint
+        - endpoint: Action:DownloadDBLogFilePortion
+        - endpoint: Action:EnableHttpEndpoint
+        - endpoint: Action:FailoverDBCluster
+        - endpoint: Action:FailoverGlobalCluster
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ModifyActivityStream
+        - endpoint: Action:ModifyCertificates
+        - endpoint: Action:ModifyCurrentDBClusterCapacity
+        - endpoint: Action:ModifyCustomDBEngineVersion
+        - endpoint: Action:ModifyDBCluster
+        - endpoint: Action:ModifyDBClusterEndpoint
+        - endpoint: Action:ModifyDBClusterParameterGroup
+        - endpoint: Action:ModifyDBClusterSnapshotAttribute
+        - endpoint: Action:ModifyDBInstance
+        - endpoint: Action:ModifyDBParameterGroup
+        - endpoint: Action:ModifyDBProxy
+        - endpoint: Action:ModifyDBProxyEndpoint
+        - endpoint: Action:ModifyDBProxyTargetGroup
+        - endpoint: Action:ModifyDBRecommendation
+        - endpoint: Action:ModifyDBShardGroup
+        - endpoint: Action:ModifyDBSnapshot
+        - endpoint: Action:ModifyDBSnapshotAttribute
+        - endpoint: Action:ModifyDBSubnetGroup
+        - endpoint: Action:ModifyEventSubscription
+        - endpoint: Action:ModifyGlobalCluster
+        - endpoint: Action:ModifyIntegration
+        - endpoint: Action:ModifyOptionGroup
+        - endpoint: Action:ModifyTenantDatabase
+        - endpoint: Action:PromoteReadReplica
+        - endpoint: Action:PromoteReadReplicaDBCluster
+        - endpoint: Action:PurchaseReservedDBInstancesOffering
+        - endpoint: Action:RebootDBCluster
+        - endpoint: Action:RebootDBInstance
+        - endpoint: Action:RebootDBShardGroup
+        - endpoint: Action:RegisterDBProxyTargets
+        - endpoint: Action:RemoveFromGlobalCluster
+        - endpoint: Action:RemoveRoleFromDBCluster
+        - endpoint: Action:RemoveRoleFromDBInstance
+        - endpoint: Action:RemoveSourceIdentifierFromSubscription
+        - endpoint: Action:RemoveTagsFromResource
+        - endpoint: Action:ResetDBClusterParameterGroup
+        - endpoint: Action:ResetDBParameterGroup
+        - endpoint: Action:RestoreDBClusterFromS3
+        - endpoint: Action:RestoreDBClusterFromSnapshot
+        - endpoint: Action:RestoreDBClusterToPointInTime
+        - endpoint: Action:RestoreDBInstanceFromDBSnapshot
+        - endpoint: Action:RestoreDBInstanceFromS3
+        - endpoint: Action:RestoreDBInstanceToPointInTime
+        - endpoint: Action:RevokeDBSecurityGroupIngress
+        - endpoint: Action:StartActivityStream
+        - endpoint: Action:StartDBCluster
+        - endpoint: Action:StartDBInstance
+        - endpoint: Action:StartDBInstanceAutomatedBackupsReplication
+        - endpoint: Action:StartExportTask
+        - endpoint: Action:StopActivityStream
+        - endpoint: Action:StopDBCluster
+        - endpoint: Action:StopDBInstance
+        - endpoint: Action:StopDBInstanceAutomatedBackupsReplication
+        - endpoint: Action:SwitchoverBlueGreenDeployment
+        - endpoint: Action:SwitchoverGlobalCluster
+        - endpoint: Action:SwitchoverReadReplica
+      - service: Redshift (redshift)
+        - endpoint: Action:AcceptReservedNodeExchange
+        - endpoint: Action:AddPartner
+        - endpoint: Action:AssociateDataShareConsumer
+        - endpoint: Action:AuthorizeClusterSecurityGroupIngress
+        - endpoint: Action:AuthorizeDataShare
+        - endpoint: Action:AuthorizeEndpointAccess
+        - endpoint: Action:AuthorizeSnapshotAccess
+        - endpoint: Action:BatchDeleteClusterSnapshots
+        - endpoint: Action:BatchModifyClusterSnapshots
+        - endpoint: Action:CancelResize
+        - endpoint: Action:CopyClusterSnapshot
+        - endpoint: Action:CreateAuthenticationProfile
+        - endpoint: Action:CreateCluster
+        - endpoint: Action:CreateClusterParameterGroup
+        - endpoint: Action:CreateClusterSecurityGroup
+        - endpoint: Action:CreateClusterSnapshot
+        - endpoint: Action:CreateClusterSubnetGroup
+        - endpoint: Action:CreateCustomDomainAssociation
+        - endpoint: Action:CreateEndpointAccess
+        - endpoint: Action:CreateEventSubscription
+        - endpoint: Action:CreateHsmClientCertificate
+        - endpoint: Action:CreateHsmConfiguration
+        - endpoint: Action:CreateIntegration
+        - endpoint: Action:CreateRedshiftIdcApplication
+        - endpoint: Action:CreateScheduledAction
+        - endpoint: Action:CreateSnapshotCopyGrant
+        - endpoint: Action:CreateSnapshotSchedule
+        - endpoint: Action:CreateTags
+        - endpoint: Action:CreateUsageLimit
+        - endpoint: Action:DeauthorizeDataShare
+        - endpoint: Action:DeleteAuthenticationProfile
+        - endpoint: Action:DeleteCluster
+        - endpoint: Action:DeleteClusterParameterGroup
+        - endpoint: Action:DeleteClusterSecurityGroup
+        - endpoint: Action:DeleteClusterSnapshot
+        - endpoint: Action:DeleteClusterSubnetGroup
+        - endpoint: Action:DeleteCustomDomainAssociation
+        - endpoint: Action:DeleteEndpointAccess
+        - endpoint: Action:DeleteEventSubscription
+        - endpoint: Action:DeleteHsmClientCertificate
+        - endpoint: Action:DeleteHsmConfiguration
+        - endpoint: Action:DeleteIntegration
+        - endpoint: Action:DeletePartner
+        - endpoint: Action:DeleteRedshiftIdcApplication
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteScheduledAction
+        - endpoint: Action:DeleteSnapshotCopyGrant
+        - endpoint: Action:DeleteSnapshotSchedule
+        - endpoint: Action:DeleteTags
+        - endpoint: Action:DeleteUsageLimit
+        - endpoint: Action:DeregisterNamespace
+        - endpoint: Action:DescribeAccountAttributes
+        - endpoint: Action:DescribeAuthenticationProfiles
+        - endpoint: Action:DescribeClusterDbRevisions
+        - endpoint: Action:DescribeClusterParameterGroups
+        - endpoint: Action:DescribeClusterParameters
+        - endpoint: Action:DescribeClusterSecurityGroups
+        - endpoint: Action:DescribeClusterSnapshots
+        - endpoint: Action:DescribeClusterSubnetGroups
+        - endpoint: Action:DescribeClusterTracks
+        - endpoint: Action:DescribeClusterVersions
+        - endpoint: Action:DescribeClusters
+        - endpoint: Action:DescribeCustomDomainAssociations
+        - endpoint: Action:DescribeDataShares
+        - endpoint: Action:DescribeDataSharesForConsumer
+        - endpoint: Action:DescribeDataSharesForProducer
+        - endpoint: Action:DescribeDefaultClusterParameters
+        - endpoint: Action:DescribeEndpointAccess
+        - endpoint: Action:DescribeEndpointAuthorization
+        - endpoint: Action:DescribeEventCategories
+        - endpoint: Action:DescribeEventSubscriptions
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeHsmClientCertificates
+        - endpoint: Action:DescribeHsmConfigurations
+        - endpoint: Action:DescribeInboundIntegrations
+        - endpoint: Action:DescribeIntegrations
+        - endpoint: Action:DescribeLoggingStatus
+        - endpoint: Action:DescribeNodeConfigurationOptions
+        - endpoint: Action:DescribeOrderableClusterOptions
+        - endpoint: Action:DescribePartners
+        - endpoint: Action:DescribeRedshiftIdcApplications
+        - endpoint: Action:DescribeReservedNodeExchangeStatus
+        - endpoint: Action:DescribeReservedNodeOfferings
+        - endpoint: Action:DescribeReservedNodes
+        - endpoint: Action:DescribeResize
+        - endpoint: Action:DescribeScheduledActions
+        - endpoint: Action:DescribeSnapshotCopyGrants
+        - endpoint: Action:DescribeSnapshotSchedules
+        - endpoint: Action:DescribeStorage
+        - endpoint: Action:DescribeTableRestoreStatus
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DescribeUsageLimits
+        - endpoint: Action:DisableLogging
+        - endpoint: Action:DisableSnapshotCopy
+        - endpoint: Action:DisassociateDataShareConsumer
+        - endpoint: Action:EnableLogging
+        - endpoint: Action:EnableSnapshotCopy
+        - endpoint: Action:FailoverPrimaryCompute
+        - endpoint: Action:GetClusterCredentials
+        - endpoint: Action:GetClusterCredentialsWithIAM
+        - endpoint: Action:GetIdentityCenterAuthToken
+        - endpoint: Action:GetReservedNodeExchangeConfigurationOptions
+        - endpoint: Action:GetReservedNodeExchangeOfferings
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:ListRecommendations
+        - endpoint: Action:ModifyAquaConfiguration
+        - endpoint: Action:ModifyAuthenticationProfile
+        - endpoint: Action:ModifyCluster
+        - endpoint: Action:ModifyClusterDbRevision
+        - endpoint: Action:ModifyClusterIamRoles
+        - endpoint: Action:ModifyClusterMaintenance
+        - endpoint: Action:ModifyClusterParameterGroup
+        - endpoint: Action:ModifyClusterSnapshot
+        - endpoint: Action:ModifyClusterSnapshotSchedule
+        - endpoint: Action:ModifyClusterSubnetGroup
+        - endpoint: Action:ModifyCustomDomainAssociation
+        - endpoint: Action:ModifyEndpointAccess
+        - endpoint: Action:ModifyEventSubscription
+        - endpoint: Action:ModifyIntegration
+        - endpoint: Action:ModifyLakehouseConfiguration
+        - endpoint: Action:ModifyRedshiftIdcApplication
+        - endpoint: Action:ModifyScheduledAction
+        - endpoint: Action:ModifySnapshotCopyRetentionPeriod
+        - endpoint: Action:ModifySnapshotSchedule
+        - endpoint: Action:ModifyUsageLimit
+        - endpoint: Action:PauseCluster
+        - endpoint: Action:PurchaseReservedNodeOffering
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RebootCluster
+        - endpoint: Action:RegisterNamespace
+        - endpoint: Action:RejectDataShare
+        - endpoint: Action:ResetClusterParameterGroup
+        - endpoint: Action:ResizeCluster
+        - endpoint: Action:RestoreFromClusterSnapshot
+        - endpoint: Action:RestoreTableFromClusterSnapshot
+        - endpoint: Action:ResumeCluster
+        - endpoint: Action:RevokeClusterSecurityGroupIngress
+        - endpoint: Action:RevokeEndpointAccess
+        - endpoint: Action:RevokeSnapshotAccess
+        - endpoint: Action:RotateEncryptionKey
+        - endpoint: Action:UpdatePartnerStatus
+      - service: Timestream for InfluxDB (timestream-influxdb)
+        - endpoint: Action:CreateDbCluster
+        - endpoint: Action:CreateDbInstance
+        - endpoint: Action:CreateDbParameterGroup
+        - endpoint: Action:DeleteDbCluster
+        - endpoint: Action:DeleteDbInstance
+        - endpoint: Action:GetDbCluster
+        - endpoint: Action:GetDbInstance
+        - endpoint: Action:GetDbParameterGroup
+        - endpoint: Action:ListDbClusters
+        - endpoint: Action:ListDbInstances
+        - endpoint: Action:ListDbInstancesForCluster
+        - endpoint: Action:ListDbParameterGroups
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RebootDbCluster
+        - endpoint: Action:RebootDbInstance
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateDbCluster
+        - endpoint: Action:UpdateDbInstance
+    - category: Integration & Messaging
+      - service: Amazon Augmented AI (augmented-ai)
+        - endpoint: Action:DeleteHumanLoop
+        - endpoint: Action:DescribeHumanLoop
+        - endpoint: Action:ListHumanLoops
+        - endpoint: Action:StartHumanLoop
+        - endpoint: Action:StopHumanLoop
+      - service: Amazon IVS (Low Latency) (ivs-lowlatency)
+        - endpoint: Action:BatchGetChannel
+        - endpoint: Action:BatchGetStreamKey
+        - endpoint: Action:BatchStartViewerSessionRevocation
+        - endpoint: Action:CreateChannel
+        - endpoint: Action:CreatePlaybackRestrictionPolicy
+        - endpoint: Action:CreateRecordingConfiguration
+        - endpoint: Action:CreateStreamKey
+        - endpoint: Action:DeleteChannel
+        - endpoint: Action:DeletePlaybackKeyPair
+        - endpoint: Action:DeletePlaybackRestrictionPolicy
+        - endpoint: Action:DeleteRecordingConfiguration
+        - endpoint: Action:DeleteStreamKey
+        - endpoint: Action:GetChannel
+        - endpoint: Action:GetPlaybackKeyPair
+        - endpoint: Action:GetPlaybackRestrictionPolicy
+        - endpoint: Action:GetRecordingConfiguration
+        - endpoint: Action:GetStream
+        - endpoint: Action:GetStreamKey
+        - endpoint: Action:GetStreamSession
+        - endpoint: Action:ImportPlaybackKeyPair
+        - endpoint: Action:ListChannels
+        - endpoint: Action:ListPlaybackKeyPairs
+        - endpoint: Action:ListPlaybackRestrictionPolicies
+        - endpoint: Action:ListRecordingConfigurations
+        - endpoint: Action:ListStreamKeys
+        - endpoint: Action:ListStreamSessions
+        - endpoint: Action:ListStreams
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutMetadata
+        - endpoint: Action:StartViewerSessionRevocation
+        - endpoint: Action:StopStream
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateChannel
+        - endpoint: Action:UpdatePlaybackRestrictionPolicy
+      - service: Amazon IVS Chat (ivs-chat)
+        - endpoint: Action:CreateChatToken
+        - endpoint: Action:CreateLoggingConfiguration
+        - endpoint: Action:CreateRoom
+        - endpoint: Action:DeleteLoggingConfiguration
+        - endpoint: Action:DeleteMessage
+        - endpoint: Action:DeleteRoom
+        - endpoint: Action:DisconnectUser
+        - endpoint: Action:GetLoggingConfiguration
+        - endpoint: Action:GetRoom
+        - endpoint: Action:ListLoggingConfigurations
+        - endpoint: Action:ListRooms
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:SendEvent
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateLoggingConfiguration
+        - endpoint: Action:UpdateRoom
+      - service: Amazon IVS Chat Messaging (ivs-chatmessaging)
+        - endpoint: Action:DeleteMessage
+        - endpoint: Action:DisconnectUser
+        - endpoint: Action:SendMessage
+      - service: Amazon IVS Multitrack (ivs-multitrack)
+        - endpoint: Action:FindIngest
+        - endpoint: Action:GetClientConfiguration
+      - service: Amazon IVS Real-Time Streaming (ivs-realtimesteraming)
+        - endpoint: Action:CreateEncoderConfiguration
+        - endpoint: Action:CreateIngestConfiguration
+        - endpoint: Action:CreateParticipantToken
+        - endpoint: Action:CreateStage
+        - endpoint: Action:CreateStorageConfiguration
+        - endpoint: Action:DeleteEncoderConfiguration
+        - endpoint: Action:DeleteIngestConfiguration
+        - endpoint: Action:DeletePublicKey
+        - endpoint: Action:DeleteStage
+        - endpoint: Action:DeleteStorageConfiguration
+        - endpoint: Action:DisconnectParticipant
+        - endpoint: Action:GetComposition
+        - endpoint: Action:GetEncoderConfiguration
+        - endpoint: Action:GetIngestConfiguration
+        - endpoint: Action:GetParticipant
+        - endpoint: Action:GetPublicKey
+        - endpoint: Action:GetStage
+        - endpoint: Action:GetStageSession
+        - endpoint: Action:GetStorageConfiguration
+        - endpoint: Action:ImportPublicKey
+        - endpoint: Action:ListCompositions
+        - endpoint: Action:ListEncoderConfigurations
+        - endpoint: Action:ListIngestConfigurations
+        - endpoint: Action:ListParticipantEvents
+        - endpoint: Action:ListParticipantReplicas
+        - endpoint: Action:ListParticipants
+        - endpoint: Action:ListPublicKeys
+        - endpoint: Action:ListStageSessions
+        - endpoint: Action:ListStages
+        - endpoint: Action:ListStorageConfigurations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartComposition
+        - endpoint: Action:StartParticipantReplication
+        - endpoint: Action:StopComposition
+        - endpoint: Action:StopParticipantReplication
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateIngestConfiguration
+        - endpoint: Action:UpdateStage
+      - service: Amazon MQ (mq)
+        - endpoint: DELETE /v1/brokers/{broker-id}
+        - endpoint: DELETE /v1/brokers/{broker-id}/users/{username}
+        - endpoint: DELETE /v1/configurations/{configuration-id}
+        - endpoint: DELETE /v1/tags/{resource-arn}
+        - endpoint: GET /v1/broker-engine-types
+        - endpoint: GET /v1/broker-instance-options
+        - endpoint: GET /v1/brokers
+        - endpoint: GET /v1/brokers/{broker-id}
+        - endpoint: GET /v1/brokers/{broker-id}/users
+        - endpoint: GET /v1/brokers/{broker-id}/users/{username}
+        - endpoint: GET /v1/configurations
+        - endpoint: GET /v1/configurations/{configuration-id}
+        - endpoint: GET /v1/configurations/{configuration-id}/revisions
+        - endpoint: GET /v1/configurations/{configuration-id}/revisions/{configuration-revision}
+        - endpoint: GET /v1/tags/{resource-arn}
+        - endpoint: POST /v1/brokers
+        - endpoint: POST /v1/brokers/{broker-id}/promote
+        - endpoint: POST /v1/brokers/{broker-id}/reboot
+        - endpoint: POST /v1/brokers/{broker-id}/users/{username}
+        - endpoint: POST /v1/configurations
+        - endpoint: POST /v1/tags/{resource-arn}
+        - endpoint: PUT /v1/brokers/{broker-id}
+        - endpoint: PUT /v1/brokers/{broker-id}/users/{username}
+        - endpoint: PUT /v1/configurations/{configuration-id}
+      - service: Amazon MSK (msk)
+        - endpoint: GET /api/v2/clusters
+        - endpoint: GET /api/v2/clusters/{clusterArn}
+        - endpoint: GET /api/v2/clusters/{clusterArn}/operations
+        - endpoint: GET /api/v2/operations/{clusterOperationArn}
+        - endpoint: POST /api/v2/clusters
+      - service: Amazon MSK Connect (msk-connect)
+        - endpoint: DELETE /v1/connectors/{connectorArn}?currentVersion={currentVersion}
+        - endpoint: DELETE /v1/custom-plugins/{customPluginArn}
+        - endpoint: DELETE /v1/tags/{resourceArn}?tagKeys={tagKeys}
+        - endpoint: DELETE /v1/worker-configurations/{workerConfigurationArn}
+        - endpoint: GET /v1/connectorOperations/{connectorOperationArn}
+        - endpoint: GET /v1/connectors/{connectorArn}
+        - endpoint: GET /v1/connectors/{connectorArn}/operations?maxResults={maxResults}&nextToken={nextToken}
+        - endpoint: GET /v1/connectors?connectorNamePrefix={connectorNamePrefix}&maxResults={maxResults}&nextToken={nextToken}
+        - endpoint: GET /v1/custom-plugins/{customPluginArn}
+        - endpoint: GET /v1/custom-plugins?maxResults={maxResults}&namePrefix={namePrefix}&nextToken={nextToken}
+        - endpoint: GET /v1/tags/{resourceArn}
+        - endpoint: GET /v1/worker-configurations/{workerConfigurationArn}
+        - endpoint: GET /v1/worker-configurations?maxResults={maxResults}&namePrefix={namePrefix}&nextToken={nextToken}
+        - endpoint: POST /v1/connectors
+        - endpoint: POST /v1/custom-plugins
+        - endpoint: POST /v1/tags/{resourceArn}
+        - endpoint: POST /v1/worker-configurations
+        - endpoint: PUT /v1/connectors/{connectorArn}?currentVersion={currentVersion}
+      - service: API Gateway (apigateway)
+        - endpoint: Action:CreateApiKey
+        - endpoint: Action:CreateAuthorizer
+        - endpoint: Action:CreateBasePathMapping
+        - endpoint: Action:CreateDeployment
+        - endpoint: Action:CreateDocumentationPart
+        - endpoint: Action:CreateDocumentationVersion
+        - endpoint: Action:CreateDomainName
+        - endpoint: Action:CreateDomainNameAccessAssociation
+        - endpoint: Action:CreateModel
+        - endpoint: Action:CreateRequestValidator
+        - endpoint: Action:CreateResource
+        - endpoint: Action:CreateRestApi
+        - endpoint: Action:CreateStage
+        - endpoint: Action:CreateUsagePlan
+        - endpoint: Action:CreateUsagePlanKey
+        - endpoint: Action:CreateVpcLink
+        - endpoint: Action:DeleteApiKey
+        - endpoint: Action:DeleteAuthorizer
+        - endpoint: Action:DeleteBasePathMapping
+        - endpoint: Action:DeleteClientCertificate
+        - endpoint: Action:DeleteDeployment
+        - endpoint: Action:DeleteDocumentationPart
+        - endpoint: Action:DeleteDocumentationVersion
+        - endpoint: Action:DeleteDomainName
+        - endpoint: Action:DeleteDomainNameAccessAssociation
+        - endpoint: Action:DeleteGatewayResponse
+        - endpoint: Action:DeleteIntegration
+        - endpoint: Action:DeleteIntegrationResponse
+        - endpoint: Action:DeleteMethod
+        - endpoint: Action:DeleteMethodResponse
+        - endpoint: Action:DeleteModel
+        - endpoint: Action:DeleteRequestValidator
+        - endpoint: Action:DeleteResource
+        - endpoint: Action:DeleteRestApi
+        - endpoint: Action:DeleteStage
+        - endpoint: Action:DeleteUsagePlan
+        - endpoint: Action:DeleteUsagePlanKey
+        - endpoint: Action:DeleteVpcLink
+        - endpoint: Action:FlushStageAuthorizersCache
+        - endpoint: Action:FlushStageCache
+        - endpoint: Action:GenerateClientCertificate
+        - endpoint: Action:GetAccount
+        - endpoint: Action:GetApiKey
+        - endpoint: Action:GetApiKeys
+        - endpoint: Action:GetAuthorizer
+        - endpoint: Action:GetAuthorizers
+        - endpoint: Action:GetBasePathMapping
+        - endpoint: Action:GetBasePathMappings
+        - endpoint: Action:GetClientCertificate
+        - endpoint: Action:GetClientCertificates
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetDeployments
+        - endpoint: Action:GetDocumentationPart
+        - endpoint: Action:GetDocumentationParts
+        - endpoint: Action:GetDocumentationVersion
+        - endpoint: Action:GetDocumentationVersions
+        - endpoint: Action:GetDomainName
+        - endpoint: Action:GetDomainNameAccessAssociations
+        - endpoint: Action:GetDomainNames
+        - endpoint: Action:GetExport
+        - endpoint: Action:GetGatewayResponse
+        - endpoint: Action:GetGatewayResponses
+        - endpoint: Action:GetIntegration
+        - endpoint: Action:GetIntegrationResponse
+        - endpoint: Action:GetMethod
+        - endpoint: Action:GetMethodResponse
+        - endpoint: Action:GetModel
+        - endpoint: Action:GetModelTemplate
+        - endpoint: Action:GetModels
+        - endpoint: Action:GetRequestValidator
+        - endpoint: Action:GetRequestValidators
+        - endpoint: Action:GetResource
+        - endpoint: Action:GetResources
+        - endpoint: Action:GetRestApi
+        - endpoint: Action:GetRestApis
+        - endpoint: Action:GetSdk
+        - endpoint: Action:GetSdkType
+        - endpoint: Action:GetSdkTypes
+        - endpoint: Action:GetStage
+        - endpoint: Action:GetStages
+        - endpoint: Action:GetTags
+        - endpoint: Action:GetUsage
+        - endpoint: Action:GetUsagePlan
+        - endpoint: Action:GetUsagePlanKey
+        - endpoint: Action:GetUsagePlanKeys
+        - endpoint: Action:GetUsagePlans
+        - endpoint: Action:GetVpcLink
+        - endpoint: Action:GetVpcLinks
+        - endpoint: Action:ImportApiKeys
+        - endpoint: Action:ImportDocumentationParts
+        - endpoint: Action:ImportRestApi
+        - endpoint: Action:PutGatewayResponse
+        - endpoint: Action:PutIntegration
+        - endpoint: Action:PutIntegrationResponse
+        - endpoint: Action:PutMethod
+        - endpoint: Action:PutMethodResponse
+        - endpoint: Action:PutRestApi
+        - endpoint: Action:RejectDomainNameAccessAssociation
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestInvokeAuthorizer
+        - endpoint: Action:TestInvokeMethod
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccount
+        - endpoint: Action:UpdateApiKey
+        - endpoint: Action:UpdateAuthorizer
+        - endpoint: Action:UpdateBasePathMapping
+        - endpoint: Action:UpdateClientCertificate
+        - endpoint: Action:UpdateDeployment
+        - endpoint: Action:UpdateDocumentationPart
+        - endpoint: Action:UpdateDocumentationVersion
+        - endpoint: Action:UpdateDomainName
+        - endpoint: Action:UpdateGatewayResponse
+        - endpoint: Action:UpdateIntegration
+        - endpoint: Action:UpdateIntegrationResponse
+        - endpoint: Action:UpdateMethod
+        - endpoint: Action:UpdateMethodResponse
+        - endpoint: Action:UpdateModel
+        - endpoint: Action:UpdateRequestValidator
+        - endpoint: Action:UpdateResource
+        - endpoint: Action:UpdateRestApi
+        - endpoint: Action:UpdateStage
+        - endpoint: Action:UpdateUsage
+        - endpoint: Action:UpdateUsagePlan
+        - endpoint: Action:UpdateVpcLink
+      - service: API Gateway v2 (apigatewayv2)
+        - endpoint: Action:CreateApi
+        - endpoint: Action:CreateApiMapping
+        - endpoint: Action:CreateAuthorizer
+        - endpoint: Action:CreateDeployment
+        - endpoint: Action:CreateDomainName
+        - endpoint: Action:CreateIntegration
+        - endpoint: Action:CreateIntegrationResponse
+        - endpoint: Action:CreateModel
+        - endpoint: Action:CreatePortal
+        - endpoint: Action:CreatePortalProduct
+        - endpoint: Action:CreateProductPage
+        - endpoint: Action:CreateProductRestEndpointPage
+        - endpoint: Action:CreateRoute
+        - endpoint: Action:CreateRouteResponse
+        - endpoint: Action:CreateRoutingRule
+        - endpoint: Action:CreateStage
+        - endpoint: Action:CreateVpcLink
+        - endpoint: Action:DeleteAccessLogSettings
+        - endpoint: Action:DeleteApi
+        - endpoint: Action:DeleteApiMapping
+        - endpoint: Action:DeleteAuthorizer
+        - endpoint: Action:DeleteCorsConfiguration
+        - endpoint: Action:DeleteDeployment
+        - endpoint: Action:DeleteDomainName
+        - endpoint: Action:DeleteIntegration
+        - endpoint: Action:DeleteIntegrationResponse
+        - endpoint: Action:DeleteModel
+        - endpoint: Action:DeletePortal
+        - endpoint: Action:DeletePortalProduct
+        - endpoint: Action:DeletePortalProductSharingPolicy
+        - endpoint: Action:DeleteProductPage
+        - endpoint: Action:DeleteProductRestEndpointPage
+        - endpoint: Action:DeleteRoute
+        - endpoint: Action:DeleteRouteRequestParameter
+        - endpoint: Action:DeleteRouteResponse
+        - endpoint: Action:DeleteRouteSettings
+        - endpoint: Action:DeleteRoutingRule
+        - endpoint: Action:DeleteStage
+        - endpoint: Action:DeleteVpcLink
+        - endpoint: Action:DisablePortal
+        - endpoint: Action:ExportApi
+        - endpoint: Action:GetApi
+        - endpoint: Action:GetApiMapping
+        - endpoint: Action:GetApiMappings
+        - endpoint: Action:GetApis
+        - endpoint: Action:GetAuthorizer
+        - endpoint: Action:GetAuthorizers
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetDeployments
+        - endpoint: Action:GetDomainName
+        - endpoint: Action:GetDomainNames
+        - endpoint: Action:GetIntegration
+        - endpoint: Action:GetIntegrationResponse
+        - endpoint: Action:GetIntegrationResponses
+        - endpoint: Action:GetIntegrations
+        - endpoint: Action:GetModel
+        - endpoint: Action:GetModelTemplate
+        - endpoint: Action:GetModels
+        - endpoint: Action:GetPortal
+        - endpoint: Action:GetPortalProduct
+        - endpoint: Action:GetPortalProductSharingPolicy
+        - endpoint: Action:GetProductPage
+        - endpoint: Action:GetProductRestEndpointPage
+        - endpoint: Action:GetRoute
+        - endpoint: Action:GetRouteResponse
+        - endpoint: Action:GetRouteResponses
+        - endpoint: Action:GetRoutes
+        - endpoint: Action:GetRoutingRule
+        - endpoint: Action:GetStage
+        - endpoint: Action:GetStages
+        - endpoint: Action:GetTags
+        - endpoint: Action:GetVpcLink
+        - endpoint: Action:GetVpcLinks
+        - endpoint: Action:ImportApi
+        - endpoint: Action:ReimportApi
+        - endpoint: Action:ResetAuthorizersCache
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApi
+        - endpoint: Action:UpdateApiMapping
+        - endpoint: Action:UpdateAuthorizer
+        - endpoint: Action:UpdateDeployment
+        - endpoint: Action:UpdateDomainName
+        - endpoint: Action:UpdateIntegration
+        - endpoint: Action:UpdateIntegrationResponse
+        - endpoint: Action:UpdateModel
+        - endpoint: Action:UpdatePortal
+        - endpoint: Action:UpdatePortalProduct
+        - endpoint: Action:UpdateProductPage
+        - endpoint: Action:UpdateProductRestEndpointPage
+        - endpoint: Action:UpdateRoute
+        - endpoint: Action:UpdateRouteResponse
+        - endpoint: Action:UpdateStage
+        - endpoint: Action:UpdateVpcLink
+      - service: AppConfig (appconfig)
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateConfigurationProfile
+        - endpoint: Action:CreateDeploymentStrategy
+        - endpoint: Action:CreateEnvironment
+        - endpoint: Action:CreateExtension
+        - endpoint: Action:CreateExtensionAssociation
+        - endpoint: Action:CreateHostedConfigurationVersion
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteConfigurationProfile
+        - endpoint: Action:DeleteDeploymentStrategy
+        - endpoint: Action:DeleteEnvironment
+        - endpoint: Action:DeleteExtension
+        - endpoint: Action:DeleteExtensionAssociation
+        - endpoint: Action:DeleteHostedConfigurationVersion
+        - endpoint: Action:GetAccountSettings
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetConfiguration
+        - endpoint: Action:GetConfigurationProfile
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetDeploymentStrategy
+        - endpoint: Action:GetEnvironment
+        - endpoint: Action:GetExtension
+        - endpoint: Action:GetExtensionAssociation
+        - endpoint: Action:GetHostedConfigurationVersion
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListConfigurationProfiles
+        - endpoint: Action:ListDeploymentStrategies
+        - endpoint: Action:ListDeployments
+        - endpoint: Action:ListEnvironments
+        - endpoint: Action:ListExtensionAssociations
+        - endpoint: Action:ListExtensions
+        - endpoint: Action:ListHostedConfigurationVersions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartDeployment
+        - endpoint: Action:StopDeployment
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccountSettings
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateConfigurationProfile
+        - endpoint: Action:UpdateDeploymentStrategy
+        - endpoint: Action:UpdateEnvironment
+        - endpoint: Action:UpdateExtension
+        - endpoint: Action:UpdateExtensionAssociation
+        - endpoint: Action:ValidateConfiguration
+      - service: Application Migration Service (MGN) (mgn)
+        - endpoint: Action:ArchiveApplication
+        - endpoint: Action:ArchiveWave
+        - endpoint: Action:AssociateApplications
+        - endpoint: Action:AssociateSourceServers
+        - endpoint: Action:ChangeServerLifeCycleState
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateConnector
+        - endpoint: Action:CreateLaunchConfigurationTemplate
+        - endpoint: Action:CreateReplicationConfigurationTemplate
+        - endpoint: Action:CreateWave
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteConnector
+        - endpoint: Action:DeleteJob
+        - endpoint: Action:DeleteLaunchConfigurationTemplate
+        - endpoint: Action:DeleteReplicationConfigurationTemplate
+        - endpoint: Action:DeleteSourceServer
+        - endpoint: Action:DeleteVcenterClient
+        - endpoint: Action:DeleteWave
+        - endpoint: Action:DescribeJobLogItems
+        - endpoint: Action:DescribeJobs
+        - endpoint: Action:DescribeLaunchConfigurationTemplates
+        - endpoint: Action:DescribeReplicationConfigurationTemplates
+        - endpoint: Action:DescribeSourceServers
+        - endpoint: Action:DescribeVcenterClients
+        - endpoint: Action:DisassociateApplications
+        - endpoint: Action:DisassociateSourceServers
+        - endpoint: Action:DisconnectFromService
+        - endpoint: Action:FinalizeCutover
+        - endpoint: Action:GetLaunchConfiguration
+        - endpoint: Action:GetReplicationConfiguration
+        - endpoint: Action:InitializeService
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListConnectors
+        - endpoint: Action:ListExportErrors
+        - endpoint: Action:ListExports
+        - endpoint: Action:ListImportErrors
+        - endpoint: Action:ListImports
+        - endpoint: Action:ListManagedAccounts
+        - endpoint: Action:ListSourceServerActions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTemplateActions
+        - endpoint: Action:ListWaves
+        - endpoint: Action:MarkAsArchived
+        - endpoint: Action:PauseReplication
+        - endpoint: Action:PutSourceServerAction
+        - endpoint: Action:PutTemplateAction
+        - endpoint: Action:RemoveSourceServerAction
+        - endpoint: Action:RemoveTemplateAction
+        - endpoint: Action:ResumeReplication
+        - endpoint: Action:RetryDataReplication
+        - endpoint: Action:StartCutover
+        - endpoint: Action:StartExport
+        - endpoint: Action:StartImport
+        - endpoint: Action:StartReplication
+        - endpoint: Action:StartTest
+        - endpoint: Action:StopReplication
+        - endpoint: Action:TagResource
+        - endpoint: Action:TerminateTargetInstances
+        - endpoint: Action:UnarchiveApplication
+        - endpoint: Action:UnarchiveWave
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateConnector
+        - endpoint: Action:UpdateLaunchConfiguration
+        - endpoint: Action:UpdateLaunchConfigurationTemplate
+        - endpoint: Action:UpdateReplicationConfiguration
+        - endpoint: Action:UpdateReplicationConfigurationTemplate
+        - endpoint: Action:UpdateSourceServer
+        - endpoint: Action:UpdateSourceServerReplicationType
+        - endpoint: Action:UpdateWave
+      - service: Application Signals (applicationsignals)
+        - endpoint: Action:BatchGetServiceLevelObjectiveBudgetReport
+        - endpoint: Action:BatchUpdateExclusionWindows
+        - endpoint: Action:CreateServiceLevelObjective
+        - endpoint: Action:DeleteGroupingConfiguration
+        - endpoint: Action:DeleteServiceLevelObjective
+        - endpoint: Action:GetService
+        - endpoint: Action:GetServiceLevelObjective
+        - endpoint: Action:ListAuditFindings
+        - endpoint: Action:ListEntityEvents
+        - endpoint: Action:ListGroupingAttributeDefinitions
+        - endpoint: Action:ListServiceDependencies
+        - endpoint: Action:ListServiceDependents
+        - endpoint: Action:ListServiceLevelObjectiveExclusionWindows
+        - endpoint: Action:ListServiceLevelObjectives
+        - endpoint: Action:ListServiceOperations
+        - endpoint: Action:ListServiceStates
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutGroupingConfiguration
+        - endpoint: Action:StartDiscovery
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateServiceLevelObjective
+      - service: AWS Config (config)
+        - endpoint: Action:AssociateResourceTypes
+        - endpoint: Action:BatchGetAggregateResourceConfig
+        - endpoint: Action:BatchGetResourceConfig
+        - endpoint: Action:DeleteAggregationAuthorization
+        - endpoint: Action:DeleteConfigRule
+        - endpoint: Action:DeleteConfigurationAggregator
+        - endpoint: Action:DeleteConfigurationRecorder
+        - endpoint: Action:DeleteConformancePack
+        - endpoint: Action:DeleteDeliveryChannel
+        - endpoint: Action:DeleteEvaluationResults
+        - endpoint: Action:DeleteOrganizationConfigRule
+        - endpoint: Action:DeleteOrganizationConformancePack
+        - endpoint: Action:DeletePendingAggregationRequest
+        - endpoint: Action:DeleteRemediationConfiguration
+        - endpoint: Action:DeleteRemediationExceptions
+        - endpoint: Action:DeleteResourceConfig
+        - endpoint: Action:DeleteRetentionConfiguration
+        - endpoint: Action:DeleteServiceLinkedConfigurationRecorder
+        - endpoint: Action:DeleteStoredQuery
+        - endpoint: Action:DeliverConfigSnapshot
+        - endpoint: Action:DescribeAggregateComplianceByConfigRules
+        - endpoint: Action:DescribeAggregateComplianceByConformancePacks
+        - endpoint: Action:DescribeAggregationAuthorizations
+        - endpoint: Action:DescribeComplianceByConfigRule
+        - endpoint: Action:DescribeComplianceByResource
+        - endpoint: Action:DescribeConfigRuleEvaluationStatus
+        - endpoint: Action:DescribeConfigRules
+        - endpoint: Action:DescribeConfigurationAggregatorSourcesStatus
+        - endpoint: Action:DescribeConfigurationAggregators
+        - endpoint: Action:DescribeConfigurationRecorderStatus
+        - endpoint: Action:DescribeConfigurationRecorders
+        - endpoint: Action:DescribeConformancePackCompliance
+        - endpoint: Action:DescribeConformancePackStatus
+        - endpoint: Action:DescribeConformancePacks
+        - endpoint: Action:DescribeDeliveryChannelStatus
+        - endpoint: Action:DescribeDeliveryChannels
+        - endpoint: Action:DescribeOrganizationConfigRuleStatuses
+        - endpoint: Action:DescribeOrganizationConfigRules
+        - endpoint: Action:DescribeOrganizationConformancePackStatuses
+        - endpoint: Action:DescribeOrganizationConformancePacks
+        - endpoint: Action:DescribePendingAggregationRequests
+        - endpoint: Action:DescribeRemediationConfigurations
+        - endpoint: Action:DescribeRemediationExceptions
+        - endpoint: Action:DescribeRemediationExecutionStatus
+        - endpoint: Action:DescribeRetentionConfigurations
+        - endpoint: Action:DisassociateResourceTypes
+        - endpoint: Action:GetAggregateComplianceDetailsByConfigRule
+        - endpoint: Action:GetAggregateConfigRuleComplianceSummary
+        - endpoint: Action:GetAggregateConformancePackComplianceSummary
+        - endpoint: Action:GetAggregateDiscoveredResourceCounts
+        - endpoint: Action:GetAggregateResourceConfig
+        - endpoint: Action:GetComplianceDetailsByConfigRule
+        - endpoint: Action:GetComplianceDetailsByResource
+        - endpoint: Action:GetComplianceSummaryByConfigRule
+        - endpoint: Action:GetComplianceSummaryByResourceType
+        - endpoint: Action:GetConformancePackComplianceDetails
+        - endpoint: Action:GetConformancePackComplianceSummary
+        - endpoint: Action:GetCustomRulePolicy
+        - endpoint: Action:GetDiscoveredResourceCounts
+        - endpoint: Action:GetOrganizationConfigRuleDetailedStatus
+        - endpoint: Action:GetOrganizationConformancePackDetailedStatus
+        - endpoint: Action:GetOrganizationCustomRulePolicy
+        - endpoint: Action:GetResourceConfigHistory
+        - endpoint: Action:GetResourceEvaluationSummary
+        - endpoint: Action:GetStoredQuery
+        - endpoint: Action:ListAggregateDiscoveredResources
+        - endpoint: Action:ListConfigurationRecorders
+        - endpoint: Action:ListConformancePackComplianceScores
+        - endpoint: Action:ListDiscoveredResources
+        - endpoint: Action:ListResourceEvaluations
+        - endpoint: Action:ListStoredQueries
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutAggregationAuthorization
+        - endpoint: Action:PutConfigRule
+        - endpoint: Action:PutConfigurationAggregator
+        - endpoint: Action:PutConfigurationRecorder
+        - endpoint: Action:PutConformancePack
+        - endpoint: Action:PutDeliveryChannel
+        - endpoint: Action:PutEvaluations
+        - endpoint: Action:PutExternalEvaluation
+        - endpoint: Action:PutOrganizationConfigRule
+        - endpoint: Action:PutOrganizationConformancePack
+        - endpoint: Action:PutRemediationConfigurations
+        - endpoint: Action:PutRemediationExceptions
+        - endpoint: Action:PutResourceConfig
+        - endpoint: Action:PutRetentionConfiguration
+        - endpoint: Action:PutServiceLinkedConfigurationRecorder
+        - endpoint: Action:PutStoredQuery
+        - endpoint: Action:SelectAggregateResourceConfig
+        - endpoint: Action:SelectResourceConfig
+        - endpoint: Action:StartConfigRulesEvaluation
+        - endpoint: Action:StartConfigurationRecorder
+        - endpoint: Action:StartRemediationExecution
+        - endpoint: Action:StartResourceEvaluation
+        - endpoint: Action:StopConfigurationRecorder
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: AWS Health (health)
+        - endpoint: Action:DescribeAffectedAccountsForOrganization
+        - endpoint: Action:DescribeAffectedEntities
+        - endpoint: Action:DescribeAffectedEntitiesForOrganization
+        - endpoint: Action:DescribeEntityAggregates
+        - endpoint: Action:DescribeEntityAggregatesForOrganization
+        - endpoint: Action:DescribeEventAggregates
+        - endpoint: Action:DescribeEventDetails
+        - endpoint: Action:DescribeEventDetailsForOrganization
+        - endpoint: Action:DescribeEventTypes
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeEventsForOrganization
+        - endpoint: Action:DescribeHealthServiceStatusForOrganization
+        - endpoint: Action:DisableHealthServiceAccessForOrganization
+        - endpoint: Action:EnableHealthServiceAccessForOrganization
+      - service: AWS Q Developer (qdeveloper)
+        - endpoint: Action:AssociateToConfiguration
+        - endpoint: Action:CreateChimeWebhookConfiguration
+        - endpoint: Action:CreateCustomAction
+        - endpoint: Action:CreateMicrosoftTeamsChannelConfiguration
+        - endpoint: Action:CreateSlackChannelConfiguration
+        - endpoint: Action:DeleteChimeWebhookConfiguration
+        - endpoint: Action:DeleteCustomAction
+        - endpoint: Action:DeleteMicrosoftTeamsChannelConfiguration
+        - endpoint: Action:DeleteMicrosoftTeamsConfiguredTeam
+        - endpoint: Action:DeleteMicrosoftTeamsUserIdentity
+        - endpoint: Action:DeleteSlackChannelConfiguration
+        - endpoint: Action:DeleteSlackUserIdentity
+        - endpoint: Action:DeleteSlackWorkspaceAuthorization
+        - endpoint: Action:DescribeChimeWebhookConfigurations
+        - endpoint: Action:DescribeSlackChannelConfigurations
+        - endpoint: Action:DescribeSlackUserIdentities
+        - endpoint: Action:DescribeSlackWorkspaces
+        - endpoint: Action:DisassociateFromConfiguration
+        - endpoint: Action:GetAccountPreferences
+        - endpoint: Action:GetCustomAction
+        - endpoint: Action:GetMicrosoftTeamsChannelConfiguration
+        - endpoint: Action:ListAssociations
+        - endpoint: Action:ListCustomActions
+        - endpoint: Action:ListMicrosoftTeamsChannelConfigurations
+        - endpoint: Action:ListMicrosoftTeamsConfiguredTeams
+        - endpoint: Action:ListMicrosoftTeamsUserIdentities
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccountPreferences
+        - endpoint: Action:UpdateChimeWebhookConfiguration
+        - endpoint: Action:UpdateCustomAction
+        - endpoint: Action:UpdateMicrosoftTeamsChannelConfiguration
+        - endpoint: Action:UpdateSlackChannelConfiguration
+      - service: Bedrock (bedrock)
+        - endpoint: Action:BatchDeleteEvaluationJob
+        - endpoint: Action:CancelAutomatedReasoningPolicyBuildWorkflow
+        - endpoint: Action:CreateAutomatedReasoningPolicy
+        - endpoint: Action:CreateAutomatedReasoningPolicyTestCase
+        - endpoint: Action:CreateAutomatedReasoningPolicyVersion
+        - endpoint: Action:CreateCustomModel
+        - endpoint: Action:CreateCustomModelDeployment
+        - endpoint: Action:CreateEvaluationJob
+        - endpoint: Action:CreateFoundationModelAgreement
+        - endpoint: Action:CreateGuardrail
+        - endpoint: Action:CreateGuardrailVersion
+        - endpoint: Action:CreateInferenceProfile
+        - endpoint: Action:CreateMarketplaceModelEndpoint
+        - endpoint: Action:CreateModelCopyJob
+        - endpoint: Action:CreateModelCustomizationJob
+        - endpoint: Action:CreateModelImportJob
+        - endpoint: Action:CreateModelInvocationJob
+        - endpoint: Action:CreatePromptRouter
+        - endpoint: Action:CreateProvisionedModelThroughput
+        - endpoint: Action:DeleteAutomatedReasoningPolicy
+        - endpoint: Action:DeleteAutomatedReasoningPolicyBuildWorkflow
+        - endpoint: Action:DeleteAutomatedReasoningPolicyTestCase
+        - endpoint: Action:DeleteCustomModel
+        - endpoint: Action:DeleteCustomModelDeployment
+        - endpoint: Action:DeleteEnforcedGuardrailConfiguration
+        - endpoint: Action:DeleteFoundationModelAgreement
+        - endpoint: Action:DeleteGuardrail
+        - endpoint: Action:DeleteImportedModel
+        - endpoint: Action:DeleteInferenceProfile
+        - endpoint: Action:DeleteMarketplaceModelEndpoint
+        - endpoint: Action:DeleteModelInvocationLoggingConfiguration
+        - endpoint: Action:DeletePromptRouter
+        - endpoint: Action:DeleteProvisionedModelThroughput
+        - endpoint: Action:DeregisterMarketplaceModelEndpoint
+        - endpoint: Action:ExportAutomatedReasoningPolicyVersion
+        - endpoint: Action:GetAutomatedReasoningPolicy
+        - endpoint: Action:GetAutomatedReasoningPolicyAnnotations
+        - endpoint: Action:GetAutomatedReasoningPolicyBuildWorkflow
+        - endpoint: Action:GetAutomatedReasoningPolicyBuildWorkflowResultAssets
+        - endpoint: Action:GetAutomatedReasoningPolicyNextScenario
+        - endpoint: Action:GetAutomatedReasoningPolicyTestCase
+        - endpoint: Action:GetAutomatedReasoningPolicyTestResult
+        - endpoint: Action:GetCustomModel
+        - endpoint: Action:GetCustomModelDeployment
+        - endpoint: Action:GetEvaluationJob
+        - endpoint: Action:GetFoundationModel
+        - endpoint: Action:GetFoundationModelAvailability
+        - endpoint: Action:GetGuardrail
+        - endpoint: Action:GetImportedModel
+        - endpoint: Action:GetInferenceProfile
+        - endpoint: Action:GetMarketplaceModelEndpoint
+        - endpoint: Action:GetModelCopyJob
+        - endpoint: Action:GetModelCustomizationJob
+        - endpoint: Action:GetModelImportJob
+        - endpoint: Action:GetModelInvocationJob
+        - endpoint: Action:GetModelInvocationLoggingConfiguration
+        - endpoint: Action:GetPromptRouter
+        - endpoint: Action:GetProvisionedModelThroughput
+        - endpoint: Action:GetUseCaseForModelAccess
+        - endpoint: Action:ListAutomatedReasoningPolicies
+        - endpoint: Action:ListAutomatedReasoningPolicyBuildWorkflows
+        - endpoint: Action:ListAutomatedReasoningPolicyTestCases
+        - endpoint: Action:ListAutomatedReasoningPolicyTestResults
+        - endpoint: Action:ListCustomModelDeployments
+        - endpoint: Action:ListCustomModels
+        - endpoint: Action:ListEnforcedGuardrailsConfiguration
+        - endpoint: Action:ListEvaluationJobs
+        - endpoint: Action:ListFoundationModelAgreementOffers
+        - endpoint: Action:ListFoundationModels
+        - endpoint: Action:ListGuardrails
+        - endpoint: Action:ListImportedModels
+        - endpoint: Action:ListInferenceProfiles
+        - endpoint: Action:ListMarketplaceModelEndpoints
+        - endpoint: Action:ListModelCopyJobs
+        - endpoint: Action:ListModelCustomizationJobs
+        - endpoint: Action:ListModelImportJobs
+        - endpoint: Action:ListModelInvocationJobs
+        - endpoint: Action:ListPromptRouters
+        - endpoint: Action:ListProvisionedModelThroughputs
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutEnforcedGuardrailConfiguration
+        - endpoint: Action:PutModelInvocationLoggingConfiguration
+        - endpoint: Action:PutUseCaseForModelAccess
+        - endpoint: Action:RegisterMarketplaceModelEndpoint
+        - endpoint: Action:StartAutomatedReasoningPolicyBuildWorkflow
+        - endpoint: Action:StartAutomatedReasoningPolicyTestWorkflow
+        - endpoint: Action:StopEvaluationJob
+        - endpoint: Action:StopModelCustomizationJob
+        - endpoint: Action:StopModelInvocationJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAutomatedReasoningPolicy
+        - endpoint: Action:UpdateAutomatedReasoningPolicyAnnotations
+        - endpoint: Action:UpdateAutomatedReasoningPolicyTestCase
+        - endpoint: Action:UpdateCustomModelDeployment
+        - endpoint: Action:UpdateGuardrail
+        - endpoint: Action:UpdateMarketplaceModelEndpoint
+        - endpoint: Action:UpdateProvisionedModelThroughput
+      - service: Cloud Control API (cloudcontrolapi)
+        - endpoint: Action:CancelResourceRequest
+        - endpoint: Action:CreateResource
+        - endpoint: Action:DeleteResource
+        - endpoint: Action:GetResource
+        - endpoint: Action:GetResourceRequestStatus
+        - endpoint: Action:ListResourceRequests
+        - endpoint: Action:ListResources
+        - endpoint: Action:UpdateResource
+      - service: Cloud Map (cloud-map)
+        - endpoint: Action:CreateHttpNamespace
+        - endpoint: Action:CreatePrivateDnsNamespace
+        - endpoint: Action:CreatePublicDnsNamespace
+        - endpoint: Action:CreateService
+        - endpoint: Action:DeleteNamespace
+        - endpoint: Action:DeleteService
+        - endpoint: Action:DeleteServiceAttributes
+        - endpoint: Action:DeregisterInstance
+        - endpoint: Action:DiscoverInstances
+        - endpoint: Action:DiscoverInstancesRevision
+        - endpoint: Action:GetInstance
+        - endpoint: Action:GetInstancesHealthStatus
+        - endpoint: Action:GetNamespace
+        - endpoint: Action:GetOperation
+        - endpoint: Action:GetService
+        - endpoint: Action:GetServiceAttributes
+        - endpoint: Action:ListInstances
+        - endpoint: Action:ListNamespaces
+        - endpoint: Action:ListOperations
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RegisterInstance
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateHttpNamespace
+        - endpoint: Action:UpdateInstanceCustomHealthStatus
+        - endpoint: Action:UpdatePrivateDnsNamespace
+        - endpoint: Action:UpdatePublicDnsNamespace
+        - endpoint: Action:UpdateService
+        - endpoint: Action:UpdateServiceAttributes
+      - service: CloudFormation (cloudformation)
+        - endpoint: Action:ActivateOrganizationsAccess
+        - endpoint: Action:ActivateType
+        - endpoint: Action:BatchDescribeTypeConfigurations
+        - endpoint: Action:CancelUpdateStack
+        - endpoint: Action:ContinueUpdateRollback
+        - endpoint: Action:CreateChangeSet
+        - endpoint: Action:CreateGeneratedTemplate
+        - endpoint: Action:CreateStack
+        - endpoint: Action:CreateStackInstances
+        - endpoint: Action:CreateStackRefactor
+        - endpoint: Action:CreateStackSet
+        - endpoint: Action:DeactivateOrganizationsAccess
+        - endpoint: Action:DeactivateType
+        - endpoint: Action:DeleteChangeSet
+        - endpoint: Action:DeleteGeneratedTemplate
+        - endpoint: Action:DeleteStack
+        - endpoint: Action:DeleteStackInstances
+        - endpoint: Action:DeleteStackSet
+        - endpoint: Action:DeregisterType
+        - endpoint: Action:DescribeAccountLimits
+        - endpoint: Action:DescribeChangeSet
+        - endpoint: Action:DescribeChangeSetHooks
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeGeneratedTemplate
+        - endpoint: Action:DescribeOrganizationsAccess
+        - endpoint: Action:DescribePublisher
+        - endpoint: Action:DescribeResourceScan
+        - endpoint: Action:DescribeStackDriftDetectionStatus
+        - endpoint: Action:DescribeStackEvents
+        - endpoint: Action:DescribeStackInstance
+        - endpoint: Action:DescribeStackRefactor
+        - endpoint: Action:DescribeStackResource
+        - endpoint: Action:DescribeStackResourceDrifts
+        - endpoint: Action:DescribeStackResources
+        - endpoint: Action:DescribeStackSet
+        - endpoint: Action:DescribeStackSetOperation
+        - endpoint: Action:DescribeStacks
+        - endpoint: Action:DescribeType
+        - endpoint: Action:DescribeTypeRegistration
+        - endpoint: Action:DetectStackDrift
+        - endpoint: Action:DetectStackResourceDrift
+        - endpoint: Action:DetectStackSetDrift
+        - endpoint: Action:EstimateTemplateCost
+        - endpoint: Action:ExecuteChangeSet
+        - endpoint: Action:ExecuteStackRefactor
+        - endpoint: Action:GetGeneratedTemplate
+        - endpoint: Action:GetHookResult
+        - endpoint: Action:GetStackPolicy
+        - endpoint: Action:GetTemplate
+        - endpoint: Action:GetTemplateSummary
+        - endpoint: Action:ImportStacksToStackSet
+        - endpoint: Action:ListChangeSets
+        - endpoint: Action:ListExports
+        - endpoint: Action:ListGeneratedTemplates
+        - endpoint: Action:ListHookResults
+        - endpoint: Action:ListImports
+        - endpoint: Action:ListResourceScanRelatedResources
+        - endpoint: Action:ListResourceScanResources
+        - endpoint: Action:ListResourceScans
+        - endpoint: Action:ListStackInstanceResourceDrifts
+        - endpoint: Action:ListStackInstances
+        - endpoint: Action:ListStackRefactorActions
+        - endpoint: Action:ListStackRefactors
+        - endpoint: Action:ListStackResources
+        - endpoint: Action:ListStackSetAutoDeploymentTargets
+        - endpoint: Action:ListStackSetOperationResults
+        - endpoint: Action:ListStackSetOperations
+        - endpoint: Action:ListStackSets
+        - endpoint: Action:ListStacks
+        - endpoint: Action:ListTypeRegistrations
+        - endpoint: Action:ListTypeVersions
+        - endpoint: Action:ListTypes
+        - endpoint: Action:PublishType
+        - endpoint: Action:RecordHandlerProgress
+        - endpoint: Action:RegisterPublisher
+        - endpoint: Action:RegisterType
+        - endpoint: Action:RollbackStack
+        - endpoint: Action:SetStackPolicy
+        - endpoint: Action:SetTypeConfiguration
+        - endpoint: Action:SetTypeDefaultVersion
+        - endpoint: Action:SignalResource
+        - endpoint: Action:StartResourceScan
+        - endpoint: Action:StopStackSetOperation
+        - endpoint: Action:TestType
+        - endpoint: Action:UpdateGeneratedTemplate
+        - endpoint: Action:UpdateStack
+        - endpoint: Action:UpdateStackInstances
+        - endpoint: Action:UpdateStackSet
+        - endpoint: Action:UpdateTerminationProtection
+        - endpoint: Action:ValidateTemplate
+      - service: CloudFront (cloudfront)
+        - endpoint: Action:AssociateAlias
+        - endpoint: Action:AssociateDistributionTenantWebACL
+        - endpoint: Action:AssociateDistributionWebACL
+        - endpoint: Action:CopyDistribution
+        - endpoint: Action:CreateAnycastIpList
+        - endpoint: Action:CreateCachePolicy
+        - endpoint: Action:CreateCloudFrontOriginAccessIdentity
+        - endpoint: Action:CreateConnectionFunction
+        - endpoint: Action:CreateConnectionGroup
+        - endpoint: Action:CreateContinuousDeploymentPolicy
+        - endpoint: Action:CreateDistribution
+        - endpoint: Action:CreateDistributionTenant
+        - endpoint: Action:CreateDistributionWithTags
+        - endpoint: Action:CreateFieldLevelEncryptionConfig
+        - endpoint: Action:CreateFieldLevelEncryptionProfile
+        - endpoint: Action:CreateFunction
+        - endpoint: Action:CreateInvalidation
+        - endpoint: Action:CreateInvalidationForDistributionTenant
+        - endpoint: Action:CreateKeyGroup
+        - endpoint: Action:CreateKeyValueStore
+        - endpoint: Action:CreateMonitoringSubscription
+        - endpoint: Action:CreateOriginAccessControl
+        - endpoint: Action:CreateOriginRequestPolicy
+        - endpoint: Action:CreatePublicKey
+        - endpoint: Action:CreateRealtimeLogConfig
+        - endpoint: Action:CreateResponseHeadersPolicy
+        - endpoint: Action:CreateStreamingDistribution
+        - endpoint: Action:CreateStreamingDistributionWithTags
+        - endpoint: Action:CreateTrustStore
+        - endpoint: Action:CreateVpcOrigin
+        - endpoint: Action:DeleteAnycastIpList
+        - endpoint: Action:DeleteCachePolicy
+        - endpoint: Action:DeleteCloudFrontOriginAccessIdentity
+        - endpoint: Action:DeleteConnectionFunction
+        - endpoint: Action:DeleteConnectionGroup
+        - endpoint: Action:DeleteContinuousDeploymentPolicy
+        - endpoint: Action:DeleteDistribution
+        - endpoint: Action:DeleteDistributionTenant
+        - endpoint: Action:DeleteFieldLevelEncryptionConfig
+        - endpoint: Action:DeleteFieldLevelEncryptionProfile
+        - endpoint: Action:DeleteFunction
+        - endpoint: Action:DeleteKey
+        - endpoint: Action:DeleteKeyGroup
+        - endpoint: Action:DeleteKeyValueStore
+        - endpoint: Action:DeleteMonitoringSubscription
+        - endpoint: Action:DeleteOriginAccessControl
+        - endpoint: Action:DeleteOriginRequestPolicy
+        - endpoint: Action:DeletePublicKey
+        - endpoint: Action:DeleteRealtimeLogConfig
+        - endpoint: Action:DeleteResponseHeadersPolicy
+        - endpoint: Action:DeleteStreamingDistribution
+        - endpoint: Action:DeleteTrustStore
+        - endpoint: Action:DeleteVpcOrigin
+        - endpoint: Action:DescribeConnectionFunction
+        - endpoint: Action:DescribeFunction
+        - endpoint: Action:DescribeKeyValueStore
+        - endpoint: Action:DisassociateDistributionTenantWebACL
+        - endpoint: Action:DisassociateDistributionWebACL
+        - endpoint: Action:GetAnycastIpList
+        - endpoint: Action:GetCachePolicy
+        - endpoint: Action:GetCachePolicyConfig
+        - endpoint: Action:GetCloudFrontOriginAccessIdentity
+        - endpoint: Action:GetCloudFrontOriginAccessIdentityConfig
+        - endpoint: Action:GetConnectionFunction
+        - endpoint: Action:GetConnectionGroup
+        - endpoint: Action:GetConnectionGroupByRoutingEndpoint
+        - endpoint: Action:GetContinuousDeploymentPolicy
+        - endpoint: Action:GetContinuousDeploymentPolicyConfig
+        - endpoint: Action:GetDistribution
+        - endpoint: Action:GetDistributionConfig
+        - endpoint: Action:GetDistributionTenant
+        - endpoint: Action:GetDistributionTenantByDomain
+        - endpoint: Action:GetFieldLevelEncryption
+        - endpoint: Action:GetFieldLevelEncryptionConfig
+        - endpoint: Action:GetFieldLevelEncryptionProfile
+        - endpoint: Action:GetFieldLevelEncryptionProfileConfig
+        - endpoint: Action:GetFunction
+        - endpoint: Action:GetInvalidation
+        - endpoint: Action:GetInvalidationForDistributionTenant
+        - endpoint: Action:GetKey
+        - endpoint: Action:GetKeyGroup
+        - endpoint: Action:GetKeyGroupConfig
+        - endpoint: Action:GetManagedCertificateDetails
+        - endpoint: Action:GetMonitoringSubscription
+        - endpoint: Action:GetOriginAccessControl
+        - endpoint: Action:GetOriginAccessControlConfig
+        - endpoint: Action:GetOriginRequestPolicy
+        - endpoint: Action:GetOriginRequestPolicyConfig
+        - endpoint: Action:GetPublicKey
+        - endpoint: Action:GetPublicKeyConfig
+        - endpoint: Action:GetRealtimeLogConfig
+        - endpoint: Action:GetResponseHeadersPolicy
+        - endpoint: Action:GetResponseHeadersPolicyConfig
+        - endpoint: Action:GetStreamingDistribution
+        - endpoint: Action:GetStreamingDistributionConfig
+        - endpoint: Action:GetTrustStore
+        - endpoint: Action:GetVpcOrigin
+        - endpoint: Action:ListAnycastIpLists
+        - endpoint: Action:ListCachePolicies
+        - endpoint: Action:ListCloudFrontOriginAccessIdentities
+        - endpoint: Action:ListConflictingAliases
+        - endpoint: Action:ListConnectionFunctions
+        - endpoint: Action:ListConnectionGroups
+        - endpoint: Action:ListContinuousDeploymentPolicies
+        - endpoint: Action:ListDistributionTenants
+        - endpoint: Action:ListDistributionTenantsByCustomization
+        - endpoint: Action:ListDistributions
+        - endpoint: Action:ListDistributionsByAnycastIpListId
+        - endpoint: Action:ListDistributionsByCachePolicyId
+        - endpoint: Action:ListDistributionsByConnectionFunction
+        - endpoint: Action:ListDistributionsByConnectionMode
+        - endpoint: Action:ListDistributionsByKeyGroup
+        - endpoint: Action:ListDistributionsByOriginRequestPolicyId
+        - endpoint: Action:ListDistributionsByRealtimeLogConfig
+        - endpoint: Action:ListDistributionsByResponseHeadersPolicyId
+        - endpoint: Action:ListDistributionsByTrustStore
+        - endpoint: Action:ListDistributionsByVpcOriginId
+        - endpoint: Action:ListDistributionsByWebACLId
+        - endpoint: Action:ListDomainConflicts
+        - endpoint: Action:ListFieldLevelEncryptionConfigs
+        - endpoint: Action:ListFieldLevelEncryptionProfiles
+        - endpoint: Action:ListFunctions
+        - endpoint: Action:ListInvalidations
+        - endpoint: Action:ListInvalidationsForDistributionTenant
+        - endpoint: Action:ListKeyGroups
+        - endpoint: Action:ListKeyValueStores
+        - endpoint: Action:ListKeys
+        - endpoint: Action:ListOriginAccessControls
+        - endpoint: Action:ListOriginRequestPolicies
+        - endpoint: Action:ListPublicKeys
+        - endpoint: Action:ListRealtimeLogConfigs
+        - endpoint: Action:ListResponseHeadersPolicies
+        - endpoint: Action:ListStreamingDistributions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTrustStores
+        - endpoint: Action:ListVpcOrigins
+        - endpoint: Action:PublishConnectionFunction
+        - endpoint: Action:PublishFunction
+        - endpoint: Action:PutKey
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestConnectionFunction
+        - endpoint: Action:TestFunction
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAnycastIpList
+        - endpoint: Action:UpdateCachePolicy
+        - endpoint: Action:UpdateCloudFrontOriginAccessIdentity
+        - endpoint: Action:UpdateConnectionFunction
+        - endpoint: Action:UpdateConnectionGroup
+        - endpoint: Action:UpdateContinuousDeploymentPolicy
+        - endpoint: Action:UpdateDistribution
+        - endpoint: Action:UpdateDistributionTenant
+        - endpoint: Action:UpdateDistributionWithStagingConfig
+        - endpoint: Action:UpdateDomainAssociation
+        - endpoint: Action:UpdateFieldLevelEncryptionConfig
+        - endpoint: Action:UpdateFieldLevelEncryptionProfile
+        - endpoint: Action:UpdateFunction
+        - endpoint: Action:UpdateKeyGroup
+        - endpoint: Action:UpdateKeyValueStore
+        - endpoint: Action:UpdateKeys
+        - endpoint: Action:UpdateOriginAccessControl
+        - endpoint: Action:UpdateOriginRequestPolicy
+        - endpoint: Action:UpdatePublicKey
+        - endpoint: Action:UpdateRealtimeLogConfig
+        - endpoint: Action:UpdateResponseHeadersPolicy
+        - endpoint: Action:UpdateStreamingDistribution
+        - endpoint: Action:UpdateTrustStore
+        - endpoint: Action:UpdateVpcOrigin
+        - endpoint: Action:VerifyDnsConfiguration
+      - service: CloudTrail (cloudtrail)
+        - endpoint: Action:AddTags
+        - endpoint: Action:CancelQuery
+        - endpoint: Action:CreateChannel
+        - endpoint: Action:CreateDashboard
+        - endpoint: Action:CreateEventDataStore
+        - endpoint: Action:CreateTrail
+        - endpoint: Action:DeleteChannel
+        - endpoint: Action:DeleteDashboard
+        - endpoint: Action:DeleteEventDataStore
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteTrail
+        - endpoint: Action:DeregisterOrganizationDelegatedAdmin
+        - endpoint: Action:DescribeQuery
+        - endpoint: Action:DescribeTrails
+        - endpoint: Action:DisableFederation
+        - endpoint: Action:EnableFederation
+        - endpoint: Action:GenerateQuery
+        - endpoint: Action:GetChannel
+        - endpoint: Action:GetDashboard
+        - endpoint: Action:GetEventConfiguration
+        - endpoint: Action:GetEventDataStore
+        - endpoint: Action:GetEventSelectors
+        - endpoint: Action:GetImport
+        - endpoint: Action:GetInsightSelectors
+        - endpoint: Action:GetQueryResults
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetTrail
+        - endpoint: Action:GetTrailStatus
+        - endpoint: Action:ListChannels
+        - endpoint: Action:ListDashboards
+        - endpoint: Action:ListEventDataStores
+        - endpoint: Action:ListImportFailures
+        - endpoint: Action:ListImports
+        - endpoint: Action:ListInsightsData
+        - endpoint: Action:ListInsightsMetricData
+        - endpoint: Action:ListPublicKeys
+        - endpoint: Action:ListQueries
+        - endpoint: Action:ListTags
+        - endpoint: Action:ListTrails
+        - endpoint: Action:LookupEvents
+        - endpoint: Action:PutEventConfiguration
+        - endpoint: Action:PutEventSelectors
+        - endpoint: Action:PutInsightSelectors
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RegisterOrganizationDelegatedAdmin
+        - endpoint: Action:RemoveTags
+        - endpoint: Action:RestoreEventDataStore
+        - endpoint: Action:SearchSampleQueries
+        - endpoint: Action:StartDashboardRefresh
+        - endpoint: Action:StartEventDataStoreIngestion
+        - endpoint: Action:StartImport
+        - endpoint: Action:StartLogging
+        - endpoint: Action:StartQuery
+        - endpoint: Action:StopEventDataStoreIngestion
+        - endpoint: Action:StopImport
+        - endpoint: Action:StopLogging
+        - endpoint: Action:UpdateChannel
+        - endpoint: Action:UpdateDashboard
+        - endpoint: Action:UpdateEventDataStore
+        - endpoint: Action:UpdateTrail
+      - service: CloudWatch (cloudwatch)
+        - endpoint: Action:DeleteAlarmMuteRule
+        - endpoint: Action:DeleteAlarms
+        - endpoint: Action:DeleteAnomalyDetector
+        - endpoint: Action:DeleteDashboards
+        - endpoint: Action:DeleteInsightRules
+        - endpoint: Action:DeleteMetricStream
+        - endpoint: Action:DescribeAlarmContributors
+        - endpoint: Action:DescribeAlarmHistory
+        - endpoint: Action:DescribeAlarms
+        - endpoint: Action:DescribeAlarmsForMetric
+        - endpoint: Action:DescribeAnomalyDetectors
+        - endpoint: Action:DescribeInsightRules
+        - endpoint: Action:DisableAlarmActions
+        - endpoint: Action:DisableInsightRules
+        - endpoint: Action:EnableAlarmActions
+        - endpoint: Action:EnableInsightRules
+        - endpoint: Action:GetAlarmMuteRule
+        - endpoint: Action:GetDashboard
+        - endpoint: Action:GetInsightRuleReport
+        - endpoint: Action:GetMetricData
+        - endpoint: Action:GetMetricStatistics
+        - endpoint: Action:GetMetricStream
+        - endpoint: Action:GetMetricWidgetImage
+        - endpoint: Action:ListAlarmMuteRules
+        - endpoint: Action:ListDashboards
+        - endpoint: Action:ListManagedInsightRules
+        - endpoint: Action:ListMetricStreams
+        - endpoint: Action:ListMetrics
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutAlarmMuteRule
+        - endpoint: Action:PutAnomalyDetector
+        - endpoint: Action:PutCompositeAlarm
+        - endpoint: Action:PutDashboard
+        - endpoint: Action:PutInsightRule
+        - endpoint: Action:PutManagedInsightRules
+        - endpoint: Action:PutMetricAlarm
+        - endpoint: Action:PutMetricData
+        - endpoint: Action:PutMetricStream
+        - endpoint: Action:SetAlarmState
+        - endpoint: Action:StartMetricStreams
+        - endpoint: Action:StopMetricStreams
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: CloudWatch Application Insights (cloudwatchapplicationinsights)
+        - endpoint: Action:AddWorkload
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateComponent
+        - endpoint: Action:CreateLogPattern
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteComponent
+        - endpoint: Action:DeleteLogPattern
+        - endpoint: Action:DescribeApplication
+        - endpoint: Action:DescribeComponent
+        - endpoint: Action:DescribeComponentConfiguration
+        - endpoint: Action:DescribeComponentConfigurationRecommendation
+        - endpoint: Action:DescribeLogPattern
+        - endpoint: Action:DescribeObservation
+        - endpoint: Action:DescribeProblem
+        - endpoint: Action:DescribeProblemObservations
+        - endpoint: Action:DescribeWorkload
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListComponents
+        - endpoint: Action:ListConfigurationHistory
+        - endpoint: Action:ListLogPatternSets
+        - endpoint: Action:ListLogPatterns
+        - endpoint: Action:ListProblems
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWorkloads
+        - endpoint: Action:RemoveWorkload
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateComponent
+        - endpoint: Action:UpdateComponentConfiguration
+        - endpoint: Action:UpdateLogPattern
+        - endpoint: Action:UpdateProblem
+        - endpoint: Action:UpdateWorkload
+      - service: CloudWatch Investigations (cloudwatchinvestigations)
+        - endpoint: Action:CreateInvestigationGroup
+        - endpoint: Action:DeleteInvestigationGroup
+        - endpoint: Action:DeleteInvestigationGroupPolicy
+        - endpoint: Action:GetInvestigationGroup
+        - endpoint: Action:GetInvestigationGroupPolicy
+        - endpoint: Action:ListInvestigationGroups
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutInvestigationGroupPolicy
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateInvestigationGroup
+      - service: CloudWatch Logs (cloudwatchlogs)
+        - endpoint: Action:AssociateKmsKey
+        - endpoint: Action:AssociateSourceToS3TableIntegration
+        - endpoint: Action:CancelExportTask
+        - endpoint: Action:CancelImportTask
+        - endpoint: Action:CreateDelivery
+        - endpoint: Action:CreateExportTask
+        - endpoint: Action:CreateImportTask
+        - endpoint: Action:CreateLogAnomalyDetector
+        - endpoint: Action:CreateLogGroup
+        - endpoint: Action:CreateLogStream
+        - endpoint: Action:CreateScheduledQuery
+        - endpoint: Action:DeleteAccountPolicy
+        - endpoint: Action:DeleteDataProtectionPolicy
+        - endpoint: Action:DeleteDelivery
+        - endpoint: Action:DeleteDeliveryDestination
+        - endpoint: Action:DeleteDeliveryDestinationPolicy
+        - endpoint: Action:DeleteDeliverySource
+        - endpoint: Action:DeleteDestination
+        - endpoint: Action:DeleteIndexPolicy
+        - endpoint: Action:DeleteIntegration
+        - endpoint: Action:DeleteLogAnomalyDetector
+        - endpoint: Action:DeleteLogGroup
+        - endpoint: Action:DeleteLogStream
+        - endpoint: Action:DeleteMetricFilter
+        - endpoint: Action:DeleteQueryDefinition
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteRetentionPolicy
+        - endpoint: Action:DeleteScheduledQuery
+        - endpoint: Action:DeleteSubscriptionFilter
+        - endpoint: Action:DeleteTransformer
+        - endpoint: Action:DescribeAccountPolicies
+        - endpoint: Action:DescribeConfigurationTemplates
+        - endpoint: Action:DescribeDeliveries
+        - endpoint: Action:DescribeDeliveryDestinations
+        - endpoint: Action:DescribeDeliverySources
+        - endpoint: Action:DescribeDestinations
+        - endpoint: Action:DescribeExportTasks
+        - endpoint: Action:DescribeFieldIndexes
+        - endpoint: Action:DescribeImportTaskBatches
+        - endpoint: Action:DescribeImportTasks
+        - endpoint: Action:DescribeIndexPolicies
+        - endpoint: Action:DescribeLogGroups
+        - endpoint: Action:DescribeLogStreams
+        - endpoint: Action:DescribeMetricFilters
+        - endpoint: Action:DescribeQueries
+        - endpoint: Action:DescribeQueryDefinitions
+        - endpoint: Action:DescribeResourcePolicies
+        - endpoint: Action:DescribeSubscriptionFilters
+        - endpoint: Action:DisassociateKmsKey
+        - endpoint: Action:DisassociateSourceFromS3TableIntegration
+        - endpoint: Action:FilterLogEvents
+        - endpoint: Action:GetDataProtectionPolicy
+        - endpoint: Action:GetDelivery
+        - endpoint: Action:GetDeliveryDestination
+        - endpoint: Action:GetDeliveryDestinationPolicy
+        - endpoint: Action:GetDeliverySource
+        - endpoint: Action:GetIntegration
+        - endpoint: Action:GetLogAnomalyDetector
+        - endpoint: Action:GetLogEvents
+        - endpoint: Action:GetLogFields
+        - endpoint: Action:GetLogGroupFields
+        - endpoint: Action:GetLogObject
+        - endpoint: Action:GetLogRecord
+        - endpoint: Action:GetQueryResults
+        - endpoint: Action:GetScheduledQuery
+        - endpoint: Action:GetScheduledQueryHistory
+        - endpoint: Action:GetTransformer
+        - endpoint: Action:ListAggregateLogGroupSummaries
+        - endpoint: Action:ListAnomalies
+        - endpoint: Action:ListIntegrations
+        - endpoint: Action:ListLogAnomalyDetectors
+        - endpoint: Action:ListLogGroups
+        - endpoint: Action:ListLogGroupsForQuery
+        - endpoint: Action:ListScheduledQueries
+        - endpoint: Action:ListSourcesForS3TableIntegration
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTagsLogGroup
+        - endpoint: Action:PutAccountPolicy
+        - endpoint: Action:PutDataProtectionPolicy
+        - endpoint: Action:PutDeliveryDestination
+        - endpoint: Action:PutDeliveryDestinationPolicy
+        - endpoint: Action:PutDeliverySource
+        - endpoint: Action:PutDestination
+        - endpoint: Action:PutDestinationPolicy
+        - endpoint: Action:PutIndexPolicy
+        - endpoint: Action:PutIntegration
+        - endpoint: Action:PutLogEvents
+        - endpoint: Action:PutLogGroupDeletionProtection
+        - endpoint: Action:PutMetricFilter
+        - endpoint: Action:PutQueryDefinition
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:PutRetentionPolicy
+        - endpoint: Action:PutSubscriptionFilter
+        - endpoint: Action:PutTransformer
+        - endpoint: Action:StartLiveTail
+        - endpoint: Action:StartQuery
+        - endpoint: Action:StopQuery
+        - endpoint: Action:TagLogGroup
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestMetricFilter
+        - endpoint: Action:TestTransformer
+        - endpoint: Action:UntagLogGroup
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAnomaly
+        - endpoint: Action:UpdateDeliveryConfiguration
+        - endpoint: Action:UpdateLogAnomalyDetector
+        - endpoint: Action:UpdateScheduledQuery
+      - service: CloudWatch OAM (oam)
+        - endpoint: Action:CreateLink
+        - endpoint: Action:CreateSink
+        - endpoint: Action:DeleteLink
+        - endpoint: Action:DeleteSink
+        - endpoint: Action:GetLink
+        - endpoint: Action:GetSink
+        - endpoint: Action:GetSinkPolicy
+        - endpoint: Action:ListAttachedLinks
+        - endpoint: Action:ListLinks
+        - endpoint: Action:ListSinks
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutSinkPolicy
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateLink
+      - service: CloudWatch Observability Admin (cloudwatch-observability-admin)
+        - endpoint: Action:CreateCentralizationRuleForOrganization
+        - endpoint: Action:CreateS3TableIntegration
+        - endpoint: Action:CreateTelemetryPipeline
+        - endpoint: Action:CreateTelemetryRule
+        - endpoint: Action:CreateTelemetryRuleForOrganization
+        - endpoint: Action:DeleteCentralizationRuleForOrganization
+        - endpoint: Action:DeleteS3TableIntegration
+        - endpoint: Action:DeleteTelemetryPipeline
+        - endpoint: Action:DeleteTelemetryRule
+        - endpoint: Action:DeleteTelemetryRuleForOrganization
+        - endpoint: Action:GetCentralizationRuleForOrganization
+        - endpoint: Action:GetS3TableIntegration
+        - endpoint: Action:GetTelemetryEnrichmentStatus
+        - endpoint: Action:GetTelemetryEvaluationStatus
+        - endpoint: Action:GetTelemetryEvaluationStatusForOrganization
+        - endpoint: Action:GetTelemetryPipeline
+        - endpoint: Action:GetTelemetryRule
+        - endpoint: Action:GetTelemetryRuleForOrganization
+        - endpoint: Action:ListCentralizationRulesForOrganization
+        - endpoint: Action:ListResourceTelemetry
+        - endpoint: Action:ListResourceTelemetryForOrganization
+        - endpoint: Action:ListS3TableIntegrations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTelemetryPipelines
+        - endpoint: Action:ListTelemetryRules
+        - endpoint: Action:ListTelemetryRulesForOrganization
+        - endpoint: Action:StartTelemetryEnrichment
+        - endpoint: Action:StartTelemetryEvaluation
+        - endpoint: Action:StartTelemetryEvaluationForOrganization
+        - endpoint: Action:StopTelemetryEnrichment
+        - endpoint: Action:StopTelemetryEvaluation
+        - endpoint: Action:StopTelemetryEvaluationForOrganization
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestTelemetryPipeline
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateCentralizationRuleForOrganization
+        - endpoint: Action:UpdateTelemetryPipeline
+        - endpoint: Action:UpdateTelemetryRule
+        - endpoint: Action:UpdateTelemetryRuleForOrganization
+        - endpoint: Action:ValidateTelemetryPipelineConfiguration
+      - service: CloudWatch RUM (cloudwatchrum)
+        - endpoint: Action:BatchCreateRumMetricDefinitions
+        - endpoint: Action:BatchDeleteRumMetricDefinitions
+        - endpoint: Action:BatchGetRumMetricDefinitions
+        - endpoint: Action:CreateAppMonitor
+        - endpoint: Action:DeleteAppMonitor
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteRumMetricsDestination
+        - endpoint: Action:GetAppMonitor
+        - endpoint: Action:GetAppMonitorData
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:ListAppMonitors
+        - endpoint: Action:ListRumMetricsDestinations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:PutRumEvents
+        - endpoint: Action:PutRumMetricsDestination
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAppMonitor
+        - endpoint: Action:UpdateRumMetricDefinition
+      - service: CloudWatch Synthetics (cloudwatchsynthetics)
+        - endpoint: Action:AssociateResource
+        - endpoint: Action:CreateCanary
+        - endpoint: Action:CreateGroup
+        - endpoint: Action:DeleteCanary
+        - endpoint: Action:DeleteGroup
+        - endpoint: Action:DescribeCanaries
+        - endpoint: Action:DescribeCanariesLastRun
+        - endpoint: Action:DescribeRuntimeVersions
+        - endpoint: Action:DisassociateResource
+        - endpoint: Action:GetCanary
+        - endpoint: Action:GetCanaryRuns
+        - endpoint: Action:GetGroup
+        - endpoint: Action:ListAssociatedGroups
+        - endpoint: Action:ListGroupResources
+        - endpoint: Action:ListGroups
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartCanary
+        - endpoint: Action:StartCanaryDryRun
+        - endpoint: Action:StopCanary
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateCanary
+      - service: CodeArtifact (codeartifact)
+        - endpoint: Action:AssociateExternalConnection
+        - endpoint: Action:CopyPackageVersions
+        - endpoint: Action:CreateDomain
+        - endpoint: Action:CreatePackageGroup
+        - endpoint: Action:CreateRepository
+        - endpoint: Action:DeleteDomain
+        - endpoint: Action:DeleteDomainPermissionsPolicy
+        - endpoint: Action:DeletePackage
+        - endpoint: Action:DeletePackageGroup
+        - endpoint: Action:DeletePackageVersions
+        - endpoint: Action:DeleteRepository
+        - endpoint: Action:DeleteRepositoryPermissionsPolicy
+        - endpoint: Action:DescribeDomain
+        - endpoint: Action:DescribePackage
+        - endpoint: Action:DescribePackageGroup
+        - endpoint: Action:DescribePackageVersion
+        - endpoint: Action:DescribeRepository
+        - endpoint: Action:DisassociateExternalConnection
+        - endpoint: Action:DisposePackageVersions
+        - endpoint: Action:GetAssociatedPackageGroup
+        - endpoint: Action:GetAuthorizationToken
+        - endpoint: Action:GetDomainPermissionsPolicy
+        - endpoint: Action:GetPackageVersionAsset
+        - endpoint: Action:GetPackageVersionReadme
+        - endpoint: Action:GetRepositoryEndpoint
+        - endpoint: Action:GetRepositoryPermissionsPolicy
+        - endpoint: Action:ListAllowedRepositoriesForGroup
+        - endpoint: Action:ListAssociatedPackages
+        - endpoint: Action:ListDomains
+        - endpoint: Action:ListPackageGroups
+        - endpoint: Action:ListPackageVersionAssets
+        - endpoint: Action:ListPackageVersionDependencies
+        - endpoint: Action:ListPackageVersions
+        - endpoint: Action:ListPackages
+        - endpoint: Action:ListRepositories
+        - endpoint: Action:ListRepositoriesInDomain
+        - endpoint: Action:ListSubPackageGroups
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PublishPackageVersion
+        - endpoint: Action:PutDomainPermissionsPolicy
+        - endpoint: Action:PutPackageOriginConfiguration
+        - endpoint: Action:PutRepositoryPermissionsPolicy
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdatePackageGroup
+        - endpoint: Action:UpdatePackageGroupOriginConfiguration
+        - endpoint: Action:UpdatePackageVersionsStatus
+        - endpoint: Action:UpdateRepository
+      - service: CodeBuild (codebuild)
+        - endpoint: Action:BatchDeleteBuilds
+        - endpoint: Action:BatchGetBuildBatches
+        - endpoint: Action:BatchGetBuilds
+        - endpoint: Action:BatchGetCommandExecutions
+        - endpoint: Action:BatchGetFleets
+        - endpoint: Action:BatchGetProjects
+        - endpoint: Action:BatchGetReportGroups
+        - endpoint: Action:BatchGetReports
+        - endpoint: Action:BatchGetSandboxes
+        - endpoint: Action:CreateFleet
+        - endpoint: Action:CreateProject
+        - endpoint: Action:CreateReportGroup
+        - endpoint: Action:CreateWebhook
+        - endpoint: Action:DeleteBuildBatch
+        - endpoint: Action:DeleteFleet
+        - endpoint: Action:DeleteProject
+        - endpoint: Action:DeleteReport
+        - endpoint: Action:DeleteReportGroup
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteSourceCredentials
+        - endpoint: Action:DeleteWebhook
+        - endpoint: Action:DescribeCodeCoverages
+        - endpoint: Action:DescribeTestCases
+        - endpoint: Action:GetReportGroupTrend
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:ImportSourceCredentials
+        - endpoint: Action:InvalidateProjectCache
+        - endpoint: Action:ListBuildBatches
+        - endpoint: Action:ListBuildBatchesForProject
+        - endpoint: Action:ListBuilds
+        - endpoint: Action:ListBuildsForProject
+        - endpoint: Action:ListCommandExecutionsForSandbox
+        - endpoint: Action:ListCuratedEnvironmentImages
+        - endpoint: Action:ListFleets
+        - endpoint: Action:ListProjects
+        - endpoint: Action:ListReportGroups
+        - endpoint: Action:ListReports
+        - endpoint: Action:ListReportsForReportGroup
+        - endpoint: Action:ListSandboxes
+        - endpoint: Action:ListSandboxesForProject
+        - endpoint: Action:ListSharedProjects
+        - endpoint: Action:ListSharedReportGroups
+        - endpoint: Action:ListSourceCredentials
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RetryBuild
+        - endpoint: Action:RetryBuildBatch
+        - endpoint: Action:StartBuild
+        - endpoint: Action:StartBuildBatch
+        - endpoint: Action:StartCommandExecution
+        - endpoint: Action:StartSandbox
+        - endpoint: Action:StartSandboxConnection
+        - endpoint: Action:StopBuild
+        - endpoint: Action:StopBuildBatch
+        - endpoint: Action:StopSandbox
+        - endpoint: Action:UpdateFleet
+        - endpoint: Action:UpdateProject
+        - endpoint: Action:UpdateProjectVisibility
+        - endpoint: Action:UpdateReportGroup
+        - endpoint: Action:UpdateWebhook
+      - service: CodeCatalyst (codecatalyst)
+        - endpoint: Action:CreateAccessToken
+        - endpoint: Action:CreateDevEnvironment
+        - endpoint: Action:CreateProject
+        - endpoint: Action:CreateSourceRepository
+        - endpoint: Action:CreateSourceRepositoryBranch
+        - endpoint: Action:DeleteAccessToken
+        - endpoint: Action:DeleteDevEnvironment
+        - endpoint: Action:DeleteProject
+        - endpoint: Action:DeleteSourceRepository
+        - endpoint: Action:DeleteSpace
+        - endpoint: Action:GetDevEnvironment
+        - endpoint: Action:GetProject
+        - endpoint: Action:GetSourceRepository
+        - endpoint: Action:GetSourceRepositoryCloneUrls
+        - endpoint: Action:GetSpace
+        - endpoint: Action:GetSubscription
+        - endpoint: Action:GetUserDetails
+        - endpoint: Action:GetWorkflow
+        - endpoint: Action:GetWorkflowRun
+        - endpoint: Action:ListAccessTokens
+        - endpoint: Action:ListDevEnvironmentSessions
+        - endpoint: Action:ListDevEnvironments
+        - endpoint: Action:ListEventLogs
+        - endpoint: Action:ListProjects
+        - endpoint: Action:ListSourceRepositories
+        - endpoint: Action:ListSourceRepositoryBranches
+        - endpoint: Action:ListSpaces
+        - endpoint: Action:ListWorkflowRuns
+        - endpoint: Action:ListWorkflows
+        - endpoint: Action:StartDevEnvironment
+        - endpoint: Action:StartDevEnvironmentSession
+        - endpoint: Action:StartWorkflowRun
+        - endpoint: Action:StopDevEnvironment
+        - endpoint: Action:StopDevEnvironmentSession
+        - endpoint: Action:UpdateDevEnvironment
+        - endpoint: Action:UpdateProject
+        - endpoint: Action:UpdateSpace
+        - endpoint: Action:VerifySession
+      - service: CodeDeploy (codedeploy)
+        - endpoint: Action:AddTagsToOnPremisesInstances
+        - endpoint: Action:BatchGetApplicationRevisions
+        - endpoint: Action:BatchGetApplications
+        - endpoint: Action:BatchGetDeploymentGroups
+        - endpoint: Action:BatchGetDeploymentInstances
+        - endpoint: Action:BatchGetDeploymentTargets
+        - endpoint: Action:BatchGetDeployments
+        - endpoint: Action:BatchGetOnPremisesInstances
+        - endpoint: Action:ContinueDeployment
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateDeployment
+        - endpoint: Action:CreateDeploymentConfig
+        - endpoint: Action:CreateDeploymentGroup
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteDeploymentConfig
+        - endpoint: Action:DeleteDeploymentGroup
+        - endpoint: Action:DeleteGitHubAccountToken
+        - endpoint: Action:DeleteResourcesByExternalId
+        - endpoint: Action:DeregisterOnPremisesInstance
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetApplicationRevision
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetDeploymentConfig
+        - endpoint: Action:GetDeploymentGroup
+        - endpoint: Action:GetDeploymentInstance
+        - endpoint: Action:GetDeploymentTarget
+        - endpoint: Action:GetOnPremisesInstance
+        - endpoint: Action:ListApplicationRevisions
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListDeploymentConfigs
+        - endpoint: Action:ListDeploymentGroups
+        - endpoint: Action:ListDeploymentInstances
+        - endpoint: Action:ListDeploymentTargets
+        - endpoint: Action:ListDeployments
+        - endpoint: Action:ListGitHubAccountTokenNames
+        - endpoint: Action:ListOnPremisesInstances
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutLifecycleEventHookExecutionStatus
+        - endpoint: Action:RegisterApplicationRevision
+        - endpoint: Action:RegisterOnPremisesInstance
+        - endpoint: Action:RemoveTagsFromOnPremisesInstances
+        - endpoint: Action:SkipWaitTimeForInstanceTermination
+        - endpoint: Action:StopDeployment
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateDeploymentGroup
+      - service: CodeGuru Profiler (codeguru-profiler)
+        - endpoint: Action:AddNotificationChannels
+        - endpoint: Action:BatchGetFrameMetricData
+        - endpoint: Action:ConfigureAgent
+        - endpoint: Action:CreateProfilingGroup
+        - endpoint: Action:DeleteProfilingGroup
+        - endpoint: Action:DescribeProfilingGroup
+        - endpoint: Action:GetFindingsReportAccountSummary
+        - endpoint: Action:GetNotificationConfiguration
+        - endpoint: Action:GetPolicy
+        - endpoint: Action:GetProfile
+        - endpoint: Action:GetRecommendations
+        - endpoint: Action:ListFindingsReports
+        - endpoint: Action:ListProfileTimes
+        - endpoint: Action:ListProfilingGroups
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PostAgentProfile
+        - endpoint: Action:PutPermission
+        - endpoint: Action:RemoveNotificationChannel
+        - endpoint: Action:RemovePermission
+        - endpoint: Action:SubmitFeedback
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateProfilingGroup
+      - service: CodeGuru Reviewer (codeguru)
+        - endpoint: Action:AssociateRepository
+        - endpoint: Action:CreateCodeReview
+        - endpoint: Action:CreateCodeReviewInternal
+        - endpoint: Action:CreateConnectionToken
+        - endpoint: Action:DescribeCodeReview
+        - endpoint: Action:DescribeRecommendationFeedback
+        - endpoint: Action:DescribeRepositoryAssociation
+        - endpoint: Action:DisassociateRepository
+        - endpoint: Action:GetMetricsData
+        - endpoint: Action:ListCodeReviews
+        - endpoint: Action:ListRecommendationFeedback
+        - endpoint: Action:ListRecommendations
+        - endpoint: Action:ListRepositoryAssociations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListThirdPartyRepositories
+        - endpoint: Action:PutRecommendationFeedback
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: CodePipeline (codepipeline)
+        - endpoint: Action:AcknowledgeJob
+        - endpoint: Action:AcknowledgeThirdPartyJob
+        - endpoint: Action:CreateCustomActionType
+        - endpoint: Action:CreatePipeline
+        - endpoint: Action:DeleteCustomActionType
+        - endpoint: Action:DeletePipeline
+        - endpoint: Action:DeleteWebhook
+        - endpoint: Action:DeregisterWebhookWithThirdParty
+        - endpoint: Action:DisableStageTransition
+        - endpoint: Action:EnableStageTransition
+        - endpoint: Action:GetActionType
+        - endpoint: Action:GetJobDetails
+        - endpoint: Action:GetPipeline
+        - endpoint: Action:GetPipelineExecution
+        - endpoint: Action:GetPipelineState
+        - endpoint: Action:GetThirdPartyJobDetails
+        - endpoint: Action:ListActionExecutions
+        - endpoint: Action:ListActionTypes
+        - endpoint: Action:ListDeployActionExecutionTargets
+        - endpoint: Action:ListPipelineExecutions
+        - endpoint: Action:ListPipelines
+        - endpoint: Action:ListRuleExecutions
+        - endpoint: Action:ListRuleTypes
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWebhooks
+        - endpoint: Action:OverrideStageCondition
+        - endpoint: Action:PollForJobs
+        - endpoint: Action:PollForThirdPartyJobs
+        - endpoint: Action:PutActionRevision
+        - endpoint: Action:PutApprovalResult
+        - endpoint: Action:PutJobFailureResult
+        - endpoint: Action:PutJobSuccessResult
+        - endpoint: Action:PutThirdPartyJobFailureResult
+        - endpoint: Action:PutThirdPartyJobSuccessResult
+        - endpoint: Action:PutWebhook
+        - endpoint: Action:RegisterWebhookWithThirdParty
+        - endpoint: Action:RetryStageExecution
+        - endpoint: Action:RollbackStage
+        - endpoint: Action:StartPipelineExecution
+        - endpoint: Action:StopPipelineExecution
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateActionType
+        - endpoint: Action:UpdatePipeline
+      - service: Comprehend (comprehend)
+        - endpoint: Action:BatchDetectDominantLanguage
+        - endpoint: Action:BatchDetectEntities
+        - endpoint: Action:BatchDetectKeyPhrases
+        - endpoint: Action:BatchDetectSentiment
+        - endpoint: Action:BatchDetectSyntax
+        - endpoint: Action:BatchDetectTargetedSentiment
+        - endpoint: Action:ClassifyDocument
+        - endpoint: Action:ContainsPiiEntities
+        - endpoint: Action:CreateDataset
+        - endpoint: Action:CreateDocumentClassifier
+        - endpoint: Action:CreateEndpoint
+        - endpoint: Action:CreateEntityRecognizer
+        - endpoint: Action:CreateFlywheel
+        - endpoint: Action:DeleteDocumentClassifier
+        - endpoint: Action:DeleteEndpoint
+        - endpoint: Action:DeleteEntityRecognizer
+        - endpoint: Action:DeleteFlywheel
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DescribeDataset
+        - endpoint: Action:DescribeDocumentClassificationJob
+        - endpoint: Action:DescribeDocumentClassifier
+        - endpoint: Action:DescribeDominantLanguageDetectionJob
+        - endpoint: Action:DescribeEndpoint
+        - endpoint: Action:DescribeEntitiesDetectionJob
+        - endpoint: Action:DescribeEntityRecognizer
+        - endpoint: Action:DescribeEventsDetectionJob
+        - endpoint: Action:DescribeFlywheel
+        - endpoint: Action:DescribeFlywheelIteration
+        - endpoint: Action:DescribeKeyPhrasesDetectionJob
+        - endpoint: Action:DescribePiiEntitiesDetectionJob
+        - endpoint: Action:DescribeResourcePolicy
+        - endpoint: Action:DescribeSentimentDetectionJob
+        - endpoint: Action:DescribeTargetedSentimentDetectionJob
+        - endpoint: Action:DescribeTopicsDetectionJob
+        - endpoint: Action:DetectDominantLanguage
+        - endpoint: Action:DetectEntities
+        - endpoint: Action:DetectKeyPhrases
+        - endpoint: Action:DetectPiiEntities
+        - endpoint: Action:DetectSentiment
+        - endpoint: Action:DetectSyntax
+        - endpoint: Action:DetectTargetedSentiment
+        - endpoint: Action:DetectToxicContent
+        - endpoint: Action:ImportModel
+        - endpoint: Action:ListDatasets
+        - endpoint: Action:ListDocumentClassificationJobs
+        - endpoint: Action:ListDocumentClassifierSummaries
+        - endpoint: Action:ListDocumentClassifiers
+        - endpoint: Action:ListDominantLanguageDetectionJobs
+        - endpoint: Action:ListEndpoints
+        - endpoint: Action:ListEntitiesDetectionJobs
+        - endpoint: Action:ListEntityRecognizerSummaries
+        - endpoint: Action:ListEntityRecognizers
+        - endpoint: Action:ListEventsDetectionJobs
+        - endpoint: Action:ListFlywheelIterationHistory
+        - endpoint: Action:ListFlywheels
+        - endpoint: Action:ListKeyPhrasesDetectionJobs
+        - endpoint: Action:ListPiiEntitiesDetectionJobs
+        - endpoint: Action:ListSentimentDetectionJobs
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTargetedSentimentDetectionJobs
+        - endpoint: Action:ListTopicsDetectionJobs
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:StartDocumentClassificationJob
+        - endpoint: Action:StartDominantLanguageDetectionJob
+        - endpoint: Action:StartEntitiesDetectionJob
+        - endpoint: Action:StartEventsDetectionJob
+        - endpoint: Action:StartFlywheelIteration
+        - endpoint: Action:StartKeyPhrasesDetectionJob
+        - endpoint: Action:StartPiiEntitiesDetectionJob
+        - endpoint: Action:StartSentimentDetectionJob
+        - endpoint: Action:StartTargetedSentimentDetectionJob
+        - endpoint: Action:StartTopicsDetectionJob
+        - endpoint: Action:StopDominantLanguageDetectionJob
+        - endpoint: Action:StopEntitiesDetectionJob
+        - endpoint: Action:StopEventsDetectionJob
+        - endpoint: Action:StopKeyPhrasesDetectionJob
+        - endpoint: Action:StopPiiEntitiesDetectionJob
+        - endpoint: Action:StopSentimentDetectionJob
+        - endpoint: Action:StopTargetedSentimentDetectionJob
+        - endpoint: Action:StopTrainingDocumentClassifier
+        - endpoint: Action:StopTrainingEntityRecognizer
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateEndpoint
+        - endpoint: Action:UpdateFlywheel
+      - service: Comprehend Medical (comprehend-medical)
+        - endpoint: Action:DescribeEntitiesDetectionV2Job
+        - endpoint: Action:DescribeICD10CMInferenceJob
+        - endpoint: Action:DescribePHIDetectionJob
+        - endpoint: Action:DescribeRxNormInferenceJob
+        - endpoint: Action:DescribeSNOMEDCTInferenceJob
+        - endpoint: Action:DetectEntitiesV2
+        - endpoint: Action:DetectPHI
+        - endpoint: Action:InferICD10CM
+        - endpoint: Action:InferRxNorm
+        - endpoint: Action:InferSNOMEDCT
+        - endpoint: Action:ListEntitiesDetectionV2Jobs
+        - endpoint: Action:ListICD10CMInferenceJobs
+        - endpoint: Action:ListPHIDetectionJobs
+        - endpoint: Action:ListRxNormInferenceJobs
+        - endpoint: Action:ListSNOMEDCTInferenceJobs
+        - endpoint: Action:StartEntitiesDetectionV2Job
+        - endpoint: Action:StartICD10CMInferenceJob
+        - endpoint: Action:StartPHIDetectionJob
+        - endpoint: Action:StartRxNormInferenceJob
+        - endpoint: Action:StartSNOMEDCTInferenceJob
+        - endpoint: Action:StopEntitiesDetectionV2Job
+        - endpoint: Action:StopICD10CMInferenceJob
+        - endpoint: Action:StopPHIDetectionJob
+        - endpoint: Action:StopRxNormInferenceJob
+        - endpoint: Action:StopSNOMEDCTInferenceJob
+      - service: Connect (connect)
+        - endpoint: Action:ActivateEvaluationForm
+        - endpoint: Action:AssociateAnalyticsDataSet
+        - endpoint: Action:AssociateApprovedOrigin
+        - endpoint: Action:AssociateBot
+        - endpoint: Action:AssociateContactWithUser
+        - endpoint: Action:AssociateDefaultVocabulary
+        - endpoint: Action:AssociateEmailAddressAlias
+        - endpoint: Action:AssociateFlow
+        - endpoint: Action:AssociateHoursOfOperations
+        - endpoint: Action:AssociateInstanceStorageConfig
+        - endpoint: Action:AssociateLambdaFunction
+        - endpoint: Action:AssociateLexBot
+        - endpoint: Action:AssociatePhoneNumberContactFlow
+        - endpoint: Action:AssociateQueueQuickConnects
+        - endpoint: Action:AssociateRoutingProfileQueues
+        - endpoint: Action:AssociateSecurityKey
+        - endpoint: Action:AssociateSecurityProfiles
+        - endpoint: Action:AssociateTrafficDistributionGroupUser
+        - endpoint: Action:AssociateUserProficiencies
+        - endpoint: Action:AssociateWorkspace
+        - endpoint: Action:BatchAssociateAnalyticsDataSet
+        - endpoint: Action:BatchCreateDataTableValue
+        - endpoint: Action:BatchDeleteDataTableValue
+        - endpoint: Action:BatchDescribeDataTableValue
+        - endpoint: Action:BatchDisassociateAnalyticsDataSet
+        - endpoint: Action:BatchGetAttachedFileMetadata
+        - endpoint: Action:BatchGetFlowAssociation
+        - endpoint: Action:BatchPutContact
+        - endpoint: Action:BatchUpdateDataTableValue
+        - endpoint: Action:ClaimPhoneNumber
+        - endpoint: Action:CompleteAttachedFileUpload
+        - endpoint: Action:CreateAgentStatus
+        - endpoint: Action:CreateContact
+        - endpoint: Action:CreateContactFlow
+        - endpoint: Action:CreateContactFlowModule
+        - endpoint: Action:CreateContactFlowModuleAlias
+        - endpoint: Action:CreateContactFlowModuleVersion
+        - endpoint: Action:CreateContactFlowVersion
+        - endpoint: Action:CreateDataTable
+        - endpoint: Action:CreateDataTableAttribute
+        - endpoint: Action:CreateEmailAddress
+        - endpoint: Action:CreateEvaluationForm
+        - endpoint: Action:CreateHoursOfOperation
+        - endpoint: Action:CreateHoursOfOperationOverride
+        - endpoint: Action:CreateInstance
+        - endpoint: Action:CreateIntegrationAssociation
+        - endpoint: Action:CreateNotification
+        - endpoint: Action:CreateParticipant
+        - endpoint: Action:CreatePersistentContactAssociation
+        - endpoint: Action:CreatePredefinedAttribute
+        - endpoint: Action:CreatePrompt
+        - endpoint: Action:CreatePushNotificationRegistration
+        - endpoint: Action:CreateQueue
+        - endpoint: Action:CreateQuickConnect
+        - endpoint: Action:CreateRoutingProfile
+        - endpoint: Action:CreateRule
+        - endpoint: Action:CreateSecurityProfile
+        - endpoint: Action:CreateTaskTemplate
+        - endpoint: Action:CreateTestCase
+        - endpoint: Action:CreateTrafficDistributionGroup
+        - endpoint: Action:CreateUseCase
+        - endpoint: Action:CreateUser
+        - endpoint: Action:CreateUserHierarchyGroup
+        - endpoint: Action:CreateView
+        - endpoint: Action:CreateViewVersion
+        - endpoint: Action:CreateVocabulary
+        - endpoint: Action:CreateWorkspace
+        - endpoint: Action:CreateWorkspacePage
+        - endpoint: Action:DeactivateEvaluationForm
+        - endpoint: Action:DeleteAttachedFile
+        - endpoint: Action:DeleteContactEvaluation
+        - endpoint: Action:DeleteContactFlow
+        - endpoint: Action:DeleteContactFlowModule
+        - endpoint: Action:DeleteContactFlowModuleAlias
+        - endpoint: Action:DeleteContactFlowModuleVersion
+        - endpoint: Action:DeleteContactFlowVersion
+        - endpoint: Action:DeleteDataTable
+        - endpoint: Action:DeleteDataTableAttribute
+        - endpoint: Action:DeleteEmailAddress
+        - endpoint: Action:DeleteEvaluationForm
+        - endpoint: Action:DeleteHoursOfOperation
+        - endpoint: Action:DeleteHoursOfOperationOverride
+        - endpoint: Action:DeleteInstance
+        - endpoint: Action:DeleteIntegrationAssociation
+        - endpoint: Action:DeleteNotification
+        - endpoint: Action:DeletePredefinedAttribute
+        - endpoint: Action:DeletePrompt
+        - endpoint: Action:DeletePushNotificationRegistration
+        - endpoint: Action:DeleteQueue
+        - endpoint: Action:DeleteQuickConnect
+        - endpoint: Action:DeleteRoutingProfile
+        - endpoint: Action:DeleteRule
+        - endpoint: Action:DeleteSecurityProfile
+        - endpoint: Action:DeleteTaskTemplate
+        - endpoint: Action:DeleteTestCase
+        - endpoint: Action:DeleteTrafficDistributionGroup
+        - endpoint: Action:DeleteUseCase
+        - endpoint: Action:DeleteUser
+        - endpoint: Action:DeleteUserHierarchyGroup
+        - endpoint: Action:DeleteView
+        - endpoint: Action:DeleteViewVersion
+        - endpoint: Action:DeleteVocabulary
+        - endpoint: Action:DeleteWorkspace
+        - endpoint: Action:DeleteWorkspaceMedia
+        - endpoint: Action:DeleteWorkspacePage
+        - endpoint: Action:DescribeAgentStatus
+        - endpoint: Action:DescribeAuthenticationProfile
+        - endpoint: Action:DescribeContact
+        - endpoint: Action:DescribeContactEvaluation
+        - endpoint: Action:DescribeContactFlow
+        - endpoint: Action:DescribeContactFlowModule
+        - endpoint: Action:DescribeContactFlowModuleAlias
+        - endpoint: Action:DescribeDataTable
+        - endpoint: Action:DescribeDataTableAttribute
+        - endpoint: Action:DescribeEmailAddress
+        - endpoint: Action:DescribeEvaluationForm
+        - endpoint: Action:DescribeHoursOfOperation
+        - endpoint: Action:DescribeHoursOfOperationOverride
+        - endpoint: Action:DescribeInstance
+        - endpoint: Action:DescribeInstanceAttribute
+        - endpoint: Action:DescribeInstanceStorageConfig
+        - endpoint: Action:DescribeNotification
+        - endpoint: Action:DescribePhoneNumber
+        - endpoint: Action:DescribePredefinedAttribute
+        - endpoint: Action:DescribePrompt
+        - endpoint: Action:DescribeQueue
+        - endpoint: Action:DescribeQuickConnect
+        - endpoint: Action:DescribeRoutingProfile
+        - endpoint: Action:DescribeRule
+        - endpoint: Action:DescribeSecurityProfile
+        - endpoint: Action:DescribeTestCase
+        - endpoint: Action:DescribeTrafficDistributionGroup
+        - endpoint: Action:DescribeUser
+        - endpoint: Action:DescribeUserHierarchyGroup
+        - endpoint: Action:DescribeUserHierarchyStructure
+        - endpoint: Action:DescribeView
+        - endpoint: Action:DescribeVocabulary
+        - endpoint: Action:DescribeWorkspace
+        - endpoint: Action:DisassociateAnalyticsDataSet
+        - endpoint: Action:DisassociateApprovedOrigin
+        - endpoint: Action:DisassociateBot
+        - endpoint: Action:DisassociateEmailAddressAlias
+        - endpoint: Action:DisassociateFlow
+        - endpoint: Action:DisassociateHoursOfOperations
+        - endpoint: Action:DisassociateInstanceStorageConfig
+        - endpoint: Action:DisassociateLambdaFunction
+        - endpoint: Action:DisassociateLexBot
+        - endpoint: Action:DisassociatePhoneNumberContactFlow
+        - endpoint: Action:DisassociateQueueQuickConnects
+        - endpoint: Action:DisassociateRoutingProfileQueues
+        - endpoint: Action:DisassociateSecurityKey
+        - endpoint: Action:DisassociateSecurityProfiles
+        - endpoint: Action:DisassociateTrafficDistributionGroupUser
+        - endpoint: Action:DisassociateUserProficiencies
+        - endpoint: Action:DisassociateWorkspace
+        - endpoint: Action:DismissUserContact
+        - endpoint: Action:EvaluateDataTableValues
+        - endpoint: Action:GetAttachedFile
+        - endpoint: Action:GetContactAttributes
+        - endpoint: Action:GetContactMetrics
+        - endpoint: Action:GetCurrentMetricData
+        - endpoint: Action:GetCurrentUserData
+        - endpoint: Action:GetEffectiveHoursOfOperations
+        - endpoint: Action:GetFederationToken
+        - endpoint: Action:GetFlowAssociation
+        - endpoint: Action:GetMetricData
+        - endpoint: Action:GetMetricDataV2
+        - endpoint: Action:GetPromptFile
+        - endpoint: Action:GetTaskTemplate
+        - endpoint: Action:GetTestCaseExecutionSummary
+        - endpoint: Action:GetTrafficDistribution
+        - endpoint: Action:ImportPhoneNumber
+        - endpoint: Action:ImportWorkspaceMedia
+        - endpoint: Action:ListAgentStatuses
+        - endpoint: Action:ListAnalyticsDataAssociations
+        - endpoint: Action:ListAnalyticsDataLakeDataSets
+        - endpoint: Action:ListApprovedOrigins
+        - endpoint: Action:ListAssociatedContacts
+        - endpoint: Action:ListAuthenticationProfiles
+        - endpoint: Action:ListBots
+        - endpoint: Action:ListChildHoursOfOperations
+        - endpoint: Action:ListContactEvaluations
+        - endpoint: Action:ListContactFlowModuleAliases
+        - endpoint: Action:ListContactFlowModuleVersions
+        - endpoint: Action:ListContactFlowModules
+        - endpoint: Action:ListContactFlowVersions
+        - endpoint: Action:ListContactFlows
+        - endpoint: Action:ListContactReferences
+        - endpoint: Action:ListDataTableAttributes
+        - endpoint: Action:ListDataTablePrimaryValues
+        - endpoint: Action:ListDataTableValues
+        - endpoint: Action:ListDataTables
+        - endpoint: Action:ListDefaultVocabularies
+        - endpoint: Action:ListEntitySecurityProfiles
+        - endpoint: Action:ListEvaluationFormVersions
+        - endpoint: Action:ListEvaluationForms
+        - endpoint: Action:ListFlowAssociations
+        - endpoint: Action:ListHoursOfOperationOverrides
+        - endpoint: Action:ListHoursOfOperations
+        - endpoint: Action:ListInstanceAttributes
+        - endpoint: Action:ListInstanceStorageConfigs
+        - endpoint: Action:ListInstances
+        - endpoint: Action:ListIntegrationAssociations
+        - endpoint: Action:ListLambdaFunctions
+        - endpoint: Action:ListLexBots
+        - endpoint: Action:ListNotifications
+        - endpoint: Action:ListPhoneNumbers
+        - endpoint: Action:ListPhoneNumbersV2
+        - endpoint: Action:ListPredefinedAttributes
+        - endpoint: Action:ListPrompts
+        - endpoint: Action:ListQueueQuickConnects
+        - endpoint: Action:ListQueues
+        - endpoint: Action:ListQuickConnects
+        - endpoint: Action:ListRealtimeContactAnalysisSegmentsV2
+        - endpoint: Action:ListRoutingProfileManualAssignmentQueues
+        - endpoint: Action:ListRoutingProfileQueues
+        - endpoint: Action:ListRoutingProfiles
+        - endpoint: Action:ListRules
+        - endpoint: Action:ListSecurityKeys
+        - endpoint: Action:ListSecurityProfileApplications
+        - endpoint: Action:ListSecurityProfileFlowModules
+        - endpoint: Action:ListSecurityProfilePermissions
+        - endpoint: Action:ListSecurityProfiles
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTaskTemplates
+        - endpoint: Action:ListTestCaseExecutionRecords
+        - endpoint: Action:ListTestCaseExecutions
+        - endpoint: Action:ListTestCases
+        - endpoint: Action:ListTrafficDistributionGroupUsers
+        - endpoint: Action:ListTrafficDistributionGroups
+        - endpoint: Action:ListUseCases
+        - endpoint: Action:ListUserHierarchyGroups
+        - endpoint: Action:ListUserNotifications
+        - endpoint: Action:ListUserProficiencies
+        - endpoint: Action:ListUsers
+        - endpoint: Action:ListViewVersions
+        - endpoint: Action:ListViews
+        - endpoint: Action:ListWorkspaceMedia
+        - endpoint: Action:ListWorkspacePages
+        - endpoint: Action:ListWorkspaces
+        - endpoint: Action:MonitorContact
+        - endpoint: Action:PauseContact
+        - endpoint: Action:PutUserStatus
+        - endpoint: Action:ReleasePhoneNumber
+        - endpoint: Action:ReplicateInstance
+        - endpoint: Action:ResumeContact
+        - endpoint: Action:ResumeContactRecording
+        - endpoint: Action:SearchAgentStatuses
+        - endpoint: Action:SearchAvailablePhoneNumbers
+        - endpoint: Action:SearchContactEvaluations
+        - endpoint: Action:SearchContactFlowModules
+        - endpoint: Action:SearchContactFlows
+        - endpoint: Action:SearchContacts
+        - endpoint: Action:SearchDataTables
+        - endpoint: Action:SearchEmailAddresses
+        - endpoint: Action:SearchEvaluationForms
+        - endpoint: Action:SearchHoursOfOperationOverrides
+        - endpoint: Action:SearchHoursOfOperations
+        - endpoint: Action:SearchNotifications
+        - endpoint: Action:SearchPredefinedAttributes
+        - endpoint: Action:SearchPrompts
+        - endpoint: Action:SearchQueues
+        - endpoint: Action:SearchQuickConnects
+        - endpoint: Action:SearchResourceTags
+        - endpoint: Action:SearchRoutingProfiles
+        - endpoint: Action:SearchSecurityProfiles
+        - endpoint: Action:SearchTestCases
+        - endpoint: Action:SearchUserHierarchyGroups
+        - endpoint: Action:SearchUsers
+        - endpoint: Action:SearchViews
+        - endpoint: Action:SearchVocabularies
+        - endpoint: Action:SearchWorkspaceAssociations
+        - endpoint: Action:SearchWorkspaces
+        - endpoint: Action:SendChatIntegrationEvent
+        - endpoint: Action:SendOutboundEmail
+        - endpoint: Action:StartAttachedFileUpload
+        - endpoint: Action:StartChatContact
+        - endpoint: Action:StartContactEvaluation
+        - endpoint: Action:StartContactMediaProcessing
+        - endpoint: Action:StartContactRecording
+        - endpoint: Action:StartContactStreaming
+        - endpoint: Action:StartEmailContact
+        - endpoint: Action:StartOutboundChatContact
+        - endpoint: Action:StartOutboundEmailContact
+        - endpoint: Action:StartOutboundVoiceContact
+        - endpoint: Action:StartScreenSharing
+        - endpoint: Action:StartTaskContact
+        - endpoint: Action:StartTestCaseExecution
+        - endpoint: Action:StartWebRTCContact
+        - endpoint: Action:StopContact
+        - endpoint: Action:StopContactMediaProcessing
+        - endpoint: Action:StopContactRecording
+        - endpoint: Action:StopContactStreaming
+        - endpoint: Action:StopTestCaseExecution
+        - endpoint: Action:SubmitContactEvaluation
+        - endpoint: Action:SuspendContactRecording
+        - endpoint: Action:TagContact
+        - endpoint: Action:TagResource
+        - endpoint: Action:TransferContact
+        - endpoint: Action:UntagContact
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAgentStatus
+        - endpoint: Action:UpdateAuthenticationProfile
+        - endpoint: Action:UpdateContact
+        - endpoint: Action:UpdateContactAttributes
+        - endpoint: Action:UpdateContactEvaluation
+        - endpoint: Action:UpdateContactFlowContent
+        - endpoint: Action:UpdateContactFlowMetadata
+        - endpoint: Action:UpdateContactFlowModuleAlias
+        - endpoint: Action:UpdateContactFlowModuleContent
+        - endpoint: Action:UpdateContactFlowModuleMetadata
+        - endpoint: Action:UpdateContactFlowName
+        - endpoint: Action:UpdateContactRoutingData
+        - endpoint: Action:UpdateContactSchedule
+        - endpoint: Action:UpdateDataTableAttribute
+        - endpoint: Action:UpdateDataTableMetadata
+        - endpoint: Action:UpdateDataTablePrimaryValues
+        - endpoint: Action:UpdateEmailAddressMetadata
+        - endpoint: Action:UpdateEvaluationForm
+        - endpoint: Action:UpdateHoursOfOperation
+        - endpoint: Action:UpdateHoursOfOperationOverride
+        - endpoint: Action:UpdateInstanceAttribute
+        - endpoint: Action:UpdateInstanceStorageConfig
+        - endpoint: Action:UpdateNotificationContent
+        - endpoint: Action:UpdateParticipantAuthentication
+        - endpoint: Action:UpdateParticipantRoleConfig
+        - endpoint: Action:UpdatePhoneNumber
+        - endpoint: Action:UpdatePhoneNumberMetadata
+        - endpoint: Action:UpdatePredefinedAttribute
+        - endpoint: Action:UpdatePrompt
+        - endpoint: Action:UpdateQueueHoursOfOperation
+        - endpoint: Action:UpdateQueueMaxContacts
+        - endpoint: Action:UpdateQueueName
+        - endpoint: Action:UpdateQueueOutboundCallerConfig
+        - endpoint: Action:UpdateQueueOutboundEmailConfig
+        - endpoint: Action:UpdateQueueStatus
+        - endpoint: Action:UpdateQuickConnectConfig
+        - endpoint: Action:UpdateQuickConnectName
+        - endpoint: Action:UpdateRoutingProfileAgentAvailabilityTimer
+        - endpoint: Action:UpdateRoutingProfileConcurrency
+        - endpoint: Action:UpdateRoutingProfileDefaultOutboundQueue
+        - endpoint: Action:UpdateRoutingProfileName
+        - endpoint: Action:UpdateRoutingProfileQueues
+        - endpoint: Action:UpdateRule
+        - endpoint: Action:UpdateSecurityProfile
+        - endpoint: Action:UpdateTaskTemplate
+        - endpoint: Action:UpdateTestCase
+        - endpoint: Action:UpdateTrafficDistribution
+        - endpoint: Action:UpdateUserConfig
+        - endpoint: Action:UpdateUserHierarchy
+        - endpoint: Action:UpdateUserHierarchyGroupName
+        - endpoint: Action:UpdateUserHierarchyStructure
+        - endpoint: Action:UpdateUserIdentityInfo
+        - endpoint: Action:UpdateUserNotificationStatus
+        - endpoint: Action:UpdateUserPhoneConfig
+        - endpoint: Action:UpdateUserProficiencies
+        - endpoint: Action:UpdateUserRoutingProfile
+        - endpoint: Action:UpdateUserSecurityProfiles
+        - endpoint: Action:UpdateViewContent
+        - endpoint: Action:UpdateViewMetadata
+        - endpoint: Action:UpdateWorkspaceMetadata
+        - endpoint: Action:UpdateWorkspacePage
+        - endpoint: Action:UpdateWorkspaceTheme
+        - endpoint: Action:UpdateWorkspaceVisibility
+      - service: Control Catalog (controlcatalog)
+        - endpoint: Action:GetControl
+        - endpoint: Action:ListCommonControls
+        - endpoint: Action:ListControlMappings
+        - endpoint: Action:ListControls
+        - endpoint: Action:ListDomains
+        - endpoint: Action:ListObjectives
+      - service: Control Tower (controltower)
+        - endpoint: Action:CreateLandingZone
+        - endpoint: Action:DeleteLandingZone
+        - endpoint: Action:DisableBaseline
+        - endpoint: Action:DisableControl
+        - endpoint: Action:EnableBaseline
+        - endpoint: Action:EnableControl
+        - endpoint: Action:GetBaseline
+        - endpoint: Action:GetBaselineOperation
+        - endpoint: Action:GetControlOperation
+        - endpoint: Action:GetEnabledBaseline
+        - endpoint: Action:GetEnabledControl
+        - endpoint: Action:GetLandingZone
+        - endpoint: Action:GetLandingZoneOperation
+        - endpoint: Action:ListBaselines
+        - endpoint: Action:ListControlOperations
+        - endpoint: Action:ListEnabledBaselines
+        - endpoint: Action:ListEnabledControls
+        - endpoint: Action:ListLandingZoneOperations
+        - endpoint: Action:ListLandingZones
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ResetEnabledBaseline
+        - endpoint: Action:ResetEnabledControl
+        - endpoint: Action:ResetLandingZone
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateEnabledBaseline
+        - endpoint: Action:UpdateEnabledControl
+        - endpoint: Action:UpdateLandingZone
+      - service: Data Firehose (firehose)
+        - endpoint: Action:CreateDeliveryStream
+        - endpoint: Action:DeleteDeliveryStream
+        - endpoint: Action:DescribeDeliveryStream
+        - endpoint: Action:ListDeliveryStreams
+        - endpoint: Action:ListTagsForDeliveryStream
+        - endpoint: Action:PutRecord
+        - endpoint: Action:PutRecordBatch
+        - endpoint: Action:StartDeliveryStreamEncryption
+        - endpoint: Action:StopDeliveryStreamEncryption
+        - endpoint: Action:TagDeliveryStream
+        - endpoint: Action:UntagDeliveryStream
+        - endpoint: Action:UpdateDestination
+      - service: Data Lifecycle Manager (dlm)
+        - endpoint: Action:CreateLifecyclePolicy
+        - endpoint: Action:DeleteLifecyclePolicy
+        - endpoint: Action:GetLifecyclePolicies
+        - endpoint: Action:GetLifecyclePolicy
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateLifecyclePolicy
+      - service: DataZone (datazone)
+        - endpoint: DELETE /tags/resourceArn?tagKeys=tagKeys
+        - endpoint: DELETE /v2/domains/domainIdentifier/account-pools/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/asset-types/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/assets/assetIdentifier/filters/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/assets/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/connections/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/data-export-configuration
+        - endpoint: DELETE /v2/domains/domainIdentifier/data-products/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/data-sources/identifier?clientToken=clientToken&retainPermissionsOnRevokeFailure=retainPermissionsOnRevokeFailure
+        - endpoint: DELETE /v2/domains/domainIdentifier/domain-units/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/time-series-data-points?clientToken=clientToken&formName=formName
+        - endpoint: DELETE /v2/domains/domainIdentifier/environment-blueprint-configurations/environmentBlueprintIdentifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/environment-blueprints/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/environment-profiles/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/environments/environmentIdentifier/actions/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/environments/environmentIdentifier/roles/environmentRoleArn
+        - endpoint: DELETE /v2/domains/domainIdentifier/environments/environmentIdentifier/subscription-targets/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/environments/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/form-types/formTypeIdentifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/glossaries/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/glossary-terms/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/listings/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/project-profiles/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/projects/identifier?skipDeletionCheck=skipDeletionCheck
+        - endpoint: DELETE /v2/domains/domainIdentifier/rules/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/subscription-grants/identifier
+        - endpoint: DELETE /v2/domains/domainIdentifier/subscription-requests/identifier
+        - endpoint: DELETE /v2/domains/identifier?clientToken=clientToken&skipDeletionCheck=skipDeletionCheck
+        - endpoint: GET /tags/resourceArn
+        - endpoint: GET /v2/domains/domainIdentifier/account-pools/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/account-pools/identifier/accounts?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/account-pools?maxResults=maxResults&name=name&nextToken=nextToken&sortBy=sortBy&sortOrder=sortOrder
+        - endpoint: GET /v2/domains/domainIdentifier/asset-types/identifier?revision=revision
+        - endpoint: GET /v2/domains/domainIdentifier/assets/assetIdentifier/filters/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/assets/assetIdentifier/filters?maxResults=maxResults&nextToken=nextToken&status=status
+        - endpoint: GET /v2/domains/domainIdentifier/assets/identifier/revisions?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/assets/identifier?revision=revision
+        - endpoint: GET /v2/domains/domainIdentifier/connections/identifier?withSecret=withSecret
+        - endpoint: GET /v2/domains/domainIdentifier/connections?environmentIdentifier=environmentIdentifier&maxResults=maxResults&name=name&nextToken=nextToken&projectIdentifier=projectIdentifier&scope=scope&sortBy=sortBy&sortOrder=sortOrder&type=type
+        - endpoint: GET /v2/domains/domainIdentifier/data-export-configuration
+        - endpoint: GET /v2/domains/domainIdentifier/data-products/identifier/revisions?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/data-products/identifier?revision=revision
+        - endpoint: GET /v2/domains/domainIdentifier/data-source-runs/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/data-source-runs/identifier/activities?maxResults=maxResults&nextToken=nextToken&status=status
+        - endpoint: GET /v2/domains/domainIdentifier/data-sources/dataSourceIdentifier/runs?maxResults=maxResults&nextToken=nextToken&status=status
+        - endpoint: GET /v2/domains/domainIdentifier/data-sources/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/data-sources?connectionIdentifier=connectionIdentifier&environmentIdentifier=environmentIdentifier&maxResults=maxResults&name=name&nextToken=nextToken&projectIdentifier=projectIdentifier&status=status&type=type
+        - endpoint: GET /v2/domains/domainIdentifier/domain-units/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/domain-units?maxResults=maxResults&nextToken=nextToken&parentDomainUnitIdentifier=parentDomainUnitIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/attributes-metadata?attributeIdentifier=attributeIdentifiers&entityRevision=entityRevision
+        - endpoint: GET /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/owners?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/time-series-data-points/identifier?formName=formName
+        - endpoint: GET /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/time-series-data-points?endedAt=endedAt&formName=formName&maxResults=maxResults&nextToken=nextToken&startedAt=startedAt
+        - endpoint: GET /v2/domains/domainIdentifier/environment-blueprint-configurations/environmentBlueprintIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/environment-blueprint-configurations?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/environment-blueprints/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/environment-blueprints?managed=managed&maxResults=maxResults&name=name&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/environment-profiles/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/environment-profiles?awsAccountId=awsAccountId&awsAccountRegion=awsAccountRegion&environmentBlueprintIdentifier=environmentBlueprintIdentifier&maxResults=maxResults&name=name&nextToken=nextToken&projectIdentifier=projectIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/environments/environmentIdentifier/actions/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/environments/environmentIdentifier/actions?maxResults=maxResults&nextToken=nextToken
+        - endpoint: GET /v2/domains/domainIdentifier/environments/environmentIdentifier/credentials
+        - endpoint: GET /v2/domains/domainIdentifier/environments/environmentIdentifier/subscription-targets/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/environments/environmentIdentifier/subscription-targets?maxResults=maxResults&nextToken=nextToken&sortBy=sortBy&sortOrder=sortOrder
+        - endpoint: GET /v2/domains/domainIdentifier/environments/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/environments?awsAccountId=awsAccountId&awsAccountRegion=awsAccountRegion&environmentBlueprintIdentifier=environmentBlueprintIdentifier&environmentProfileIdentifier=environmentProfileIdentifier&maxResults=maxResults&name=name&nextToken=nextToken&projectIdentifier=projectIdentifier&provider=provider&status=status
+        - endpoint: GET /v2/domains/domainIdentifier/form-types/formTypeIdentifier?revision=revision
+        - endpoint: GET /v2/domains/domainIdentifier/glossaries/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/glossary-terms/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/group-profiles/groupIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/jobRuns/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/jobs/jobIdentifier/runs?maxResults=maxResults&nextToken=nextToken&sortOrder=sortOrder&status=status
+        - endpoint: GET /v2/domains/domainIdentifier/lineage/events/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/lineage/events?maxResults=maxResults&nextToken=nextToken&processingStatus=processingStatus&sortOrder=sortOrder&timestampAfter=timestampAfter&timestampBefore=timestampBefore
+        - endpoint: GET /v2/domains/domainIdentifier/lineage/nodes/identifier/history?direction=direction&maxResults=maxResults&nextToken=nextToken&sortOrder=sortOrder&timestampGTE=eventTimestampGTE&timestampLTE=eventTimestampLTE
+        - endpoint: GET /v2/domains/domainIdentifier/lineage/nodes/identifier?timestamp=eventTimestamp
+        - endpoint: GET /v2/domains/domainIdentifier/list-rules/targetType/targetIdentifier?assetTypes=assetTypes&dataProduct=dataProduct&includeCascaded=includeCascaded&maxResults=maxResults&nextToken=nextToken&projectIds=projectIds&ruleAction=action&ruleType=ruleType
+        - endpoint: GET /v2/domains/domainIdentifier/listings/identifier?listingRevision=listingRevision
+        - endpoint: GET /v2/domains/domainIdentifier/metadata-generation-runs/identifier?type=type
+        - endpoint: GET /v2/domains/domainIdentifier/metadata-generation-runs?maxResults=maxResults&nextToken=nextToken&status=status&targetIdentifier=targetIdentifier&type=type
+        - endpoint: GET /v2/domains/domainIdentifier/notifications?afterTimestamp=afterTimestamp&beforeTimestamp=beforeTimestamp&maxResults=maxResults&nextToken=nextToken&subjects=subjects&taskStatus=taskStatus&type=type
+        - endpoint: GET /v2/domains/domainIdentifier/policies/managed/entityType/entityIdentifier/grants?maxResults=maxResults&nextToken=nextToken&policyType=policyType
+        - endpoint: GET /v2/domains/domainIdentifier/project-profiles/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/project-profiles?maxResults=maxResults&name=name&nextToken=nextToken&sortBy=sortBy&sortOrder=sortOrder
+        - endpoint: GET /v2/domains/domainIdentifier/projects/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/projects/projectIdentifier/memberships?maxResults=maxResults&nextToken=nextToken&sortBy=sortBy&sortOrder=sortOrder
+        - endpoint: GET /v2/domains/domainIdentifier/projects?groupIdentifier=groupIdentifier&maxResults=maxResults&name=name&nextToken=nextToken&userIdentifier=userIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/rules/identifier?revision=revision
+        - endpoint: GET /v2/domains/domainIdentifier/subscription-grants/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/subscription-grants?environmentId=environmentId&maxResults=maxResults&nextToken=nextToken&owningGroupId=owningGroupId&owningIamPrincipalArn=owningIamPrincipalArn&owningProjectId=owningProjectId&owningUserId=owningUserId&sortBy=sortBy&sortOrder=sortOrder&subscribedListingId=subscribedListingId&subscriptionId=subscriptionId&subscriptionTargetId=subscriptionTargetId
+        - endpoint: GET /v2/domains/domainIdentifier/subscription-requests/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/subscription-requests?approverProjectId=approverProjectId&maxResults=maxResults&nextToken=nextToken&owningGroupId=owningGroupId&owningIamPrincipalArn=owningIamPrincipalArn&owningProjectId=owningProjectId&owningUserId=owningUserId&sortBy=sortBy&sortOrder=sortOrder&status=status&subscribedListingId=subscribedListingId
+        - endpoint: GET /v2/domains/domainIdentifier/subscriptions/identifier
+        - endpoint: GET /v2/domains/domainIdentifier/subscriptions?approverProjectId=approverProjectId&maxResults=maxResults&nextToken=nextToken&owningGroupId=owningGroupId&owningIamPrincipalArn=owningIamPrincipalArn&owningProjectId=owningProjectId&owningUserId=owningUserId&sortBy=sortBy&sortOrder=sortOrder&status=status&subscribedListingId=subscribedListingId&subscriptionRequestIdentifier=subscriptionRequestIdentifier
+        - endpoint: GET /v2/domains/domainIdentifier/user-profiles/userIdentifier?type=type
+        - endpoint: GET /v2/domains/identifier
+        - endpoint: GET /v2/domains?maxResults=maxResults&nextToken=nextToken&status=status
+        - endpoint: PATCH /v2/domains/domainIdentifier/account-pools/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/assets/assetIdentifier/filters/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/connections/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/data-sources/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/associate-governed-terms
+        - endpoint: PATCH /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/disassociate-governed-terms
+        - endpoint: PATCH /v2/domains/domainIdentifier/environment-blueprints/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/environment-profiles/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/environments/environmentIdentifier/actions/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/environments/environmentIdentifier/subscription-targets/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/environments/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/glossaries/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/glossary-terms/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/project-profiles/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/projects/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/root-domain-unit-owner
+        - endpoint: PATCH /v2/domains/domainIdentifier/rules/identifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/subscription-grants/identifier/status/assetIdentifier
+        - endpoint: PATCH /v2/domains/domainIdentifier/subscription-requests/identifier
+        - endpoint: POST /tags/resourceArn
+        - endpoint: POST /v2/domains
+        - endpoint: POST /v2/domains/domainIdentifier/account-pools
+        - endpoint: POST /v2/domains/domainIdentifier/asset-types
+        - endpoint: POST /v2/domains/domainIdentifier/assets
+        - endpoint: POST /v2/domains/domainIdentifier/assets/assetIdentifier/filters
+        - endpoint: POST /v2/domains/domainIdentifier/assets/identifier/revisions
+        - endpoint: POST /v2/domains/domainIdentifier/connections
+        - endpoint: POST /v2/domains/domainIdentifier/data-products
+        - endpoint: POST /v2/domains/domainIdentifier/data-products/identifier/revisions
+        - endpoint: POST /v2/domains/domainIdentifier/data-sources
+        - endpoint: POST /v2/domains/domainIdentifier/data-sources/dataSourceIdentifier/runs
+        - endpoint: POST /v2/domains/domainIdentifier/domain-units
+        - endpoint: POST /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/addOwner
+        - endpoint: POST /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/removeOwner
+        - endpoint: POST /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/time-series-data-points
+        - endpoint: POST /v2/domains/domainIdentifier/environment-blueprints
+        - endpoint: POST /v2/domains/domainIdentifier/environment-profiles
+        - endpoint: POST /v2/domains/domainIdentifier/environments
+        - endpoint: POST /v2/domains/domainIdentifier/environments/environmentIdentifier/actions
+        - endpoint: POST /v2/domains/domainIdentifier/environments/environmentIdentifier/subscription-targets
+        - endpoint: POST /v2/domains/domainIdentifier/form-types
+        - endpoint: POST /v2/domains/domainIdentifier/get-portal-login-url
+        - endpoint: POST /v2/domains/domainIdentifier/glossaries
+        - endpoint: POST /v2/domains/domainIdentifier/glossary-terms
+        - endpoint: POST /v2/domains/domainIdentifier/group-profiles
+        - endpoint: POST /v2/domains/domainIdentifier/lineage/events
+        - endpoint: POST /v2/domains/domainIdentifier/listings/change-set
+        - endpoint: POST /v2/domains/domainIdentifier/listings/search
+        - endpoint: POST /v2/domains/domainIdentifier/metadata-generation-runs
+        - endpoint: POST /v2/domains/domainIdentifier/metadata-generation-runs/identifier/cancel
+        - endpoint: POST /v2/domains/domainIdentifier/policies/managed/entityType/entityIdentifier/addGrant
+        - endpoint: POST /v2/domains/domainIdentifier/policies/managed/entityType/entityIdentifier/removeGrant
+        - endpoint: POST /v2/domains/domainIdentifier/project-profiles
+        - endpoint: POST /v2/domains/domainIdentifier/projects
+        - endpoint: POST /v2/domains/domainIdentifier/projects/projectIdentifier/createMembership
+        - endpoint: POST /v2/domains/domainIdentifier/projects/projectIdentifier/deleteMembership
+        - endpoint: POST /v2/domains/domainIdentifier/rules
+        - endpoint: POST /v2/domains/domainIdentifier/search
+        - endpoint: POST /v2/domains/domainIdentifier/search-group-profiles
+        - endpoint: POST /v2/domains/domainIdentifier/search-user-profiles
+        - endpoint: POST /v2/domains/domainIdentifier/subscription-grants
+        - endpoint: POST /v2/domains/domainIdentifier/subscription-requests
+        - endpoint: POST /v2/domains/domainIdentifier/types-search
+        - endpoint: POST /v2/domains/domainIdentifier/user-profiles
+        - endpoint: PUT /v2/domains/domainIdentifier/assets/identifier/accept-predictions?revision=revision
+        - endpoint: PUT /v2/domains/domainIdentifier/assets/identifier/reject-predictions?revision=revision
+        - endpoint: PUT /v2/domains/domainIdentifier/data-export-configuration
+        - endpoint: PUT /v2/domains/domainIdentifier/domain-units/identifier
+        - endpoint: PUT /v2/domains/domainIdentifier/entities/entityType/entityIdentifier/attributes-metadata
+        - endpoint: PUT /v2/domains/domainIdentifier/environment-blueprint-configurations/environmentBlueprintIdentifier
+        - endpoint: PUT /v2/domains/domainIdentifier/environments/environmentIdentifier/roles/environmentRoleArn
+        - endpoint: PUT /v2/domains/domainIdentifier/group-profiles/groupIdentifier
+        - endpoint: PUT /v2/domains/domainIdentifier/subscription-requests/identifier/accept
+        - endpoint: PUT /v2/domains/domainIdentifier/subscription-requests/identifier/reject
+        - endpoint: PUT /v2/domains/domainIdentifier/subscriptions/identifier/cancel
+        - endpoint: PUT /v2/domains/domainIdentifier/subscriptions/identifier/revoke
+        - endpoint: PUT /v2/domains/domainIdentifier/user-profiles/userIdentifier
+        - endpoint: PUT /v2/domains/identifier?clientToken=clientToken
+      - service: Deadline Cloud (deadline-cloud)
+        - endpoint: Action:AssociateMemberToFarm
+        - endpoint: Action:AssociateMemberToFleet
+        - endpoint: Action:AssociateMemberToJob
+        - endpoint: Action:AssociateMemberToQueue
+        - endpoint: Action:AssumeFleetRoleForRead
+        - endpoint: Action:AssumeFleetRoleForWorker
+        - endpoint: Action:AssumeQueueRoleForRead
+        - endpoint: Action:AssumeQueueRoleForUser
+        - endpoint: Action:AssumeQueueRoleForWorker
+        - endpoint: Action:BatchGetJobEntity
+        - endpoint: Action:CopyJobTemplate
+        - endpoint: Action:CreateBudget
+        - endpoint: Action:CreateFarm
+        - endpoint: Action:CreateFleet
+        - endpoint: Action:CreateJob
+        - endpoint: Action:CreateLicenseEndpoint
+        - endpoint: Action:CreateLimit
+        - endpoint: Action:CreateMonitor
+        - endpoint: Action:CreateQueue
+        - endpoint: Action:CreateQueueEnvironment
+        - endpoint: Action:CreateQueueFleetAssociation
+        - endpoint: Action:CreateQueueLimitAssociation
+        - endpoint: Action:CreateStorageProfile
+        - endpoint: Action:CreateWorker
+        - endpoint: Action:DeleteBudget
+        - endpoint: Action:DeleteFarm
+        - endpoint: Action:DeleteFleet
+        - endpoint: Action:DeleteLicenseEndpoint
+        - endpoint: Action:DeleteLimit
+        - endpoint: Action:DeleteMeteredProduct
+        - endpoint: Action:DeleteMonitor
+        - endpoint: Action:DeleteQueue
+        - endpoint: Action:DeleteQueueEnvironment
+        - endpoint: Action:DeleteQueueFleetAssociation
+        - endpoint: Action:DeleteQueueLimitAssociation
+        - endpoint: Action:DeleteStorageProfile
+        - endpoint: Action:DeleteWorker
+        - endpoint: Action:DisassociateMemberFromFarm
+        - endpoint: Action:DisassociateMemberFromFleet
+        - endpoint: Action:DisassociateMemberFromJob
+        - endpoint: Action:DisassociateMemberFromQueue
+        - endpoint: Action:GetBudget
+        - endpoint: Action:GetFarm
+        - endpoint: Action:GetFleet
+        - endpoint: Action:GetJob
+        - endpoint: Action:GetLicenseEndpoint
+        - endpoint: Action:GetLimit
+        - endpoint: Action:GetMonitor
+        - endpoint: Action:GetQueue
+        - endpoint: Action:GetQueueEnvironment
+        - endpoint: Action:GetQueueFleetAssociation
+        - endpoint: Action:GetQueueLimitAssociation
+        - endpoint: Action:GetSession
+        - endpoint: Action:GetSessionAction
+        - endpoint: Action:GetSessionsStatisticsAggregation
+        - endpoint: Action:GetStep
+        - endpoint: Action:GetStorageProfile
+        - endpoint: Action:GetStorageProfileForQueue
+        - endpoint: Action:GetTask
+        - endpoint: Action:GetWorker
+        - endpoint: Action:ListAvailableMeteredProducts
+        - endpoint: Action:ListBudgets
+        - endpoint: Action:ListFarmMembers
+        - endpoint: Action:ListFarms
+        - endpoint: Action:ListFleetMembers
+        - endpoint: Action:ListFleets
+        - endpoint: Action:ListJobMembers
+        - endpoint: Action:ListJobParameterDefinitions
+        - endpoint: Action:ListJobs
+        - endpoint: Action:ListLicenseEndpoints
+        - endpoint: Action:ListLimits
+        - endpoint: Action:ListMeteredProducts
+        - endpoint: Action:ListMonitors
+        - endpoint: Action:ListQueueEnvironments
+        - endpoint: Action:ListQueueFleetAssociations
+        - endpoint: Action:ListQueueLimitAssociations
+        - endpoint: Action:ListQueueMembers
+        - endpoint: Action:ListQueues
+        - endpoint: Action:ListSessionActions
+        - endpoint: Action:ListSessions
+        - endpoint: Action:ListSessionsForWorker
+        - endpoint: Action:ListStepConsumers
+        - endpoint: Action:ListStepDependencies
+        - endpoint: Action:ListSteps
+        - endpoint: Action:ListStorageProfiles
+        - endpoint: Action:ListStorageProfilesForQueue
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTasks
+        - endpoint: Action:ListWorkers
+        - endpoint: Action:PutMeteredProduct
+        - endpoint: Action:SearchJobs
+        - endpoint: Action:SearchSteps
+        - endpoint: Action:SearchTasks
+        - endpoint: Action:SearchWorkers
+        - endpoint: Action:StartSessionsStatisticsAggregation
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateBudget
+        - endpoint: Action:UpdateFarm
+        - endpoint: Action:UpdateFleet
+        - endpoint: Action:UpdateJob
+        - endpoint: Action:UpdateLimit
+        - endpoint: Action:UpdateMonitor
+        - endpoint: Action:UpdateQueue
+        - endpoint: Action:UpdateQueueEnvironment
+        - endpoint: Action:UpdateQueueFleetAssociation
+        - endpoint: Action:UpdateQueueLimitAssociation
+        - endpoint: Action:UpdateSession
+        - endpoint: Action:UpdateStep
+        - endpoint: Action:UpdateStorageProfile
+        - endpoint: Action:UpdateTask
+        - endpoint: Action:UpdateWorker
+        - endpoint: Action:UpdateWorkerSchedule
+      - service: DevOps Guru (devops-guru)
+        - endpoint: Action:AddNotificationChannel
+        - endpoint: Action:DeleteInsight
+        - endpoint: Action:DescribeAccountHealth
+        - endpoint: Action:DescribeAccountOverview
+        - endpoint: Action:DescribeAnomaly
+        - endpoint: Action:DescribeEventSourcesConfig
+        - endpoint: Action:DescribeFeedback
+        - endpoint: Action:DescribeInsight
+        - endpoint: Action:DescribeOrganizationHealth
+        - endpoint: Action:DescribeOrganizationOverview
+        - endpoint: Action:DescribeOrganizationResourceCollectionHealth
+        - endpoint: Action:DescribeResourceCollectionHealth
+        - endpoint: Action:DescribeServiceIntegration
+        - endpoint: Action:GetCostEstimation
+        - endpoint: Action:GetResourceCollection
+        - endpoint: Action:ListAnomaliesForInsight
+        - endpoint: Action:ListAnomalousLogGroups
+        - endpoint: Action:ListEvents
+        - endpoint: Action:ListInsights
+        - endpoint: Action:ListMonitoredResources
+        - endpoint: Action:ListNotificationChannels
+        - endpoint: Action:ListOrganizationInsights
+        - endpoint: Action:ListRecommendations
+        - endpoint: Action:PutFeedback
+        - endpoint: Action:RemoveNotificationChannel
+        - endpoint: Action:SearchInsights
+        - endpoint: Action:SearchOrganizationInsights
+        - endpoint: Action:StartCostEstimation
+        - endpoint: Action:UpdateEventSourcesConfig
+        - endpoint: Action:UpdateResourceCollection
+        - endpoint: Action:UpdateServiceIntegration
+      - service: Direct Connect (directconnect)
+        - endpoint: Action:AcceptDirectConnectGatewayAssociationProposal
+        - endpoint: Action:AllocateConnectionOnInterconnect
+        - endpoint: Action:AllocateHostedConnection
+        - endpoint: Action:AllocatePrivateVirtualInterface
+        - endpoint: Action:AllocatePublicVirtualInterface
+        - endpoint: Action:AllocateTransitVirtualInterface
+        - endpoint: Action:AssociateConnectionWithLag
+        - endpoint: Action:AssociateHostedConnection
+        - endpoint: Action:AssociateMacSecKey
+        - endpoint: Action:AssociateVirtualInterface
+        - endpoint: Action:ConfirmConnection
+        - endpoint: Action:ConfirmCustomerAgreement
+        - endpoint: Action:ConfirmPrivateVirtualInterface
+        - endpoint: Action:ConfirmPublicVirtualInterface
+        - endpoint: Action:ConfirmTransitVirtualInterface
+        - endpoint: Action:CreateBGPPeer
+        - endpoint: Action:CreateConnection
+        - endpoint: Action:CreateDirectConnectGateway
+        - endpoint: Action:CreateDirectConnectGatewayAssociation
+        - endpoint: Action:CreateDirectConnectGatewayAssociationProposal
+        - endpoint: Action:CreateInterconnect
+        - endpoint: Action:CreateLag
+        - endpoint: Action:CreatePrivateVirtualInterface
+        - endpoint: Action:CreatePublicVirtualInterface
+        - endpoint: Action:CreateTransitVirtualInterface
+        - endpoint: Action:DeleteBGPPeer
+        - endpoint: Action:DeleteConnection
+        - endpoint: Action:DeleteDirectConnectGateway
+        - endpoint: Action:DeleteDirectConnectGatewayAssociation
+        - endpoint: Action:DeleteDirectConnectGatewayAssociationProposal
+        - endpoint: Action:DeleteInterconnect
+        - endpoint: Action:DeleteLag
+        - endpoint: Action:DeleteVirtualInterface
+        - endpoint: Action:DescribeConnectionLoa
+        - endpoint: Action:DescribeConnections
+        - endpoint: Action:DescribeConnectionsOnInterconnect
+        - endpoint: Action:DescribeCustomerMetadata
+        - endpoint: Action:DescribeDirectConnectGatewayAssociationProposals
+        - endpoint: Action:DescribeDirectConnectGatewayAssociations
+        - endpoint: Action:DescribeDirectConnectGatewayAttachments
+        - endpoint: Action:DescribeDirectConnectGateways
+        - endpoint: Action:DescribeHostedConnections
+        - endpoint: Action:DescribeInterconnectLoa
+        - endpoint: Action:DescribeInterconnects
+        - endpoint: Action:DescribeLags
+        - endpoint: Action:DescribeLoa
+        - endpoint: Action:DescribeLocations
+        - endpoint: Action:DescribeRouterConfiguration
+        - endpoint: Action:DescribeTags
+        - endpoint: Action:DescribeVirtualGateways
+        - endpoint: Action:DescribeVirtualInterfaces
+        - endpoint: Action:DisassociateConnectionFromLag
+        - endpoint: Action:DisassociateMacSecKey
+        - endpoint: Action:ListVirtualInterfaceTestHistory
+        - endpoint: Action:StartBgpFailoverTest
+        - endpoint: Action:StopBgpFailoverTest
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateConnection
+        - endpoint: Action:UpdateDirectConnectGateway
+        - endpoint: Action:UpdateDirectConnectGatewayAssociation
+        - endpoint: Action:UpdateLag
+        - endpoint: Action:UpdateVirtualInterfaceAttributes
+      - service: ElastiCache (elasticache)
+        - endpoint: Action:AddTagsToResource
+        - endpoint: Action:AuthorizeCacheSecurityGroupIngress
+        - endpoint: Action:BatchApplyUpdateAction
+        - endpoint: Action:BatchStopUpdateAction
+        - endpoint: Action:CompleteMigration
+        - endpoint: Action:CopyServerlessCacheSnapshot
+        - endpoint: Action:CopySnapshot
+        - endpoint: Action:CreateCacheCluster
+        - endpoint: Action:CreateCacheParameterGroup
+        - endpoint: Action:CreateCacheSecurityGroup
+        - endpoint: Action:CreateCacheSubnetGroup
+        - endpoint: Action:CreateGlobalReplicationGroup
+        - endpoint: Action:CreateReplicationGroup
+        - endpoint: Action:CreateServerlessCache
+        - endpoint: Action:CreateServerlessCacheSnapshot
+        - endpoint: Action:CreateSnapshot
+        - endpoint: Action:CreateUser
+        - endpoint: Action:CreateUserGroup
+        - endpoint: Action:DecreaseNodeGroupsInGlobalReplicationGroup
+        - endpoint: Action:DecreaseReplicaCount
+        - endpoint: Action:DeleteCacheCluster
+        - endpoint: Action:DeleteCacheParameterGroup
+        - endpoint: Action:DeleteCacheSecurityGroup
+        - endpoint: Action:DeleteCacheSubnetGroup
+        - endpoint: Action:DeleteGlobalReplicationGroup
+        - endpoint: Action:DeleteReplicationGroup
+        - endpoint: Action:DeleteServerlessCache
+        - endpoint: Action:DeleteServerlessCacheSnapshot
+        - endpoint: Action:DeleteSnapshot
+        - endpoint: Action:DeleteUser
+        - endpoint: Action:DeleteUserGroup
+        - endpoint: Action:DescribeCacheClusters
+        - endpoint: Action:DescribeCacheEngineVersions
+        - endpoint: Action:DescribeCacheParameterGroups
+        - endpoint: Action:DescribeCacheParameters
+        - endpoint: Action:DescribeCacheSecurityGroups
+        - endpoint: Action:DescribeCacheSubnetGroups
+        - endpoint: Action:DescribeEngineDefaultParameters
+        - endpoint: Action:DescribeEvents
+        - endpoint: Action:DescribeGlobalReplicationGroups
+        - endpoint: Action:DescribeReplicationGroups
+        - endpoint: Action:DescribeReservedCacheNodes
+        - endpoint: Action:DescribeReservedCacheNodesOfferings
+        - endpoint: Action:DescribeServerlessCacheSnapshots
+        - endpoint: Action:DescribeServerlessCaches
+        - endpoint: Action:DescribeServiceUpdates
+        - endpoint: Action:DescribeSnapshots
+        - endpoint: Action:DescribeUpdateActions
+        - endpoint: Action:DescribeUserGroups
+        - endpoint: Action:DescribeUsers
+        - endpoint: Action:DisassociateGlobalReplicationGroup
+        - endpoint: Action:ExportServerlessCacheSnapshot
+        - endpoint: Action:FailoverGlobalReplicationGroup
+        - endpoint: Action:IncreaseNodeGroupsInGlobalReplicationGroup
+        - endpoint: Action:IncreaseReplicaCount
+        - endpoint: Action:ListAllowedNodeTypeModifications
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ModifyCacheCluster
+        - endpoint: Action:ModifyCacheParameterGroup
+        - endpoint: Action:ModifyCacheSubnetGroup
+        - endpoint: Action:ModifyGlobalReplicationGroup
+        - endpoint: Action:ModifyReplicationGroup
+        - endpoint: Action:ModifyReplicationGroupShardConfiguration
+        - endpoint: Action:ModifyServerlessCache
+        - endpoint: Action:ModifyUser
+        - endpoint: Action:ModifyUserGroup
+        - endpoint: Action:PurchaseReservedCacheNodesOffering
+        - endpoint: Action:RebalanceSlotsInGlobalReplicationGroup
+        - endpoint: Action:RebootCacheCluster
+        - endpoint: Action:RemoveTagsFromResource
+        - endpoint: Action:ResetCacheParameterGroup
+        - endpoint: Action:RevokeCacheSecurityGroupIngress
+        - endpoint: Action:StartMigration
+        - endpoint: Action:TestFailover
+        - endpoint: Action:TestMigration
+      - service: Elemental MediaConnect (mediaconnect)
+        - endpoint: Action:AddBridgeOutputs
+        - endpoint: Action:AddBridgeSources
+        - endpoint: Action:AddFlowMediaStreams
+        - endpoint: Action:AddFlowOutputs
+        - endpoint: Action:AddFlowSources
+        - endpoint: Action:AddFlowVpcInterfaces
+        - endpoint: Action:BatchGetRouterInput
+        - endpoint: Action:BatchGetRouterNetworkInterface
+        - endpoint: Action:BatchGetRouterOutput
+        - endpoint: Action:CreateBridge
+        - endpoint: Action:CreateFlow
+        - endpoint: Action:CreateGateway
+        - endpoint: Action:CreateRouterInput
+        - endpoint: Action:CreateRouterNetworkInterface
+        - endpoint: Action:CreateRouterOutput
+        - endpoint: Action:DeleteBridge
+        - endpoint: Action:DeleteFlow
+        - endpoint: Action:DeleteGateway
+        - endpoint: Action:DeleteRouterInput
+        - endpoint: Action:DeleteRouterNetworkInterface
+        - endpoint: Action:DeleteRouterOutput
+        - endpoint: Action:DeregisterGatewayInstance
+        - endpoint: Action:DescribeBridge
+        - endpoint: Action:DescribeFlow
+        - endpoint: Action:DescribeFlowSourceMetadata
+        - endpoint: Action:DescribeFlowSourceThumbnail
+        - endpoint: Action:DescribeGateway
+        - endpoint: Action:DescribeGatewayInstance
+        - endpoint: Action:DescribeOffering
+        - endpoint: Action:DescribeReservation
+        - endpoint: Action:GetRouterInput
+        - endpoint: Action:GetRouterInputSourceMetadata
+        - endpoint: Action:GetRouterInputThumbnail
+        - endpoint: Action:GetRouterNetworkInterface
+        - endpoint: Action:GetRouterOutput
+        - endpoint: Action:GrantFlowEntitlements
+        - endpoint: Action:ListBridges
+        - endpoint: Action:ListEntitlements
+        - endpoint: Action:ListFlows
+        - endpoint: Action:ListGatewayInstances
+        - endpoint: Action:ListGateways
+        - endpoint: Action:ListOfferings
+        - endpoint: Action:ListReservations
+        - endpoint: Action:ListRouterInputs
+        - endpoint: Action:ListRouterNetworkInterfaces
+        - endpoint: Action:ListRouterOutputs
+        - endpoint: Action:ListTagsForGlobalResource
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PurchaseOffering
+        - endpoint: Action:RemoveBridgeOutput
+        - endpoint: Action:RemoveBridgeSource
+        - endpoint: Action:RemoveFlowMediaStream
+        - endpoint: Action:RemoveFlowOutput
+        - endpoint: Action:RemoveFlowSource
+        - endpoint: Action:RemoveFlowVpcInterface
+        - endpoint: Action:RestartRouterInput
+        - endpoint: Action:RestartRouterOutput
+        - endpoint: Action:RevokeFlowEntitlement
+        - endpoint: Action:StartFlow
+        - endpoint: Action:StartRouterInput
+        - endpoint: Action:StartRouterOutput
+        - endpoint: Action:StopFlow
+        - endpoint: Action:StopRouterInput
+        - endpoint: Action:StopRouterOutput
+        - endpoint: Action:TagGlobalResource
+        - endpoint: Action:TagResource
+        - endpoint: Action:TakeRouterInput
+        - endpoint: Action:UntagGlobalResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateBridge
+        - endpoint: Action:UpdateBridgeOutput
+        - endpoint: Action:UpdateBridgeSource
+        - endpoint: Action:UpdateBridgeState
+        - endpoint: Action:UpdateFlow
+        - endpoint: Action:UpdateFlowEntitlement
+        - endpoint: Action:UpdateFlowMediaStream
+        - endpoint: Action:UpdateFlowOutput
+        - endpoint: Action:UpdateFlowSource
+        - endpoint: Action:UpdateGatewayInstance
+        - endpoint: Action:UpdateRouterInput
+        - endpoint: Action:UpdateRouterNetworkInterface
+        - endpoint: Action:UpdateRouterOutput
+      - service: Elemental MediaPackage V2 (mediapackage)
+        - endpoint: Action:CancelHarvestJob
+        - endpoint: Action:CreateChannel
+        - endpoint: Action:CreateChannelGroup
+        - endpoint: Action:CreateHarvestJob
+        - endpoint: Action:CreateOriginEndpoint
+        - endpoint: Action:DeleteChannel
+        - endpoint: Action:DeleteChannelGroup
+        - endpoint: Action:DeleteChannelPolicy
+        - endpoint: Action:DeleteOriginEndpoint
+        - endpoint: Action:DeleteOriginEndpointPolicy
+        - endpoint: Action:GetChannel
+        - endpoint: Action:GetChannelGroup
+        - endpoint: Action:GetChannelPolicy
+        - endpoint: Action:GetHarvestJob
+        - endpoint: Action:GetOriginEndpoint
+        - endpoint: Action:GetOriginEndpointPolicy
+        - endpoint: Action:ListChannelGroups
+        - endpoint: Action:ListChannels
+        - endpoint: Action:ListHarvestJobs
+        - endpoint: Action:ListOriginEndpoints
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutChannelPolicy
+        - endpoint: Action:PutOriginEndpointPolicy
+        - endpoint: Action:ResetChannelState
+        - endpoint: Action:ResetOriginEndpointState
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateChannel
+        - endpoint: Action:UpdateChannelGroup
+        - endpoint: Action:UpdateOriginEndpoint
+      - service: Elemental MediaTailor (mediatailor)
+        - endpoint: Action:ConfigureLogsForChannel
+        - endpoint: Action:ConfigureLogsForPlaybackConfiguration
+        - endpoint: Action:CreateChannel
+        - endpoint: Action:CreateLiveSource
+        - endpoint: Action:CreatePrefetchSchedule
+        - endpoint: Action:CreateProgram
+        - endpoint: Action:CreateSourceLocation
+        - endpoint: Action:CreateVodSource
+        - endpoint: Action:DeleteChannel
+        - endpoint: Action:DeleteChannelPolicy
+        - endpoint: Action:DeleteLiveSource
+        - endpoint: Action:DeletePlaybackConfiguration
+        - endpoint: Action:DeletePrefetchSchedule
+        - endpoint: Action:DeleteProgram
+        - endpoint: Action:DeleteSourceLocation
+        - endpoint: Action:DeleteVodSource
+        - endpoint: Action:DescribeChannel
+        - endpoint: Action:DescribeLiveSource
+        - endpoint: Action:DescribeProgram
+        - endpoint: Action:DescribeSourceLocation
+        - endpoint: Action:DescribeVodSource
+        - endpoint: Action:GetChannelPolicy
+        - endpoint: Action:GetChannelSchedule
+        - endpoint: Action:GetPlaybackConfiguration
+        - endpoint: Action:GetPrefetchSchedule
+        - endpoint: Action:ListAlerts
+        - endpoint: Action:ListChannels
+        - endpoint: Action:ListLiveSources
+        - endpoint: Action:ListPlaybackConfigurations
+        - endpoint: Action:ListPrefetchSchedules
+        - endpoint: Action:ListSourceLocations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListVodSources
+        - endpoint: Action:PutChannelPolicy
+        - endpoint: Action:PutPlaybackConfiguration
+        - endpoint: Action:StartChannel
+        - endpoint: Action:StopChannel
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateChannel
+        - endpoint: Action:UpdateLiveSource
+        - endpoint: Action:UpdateProgram
+        - endpoint: Action:UpdateSourceLocation
+        - endpoint: Action:UpdateVodSource
+      - service: EMR (emr)
+        - endpoint: Action:AddInstanceFleet
+        - endpoint: Action:AddInstanceGroups
+        - endpoint: Action:AddJobFlowSteps
+        - endpoint: Action:AddTags
+        - endpoint: Action:CancelSteps
+        - endpoint: Action:CreatePersistentAppUI
+        - endpoint: Action:CreateSecurityConfiguration
+        - endpoint: Action:CreateStudio
+        - endpoint: Action:CreateStudioSessionMapping
+        - endpoint: Action:DeleteSecurityConfiguration
+        - endpoint: Action:DeleteStudio
+        - endpoint: Action:DeleteStudioSessionMapping
+        - endpoint: Action:DescribeCluster
+        - endpoint: Action:DescribeJobFlows
+        - endpoint: Action:DescribeNotebookExecution
+        - endpoint: Action:DescribePersistentAppUI
+        - endpoint: Action:DescribeReleaseLabel
+        - endpoint: Action:DescribeSecurityConfiguration
+        - endpoint: Action:DescribeStep
+        - endpoint: Action:DescribeStudio
+        - endpoint: Action:GetAutoTerminationPolicy
+        - endpoint: Action:GetBlockPublicAccessConfiguration
+        - endpoint: Action:GetClusterSessionCredentials
+        - endpoint: Action:GetManagedScalingPolicy
+        - endpoint: Action:GetOnClusterAppUIPresignedURL
+        - endpoint: Action:GetPersistentAppUIPresignedURL
+        - endpoint: Action:GetStudioSessionMapping
+        - endpoint: Action:ListBootstrapActions
+        - endpoint: Action:ListClusters
+        - endpoint: Action:ListInstanceFleets
+        - endpoint: Action:ListInstanceGroups
+        - endpoint: Action:ListInstances
+        - endpoint: Action:ListNotebookExecutions
+        - endpoint: Action:ListReleaseLabels
+        - endpoint: Action:ListSecurityConfigurations
+        - endpoint: Action:ListSteps
+        - endpoint: Action:ListStudioSessionMappings
+        - endpoint: Action:ListStudios
+        - endpoint: Action:ListSupportedInstanceTypes
+        - endpoint: Action:ModifyCluster
+        - endpoint: Action:ModifyInstanceFleet
+        - endpoint: Action:ModifyInstanceGroups
+        - endpoint: Action:PutAutoScalingPolicy
+        - endpoint: Action:PutAutoTerminationPolicy
+        - endpoint: Action:PutBlockPublicAccessConfiguration
+        - endpoint: Action:PutManagedScalingPolicy
+        - endpoint: Action:RemoveAutoScalingPolicy
+        - endpoint: Action:RemoveAutoTerminationPolicy
+        - endpoint: Action:RemoveManagedScalingPolicy
+        - endpoint: Action:RemoveTags
+        - endpoint: Action:RunJobFlow
+        - endpoint: Action:SetKeepJobFlowAliveWhenNoSteps
+        - endpoint: Action:SetTerminationProtection
+        - endpoint: Action:SetUnhealthyNodeReplacement
+        - endpoint: Action:SetVisibleToAllUsers
+        - endpoint: Action:StartNotebookExecution
+        - endpoint: Action:StopNotebookExecution
+        - endpoint: Action:TerminateJobFlows
+        - endpoint: Action:UpdateStudio
+        - endpoint: Action:UpdateStudioSessionMapping
+      - service: EMR on EKS (emr-on-eks)
+        - endpoint: Action:CancelJobRun
+        - endpoint: Action:CreateJobTemplate
+        - endpoint: Action:CreateManagedEndpoint
+        - endpoint: Action:CreateSecurityConfiguration
+        - endpoint: Action:CreateVirtualCluster
+        - endpoint: Action:DeleteJobTemplate
+        - endpoint: Action:DeleteManagedEndpoint
+        - endpoint: Action:DeleteVirtualCluster
+        - endpoint: Action:DescribeJobRun
+        - endpoint: Action:DescribeJobTemplate
+        - endpoint: Action:DescribeManagedEndpoint
+        - endpoint: Action:DescribeSecurityConfiguration
+        - endpoint: Action:DescribeVirtualCluster
+        - endpoint: Action:GetManagedEndpointSessionCredentials
+        - endpoint: Action:ListJobRuns
+        - endpoint: Action:ListJobTemplates
+        - endpoint: Action:ListManagedEndpoints
+        - endpoint: Action:ListSecurityConfigurations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListVirtualClusters
+        - endpoint: Action:StartJobRun
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: EMR Serverless (emr-serverless)
+        - endpoint: DELETE /applications/{applicationId}
+        - endpoint: DELETE /applications/{applicationId}/jobruns/{jobRunId}?shutdownGracePeriodInSeconds={shutdownGracePeriodInSeconds}
+        - endpoint: DELETE /tags/{resourceArn}?tagKeys={tagKeys}
+        - endpoint: GET /applications/{applicationId}
+        - endpoint: GET /applications/{applicationId}/jobruns/{jobRunId}/attempts?maxResults={maxResults}&nextToken={nextToken}
+        - endpoint: GET /applications/{applicationId}/jobruns/{jobRunId}/dashboard?accessSystemProfileLogs={accessSystemProfileLogs}&attempt={attempt}
+        - endpoint: GET /applications/{applicationId}/jobruns/{jobRunId}?attempt={attempt}
+        - endpoint: GET /applications/{applicationId}/jobruns?createdAtAfter={createdAtAfter}&createdAtBefore={createdAtBefore}&maxResults={maxResults}&mode={mode}&nextToken={nextToken}&states={states}
+        - endpoint: GET /applications?maxResults={maxResults}&nextToken={nextToken}&states={states}
+        - endpoint: GET /tags/{resourceArn}
+        - endpoint: PATCH /applications/{applicationId}
+        - endpoint: POST /applications
+        - endpoint: POST /applications/{applicationId}/jobruns
+        - endpoint: POST /applications/{applicationId}/start
+        - endpoint: POST /applications/{applicationId}/stop
+        - endpoint: POST /tags/{resourceArn}
+      - service: EventBridge (eventbridge)
+        - endpoint: Action:ActivateEventSource
+        - endpoint: Action:CancelReplay
+        - endpoint: Action:CreateApiDestination
+        - endpoint: Action:CreateArchive
+        - endpoint: Action:CreateConnection
+        - endpoint: Action:CreateEndpoint
+        - endpoint: Action:CreateEventBus
+        - endpoint: Action:CreatePartnerEventSource
+        - endpoint: Action:DeactivateEventSource
+        - endpoint: Action:DeauthorizeConnection
+        - endpoint: Action:DeleteApiDestination
+        - endpoint: Action:DeleteArchive
+        - endpoint: Action:DeleteConnection
+        - endpoint: Action:DeleteEndpoint
+        - endpoint: Action:DeleteEventBus
+        - endpoint: Action:DeletePartnerEventSource
+        - endpoint: Action:DeleteRule
+        - endpoint: Action:DescribeApiDestination
+        - endpoint: Action:DescribeArchive
+        - endpoint: Action:DescribeConnection
+        - endpoint: Action:DescribeEndpoint
+        - endpoint: Action:DescribeEventBus
+        - endpoint: Action:DescribeEventSource
+        - endpoint: Action:DescribePartnerEventSource
+        - endpoint: Action:DescribeReplay
+        - endpoint: Action:DescribeRule
+        - endpoint: Action:DisableRule
+        - endpoint: Action:EnableRule
+        - endpoint: Action:ListApiDestinations
+        - endpoint: Action:ListArchives
+        - endpoint: Action:ListConnections
+        - endpoint: Action:ListEndpoints
+        - endpoint: Action:ListEventBuses
+        - endpoint: Action:ListEventSources
+        - endpoint: Action:ListPartnerEventSourceAccounts
+        - endpoint: Action:ListPartnerEventSources
+        - endpoint: Action:ListReplays
+        - endpoint: Action:ListRuleNamesByTarget
+        - endpoint: Action:ListRules
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTargetsByRule
+        - endpoint: Action:PutEvents
+        - endpoint: Action:PutPartnerEvents
+        - endpoint: Action:PutPermission
+        - endpoint: Action:PutRule
+        - endpoint: Action:PutTargets
+        - endpoint: Action:RemovePermission
+        - endpoint: Action:RemoveTargets
+        - endpoint: Action:StartReplay
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestEventPattern
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApiDestination
+        - endpoint: Action:UpdateArchive
+        - endpoint: Action:UpdateConnection
+        - endpoint: Action:UpdateEndpoint
+        - endpoint: Action:UpdateEventBus
+      - service: FinSpace (finspace)
+        - endpoint: DELETE /datasetsv2/{datasetId}
+        - endpoint: DELETE /permission-group/{permissionGroupId}
+        - endpoint: DELETE /permission-group/{permissionGroupId}/users/{userId}
+        - endpoint: GET /credentials/programmatic
+        - endpoint: GET /datasets/{datasetId}/changesetsv2
+        - endpoint: GET /datasets/{datasetId}/changesetsv2/{changesetId}
+        - endpoint: GET /datasets/{datasetId}/dataviewsv2
+        - endpoint: GET /datasets/{datasetId}/dataviewsv2/{dataviewId}
+        - endpoint: GET /datasetsv2
+        - endpoint: GET /datasetsv2/{datasetId}
+        - endpoint: GET /permission-group
+        - endpoint: GET /permission-group/{permissionGroupId}
+        - endpoint: GET /permission-group/{permissionGroupId}/users
+        - endpoint: GET /user
+        - endpoint: GET /user/{userId}
+        - endpoint: GET /user/{userId}/permission-groups
+        - endpoint: POST /datasets/{datasetId}/changesetsv2
+        - endpoint: POST /datasets/{datasetId}/dataviewsv2
+        - endpoint: POST /datasets/{datasetId}/dataviewsv2/{dataviewId}/external-access-details
+        - endpoint: POST /datasetsv2
+        - endpoint: POST /permission-group
+        - endpoint: POST /permission-group/{permissionGroupId}/users/{userId}
+        - endpoint: POST /user
+        - endpoint: POST /user/{userId}/disable
+        - endpoint: POST /user/{userId}/enable
+        - endpoint: POST /user/{userId}/password
+        - endpoint: POST /workingLocationV1
+        - endpoint: PUT /datasets/{datasetId}/changesetsv2/{changesetId}
+        - endpoint: PUT /datasetsv2/{datasetId}
+        - endpoint: PUT /permission-group/{permissionGroupId}
+        - endpoint: PUT /user/{userId}
+      - service: FinSpace Management (finspace-management)
+        - endpoint: DELETE /environment/{environmentId}
+        - endpoint: DELETE /kx/environments/{environmentId}
+        - endpoint: DELETE /kx/environments/{environmentId}/clusters/{clusterName}
+        - endpoint: DELETE /kx/environments/{environmentId}/clusters/{clusterName}/nodes/{nodeId}
+        - endpoint: DELETE /kx/environments/{environmentId}/databases/{databaseName}
+        - endpoint: DELETE /kx/environments/{environmentId}/databases/{databaseName}/dataviews/{dataviewName}
+        - endpoint: DELETE /kx/environments/{environmentId}/kxvolumes/{volumeName}
+        - endpoint: DELETE /kx/environments/{environmentId}/scalingGroups/{scalingGroupName}
+        - endpoint: DELETE /kx/environments/{environmentId}/users/{userName}
+        - endpoint: DELETE /tags/{resourceArn}
+        - endpoint: GET /environment
+        - endpoint: GET /environment/{environmentId}
+        - endpoint: GET /kx/environments
+        - endpoint: GET /kx/environments/{environmentId}
+        - endpoint: GET /kx/environments/{environmentId}/clusters
+        - endpoint: GET /kx/environments/{environmentId}/clusters/{clusterName}
+        - endpoint: GET /kx/environments/{environmentId}/clusters/{clusterName}/nodes
+        - endpoint: GET /kx/environments/{environmentId}/connectionString
+        - endpoint: GET /kx/environments/{environmentId}/databases
+        - endpoint: GET /kx/environments/{environmentId}/databases/{databaseName}
+        - endpoint: GET /kx/environments/{environmentId}/databases/{databaseName}/changesets
+        - endpoint: GET /kx/environments/{environmentId}/databases/{databaseName}/changesets/{changesetId}
+        - endpoint: GET /kx/environments/{environmentId}/databases/{databaseName}/dataviews
+        - endpoint: GET /kx/environments/{environmentId}/databases/{databaseName}/dataviews/{dataviewName}
+        - endpoint: GET /kx/environments/{environmentId}/kxvolumes
+        - endpoint: GET /kx/environments/{environmentId}/kxvolumes/{volumeName}
+        - endpoint: GET /kx/environments/{environmentId}/scalingGroups
+        - endpoint: GET /kx/environments/{environmentId}/scalingGroups/{scalingGroupName}
+        - endpoint: GET /kx/environments/{environmentId}/users
+        - endpoint: GET /kx/environments/{environmentId}/users/{userName}
+        - endpoint: GET /tags/{resourceArn}
+        - endpoint: PATCH /kx/environments/{environmentId}/kxvolumes/{volumeName}
+        - endpoint: POST /environment
+        - endpoint: POST /kx/environments
+        - endpoint: POST /kx/environments/{environmentId}/clusters
+        - endpoint: POST /kx/environments/{environmentId}/databases
+        - endpoint: POST /kx/environments/{environmentId}/databases/{databaseName}/changesets
+        - endpoint: POST /kx/environments/{environmentId}/databases/{databaseName}/dataviews
+        - endpoint: POST /kx/environments/{environmentId}/kxvolumes
+        - endpoint: POST /kx/environments/{environmentId}/scalingGroups
+        - endpoint: POST /kx/environments/{environmentId}/users
+        - endpoint: POST /tags/{resourceArn}
+        - endpoint: PUT /environment/{environmentId}
+        - endpoint: PUT /kx/environments/{environmentId}
+        - endpoint: PUT /kx/environments/{environmentId}/clusters/{clusterName}/configuration/code
+        - endpoint: PUT /kx/environments/{environmentId}/clusters/{clusterName}/configuration/databases
+        - endpoint: PUT /kx/environments/{environmentId}/databases/{databaseName}
+        - endpoint: PUT /kx/environments/{environmentId}/databases/{databaseName}/dataviews/{dataviewName}
+        - endpoint: PUT /kx/environments/{environmentId}/network
+        - endpoint: PUT /kx/environments/{environmentId}/users/{userName}
+      - service: GameLift Streams (gameliftstreams)
+        - endpoint: DELETE /applications/{identifier}
+        - endpoint: DELETE /streamgroups/{identifier}
+        - endpoint: DELETE /streamgroups/{identifier}/locations
+        - endpoint: DELETE /streamgroups/{identifier}/streamsessions/{streamSessionIdentifier}
+        - endpoint: DELETE /tags/{resourceArn}
+        - endpoint: GET /applications
+        - endpoint: GET /applications/{identifier}
+        - endpoint: GET /streamgroups
+        - endpoint: GET /streamgroups/{identifier}
+        - endpoint: GET /streamgroups/{identifier}/streamsessions
+        - endpoint: GET /streamgroups/{identifier}/streamsessions/{streamSessionIdentifier}
+        - endpoint: GET /streamsessions
+        - endpoint: GET /tags/{resourceArn}
+        - endpoint: PATCH /applications/{identifier}
+        - endpoint: PATCH /streamgroups/{identifier}
+        - endpoint: POST /applications
+        - endpoint: POST /streamgroups
+        - endpoint: POST /streamgroups/{identifier}/associations
+        - endpoint: POST /streamgroups/{identifier}/disassociations
+        - endpoint: POST /streamgroups/{identifier}/locations
+        - endpoint: POST /streamgroups/{identifier}/streamsessions
+        - endpoint: POST /streamgroups/{identifier}/streamsessions/{streamSessionIdentifier}/connections
+        - endpoint: POST /tags/{resourceArn}
+        - endpoint: PUT /streamgroups/{identifier}/streamsessions/{streamSessionIdentifier}/exportfiles
+      - service: Ground Station (ground-station)
+        - endpoint: Action:CancelContact
+        - endpoint: Action:CreateConfig
+        - endpoint: Action:CreateDataflowEndpointGroup
+        - endpoint: Action:CreateDataflowEndpointGroupV2
+        - endpoint: Action:CreateEphemeris
+        - endpoint: Action:CreateMissionProfile
+        - endpoint: Action:DeleteConfig
+        - endpoint: Action:DeleteDataflowEndpointGroup
+        - endpoint: Action:DeleteEphemeris
+        - endpoint: Action:DeleteMissionProfile
+        - endpoint: Action:DescribeContact
+        - endpoint: Action:DescribeEphemeris
+        - endpoint: Action:GetAgentConfiguration
+        - endpoint: Action:GetAgentTaskResponseUrl
+        - endpoint: Action:GetConfig
+        - endpoint: Action:GetDataflowEndpointGroup
+        - endpoint: Action:GetMinuteUsage
+        - endpoint: Action:GetMissionProfile
+        - endpoint: Action:GetSatellite
+        - endpoint: Action:ListConfigs
+        - endpoint: Action:ListContacts
+        - endpoint: Action:ListDataflowEndpointGroups
+        - endpoint: Action:ListEphemerides
+        - endpoint: Action:ListGroundStations
+        - endpoint: Action:ListMissionProfiles
+        - endpoint: Action:ListSatellites
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RegisterAgent
+        - endpoint: Action:ReserveContact
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAgentStatus
+        - endpoint: Action:UpdateConfig
+        - endpoint: Action:UpdateEphemeris
+        - endpoint: Action:UpdateMissionProfile
+      - service: HealthImaging (healthimaging)
+        - endpoint: Action:CopyImageSet
+        - endpoint: Action:CreateDatastore
+        - endpoint: Action:DeleteDatastore
+        - endpoint: Action:DeleteImageSet
+        - endpoint: Action:GetDICOMImportJob
+        - endpoint: Action:GetDatastore
+        - endpoint: Action:GetImageFrame
+        - endpoint: Action:GetImageSet
+        - endpoint: Action:GetImageSetMetadata
+        - endpoint: Action:ListDICOMImportJobs
+        - endpoint: Action:ListDatastores
+        - endpoint: Action:ListImageSetVersions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:SearchImageSets
+        - endpoint: Action:StartDICOMImportJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateImageSetMetadata
+      - service: HealthLake (healthlake)
+        - endpoint: Action:CreateFHIRDatastore
+        - endpoint: Action:DeleteFHIRDatastore
+        - endpoint: Action:DescribeFHIRDatastore
+        - endpoint: Action:DescribeFHIRExportJob
+        - endpoint: Action:DescribeFHIRImportJob
+        - endpoint: Action:ListFHIRDatastores
+        - endpoint: Action:ListFHIRExportJobs
+        - endpoint: Action:ListFHIRImportJobs
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartFHIRExportJob
+        - endpoint: Action:StartFHIRImportJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: HealthOmics (omics)
+        - endpoint: Action:AbortMultipartReadSetUpload
+        - endpoint: Action:AcceptShare
+        - endpoint: Action:BatchDeleteReadSet
+        - endpoint: Action:CancelAnnotationImportJob
+        - endpoint: Action:CancelRun
+        - endpoint: Action:CancelVariantImportJob
+        - endpoint: Action:CompleteMultipartReadSetUpload
+        - endpoint: Action:CreateAnnotationStore
+        - endpoint: Action:CreateAnnotationStoreVersion
+        - endpoint: Action:CreateMultipartReadSetUpload
+        - endpoint: Action:CreateReferenceStore
+        - endpoint: Action:CreateRunCache
+        - endpoint: Action:CreateRunGroup
+        - endpoint: Action:CreateSequenceStore
+        - endpoint: Action:CreateShare
+        - endpoint: Action:CreateVariantStore
+        - endpoint: Action:CreateWorkflow
+        - endpoint: Action:CreateWorkflowVersion
+        - endpoint: Action:DeleteAnnotationStore
+        - endpoint: Action:DeleteAnnotationStoreVersions
+        - endpoint: Action:DeleteReference
+        - endpoint: Action:DeleteReferenceStore
+        - endpoint: Action:DeleteRun
+        - endpoint: Action:DeleteRunCache
+        - endpoint: Action:DeleteRunGroup
+        - endpoint: Action:DeleteS3AccessPolicy
+        - endpoint: Action:DeleteSequenceStore
+        - endpoint: Action:DeleteShare
+        - endpoint: Action:DeleteVariantStore
+        - endpoint: Action:DeleteWorkflow
+        - endpoint: Action:DeleteWorkflowVersion
+        - endpoint: Action:GetAnnotationImportJob
+        - endpoint: Action:GetAnnotationStore
+        - endpoint: Action:GetAnnotationStoreVersion
+        - endpoint: Action:GetReadSet
+        - endpoint: Action:GetReadSetActivationJob
+        - endpoint: Action:GetReadSetExportJob
+        - endpoint: Action:GetReadSetImportJob
+        - endpoint: Action:GetReadSetMetadata
+        - endpoint: Action:GetReference
+        - endpoint: Action:GetReferenceImportJob
+        - endpoint: Action:GetReferenceMetadata
+        - endpoint: Action:GetReferenceStore
+        - endpoint: Action:GetRun
+        - endpoint: Action:GetRunCache
+        - endpoint: Action:GetRunGroup
+        - endpoint: Action:GetRunTask
+        - endpoint: Action:GetS3AccessPolicy
+        - endpoint: Action:GetSequenceStore
+        - endpoint: Action:GetShare
+        - endpoint: Action:GetVariantImportJob
+        - endpoint: Action:GetVariantStore
+        - endpoint: Action:GetWorkflow
+        - endpoint: Action:GetWorkflowVersion
+        - endpoint: Action:ListAnnotationImportJobs
+        - endpoint: Action:ListAnnotationStoreVersions
+        - endpoint: Action:ListAnnotationStores
+        - endpoint: Action:ListMultipartReadSetUploads
+        - endpoint: Action:ListReadSetActivationJobs
+        - endpoint: Action:ListReadSetExportJobs
+        - endpoint: Action:ListReadSetImportJobs
+        - endpoint: Action:ListReadSetUploadParts
+        - endpoint: Action:ListReadSets
+        - endpoint: Action:ListReferenceImportJobs
+        - endpoint: Action:ListReferenceStores
+        - endpoint: Action:ListReferences
+        - endpoint: Action:ListRunCaches
+        - endpoint: Action:ListRunGroups
+        - endpoint: Action:ListRunTasks
+        - endpoint: Action:ListRuns
+        - endpoint: Action:ListSequenceStores
+        - endpoint: Action:ListShares
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListVariantImportJobs
+        - endpoint: Action:ListVariantStores
+        - endpoint: Action:ListWorkflowVersions
+        - endpoint: Action:ListWorkflows
+        - endpoint: Action:PutS3AccessPolicy
+        - endpoint: Action:StartAnnotationImportJob
+        - endpoint: Action:StartReadSetActivationJob
+        - endpoint: Action:StartReadSetExportJob
+        - endpoint: Action:StartReadSetImportJob
+        - endpoint: Action:StartReferenceImportJob
+        - endpoint: Action:StartRun
+        - endpoint: Action:StartVariantImportJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAnnotationStore
+        - endpoint: Action:UpdateAnnotationStoreVersion
+        - endpoint: Action:UpdateRunCache
+        - endpoint: Action:UpdateRunGroup
+        - endpoint: Action:UpdateSequenceStore
+        - endpoint: Action:UpdateVariantStore
+        - endpoint: Action:UpdateWorkflow
+        - endpoint: Action:UpdateWorkflowVersion
+        - endpoint: Action:UploadReadSetPart
+      - service: Internet Monitor (internet-monitor)
+        - endpoint: Action:CreateMonitor
+        - endpoint: Action:DeleteMonitor
+        - endpoint: Action:GetHealthEvent
+        - endpoint: Action:GetInternetEvent
+        - endpoint: Action:GetMonitor
+        - endpoint: Action:GetQueryResults
+        - endpoint: Action:GetQueryStatus
+        - endpoint: Action:ListHealthEvents
+        - endpoint: Action:ListInternetEvents
+        - endpoint: Action:ListMonitors
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartQuery
+        - endpoint: Action:StopQuery
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateMonitor
+      - service: IoT (iot)
+        - endpoint: Action:AcceptCertificateTransfer
+        - endpoint: Action:AddThingToBillingGroup
+        - endpoint: Action:AddThingToThingGroup
+        - endpoint: Action:AssociateSbomWithPackageVersion
+        - endpoint: Action:AssociateTargetsWithJob
+        - endpoint: Action:AttachPolicy
+        - endpoint: Action:AttachPrincipalPolicy
+        - endpoint: Action:AttachSecurityProfile
+        - endpoint: Action:AttachThingPrincipal
+        - endpoint: Action:CancelAuditMitigationActionsTask
+        - endpoint: Action:CancelAuditTask
+        - endpoint: Action:CancelCertificateTransfer
+        - endpoint: Action:CancelDetectMitigationActionsTask
+        - endpoint: Action:CancelJob
+        - endpoint: Action:CancelJobExecution
+        - endpoint: Action:ClearDefaultAuthorizer
+        - endpoint: Action:ConfirmTopicRuleDestination
+        - endpoint: Action:CreateAuditSuppression
+        - endpoint: Action:CreateAuthorizer
+        - endpoint: Action:CreateBillingGroup
+        - endpoint: Action:CreateCertificateFromCsr
+        - endpoint: Action:CreateCertificateProvider
+        - endpoint: Action:CreateCommand
+        - endpoint: Action:CreateCustomMetric
+        - endpoint: Action:CreateDimension
+        - endpoint: Action:CreateDomainConfiguration
+        - endpoint: Action:CreateDynamicThingGroup
+        - endpoint: Action:CreateFleetMetric
+        - endpoint: Action:CreateJob
+        - endpoint: Action:CreateJobTemplate
+        - endpoint: Action:CreateKeysAndCertificate
+        - endpoint: Action:CreateMitigationAction
+        - endpoint: Action:CreateOTAUpdate
+        - endpoint: Action:CreatePackage
+        - endpoint: Action:CreatePackageVersion
+        - endpoint: Action:CreatePolicy
+        - endpoint: Action:CreatePolicyVersion
+        - endpoint: Action:CreateProvisioningClaim
+        - endpoint: Action:CreateProvisioningTemplate
+        - endpoint: Action:CreateProvisioningTemplateVersion
+        - endpoint: Action:CreateRoleAlias
+        - endpoint: Action:CreateScheduledAudit
+        - endpoint: Action:CreateSecurityProfile
+        - endpoint: Action:CreateStream
+        - endpoint: Action:CreateThing
+        - endpoint: Action:CreateThingGroup
+        - endpoint: Action:CreateThingType
+        - endpoint: Action:CreateTopicRule
+        - endpoint: Action:CreateTopicRuleDestination
+        - endpoint: Action:DeleteAccountAuditConfiguration
+        - endpoint: Action:DeleteAuditSuppression
+        - endpoint: Action:DeleteAuthorizer
+        - endpoint: Action:DeleteBillingGroup
+        - endpoint: Action:DeleteCACertificate
+        - endpoint: Action:DeleteCertificate
+        - endpoint: Action:DeleteCertificateProvider
+        - endpoint: Action:DeleteCommand
+        - endpoint: Action:DeleteCommandExecution
+        - endpoint: Action:DeleteCustomMetric
+        - endpoint: Action:DeleteDimension
+        - endpoint: Action:DeleteDomainConfiguration
+        - endpoint: Action:DeleteDynamicThingGroup
+        - endpoint: Action:DeleteFleetMetric
+        - endpoint: Action:DeleteJob
+        - endpoint: Action:DeleteJobExecution
+        - endpoint: Action:DeleteJobTemplate
+        - endpoint: Action:DeleteMitigationAction
+        - endpoint: Action:DeleteOTAUpdate
+        - endpoint: Action:DeletePackage
+        - endpoint: Action:DeletePackageVersion
+        - endpoint: Action:DeletePolicy
+        - endpoint: Action:DeletePolicyVersion
+        - endpoint: Action:DeleteProvisioningTemplate
+        - endpoint: Action:DeleteProvisioningTemplateVersion
+        - endpoint: Action:DeleteRegistrationCode
+        - endpoint: Action:DeleteRoleAlias
+        - endpoint: Action:DeleteScheduledAudit
+        - endpoint: Action:DeleteSecurityProfile
+        - endpoint: Action:DeleteStream
+        - endpoint: Action:DeleteThing
+        - endpoint: Action:DeleteThingGroup
+        - endpoint: Action:DeleteThingType
+        - endpoint: Action:DeleteTopicRule
+        - endpoint: Action:DeleteTopicRuleDestination
+        - endpoint: Action:DeleteV2LoggingLevel
+        - endpoint: Action:DeprecateThingType
+        - endpoint: Action:DescribeAccountAuditConfiguration
+        - endpoint: Action:DescribeAuditFinding
+        - endpoint: Action:DescribeAuditMitigationActionsTask
+        - endpoint: Action:DescribeAuditSuppression
+        - endpoint: Action:DescribeAuditTask
+        - endpoint: Action:DescribeAuthorizer
+        - endpoint: Action:DescribeBillingGroup
+        - endpoint: Action:DescribeCACertificate
+        - endpoint: Action:DescribeCertificate
+        - endpoint: Action:DescribeCertificateProvider
+        - endpoint: Action:DescribeCustomMetric
+        - endpoint: Action:DescribeDefaultAuthorizer
+        - endpoint: Action:DescribeDetectMitigationActionsTask
+        - endpoint: Action:DescribeDimension
+        - endpoint: Action:DescribeDomainConfiguration
+        - endpoint: Action:DescribeEndpoint
+        - endpoint: Action:DescribeEventConfigurations
+        - endpoint: Action:DescribeFleetMetric
+        - endpoint: Action:DescribeIndex
+        - endpoint: Action:DescribeJob
+        - endpoint: Action:DescribeJobExecution
+        - endpoint: Action:DescribeJobTemplate
+        - endpoint: Action:DescribeManagedJobTemplate
+        - endpoint: Action:DescribeMitigationAction
+        - endpoint: Action:DescribeProvisioningTemplate
+        - endpoint: Action:DescribeProvisioningTemplateVersion
+        - endpoint: Action:DescribeRoleAlias
+        - endpoint: Action:DescribeScheduledAudit
+        - endpoint: Action:DescribeSecurityProfile
+        - endpoint: Action:DescribeStream
+        - endpoint: Action:DescribeThing
+        - endpoint: Action:DescribeThingGroup
+        - endpoint: Action:DescribeThingRegistrationTask
+        - endpoint: Action:DescribeThingType
+        - endpoint: Action:DetachPolicy
+        - endpoint: Action:DetachPrincipalPolicy
+        - endpoint: Action:DetachSecurityProfile
+        - endpoint: Action:DetachThingPrincipal
+        - endpoint: Action:DisableTopicRule
+        - endpoint: Action:DisassociateSbomFromPackageVersion
+        - endpoint: Action:EnableTopicRule
+        - endpoint: Action:GetBehaviorModelTrainingSummaries
+        - endpoint: Action:GetBucketsAggregation
+        - endpoint: Action:GetCardinality
+        - endpoint: Action:GetCommand
+        - endpoint: Action:GetCommandExecution
+        - endpoint: Action:GetEffectivePolicies
+        - endpoint: Action:GetIndexingConfiguration
+        - endpoint: Action:GetJobDocument
+        - endpoint: Action:GetLoggingOptions
+        - endpoint: Action:GetOTAUpdate
+        - endpoint: Action:GetPackage
+        - endpoint: Action:GetPackageConfiguration
+        - endpoint: Action:GetPackageVersion
+        - endpoint: Action:GetPercentiles
+        - endpoint: Action:GetPolicy
+        - endpoint: Action:GetPolicyVersion
+        - endpoint: Action:GetRegistrationCode
+        - endpoint: Action:GetStatistics
+        - endpoint: Action:GetThingConnectivityData
+        - endpoint: Action:GetTopicRule
+        - endpoint: Action:GetTopicRuleDestination
+        - endpoint: Action:GetV2LoggingOptions
+        - endpoint: Action:ListActiveViolations
+        - endpoint: Action:ListAttachedPolicies
+        - endpoint: Action:ListAuditFindings
+        - endpoint: Action:ListAuditMitigationActionsExecutions
+        - endpoint: Action:ListAuditMitigationActionsTasks
+        - endpoint: Action:ListAuditSuppressions
+        - endpoint: Action:ListAuditTasks
+        - endpoint: Action:ListAuthorizers
+        - endpoint: Action:ListBillingGroups
+        - endpoint: Action:ListCACertificates
+        - endpoint: Action:ListCertificateProviders
+        - endpoint: Action:ListCertificates
+        - endpoint: Action:ListCertificatesByCA
+        - endpoint: Action:ListCommandExecutions
+        - endpoint: Action:ListCommands
+        - endpoint: Action:ListCustomMetrics
+        - endpoint: Action:ListDetectMitigationActionsExecutions
+        - endpoint: Action:ListDetectMitigationActionsTasks
+        - endpoint: Action:ListDimensions
+        - endpoint: Action:ListDomainConfigurations
+        - endpoint: Action:ListFleetMetrics
+        - endpoint: Action:ListIndices
+        - endpoint: Action:ListJobExecutionsForJob
+        - endpoint: Action:ListJobExecutionsForThing
+        - endpoint: Action:ListJobTemplates
+        - endpoint: Action:ListJobs
+        - endpoint: Action:ListManagedJobTemplates
+        - endpoint: Action:ListMetricValues
+        - endpoint: Action:ListMitigationActions
+        - endpoint: Action:ListOTAUpdates
+        - endpoint: Action:ListOutgoingCertificates
+        - endpoint: Action:ListPackageVersions
+        - endpoint: Action:ListPackages
+        - endpoint: Action:ListPolicies
+        - endpoint: Action:ListPolicyPrincipals
+        - endpoint: Action:ListPolicyVersions
+        - endpoint: Action:ListPrincipalPolicies
+        - endpoint: Action:ListPrincipalThings
+        - endpoint: Action:ListPrincipalThingsV2
+        - endpoint: Action:ListProvisioningTemplateVersions
+        - endpoint: Action:ListProvisioningTemplates
+        - endpoint: Action:ListRelatedResourcesForAuditFinding
+        - endpoint: Action:ListRoleAliases
+        - endpoint: Action:ListSbomValidationResults
+        - endpoint: Action:ListScheduledAudits
+        - endpoint: Action:ListSecurityProfiles
+        - endpoint: Action:ListSecurityProfilesForTarget
+        - endpoint: Action:ListStreams
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTargetsForPolicy
+        - endpoint: Action:ListTargetsForSecurityProfile
+        - endpoint: Action:ListThingGroups
+        - endpoint: Action:ListThingGroupsForThing
+        - endpoint: Action:ListThingPrincipals
+        - endpoint: Action:ListThingPrincipalsV2
+        - endpoint: Action:ListThingRegistrationTaskReports
+        - endpoint: Action:ListThingRegistrationTasks
+        - endpoint: Action:ListThingTypes
+        - endpoint: Action:ListThings
+        - endpoint: Action:ListThingsInBillingGroup
+        - endpoint: Action:ListThingsInThingGroup
+        - endpoint: Action:ListTopicRuleDestinations
+        - endpoint: Action:ListTopicRules
+        - endpoint: Action:ListV2LoggingLevels
+        - endpoint: Action:ListViolationEvents
+        - endpoint: Action:PutVerificationStateOnViolation
+        - endpoint: Action:RegisterCACertificate
+        - endpoint: Action:RegisterCertificate
+        - endpoint: Action:RegisterCertificateWithoutCA
+        - endpoint: Action:RegisterThing
+        - endpoint: Action:RejectCertificateTransfer
+        - endpoint: Action:RemoveThingFromBillingGroup
+        - endpoint: Action:RemoveThingFromThingGroup
+        - endpoint: Action:ReplaceTopicRule
+        - endpoint: Action:SearchIndex
+        - endpoint: Action:SetDefaultAuthorizer
+        - endpoint: Action:SetDefaultPolicyVersion
+        - endpoint: Action:SetLoggingOptions
+        - endpoint: Action:SetV2LoggingLevel
+        - endpoint: Action:SetV2LoggingOptions
+        - endpoint: Action:StartAuditMitigationActionsTask
+        - endpoint: Action:StartDetectMitigationActionsTask
+        - endpoint: Action:StartOnDemandAuditTask
+        - endpoint: Action:StartThingRegistrationTask
+        - endpoint: Action:StopThingRegistrationTask
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestAuthorization
+        - endpoint: Action:TestInvokeAuthorizer
+        - endpoint: Action:TransferCertificate
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccountAuditConfiguration
+        - endpoint: Action:UpdateAuditSuppression
+        - endpoint: Action:UpdateAuthorizer
+        - endpoint: Action:UpdateBillingGroup
+        - endpoint: Action:UpdateCACertificate
+        - endpoint: Action:UpdateCertificate
+        - endpoint: Action:UpdateCertificateProvider
+        - endpoint: Action:UpdateCommand
+        - endpoint: Action:UpdateCustomMetric
+        - endpoint: Action:UpdateDimension
+        - endpoint: Action:UpdateDomainConfiguration
+        - endpoint: Action:UpdateDynamicThingGroup
+        - endpoint: Action:UpdateEventConfigurations
+        - endpoint: Action:UpdateFleetMetric
+        - endpoint: Action:UpdateIndexingConfiguration
+        - endpoint: Action:UpdateJob
+        - endpoint: Action:UpdateMitigationAction
+        - endpoint: Action:UpdatePackage
+        - endpoint: Action:UpdatePackageConfiguration
+        - endpoint: Action:UpdatePackageVersion
+        - endpoint: Action:UpdateProvisioningTemplate
+        - endpoint: Action:UpdateRoleAlias
+        - endpoint: Action:UpdateScheduledAudit
+        - endpoint: Action:UpdateSecurityProfile
+        - endpoint: Action:UpdateStream
+        - endpoint: Action:UpdateThing
+        - endpoint: Action:UpdateThingGroup
+        - endpoint: Action:UpdateThingGroupsForThing
+        - endpoint: Action:UpdateThingType
+        - endpoint: Action:UpdateTopicRuleDestination
+        - endpoint: Action:ValidateSecurityProfileBehaviors
+      - service: IoT Events (iot-events)
+        - endpoint: Action:CreateAlarmModel
+        - endpoint: Action:CreateDetectorModel
+        - endpoint: Action:CreateInput
+        - endpoint: Action:DeleteAlarmModel
+        - endpoint: Action:DeleteDetectorModel
+        - endpoint: Action:DeleteInput
+        - endpoint: Action:DescribeAlarmModel
+        - endpoint: Action:DescribeDetectorModel
+        - endpoint: Action:DescribeDetectorModelAnalysis
+        - endpoint: Action:DescribeInput
+        - endpoint: Action:DescribeLoggingOptions
+        - endpoint: Action:GetDetectorModelAnalysisResults
+        - endpoint: Action:ListAlarmModelVersions
+        - endpoint: Action:ListAlarmModels
+        - endpoint: Action:ListDetectorModelVersions
+        - endpoint: Action:ListDetectorModels
+        - endpoint: Action:ListInputRoutings
+        - endpoint: Action:ListInputs
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutLoggingOptions
+        - endpoint: Action:StartDetectorModelAnalysis
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAlarmModel
+        - endpoint: Action:UpdateDetectorModel
+        - endpoint: Action:UpdateInput
+      - service: IoT Greengrass (iot-greengrass)
+        - endpoint: Action:AssociateServiceRoleToAccount
+        - endpoint: Action:BatchAssociateClientDeviceWithCoreDevice
+        - endpoint: Action:BatchDisassociateClientDeviceFromCoreDevice
+        - endpoint: Action:CancelDeployment
+        - endpoint: Action:CreateComponentVersion
+        - endpoint: Action:CreateDeployment
+        - endpoint: Action:DeleteComponent
+        - endpoint: Action:DeleteCoreDevice
+        - endpoint: Action:DeleteDeployment
+        - endpoint: Action:DescribeComponent
+        - endpoint: Action:DisassociateServiceRoleFromAccount
+        - endpoint: Action:GetComponent
+        - endpoint: Action:GetComponentVersionArtifact
+        - endpoint: Action:GetConnectivityInfo
+        - endpoint: Action:GetCoreDevice
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetServiceRoleForAccount
+        - endpoint: Action:ListClientDevicesAssociatedWithCoreDevice
+        - endpoint: Action:ListComponentVersions
+        - endpoint: Action:ListComponents
+        - endpoint: Action:ListCoreDevices
+        - endpoint: Action:ListDeployments
+        - endpoint: Action:ListEffectiveDeployments
+        - endpoint: Action:ListInstalledComponents
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ResolveComponentCandidates
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateConnectivityInfo
+      - service: IoT SiteWise (iot-sitewise)
+        - endpoint: Action:AssociateAssets
+        - endpoint: Action:AssociateTimeSeriesToAssetProperty
+        - endpoint: Action:BatchAssociateProjectAssets
+        - endpoint: Action:BatchDisassociateProjectAssets
+        - endpoint: Action:BatchGetAssetPropertyAggregates
+        - endpoint: Action:BatchGetAssetPropertyValue
+        - endpoint: Action:BatchGetAssetPropertyValueHistory
+        - endpoint: Action:BatchPutAssetPropertyValue
+        - endpoint: Action:CreateAccessPolicy
+        - endpoint: Action:CreateAsset
+        - endpoint: Action:CreateAssetModel
+        - endpoint: Action:CreateAssetModelCompositeModel
+        - endpoint: Action:CreateBulkImportJob
+        - endpoint: Action:CreateComputationModel
+        - endpoint: Action:CreateDashboard
+        - endpoint: Action:CreateDataset
+        - endpoint: Action:CreateGateway
+        - endpoint: Action:CreatePortal
+        - endpoint: Action:CreateProject
+        - endpoint: Action:DeleteAccessPolicy
+        - endpoint: Action:DeleteAsset
+        - endpoint: Action:DeleteAssetModel
+        - endpoint: Action:DeleteAssetModelCompositeModel
+        - endpoint: Action:DeleteAssetModelInterfaceRelationship
+        - endpoint: Action:DeleteComputationModel
+        - endpoint: Action:DeleteDashboard
+        - endpoint: Action:DeleteDataset
+        - endpoint: Action:DeleteGateway
+        - endpoint: Action:DeletePortal
+        - endpoint: Action:DeleteProject
+        - endpoint: Action:DeleteTimeSeries
+        - endpoint: Action:DescribeAccessPolicy
+        - endpoint: Action:DescribeAction
+        - endpoint: Action:DescribeAsset
+        - endpoint: Action:DescribeAssetCompositeModel
+        - endpoint: Action:DescribeAssetModel
+        - endpoint: Action:DescribeAssetModelCompositeModel
+        - endpoint: Action:DescribeAssetModelInterfaceRelationship
+        - endpoint: Action:DescribeAssetProperty
+        - endpoint: Action:DescribeBulkImportJob
+        - endpoint: Action:DescribeComputationModel
+        - endpoint: Action:DescribeComputationModelExecutionSummary
+        - endpoint: Action:DescribeDashboard
+        - endpoint: Action:DescribeDataset
+        - endpoint: Action:DescribeDefaultEncryptionConfiguration
+        - endpoint: Action:DescribeExecution
+        - endpoint: Action:DescribeGateway
+        - endpoint: Action:DescribeGatewayCapabilityConfiguration
+        - endpoint: Action:DescribeLoggingOptions
+        - endpoint: Action:DescribePortal
+        - endpoint: Action:DescribeProject
+        - endpoint: Action:DescribeStorageConfiguration
+        - endpoint: Action:DescribeTimeSeries
+        - endpoint: Action:DisassociateAssets
+        - endpoint: Action:DisassociateTimeSeriesFromAssetProperty
+        - endpoint: Action:ExecuteAction
+        - endpoint: Action:ExecuteQuery
+        - endpoint: Action:GetAssetPropertyAggregates
+        - endpoint: Action:GetAssetPropertyValue
+        - endpoint: Action:GetAssetPropertyValueHistory
+        - endpoint: Action:GetInterpolatedAssetPropertyValues
+        - endpoint: Action:InvokeAssistant
+        - endpoint: Action:ListAccessPolicies
+        - endpoint: Action:ListActions
+        - endpoint: Action:ListAssetModelCompositeModels
+        - endpoint: Action:ListAssetModelProperties
+        - endpoint: Action:ListAssetModels
+        - endpoint: Action:ListAssetProperties
+        - endpoint: Action:ListAssetRelationships
+        - endpoint: Action:ListAssets
+        - endpoint: Action:ListAssociatedAssets
+        - endpoint: Action:ListBulkImportJobs
+        - endpoint: Action:ListCompositionRelationships
+        - endpoint: Action:ListComputationModelDataBindingUsages
+        - endpoint: Action:ListComputationModelResolveToResources
+        - endpoint: Action:ListComputationModels
+        - endpoint: Action:ListDashboards
+        - endpoint: Action:ListDatasets
+        - endpoint: Action:ListExecutions
+        - endpoint: Action:ListGateways
+        - endpoint: Action:ListInterfaceRelationships
+        - endpoint: Action:ListPortals
+        - endpoint: Action:ListProjectAssets
+        - endpoint: Action:ListProjects
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTimeSeries
+        - endpoint: Action:PutAssetModelInterfaceRelationship
+        - endpoint: Action:PutDefaultEncryptionConfiguration
+        - endpoint: Action:PutLoggingOptions
+        - endpoint: Action:PutStorageConfiguration
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccessPolicy
+        - endpoint: Action:UpdateAsset
+        - endpoint: Action:UpdateAssetModel
+        - endpoint: Action:UpdateAssetModelCompositeModel
+        - endpoint: Action:UpdateAssetProperty
+        - endpoint: Action:UpdateComputationModel
+        - endpoint: Action:UpdateDashboard
+        - endpoint: Action:UpdateDataset
+        - endpoint: Action:UpdateGateway
+        - endpoint: Action:UpdateGatewayCapabilityConfiguration
+        - endpoint: Action:UpdatePortal
+        - endpoint: Action:UpdateProject
+      - service: IoT TwinMaker (iot-twinmaker)
+        - endpoint: Action:BatchPutPropertyValues
+        - endpoint: Action:CancelMetadataTransferJob
+        - endpoint: Action:CreateComponentType
+        - endpoint: Action:CreateEntity
+        - endpoint: Action:CreateMetadataTransferJob
+        - endpoint: Action:CreateScene
+        - endpoint: Action:CreateSyncJob
+        - endpoint: Action:CreateWorkspace
+        - endpoint: Action:DeleteComponentType
+        - endpoint: Action:DeleteEntity
+        - endpoint: Action:DeleteScene
+        - endpoint: Action:DeleteSyncJob
+        - endpoint: Action:DeleteWorkspace
+        - endpoint: Action:ExecuteQuery
+        - endpoint: Action:GetComponentType
+        - endpoint: Action:GetEntity
+        - endpoint: Action:GetMetadataTransferJob
+        - endpoint: Action:GetPricingPlan
+        - endpoint: Action:GetPropertyValue
+        - endpoint: Action:GetPropertyValueHistory
+        - endpoint: Action:GetScene
+        - endpoint: Action:GetSyncJob
+        - endpoint: Action:GetWorkspace
+        - endpoint: Action:ListComponentTypes
+        - endpoint: Action:ListComponents
+        - endpoint: Action:ListEntities
+        - endpoint: Action:ListMetadataTransferJobs
+        - endpoint: Action:ListProperties
+        - endpoint: Action:ListScenes
+        - endpoint: Action:ListSyncJobs
+        - endpoint: Action:ListSyncResources
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWorkspaces
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateComponentType
+        - endpoint: Action:UpdateEntity
+        - endpoint: Action:UpdatePricingPlan
+        - endpoint: Action:UpdateScene
+        - endpoint: Action:UpdateWorkspace
+      - service: IoT Wireless (iot-wireless)
+        - endpoint: Action:AssociateAwsAccountWithPartnerAccount
+        - endpoint: Action:AssociateMulticastGroupWithFuotaTask
+        - endpoint: Action:AssociateWirelessDeviceWithFuotaTask
+        - endpoint: Action:AssociateWirelessDeviceWithMulticastGroup
+        - endpoint: Action:AssociateWirelessDeviceWithThing
+        - endpoint: Action:AssociateWirelessGatewayWithCertificate
+        - endpoint: Action:AssociateWirelessGatewayWithThing
+        - endpoint: Action:CancelMulticastGroupSession
+        - endpoint: Action:CreateDestination
+        - endpoint: Action:CreateDeviceProfile
+        - endpoint: Action:CreateFuotaTask
+        - endpoint: Action:CreateMulticastGroup
+        - endpoint: Action:CreateNetworkAnalyzerConfiguration
+        - endpoint: Action:CreateServiceProfile
+        - endpoint: Action:CreateWirelessDevice
+        - endpoint: Action:CreateWirelessGateway
+        - endpoint: Action:CreateWirelessGatewayTask
+        - endpoint: Action:CreateWirelessGatewayTaskDefinition
+        - endpoint: Action:DeleteDestination
+        - endpoint: Action:DeleteDeviceProfile
+        - endpoint: Action:DeleteFuotaTask
+        - endpoint: Action:DeleteMulticastGroup
+        - endpoint: Action:DeleteNetworkAnalyzerConfiguration
+        - endpoint: Action:DeleteQueuedMessages
+        - endpoint: Action:DeleteServiceProfile
+        - endpoint: Action:DeleteWirelessDevice
+        - endpoint: Action:DeleteWirelessDeviceImportTask
+        - endpoint: Action:DeleteWirelessGateway
+        - endpoint: Action:DeleteWirelessGatewayTask
+        - endpoint: Action:DeleteWirelessGatewayTaskDefinition
+        - endpoint: Action:DeregisterWirelessDevice
+        - endpoint: Action:DisassociateAwsAccountFromPartnerAccount
+        - endpoint: Action:DisassociateMulticastGroupFromFuotaTask
+        - endpoint: Action:DisassociateWirelessDeviceFromFuotaTask
+        - endpoint: Action:DisassociateWirelessDeviceFromMulticastGroup
+        - endpoint: Action:DisassociateWirelessDeviceFromThing
+        - endpoint: Action:DisassociateWirelessGatewayFromCertificate
+        - endpoint: Action:DisassociateWirelessGatewayFromThing
+        - endpoint: Action:GetDestination
+        - endpoint: Action:GetDeviceProfile
+        - endpoint: Action:GetEventConfigurationByResourceTypes
+        - endpoint: Action:GetFuotaTask
+        - endpoint: Action:GetLogLevelsByResourceTypes
+        - endpoint: Action:GetMetricConfiguration
+        - endpoint: Action:GetMetrics
+        - endpoint: Action:GetMulticastGroup
+        - endpoint: Action:GetMulticastGroupSession
+        - endpoint: Action:GetNetworkAnalyzerConfiguration
+        - endpoint: Action:GetPartnerAccount
+        - endpoint: Action:GetPosition
+        - endpoint: Action:GetPositionConfiguration
+        - endpoint: Action:GetPositionEstimate
+        - endpoint: Action:GetResourceEventConfiguration
+        - endpoint: Action:GetResourceLogLevel
+        - endpoint: Action:GetResourcePosition
+        - endpoint: Action:GetServiceEndpoint
+        - endpoint: Action:GetServiceProfile
+        - endpoint: Action:GetWirelessDevice
+        - endpoint: Action:GetWirelessDeviceImportTask
+        - endpoint: Action:GetWirelessDeviceStatistics
+        - endpoint: Action:GetWirelessGateway
+        - endpoint: Action:GetWirelessGatewayCertificate
+        - endpoint: Action:GetWirelessGatewayFirmwareInformation
+        - endpoint: Action:GetWirelessGatewayStatistics
+        - endpoint: Action:GetWirelessGatewayTask
+        - endpoint: Action:GetWirelessGatewayTaskDefinition
+        - endpoint: Action:ListDestinations
+        - endpoint: Action:ListDeviceProfiles
+        - endpoint: Action:ListDevicesForWirelessDeviceImportTask
+        - endpoint: Action:ListEventConfigurations
+        - endpoint: Action:ListFuotaTasks
+        - endpoint: Action:ListMulticastGroups
+        - endpoint: Action:ListMulticastGroupsByFuotaTask
+        - endpoint: Action:ListNetworkAnalyzerConfigurations
+        - endpoint: Action:ListPartnerAccounts
+        - endpoint: Action:ListPositionConfigurations
+        - endpoint: Action:ListQueuedMessages
+        - endpoint: Action:ListServiceProfiles
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWirelessDeviceImportTasks
+        - endpoint: Action:ListWirelessDevices
+        - endpoint: Action:ListWirelessGatewayTaskDefinitions
+        - endpoint: Action:ListWirelessGateways
+        - endpoint: Action:PutPositionConfiguration
+        - endpoint: Action:PutResourceLogLevel
+        - endpoint: Action:ResetAllResourceLogLevels
+        - endpoint: Action:ResetResourceLogLevel
+        - endpoint: Action:SendDataToMulticastGroup
+        - endpoint: Action:SendDataToWirelessDevice
+        - endpoint: Action:StartBulkAssociateWirelessDeviceWithMulticastGroup
+        - endpoint: Action:StartBulkDisassociateWirelessDeviceFromMulticastGroup
+        - endpoint: Action:StartFuotaTask
+        - endpoint: Action:StartMulticastGroupSession
+        - endpoint: Action:StartSingleWirelessDeviceImportTask
+        - endpoint: Action:StartWirelessDeviceImportTask
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestWirelessDevice
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateDestination
+        - endpoint: Action:UpdateEventConfigurationByResourceTypes
+        - endpoint: Action:UpdateFuotaTask
+        - endpoint: Action:UpdateLogLevelsByResourceTypes
+        - endpoint: Action:UpdateMetricConfiguration
+        - endpoint: Action:UpdateMulticastGroup
+        - endpoint: Action:UpdateNetworkAnalyzerConfiguration
+        - endpoint: Action:UpdatePartnerAccount
+        - endpoint: Action:UpdatePosition
+        - endpoint: Action:UpdateResourceEventConfiguration
+        - endpoint: Action:UpdateResourcePosition
+        - endpoint: Action:UpdateWirelessDevice
+        - endpoint: Action:UpdateWirelessDeviceImportTask
+        - endpoint: Action:UpdateWirelessGateway
+      - service: Kendra (kendra)
+        - endpoint: Action:AssociateEntitiesToExperience
+        - endpoint: Action:AssociatePersonasToEntities
+        - endpoint: Action:BatchDeleteDocument
+        - endpoint: Action:BatchDeleteFeaturedResultsSet
+        - endpoint: Action:BatchGetDocumentStatus
+        - endpoint: Action:BatchPutDocument
+        - endpoint: Action:ClearQuerySuggestions
+        - endpoint: Action:CreateAccessControlConfiguration
+        - endpoint: Action:CreateDataSource
+        - endpoint: Action:CreateExperience
+        - endpoint: Action:CreateFaq
+        - endpoint: Action:CreateFeaturedResultsSet
+        - endpoint: Action:CreateIndex
+        - endpoint: Action:CreateQuerySuggestionsBlockList
+        - endpoint: Action:CreateThesaurus
+        - endpoint: Action:DeleteAccessControlConfiguration
+        - endpoint: Action:DeleteDataSource
+        - endpoint: Action:DeleteExperience
+        - endpoint: Action:DeleteFaq
+        - endpoint: Action:DeleteIndex
+        - endpoint: Action:DeletePrincipalMapping
+        - endpoint: Action:DeleteQuerySuggestionsBlockList
+        - endpoint: Action:DeleteThesaurus
+        - endpoint: Action:DescribeAccessControlConfiguration
+        - endpoint: Action:DescribeDataSource
+        - endpoint: Action:DescribeExperience
+        - endpoint: Action:DescribeFaq
+        - endpoint: Action:DescribeFeaturedResultsSet
+        - endpoint: Action:DescribeIndex
+        - endpoint: Action:DescribePrincipalMapping
+        - endpoint: Action:DescribeQuerySuggestionsBlockList
+        - endpoint: Action:DescribeQuerySuggestionsConfig
+        - endpoint: Action:DescribeThesaurus
+        - endpoint: Action:DisassociateEntitiesFromExperience
+        - endpoint: Action:DisassociatePersonasFromEntities
+        - endpoint: Action:GetQuerySuggestions
+        - endpoint: Action:GetSnapshots
+        - endpoint: Action:ListAccessControlConfigurations
+        - endpoint: Action:ListDataSourceSyncJobs
+        - endpoint: Action:ListDataSources
+        - endpoint: Action:ListEntityPersonas
+        - endpoint: Action:ListExperienceEntities
+        - endpoint: Action:ListExperiences
+        - endpoint: Action:ListFaqs
+        - endpoint: Action:ListFeaturedResultsSets
+        - endpoint: Action:ListGroupsOlderThanOrderingId
+        - endpoint: Action:ListIndices
+        - endpoint: Action:ListQuerySuggestionsBlockLists
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListThesauri
+        - endpoint: Action:PutPrincipalMapping
+        - endpoint: Action:Query
+        - endpoint: Action:Retrieve
+        - endpoint: Action:StartDataSourceSyncJob
+        - endpoint: Action:StopDataSourceSyncJob
+        - endpoint: Action:SubmitFeedback
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccessControlConfiguration
+        - endpoint: Action:UpdateDataSource
+        - endpoint: Action:UpdateExperience
+        - endpoint: Action:UpdateFeaturedResultsSet
+        - endpoint: Action:UpdateIndex
+        - endpoint: Action:UpdateQuerySuggestionsBlockList
+        - endpoint: Action:UpdateQuerySuggestionsConfig
+        - endpoint: Action:UpdateThesaurus
+      - service: Kinesis Data Streams (kinesis)
+        - endpoint: Action:AddTagsToStream
+        - endpoint: Action:CreateStream
+        - endpoint: Action:DecreaseStreamRetentionPeriod
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteStream
+        - endpoint: Action:DeregisterStreamConsumer
+        - endpoint: Action:DescribeAccountSettings
+        - endpoint: Action:DescribeLimits
+        - endpoint: Action:DescribeStream
+        - endpoint: Action:DescribeStreamConsumer
+        - endpoint: Action:DescribeStreamSummary
+        - endpoint: Action:DisableEnhancedMonitoring
+        - endpoint: Action:EnableEnhancedMonitoring
+        - endpoint: Action:GetRecords
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetShardIterator
+        - endpoint: Action:IncreaseStreamRetentionPeriod
+        - endpoint: Action:ListShards
+        - endpoint: Action:ListStreamConsumers
+        - endpoint: Action:ListStreams
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTagsForStream
+        - endpoint: Action:MergeShards
+        - endpoint: Action:PutRecord
+        - endpoint: Action:PutRecords
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RegisterStreamConsumer
+        - endpoint: Action:RemoveTagsFromStream
+        - endpoint: Action:SplitShard
+        - endpoint: Action:StartStreamEncryption
+        - endpoint: Action:StopStreamEncryption
+        - endpoint: Action:SubscribeToShard
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccountSettings
+        - endpoint: Action:UpdateMaxRecordSize
+        - endpoint: Action:UpdateShardCount
+        - endpoint: Action:UpdateStreamMode
+        - endpoint: Action:UpdateStreamWarmThroughput
+      - service: Kinesis Video Streams (kinesisvideostreams)
+        - endpoint: POST /ListTagsForResource
+        - endpoint: POST /TagResource
+        - endpoint: POST /UntagResource
+        - endpoint: POST /createSignalingChannel
+        - endpoint: POST /createStream
+        - endpoint: POST /deleteEdgeConfiguration
+        - endpoint: POST /deleteSignalingChannel
+        - endpoint: POST /deleteStream
+        - endpoint: POST /describeEdgeConfiguration
+        - endpoint: POST /describeImageGenerationConfiguration
+        - endpoint: POST /describeMappedResourceConfiguration
+        - endpoint: POST /describeMediaStorageConfiguration
+        - endpoint: POST /describeNotificationConfiguration
+        - endpoint: POST /describeSignalingChannel
+        - endpoint: POST /describeStream
+        - endpoint: POST /describeStreamStorageConfiguration
+        - endpoint: POST /getDataEndpoint
+        - endpoint: POST /getSignalingChannelEndpoint
+        - endpoint: POST /listEdgeAgentConfigurations
+        - endpoint: POST /listSignalingChannels
+        - endpoint: POST /listStreams
+        - endpoint: POST /listTagsForStream
+        - endpoint: POST /startEdgeConfigurationUpdate
+        - endpoint: POST /tagStream
+        - endpoint: POST /untagStream
+        - endpoint: POST /updateDataRetention
+        - endpoint: POST /updateImageGenerationConfiguration
+        - endpoint: POST /updateMediaStorageConfiguration
+        - endpoint: POST /updateNotificationConfiguration
+        - endpoint: POST /updateSignalingChannel
+        - endpoint: POST /updateStream
+        - endpoint: POST /updateStreamStorageConfiguration
+      - service: Mainframe Modernization (M2) (m2)
+        - endpoint: Action:CancelBatchJobExecution
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateDataSetExportTask
+        - endpoint: Action:CreateDataSetImportTask
+        - endpoint: Action:CreateDeployment
+        - endpoint: Action:CreateEnvironment
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteApplicationFromEnvironment
+        - endpoint: Action:DeleteEnvironment
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetApplicationVersion
+        - endpoint: Action:GetBatchJobExecution
+        - endpoint: Action:GetDataSetDetails
+        - endpoint: Action:GetDataSetExportTask
+        - endpoint: Action:GetDataSetImportTask
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetEnvironment
+        - endpoint: Action:GetSignedBluinsightsUrl
+        - endpoint: Action:ListApplicationVersions
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListBatchJobDefinitions
+        - endpoint: Action:ListBatchJobExecutions
+        - endpoint: Action:ListBatchJobRestartPoints
+        - endpoint: Action:ListDataSetExportHistory
+        - endpoint: Action:ListDataSetImportHistory
+        - endpoint: Action:ListDataSets
+        - endpoint: Action:ListDeployments
+        - endpoint: Action:ListEngineVersions
+        - endpoint: Action:ListEnvironments
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartApplication
+        - endpoint: Action:StartBatchJob
+        - endpoint: Action:StopApplication
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApplication
+        - endpoint: Action:UpdateEnvironment
+      - service: Managed Grafana (grafana)
+        - endpoint: Action:AssociateLicense
+        - endpoint: Action:CreateWorkspace
+        - endpoint: Action:CreateWorkspaceApiKey
+        - endpoint: Action:CreateWorkspaceServiceAccount
+        - endpoint: Action:CreateWorkspaceServiceAccountToken
+        - endpoint: Action:DeleteWorkspace
+        - endpoint: Action:DeleteWorkspaceApiKey
+        - endpoint: Action:DeleteWorkspaceServiceAccount
+        - endpoint: Action:DeleteWorkspaceServiceAccountToken
+        - endpoint: Action:DescribeWorkspace
+        - endpoint: Action:DescribeWorkspaceAuthentication
+        - endpoint: Action:DescribeWorkspaceConfiguration
+        - endpoint: Action:DisassociateLicense
+        - endpoint: Action:ListPermissions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListVersions
+        - endpoint: Action:ListWorkspaceServiceAccountTokens
+        - endpoint: Action:ListWorkspaceServiceAccounts
+        - endpoint: Action:ListWorkspaces
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdatePermissions
+        - endpoint: Action:UpdateWorkspace
+        - endpoint: Action:UpdateWorkspaceAuthentication
+        - endpoint: Action:UpdateWorkspaceConfiguration
+      - service: Managed Prometheus (prometheus)
+        - endpoint: Action:CreateAlertManagerDefinition
+        - endpoint: Action:CreateAnomalyDetector
+        - endpoint: Action:CreateLoggingConfiguration
+        - endpoint: Action:CreateQueryLoggingConfiguration
+        - endpoint: Action:CreateRuleGroupsNamespace
+        - endpoint: Action:CreateScraper
+        - endpoint: Action:CreateWorkspace
+        - endpoint: Action:DeleteAlertManagerDefinition
+        - endpoint: Action:DeleteAnomalyDetector
+        - endpoint: Action:DeleteLoggingConfiguration
+        - endpoint: Action:DeleteQueryLoggingConfiguration
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteRuleGroupsNamespace
+        - endpoint: Action:DeleteScraper
+        - endpoint: Action:DeleteScraperLoggingConfiguration
+        - endpoint: Action:DeleteWorkspace
+        - endpoint: Action:DescribeAlertManagerDefinition
+        - endpoint: Action:DescribeAnomalyDetector
+        - endpoint: Action:DescribeLoggingConfiguration
+        - endpoint: Action:DescribeQueryLoggingConfiguration
+        - endpoint: Action:DescribeResourcePolicy
+        - endpoint: Action:DescribeRuleGroupsNamespace
+        - endpoint: Action:DescribeScraper
+        - endpoint: Action:DescribeScraperLoggingConfiguration
+        - endpoint: Action:DescribeWorkspace
+        - endpoint: Action:DescribeWorkspaceConfiguration
+        - endpoint: Action:GetDefaultScraperConfiguration
+        - endpoint: Action:ListAnomalyDetectors
+        - endpoint: Action:ListRuleGroupsNamespaces
+        - endpoint: Action:ListScrapers
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWorkspaces
+        - endpoint: Action:PutAlertManagerDefinition
+        - endpoint: Action:PutAnomalyDetector
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:PutRuleGroupsNamespace
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateLoggingConfiguration
+        - endpoint: Action:UpdateQueryLoggingConfiguration
+        - endpoint: Action:UpdateScraper
+        - endpoint: Action:UpdateScraperLoggingConfiguration
+        - endpoint: Action:UpdateWorkspaceAlias
+        - endpoint: Action:UpdateWorkspaceConfiguration
+      - service: Marketplace (marketplace)
+        - endpoint: Action:BatchDescribeEntities
+        - endpoint: Action:BatchMeterUsage
+        - endpoint: Action:CancelChangeSet
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DescribeAgreement
+        - endpoint: Action:DescribeChangeSet
+        - endpoint: Action:DescribeEntity
+        - endpoint: Action:GetAgreementTerms
+        - endpoint: Action:GetBuyerDashboard
+        - endpoint: Action:GetEntitlements
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:ListChangeSets
+        - endpoint: Action:ListEntities
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:MeterUsage
+        - endpoint: Action:PutDeploymentParameter
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RegisterUsage
+        - endpoint: Action:ResolveCustomer
+        - endpoint: Action:SearchAgreements
+        - endpoint: Action:StartChangeSet
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: Migration Hub Orchestrator (migrationhub-orchestrator)
+        - endpoint: Action:CreateTemplate
+        - endpoint: Action:CreateWorkflow
+        - endpoint: Action:CreateWorkflowStep
+        - endpoint: Action:CreateWorkflowStepGroup
+        - endpoint: Action:DeleteTemplate
+        - endpoint: Action:DeleteWorkflow
+        - endpoint: Action:DeleteWorkflowStep
+        - endpoint: Action:DeleteWorkflowStepGroup
+        - endpoint: Action:GetTemplate
+        - endpoint: Action:GetTemplateStep
+        - endpoint: Action:GetTemplateStepGroup
+        - endpoint: Action:GetWorkflow
+        - endpoint: Action:GetWorkflowStep
+        - endpoint: Action:GetWorkflowStepGroup
+        - endpoint: Action:ListPlugins
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTemplateStepGroups
+        - endpoint: Action:ListTemplateSteps
+        - endpoint: Action:ListTemplates
+        - endpoint: Action:ListWorkflowStepGroups
+        - endpoint: Action:ListWorkflowSteps
+        - endpoint: Action:ListWorkflows
+        - endpoint: Action:RetryWorkflowStep
+        - endpoint: Action:StartWorkflow
+        - endpoint: Action:StopWorkflow
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateTemplate
+        - endpoint: Action:UpdateWorkflow
+        - endpoint: Action:UpdateWorkflowStep
+        - endpoint: Action:UpdateWorkflowStepGroup
+      - service: Migration Hub Refactor Spaces (migrationhub-refactor-spaces)
+        - endpoint: Action:CreateApplication
+        - endpoint: Action:CreateEnvironment
+        - endpoint: Action:CreateRoute
+        - endpoint: Action:CreateService
+        - endpoint: Action:DeleteApplication
+        - endpoint: Action:DeleteEnvironment
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteRoute
+        - endpoint: Action:DeleteService
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetEnvironment
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetRoute
+        - endpoint: Action:GetService
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListEnvironmentVpcs
+        - endpoint: Action:ListEnvironments
+        - endpoint: Action:ListRoutes
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateRoute
+      - service: Migration Hub Strategy Recommendations (migrationhub-strategy)
+        - endpoint: Action:GetApplicationComponentDetails
+        - endpoint: Action:GetApplicationComponentStrategies
+        - endpoint: Action:GetAssessment
+        - endpoint: Action:GetImportFileTask
+        - endpoint: Action:GetLatestAssessmentId
+        - endpoint: Action:GetPortfolioPreferences
+        - endpoint: Action:GetPortfolioSummary
+        - endpoint: Action:GetRecommendationReportDetails
+        - endpoint: Action:GetServerDetails
+        - endpoint: Action:GetServerStrategies
+        - endpoint: Action:ListAnalyzableServers
+        - endpoint: Action:ListApplicationComponents
+        - endpoint: Action:ListCollectors
+        - endpoint: Action:ListImportFileTask
+        - endpoint: Action:ListServers
+        - endpoint: Action:PutPortfolioPreferences
+        - endpoint: Action:StartAssessment
+        - endpoint: Action:StartImportFileTask
+        - endpoint: Action:StartRecommendationReportGeneration
+        - endpoint: Action:StopAssessment
+        - endpoint: Action:UpdateApplicationComponentConfig
+        - endpoint: Action:UpdateServerConfig
+      - service: MWAA (mwaa)
+        - endpoint: DELETE /environments/{Name}
+        - endpoint: DELETE /tags/{ResourceArn}?tagKeys={tagKeys}
+        - endpoint: GET /environments/{Name}
+        - endpoint: GET /environments?MaxResults={MaxResults}&NextToken={NextToken}
+        - endpoint: GET /tags/{ResourceArn}
+        - endpoint: PATCH /environments/{Name}
+        - endpoint: POST /clitoken/{Name}
+        - endpoint: POST /metrics/environments/{EnvironmentName}
+        - endpoint: POST /restapi/{Name}
+        - endpoint: POST /tags/{ResourceArn}
+        - endpoint: POST /webtoken/{Name}
+        - endpoint: PUT /environments/{Name}
+      - service: MWAA Serverless (mwaa-serverless)
+        - endpoint: Action:CreateWorkflow
+        - endpoint: Action:DeleteWorkflow
+        - endpoint: Action:GetTaskInstance
+        - endpoint: Action:GetWorkflow
+        - endpoint: Action:GetWorkflowRun
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTaskInstances
+        - endpoint: Action:ListWorkflowRuns
+        - endpoint: Action:ListWorkflowVersions
+        - endpoint: Action:ListWorkflows
+        - endpoint: Action:StartWorkflowRun
+        - endpoint: Action:StopWorkflowRun
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateWorkflow
+      - service: Network Flow Monitor (networkflowmonitor)
+        - endpoint: Action:CreateMonitor
+        - endpoint: Action:CreateScope
+        - endpoint: Action:DeleteMonitor
+        - endpoint: Action:DeleteScope
+        - endpoint: Action:GetMonitor
+        - endpoint: Action:GetQueryResultsMonitorTopContributors
+        - endpoint: Action:GetQueryResultsWorkloadInsightsTopContributors
+        - endpoint: Action:GetQueryResultsWorkloadInsightsTopContributorsData
+        - endpoint: Action:GetQueryStatusMonitorTopContributors
+        - endpoint: Action:GetQueryStatusWorkloadInsightsTopContributors
+        - endpoint: Action:GetQueryStatusWorkloadInsightsTopContributorsData
+        - endpoint: Action:GetScope
+        - endpoint: Action:ListMonitors
+        - endpoint: Action:ListScopes
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartQueryMonitorTopContributors
+        - endpoint: Action:StartQueryWorkloadInsightsTopContributors
+        - endpoint: Action:StartQueryWorkloadInsightsTopContributorsData
+        - endpoint: Action:StopQueryMonitorTopContributors
+        - endpoint: Action:StopQueryWorkloadInsightsTopContributors
+        - endpoint: Action:StopQueryWorkloadInsightsTopContributorsData
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateMonitor
+        - endpoint: Action:UpdateScope
+      - service: Network Synthetic Monitor (network-synthetic-monitor)
+        - endpoint: Action:CreateMonitor
+        - endpoint: Action:CreateProbe
+        - endpoint: Action:DeleteMonitor
+        - endpoint: Action:DeleteProbe
+        - endpoint: Action:GetMonitor
+        - endpoint: Action:GetProbe
+        - endpoint: Action:ListMonitors
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateMonitor
+        - endpoint: Action:UpdateProbe
+      - service: Organizations (organizations)
+        - endpoint: Action:AcceptHandshake
+        - endpoint: Action:AttachPolicy
+        - endpoint: Action:CancelHandshake
+        - endpoint: Action:CloseAccount
+        - endpoint: Action:CreateAccount
+        - endpoint: Action:CreateGovCloudAccount
+        - endpoint: Action:CreateOrganization
+        - endpoint: Action:CreateOrganizationalUnit
+        - endpoint: Action:CreatePolicy
+        - endpoint: Action:DeclineHandshake
+        - endpoint: Action:DeleteOrganization
+        - endpoint: Action:DeleteOrganizationalUnit
+        - endpoint: Action:DeletePolicy
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeregisterDelegatedAdministrator
+        - endpoint: Action:DescribeAccount
+        - endpoint: Action:DescribeCreateAccountStatus
+        - endpoint: Action:DescribeEffectivePolicy
+        - endpoint: Action:DescribeHandshake
+        - endpoint: Action:DescribeOrganization
+        - endpoint: Action:DescribeOrganizationalUnit
+        - endpoint: Action:DescribePolicy
+        - endpoint: Action:DescribeResourcePolicy
+        - endpoint: Action:DescribeResponsibilityTransfer
+        - endpoint: Action:DetachPolicy
+        - endpoint: Action:DisableAWSServiceAccess
+        - endpoint: Action:DisablePolicyType
+        - endpoint: Action:EnableAWSServiceAccess
+        - endpoint: Action:EnableAllFeatures
+        - endpoint: Action:EnablePolicyType
+        - endpoint: Action:InviteAccountToOrganization
+        - endpoint: Action:InviteOrganizationToTransferResponsibility
+        - endpoint: Action:LeaveOrganization
+        - endpoint: Action:ListAWSServiceAccessForOrganization
+        - endpoint: Action:ListAccounts
+        - endpoint: Action:ListAccountsForParent
+        - endpoint: Action:ListAccountsWithInvalidEffectivePolicy
+        - endpoint: Action:ListChildren
+        - endpoint: Action:ListCreateAccountStatus
+        - endpoint: Action:ListDelegatedAdministrators
+        - endpoint: Action:ListDelegatedServicesForAccount
+        - endpoint: Action:ListEffectivePolicyValidationErrors
+        - endpoint: Action:ListHandshakesForAccount
+        - endpoint: Action:ListHandshakesForOrganization
+        - endpoint: Action:ListInboundResponsibilityTransfers
+        - endpoint: Action:ListOrganizationalUnitsForParent
+        - endpoint: Action:ListOutboundResponsibilityTransfers
+        - endpoint: Action:ListParents
+        - endpoint: Action:ListPolicies
+        - endpoint: Action:ListPoliciesForTarget
+        - endpoint: Action:ListRoots
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTargetsForPolicy
+        - endpoint: Action:MoveAccount
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RegisterDelegatedAdministrator
+        - endpoint: Action:RemoveAccountFromOrganization
+        - endpoint: Action:TagResource
+        - endpoint: Action:TerminateResponsibilityTransfer
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateOrganizationalUnit
+        - endpoint: Action:UpdatePolicy
+        - endpoint: Action:UpdateResponsibilityTransfer
+      - service: Partner Central (partner-central)
+        - endpoint: Action:AcceptChannelHandshake
+        - endpoint: Action:AcceptConnectionInvitation
+        - endpoint: Action:AcceptEngagementInvitation
+        - endpoint: Action:AmendBenefitApplication
+        - endpoint: Action:AssignOpportunity
+        - endpoint: Action:AssociateAwsTrainingCertificationEmailDomain
+        - endpoint: Action:AssociateBenefitApplicationResource
+        - endpoint: Action:AssociateOpportunity
+        - endpoint: Action:CancelBenefitApplication
+        - endpoint: Action:CancelChannelHandshake
+        - endpoint: Action:CancelConnection
+        - endpoint: Action:CancelConnectionInvitation
+        - endpoint: Action:CancelProfileUpdateTask
+        - endpoint: Action:CreateBenefitApplication
+        - endpoint: Action:CreateChannelHandshake
+        - endpoint: Action:CreateConnectionInvitation
+        - endpoint: Action:CreateEngagement
+        - endpoint: Action:CreateEngagementContext
+        - endpoint: Action:CreateEngagementInvitation
+        - endpoint: Action:CreateOpportunity
+        - endpoint: Action:CreatePartner
+        - endpoint: Action:CreateProgramManagementAccount
+        - endpoint: Action:CreateRelationship
+        - endpoint: Action:CreateResourceSnapshot
+        - endpoint: Action:CreateResourceSnapshotJob
+        - endpoint: Action:DeleteProgramManagementAccount
+        - endpoint: Action:DeleteRelationship
+        - endpoint: Action:DeleteResourceSnapshotJob
+        - endpoint: Action:DisassociateAwsTrainingCertificationEmailDomain
+        - endpoint: Action:DisassociateBenefitApplicationResource
+        - endpoint: Action:DisassociateOpportunity
+        - endpoint: Action:GetAllianceLeadContact
+        - endpoint: Action:GetAwsOpportunitySummary
+        - endpoint: Action:GetBenefit
+        - endpoint: Action:GetBenefitAllocation
+        - endpoint: Action:GetBenefitApplication
+        - endpoint: Action:GetConnection
+        - endpoint: Action:GetConnectionInvitation
+        - endpoint: Action:GetConnectionPreferences
+        - endpoint: Action:GetEngagement
+        - endpoint: Action:GetEngagementInvitation
+        - endpoint: Action:GetOpportunity
+        - endpoint: Action:GetPartner
+        - endpoint: Action:GetProfileUpdateTask
+        - endpoint: Action:GetProfileVisibility
+        - endpoint: Action:GetRelationship
+        - endpoint: Action:GetResourceSnapshot
+        - endpoint: Action:GetResourceSnapshotJob
+        - endpoint: Action:GetSellingSystemSettings
+        - endpoint: Action:GetVerification
+        - endpoint: Action:ListBenefitAllocations
+        - endpoint: Action:ListBenefitApplications
+        - endpoint: Action:ListBenefits
+        - endpoint: Action:ListChannelHandshakes
+        - endpoint: Action:ListConnectionInvitations
+        - endpoint: Action:ListConnections
+        - endpoint: Action:ListEngagementByAcceptingInvitationTasks
+        - endpoint: Action:ListEngagementFromOpportunityTasks
+        - endpoint: Action:ListEngagementInvitations
+        - endpoint: Action:ListEngagementMembers
+        - endpoint: Action:ListEngagementResourceAssociations
+        - endpoint: Action:ListEngagements
+        - endpoint: Action:ListOpportunities
+        - endpoint: Action:ListOpportunityFromEngagementTasks
+        - endpoint: Action:ListPartners
+        - endpoint: Action:ListProgramManagementAccounts
+        - endpoint: Action:ListRelationships
+        - endpoint: Action:ListResourceSnapshotJobs
+        - endpoint: Action:ListResourceSnapshots
+        - endpoint: Action:ListSolutions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:Partner
+        - endpoint: Action:PutAllianceLeadContact
+        - endpoint: Action:PutProfileVisibility
+        - endpoint: Action:PutSellingSystemSettings
+        - endpoint: Action:RecallBenefitApplication
+        - endpoint: Action:RejectChannelHandshake
+        - endpoint: Action:RejectConnectionInvitation
+        - endpoint: Action:RejectEngagementInvitation
+        - endpoint: Action:SendEmailVerificationCode
+        - endpoint: Action:StartEngagementByAcceptingInvitationTask
+        - endpoint: Action:StartEngagementFromOpportunityTask
+        - endpoint: Action:StartOpportunityFromEngagementTask
+        - endpoint: Action:StartProfileUpdateTask
+        - endpoint: Action:StartResourceSnapshotJob
+        - endpoint: Action:StartVerification
+        - endpoint: Action:StopResourceSnapshotJob
+        - endpoint: Action:SubmitBenefitApplication
+        - endpoint: Action:SubmitOpportunity
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateBenefitApplication
+        - endpoint: Action:UpdateConnectionPreferences
+        - endpoint: Action:UpdateEngagementContext
+        - endpoint: Action:UpdateOpportunity
+        - endpoint: Action:UpdateProgramManagementAccount
+        - endpoint: Action:UpdateRelationship
+      - service: Proton (proton)
+        - endpoint: Action:AcceptEnvironmentAccountConnection
+        - endpoint: Action:CancelComponentDeployment
+        - endpoint: Action:CancelEnvironmentDeployment
+        - endpoint: Action:CancelServiceInstanceDeployment
+        - endpoint: Action:CancelServicePipelineDeployment
+        - endpoint: Action:CreateComponent
+        - endpoint: Action:CreateEnvironment
+        - endpoint: Action:CreateEnvironmentAccountConnection
+        - endpoint: Action:CreateEnvironmentTemplate
+        - endpoint: Action:CreateEnvironmentTemplateVersion
+        - endpoint: Action:CreateRepository
+        - endpoint: Action:CreateService
+        - endpoint: Action:CreateServiceInstance
+        - endpoint: Action:CreateServiceSyncConfig
+        - endpoint: Action:CreateServiceTemplate
+        - endpoint: Action:CreateServiceTemplateVersion
+        - endpoint: Action:CreateTemplateSyncConfig
+        - endpoint: Action:DeleteComponent
+        - endpoint: Action:DeleteDeployment
+        - endpoint: Action:DeleteEnvironment
+        - endpoint: Action:DeleteEnvironmentAccountConnection
+        - endpoint: Action:DeleteEnvironmentTemplate
+        - endpoint: Action:DeleteEnvironmentTemplateVersion
+        - endpoint: Action:DeleteRepository
+        - endpoint: Action:DeleteService
+        - endpoint: Action:DeleteServiceSyncConfig
+        - endpoint: Action:DeleteServiceTemplate
+        - endpoint: Action:DeleteServiceTemplateVersion
+        - endpoint: Action:DeleteTemplateSyncConfig
+        - endpoint: Action:GetAccountSettings
+        - endpoint: Action:GetComponent
+        - endpoint: Action:GetDeployment
+        - endpoint: Action:GetEnvironment
+        - endpoint: Action:GetEnvironmentAccountConnection
+        - endpoint: Action:GetEnvironmentTemplate
+        - endpoint: Action:GetEnvironmentTemplateVersion
+        - endpoint: Action:GetRepository
+        - endpoint: Action:GetRepositorySyncStatus
+        - endpoint: Action:GetResourcesSummary
+        - endpoint: Action:GetService
+        - endpoint: Action:GetServiceInstance
+        - endpoint: Action:GetServiceInstanceSyncStatus
+        - endpoint: Action:GetServiceSyncBlockerSummary
+        - endpoint: Action:GetServiceSyncConfig
+        - endpoint: Action:GetServiceTemplate
+        - endpoint: Action:GetServiceTemplateVersion
+        - endpoint: Action:GetTemplateSyncConfig
+        - endpoint: Action:GetTemplateSyncStatus
+        - endpoint: Action:ListComponentOutputs
+        - endpoint: Action:ListComponentProvisionedResources
+        - endpoint: Action:ListComponents
+        - endpoint: Action:ListDeployments
+        - endpoint: Action:ListEnvironmentAccountConnections
+        - endpoint: Action:ListEnvironmentOutputs
+        - endpoint: Action:ListEnvironmentProvisionedResources
+        - endpoint: Action:ListEnvironmentTemplateVersions
+        - endpoint: Action:ListEnvironmentTemplates
+        - endpoint: Action:ListEnvironments
+        - endpoint: Action:ListRepositories
+        - endpoint: Action:ListRepositorySyncDefinitions
+        - endpoint: Action:ListServiceInstanceOutputs
+        - endpoint: Action:ListServiceInstanceProvisionedResources
+        - endpoint: Action:ListServiceInstances
+        - endpoint: Action:ListServicePipelineOutputs
+        - endpoint: Action:ListServicePipelineProvisionedResources
+        - endpoint: Action:ListServiceTemplateVersions
+        - endpoint: Action:ListServiceTemplates
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:NotifyResourceDeploymentStatusChange
+        - endpoint: Action:RejectEnvironmentAccountConnection
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAccountSettings
+        - endpoint: Action:UpdateComponent
+        - endpoint: Action:UpdateEnvironment
+        - endpoint: Action:UpdateEnvironmentAccountConnection
+        - endpoint: Action:UpdateEnvironmentTemplate
+        - endpoint: Action:UpdateEnvironmentTemplateVersion
+        - endpoint: Action:UpdateService
+        - endpoint: Action:UpdateServiceInstance
+        - endpoint: Action:UpdateServicePipeline
+        - endpoint: Action:UpdateServiceSyncBlocker
+        - endpoint: Action:UpdateServiceSyncConfig
+        - endpoint: Action:UpdateServiceTemplate
+        - endpoint: Action:UpdateServiceTemplateVersion
+        - endpoint: Action:UpdateTemplateSyncConfig
+      - service: RAM (ram)
+        - endpoint: Action:AcceptResourceShareInvitation
+        - endpoint: Action:AssociateResourceShare
+        - endpoint: Action:AssociateResourceSharePermission
+        - endpoint: Action:CreatePermission
+        - endpoint: Action:CreatePermissionVersion
+        - endpoint: Action:CreateResourceShare
+        - endpoint: Action:DeletePermission
+        - endpoint: Action:DeletePermissionVersion
+        - endpoint: Action:DeleteResourceShare
+        - endpoint: Action:DisassociateResourceShare
+        - endpoint: Action:DisassociateResourceSharePermission
+        - endpoint: Action:EnableSharingWithAwsOrganization
+        - endpoint: Action:GetPermission
+        - endpoint: Action:GetResourcePolicies
+        - endpoint: Action:GetResourceShareAssociations
+        - endpoint: Action:GetResourceShareInvitations
+        - endpoint: Action:GetResourceShares
+        - endpoint: Action:ListPendingInvitationResources
+        - endpoint: Action:ListPermissionAssociations
+        - endpoint: Action:ListPermissionVersions
+        - endpoint: Action:ListPermissions
+        - endpoint: Action:ListPrincipals
+        - endpoint: Action:ListReplacePermissionAssociationsWork
+        - endpoint: Action:ListResourceSharePermissions
+        - endpoint: Action:ListResourceTypes
+        - endpoint: Action:ListResources
+        - endpoint: Action:ListSourceAssociations
+        - endpoint: Action:PromotePermissionCreatedFromPolicy
+        - endpoint: Action:PromoteResourceShareCreatedFromPolicy
+        - endpoint: Action:RejectResourceShareInvitation
+        - endpoint: Action:ReplacePermissionAssociations
+        - endpoint: Action:SetDefaultPermissionVersion
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateResourceShare
+      - service: Resilience Hub (resilience-hub)
+        - endpoint: Action:AcceptResourceGroupingRecommendations
+        - endpoint: Action:AddDraftAppVersionResourceMappings
+        - endpoint: Action:BatchUpdateRecommendationStatus
+        - endpoint: Action:CreateApp
+        - endpoint: Action:CreateAppVersionAppComponent
+        - endpoint: Action:CreateAppVersionResource
+        - endpoint: Action:CreateRecommendationTemplate
+        - endpoint: Action:CreateResiliencyPolicy
+        - endpoint: Action:DeleteApp
+        - endpoint: Action:DeleteAppAssessment
+        - endpoint: Action:DeleteAppInputSource
+        - endpoint: Action:DeleteAppVersionAppComponent
+        - endpoint: Action:DeleteAppVersionResource
+        - endpoint: Action:DeleteRecommendationTemplate
+        - endpoint: Action:DeleteResiliencyPolicy
+        - endpoint: Action:DescribeApp
+        - endpoint: Action:DescribeAppAssessment
+        - endpoint: Action:DescribeAppVersion
+        - endpoint: Action:DescribeAppVersionAppComponent
+        - endpoint: Action:DescribeAppVersionResource
+        - endpoint: Action:DescribeAppVersionResourcesResolutionStatus
+        - endpoint: Action:DescribeAppVersionTemplate
+        - endpoint: Action:DescribeDraftAppVersionResourcesImportStatus
+        - endpoint: Action:DescribeMetricsExport
+        - endpoint: Action:DescribeResiliencyPolicy
+        - endpoint: Action:DescribeResourceGroupingRecommendationTask
+        - endpoint: Action:ImportResourcesToDraftAppVersion
+        - endpoint: Action:ListAlarmRecommendations
+        - endpoint: Action:ListAppAssessmentComplianceDrifts
+        - endpoint: Action:ListAppAssessmentResourceDrifts
+        - endpoint: Action:ListAppAssessments
+        - endpoint: Action:ListAppComponentCompliances
+        - endpoint: Action:ListAppComponentRecommendations
+        - endpoint: Action:ListAppInputSources
+        - endpoint: Action:ListAppVersionAppComponents
+        - endpoint: Action:ListAppVersionResourceMappings
+        - endpoint: Action:ListAppVersionResources
+        - endpoint: Action:ListAppVersions
+        - endpoint: Action:ListApps
+        - endpoint: Action:ListMetrics
+        - endpoint: Action:ListRecommendationTemplates
+        - endpoint: Action:ListResiliencyPolicies
+        - endpoint: Action:ListResourceGroupingRecommendations
+        - endpoint: Action:ListSopRecommendations
+        - endpoint: Action:ListSuggestedResiliencyPolicies
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTestRecommendations
+        - endpoint: Action:ListUnsupportedAppVersionResources
+        - endpoint: Action:PublishAppVersion
+        - endpoint: Action:PutDraftAppVersionTemplate
+        - endpoint: Action:RejectResourceGroupingRecommendations
+        - endpoint: Action:RemoveDraftAppVersionResourceMappings
+        - endpoint: Action:ResolveAppVersionResources
+        - endpoint: Action:StartAppAssessment
+        - endpoint: Action:StartMetricsExport
+        - endpoint: Action:StartResourceGroupingRecommendationTask
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApp
+        - endpoint: Action:UpdateAppVersion
+        - endpoint: Action:UpdateAppVersionAppComponent
+        - endpoint: Action:UpdateAppVersionResource
+        - endpoint: Action:UpdateResiliencyPolicy
+      - service: Resource Explorer (resource-explorer)
+        - endpoint: Action:AssociateDefaultView
+        - endpoint: Action:BatchGetView
+        - endpoint: Action:CreateIndex
+        - endpoint: Action:CreateResourceExplorerSetup
+        - endpoint: Action:CreateView
+        - endpoint: Action:DeleteIndex
+        - endpoint: Action:DeleteResourceExplorerSetup
+        - endpoint: Action:DeleteView
+        - endpoint: Action:DisassociateDefaultView
+        - endpoint: Action:GetAccountLevelServiceConfiguration
+        - endpoint: Action:GetDefaultView
+        - endpoint: Action:GetIndex
+        - endpoint: Action:GetManagedView
+        - endpoint: Action:GetResourceExplorerSetup
+        - endpoint: Action:GetServiceIndex
+        - endpoint: Action:GetServiceView
+        - endpoint: Action:GetView
+        - endpoint: Action:ListIndexes
+        - endpoint: Action:ListIndexesForMembers
+        - endpoint: Action:ListManagedViews
+        - endpoint: Action:ListResources
+        - endpoint: Action:ListServiceIndexes
+        - endpoint: Action:ListServiceViews
+        - endpoint: Action:ListStreamingAccessForServices
+        - endpoint: Action:ListSupportedResourceTypes
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListViews
+        - endpoint: Action:Search
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateIndexType
+        - endpoint: Action:UpdateView
+      - service: Resource Groups (resource-groups)
+        - endpoint: Action:CancelTagSyncTask
+        - endpoint: Action:CreateGroup
+        - endpoint: Action:DeleteGroup
+        - endpoint: Action:GetAccountSettings
+        - endpoint: Action:GetGroup
+        - endpoint: Action:GetGroupConfiguration
+        - endpoint: Action:GetGroupQuery
+        - endpoint: Action:GetTagSyncTask
+        - endpoint: Action:GetTags
+        - endpoint: Action:GroupResources
+        - endpoint: Action:ListGroupResources
+        - endpoint: Action:ListGroupingStatuses
+        - endpoint: Action:ListGroups
+        - endpoint: Action:ListTagSyncTasks
+        - endpoint: Action:PutGroupConfiguration
+        - endpoint: Action:SearchResources
+        - endpoint: Action:StartTagSyncTask
+        - endpoint: Action:Tag
+        - endpoint: Action:UngroupResources
+        - endpoint: Action:Untag
+        - endpoint: Action:UpdateAccountSettings
+        - endpoint: Action:UpdateGroup
+        - endpoint: Action:UpdateGroupQuery
+      - service: Resource Groups Tagging API (resourcegroupstaggingapi)
+        - endpoint: Action:DescribeReportCreation
+        - endpoint: Action:GetComplianceSummary
+        - endpoint: Action:GetResources
+        - endpoint: Action:GetTagKeys
+        - endpoint: Action:GetTagValues
+        - endpoint: Action:StartReportCreation
+        - endpoint: Action:TagResources
+        - endpoint: Action:UntagResources
+      - service: Service Quotas (servicequotas)
+        - endpoint: Action:AssociateServiceQuotaTemplate
+        - endpoint: Action:CreateSupportCase
+        - endpoint: Action:DeleteServiceQuotaIncreaseRequestFromTemplate
+        - endpoint: Action:DisassociateServiceQuotaTemplate
+        - endpoint: Action:GetAWSDefaultServiceQuota
+        - endpoint: Action:GetAssociationForServiceQuotaTemplate
+        - endpoint: Action:GetAutoManagementConfiguration
+        - endpoint: Action:GetQuotaUtilizationReport
+        - endpoint: Action:GetRequestedServiceQuotaChange
+        - endpoint: Action:GetServiceQuota
+        - endpoint: Action:GetServiceQuotaIncreaseRequestFromTemplate
+        - endpoint: Action:ListAWSDefaultServiceQuotas
+        - endpoint: Action:ListRequestedServiceQuotaChangeHistory
+        - endpoint: Action:ListRequestedServiceQuotaChangeHistoryByQuota
+        - endpoint: Action:ListServiceQuotaIncreaseRequestsInTemplate
+        - endpoint: Action:ListServiceQuotas
+        - endpoint: Action:ListServices
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutServiceQuotaIncreaseRequestIntoTemplate
+        - endpoint: Action:RequestServiceQuotaIncrease
+        - endpoint: Action:StartAutoManagement
+        - endpoint: Action:StartQuotaUtilizationReport
+        - endpoint: Action:StopAutoManagement
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAutoManagement
+      - service: SES (ses)
+        - endpoint: Action:CloneReceiptRuleSet
+        - endpoint: Action:CreateConfigurationSet
+        - endpoint: Action:CreateConfigurationSetEventDestination
+        - endpoint: Action:CreateConfigurationSetTrackingOptions
+        - endpoint: Action:CreateCustomVerificationEmailTemplate
+        - endpoint: Action:CreateReceiptFilter
+        - endpoint: Action:CreateReceiptRule
+        - endpoint: Action:CreateReceiptRuleSet
+        - endpoint: Action:CreateTemplate
+        - endpoint: Action:DeleteConfigurationSet
+        - endpoint: Action:DeleteConfigurationSetEventDestination
+        - endpoint: Action:DeleteConfigurationSetTrackingOptions
+        - endpoint: Action:DeleteCustomVerificationEmailTemplate
+        - endpoint: Action:DeleteIdentity
+        - endpoint: Action:DeleteIdentityPolicy
+        - endpoint: Action:DeleteReceiptFilter
+        - endpoint: Action:DeleteReceiptRule
+        - endpoint: Action:DeleteReceiptRuleSet
+        - endpoint: Action:DeleteTemplate
+        - endpoint: Action:DeleteVerifiedEmailAddress
+        - endpoint: Action:DescribeActiveReceiptRuleSet
+        - endpoint: Action:DescribeConfigurationSet
+        - endpoint: Action:DescribeReceiptRule
+        - endpoint: Action:DescribeReceiptRuleSet
+        - endpoint: Action:GetAccountSendingEnabled
+        - endpoint: Action:GetCustomVerificationEmailTemplate
+        - endpoint: Action:GetIdentityDkimAttributes
+        - endpoint: Action:GetIdentityMailFromDomainAttributes
+        - endpoint: Action:GetIdentityNotificationAttributes
+        - endpoint: Action:GetIdentityPolicies
+        - endpoint: Action:GetIdentityVerificationAttributes
+        - endpoint: Action:GetSendQuota
+        - endpoint: Action:GetSendStatistics
+        - endpoint: Action:GetTemplate
+        - endpoint: Action:ListConfigurationSets
+        - endpoint: Action:ListCustomVerificationEmailTemplates
+        - endpoint: Action:ListIdentities
+        - endpoint: Action:ListIdentityPolicies
+        - endpoint: Action:ListReceiptFilters
+        - endpoint: Action:ListReceiptRuleSets
+        - endpoint: Action:ListTemplates
+        - endpoint: Action:ListVerifiedEmailAddresses
+        - endpoint: Action:PutConfigurationSetDeliveryOptions
+        - endpoint: Action:PutIdentityPolicy
+        - endpoint: Action:ReorderReceiptRuleSet
+        - endpoint: Action:SendBounce
+        - endpoint: Action:SendBulkTemplatedEmail
+        - endpoint: Action:SendCustomVerificationEmail
+        - endpoint: Action:SendEmail
+        - endpoint: Action:SendRawEmail
+        - endpoint: Action:SendTemplatedEmail
+        - endpoint: Action:SetActiveReceiptRuleSet
+        - endpoint: Action:SetIdentityDkimEnabled
+        - endpoint: Action:SetIdentityFeedbackForwardingEnabled
+        - endpoint: Action:SetIdentityHeadersInNotificationsEnabled
+        - endpoint: Action:SetIdentityMailFromDomain
+        - endpoint: Action:SetIdentityNotificationTopic
+        - endpoint: Action:SetReceiptRulePosition
+        - endpoint: Action:TestRenderTemplate
+        - endpoint: Action:UpdateAccountSendingEnabled
+        - endpoint: Action:UpdateConfigurationSetEventDestination
+        - endpoint: Action:UpdateConfigurationSetReputationMetricsEnabled
+        - endpoint: Action:UpdateConfigurationSetSendingEnabled
+        - endpoint: Action:UpdateConfigurationSetTrackingOptions
+        - endpoint: Action:UpdateCustomVerificationEmailTemplate
+        - endpoint: Action:UpdateReceiptRule
+        - endpoint: Action:UpdateTemplate
+        - endpoint: Action:VerifyDomainDkim
+        - endpoint: Action:VerifyDomainIdentity
+        - endpoint: Action:VerifyEmailAddress
+        - endpoint: Action:VerifyEmailIdentity
+      - service: SESv2 (ses-v2)
+        - endpoint: Action:BatchGetMetricData
+        - endpoint: Action:CancelExportJob
+        - endpoint: Action:CreateConfigurationSet
+        - endpoint: Action:CreateConfigurationSetEventDestination
+        - endpoint: Action:CreateContact
+        - endpoint: Action:CreateContactList
+        - endpoint: Action:CreateCustomVerificationEmailTemplate
+        - endpoint: Action:CreateDedicatedIpPool
+        - endpoint: Action:CreateDeliverabilityTestReport
+        - endpoint: Action:CreateEmailIdentity
+        - endpoint: Action:CreateEmailIdentityPolicy
+        - endpoint: Action:CreateEmailTemplate
+        - endpoint: Action:CreateExportJob
+        - endpoint: Action:CreateImportJob
+        - endpoint: Action:CreateMultiRegionEndpoint
+        - endpoint: Action:CreateTenant
+        - endpoint: Action:CreateTenantResourceAssociation
+        - endpoint: Action:DeleteConfigurationSet
+        - endpoint: Action:DeleteConfigurationSetEventDestination
+        - endpoint: Action:DeleteContact
+        - endpoint: Action:DeleteContactList
+        - endpoint: Action:DeleteCustomVerificationEmailTemplate
+        - endpoint: Action:DeleteDedicatedIpPool
+        - endpoint: Action:DeleteEmailIdentity
+        - endpoint: Action:DeleteEmailIdentityPolicy
+        - endpoint: Action:DeleteEmailTemplate
+        - endpoint: Action:DeleteMultiRegionEndpoint
+        - endpoint: Action:DeleteSuppressedDestination
+        - endpoint: Action:DeleteTenant
+        - endpoint: Action:DeleteTenantResourceAssociation
+        - endpoint: Action:GetAccount
+        - endpoint: Action:GetBlacklistReports
+        - endpoint: Action:GetConfigurationSet
+        - endpoint: Action:GetConfigurationSetEventDestinations
+        - endpoint: Action:GetContact
+        - endpoint: Action:GetContactList
+        - endpoint: Action:GetCustomVerificationEmailTemplate
+        - endpoint: Action:GetDedicatedIp
+        - endpoint: Action:GetDedicatedIpPool
+        - endpoint: Action:GetDedicatedIps
+        - endpoint: Action:GetDeliverabilityDashboardOptions
+        - endpoint: Action:GetDeliverabilityTestReport
+        - endpoint: Action:GetDomainDeliverabilityCampaign
+        - endpoint: Action:GetDomainStatisticsReport
+        - endpoint: Action:GetEmailAddressInsights
+        - endpoint: Action:GetEmailIdentity
+        - endpoint: Action:GetEmailIdentityPolicies
+        - endpoint: Action:GetEmailTemplate
+        - endpoint: Action:GetExportJob
+        - endpoint: Action:GetImportJob
+        - endpoint: Action:GetMessageInsights
+        - endpoint: Action:GetMultiRegionEndpoint
+        - endpoint: Action:GetReputationEntity
+        - endpoint: Action:GetSuppressedDestination
+        - endpoint: Action:GetTenant
+        - endpoint: Action:ListConfigurationSets
+        - endpoint: Action:ListContactLists
+        - endpoint: Action:ListContacts
+        - endpoint: Action:ListCustomVerificationEmailTemplates
+        - endpoint: Action:ListDedicatedIpPools
+        - endpoint: Action:ListDeliverabilityTestReports
+        - endpoint: Action:ListDomainDeliverabilityCampaigns
+        - endpoint: Action:ListEmailIdentities
+        - endpoint: Action:ListEmailTemplates
+        - endpoint: Action:ListExportJobs
+        - endpoint: Action:ListImportJobs
+        - endpoint: Action:ListMultiRegionEndpoints
+        - endpoint: Action:ListRecommendations
+        - endpoint: Action:ListReputationEntities
+        - endpoint: Action:ListResourceTenants
+        - endpoint: Action:ListSuppressedDestinations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTenantResources
+        - endpoint: Action:ListTenants
+        - endpoint: Action:PutAccountDedicatedIpWarmupAttributes
+        - endpoint: Action:PutAccountDetails
+        - endpoint: Action:PutAccountSendingAttributes
+        - endpoint: Action:PutAccountSuppressionAttributes
+        - endpoint: Action:PutAccountVdmAttributes
+        - endpoint: Action:PutConfigurationSetArchivingOptions
+        - endpoint: Action:PutConfigurationSetDeliveryOptions
+        - endpoint: Action:PutConfigurationSetReputationOptions
+        - endpoint: Action:PutConfigurationSetSendingOptions
+        - endpoint: Action:PutConfigurationSetSuppressionOptions
+        - endpoint: Action:PutConfigurationSetTrackingOptions
+        - endpoint: Action:PutConfigurationSetVdmOptions
+        - endpoint: Action:PutDedicatedIpInPool
+        - endpoint: Action:PutDedicatedIpPoolScalingAttributes
+        - endpoint: Action:PutDedicatedIpWarmupAttributes
+        - endpoint: Action:PutDeliverabilityDashboardOption
+        - endpoint: Action:PutEmailIdentityConfigurationSetAttributes
+        - endpoint: Action:PutEmailIdentityDkimAttributes
+        - endpoint: Action:PutEmailIdentityDkimSigningAttributes
+        - endpoint: Action:PutEmailIdentityFeedbackAttributes
+        - endpoint: Action:PutEmailIdentityMailFromAttributes
+        - endpoint: Action:PutSuppressedDestination
+        - endpoint: Action:SendBulkEmail
+        - endpoint: Action:SendCustomVerificationEmail
+        - endpoint: Action:SendEmail
+        - endpoint: Action:TagResource
+        - endpoint: Action:TestRenderEmailTemplate
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateConfigurationSetEventDestination
+        - endpoint: Action:UpdateContact
+        - endpoint: Action:UpdateContactList
+        - endpoint: Action:UpdateCustomVerificationEmailTemplate
+        - endpoint: Action:UpdateEmailIdentityPolicy
+        - endpoint: Action:UpdateEmailTemplate
+        - endpoint: Action:UpdateReputationEntityCustomerManagedStatus
+        - endpoint: Action:UpdateReputationEntityPolicy
+      - service: SNS (sns)
+        - endpoint: Action:AddPermission
+        - endpoint: Action:CheckIfPhoneNumberIsOptedOut
+        - endpoint: Action:ConfirmSubscription
+        - endpoint: Action:CreatePlatformApplication
+        - endpoint: Action:CreatePlatformEndpoint
+        - endpoint: Action:CreateSMSSandboxPhoneNumber
+        - endpoint: Action:CreateTopic
+        - endpoint: Action:DeleteEndpoint
+        - endpoint: Action:DeletePlatformApplication
+        - endpoint: Action:DeleteSMSSandboxPhoneNumber
+        - endpoint: Action:DeleteTopic
+        - endpoint: Action:GetDataProtectionPolicy
+        - endpoint: Action:GetEndpointAttributes
+        - endpoint: Action:GetPlatformApplicationAttributes
+        - endpoint: Action:GetSMSAttributes
+        - endpoint: Action:GetSMSSandboxAccountStatus
+        - endpoint: Action:GetSubscriptionAttributes
+        - endpoint: Action:GetTopicAttributes
+        - endpoint: Action:ListEndpointsByPlatformApplication
+        - endpoint: Action:ListOriginationNumbers
+        - endpoint: Action:ListPhoneNumbersOptedOut
+        - endpoint: Action:ListPlatformApplications
+        - endpoint: Action:ListSMSSandboxPhoneNumbers
+        - endpoint: Action:ListSubscriptions
+        - endpoint: Action:ListSubscriptionsByTopic
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTopics
+        - endpoint: Action:OptInPhoneNumber
+        - endpoint: Action:Publish
+        - endpoint: Action:PublishBatch
+        - endpoint: Action:PutDataProtectionPolicy
+        - endpoint: Action:RemovePermission
+        - endpoint: Action:SetEndpointAttributes
+        - endpoint: Action:SetPlatformApplicationAttributes
+        - endpoint: Action:SetSMSAttributes
+        - endpoint: Action:SetSubscriptionAttributes
+        - endpoint: Action:SetTopicAttributes
+        - endpoint: Action:Subscribe
+        - endpoint: Action:TagResource
+        - endpoint: Action:Unsubscribe
+        - endpoint: Action:UntagResource
+        - endpoint: Action:VerifySMSSandboxPhoneNumber
+      - service: SQS (sqs)
+        - endpoint: Action:AddPermission
+        - endpoint: Action:CancelMessageMoveTask
+        - endpoint: Action:ChangeMessageVisibility
+        - endpoint: Action:ChangeMessageVisibilityBatch
+        - endpoint: Action:CreateQueue
+        - endpoint: Action:DeleteMessage
+        - endpoint: Action:DeleteMessageBatch
+        - endpoint: Action:DeleteQueue
+        - endpoint: Action:GetQueueAttributes
+        - endpoint: Action:GetQueueUrl
+        - endpoint: Action:ListDeadLetterSourceQueues
+        - endpoint: Action:ListMessageMoveTasks
+        - endpoint: Action:ListQueueTags
+        - endpoint: Action:ListQueues
+        - endpoint: Action:PurgeQueue
+        - endpoint: Action:ReceiveMessage
+        - endpoint: Action:RemovePermission
+        - endpoint: Action:SendMessage
+        - endpoint: Action:SendMessageBatch
+        - endpoint: Action:SetQueueAttributes
+        - endpoint: Action:StartMessageMoveTask
+        - endpoint: Action:TagQueue
+        - endpoint: Action:UntagQueue
+        - endpoint: GET /sqs/queues
+        - endpoint: POST /sqs/messages/{queue}
+        - endpoint: POST /sqs/messages/{queue}/receive
+        - endpoint: PUT /sqs/queues/{queue}
+      - service: Support (support)
+        - endpoint: Action:AddAttachmentsToSet
+        - endpoint: Action:AddCommunicationToCase
+        - endpoint: Action:CreateCase
+        - endpoint: Action:DescribeAttachment
+        - endpoint: Action:DescribeCases
+        - endpoint: Action:DescribeCommunications
+        - endpoint: Action:DescribeCreateCaseOptions
+        - endpoint: Action:DescribeIssueTypes
+        - endpoint: Action:DescribeServices
+        - endpoint: Action:DescribeSeverityLevels
+        - endpoint: Action:DescribeSupportedLanguages
+        - endpoint: Action:DescribeTrustedAdvisorCheckRefreshStatuses
+        - endpoint: Action:DescribeTrustedAdvisorCheckResult
+        - endpoint: Action:DescribeTrustedAdvisorCheckSummaries
+        - endpoint: Action:RefreshTrustedAdvisorCheck
+        - endpoint: Action:ResolveCase
+      - service: Support App in Slack (supportapp)
+        - endpoint: Action:CreateSlackChannelConfiguration
+        - endpoint: Action:DeleteAccountAlias
+        - endpoint: Action:DeleteSlackChannelConfiguration
+        - endpoint: Action:DeleteSlackWorkspaceConfiguration
+        - endpoint: Action:GetAccountAlias
+        - endpoint: Action:ListSlackChannelConfigurations
+        - endpoint: Action:ListSlackWorkspaceConfigurations
+        - endpoint: Action:PutAccountAlias
+        - endpoint: Action:RegisterSlackWorkspaceForOrganization
+        - endpoint: Action:UpdateSlackChannelConfiguration
+      - service: SWF (swf)
+        - endpoint: Action:CountClosedWorkflowExecutions
+        - endpoint: Action:CountOpenWorkflowExecutions
+        - endpoint: Action:CountPendingActivityTasks
+        - endpoint: Action:CountPendingDecisionTasks
+        - endpoint: Action:DeleteActivityType
+        - endpoint: Action:DeleteWorkflowType
+        - endpoint: Action:DeprecateActivityType
+        - endpoint: Action:DeprecateDomain
+        - endpoint: Action:DeprecateWorkflowType
+        - endpoint: Action:DescribeActivityType
+        - endpoint: Action:DescribeDomain
+        - endpoint: Action:DescribeWorkflowExecution
+        - endpoint: Action:DescribeWorkflowType
+        - endpoint: Action:GetWorkflowExecutionHistory
+        - endpoint: Action:ListActivityTypes
+        - endpoint: Action:ListClosedWorkflowExecutions
+        - endpoint: Action:ListDomains
+        - endpoint: Action:ListOpenWorkflowExecutions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListWorkflowTypes
+        - endpoint: Action:PollForActivityTask
+        - endpoint: Action:PollForDecisionTask
+        - endpoint: Action:RecordActivityTaskHeartbeat
+        - endpoint: Action:RegisterActivityType
+        - endpoint: Action:RegisterDomain
+        - endpoint: Action:RegisterWorkflowType
+        - endpoint: Action:RequestCancelWorkflowExecution
+        - endpoint: Action:RespondActivityTaskCanceled
+        - endpoint: Action:RespondActivityTaskCompleted
+        - endpoint: Action:RespondActivityTaskFailed
+        - endpoint: Action:RespondDecisionTaskCompleted
+        - endpoint: Action:SignalWorkflowExecution
+        - endpoint: Action:StartWorkflowExecution
+        - endpoint: Action:TagResource
+        - endpoint: Action:TerminateWorkflowExecution
+        - endpoint: Action:UndeprecateActivityType
+        - endpoint: Action:UndeprecateDomain
+        - endpoint: Action:UndeprecateWorkflowType
+        - endpoint: Action:UntagResource
+      - service: Systems Manager (systems-manager)
+        - endpoint: Action:AddTagsToResource
+        - endpoint: Action:AssociateOpsItemRelatedItem
+        - endpoint: Action:CancelCommand
+        - endpoint: Action:CancelMaintenanceWindowExecution
+        - endpoint: Action:CreateActivation
+        - endpoint: Action:CreateAssociation
+        - endpoint: Action:CreateAssociationBatch
+        - endpoint: Action:CreateDocument
+        - endpoint: Action:CreateMaintenanceWindow
+        - endpoint: Action:CreateOpsItem
+        - endpoint: Action:CreateOpsMetadata
+        - endpoint: Action:CreatePatchBaseline
+        - endpoint: Action:CreateResourceDataSync
+        - endpoint: Action:DeleteActivation
+        - endpoint: Action:DeleteAssociation
+        - endpoint: Action:DeleteDocument
+        - endpoint: Action:DeleteInventory
+        - endpoint: Action:DeleteMaintenanceWindow
+        - endpoint: Action:DeleteOpsItem
+        - endpoint: Action:DeleteOpsMetadata
+        - endpoint: Action:DeleteParameter
+        - endpoint: Action:DeleteParameters
+        - endpoint: Action:DeletePatchBaseline
+        - endpoint: Action:DeleteResourceDataSync
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeregisterManagedInstance
+        - endpoint: Action:DeregisterPatchBaselineForPatchGroup
+        - endpoint: Action:DeregisterTargetFromMaintenanceWindow
+        - endpoint: Action:DeregisterTaskFromMaintenanceWindow
+        - endpoint: Action:DescribeActivations
+        - endpoint: Action:DescribeAssociation
+        - endpoint: Action:DescribeAssociationExecutionTargets
+        - endpoint: Action:DescribeAssociationExecutions
+        - endpoint: Action:DescribeAutomationExecutions
+        - endpoint: Action:DescribeAutomationStepExecutions
+        - endpoint: Action:DescribeAvailablePatches
+        - endpoint: Action:DescribeDocument
+        - endpoint: Action:DescribeDocumentPermission
+        - endpoint: Action:DescribeEffectiveInstanceAssociations
+        - endpoint: Action:DescribeEffectivePatchesForPatchBaseline
+        - endpoint: Action:DescribeInstanceAssociationsStatus
+        - endpoint: Action:DescribeInstanceInformation
+        - endpoint: Action:DescribeInstancePatchStates
+        - endpoint: Action:DescribeInstancePatchStatesForPatchGroup
+        - endpoint: Action:DescribeInstancePatches
+        - endpoint: Action:DescribeInstanceProperties
+        - endpoint: Action:DescribeInventoryDeletions
+        - endpoint: Action:DescribeMaintenanceWindowExecutionTaskInvocations
+        - endpoint: Action:DescribeMaintenanceWindowExecutionTasks
+        - endpoint: Action:DescribeMaintenanceWindowExecutions
+        - endpoint: Action:DescribeMaintenanceWindowSchedule
+        - endpoint: Action:DescribeMaintenanceWindowTargets
+        - endpoint: Action:DescribeMaintenanceWindowTasks
+        - endpoint: Action:DescribeMaintenanceWindows
+        - endpoint: Action:DescribeMaintenanceWindowsForTarget
+        - endpoint: Action:DescribeOpsItems
+        - endpoint: Action:DescribeParameters
+        - endpoint: Action:DescribePatchBaselines
+        - endpoint: Action:DescribePatchGroupState
+        - endpoint: Action:DescribePatchGroups
+        - endpoint: Action:DescribePatchProperties
+        - endpoint: Action:DescribeSessions
+        - endpoint: Action:DisassociateOpsItemRelatedItem
+        - endpoint: Action:GetAccessToken
+        - endpoint: Action:GetAutomationExecution
+        - endpoint: Action:GetCalendarState
+        - endpoint: Action:GetCommandInvocation
+        - endpoint: Action:GetConnectionStatus
+        - endpoint: Action:GetDefaultPatchBaseline
+        - endpoint: Action:GetDeployablePatchSnapshotForInstance
+        - endpoint: Action:GetDocument
+        - endpoint: Action:GetExecutionPreview
+        - endpoint: Action:GetInventory
+        - endpoint: Action:GetInventorySchema
+        - endpoint: Action:GetMaintenanceWindow
+        - endpoint: Action:GetMaintenanceWindowExecution
+        - endpoint: Action:GetMaintenanceWindowExecutionTask
+        - endpoint: Action:GetMaintenanceWindowExecutionTaskInvocation
+        - endpoint: Action:GetMaintenanceWindowTask
+        - endpoint: Action:GetOpsItem
+        - endpoint: Action:GetOpsMetadata
+        - endpoint: Action:GetOpsSummary
+        - endpoint: Action:GetParameter
+        - endpoint: Action:GetParameterHistory
+        - endpoint: Action:GetParameters
+        - endpoint: Action:GetParametersByPath
+        - endpoint: Action:GetPatchBaseline
+        - endpoint: Action:GetPatchBaselineForPatchGroup
+        - endpoint: Action:GetResourcePolicies
+        - endpoint: Action:GetServiceSetting
+        - endpoint: Action:LabelParameterVersion
+        - endpoint: Action:ListAssociationVersions
+        - endpoint: Action:ListAssociations
+        - endpoint: Action:ListCommandInvocations
+        - endpoint: Action:ListCommands
+        - endpoint: Action:ListComplianceItems
+        - endpoint: Action:ListComplianceSummaries
+        - endpoint: Action:ListDocumentMetadataHistory
+        - endpoint: Action:ListDocumentVersions
+        - endpoint: Action:ListDocuments
+        - endpoint: Action:ListInventoryEntries
+        - endpoint: Action:ListNodes
+        - endpoint: Action:ListNodesSummary
+        - endpoint: Action:ListOpsItemEvents
+        - endpoint: Action:ListOpsItemRelatedItems
+        - endpoint: Action:ListOpsMetadata
+        - endpoint: Action:ListResourceComplianceSummaries
+        - endpoint: Action:ListResourceDataSync
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ModifyDocumentPermission
+        - endpoint: Action:PutComplianceItems
+        - endpoint: Action:PutInventory
+        - endpoint: Action:PutParameter
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RegisterDefaultPatchBaseline
+        - endpoint: Action:RegisterPatchBaselineForPatchGroup
+        - endpoint: Action:RegisterTargetWithMaintenanceWindow
+        - endpoint: Action:RegisterTaskWithMaintenanceWindow
+        - endpoint: Action:RemoveTagsFromResource
+        - endpoint: Action:ResetServiceSetting
+        - endpoint: Action:ResumeSession
+        - endpoint: Action:SendAutomationSignal
+        - endpoint: Action:SendCommand
+        - endpoint: Action:StartAccessRequest
+        - endpoint: Action:StartAssociationsOnce
+        - endpoint: Action:StartAutomationExecution
+        - endpoint: Action:StartChangeRequestExecution
+        - endpoint: Action:StartExecutionPreview
+        - endpoint: Action:StartSession
+        - endpoint: Action:StopAutomationExecution
+        - endpoint: Action:TerminateSession
+        - endpoint: Action:UnlabelParameterVersion
+        - endpoint: Action:UpdateAssociation
+        - endpoint: Action:UpdateAssociationStatus
+        - endpoint: Action:UpdateDocument
+        - endpoint: Action:UpdateDocumentDefaultVersion
+        - endpoint: Action:UpdateDocumentMetadata
+        - endpoint: Action:UpdateMaintenanceWindow
+        - endpoint: Action:UpdateMaintenanceWindowTarget
+        - endpoint: Action:UpdateMaintenanceWindowTask
+        - endpoint: Action:UpdateManagedInstanceRole
+        - endpoint: Action:UpdateOpsItem
+        - endpoint: Action:UpdateOpsMetadata
+        - endpoint: Action:UpdatePatchBaseline
+        - endpoint: Action:UpdateResourceDataSync
+        - endpoint: Action:UpdateServiceSetting
+      - service: Systems Manager for SAP (ssmsap)
+        - endpoint: Action:DeleteResourcePermission
+        - endpoint: Action:DeregisterApplication
+        - endpoint: Action:GetApplication
+        - endpoint: Action:GetComponent
+        - endpoint: Action:GetConfigurationCheckOperation
+        - endpoint: Action:GetDatabase
+        - endpoint: Action:GetOperation
+        - endpoint: Action:GetResourcePermission
+        - endpoint: Action:ListApplications
+        - endpoint: Action:ListComponents
+        - endpoint: Action:ListConfigurationCheckDefinitions
+        - endpoint: Action:ListConfigurationCheckOperations
+        - endpoint: Action:ListDatabases
+        - endpoint: Action:ListOperationEvents
+        - endpoint: Action:ListOperations
+        - endpoint: Action:ListSubCheckResults
+        - endpoint: Action:ListSubCheckRuleResults
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutResourcePermission
+        - endpoint: Action:RegisterApplication
+        - endpoint: Action:StartApplication
+        - endpoint: Action:StartApplicationRefresh
+        - endpoint: Action:StartConfigurationChecks
+        - endpoint: Action:StopApplication
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApplicationSettings
+      - service: Systems Manager GUI Connect (ssm-guiconnect)
+        - endpoint: Action:DeleteConnectionRecordingPreferences
+        - endpoint: Action:GetConnectionRecordingPreferences
+        - endpoint: Action:UpdateConnectionRecordingPreferences
+      - service: Systems Manager Incident Manager (incident-manager)
+        - endpoint: Action:AcceptPage
+        - endpoint: Action:ActivateContactChannel
+        - endpoint: Action:BatchGetIncidentFindings
+        - endpoint: Action:CreateContact
+        - endpoint: Action:CreateContactChannel
+        - endpoint: Action:CreateReplicationSet
+        - endpoint: Action:CreateResponsePlan
+        - endpoint: Action:CreateRotation
+        - endpoint: Action:CreateRotationOverride
+        - endpoint: Action:CreateTimelineEvent
+        - endpoint: Action:DeactivateContactChannel
+        - endpoint: Action:DeleteContact
+        - endpoint: Action:DeleteContactChannel
+        - endpoint: Action:DeleteIncidentRecord
+        - endpoint: Action:DeleteReplicationSet
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteResponsePlan
+        - endpoint: Action:DeleteRotation
+        - endpoint: Action:DeleteRotationOverride
+        - endpoint: Action:DeleteTimelineEvent
+        - endpoint: Action:DescribeEngagement
+        - endpoint: Action:DescribePage
+        - endpoint: Action:GetContact
+        - endpoint: Action:GetContactChannel
+        - endpoint: Action:GetContactPolicy
+        - endpoint: Action:GetIncidentRecord
+        - endpoint: Action:GetReplicationSet
+        - endpoint: Action:GetResourcePolicies
+        - endpoint: Action:GetResponsePlan
+        - endpoint: Action:GetRotation
+        - endpoint: Action:GetRotationOverride
+        - endpoint: Action:GetTimelineEvent
+        - endpoint: Action:ListContactChannels
+        - endpoint: Action:ListContacts
+        - endpoint: Action:ListEngagements
+        - endpoint: Action:ListIncidentFindings
+        - endpoint: Action:ListIncidentRecords
+        - endpoint: Action:ListPageReceipts
+        - endpoint: Action:ListPageResolutions
+        - endpoint: Action:ListPagesByContact
+        - endpoint: Action:ListPagesByEngagement
+        - endpoint: Action:ListPreviewRotationShifts
+        - endpoint: Action:ListRelatedItems
+        - endpoint: Action:ListReplicationSets
+        - endpoint: Action:ListResponsePlans
+        - endpoint: Action:ListRotationOverrides
+        - endpoint: Action:ListRotationShifts
+        - endpoint: Action:ListRotations
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTimelineEvents
+        - endpoint: Action:PutContactPolicy
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:SendActivationCode
+        - endpoint: Action:StartEngagement
+        - endpoint: Action:StartIncident
+        - endpoint: Action:StopEngagement
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateContact
+        - endpoint: Action:UpdateContactChannel
+        - endpoint: Action:UpdateDeletionProtection
+        - endpoint: Action:UpdateIncidentRecord
+        - endpoint: Action:UpdateRelatedItems
+        - endpoint: Action:UpdateReplicationSet
+        - endpoint: Action:UpdateResponsePlan
+        - endpoint: Action:UpdateRotation
+        - endpoint: Action:UpdateTimelineEvent
+      - service: Systems Manager Quick Setup (quick-setup)
+        - endpoint: Action:CreateConfigurationManager
+        - endpoint: Action:DeleteConfigurationManager
+        - endpoint: Action:GetConfiguration
+        - endpoint: Action:GetConfigurationManager
+        - endpoint: Action:GetServiceSettings
+        - endpoint: Action:ListConfigurationManagers
+        - endpoint: Action:ListConfigurations
+        - endpoint: Action:ListQuickSetupTypes
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateConfigurationDefinition
+        - endpoint: Action:UpdateConfigurationManager
+        - endpoint: Action:UpdateServiceSettings
+      - service: Trusted Advisor (trustedadvisor)
+        - endpoint: Action:BatchUpdateRecommendationResourceExclusion
+        - endpoint: Action:GetOrganizationRecommendation
+        - endpoint: Action:GetRecommendation
+        - endpoint: Action:ListChecks
+        - endpoint: Action:ListOrganizationRecommendationAccounts
+        - endpoint: Action:ListOrganizationRecommendationResources
+        - endpoint: Action:ListOrganizationRecommendations
+        - endpoint: Action:ListRecommendationResources
+        - endpoint: Action:ListRecommendations
+        - endpoint: Action:UpdateOrganizationRecommendationLifecycle
+        - endpoint: Action:UpdateRecommendationLifecycle
+      - service: User Notifications (usernotifications)
+        - endpoint: Action:AssociateChannel
+        - endpoint: Action:AssociateManagedNotificationAccountContact
+        - endpoint: Action:AssociateManagedNotificationAdditionalChannel
+        - endpoint: Action:AssociateOrganizationalUnit
+        - endpoint: Action:CreateEventRule
+        - endpoint: Action:CreateNotificationConfiguration
+        - endpoint: Action:DeleteEventRule
+        - endpoint: Action:DeleteNotificationConfiguration
+        - endpoint: Action:DeregisterNotificationHub
+        - endpoint: Action:DisableNotificationsAccessForOrganization
+        - endpoint: Action:DisassociateChannel
+        - endpoint: Action:DisassociateManagedNotificationAccountContact
+        - endpoint: Action:DisassociateManagedNotificationAdditionalChannel
+        - endpoint: Action:DisassociateOrganizationalUnit
+        - endpoint: Action:EnableNotificationsAccessForOrganization
+        - endpoint: Action:GetEventRule
+        - endpoint: Action:GetManagedNotificationChildEvent
+        - endpoint: Action:GetManagedNotificationConfiguration
+        - endpoint: Action:GetManagedNotificationEvent
+        - endpoint: Action:GetNotificationConfiguration
+        - endpoint: Action:GetNotificationEvent
+        - endpoint: Action:GetNotificationsAccessForOrganization
+        - endpoint: Action:ListChannels
+        - endpoint: Action:ListEventRules
+        - endpoint: Action:ListManagedNotificationChannelAssociations
+        - endpoint: Action:ListManagedNotificationChildEvents
+        - endpoint: Action:ListManagedNotificationConfigurations
+        - endpoint: Action:ListManagedNotificationEvents
+        - endpoint: Action:ListMemberAccounts
+        - endpoint: Action:ListNotificationConfigurations
+        - endpoint: Action:ListNotificationEvents
+        - endpoint: Action:ListNotificationHubs
+        - endpoint: Action:ListOrganizationalUnits
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RegisterNotificationHub
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateEventRule
+        - endpoint: Action:UpdateNotificationConfiguration
+    - category: Security & Identity
+      - service: ACM (acm)
+        - endpoint: Action:AddTagsToCertificate
+        - endpoint: Action:DeleteCertificate
+        - endpoint: Action:DescribeCertificate
+        - endpoint: Action:ExportCertificate
+        - endpoint: Action:GetAccountConfiguration
+        - endpoint: Action:GetCertificate
+        - endpoint: Action:ImportCertificate
+        - endpoint: Action:ListCertificates
+        - endpoint: Action:ListTagsForCertificate
+        - endpoint: Action:PutAccountConfiguration
+        - endpoint: Action:RemoveTagsFromCertificate
+        - endpoint: Action:RenewCertificate
+        - endpoint: Action:RequestCertificate
+        - endpoint: Action:ResendValidationEmail
+        - endpoint: Action:RevokeCertificate
+        - endpoint: Action:UpdateCertificateOptions
+      - service: CloudHSM (cloudhsm)
+        - endpoint: Action:CopyBackupToRegion
+        - endpoint: Action:CreateCluster
+        - endpoint: Action:CreateHsm
+        - endpoint: Action:DeleteBackup
+        - endpoint: Action:DeleteCluster
+        - endpoint: Action:DeleteHsm
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DescribeBackups
+        - endpoint: Action:DescribeClusters
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:InitializeCluster
+        - endpoint: Action:ListTags
+        - endpoint: Action:ModifyBackupAttributes
+        - endpoint: Action:ModifyCluster
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:RestoreBackup
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+      - service: Cognito Federated Identities (cognito)
+        - endpoint: Action:CreateIdentityPool
+        - endpoint: Action:DeleteIdentities
+        - endpoint: Action:DeleteIdentityPool
+        - endpoint: Action:DescribeIdentity
+        - endpoint: Action:DescribeIdentityPool
+        - endpoint: Action:GetCredentialsForIdentity
+        - endpoint: Action:GetId
+        - endpoint: Action:GetIdentityPoolRoles
+        - endpoint: Action:GetOpenIdToken
+        - endpoint: Action:GetOpenIdTokenForDeveloperIdentity
+        - endpoint: Action:GetPrincipalTagAttributeMap
+        - endpoint: Action:ListIdentities
+        - endpoint: Action:ListIdentityPools
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:LookupDeveloperIdentity
+        - endpoint: Action:MergeDeveloperIdentities
+        - endpoint: Action:SetIdentityPoolRoles
+        - endpoint: Action:SetPrincipalTagAttributeMap
+        - endpoint: Action:TagResource
+        - endpoint: Action:UnlinkDeveloperIdentity
+        - endpoint: Action:UnlinkIdentity
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateIdentityPool
+      - service: Cognito Sync (cognitosync)
+        - endpoint: Action:BulkPublish
+        - endpoint: Action:DeleteDataset
+        - endpoint: Action:DescribeDataset
+        - endpoint: Action:DescribeIdentityPoolUsage
+        - endpoint: Action:DescribeIdentityUsage
+        - endpoint: Action:GetBulkPublishDetails
+        - endpoint: Action:GetCognitoEvents
+        - endpoint: Action:GetIdentityPoolConfiguration
+        - endpoint: Action:ListDatasets
+        - endpoint: Action:ListIdentityPoolUsage
+        - endpoint: Action:ListRecords
+        - endpoint: Action:RegisterDevice
+        - endpoint: Action:SetCognitoEvents
+        - endpoint: Action:SetIdentityPoolConfiguration
+        - endpoint: Action:SubscribeToDataset
+        - endpoint: Action:UnsubscribeFromDataset
+        - endpoint: Action:UpdateRecords
+      - service: Cognito User Pools (cognito-user-pools)
+        - endpoint: Action:AddCustomAttributes
+        - endpoint: Action:AdminAddUserToGroup
+        - endpoint: Action:AdminConfirmSignUp
+        - endpoint: Action:AdminCreateUser
+        - endpoint: Action:AdminDeleteUser
+        - endpoint: Action:AdminDeleteUserAttributes
+        - endpoint: Action:AdminDisableProviderForUser
+        - endpoint: Action:AdminDisableUser
+        - endpoint: Action:AdminEnableUser
+        - endpoint: Action:AdminForgetDevice
+        - endpoint: Action:AdminGetDevice
+        - endpoint: Action:AdminGetUser
+        - endpoint: Action:AdminInitiateAuth
+        - endpoint: Action:AdminLinkProviderForUser
+        - endpoint: Action:AdminListDevices
+        - endpoint: Action:AdminListGroupsForUser
+        - endpoint: Action:AdminListUserAuthEvents
+        - endpoint: Action:AdminRemoveUserFromGroup
+        - endpoint: Action:AdminResetUserPassword
+        - endpoint: Action:AdminRespondToAuthChallenge
+        - endpoint: Action:AdminSetUserMFAPreference
+        - endpoint: Action:AdminSetUserPassword
+        - endpoint: Action:AdminSetUserSettings
+        - endpoint: Action:AdminUpdateAuthEventFeedback
+        - endpoint: Action:AdminUpdateDeviceStatus
+        - endpoint: Action:AdminUpdateUserAttributes
+        - endpoint: Action:AdminUserGlobalSignOut
+        - endpoint: Action:AssociateSoftwareToken
+        - endpoint: Action:ChangePassword
+        - endpoint: Action:CompleteWebAuthnRegistration
+        - endpoint: Action:ConfirmDevice
+        - endpoint: Action:ConfirmForgotPassword
+        - endpoint: Action:ConfirmSignUp
+        - endpoint: Action:CreateGroup
+        - endpoint: Action:CreateIdentityProvider
+        - endpoint: Action:CreateManagedLoginBranding
+        - endpoint: Action:CreateResourceServer
+        - endpoint: Action:CreateTerms
+        - endpoint: Action:CreateUserImportJob
+        - endpoint: Action:CreateUserPool
+        - endpoint: Action:CreateUserPoolClient
+        - endpoint: Action:CreateUserPoolDomain
+        - endpoint: Action:DeleteGroup
+        - endpoint: Action:DeleteIdentityProvider
+        - endpoint: Action:DeleteManagedLoginBranding
+        - endpoint: Action:DeleteResourceServer
+        - endpoint: Action:DeleteTerms
+        - endpoint: Action:DeleteUser
+        - endpoint: Action:DeleteUserAttributes
+        - endpoint: Action:DeleteUserPool
+        - endpoint: Action:DeleteUserPoolClient
+        - endpoint: Action:DeleteUserPoolDomain
+        - endpoint: Action:DeleteWebAuthnCredential
+        - endpoint: Action:DescribeIdentityProvider
+        - endpoint: Action:DescribeManagedLoginBranding
+        - endpoint: Action:DescribeManagedLoginBrandingByClient
+        - endpoint: Action:DescribeResourceServer
+        - endpoint: Action:DescribeRiskConfiguration
+        - endpoint: Action:DescribeTerms
+        - endpoint: Action:DescribeUserImportJob
+        - endpoint: Action:DescribeUserPool
+        - endpoint: Action:DescribeUserPoolClient
+        - endpoint: Action:DescribeUserPoolDomain
+        - endpoint: Action:ForgetDevice
+        - endpoint: Action:ForgotPassword
+        - endpoint: Action:GetCSVHeader
+        - endpoint: Action:GetDevice
+        - endpoint: Action:GetGroup
+        - endpoint: Action:GetIdentityProviderByIdentifier
+        - endpoint: Action:GetLogDeliveryConfiguration
+        - endpoint: Action:GetSigningCertificate
+        - endpoint: Action:GetTokensFromRefreshToken
+        - endpoint: Action:GetUICustomization
+        - endpoint: Action:GetUser
+        - endpoint: Action:GetUserAttributeVerificationCode
+        - endpoint: Action:GetUserAuthFactors
+        - endpoint: Action:GetUserPoolMfaConfig
+        - endpoint: Action:GlobalSignOut
+        - endpoint: Action:InitiateAuth
+        - endpoint: Action:ListDevices
+        - endpoint: Action:ListGroups
+        - endpoint: Action:ListIdentityProviders
+        - endpoint: Action:ListResourceServers
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTerms
+        - endpoint: Action:ListUserImportJobs
+        - endpoint: Action:ListUserPoolClients
+        - endpoint: Action:ListUserPools
+        - endpoint: Action:ListUsers
+        - endpoint: Action:ListUsersInGroup
+        - endpoint: Action:ListWebAuthnCredentials
+        - endpoint: Action:ResendConfirmationCode
+        - endpoint: Action:RespondToAuthChallenge
+        - endpoint: Action:RevokeToken
+        - endpoint: Action:SetLogDeliveryConfiguration
+        - endpoint: Action:SetRiskConfiguration
+        - endpoint: Action:SetUICustomization
+        - endpoint: Action:SetUserMFAPreference
+        - endpoint: Action:SetUserPoolMfaConfig
+        - endpoint: Action:SetUserSettings
+        - endpoint: Action:SignUp
+        - endpoint: Action:StartUserImportJob
+        - endpoint: Action:StartWebAuthnRegistration
+        - endpoint: Action:StopUserImportJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAuthEventFeedback
+        - endpoint: Action:UpdateDeviceStatus
+        - endpoint: Action:UpdateGroup
+        - endpoint: Action:UpdateIdentityProvider
+        - endpoint: Action:UpdateManagedLoginBranding
+        - endpoint: Action:UpdateResourceServer
+        - endpoint: Action:UpdateTerms
+        - endpoint: Action:UpdateUserAttributes
+        - endpoint: Action:UpdateUserPool
+        - endpoint: Action:UpdateUserPoolClient
+        - endpoint: Action:UpdateUserPoolDomain
+        - endpoint: Action:VerifySoftwareToken
+        - endpoint: Action:VerifyUserAttribute
+      - service: KMS (kms)
+        - endpoint: Action:CancelKeyDeletion
+        - endpoint: Action:ConnectCustomKeyStore
+        - endpoint: Action:CreateAlias
+        - endpoint: Action:CreateCustomKeyStore
+        - endpoint: Action:CreateGrant
+        - endpoint: Action:CreateKey
+        - endpoint: Action:Decrypt
+        - endpoint: Action:DeleteAlias
+        - endpoint: Action:DeleteCustomKeyStore
+        - endpoint: Action:DeleteImportedKeyMaterial
+        - endpoint: Action:DeriveSharedSecret
+        - endpoint: Action:DescribeCustomKeyStores
+        - endpoint: Action:DescribeKey
+        - endpoint: Action:DisableKey
+        - endpoint: Action:DisableKeyRotation
+        - endpoint: Action:DisconnectCustomKeyStore
+        - endpoint: Action:EnableKey
+        - endpoint: Action:EnableKeyRotation
+        - endpoint: Action:Encrypt
+        - endpoint: Action:GenerateDataKey
+        - endpoint: Action:GenerateDataKeyPair
+        - endpoint: Action:GenerateDataKeyPairWithoutPlaintext
+        - endpoint: Action:GenerateDataKeyWithoutPlaintext
+        - endpoint: Action:GenerateMac
+        - endpoint: Action:GenerateRandom
+        - endpoint: Action:GetKeyPolicy
+        - endpoint: Action:GetKeyRotationStatus
+        - endpoint: Action:GetParametersForImport
+        - endpoint: Action:GetPublicKey
+        - endpoint: Action:ImportKeyMaterial
+        - endpoint: Action:ListAliases
+        - endpoint: Action:ListGrants
+        - endpoint: Action:ListKeyPolicies
+        - endpoint: Action:ListKeyRotations
+        - endpoint: Action:ListKeys
+        - endpoint: Action:ListResourceTags
+        - endpoint: Action:ListRetirableGrants
+        - endpoint: Action:PutKeyPolicy
+        - endpoint: Action:ReEncrypt
+        - endpoint: Action:ReplicateKey
+        - endpoint: Action:RetireGrant
+        - endpoint: Action:RevokeGrant
+        - endpoint: Action:RotateKeyOnDemand
+        - endpoint: Action:ScheduleKeyDeletion
+        - endpoint: Action:Sign
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateAlias
+        - endpoint: Action:UpdateCustomKeyStore
+        - endpoint: Action:UpdateKeyDescription
+        - endpoint: Action:UpdatePrimaryRegion
+        - endpoint: Action:Verify
+        - endpoint: Action:VerifyMac
+      - service: License Manager (license-manager)
+        - endpoint: Action:AcceptGrant
+        - endpoint: Action:CheckInLicense
+        - endpoint: Action:CheckoutBorrowLicense
+        - endpoint: Action:CheckoutLicense
+        - endpoint: Action:CreateGrant
+        - endpoint: Action:CreateGrantVersion
+        - endpoint: Action:CreateLicense
+        - endpoint: Action:CreateLicenseAssetGroup
+        - endpoint: Action:CreateLicenseAssetRuleset
+        - endpoint: Action:CreateLicenseConfiguration
+        - endpoint: Action:CreateLicenseConversionTaskForResource
+        - endpoint: Action:CreateLicenseManagerReportGenerator
+        - endpoint: Action:CreateLicenseVersion
+        - endpoint: Action:CreateToken
+        - endpoint: Action:DeleteGrant
+        - endpoint: Action:DeleteLicense
+        - endpoint: Action:DeleteLicenseAssetGroup
+        - endpoint: Action:DeleteLicenseAssetRuleset
+        - endpoint: Action:DeleteLicenseConfiguration
+        - endpoint: Action:DeleteLicenseManagerReportGenerator
+        - endpoint: Action:DeleteToken
+        - endpoint: Action:ExtendLicenseConsumption
+        - endpoint: Action:GetAccessToken
+        - endpoint: Action:GetGrant
+        - endpoint: Action:GetLicense
+        - endpoint: Action:GetLicenseAssetGroup
+        - endpoint: Action:GetLicenseAssetRuleset
+        - endpoint: Action:GetLicenseConfiguration
+        - endpoint: Action:GetLicenseConversionTask
+        - endpoint: Action:GetLicenseManagerReportGenerator
+        - endpoint: Action:GetLicenseUsage
+        - endpoint: Action:GetServiceSettings
+        - endpoint: Action:ListAssetsForLicenseAssetGroup
+        - endpoint: Action:ListAssociationsForLicenseConfiguration
+        - endpoint: Action:ListDistributedGrants
+        - endpoint: Action:ListFailuresForLicenseConfigurationOperations
+        - endpoint: Action:ListLicenseAssetGroups
+        - endpoint: Action:ListLicenseAssetRulesets
+        - endpoint: Action:ListLicenseConfigurations
+        - endpoint: Action:ListLicenseConfigurationsForOrganization
+        - endpoint: Action:ListLicenseConversionTasks
+        - endpoint: Action:ListLicenseManagerReportGenerators
+        - endpoint: Action:ListLicenseSpecificationsForResource
+        - endpoint: Action:ListLicenseVersions
+        - endpoint: Action:ListLicenses
+        - endpoint: Action:ListReceivedGrants
+        - endpoint: Action:ListReceivedGrantsForOrganization
+        - endpoint: Action:ListReceivedLicenses
+        - endpoint: Action:ListReceivedLicensesForOrganization
+        - endpoint: Action:ListResourceInventory
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListTokens
+        - endpoint: Action:ListUsageForLicenseConfiguration
+        - endpoint: Action:RejectGrant
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateLicenseAssetGroup
+        - endpoint: Action:UpdateLicenseAssetRuleset
+        - endpoint: Action:UpdateLicenseConfiguration
+        - endpoint: Action:UpdateLicenseManagerReportGenerator
+        - endpoint: Action:UpdateLicenseSpecificationsForResource
+        - endpoint: Action:UpdateServiceSettings
+      - service: License Manager Linux Subscriptions (license-manager-linux-subscriptions)
+        - endpoint: Action:DeregisterSubscriptionProvider
+        - endpoint: Action:GetRegisteredSubscriptionProvider
+        - endpoint: Action:GetServiceSettings
+        - endpoint: Action:ListLinuxSubscriptionInstances
+        - endpoint: Action:ListLinuxSubscriptions
+        - endpoint: Action:ListRegisteredSubscriptionProviders
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:RegisterSubscriptionProvider
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateServiceSettings
+      - service: License Manager User Subscriptions (license-manager-user-subscriptions)
+        - endpoint: Action:AssociateUser
+        - endpoint: Action:CreateLicenseServerEndpoint
+        - endpoint: Action:DeleteLicenseServerEndpoint
+        - endpoint: Action:DeregisterIdentityProvider
+        - endpoint: Action:DisassociateUser
+        - endpoint: Action:ListIdentityProviders
+        - endpoint: Action:ListInstances
+        - endpoint: Action:ListLicenseServerEndpoints
+        - endpoint: Action:ListProductSubscriptions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:ListUserAssociations
+        - endpoint: Action:RegisterIdentityProvider
+        - endpoint: Action:StartProductSubscription
+        - endpoint: Action:StopProductSubscription
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateIdentityProviderSettings
+      - service: Multi-party Approval (mpa)
+        - endpoint: Action:CancelSession
+        - endpoint: Action:CreateApprovalTeam
+        - endpoint: Action:CreateIdentitySource
+        - endpoint: Action:DeleteIdentitySource
+        - endpoint: Action:DeleteInactiveApprovalTeamVersion
+        - endpoint: Action:GetApprovalTeam
+        - endpoint: Action:GetIdentitySource
+        - endpoint: Action:GetPolicyVersion
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetSession
+        - endpoint: Action:ListApprovalTeams
+        - endpoint: Action:ListIdentitySources
+        - endpoint: Action:ListPolicies
+        - endpoint: Action:ListPolicyVersions
+        - endpoint: Action:ListResourcePolicies
+        - endpoint: Action:ListSessions
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:StartActiveApprovalTeamDeletion
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateApprovalTeam
+      - service: Private CA (privateca)
+        - endpoint: Action:CreateCertificateAuthority
+        - endpoint: Action:CreateCertificateAuthorityAuditReport
+        - endpoint: Action:CreatePermission
+        - endpoint: Action:DeleteCertificateAuthority
+        - endpoint: Action:DeletePermission
+        - endpoint: Action:DeletePolicy
+        - endpoint: Action:DescribeCertificateAuthority
+        - endpoint: Action:DescribeCertificateAuthorityAuditReport
+        - endpoint: Action:GetCertificate
+        - endpoint: Action:GetCertificateAuthorityCertificate
+        - endpoint: Action:GetCertificateAuthorityCsr
+        - endpoint: Action:GetPolicy
+        - endpoint: Action:ImportCertificateAuthorityCertificate
+        - endpoint: Action:IssueCertificate
+        - endpoint: Action:ListCertificateAuthorities
+        - endpoint: Action:ListPermissions
+        - endpoint: Action:ListTags
+        - endpoint: Action:PutPolicy
+        - endpoint: Action:RestoreCertificateAuthority
+        - endpoint: Action:RevokeCertificate
+        - endpoint: Action:TagCertificateAuthority
+        - endpoint: Action:UntagCertificateAuthority
+        - endpoint: Action:UpdateCertificateAuthority
+      - service: Secrets Manager (secretsmanager)
+        - endpoint: Action:BatchGetSecretValue
+        - endpoint: Action:CancelRotateSecret
+        - endpoint: Action:CreateSecret
+        - endpoint: Action:DeleteResourcePolicy
+        - endpoint: Action:DeleteSecret
+        - endpoint: Action:DescribeSecret
+        - endpoint: Action:GetRandomPassword
+        - endpoint: Action:GetResourcePolicy
+        - endpoint: Action:GetSecretValue
+        - endpoint: Action:ListSecretVersionIds
+        - endpoint: Action:ListSecrets
+        - endpoint: Action:PutResourcePolicy
+        - endpoint: Action:PutSecretValue
+        - endpoint: Action:RemoveRegionsFromReplication
+        - endpoint: Action:ReplicateSecretToRegions
+        - endpoint: Action:RestoreSecret
+        - endpoint: Action:RotateSecret
+        - endpoint: Action:StopReplicationToReplica
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+        - endpoint: Action:UpdateSecret
+        - endpoint: Action:UpdateSecretVersionStage
+        - endpoint: Action:ValidateResourcePolicy
+      - service: Signer (signer)
+        - endpoint: Action:AddProfilePermission
+        - endpoint: Action:CancelSigningProfile
+        - endpoint: Action:DescribeSigningJob
+        - endpoint: Action:GetRevocationStatus
+        - endpoint: Action:GetSigningPlatform
+        - endpoint: Action:GetSigningProfile
+        - endpoint: Action:ListProfilePermissions
+        - endpoint: Action:ListSigningJobs
+        - endpoint: Action:ListSigningPlatforms
+        - endpoint: Action:ListSigningProfiles
+        - endpoint: Action:ListTagsForResource
+        - endpoint: Action:PutSigningProfile
+        - endpoint: Action:RemoveProfilePermission
+        - endpoint: Action:RevokeSignature
+        - endpoint: Action:RevokeSigningProfile
+        - endpoint: Action:SignPayload
+        - endpoint: Action:StartSigningJob
+        - endpoint: Action:TagResource
+        - endpoint: Action:UntagResource
+    - category: Storage
+      - service: S3 (s3)
+        - endpoint: GET /
+        - endpoint: GET /s3/buckets
+        - endpoint: GET /s3/objects/{bucket}
+        - endpoint: GET /s3/objects/{bucket}/{key...}
+        - endpoint: GET/PUT/POST/DELETE/HEAD /{bucket}/{key...}
+        - endpoint: POST /
+        - endpoint: POST /WriteGetObjectResponse
+        - endpoint: PUT /s3/buckets/{bucket}
+        - endpoint: PUT /s3/objects/{bucket}/{key...}
+        - endpoint: PUT/POST/DELETE /{bucket}
+      - service: S3 Control (s3-control)
+        - endpoint: GET /v20180820/accessgrantsinstance/grants
+        - endpoint: GET /v20180820/accessgrantsinstance/locations
+        - endpoint: GET /v20180820/accessgrantsinstances
+        - endpoint: GET /v20180820/accesspoint
+        - endpoint: GET /v20180820/accesspoint/{name}/policyStatus
+        - endpoint: GET /v20180820/async-requests/mrap/{requestToken}
+        - endpoint: GET /v20180820/jobs/{jobId}
+        - endpoint: GET /v20180820/mrap/instances
+        - endpoint: GET /v20180820/mrap/instances/{name}
+        - endpoint: GET /v20180820/mrap/instances/{name}/policy
+        - endpoint: GET /v20180820/mrap/instances/{name}/policyStatus
+        - endpoint: GET /v20180820/outposts/{outpostId}/buckets
+        - endpoint: GET /v20180820/storagelens
+        - endpoint: GET/DELETE /v20180820/accessgrantsinstance/grant/{grantId}
+        - endpoint: GET/DELETE /v20180820/outposts/{outpostId}/bucket/{bucket}
+        - endpoint: GET/PATCH /v20180820/mrap/instances/{name}/routes
+        - endpoint: GET/PUT/DELETE /v20180820/accessgrantsinstance/location/{locationId}
+        - endpoint: GET/PUT/DELETE /v20180820/outposts/{outpostId}/bucket/{bucket}/lifecycle
+        - endpoint: GET/PUT/DELETE /v20180820/outposts/{outpostId}/bucket/{bucket}/policy
+        - endpoint: GET/PUT/DELETE /v20180820/outposts/{outpostId}/bucket/{bucket}/replication
+        - endpoint: GET/PUT/DELETE /v20180820/outposts/{outpostId}/bucket/{bucket}/tagging
+        - endpoint: GET/PUT/DELETE /v20180820/storage-lens-groups/{name}
+        - endpoint: POST /v20180820/accessgrantsinstance/grant
+        - endpoint: POST /v20180820/accessgrantsinstance/identitycenter
+        - endpoint: POST /v20180820/accessgrantsinstance/location
+        - endpoint: POST /v20180820/async-requests/mrap/create
+        - endpoint: POST /v20180820/async-requests/mrap/put-policy
+        - endpoint: POST /v20180820/jobs/{jobId}/priority
+        - endpoint: POST /v20180820/jobs/{jobId}/status
+        - endpoint: POST /v20180820/outposts/{outpostId}/bucket
+        - endpoint: POST/GET /v20180820/jobs
+        - endpoint: POST/GET /v20180820/storage-lens-groups
+        - endpoint: POST/GET/DELETE /v20180820/accessgrantsinstance
+        - endpoint: PUT/GET/DELETE /v20180820/accessgrantsinstance/resourcepolicy
+        - endpoint: PUT/GET/DELETE /v20180820/accesspoint/{name}
+        - endpoint: PUT/GET/DELETE /v20180820/accesspoint/{name}/policy
+        - endpoint: PUT/GET/DELETE /v20180820/configuration/publicAccessBlock
+        - endpoint: PUT/GET/DELETE /v20180820/jobs/{jobId}/tagging
+        - endpoint: PUT/GET/DELETE /v20180820/storagelens/{configId}
+        - endpoint: PUT/GET/DELETE /v20180820/storagelens/{configId}/tagging
+      - service: S3 Outposts (s3-outposts)
+        - endpoint: DELETE /S3Outposts/DeleteEndpoint
+        - endpoint: GET /S3Outposts/ListEndpoints
+        - endpoint: GET /S3Outposts/ListOutpostsWithS3
+        - endpoint: GET /S3Outposts/ListSharedEndpoints
+        - endpoint: POST /S3Outposts/CreateEndpoint
+      - service: S3 Tables (s3-tables)
+        - endpoint: GET /iceberg/v1/config
+        - endpoint: GET/POST /iceberg/v1/{tableBucketArn}/namespaces
+        - endpoint: GET/POST /iceberg/v1/{tableBucketArn}/namespaces/{namespace}/tables
+        - endpoint: HEAD/GET/DELETE /iceberg/v1/{tableBucketArn}/namespaces/{namespace}
+        - endpoint: HEAD/GET/POST/DELETE /iceberg/v1/{tableBucketArn}/namespaces/{namespace}/tables/{table}
+        - endpoint: POST /iceberg/v1/{tableBucketArn}/tables/rename
+      - service: S3 Vectors (s3-vectors)
+        - endpoint: POST /CreateIndex
+        - endpoint: POST /CreateVectorBucket
+        - endpoint: POST /DeleteIndex
+        - endpoint: POST /DeleteVectorBucket
+        - endpoint: POST /DeleteVectorBucketPolicy
+        - endpoint: POST /DeleteVectors
+        - endpoint: POST /GetIndex
+        - endpoint: POST /GetVectorBucket
+        - endpoint: POST /GetVectorBucketPolicy
+        - endpoint: POST /GetVectors
+        - endpoint: POST /ListIndexes
+        - endpoint: POST /ListTagsForResource
+        - endpoint: POST /ListVectorBuckets
+        - endpoint: POST /ListVectors
+        - endpoint: POST /PutVectorBucketPolicy
+        - endpoint: POST /PutVectors
+        - endpoint: POST /QueryVectors
+        - endpoint: POST /TagResource
+        - endpoint: POST /UntagResource
+  - provider: gcp
+    - category: AI & ML
+      - service: AutoML (API v1) (automl-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/datasets
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/datasets/team-dataset
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/models
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/models/team-model
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/models/team-model/modelEvaluations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/models/team-model/modelEvaluations/eval-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/models/team-model:batchPredict
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/models/team-model:predict
+      - service: Chat (API v1) (chat-apiv1)
+        - endpoint: DELETE /gcp/v1/spaces/team-space/messages/message-1/reactions/reaction-1
+        - endpoint: GET /gcp/v1/customEmojis
+        - endpoint: GET /gcp/v1/customEmojis/emoji-1
+        - endpoint: GET /gcp/v1/spaces
+        - endpoint: GET /gcp/v1/spaces/team-space
+        - endpoint: GET /gcp/v1/spaces/team-space/members
+        - endpoint: GET /gcp/v1/spaces/team-space/members/user-1
+        - endpoint: GET /gcp/v1/spaces/team-space/messages
+        - endpoint: GET /gcp/v1/spaces/team-space/messages/message-1
+        - endpoint: GET /gcp/v1/spaces/team-space/messages/message-1/attachments/attachment-1
+        - endpoint: GET /gcp/v1/spaces/team-space/messages/message-1/reactions
+        - endpoint: GET /gcp/v1/spaces/team-space/spaceEvents
+        - endpoint: GET /gcp/v1/spaces/team-space/spaceEvents/event-1
+        - endpoint: GET /gcp/v1/spaces:findDirectMessage
+        - endpoint: GET /gcp/v1/users/me/spaces/team-space/spaceNotificationSetting
+        - endpoint: GET /gcp/v1/users/me/spaces/team-space/spaceReadState
+        - endpoint: GET /gcp/v1/users/me/spaces/team-space/threads/thread-1/threadReadState
+        - endpoint: PATCH /gcp/v1/spaces/team-space/messages/message-1
+        - endpoint: POST /gcp/v1/spaces/team-space/attachments:upload
+        - endpoint: POST /gcp/v1/spaces/team-space/messages
+        - endpoint: POST /gcp/v1/spaces/team-space/messages/message-1/reactions
+        - endpoint: POST /gcp/v1/spaces:search
+        - endpoint: POST /gcp/v1/spaces:setup
+      - service: Cloud Speech-to-Text V1 (speech-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/CreateCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/CreatePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/DeleteCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/DeletePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/GetCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/GetPhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/ListCustomClasses
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/ListPhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/UpdateCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/UpdatePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/LongRunningRecognize
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/Recognize
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/StreamingRecognize
+      - service: Cloud Speech-to-Text V2 (speech-apiv2)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/CreateCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/CreatePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/DeleteCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/DeletePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/GetCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/GetPhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/ListCustomClasses
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/ListPhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/UpdateCustomClass
+        - endpoint: POST /gcp/google.cloud.speech.v1.Adaptation/UpdatePhraseSet
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/LongRunningRecognize
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/Recognize
+        - endpoint: POST /gcp/google.cloud.speech.v1.Speech/StreamingRecognize
+      - service: Cloud Text-to-Speech V1 (texttospeech-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/synthesizeLongAudio.op-1
+        - endpoint: GET /gcp/v1/voices
+        - endpoint: POST /gcp/google.cloud.texttospeech.v1.TextToSpeech/ListVoices
+        - endpoint: POST /gcp/google.cloud.texttospeech.v1.TextToSpeechLongAudioSynthesize/ListOperations
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1:synthesizeLongAudio
+        - endpoint: POST /gcp/v1/text:synthesize
+      - service: Cloud Translation Advanced V3 (translate-apiv3)
+        - endpoint: GET /gcp/v3/projects/stackyard/locations
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/glossaries
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/supportedLanguages
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/adaptiveMtDatasets
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/datasets
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/glossaries
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/models
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1:batchTranslateText
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1:translateText
+      - service: Cloud Video Intelligence (videointelligence-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-east1/operations/annotateVideo.video-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-east1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-east1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-east1/operations/annotateVideo.video-1
+        - endpoint: POST /gcp/google.cloud.videointelligence.v1.VideoIntelligenceService/AnnotateVideo
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-east1/operations/annotateVideo.video-1:cancel
+        - endpoint: POST /gcp/v1/videos:annotate
+      - service: Cloud Vision V2 (vision-v2-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/AsyncBatchAnnotateImages
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/BatchAnnotateFiles
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/BatchAnnotateImages
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/CreateProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/DeleteProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/GetProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/ListProductSets
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/UpdateProductSet
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1:cancel
+      - service: CSS API (shopping-css-apiv1)
+        - endpoint: DELETE /gcp/v1/accounts/123456/cssProductInputs/en~US~sku-1
+        - endpoint: DELETE /gcp/v1/accounts/123456/labels/label-summer-2026
+        - endpoint: GET /gcp/v1/accounts/123456
+        - endpoint: GET /gcp/v1/accounts/123456/cssProducts
+        - endpoint: GET /gcp/v1/accounts/123456/cssProducts/en~US~sku-1
+        - endpoint: GET /gcp/v1/accounts/123456/labels
+        - endpoint: GET /gcp/v1/accounts/123456/quotas
+        - endpoint: GET /gcp/v1/accounts/123456:listChildAccounts
+        - endpoint: PATCH /gcp/v1/accounts/123456/cssProductInputs/en~US~sku-1
+        - endpoint: PATCH /gcp/v1/accounts/123456/labels/label-summer-2026
+        - endpoint: POST /gcp/v1/accounts/123456/cssProductInputs:insert
+        - endpoint: POST /gcp/v1/accounts/123456/labels
+        - endpoint: POST /gcp/v1/accounts/123456:updateLabels
+      - service: Data Labeling (API v1) (datalabeling-apiv1)
+        - endpoint: none
+      - service: Dialogflow (API v1) (dialogflow-apiv1)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/agent/intents/intent-1
+        - endpoint: GET /gcp/v2/projects/-/agent:search
+        - endpoint: GET /gcp/v2/projects/stackyard/agent
+        - endpoint: GET /gcp/v2/projects/stackyard/agent/intents
+        - endpoint: GET /gcp/v2/projects/stackyard/agent/intents/intent-1
+        - endpoint: GET /gcp/v2/projects/stackyard/agent/validationResult
+        - endpoint: GET /gcp/v2/projects/stackyard/operations
+        - endpoint: GET /gcp/v2/projects/stackyard/operations/op-1
+        - endpoint: PATCH /gcp/v2/projects/stackyard/agent
+        - endpoint: PATCH /gcp/v2/projects/stackyard/agent/intents/intent-1
+        - endpoint: POST /gcp/v2/projects/stackyard/agent/intents
+        - endpoint: POST /gcp/v2/projects/stackyard/agent/sessions/session-1:detectIntent
+        - endpoint: POST /gcp/v2/projects/stackyard/agent:train
+        - endpoint: POST /gcp/v2/projects/stackyard/operations/op-1:cancel
+      - service: Dialogflow Cx (API v1) (dialogflow-cx-apiv1)
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows/flow-1
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows/flow-1/validationResult
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/validationResult
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v3/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: PATCH /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1
+        - endpoint: PATCH /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows/flow-1
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows/flow-1:train
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/flows/flow-1:validate
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/sessions/session-1:detectIntent
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/sessions/session-1:fulfillIntent
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1/sessions/session-1:matchIntent
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1:export
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1:restore
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/agents/agent-1:validate
+        - endpoint: POST /gcp/v3/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Document AI (API v1) (documentai-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us/processors/proc-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processorTypes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processorTypes/FORM_PARSER_PROCESSOR
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors/proc-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1/evaluations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1/evaluations/eval-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/operations/op-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1/humanReviewConfig:reviewDocument
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1:deploy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1:evaluateProcessorVersion
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions/ver-1:undeploy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1/processorVersions:train
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1:batchProcess
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1:disable
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1:enable
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1:process
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us/processors/proc-1:setDefaultProcessorVersion
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us:fetchProcessorTypes
+      - service: Domains (API v1) (domains-apiv1)
+        - endpoint: none
+      - service: Gemini Data Analytics (API v1) (geminidataanalytics-apiv1)
+        - endpoint: DELETE /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents/analytics-agent
+        - endpoint: DELETE /gcp/v1beta/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/conversations
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/conversations/conv-1
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/conversations/conv-1/messages
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents/analytics-agent
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents:listAccessible
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1beta/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: PATCH /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents/analytics-agent
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1/conversations
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents/analytics-agent:getIamPolicy
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1/dataAgents/analytics-agent:setIamPolicy
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1/operations/op-1:cancel
+        - endpoint: POST /gcp/v1beta/projects/stackyard/locations/us-central1:chat
+      - service: Generative Language (API v1) (generativelanguage-apiv1)
+        - endpoint: GET /gcp/v1/models
+        - endpoint: GET /gcp/v1/models/gemini-2.0-flash
+        - endpoint: POST /gcp/v1/models/gemini-2.0-flash:countTokens
+        - endpoint: POST /gcp/v1/models/gemini-2.0-flash:generateContent
+        - endpoint: POST /gcp/v1/models/gemini-2.0-flash:streamGenerateContent
+      - service: Language (API v1) (language-apiv1)
+        - endpoint: none
+      - service: Language (API v2) (language-apiv2)
+        - endpoint: none
+      - service: Live Stream (video-livestream-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/assets
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/channels
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/clips
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/dvrSessions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/events
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/inputs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createChannel.channel-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/pools/default
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/pools/default
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/assets
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/clips
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/distributions/distribution-1:start
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/distributions/distribution-1:stop
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/dvrSessions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1/events
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1:start
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/channels/channel-1:stop
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/inputs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/inputs/input-1:preview
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/createChannel.channel-1:cancel
+      - service: Media Translation (API v1beta1) (mediatranslation-apiv1beta1)
+        - endpoint: POST /gcp/google.cloud.mediatranslation.v1beta1.SpeechTranslationService/StreamingTranslateSpeech
+      - service: Meet (API v2) (meet-apiv2)
+        - endpoint: none
+      - service: Merchant Accounts (shopping-merchant-accounts-apiv1)
+        - endpoint: DELETE /gcp/accounts/v1/accounts/123456
+        - endpoint: DELETE /gcp/accounts/v1/accounts/123456/checkoutSettings
+        - endpoint: DELETE /gcp/accounts/v1/accounts/123456/onlineReturnPolicies/default-policy
+        - endpoint: DELETE /gcp/accounts/v1/accounts/123456/regions/us-east
+        - endpoint: DELETE /gcp/accounts/v1/accounts/123456/users/owner@example.com
+        - endpoint: GET /gcp/accounts/v1/accounts
+        - endpoint: GET /gcp/accounts/v1/accounts/123456
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/autofeedSettings
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/automaticImprovements
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/businessIdentity
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/businessInfo
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/checkoutSettings
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/developerRegistration
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/emailPreferences
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/gbpAccounts
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/homepage
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/issues
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/lfpProviders:find
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/omnichannelSettings
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/omnichannelSettings/default
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/onlineReturnPolicies
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/onlineReturnPolicies/default-policy
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/programs
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/programs/free-listings
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/regions
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/regions/us-east
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/relationships
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/relationships/relationship-1
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/services
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/services/shopping-ads
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/shippingSettings
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/termsOfServiceAgreementStates/state-1
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/termsOfServiceAgreementStates:retrieveForApplication
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/users
+        - endpoint: GET /gcp/accounts/v1/accounts/123456/users/owner@example.com
+        - endpoint: GET /gcp/accounts/v1/accounts/123456:listSubaccounts
+        - endpoint: GET /gcp/accounts/v1/accounts:getAccountForGcpRegistration
+        - endpoint: GET /gcp/accounts/v1/termsOfService/latest
+        - endpoint: GET /gcp/accounts/v1/termsOfService:retrieveLatest
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/autofeedSettings
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/automaticImprovements
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/businessIdentity
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/businessInfo
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/checkoutSettings
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/emailPreferences
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/homepage
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/omnichannelSettings/default
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/regions/us-east
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/relationships/relationship-1
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/users/me:verifySelf
+        - endpoint: PATCH /gcp/accounts/v1/accounts/123456/users/owner@example.com
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/checkoutSettings
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/developerRegistration:registerGcp
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/developerRegistration:unregisterGcp
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/gbpAccounts:linkGbpAccount
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/homepage:claim
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/homepage:unclaim
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/omnichannelSettings
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/omnichannelSettings/default:requestInventoryVerification
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/onlineReturnPolicies
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/programs/free-listings:disable
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/programs/free-listings:enable
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/regions
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/regions:batchCreate
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/regions:batchDelete
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/regions:batchUpdate
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/services/shopping-ads:approve
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/services/shopping-ads:reject
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/services:propose
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/shippingSettings:insert
+        - endpoint: POST /gcp/accounts/v1/accounts/123456/users
+        - endpoint: POST /gcp/accounts/v1/accounts/123456:linkLfpProvider
+        - endpoint: POST /gcp/accounts/v1/accounts:createAndConfigure
+        - endpoint: POST /gcp/accounts/v1/termsOfService/latest:accept
+      - service: Merchant Conversions (shopping-merchant-conversions-apiv1)
+        - endpoint: DELETE /gcp/conversions/v1/accounts/123456/conversionSources/galk:2001
+        - endpoint: DELETE /gcp/conversions/v1/accounts/123456/conversionSources/mcdn:1001
+        - endpoint: GET /gcp/conversions/v1/accounts/123456/conversionSources
+        - endpoint: GET /gcp/conversions/v1/accounts/123456/conversionSources/galk:2001
+        - endpoint: GET /gcp/conversions/v1/accounts/123456/conversionSources/mcdn:1001
+        - endpoint: PATCH /gcp/conversions/v1/accounts/123456/conversionSources/mcdn:1001
+        - endpoint: POST /gcp/conversions/v1/accounts/123456/conversionSources
+        - endpoint: POST /gcp/conversions/v1/accounts/123456/conversionSources/mcdn:1001:undelete
+      - service: Merchant Data Sources (shopping-merchant-datasources-apiv1)
+        - endpoint: DELETE /gcp/datasources/v1/accounts/123456/dataSources/1001
+        - endpoint: GET /gcp/datasources/v1/accounts/123456/dataSources
+        - endpoint: GET /gcp/datasources/v1/accounts/123456/dataSources/1001
+        - endpoint: GET /gcp/datasources/v1/accounts/123456/dataSources/1001/fileUploads/latest
+        - endpoint: PATCH /gcp/datasources/v1/accounts/123456/dataSources/1001
+        - endpoint: POST /gcp/datasources/v1/accounts/123456/dataSources
+        - endpoint: POST /gcp/datasources/v1/accounts/123456/dataSources/1001:fetch
+      - service: Merchant Inventories (shopping-merchant-inventories-apiv1)
+        - endpoint: DELETE /gcp/inventories/v1/accounts/123456/products/sku-1001/localInventories/store-nyc
+        - endpoint: DELETE /gcp/inventories/v1/accounts/123456/products/sku-1001/regionalInventories/us-east1
+        - endpoint: GET /gcp/inventories/v1/accounts/123456/products/sku-1001/localInventories
+        - endpoint: GET /gcp/inventories/v1/accounts/123456/products/sku-1001/regionalInventories
+        - endpoint: POST /gcp/inventories/v1/accounts/123456/products/sku-1001/localInventories:insert
+        - endpoint: POST /gcp/inventories/v1/accounts/123456/products/sku-1001/regionalInventories:insert
+      - service: Merchant Issues Resolution (shopping-merchant-issueresolution-apiv1)
+        - endpoint: GET /gcp/issueresolution/v1/accounts/123456/aggregateProductStatuses
+        - endpoint: POST /gcp/issueresolution/v1/accounts/123456/products/sku-1001:renderproductissues
+        - endpoint: POST /gcp/issueresolution/v1/accounts/123456:renderaccountissues
+        - endpoint: POST /gcp/issueresolution/v1/accounts/123456:triggeraction
+      - service: Merchant LFP (shopping-merchant-lfp-apiv1)
+        - endpoint: DELETE /gcp/lfp/v1/accounts/123456/lfpStores/567890~store-nyc
+        - endpoint: GET /gcp/lfp/v1/accounts/123456/lfpMerchantStates/567890
+        - endpoint: GET /gcp/lfp/v1/accounts/123456/lfpStores
+        - endpoint: GET /gcp/lfp/v1/accounts/123456/lfpStores/567890~store-nyc
+        - endpoint: POST /gcp/lfp/v1/accounts/123456/lfpInventories:insert
+        - endpoint: POST /gcp/lfp/v1/accounts/123456/lfpSales:insert
+        - endpoint: POST /gcp/lfp/v1/accounts/123456/lfpStores:insert
+      - service: Merchant Order Tracking (shopping-merchant-ordertracking-apiv1)
+        - endpoint: POST /gcp/ordertracking/v1/accounts/123456/orderTrackingSignals
+      - service: Merchant Product Studio (shopping-merchant-productstudio-apiv1alpha)
+        - endpoint: POST /gcp/productstudio/v1alpha/accounts/123456/generatedImages:generateProductImageBackground
+        - endpoint: POST /gcp/productstudio/v1alpha/accounts/123456/generatedImages:removeProductImageBackground
+        - endpoint: POST /gcp/productstudio/v1alpha/accounts/123456/generatedImages:upscaleProductImage
+        - endpoint: POST /gcp/productstudio/v1alpha/accounts/123456:generateProductTextSuggestions
+      - service: Merchant Products (shopping-merchant-products-apiv1)
+        - endpoint: DELETE /gcp/products/v1/accounts/123456/productInputs/en~US~sku-1001
+        - endpoint: GET /gcp/products/v1/accounts/123456/products
+        - endpoint: GET /gcp/products/v1/accounts/123456/products/en~US~sku-1001
+        - endpoint: PATCH /gcp/products/v1/accounts/123456/productInputs/en~US~sku-1001
+        - endpoint: POST /gcp/products/v1/accounts/123456/productInputs:insert
+      - service: Merchant Promotions (shopping-merchant-promotions-apiv1)
+        - endpoint: GET /gcp/promotions/v1/accounts/123456/promotions
+        - endpoint: GET /gcp/promotions/v1/accounts/123456/promotions/en~US~promo-1001
+        - endpoint: POST /gcp/promotions/v1/accounts/123456/promotions:insert
+      - service: Merchant Quota (shopping-merchant-quota-apiv1)
+        - endpoint: GET /gcp/quota/v1/accounts/123456/quotas
+      - service: Merchant Reports (shopping-merchant-reports-apiv1)
+        - endpoint: POST /gcp/reports/v1/accounts/123456/reports:search
+      - service: Merchant Reviews (shopping-merchant-reviews-apiv1beta)
+        - endpoint: DELETE /gcp/reviews/v1beta/accounts/123456/merchantReviews/merchant-review-1001
+        - endpoint: DELETE /gcp/reviews/v1beta/accounts/123456/productReviews/product-review-1001
+        - endpoint: GET /gcp/reviews/v1beta/accounts/123456/merchantReviews
+        - endpoint: GET /gcp/reviews/v1beta/accounts/123456/merchantReviews/merchant-review-1001
+        - endpoint: GET /gcp/reviews/v1beta/accounts/123456/productReviews
+        - endpoint: GET /gcp/reviews/v1beta/accounts/123456/productReviews/product-review-1001
+        - endpoint: POST /gcp/reviews/v1beta/accounts/123456/merchantReviews:insert
+        - endpoint: POST /gcp/reviews/v1beta/accounts/123456/productReviews:insert
+      - service: Model Armor (API v1) (modelarmor-apiv1)
+        - endpoint: none
+      - service: Optimization (API v1) (optimization-apiv1)
+        - endpoint: none
+      - service: Recommendations AI (recommendationengine-apiv1beta1)
+        - endpoint: DELETE /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems/item-1
+        - endpoint: DELETE /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/predictionApiKeyRegistrations/stackyard-api-key
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems/item-1
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/predictionApiKeyRegistrations
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/userEvents
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/userEvents:collect
+        - endpoint: GET /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/operations/importCatalogItems-1
+        - endpoint: PATCH /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems/item-1
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/catalogItems:import
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/placements/home_page:predict
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/predictionApiKeyRegistrations
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/userEvents:import
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/userEvents:purge
+        - endpoint: POST /gcp/v1beta1/projects/stackyard/locations/global/catalogs/default_catalog/eventStores/default_event_store/userEvents:write
+      - service: Talent Solution V4 (talent-apiv4)
+        - endpoint: DELETE /gcp/v4/projects/stackyard/tenants/tenant-1
+        - endpoint: DELETE /gcp/v4/projects/stackyard/tenants/tenant-1/companies/company-1
+        - endpoint: DELETE /gcp/v4/projects/stackyard/tenants/tenant-1/jobs/job-1
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/companies
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/companies/company-1
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/jobs
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/jobs/job-1
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/operations
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1/operations/batchCreateJobs-1
+        - endpoint: GET /gcp/v4/projects/stackyard/tenants/tenant-1:completeQuery
+        - endpoint: PATCH /gcp/v4/projects/stackyard/tenants/tenant-1
+        - endpoint: PATCH /gcp/v4/projects/stackyard/tenants/tenant-1/companies/company-1
+        - endpoint: PATCH /gcp/v4/projects/stackyard/tenants/tenant-1/jobs/job-1
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/clientEvents
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/companies
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs:batchCreate
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs:batchDelete
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs:batchUpdate
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs:search
+        - endpoint: POST /gcp/v4/projects/stackyard/tenants/tenant-1/jobs:searchForAlert
+      - service: Transcoder (video-transcoder-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/jobTemplates/template-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobTemplates
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobTemplates/template-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobTemplates
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobs
+      - service: Vertex AI Platform (API v1) (aiplatform-apiv1)
+        - endpoint: GET /gcp/aiplatform/v1/projects/stackyard/locations/us-central1/datasets
+        - endpoint: POST /google.cloud.aiplatform.v1.DatasetService/ListDatasets
+      - service: Vertex AI Search for commerce (retail-apiv2)
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/attributesConfig
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products/product-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/completionConfig
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/generativeQuestionFeature
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/generativeQuestions
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/models
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/models/model-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/operations
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/operations/op-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/servingConfigs
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/servingConfigs/default_config
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog:getDefaultBranch
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products/product-1
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/completionConfig
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/generativeQuestionFeature
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/attributesConfig:addCatalogAttribute
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products/product-1:addFulfillmentPlaces
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products/product-1:setInventory
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products:import
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/branches/default_branch/products:purge
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/completionData:import
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/generativeQuestion:batchUpdate
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/models
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/models/model-1:tune
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/placements/default_search:predict
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/placements/default_search:search
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/servingConfigs
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/servingConfigs/default_config:addControl
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/userEvents:collect
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/userEvents:import
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog/userEvents:write
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog:completeQuery
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog:exportAnalyticsMetrics
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/global/catalogs/default_catalog:setDefaultBranch
+      - service: Video Stitcher (video-stitcher-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/cdnKeys/cdn-key-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/liveConfigs/live-config-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/slates/slate-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/vodConfigs/vod-config-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/cdnKeys
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/cdnKeys/cdn-key-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/liveConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/liveConfigs/live-config-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/liveSessions/live-session-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/liveSessions/live-session-1/liveAdTagDetails
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/liveSessions/live-session-1/liveAdTagDetails/adtag-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createCdnKey.cdn-key-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/slates
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/slates/slate-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodConfigs/vod-config-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodSessions/vod-session-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodSessions/vod-session-1/vodAdTagDetails
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodSessions/vod-session-1/vodAdTagDetails/adtag-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodSessions/vod-session-1/vodStitchDetails
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vodSessions/vod-session-1/vodStitchDetails/stitch-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/cdnKeys/cdn-key-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/liveConfigs/live-config-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/slates/slate-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/vodConfigs/vod-config-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/cdnKeys
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/liveConfigs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/liveSessions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/createCdnKey.cdn-key-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/slates
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/vodConfigs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/vodSessions
+      - service: Vision (vision-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/AsyncBatchAnnotateImages
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/BatchAnnotateFiles
+        - endpoint: POST /gcp/google.cloud.vision.v1.ImageAnnotator/BatchAnnotateImages
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/CreateProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/DeleteProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/GetProductSet
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/ListProductSets
+        - endpoint: POST /gcp/google.cloud.vision.v1.ProductSearch/UpdateProductSet
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/vision-op-1:cancel
+      - service: Vision AI (visionai-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/createStream.stream-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createStream.stream-1
+        - endpoint: POST /gcp/google.cloud.visionai.v1.AppPlatform/ListApplications
+        - endpoint: POST /gcp/google.cloud.visionai.v1.HealthCheckService/HealthCheck
+        - endpoint: POST /gcp/google.cloud.visionai.v1.LiveVideoAnalytics/ListPublicOperators
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamingService/AcquireLease
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamingService/ReleaseLease
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamingService/RenewLease
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamsService/CreateStream
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamsService/GetStream
+        - endpoint: POST /gcp/google.cloud.visionai.v1.StreamsService/ListStreams
+        - endpoint: POST /gcp/google.cloud.visionai.v1.Warehouse/CreateCorpus
+        - endpoint: POST /gcp/google.cloud.visionai.v1.Warehouse/GetCorpus
+        - endpoint: POST /gcp/google.cloud.visionai.v1.Warehouse/ListCorpora
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/createStream.stream-1:cancel
+    - category: Compute & Runtimes
+      - service: App Engine (API v1) (appengine-apiv1)
+        - endpoint: GET /gcp/v1/apps/stackyard
+        - endpoint: GET /gcp/v1/apps/stackyard/services
+        - endpoint: GET /gcp/v1/apps/stackyard/services/default
+        - endpoint: GET /gcp/v1/apps/stackyard/services/default/versions
+        - endpoint: GET /gcp/v1/apps/stackyard/services/default/versions/v1
+        - endpoint: GET /gcp/v1/apps/stackyard/services/default/versions/v1/instances
+        - endpoint: GET /gcp/v1/apps/stackyard/services/default/versions/v1/instances/i-1
+      - service: Cloud Run Admin (run-apiv2)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions/execution-1
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/services/service-1
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/services/service-1/revisions/service-1-00001
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions/execution-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions/execution-1/tasks
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions/execution-1/tasks/task-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/operations/createService.service-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/services
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/services/service-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/services/service-1/revisions
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/services/service-1/revisions/service-1-00001
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/us-central1/services/service-1
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/jobs
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1/executions/execution-1:cancel
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/jobs/job-1:run
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/operations/createService.service-1:wait
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/services
+      - service: Cloud TPU V1 (tpu-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/nodes/node-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/createNode.node-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/acceleratorTypes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/acceleratorTypes/v3-8
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/nodes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/nodes/node-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createNode.node-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/tensorflowVersions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/tensorflowVersions/v2-alpha
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/nodes
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/nodes/node-1:reimage
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/nodes/node-1:stop
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/nodes/node-stopped:start
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/createNode.node-1:cancel
+      - service: Compute (API v1) (compute-apiv1)
+        - endpoint: DELETE /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances/team-vm
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/global/networks
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/global/networks/team-network
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/global/operations/op-global-1
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones/us-central1-a
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances/team-vm
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones/us-central1-a/operations
+        - endpoint: GET /gcp/compute/v1/projects/stackyard/zones/us-central1-a/operations/op-zone-1
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/global/networks
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/global/operations/op-global-1/wait
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances/team-vm/start
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/zones/us-central1-a/instances/team-vm/stop
+        - endpoint: POST /gcp/compute/v1/projects/stackyard/zones/us-central1-a/operations/op-zone-1/wait
+      - service: Compute Metadata (API v1) (compute-metadata-apiv1)
+        - endpoint: GET /computeMetadata/v1/instance/tags
+        - endpoint: GET /computeMetadata/v1/project/project-id
+      - service: Container (API v1) (container-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool
+        - endpoint: GET /gcp/v1/projects/stackyard/aggregated/usableSubnetworks
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/serverConfig
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:completeUpgrade
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:fetchNodePoolUpgradeInfo
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:rollback
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:setManagement
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:setSize
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster:checkAutopilotCompatibility
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster:fetchClusterUpgradeInfo
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster:setAddons
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster:setLogging
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster:setMonitoring
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Edge Container (API v1) (edgecontainer-apiv1)
+        - endpoint: none
+      - service: Functions (API v1) (functions-apiv1)
+        - endpoint: none
+      - service: Functions (API v2) (functions-apiv2)
+        - endpoint: none
+      - service: GKE Backup (API v1) (gkebackup-apiv1)
+        - endpoint: none
+      - service: GKE Connect (API v1) (gkeconnect-apiv1)
+        - endpoint: none
+      - service: GKE Hub (API v1) (gkehub-apiv1)
+        - endpoint: none
+      - service: GKE Multi-Cloud (API v1) (gkemulticloud-apiv1)
+        - endpoint: none
+      - service: Notebooks (API v1) (notebooks-apiv1)
+        - endpoint: none
+      - service: Notebooks (API v2) (notebooks-apiv2)
+        - endpoint: none
+      - service: VM Migration (vmmigration-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/vmmigration-op-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/targetProjects
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/targetProjects/target-project-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/groups
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/groups/group-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/imageImports
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/imageImports/image-import-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/imageImports/image-import-1/imageImportJobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/imageImports/image-import-1/imageImportJobs/image-import-job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/vmmigration-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/datacenterConnectors
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/datacenterConnectors/connector-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs/disk-migration-job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cloneJobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cloneJobs/clone-job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cutoverJobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cutoverJobs/cutover-job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/replicationCycles
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/replicationCycles/replication-cycle-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/utilizationReports
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/utilizationReports/report-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1:fetchInventory
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1:fetchStorageInventory
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/groups/group-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs/disk-migration-job-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1
+        - endpoint: POST /gcp/google.cloud.vmmigration.v1.VmMigration/CreateSource
+        - endpoint: POST /gcp/google.cloud.vmmigration.v1.VmMigration/GetSource
+        - endpoint: POST /gcp/google.cloud.vmmigration.v1.VmMigration/ListSources
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/targetProjects
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/groups
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/groups/group-1:addGroupMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/groups/group-1:removeGroupMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/imageImports
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/imageImports/image-import-1/imageImportJobs/image-import-job-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/vmmigration-op-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/datacenterConnectors
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/datacenterConnectors/connector-1:upgradeAppliance
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs/disk-migration-job-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/diskMigrationJobs/disk-migration-job-1:run
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cloneJobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cloneJobs/clone-job-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cutoverJobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1/cutoverJobs/cutover-job-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1:extendMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1:finalizeMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1:pauseMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-1:startMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/migratingVms/migrating-vm-paused:resumeMigration
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/sources/source-1/utilizationReports
+      - service: VMware Engine (vmwareengine-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/networkPeerings/network-peering-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1/externalAddresses/external-address-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/vmwareengine-op-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/privateConnections/private-connection-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/vmwareEngineNetworks/vmware-engine-network-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/networkPeerings
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/networkPeerings/network-peering-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/networkPeerings/network-peering-1/peeringRoutes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/networkPolicies/network-policy-1/dnsBindPermission
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/managementDnsZoneBindings
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/managementDnsZoneBindings/management-dns-zone-binding-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1/externalAddresses
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1/externalAddresses/external-address-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/vmwareengine-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/clusters
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/clusters/cluster-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/clusters/cluster-1/nodes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/clusters/cluster-1/nodes/node-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/dnsForwarding
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1:showNsxCredentials
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateConnections
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateConnections/private-connection-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateConnections/private-connection-1/peeringRoutes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vmwareEngineNetworks
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/vmwareEngineNetworks/vmware-engine-network-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/networkPeerings/network-peering-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1/externalAddresses/external-address-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/dnsForwarding
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/privateConnections/private-connection-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/vmwareEngineNetworks/vmware-engine-network-1
+        - endpoint: POST /gcp/google.cloud.vmwareengine.v1.VmwareEngine/CreatePrivateCloud
+        - endpoint: POST /gcp/google.cloud.vmwareengine.v1.VmwareEngine/GetPrivateCloud
+        - endpoint: POST /gcp/google.cloud.vmwareengine.v1.VmwareEngine/ListPrivateClouds
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/networkPeerings
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/networkPolicies/network-policy-1/dnsBindPermission:grant
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/networkPolicies/network-policy-1/dnsBindPermission:revoke
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/managementDnsZoneBindings
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/managementDnsZoneBindings/management-dns-zone-binding-1:repair
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1/externalAddresses
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/networkPolicies/network-policy-1:fetchNetworkPolicyExternalAddresses
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/vmwareengine-op-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateClouds
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1/clusters
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1:resetNsxCredentials
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateClouds/private-cloud-1:undelete
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateConnections
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/vmwareEngineNetworks
+    - category: Data & Databases
+      - service: Bigtable (API v2) (bigtable-apiv2)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders
+        - endpoint: GET /gcp/v2/projects/stackyard/instances
+        - endpoint: GET /gcp/v2/projects/stackyard/instances/dev-instance
+        - endpoint: GET /gcp/v2/projects/stackyard/instances/dev-instance/tables
+        - endpoint: GET /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders
+        - endpoint: POST /gcp/v2/projects/stackyard/instances/dev-instance/tables
+        - endpoint: POST /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders:dropRowRange
+        - endpoint: POST /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders:mutateRow
+        - endpoint: POST /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders:readRows
+        - endpoint: POST /gcp/v2/projects/stackyard/instances/dev-instance/tables/orders:sampleRowKeys
+      - service: Cloud Spanner (spanner-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:batchWrite
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:beginTransaction
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:commit
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:executeBatchDml
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:executeSql
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:executeStreamingSql
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:partitionQuery
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:partitionRead
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:read
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:rollback
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/s-1:streamingRead
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions:batchCreate
+      - service: Cloud Spanner Adapter (spanner-adapter-apiv1)
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/as-1:adaptMessage
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions/as-1:unknown
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/sessions:adapter
+      - service: Cloud Spanner Admin Database (spanner-admin-database-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/backups/backup-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/backupSchedules/daily-full
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-database-stackyard-db
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/backupOperations
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/backups
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/backups/backup-1
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databaseOperations
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/backupSchedules
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/backupSchedules/daily-full
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/databaseRoles
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/ddl
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db:getIamPolicy
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-database-stackyard-db
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance/backups/backup-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/backupSchedules/daily-full
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/ddl
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/backups
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/backups:copy
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db/backupSchedules
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db:addSplitPoints
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases/stackyard-db:testIamPermissions
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/databases:restore
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-database-stackyard-db:cancel
+      - service: Cloud Spanner Admin Instance (spanner-admin-instance-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instanceConfigs/custom-stackyard-primary
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitions/partition-a
+        - endpoint: DELETE /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-instance-stackyard-instance
+        - endpoint: GET /gcp/v1/projects/stackyard/instanceConfigOperations
+        - endpoint: GET /gcp/v1/projects/stackyard/instanceConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/instanceConfigs/custom-stackyard-primary
+        - endpoint: GET /gcp/v1/projects/stackyard/instances
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitionOperations
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitions
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitions/partition-a
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-instance-stackyard-instance
+        - endpoint: GET /gcp/v1/projects/stackyard/instances/stackyard-instance:getIamPolicy
+        - endpoint: GET /gcp/v1/projects/stackyard/operations
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instanceConfigs/custom-stackyard-primary
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance
+        - endpoint: PATCH /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitions/partition-a
+        - endpoint: POST /gcp/v1/projects/stackyard/instanceConfigs
+        - endpoint: POST /gcp/v1/projects/stackyard/instances
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/instancePartitions
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance/operations/create-instance-stackyard-instance:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance:move
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/instances/stackyard-instance:testIamPermissions
+      - service: Cloud Spanner Executor (spanner-executor-apiv1)
+        - endpoint: POST /gcp/google.spanner.executor.v1.SpannerExecutorProxy/ExecuteActionAsync
+      - service: Data Fusion (API v1) (datafusion-apiv1)
+        - endpoint: none
+      - service: Data QnA (API v1alpha) (dataqna-apiv1alpha)
+        - endpoint: none
+      - service: Dataflow (API v1beta3) (dataflow-apiv1beta3)
+        - endpoint: DELETE /gcp/v1b3/projects/stackyard/locations/us-central1/snapshots/snap-1
+        - endpoint: GET /gcp/v1b3/projects/stackyard/jobs:aggregated
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job/executionDetails
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job/messages
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job/metrics
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job/snapshots
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job/stages/stage-a/executionDetails
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/snapshots/snap-1
+        - endpoint: GET /gcp/v1b3/projects/stackyard/locations/us-central1/templates:get
+        - endpoint: POST /gcp/v1b3/projects/stackyard/locations/us-central1/flexTemplates:launch
+        - endpoint: POST /gcp/v1b3/projects/stackyard/locations/us-central1/jobs
+        - endpoint: POST /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job:snapshot
+        - endpoint: POST /gcp/v1b3/projects/stackyard/locations/us-central1/templates
+        - endpoint: POST /gcp/v1b3/projects/stackyard/locations/us-central1/templates:launch
+        - endpoint: PUT /gcp/v1b3/projects/stackyard/locations/us-central1/jobs/team-job
+      - service: Dataform (API v1) (dataform-apiv1)
+        - endpoint: none
+      - service: Dataplex (API v1) (dataplex-apiv1)
+        - endpoint: none
+      - service: Dataproc (API v1) (dataproc-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/clusters
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/jobs
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+        - endpoint: PATCH /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: PATCH /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:diagnose
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:start
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:stop
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs:submit
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs:submitAsOperation
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template:instantiate
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates:instantiateInline
+        - endpoint: PUT /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: PUT /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+      - service: Dataproc v2 (API v1) (dataproc-v2-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: DELETE /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/clusters
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/jobs
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates
+        - endpoint: GET /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+        - endpoint: PATCH /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster
+        - endpoint: PATCH /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:diagnose
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:start
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/clusters/team-cluster:stop
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs/team-job:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs:submit
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/jobs:submitAsOperation
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template:instantiate
+        - endpoint: POST /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates:instantiateInline
+        - endpoint: PUT /gcp/v1/projects/stackyard/regions/us-central1/autoscalingPolicies/team-policy
+        - endpoint: PUT /gcp/v1/projects/stackyard/regions/us-central1/workflowTemplates/team-template
+      - service: Datastore (API v1) (datastore-apiv1)
+        - endpoint: POST /gcp/v1/projects/stackyard/databases/analytics:commit
+        - endpoint: POST /gcp/v1/projects/stackyard/databases/analytics:lookup
+        - endpoint: POST /gcp/v1/projects/stackyard:allocateIds
+        - endpoint: POST /gcp/v1/projects/stackyard:beginTransaction
+        - endpoint: POST /gcp/v1/projects/stackyard:commit
+        - endpoint: POST /gcp/v1/projects/stackyard:lookup
+        - endpoint: POST /gcp/v1/projects/stackyard:reserveIds
+        - endpoint: POST /gcp/v1/projects/stackyard:rollback
+        - endpoint: POST /gcp/v1/projects/stackyard:runAggregationQuery
+        - endpoint: POST /gcp/v1/projects/stackyard:runQuery
+      - service: Datastore Admin (API v1) (datastore-admin-apiv1)
+        - endpoint: none
+      - service: Datastream (API v1) (datastream-apiv1)
+        - endpoint: none
+      - service: Firestore (API v1) (firestore-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/databases/(default)/documents/users
+        - endpoint: GET /gcp/v1/projects/stackyard/databases/(default)/documents/users/u-1
+        - endpoint: POST /gcp/v1/projects/stackyard/databases/(default)/documents/users
+      - service: Memorystore (API v1) (memorystore-apiv1)
+        - endpoint: none
+      - service: Memorystore For Redis (redis-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/instances
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1/authString
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1:export
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1:failover
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1:import
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1:rescheduleMaintenance
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances/redis-1:upgrade
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Memorystore For Redis Cluster (redis-cluster-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/backupCollections/collection-1/backups/backup-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/backupCollections
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/backupCollections/collection-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/backupCollections/collection-1/backups
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/backupCollections/collection-1/backups/backup-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1/certificateAuthority
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/backupCollections/collection-1/backups/backup-1:export
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1:backup
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/clusters/cluster-1:rescheduleClusterMaintenance
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Metastore (API v1) (metastore-apiv1)
+        - endpoint: none
+      - service: Metrics Scope (API v1) (metricsscope-apiv1)
+        - endpoint: none
+      - service: Oracle Database (API v1) (oracledatabase-apiv1)
+        - endpoint: none
+      - service: Pub/Sub (API v1) (pubsub-apiv1)
+        - endpoint: none
+      - service: Pub/Sub Lite (API v1) (pubsublite-apiv1)
+        - endpoint: none
+      - service: Pub/Sub v2 (API v1) (pubsub-v2-apiv1)
+        - endpoint: none
+    - category: Integration & Operations
+      - service: API Hub (API v1) (apihub-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/apis/team-api/versions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/apis/team-api/versions/v1/definitions/openapi
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/apis/team-api/versions/v1/operations/get-orders
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/attributes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deployments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/externalApis
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1:searchResources
+      - service: API Keys (API v2) (apikeys-apiv2)
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/keys
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/keys/team-key
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/global/keys/team-key/keyString
+        - endpoint: POST /gcp/v2/keys:lookupKey
+      - service: Apigee Connect (API v1) (apigeeconnect-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/endpoints/local/connections
+        - endpoint: POST /gcp/v1/projects/stackyard/endpoints/local:egress
+      - service: Artifact Registry (API v1) (artifactregistry-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/dockerImages
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/tags
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/tags/latest
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/versions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/team-repo/packages/orders/versions/1.0.0
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories
+      - service: Channel (API v1) (channel-apiv1)
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/customers
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/customers/team-customer
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/customers/team-customer/entitlements
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/offers
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/reportJobs/team-report-job:fetchReportResults
+        - endpoint: GET /gcp/v1/accounts/stackyard-account/reports
+        - endpoint: GET /gcp/v1/products
+        - endpoint: POST /gcp/v1/accounts/stackyard-account/reports/613bf59q:run
+        - endpoint: POST /gcp/v1/accounts/stackyard-account:checkCloudIdentityAccountsExist
+      - service: Chronicle (API v1) (chronicle-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/dataAccessLabels
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/dataAccessLabels/team-label
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/dataAccessScopes
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/referenceLists
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/-/deployments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/team-rule
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/team-rule/deployment
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/team-rule/retrohunts
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/team-rule/retrohunts/team-retrohunt
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/rules/team-rule:listRevisions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/watchlists
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us/instances/default/watchlists/high-risk-entities
+      - service: Cloud Build (API v2) (cloudbuild-apiv2)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories/orders
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/connections
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories/orders
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories/orders:accessReadToken
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories/orders:accessReadWriteToken
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories/orders:fetchGitRefs
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories:batchCreate
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection:fetchLinkableRepositories
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection:getIamPolicy
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection:setIamPolicy
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection:testIamPermissions
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Cloud Controls Partner (API v1) (cloudcontrolspartner-apiv1)
+        - endpoint: DELETE /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload/accessApprovalRequests
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload/ekmConnections
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload/partnerPermissions
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload/violations
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer/workloads/team-workload/violations/violation-1
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/us-central1/partner
+        - endpoint: PATCH /gcp/v1/organizations/123456789/locations/us-central1/customers/team-customer
+        - endpoint: POST /gcp/v1/organizations/123456789/locations/us-central1/customers
+      - service: Cloud DMS (API v1) (clouddms-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connectionProfiles
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connectionProfiles/team-profile
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace/mappingRules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace/mappingRules/team-rule
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/migrationJobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/migrationJobs/team-job
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/team-operation
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateConnections
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/privateConnections/team-private-connection
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1:fetchStaticIps
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connectionProfiles
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace/mappingRules
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace:describeConversionWorkspaceRevisions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace:describeDatabaseEntities
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/conversionWorkspaces/team-workspace:searchBackgroundJobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/migrationJobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/migrationJobs/team-job:start
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/privateConnections
+      - service: Cloud Profiler (API v2) (cloudprofiler-apiv2)
+        - endpoint: GET /gcp/v2/projects/stackyard/profiles
+        - endpoint: GET /gcp/v2/projects/stackyard/profiles/stackyard-profile
+        - endpoint: PATCH /gcp/v2/projects/stackyard/profiles/stackyard-profile
+        - endpoint: POST /gcp/v2/projects/stackyard/profiles
+        - endpoint: POST /gcp/v2/projects/stackyard/profiles:createOffline
+      - service: Cloud Quotas (API v1) (cloudquotas-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/quotaPreferences
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/quotaPreferences/team-config
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/services/compute.googleapis.com/quotaInfos
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/services/compute.googleapis.com/quotaInfos/CpusPerProjectPerRegion
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/quotaPreferences/team-config
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/quotaPreferences
+      - service: Cloud Resource Manager V2 (resourcemanager-apiv2)
+        - endpoint: DELETE /gcp/v2/folders/1001
+        - endpoint: DELETE /gcp/v2/operations/create-folder-1001
+        - endpoint: DELETE /gcp/v3/folders/1001
+        - endpoint: DELETE /gcp/v3/operations/create-folder-1001
+        - endpoint: DELETE /gcp/v3/projects/415104041262
+        - endpoint: DELETE /gcp/v3/tagBindings/%2F%2Fcloudresourcemanager.googleapis.com%2Fprojects%2F415104041262/tagValues/3001
+        - endpoint: DELETE /gcp/v3/tagKeys/2001
+        - endpoint: DELETE /gcp/v3/tagValues/3001
+        - endpoint: DELETE /gcp/v3/tagValues/3001/tagHolds/hold-1
+        - endpoint: GET /gcp/v2/folders
+        - endpoint: GET /gcp/v2/folders/1001
+        - endpoint: GET /gcp/v2/folders:search
+        - endpoint: GET /gcp/v2/operations
+        - endpoint: GET /gcp/v2/operations/create-folder-1001
+        - endpoint: GET /gcp/v3/effectiveTags
+        - endpoint: GET /gcp/v3/folders
+        - endpoint: GET /gcp/v3/folders:search
+        - endpoint: GET /gcp/v3/operations
+        - endpoint: GET /gcp/v3/operations/create-folder-1001
+        - endpoint: GET /gcp/v3/organizations/123456
+        - endpoint: GET /gcp/v3/organizations:search
+        - endpoint: GET /gcp/v3/projects
+        - endpoint: GET /gcp/v3/projects/415104041262
+        - endpoint: GET /gcp/v3/projects:search
+        - endpoint: GET /gcp/v3/tagBindings
+        - endpoint: GET /gcp/v3/tagKeys
+        - endpoint: GET /gcp/v3/tagKeys/2001
+        - endpoint: GET /gcp/v3/tagKeys/namespaced
+        - endpoint: GET /gcp/v3/tagValues
+        - endpoint: GET /gcp/v3/tagValues/3001
+        - endpoint: GET /gcp/v3/tagValues/3001/tagHolds
+        - endpoint: GET /gcp/v3/tagValues/namespaced
+        - endpoint: PATCH /gcp/v2/folders/1001
+        - endpoint: PATCH /gcp/v3/folders/1001
+        - endpoint: PATCH /gcp/v3/projects/415104041262
+        - endpoint: PATCH /gcp/v3/tagKeys/2001
+        - endpoint: PATCH /gcp/v3/tagValues/3001
+        - endpoint: POST /gcp/v2/folders
+        - endpoint: POST /gcp/v2/folders/1001:getIamPolicy
+        - endpoint: POST /gcp/v2/folders/1001:move
+        - endpoint: POST /gcp/v2/folders/1001:setIamPolicy
+        - endpoint: POST /gcp/v2/folders/1001:testIamPermissions
+        - endpoint: POST /gcp/v2/folders/1001:undelete
+        - endpoint: POST /gcp/v2/operations/create-folder-1001:cancel
+        - endpoint: POST /gcp/v3/folders
+        - endpoint: POST /gcp/v3/folders/1001:move
+        - endpoint: POST /gcp/v3/folders/1001:undelete
+        - endpoint: POST /gcp/v3/operations/create-folder-1001:cancel
+        - endpoint: POST /gcp/v3/projects
+        - endpoint: POST /gcp/v3/projects/415104041262:getIamPolicy
+        - endpoint: POST /gcp/v3/projects/415104041262:move
+        - endpoint: POST /gcp/v3/projects/415104041262:setIamPolicy
+        - endpoint: POST /gcp/v3/projects/415104041262:testIamPermissions
+        - endpoint: POST /gcp/v3/projects/415104041262:undelete
+        - endpoint: POST /gcp/v3/tagBindings
+        - endpoint: POST /gcp/v3/tagKeys
+        - endpoint: POST /gcp/v3/tagValues
+        - endpoint: POST /gcp/v3/tagValues/3001/tagHolds
+      - service: Cloud Resource Manager V3 (resourcemanager-apiv3)
+        - endpoint: DELETE /gcp/v2/folders/1001
+        - endpoint: DELETE /gcp/v2/operations/create-folder-1001
+        - endpoint: DELETE /gcp/v3/folders/1001
+        - endpoint: DELETE /gcp/v3/operations/create-folder-1001
+        - endpoint: DELETE /gcp/v3/projects/415104041262
+        - endpoint: DELETE /gcp/v3/tagBindings/%2F%2Fcloudresourcemanager.googleapis.com%2Fprojects%2F415104041262/tagValues/3001
+        - endpoint: DELETE /gcp/v3/tagKeys/2001
+        - endpoint: DELETE /gcp/v3/tagValues/3001
+        - endpoint: DELETE /gcp/v3/tagValues/3001/tagHolds/hold-1
+        - endpoint: GET /gcp/v2/folders
+        - endpoint: GET /gcp/v2/folders/1001
+        - endpoint: GET /gcp/v2/folders:search
+        - endpoint: GET /gcp/v2/operations
+        - endpoint: GET /gcp/v2/operations/create-folder-1001
+        - endpoint: GET /gcp/v3/effectiveTags
+        - endpoint: GET /gcp/v3/folders
+        - endpoint: GET /gcp/v3/folders:search
+        - endpoint: GET /gcp/v3/operations
+        - endpoint: GET /gcp/v3/operations/create-folder-1001
+        - endpoint: GET /gcp/v3/organizations/123456
+        - endpoint: GET /gcp/v3/organizations:search
+        - endpoint: GET /gcp/v3/projects
+        - endpoint: GET /gcp/v3/projects/415104041262
+        - endpoint: GET /gcp/v3/projects:search
+        - endpoint: GET /gcp/v3/tagBindings
+        - endpoint: GET /gcp/v3/tagKeys
+        - endpoint: GET /gcp/v3/tagKeys/2001
+        - endpoint: GET /gcp/v3/tagKeys/namespaced
+        - endpoint: GET /gcp/v3/tagValues
+        - endpoint: GET /gcp/v3/tagValues/3001
+        - endpoint: GET /gcp/v3/tagValues/3001/tagHolds
+        - endpoint: GET /gcp/v3/tagValues/namespaced
+        - endpoint: PATCH /gcp/v2/folders/1001
+        - endpoint: PATCH /gcp/v3/folders/1001
+        - endpoint: PATCH /gcp/v3/projects/415104041262
+        - endpoint: PATCH /gcp/v3/tagKeys/2001
+        - endpoint: PATCH /gcp/v3/tagValues/3001
+        - endpoint: POST /gcp/v2/folders
+        - endpoint: POST /gcp/v2/folders/1001:getIamPolicy
+        - endpoint: POST /gcp/v2/folders/1001:move
+        - endpoint: POST /gcp/v2/folders/1001:setIamPolicy
+        - endpoint: POST /gcp/v2/folders/1001:testIamPermissions
+        - endpoint: POST /gcp/v2/folders/1001:undelete
+        - endpoint: POST /gcp/v2/operations/create-folder-1001:cancel
+        - endpoint: POST /gcp/v3/folders
+        - endpoint: POST /gcp/v3/folders/1001:move
+        - endpoint: POST /gcp/v3/folders/1001:undelete
+        - endpoint: POST /gcp/v3/operations/create-folder-1001:cancel
+        - endpoint: POST /gcp/v3/projects
+        - endpoint: POST /gcp/v3/projects/415104041262:getIamPolicy
+        - endpoint: POST /gcp/v3/projects/415104041262:move
+        - endpoint: POST /gcp/v3/projects/415104041262:setIamPolicy
+        - endpoint: POST /gcp/v3/projects/415104041262:testIamPermissions
+        - endpoint: POST /gcp/v3/projects/415104041262:undelete
+        - endpoint: POST /gcp/v3/tagBindings
+        - endpoint: POST /gcp/v3/tagKeys
+        - endpoint: POST /gcp/v3/tagValues
+        - endpoint: POST /gcp/v3/tagValues/3001/tagHolds
+      - service: Cloud Scheduler (scheduler-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1:pause
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-1:run
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/jobs/job-paused:resume
+      - service: Cloud Shell (shell-apiv1)
+        - endpoint: GET /gcp/v1/users/me/environments/default
+        - endpoint: POST /gcp/v1/users/me/environments/default:addPublicKey
+        - endpoint: POST /gcp/v1/users/me/environments/default:authorize
+        - endpoint: POST /gcp/v1/users/me/environments/default:removePublicKey
+        - endpoint: POST /gcp/v1/users/me/environments/default:start
+      - service: Cloud Support V2 (support-apiv2)
+        - endpoint: GET /gcp/v2/caseClassifications:search
+        - endpoint: GET /gcp/v2/projects/stackyard/cases
+        - endpoint: GET /gcp/v2/projects/stackyard/cases/case-open-1
+        - endpoint: GET /gcp/v2/projects/stackyard/cases/case-open-1/attachments
+        - endpoint: GET /gcp/v2/projects/stackyard/cases/case-open-1/comments
+        - endpoint: GET /gcp/v2/projects/stackyard/cases:search
+        - endpoint: PATCH /gcp/v2/projects/stackyard/cases/case-open-1
+        - endpoint: POST /gcp/v2/projects/stackyard/cases
+        - endpoint: POST /gcp/v2/projects/stackyard/cases/case-open-1/comments
+        - endpoint: POST /gcp/v2/projects/stackyard/cases/case-open-1:close
+        - endpoint: POST /gcp/v2/projects/stackyard/cases/case-open-1:escalate
+      - service: Cloud Tasks (API v2) (cloudtasks-apiv2)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue
+        - endpoint: DELETE /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue/tasks/task-1
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/queues
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue/tasks
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue/tasks/task-1
+        - endpoint: PATCH /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue/tasks
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue/tasks/task-1:run
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue:pause
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue:purge
+        - endpoint: POST /gcp/v2/projects/stackyard/locations/us-central1/queues/team-queue:resume
+      - service: Commerce Consumer Procurement (API v1) (commerce-consumer-procurement-apiv1)
+        - endpoint: GET /gcp/v1/billingAccounts/0123456789/orders
+        - endpoint: GET /gcp/v1/billingAccounts/0123456789/orders/order-1
+        - endpoint: GET /gcp/v1/billingAccounts/0123456789/orders/order-1/operations/op-1
+        - endpoint: POST /gcp/v1/billingAccounts/0123456789/orders/order-1:cancel
+        - endpoint: POST /gcp/v1/billingAccounts/0123456789/orders/order-1:modify
+        - endpoint: POST /gcp/v1/billingAccounts/0123456789/orders:place
+      - service: Confidential Computing (API v1) (confidentialcomputing-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/challenges
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/challenges/ch-1:verifyAttestation
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/challenges/ch-1:verifyConfidentialGke
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/challenges/ch-1:verifyConfidentialSpace
+      - service: Config (API v1) (config-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deployments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/previews
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deployments
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deployments/platform-foundation:lock
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/previews/preview-1:export
+      - service: Config Delivery (API v1) (configdelivery-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1/variants/default
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package/rollouts
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package/rollouts/rollout-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1/variants
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1/variants/default
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package/rollouts/rollout-1:abort
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package/rollouts/rollout-1:resume
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/fleetPackages/platform-package/rollouts/rollout-1:suspend
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/resourceBundles/platform-bundle/releases/r-1/variants
+      - service: Deploy (API v1) (deploy-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/targets/team-target
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/config
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout/jobRuns
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout/jobRuns/job-a
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline:getIamPolicy
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deployPolicies
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/deployPolicies/policy-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/targets
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/targets/team-target
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout/jobRuns/job-a:terminate
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout:advance
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout:approve
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout:ignoreJob
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release/rollouts/team-rollout:retryJob
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline/releases/team-release:abandon
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/deliveryPipelines/team-pipeline:testIamPermissions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/targets
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/targets/team-target:rollbackTarget
+      - service: Developer Connect (API v1) (developerconnect-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks/orders
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks/orders
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks/orders:fetchGitRefs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection:fetchGitHubInstallations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection:fetchLinkableGitRepositories
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connections
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks/orders:fetchReadToken
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connections/team-connection/gitRepositoryLinks/orders:fetchReadWriteToken
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/op-1:cancel
+      - service: Device Streaming (API v1) (devicestreaming-apiv1)
+        - endpoint: none
+      - service: Discovery Engine (API v1) (discoveryengine-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations/conv-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/sessions/session-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations/conv-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/sessions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/sessions/session-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/collections/default_collection/operations/op-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations/conv-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/sessions/session-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/conversations/conv-1:converse
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store/sessions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/dataStores/orders-store:completeQuery
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine/servingConfigs/default_serving_config:answer
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine/servingConfigs/default_serving_config:search
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/engines/orders-engine/servingConfigs/default_serving_config:searchLite
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/collections/default_collection/operations/op-1:cancel
+      - service: DLP (API v1) (dlp-apiv1)
+        - endpoint: none
+      - service: Error Reporting (API v1) (errorreporting-apiv1)
+        - endpoint: none
+      - service: Essential Contacts (API v1) (essentialcontacts-apiv1)
+        - endpoint: none
+      - service: Eventarc (API v1) (eventarc-apiv1)
+        - endpoint: none
+      - service: Eventarc Publishing (API v1) (eventarc-publishing-apiv1)
+        - endpoint: none
+      - service: Financial Services (API v1) (financialservices-apiv1)
+        - endpoint: none
+      - service: Gaming (API v1) (gaming-apiv1)
+        - endpoint: none
+      - service: IoT (API v1) (iot-apiv1)
+        - endpoint: none
+      - service: Life Sciences (API v2beta) (lifesciences-apiv2beta)
+        - endpoint: none
+      - service: Logging (API v2) (logging-apiv2)
+        - endpoint: DELETE /gcp/v2/projects/stackyard/exclusions/exclude-debug
+        - endpoint: DELETE /gcp/v2/projects/stackyard/logs/stackyard%2Fapp
+        - endpoint: DELETE /gcp/v2/projects/stackyard/metrics/error_count
+        - endpoint: DELETE /gcp/v2/projects/stackyard/sinks/export-a
+        - endpoint: GET /gcp/v2/projects/stackyard/exclusions
+        - endpoint: GET /gcp/v2/projects/stackyard/exclusions/exclude-debug
+        - endpoint: GET /gcp/v2/projects/stackyard/locations/us-central1/buckets
+        - endpoint: GET /gcp/v2/projects/stackyard/logs
+        - endpoint: GET /gcp/v2/projects/stackyard/metrics
+        - endpoint: GET /gcp/v2/projects/stackyard/metrics/error_count
+        - endpoint: GET /gcp/v2/projects/stackyard/monitoredResourceDescriptors
+        - endpoint: GET /gcp/v2/projects/stackyard/sinks
+        - endpoint: GET /gcp/v2/projects/stackyard/sinks/export-a
+        - endpoint: POST /gcp/v2/entries:list
+        - endpoint: POST /gcp/v2/entries:write
+        - endpoint: POST /gcp/v2/projects/stackyard/exclusions
+        - endpoint: POST /gcp/v2/projects/stackyard/metrics
+        - endpoint: POST /gcp/v2/projects/stackyard/sinks
+      - service: Managed Kafka (API v1) (managedkafka-apiv1)
+        - endpoint: none
+      - service: Managed Kafka Schema Registry (API v1) (managedkafka-schemaregistry-apiv1)
+        - endpoint: none
+      - service: Migration Center (API v1) (migrationcenter-apiv1)
+        - endpoint: none
+      - service: Monitoring (API v3) (monitoring-apiv3)
+        - endpoint: GET /gcp/v3/projects/stackyard/alertPolicies
+        - endpoint: GET /gcp/v3/projects/stackyard/groups
+        - endpoint: GET /gcp/v3/projects/stackyard/groups/group-1/members
+        - endpoint: GET /gcp/v3/projects/stackyard/metricDescriptors
+        - endpoint: GET /gcp/v3/projects/stackyard/monitoredResourceDescriptors
+        - endpoint: GET /gcp/v3/projects/stackyard/notificationChannelDescriptors
+        - endpoint: GET /gcp/v3/projects/stackyard/notificationChannels
+        - endpoint: GET /gcp/v3/projects/stackyard/services
+        - endpoint: GET /gcp/v3/projects/stackyard/services/service-a/serviceLevelObjectives
+        - endpoint: GET /gcp/v3/projects/stackyard/snoozes
+        - endpoint: GET /gcp/v3/projects/stackyard/uptimeCheckConfigs
+        - endpoint: GET /gcp/v3/uptimeCheckIps
+        - endpoint: GET /gcp/v3/workspaces/stackyard-host/services
+        - endpoint: GET /gcp/v3/workspaces/stackyard-host/services/-/serviceLevelObjectives
+        - endpoint: POST /gcp/v3/projects/stackyard/alertPolicies
+        - endpoint: POST /gcp/v3/projects/stackyard/timeSeries:query
+      - service: Monitoring Dashboard (API v1) (monitoring-dashboard-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/dashboards/dashboard-1
+        - endpoint: GET /gcp/v1/dashboards/managed-dashboard-1
+        - endpoint: GET /gcp/v1/projects/stackyard/dashboards
+        - endpoint: GET /gcp/v1/projects/stackyard/dashboards/dashboard-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/dashboards/dashboard-1
+        - endpoint: POST /gcp/v1/projects/stackyard/dashboards
+      - service: OS Config (API v1) (osconfig-apiv1)
+        - endpoint: none
+      - service: OS Config Agent Endpoint (API v1) (osconfig-agentendpoint-apiv1)
+        - endpoint: none
+      - service: OS Login (API v1) (oslogin-apiv1)
+        - endpoint: none
+      - service: Parameter Manager (API v1) (parametermanager-apiv1)
+        - endpoint: none
+      - service: Rapid Migration Assessment (rapidmigrationassessment-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/annotations/annotation-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/collectors
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createCollector.collector-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/annotations
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/collectors
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1-paused:resume
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1:pause
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/collectors/collector-1:register
+      - service: Recommender (recommender-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/insightTypes/google.iam.policy.Insight/config
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/insightTypes/google.iam.policy.Insight/insights
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/insightTypes/google.iam.policy.Insight/insights/insight-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/config
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations/recommendation-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/insightTypes/google.iam.policy.Insight/config
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/config
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/insightTypes/google.iam.policy.Insight/insights/insight-1:markAccepted
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations/recommendation-1:markClaimed
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations/recommendation-1:markDismissed
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations/recommendation-1:markFailed
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/recommenders/google.compute.instance.MachineTypeRecommender/recommendations/recommendation-1:markSucceeded
+      - service: Secure Source Manager (securesourcemanager-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/instances
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/instances/instance-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/branchRules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/branchRules/main
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/hooks
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/hooks/hook-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/issues
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/issues/issue-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/issues/issue-1/issueComments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/pullRequests
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/pullRequests/pull-request-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/pullRequests/pull-request-1/pullRequestComments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/pullRequests/pull-request-1:listFileDiffs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1:fetchBlob
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1:fetchTree
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1:getIamPolicy
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/instances
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/branchRules
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/issues/issue-1:close
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1/pullRequests/pull-request-1:close
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/repositories/repository-1:testIamPermissions
+      - service: Service Control (servicecontrol-apiv1)
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:allocateQuota
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:check
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:report
+      - service: Service Directory (servicedirectory-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1/endpoints/ep-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1/endpoints
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1/endpoints/ep-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1/endpoints/ep-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1/endpoints
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1:resolve
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/namespaces/ns-1/services/svc-1:testIamPermissions
+      - service: Service Health (servicehealth-apiv1)
+        - endpoint: GET /gcp/v1/organizations/123456789/locations
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/global
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/global/organizationEvents
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/global/organizationEvents/org-event-1
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/global/organizationImpacts
+        - endpoint: GET /gcp/v1/organizations/123456789/locations/global/organizationImpacts/impact-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/events
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/events/event-1
+      - service: Service Management (servicemanagement-apiv1)
+        - endpoint: DELETE /gcp/v1/services/stackyard.googleapis.com
+        - endpoint: GET /gcp/v1/operations
+        - endpoint: GET /gcp/v1/operations/servicemanagement-create-service
+        - endpoint: GET /gcp/v1/services
+        - endpoint: GET /gcp/v1/services/stackyard.googleapis.com
+        - endpoint: GET /gcp/v1/services/stackyard.googleapis.com/configs
+        - endpoint: GET /gcp/v1/services/stackyard.googleapis.com/configs/2026-01-01r0
+        - endpoint: GET /gcp/v1/services/stackyard.googleapis.com/rollouts
+        - endpoint: GET /gcp/v1/services/stackyard.googleapis.com/rollouts/2026-01-01r0
+        - endpoint: POST /gcp/v1/services
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com/configs
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com/configs:submit
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com/rollouts
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:getIamPolicy
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:setIamPolicy
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:testIamPermissions
+        - endpoint: POST /gcp/v1/services/stackyard.googleapis.com:undelete
+        - endpoint: POST /gcp/v1/services:generateConfigReport
+      - service: Service Usage (serviceusage-apiv1)
+        - endpoint: GET /gcp/v1/operations
+        - endpoint: GET /gcp/v1/operations/serviceusage-enable-serviceusage.googleapis.com
+        - endpoint: GET /gcp/v1/projects/stackyard/services
+        - endpoint: GET /gcp/v1/projects/stackyard/services/serviceusage.googleapis.com
+        - endpoint: GET /gcp/v1/projects/stackyard/services:batchGet
+        - endpoint: POST /gcp/v1/projects/stackyard/services/serviceusage.googleapis.com:disable
+        - endpoint: POST /gcp/v1/projects/stackyard/services/serviceusage.googleapis.com:enable
+        - endpoint: POST /gcp/v1/projects/stackyard/services:batchEnable
+      - service: Stackdriver Trace V1 (trace-apiv1)
+        - endpoint: POST /gcp/v2/projects/stackyard/traces/0123456789abcdef0123456789abcdef/spans/1111111111111111
+        - endpoint: POST /gcp/v2/projects/stackyard/traces:batchWrite
+      - service: Stackdriver Trace V2 (trace-apiv2)
+        - endpoint: POST /gcp/v2/projects/stackyard/traces/0123456789abcdef0123456789abcdef/spans/1111111111111111
+        - endpoint: POST /gcp/v2/projects/stackyard/traces:batchWrite
+      - service: Subscriptions (API v1) (subscriptions-apiv1)
+        - endpoint: none
+      - service: Telco Automation V1 (telcoautomation-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/edgeSlms/edgeslm-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/edgeSlms
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/edgeSlms/edgeslm-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createOrchestrationCluster.cluster-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft:listRevisions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints:searchRevisions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft/hydratedDeployments
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft/hydratedDeployments/hydrated-draft
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft:computeDeploymentStatus
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft:listRevisions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments:searchRevisions
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/publicBlueprints
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/publicBlueprints/public-blueprint-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft/hydratedDeployments/hydrated-draft
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/edgeSlms
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft:discard
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-draft:propose
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-proposed:approve
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/blueprints/blueprint-proposed:reject
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-applied:rollback
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft/hydratedDeployments/hydrated-draft:apply
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft:apply
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft:discard
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/orchestrationClusters/cluster-1/deployments/deployment-draft:remove
+    - category: Networking & Edge
+      - service: API Gateway (API v1) (apigateway-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/apis
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/apis/team-api
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/apis/team-api/configs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/apis/team-api/configs/team-config
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/gateways
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/gateways/team-gateway
+      - service: Edge Network (API v1) (edgenetwork-apiv1)
+        - endpoint: none
+      - service: Maps Address Validation (API v1) (maps-addressvalidation-apiv1)
+        - endpoint: none
+      - service: Maps Area Insights (API v1) (maps-areainsights-apiv1)
+        - endpoint: none
+      - service: Maps Fleet Engine (API v1) (maps-fleetengine-apiv1)
+        - endpoint: DELETE /gcp/v1/providers/stackyard/trips/trip-1
+        - endpoint: DELETE /gcp/v1/providers/stackyard/vehicles/vehicle-1
+        - endpoint: GET /gcp/v1/providers/stackyard/trips
+        - endpoint: GET /gcp/v1/providers/stackyard/trips/trip-1
+        - endpoint: GET /gcp/v1/providers/stackyard/vehicles
+        - endpoint: GET /gcp/v1/providers/stackyard/vehicles/vehicle-1
+        - endpoint: PATCH /gcp/v1/providers/stackyard/trips/trip-1
+        - endpoint: PATCH /gcp/v1/providers/stackyard/vehicles/vehicle-1
+        - endpoint: POST /gcp/v1/providers/stackyard/trips
+        - endpoint: POST /gcp/v1/providers/stackyard/trips/trip-1:reportBillable
+        - endpoint: POST /gcp/v1/providers/stackyard/trips:search
+        - endpoint: POST /gcp/v1/providers/stackyard/vehicles
+        - endpoint: POST /gcp/v1/providers/stackyard/vehicles/vehicle-1:updateAttributes
+        - endpoint: POST /gcp/v1/providers/stackyard/vehicles:search
+      - service: Maps Fleet Engine Delivery (API v1) (maps-fleetengine-delivery-apiv1)
+        - endpoint: DELETE /gcp/v1/providers/stackyard/deliveryVehicles/dv-1
+        - endpoint: DELETE /gcp/v1/providers/stackyard/tasks/task-1
+        - endpoint: GET /gcp/v1/providers/stackyard/deliveryVehicles
+        - endpoint: GET /gcp/v1/providers/stackyard/deliveryVehicles/dv-1
+        - endpoint: GET /gcp/v1/providers/stackyard/taskTrackingInfo/trk-1
+        - endpoint: GET /gcp/v1/providers/stackyard/tasks
+        - endpoint: GET /gcp/v1/providers/stackyard/tasks/task-1
+        - endpoint: PATCH /gcp/v1/providers/stackyard/deliveryVehicles/dv-1
+        - endpoint: PATCH /gcp/v1/providers/stackyard/tasks/task-1
+        - endpoint: POST /gcp/v1/providers/stackyard/deliveryVehicles
+        - endpoint: POST /gcp/v1/providers/stackyard/tasks
+        - endpoint: POST /gcp/v1/providers/stackyard/tasks:batchCreate
+      - service: Maps Places (API v1) (maps-places-apiv1)
+        - endpoint: GET /gcp/v1/places/ChIJj61dQgK6j4AR4GeTYWZsKWw
+        - endpoint: GET /gcp/v1/places/ChIJj61dQgK6j4AR4GeTYWZsKWw/photos/AW123/media
+        - endpoint: POST /gcp/v1/places:autocomplete
+        - endpoint: POST /gcp/v1/places:searchNearby
+        - endpoint: POST /gcp/v1/places:searchText
+      - service: Maps Route Optimization (API v1) (maps-routeoptimization-apiv1)
+        - endpoint: GET /gcp/v1/operations/routeopt-op-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1:batchOptimizeTours
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1:optimizeTours
+        - endpoint: POST /gcp/v1/projects/stackyard:optimizeTours
+      - service: Maps Routing (API v2) (maps-routing-apiv2)
+        - endpoint: POST /gcp/directions/v2:computeRoutes
+        - endpoint: POST /gcp/distanceMatrix/v2:computeRouteMatrix
+        - endpoint: POST /gcp/google.maps.routing.v2.Routes/ComputeRouteMatrix
+        - endpoint: POST /gcp/google.maps.routing.v2.Routes/ComputeRoutes
+      - service: Maps Solar (API v1) (maps-solar-apiv1)
+        - endpoint: GET /gcp/v1/buildingInsights:findClosest
+        - endpoint: GET /gcp/v1/dataLayers:get
+        - endpoint: GET /gcp/v1/geoTiff:get
+      - service: Network Connectivity (API v1) (networkconnectivity-apiv1)
+        - endpoint: none
+      - service: Network Management (API v1) (networkmanagement-apiv1)
+        - endpoint: none
+      - service: Network Services (API v1) (networkservices-apiv1)
+        - endpoint: none
+      - service: Street View Publish (streetview-publish-apiv1)
+        - endpoint: DELETE /gcp/v1/photo/photo-1
+        - endpoint: DELETE /gcp/v1/photoSequence/sequence-1
+        - endpoint: GET /gcp/v1/operations
+        - endpoint: GET /gcp/v1/operations/photoSequence.sequence-1
+        - endpoint: GET /gcp/v1/photo/photo-1
+        - endpoint: GET /gcp/v1/photoSequence/sequence-1
+        - endpoint: GET /gcp/v1/photoSequences
+        - endpoint: GET /gcp/v1/photos
+        - endpoint: GET /gcp/v1/photos:batchGet
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: POST /gcp/v1/photo
+        - endpoint: POST /gcp/v1/photo:startUpload
+        - endpoint: POST /gcp/v1/photoSequence
+        - endpoint: POST /gcp/v1/photoSequence:startUpload
+        - endpoint: POST /gcp/v1/photos:batchDelete
+        - endpoint: POST /gcp/v1/photos:batchUpdate
+        - endpoint: PUT /gcp/v1/photo/photo-1
+    - category: Security & Identity
+      - service: Certificate Authority Service (security-privateca-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/certificateTemplates/template-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/operation-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1/certificateRevocationLists
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1/certificateRevocationLists/crl-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificates
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificates/cert-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1:fetchCaCerts
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/certificateTemplates
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/certificateTemplates/template-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/operation-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1/certificateRevocationLists/crl-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificates/cert-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/certificateTemplates/template-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-1:disable
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-awaiting:activate
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-awaiting:fetch
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-deleted:undelete
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificateAuthorities/ca-disabled:enable
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificates
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1/certificates/cert-1:revoke
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/caPools/pool-1:testIamPermissions
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/certificateTemplates
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/operation-1:cancel
+      - service: Certificate Manager (API v1) (certificatemanager-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/trustConfigs/team-trust
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/certificateIssuanceConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/certificateMaps
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/certificateMaps/team-map/certificateMapEntries
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/certificates
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/certificates/team-certificate
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/dnsAuthorizations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/trustConfigs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/certificates
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/dnsAuthorizations
+      - service: Data Catalog (API v1) (datacatalog-apiv1)
+        - endpoint: none
+      - service: Data Catalog Lineage (API v1) (datacatalog-lineage-apiv1)
+        - endpoint: none
+      - service: IAM (API v1) (iam-apiv1)
+        - endpoint: POST /gcp/v1/projects/stackyard:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:testIamPermissions
+      - service: IAM (API v2) (iam-apiv2)
+        - endpoint: POST /gcp/v1/projects/stackyard:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:testIamPermissions
+      - service: IAM (API v3) (iam-apiv3)
+        - endpoint: POST /gcp/v1/projects/stackyard:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:testIamPermissions
+      - service: IAM Admin (API v1) (iam-admin-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/roles/customViewer
+        - endpoint: DELETE /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com
+        - endpoint: GET /gcp/v1/projects/stackyard/roles/customViewer
+        - endpoint: GET /gcp/v1/projects/stackyard/serviceAccounts
+        - endpoint: GET /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com
+        - endpoint: GET /gcp/v1/roles
+        - endpoint: PATCH /gcp/v1/projects/stackyard/roles/customViewer
+        - endpoint: PATCH /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com
+        - endpoint: POST /gcp/v1/iamPolicies:lintPolicy
+        - endpoint: POST /gcp/v1/iamPolicies:queryAuditableServices
+        - endpoint: POST /gcp/v1/permissions:queryTestablePermissions
+        - endpoint: POST /gcp/v1/projects/stackyard/roles
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:disable
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:enable
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:undelete
+        - endpoint: POST /gcp/v1/roles:queryGrantableRoles
+      - service: IAM Credentials (API v1) (iam-credentials-apiv1)
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:generateAccessToken
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:generateIdToken
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:signBlob
+        - endpoint: POST /gcp/v1/projects/stackyard/serviceAccounts/stackyard@example.iam.gserviceaccount.com:signJwt
+      - service: IAP (API v1) (iap-apiv1)
+        - endpoint: none
+      - service: Identity Toolkit (API v2) (identitytoolkit-apiv2)
+        - endpoint: none
+      - service: IDS (API v1) (ids-apiv1)
+        - endpoint: none
+      - service: KMS (API v1) (kms-apiv1)
+        - endpoint: none
+      - service: KMS Inventory (API v1) (kms-inventory-apiv1)
+        - endpoint: none
+      - service: License Manager (API v1) (licensemanager-apiv1)
+        - endpoint: none
+      - service: Location Finder (API v1) (locationfinder-apiv1)
+        - endpoint: none
+      - service: Managed Identities (API v1) (managedidentities-apiv1)
+        - endpoint: none
+      - service: Memcache (API v1) (memcache-apiv1)
+        - endpoint: none
+      - service: Merchant Notifications (shopping-merchant-notifications-apiv1)
+        - endpoint: DELETE /gcp/notifications/v1/accounts/123456/notificationsubscriptions/all-managed-product-status-change
+        - endpoint: GET /gcp/notifications/v1/accounts/123456/notificationsubscriptions
+        - endpoint: GET /gcp/notifications/v1/accounts/123456/notificationsubscriptions/all-managed-product-status-change
+        - endpoint: GET /gcp/notifications/v1/accounts/123456/notificationsubscriptions/all-managed-product-status-change:getHealth
+        - endpoint: PATCH /gcp/notifications/v1/accounts/123456/notificationsubscriptions/all-managed-product-status-change
+        - endpoint: POST /gcp/notifications/v1/accounts/123456/notificationsubscriptions
+      - service: Network Security (API v1beta1) (networksecurity-apiv1beta1)
+        - endpoint: none
+      - service: Org Policy (API v2) (orgpolicy-apiv2)
+        - endpoint: none
+      - service: Phishing Protection (API v1beta1) (phishingprotection-apiv1beta1)
+        - endpoint: none
+      - service: Policy Simulator (API v1) (policysimulator-apiv1)
+        - endpoint: none
+      - service: Policy Troubleshooter (API v1) (policytroubleshooter-apiv1)
+        - endpoint: none
+      - service: Policy Troubleshooter IAM (API v3) (policytroubleshooter-iam-apiv3)
+        - endpoint: POST /gcp/v1/projects/stackyard:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard:testIamPermissions
+      - service: Private Catalog (API v1beta1) (privatecatalog-apiv1beta1)
+        - endpoint: none
+      - service: Privileged Access Manager (API v1) (privilegedaccessmanager-apiv1)
+        - endpoint: none
+      - service: Public Certificate Authority (security-publicca-apiv1)
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/externalAccountKeys
+      - service: reCAPTCHA Enterprise (recaptchaenterprise-v2-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/firewallpolicies/policy-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/keys/site-key-1
+        - endpoint: GET /gcp/v1/projects/stackyard/firewallpolicies
+        - endpoint: GET /gcp/v1/projects/stackyard/firewallpolicies/policy-1
+        - endpoint: GET /gcp/v1/projects/stackyard/keys
+        - endpoint: GET /gcp/v1/projects/stackyard/keys/site-key-1
+        - endpoint: GET /gcp/v1/projects/stackyard/keys/site-key-1/ipOverrides
+        - endpoint: GET /gcp/v1/projects/stackyard/keys/site-key-1/metrics
+        - endpoint: GET /gcp/v1/projects/stackyard/keys/site-key-1:retrieveLegacySecretKey
+        - endpoint: GET /gcp/v1/projects/stackyard/projectmetadata
+        - endpoint: GET /gcp/v1/projects/stackyard/relatedaccountgroupmemberships:search
+        - endpoint: GET /gcp/v1/projects/stackyard/relatedaccountgroups
+        - endpoint: GET /gcp/v1/projects/stackyard/relatedaccountgroups/group-1/memberships
+        - endpoint: PATCH /gcp/v1/projects/stackyard/firewallpolicies/policy-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/keys/site-key-1
+        - endpoint: POST /gcp/v1/projects/stackyard/assessments
+        - endpoint: POST /gcp/v1/projects/stackyard/assessments/assessment-1:annotate
+        - endpoint: POST /gcp/v1/projects/stackyard/firewallpolicies
+        - endpoint: POST /gcp/v1/projects/stackyard/firewallpolicies:reorder
+        - endpoint: POST /gcp/v1/projects/stackyard/keys
+        - endpoint: POST /gcp/v1/projects/stackyard/keys/site-key-1:addIpOverride
+        - endpoint: POST /gcp/v1/projects/stackyard/keys/site-key-1:migrate
+        - endpoint: POST /gcp/v1/projects/stackyard/keys/site-key-1:removeIpOverride
+      - service: Secret Manager (secretmanager-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/secrets/secret-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global
+        - endpoint: GET /gcp/v1/projects/stackyard/secrets
+        - endpoint: GET /gcp/v1/projects/stackyard/secrets/secret-1
+        - endpoint: GET /gcp/v1/projects/stackyard/secrets/secret-1/versions
+        - endpoint: GET /gcp/v1/projects/stackyard/secrets/secret-1/versions/1
+        - endpoint: GET /gcp/v1/projects/stackyard/secrets/secret-1/versions/1:access
+        - endpoint: PATCH /gcp/v1/projects/stackyard/secrets/secret-1
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1/versions
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1/versions/1:destroy
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1/versions/1:disable
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1/versions/2:enable
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1:getIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1:setIamPolicy
+        - endpoint: POST /gcp/v1/projects/stackyard/secrets/secret-1:testIamPermissions
+      - service: Security Command Center (securitycenter-apiv1)
+        - endpoint: GET /gcp/v2/organizations/123456/bigQueryExports/export-1
+        - endpoint: GET /gcp/v2/organizations/123456/muteConfigs/mute-config-1
+        - endpoint: GET /gcp/v2/organizations/123456/notificationConfigs/notify-1
+        - endpoint: GET /gcp/v2/organizations/123456/operations/op-1
+        - endpoint: GET /gcp/v2/organizations/123456/resourceValueConfigs/config-1
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest/attackPaths
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest/valuedResources/resource-1
+        - endpoint: GET /gcp/v2/organizations/123456/sources/source-1
+        - endpoint: GET /gcp/v2/organizations/123456/sources/source-1/findings
+      - service: Security Command Center Management (securitycentermanagement-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules/etd-module-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules/sha-module-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/effectiveEventThreatDetectionCustomModules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/effectiveEventThreatDetectionCustomModules/effective-etd-module-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/effectiveSecurityHealthAnalyticsCustomModules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/effectiveSecurityHealthAnalyticsCustomModules/effective-sha-module-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules/etd-module-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules:listDescendant
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/securityCenterServices
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/securityCenterServices/security-health-analytics
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules/sha-module-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules:listDescendant
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules/etd-module-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/securityCenterServices/security-health-analytics
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules/sha-module-1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/eventThreatDetectionCustomModules:validate
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/securityHealthAnalyticsCustomModules:simulate
+      - service: Security Command Center V2 (securitycenter-apiv2)
+        - endpoint: GET /gcp/v2/organizations/123456/bigQueryExports/export-1
+        - endpoint: GET /gcp/v2/organizations/123456/muteConfigs/mute-config-1
+        - endpoint: GET /gcp/v2/organizations/123456/notificationConfigs/notify-1
+        - endpoint: GET /gcp/v2/organizations/123456/operations/op-1
+        - endpoint: GET /gcp/v2/organizations/123456/resourceValueConfigs/config-1
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest/attackPaths
+        - endpoint: GET /gcp/v2/organizations/123456/simulations/latest/valuedResources/resource-1
+        - endpoint: GET /gcp/v2/organizations/123456/sources/source-1
+        - endpoint: GET /gcp/v2/organizations/123456/sources/source-1/findings
+      - service: Security Posture (securityposture-apiv1)
+        - endpoint: DELETE /gcp/v1/organizations/123456/locations/global/operations/op-1
+        - endpoint: DELETE /gcp/v1/organizations/123456/locations/global/postureDeployments/deployment-1
+        - endpoint: DELETE /gcp/v1/organizations/123456/locations/global/postures/posture-1
+        - endpoint: GET /gcp/v1/organizations/123456/locations
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/operations
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/operations/op-1
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postureDeployments
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postureDeployments/deployment-1
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postureTemplates
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postureTemplates/template-1
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postures
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postures/posture-1
+        - endpoint: GET /gcp/v1/organizations/123456/locations/global/postures/posture-1:listRevisions
+        - endpoint: PATCH /gcp/v1/organizations/123456/locations/global/postureDeployments/deployment-1
+        - endpoint: PATCH /gcp/v1/organizations/123456/locations/global/postures/posture-1
+        - endpoint: POST /gcp/v1/organizations/123456/locations/global/operations/op-1:cancel
+        - endpoint: POST /gcp/v1/organizations/123456/locations/global/postureDeployments
+        - endpoint: POST /gcp/v1/organizations/123456/locations/global/postures
+        - endpoint: POST /gcp/v1/organizations/123456/locations/global/postures:extract
+      - service: Serverless VPC Access (vpcaccess-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/connectors/connector-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/vpcaccess-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connectors
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/connectors/connector-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/vpcaccess-op-1
+        - endpoint: POST /gcp/google.cloud.vpcaccess.v1.VpcAccessService/CreateConnector
+        - endpoint: POST /gcp/google.cloud.vpcaccess.v1.VpcAccessService/DeleteConnector
+        - endpoint: POST /gcp/google.cloud.vpcaccess.v1.VpcAccessService/GetConnector
+        - endpoint: POST /gcp/google.cloud.vpcaccess.v1.VpcAccessService/ListConnectors
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/connectors
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/vpcaccess-op-1:cancel
+    - category: Storage
+      - service: Cloud Storage (storage-apiv1)
+        - endpoint: DELETE /gcp/storage/v1/b/stackyard-bucket/acl/allUsers
+        - endpoint: DELETE /gcp/storage/v1/b/stackyard-bucket/o/moved.txt
+        - endpoint: DELETE /gcp/storage/v1/b/stackyard-bucket/o/source.txt/acl/allUsers
+        - endpoint: GET /gcp/download/storage/v1/b/stackyard-bucket/o/source.txt
+        - endpoint: GET /gcp/storage/v1/b
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/acl
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/iam
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/iam/testPermissions
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/notificationConfigs
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/o
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/o/shape.txt
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/o/source.txt
+        - endpoint: GET /gcp/storage/v1/b/stackyard-bucket/o/source.txt/acl
+        - endpoint: GET /gcp/storage/v1/projects/stackyard/hmacKeys
+        - endpoint: GET /gcp/storage/v1/projects/stackyard/serviceAccount
+        - endpoint: PATCH /gcp/storage/v1/b/stackyard-bucket
+        - endpoint: PATCH /gcp/storage/v1/b/stackyard-bucket/o/source.txt
+        - endpoint: POST /gcp/storage/v1/b
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/acl
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/notificationConfigs
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/composed.txt/compose
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/copied.txt/moveTo/o/moved.txt
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/moved.txt/restore
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/source.txt/acl
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/source.txt/copyTo/b/stackyard-bucket/o/copied.txt
+        - endpoint: POST /gcp/storage/v1/b/stackyard-bucket/o/source.txt/rewriteTo/b/stackyard-bucket/o/rewritten.txt
+        - endpoint: POST /gcp/storage/v1/projects/stackyard/hmacKeys
+        - endpoint: POST /gcp/upload/storage/v1/b/stackyard-bucket/o
+        - endpoint: PUT /gcp/storage/v1/b/stackyard-bucket/iam
+      - service: Filestore (API v1) (filestore-apiv1)
+        - endpoint: none
+      - service: Lustre (API v1) (lustre-apiv1)
+        - endpoint: none
+      - service: NetApp (API v1) (netapp-apiv1)
+        - endpoint: none
+      - service: Parallelstore (API v1) (parallelstore-apiv1)
+        - endpoint: none
+      - service: Storage Batch Operations (storagebatchoperations-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/jobs/job-1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/global/operations/createJob.job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/jobs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/jobs/job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/jobs/job-1/bucketOperations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/jobs/job-1/bucketOperations/bucket-op-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/operations/createJob.job-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/global/operations/createJob.job-succeeded
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/jobs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/jobs/job-1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/global/operations/createJob.job-1:cancel
+      - service: Storage Insights (storageinsights-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs/datasetconfig1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/operations/createDatasetConfig.datasetconfig1
+        - endpoint: DELETE /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs/reportconfig1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs/datasetconfig1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/operations/createDatasetConfig.datasetconfig1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs/reportconfig1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs/reportconfig1/reportDetails
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs/reportconfig1/reportDetails/reportdetail1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs/datasetconfig1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs/reportconfig1
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs/datasetconfig1:linkDataset
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/datasetConfigs/datasetconfig1:unlinkDataset
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/operations/createDatasetConfig.datasetconfig1:cancel
+        - endpoint: POST /gcp/v1/projects/stackyard/locations/us-central1/reportConfigs
+      - service: Storage Transfer (storagetransfer-apiv1)
+        - endpoint: DELETE /gcp/v1/projects/stackyard/agentPools/agentpool-1
+        - endpoint: DELETE /gcp/v1/transferJobs/job-1
+        - endpoint: DELETE /gcp/v1/transferOperations/run.job-1
+        - endpoint: GET /gcp/v1/googleServiceAccounts/stackyard
+        - endpoint: GET /gcp/v1/projects/stackyard/agentPools
+        - endpoint: GET /gcp/v1/projects/stackyard/agentPools/agentpool-1
+        - endpoint: GET /gcp/v1/projects/stackyard/locations
+        - endpoint: GET /gcp/v1/projects/stackyard/locations/us-central1
+        - endpoint: GET /gcp/v1/transferJobs
+        - endpoint: GET /gcp/v1/transferJobs/job-1
+        - endpoint: GET /gcp/v1/transferOperations
+        - endpoint: GET /gcp/v1/transferOperations/run.job-1
+        - endpoint: PATCH /gcp/v1/projects/stackyard/agentPools/agentpool-1
+        - endpoint: PATCH /gcp/v1/transferJobs/job-1
+        - endpoint: POST /gcp/v1/projects/stackyard/agentPools
+        - endpoint: POST /gcp/v1/transferJobs
+        - endpoint: POST /gcp/v1/transferJobs/job-1:run
+        - endpoint: POST /gcp/v1/transferOperations/run.job-1-paused:resume
+        - endpoint: POST /gcp/v1/transferOperations/run.job-1:cancel
+        - endpoint: POST /gcp/v1/transferOperations/run.job-1:pause

@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  meet-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/meet-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_MEET_SPACE=spaces/team-space
+      - STACKYARD_GCP_MEET_CONFERENCE_RECORD=conferenceRecords/team-conference
+      - STACKYARD_GCP_MEET_PARTICIPANT=conferenceRecords/team-conference/participants/team-participant
+      - STACKYARD_GCP_MEET_PARTICIPANT_SESSION=conferenceRecords/team-conference/participants/team-participant/participantSessions/session-1
+      - STACKYARD_GCP_MEET_RECORDING=conferenceRecords/team-conference/recordings/recording-1
+      - STACKYARD_GCP_MEET_TRANSCRIPT=conferenceRecords/team-conference/transcripts/transcript-1
+      - STACKYARD_GCP_MEET_TRANSCRIPT_ENTRY=conferenceRecords/team-conference/transcripts/transcript-1/entries/entry-1

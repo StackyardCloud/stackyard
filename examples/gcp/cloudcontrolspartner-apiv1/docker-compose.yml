@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  cloudcontrolspartner-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/cloudcontrolspartner-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_CLOUDCONTROLSPARTNER_ORGANIZATION=organizations/123456789
+      - STACKYARD_GCP_CLOUDCONTROLSPARTNER_LOCATION=us-central1
+      - STACKYARD_GCP_CLOUDCONTROLSPARTNER_CUSTOMER_ID=team-customer
+      - STACKYARD_GCP_CLOUDCONTROLSPARTNER_WORKLOAD_ID=team-workload
+      - STACKYARD_GCP_CLOUDCONTROLSPARTNER_VIOLATION_ID=violation-1

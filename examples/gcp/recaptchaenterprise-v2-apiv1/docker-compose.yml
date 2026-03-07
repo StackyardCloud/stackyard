@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  recaptchaenterprise-v2-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/recaptchaenterprise-v2-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_RECAPTCHA_KEY_ID=site-key-1
+      - STACKYARD_GCP_RECAPTCHA_ASSESSMENT_ID=assessment-1

@@ -1,0 +1,33 @@
+package websecurityscanner // import "cloud.google.com/go/websecurityscanner/apiv1"
+
+type Client struct {
+
+	// The call options for this service.
+	CallOptions *CallOptions
+	// Has unexported fields.
+}
+    Client is a client for interacting with Web Security Scanner API. Methods,
+    except Close, may be called concurrently. However, fields must not be
+    modified concurrently with method calls.
+
+    Web Security Scanner Service identifies security vulnerabilities in
+    web applications hosted on Google Cloud. It crawls your application,
+    and attempts to exercise as many user inputs and event handlers as possible.
+
+func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error)
+func NewRESTClient(ctx context.Context, opts ...option.ClientOption) (*Client, error)
+func (c *Client) Close() error
+func (c *Client) Connection() *grpc.ClientConn
+func (c *Client) CreateScanConfig(ctx context.Context, req *websecurityscannerpb.CreateScanConfigRequest, ...) (*websecurityscannerpb.ScanConfig, error)
+func (c *Client) DeleteScanConfig(ctx context.Context, req *websecurityscannerpb.DeleteScanConfigRequest, ...) error
+func (c *Client) GetFinding(ctx context.Context, req *websecurityscannerpb.GetFindingRequest, ...) (*websecurityscannerpb.Finding, error)
+func (c *Client) GetScanConfig(ctx context.Context, req *websecurityscannerpb.GetScanConfigRequest, ...) (*websecurityscannerpb.ScanConfig, error)
+func (c *Client) GetScanRun(ctx context.Context, req *websecurityscannerpb.GetScanRunRequest, ...) (*websecurityscannerpb.ScanRun, error)
+func (c *Client) ListCrawledUrls(ctx context.Context, req *websecurityscannerpb.ListCrawledUrlsRequest, ...) *CrawledUrlIterator
+func (c *Client) ListFindingTypeStats(ctx context.Context, req *websecurityscannerpb.ListFindingTypeStatsRequest, ...) (*websecurityscannerpb.ListFindingTypeStatsResponse, error)
+func (c *Client) ListFindings(ctx context.Context, req *websecurityscannerpb.ListFindingsRequest, ...) *FindingIterator
+func (c *Client) ListScanConfigs(ctx context.Context, req *websecurityscannerpb.ListScanConfigsRequest, ...) *ScanConfigIterator
+func (c *Client) ListScanRuns(ctx context.Context, req *websecurityscannerpb.ListScanRunsRequest, ...) *ScanRunIterator
+func (c *Client) StartScanRun(ctx context.Context, req *websecurityscannerpb.StartScanRunRequest, ...) (*websecurityscannerpb.ScanRun, error)
+func (c *Client) StopScanRun(ctx context.Context, req *websecurityscannerpb.StopScanRunRequest, ...) (*websecurityscannerpb.ScanRun, error)
+func (c *Client) UpdateScanConfig(ctx context.Context, req *websecurityscannerpb.UpdateScanConfigRequest, ...) (*websecurityscannerpb.ScanConfig, error)

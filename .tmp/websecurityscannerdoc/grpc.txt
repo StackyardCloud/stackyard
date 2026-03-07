@@ -1,0 +1,37 @@
+package websecurityscannerpb // import "cloud.google.com/go/websecurityscanner/apiv1/websecurityscannerpb"
+
+type WebSecurityScannerClient interface {
+	// Creates a new ScanConfig.
+	CreateScanConfig(ctx context.Context, in *CreateScanConfigRequest, opts ...grpc.CallOption) (*ScanConfig, error)
+	// Deletes an existing ScanConfig and its child resources.
+	DeleteScanConfig(ctx context.Context, in *DeleteScanConfigRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Gets a ScanConfig.
+	GetScanConfig(ctx context.Context, in *GetScanConfigRequest, opts ...grpc.CallOption) (*ScanConfig, error)
+	// Lists ScanConfigs under a given project.
+	ListScanConfigs(ctx context.Context, in *ListScanConfigsRequest, opts ...grpc.CallOption) (*ListScanConfigsResponse, error)
+	// Updates a ScanConfig. This method support partial update of a ScanConfig.
+	UpdateScanConfig(ctx context.Context, in *UpdateScanConfigRequest, opts ...grpc.CallOption) (*ScanConfig, error)
+	// Start a ScanRun according to the given ScanConfig.
+	StartScanRun(ctx context.Context, in *StartScanRunRequest, opts ...grpc.CallOption) (*ScanRun, error)
+	// Gets a ScanRun.
+	GetScanRun(ctx context.Context, in *GetScanRunRequest, opts ...grpc.CallOption) (*ScanRun, error)
+	// Lists ScanRuns under a given ScanConfig, in descending order of ScanRun
+	// stop time.
+	ListScanRuns(ctx context.Context, in *ListScanRunsRequest, opts ...grpc.CallOption) (*ListScanRunsResponse, error)
+	// Stops a ScanRun. The stopped ScanRun is returned.
+	StopScanRun(ctx context.Context, in *StopScanRunRequest, opts ...grpc.CallOption) (*ScanRun, error)
+	// List CrawledUrls under a given ScanRun.
+	ListCrawledUrls(ctx context.Context, in *ListCrawledUrlsRequest, opts ...grpc.CallOption) (*ListCrawledUrlsResponse, error)
+	// Gets a Finding.
+	GetFinding(ctx context.Context, in *GetFindingRequest, opts ...grpc.CallOption) (*Finding, error)
+	// List Findings under a given ScanRun.
+	ListFindings(ctx context.Context, in *ListFindingsRequest, opts ...grpc.CallOption) (*ListFindingsResponse, error)
+	// List all FindingTypeStats under a given ScanRun.
+	ListFindingTypeStats(ctx context.Context, in *ListFindingTypeStatsRequest, opts ...grpc.CallOption) (*ListFindingTypeStatsResponse, error)
+}
+    WebSecurityScannerClient is the client API for WebSecurityScanner service.
+
+    For semantics around ctx use and closing/ending streaming RPCs, please refer
+    to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+
+func NewWebSecurityScannerClient(cc grpc.ClientConnInterface) WebSecurityScannerClient

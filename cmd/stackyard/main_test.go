@@ -20,6 +20,9 @@ func TestParseStartOptions_Defaults(t *testing.T) {
 	if opts.addr != ":4566" {
 		t.Fatalf("expected default addr :4566, got %q", opts.addr)
 	}
+	if opts.h2Addr != ":4567" {
+		t.Fatalf("expected default h2 addr :4567, got %q", opts.h2Addr)
+	}
 	if opts.logLevel != "info" {
 		t.Fatalf("expected default log level info, got %q", opts.logLevel)
 	}
@@ -47,24 +50,28 @@ func TestParseStartOptions_Examples(t *testing.T) {
 		name string
 		args []string
 		addr string
+		h2   string
 		log  string
 	}{
 		{
 			name: "providers only",
 			args: []string{"--providers", "aws"},
 			addr: ":4566",
+			h2:   ":4567",
 			log:  "info",
 		},
 		{
 			name: "providers and port",
 			args: []string{"--providers", "aws", "--port", "4566"},
 			addr: ":4566",
+			h2:   ":4567",
 			log:  "info",
 		},
 		{
 			name: "providers and debug logging",
 			args: []string{"--providers", "aws", "--log-level", "debug"},
 			addr: ":4566",
+			h2:   ":4567",
 			log:  "debug",
 		},
 	}
@@ -80,6 +87,9 @@ func TestParseStartOptions_Examples(t *testing.T) {
 			}
 			if opts.addr != tc.addr {
 				t.Fatalf("expected addr %q, got %q", tc.addr, opts.addr)
+			}
+			if opts.h2Addr != tc.h2 {
+				t.Fatalf("expected h2 addr %q, got %q", tc.h2, opts.h2Addr)
 			}
 			if opts.logLevel != tc.log {
 				t.Fatalf("expected log level %q, got %q", tc.log, opts.logLevel)
@@ -104,6 +114,38 @@ func TestParseStartOptions_PortOverridesEnvAddr(t *testing.T) {
 	}
 	if opts.addr != ":4570" {
 		t.Fatalf("expected explicit --port to win over env addr, got %q", opts.addr)
+	}
+	if opts.h2Addr != ":4567" {
+		t.Fatalf("expected default h2 addr :4567, got %q", opts.h2Addr)
+	}
+}
+
+func TestParseStartOptions_HTTP2PortTracksResolvedHost(t *testing.T) {
+	t.Parallel()
+
+	opts, err := parseStartOptions(
+		[]string{"--providers", "aws", "--addr", "127.0.0.1:4566", "--h2-port", "50051"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err != nil {
+		t.Fatalf("parseStartOptions returned error: %v", err)
+	}
+	if opts.h2Addr != "127.0.0.1:50051" {
+		t.Fatalf("expected h2 addr 127.0.0.1:50051, got %q", opts.h2Addr)
+	}
+}
+
+func TestParseStartOptions_RejectsSameHTTPAndHTTP2Addr(t *testing.T) {
+	t.Parallel()
+
+	_, err := parseStartOptions(
+		[]string{"--providers", "aws", "--addr", ":4566", "--h2-addr", ":4566"},
+		&bytes.Buffer{},
+		envFromMap(nil),
+	)
+	if err == nil {
+		t.Fatalf("expected error when --h2-addr matches --addr")
 	}
 }
 
@@ -156,6 +198,7 @@ func TestRunHelpIncludesFlagOptions(t *testing.T) {
 		"--providers string",
 		"Options: aws, gcp, azure, oci",
 		"--port int",
+		"--h2-port int",
 		"1-65535",
 		"--log-level string",
 		"debug, info, warn, error",
@@ -191,6 +234,9 @@ func TestRunHelpStartShowsStartUsage(t *testing.T) {
 	}
 	if !strings.Contains(out, "--aws-access-key string") {
 		t.Fatalf("expected aws access key flag in start help output, got: %s", out)
+	}
+	if !strings.Contains(out, "--h2-port int") {
+		t.Fatalf("expected h2-port flag in start help output, got: %s", out)
 	}
 }
 

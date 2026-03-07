@@ -471,6 +471,14 @@ func (s *Server) Close() error {
 			return err
 		}
 	}
+	if s.http2Server != nil {
+		if err := s.http2Server.Close(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			if errOut != nil {
+				return fmt.Errorf("existing close failed: %v; http2 close failed: %w", errOut, err)
+			}
+			return err
+		}
+	}
 	return errOut
 }
 

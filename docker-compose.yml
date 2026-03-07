@@ -12,4 +12,5 @@ services:
       STACKYARD_LOG_LEVEL: "debug"
     ports:
       - "4566:4566"
+      - "4567:4567"
     restart: unless-stopped

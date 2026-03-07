@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  shopping-css-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/shopping-css-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_CSS_ACCOUNT_ID=123456
+      - STACKYARD_GCP_CSS_RAW_PROVIDED_ID=sku-1
+      - STACKYARD_GCP_CSS_CONTENT_LANGUAGE=en
+      - STACKYARD_GCP_CSS_FEED_LABEL=US
+      - STACKYARD_GCP_CSS_LABEL_DISPLAY_NAME=Summer 2026

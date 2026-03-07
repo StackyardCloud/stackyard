@@ -38,6 +38,7 @@ func TestProviderFromPath(t *testing.T) {
 		{path: "/", want: providerAWS},
 		{path: "/s3/buckets", want: providerAWS},
 		{path: "/gcp/storage/v1/b", want: providerGCP},
+		{path: "/google.cloud.aiplatform.v1.DatasetService/ListDatasets", want: providerGCP},
 		{path: "/azure/storage", want: providerAzure},
 		{path: "/oci/objectstorage", want: providerOCI},
 	}

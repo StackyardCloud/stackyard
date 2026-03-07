@@ -54,6 +54,10 @@ func toProviderSet(providers []string) map[string]struct{} {
 func providerFromPath(rawPath string) string {
 	path := strings.TrimSpace(rawPath)
 	switch {
+	case strings.HasPrefix(path, "/maps."):
+		return providerGCP
+	case strings.HasPrefix(path, "/google."):
+		return providerGCP
 	case path == "/gcp" || strings.HasPrefix(path, "/gcp/"):
 		return providerGCP
 	case path == "/azure" || strings.HasPrefix(path, "/azure/"):

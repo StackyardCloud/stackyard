@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  shopping-merchant-notifications-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/shopping-merchant-notifications-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_MERCHANT_NOTIFICATIONS_ACCOUNT_ID=123456
+      - STACKYARD_GCP_MERCHANT_NOTIFICATIONS_CREATE_CALLBACK_URI=https://example.com/hooks/merchant-notifications
+      - STACKYARD_GCP_MERCHANT_NOTIFICATIONS_UPDATE_CALLBACK_URI=https://example.com/hooks/merchant-notifications-updated

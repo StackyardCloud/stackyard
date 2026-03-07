@@ -1,0 +1,31 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  chat-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/chat-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_CHAT_SPACE=spaces/team-space
+      - STACKYARD_GCP_CHAT_MESSAGE=spaces/team-space/messages/message-1
+      - STACKYARD_GCP_CHAT_MEMBERSHIP=spaces/team-space/members/user-1
+      - STACKYARD_GCP_CHAT_REACTION=spaces/team-space/messages/message-1/reactions/reaction-1
+      - STACKYARD_GCP_CHAT_CUSTOM_EMOJI=customEmojis/emoji-1
+      - STACKYARD_GCP_CHAT_SPACE_READ_STATE=users/me/spaces/team-space/spaceReadState
+      - STACKYARD_GCP_CHAT_THREAD_READ_STATE=users/me/spaces/team-space/threads/thread-1/threadReadState
+      - STACKYARD_GCP_CHAT_SPACE_NOTIFICATION_SETTING=users/me/spaces/team-space/spaceNotificationSetting
+      - STACKYARD_GCP_CHAT_SPACE_EVENT=spaces/team-space/spaceEvents/event-1
+      - STACKYARD_GCP_CHAT_ATTACHMENT=spaces/team-space/messages/message-1/attachments/attachment-1

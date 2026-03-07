@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  bigtable-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/bigtable-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT=stackyard
+      - STACKYARD_GCP_BIGTABLE_INSTANCE=dev-instance
+      - STACKYARD_GCP_BIGTABLE_TABLE=orders
+      - STACKYARD_GCP_BIGTABLE_ROW_KEY=order-1
+      - STACKYARD_GCP_BIGTABLE_FAMILY=cf1
+      - STACKYARD_GCP_BIGTABLE_QUALIFIER=status
+      - STACKYARD_GCP_BIGTABLE_VALUE=created

@@ -1,5 +1,9 @@
 # Data Pipeline Reference Architecture Example
 
+Canonical provider-scoped path for this AWS variant:
+
+- `reference-architecture/data-pipeline/aws/example`
+
 This runnable example implements a reference architecture control plane using Stackyard-emulated AWS services.
 
 ## Stack

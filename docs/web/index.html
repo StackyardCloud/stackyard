@@ -1,4 +1,4 @@
-v<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,7 +6,7 @@ v<!DOCTYPE html>
     <title>Stackyard Docs</title>
     <meta
       name="description"
-      content="Stackyard documentation portal for AWS-compatible local service emulation."
+      content="Stackyard documentation portal for AWS and GCP compatible local cloud service emulation."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,7 +26,10 @@ v<!DOCTYPE html>
         <nav class="top-nav" aria-label="Primary navigation">
           <a href="./index.html" aria-current="page">Overview</a>
           <a href="./aws/index.html">AWS</a>
-          <a href="./aws/services/index.html">Services</a>
+          <a href="./aws/services/index.html">AWS Services</a>
+          <a href="./gcp/index.html">GCP</a>
+          <a href="./gcp/services/index.html">GCP Services</a>
+          <a href="./tree/index.html">Service Tree</a>
           <a href="../index.html">Legacy API Page</a>
         </nav>
       </div>
@@ -36,11 +39,11 @@ v<!DOCTYPE html>
       <section class="hero reveal">
         <h1>Stackyard Documentation</h1>
         <p>
-          This docs web portal mirrors the LocalStack docs navigation approach, with a focused AWS service catalog for
-          fast local-development lookup.
+          This docs web portal organizes Stackyard cloud emulation coverage by provider, with dedicated AWS and GCP
+          documentation areas for fast local development lookup.
         </p>
         <div class="hero-meta">
-          <span class="pill accent">AWS-compatible APIs</span>
+          <span class="pill accent">AWS + GCP compatible APIs</span>
           <span class="pill neutral">Structured by service domains</span>
           <span class="pill warn">Built for local integration workflows</span>
         </div>
@@ -56,13 +59,37 @@ v<!DOCTYPE html>
         <article class="landing-card">
           <h2>AWS Services Catalog</h2>
           <p>Browse and filter every supported Stackyard service in one place.</p>
-          <p><a class="btn primary" href="aws/services/index.html">Open Services Page</a></p>
+          <p><a class="btn primary" href="aws/services/index.html">Open AWS Services</a></p>
         </article>
 
         <article class="landing-card">
-          <h2>Implementation Details</h2>
-          <p>Jump to per-service staging and endpoint notes in the existing API docs.</p>
-          <p><a class="btn ghost" href="../index.html">Open Legacy API Surface</a></p>
+          <h2>GCP Documentation</h2>
+          <p>Explore GCP capability coverage, staged plans, and service-level compatibility notes.</p>
+          <p><a class="btn primary" href="gcp/index.html">Open GCP Docs</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>GCP Services Catalog</h2>
+          <p>Filter GCP service entries by category and inspect per-service capability gates.</p>
+          <p><a class="btn primary" href="gcp/services/index.html">Open GCP Services</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>AWS API Surface</h2>
+          <p>Jump to the legacy per-service endpoint and action details for AWS coverage.</p>
+          <p><a class="btn ghost" href="../index.html">Open AWS API Surface</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>GCP API Surface</h2>
+          <p>Open the legacy-style GCP API coverage page with service anchors and capability details.</p>
+          <p><a class="btn ghost" href="../gcp.html">Open GCP API Surface</a></p>
+        </article>
+
+        <article class="landing-card">
+          <h2>Provider Service Tree</h2>
+          <p>Inspect the full hierarchical tree: root -> provider -> category -> service -> endpoint.</p>
+          <p><a class="btn ghost" href="tree/index.html">Open Service Tree</a></p>
         </article>
       </section>
     </main>

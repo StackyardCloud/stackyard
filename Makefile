@@ -1,9 +1,10 @@
-.PHONY: fmt tidy test ci install examples-docker examples-docker-provider examples-docker-aws examples-docker-gcp examples-docker-azure examples-docker-oci coverage-all coverage-all-strict provider-contracts up down restart
+.PHONY: fmt tidy test ci install examples-docker examples-docker-provider examples-docker-aws examples-docker-gcp examples-docker-azure examples-docker-oci refarch-examples refarch-examples-aws refarch-examples-gcp refarch-examples-all coverage-all coverage-all-strict coverage-gcp-contracts coverage-gcp-contracts-strict coverage-gcp-io-contracts coverage-gcp-io-contracts-strict provider-contracts up down restart
 
 BUILD ?= 0
 VOLUMES ?= 0
 PROVIDER ?= aws
 COVERAGE_FAIL_ON ?= not_implemented,service_error,client_error,contract_error,transport_error,skeleton_error,unknown_error,auth_error
+GCP_STRICT_SERVICES ?= cloudprofiler cloudquotas commerce_consumer_procurement configdelivery apigeeconnect mediatranslation config rapidmigrationassessment
 
 fmt:
 	gofmt -w ./cmd ./internal
@@ -108,6 +109,31 @@ examples-docker-azure:
 examples-docker-oci:
 	$(MAKE) examples-docker-provider PROVIDER=oci
 
+refarch-examples:
+ifeq ($(OS),Windows_NT)
+	$(MAKE) refarch-examples-aws
+else
+	$(MAKE) refarch-examples-aws
+endif
+
+refarch-examples-aws:
+ifeq ($(OS),Windows_NT)
+	PROVIDER=aws powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-reference-architecture-examples.ps1
+else
+	PROVIDER=aws bash ./scripts/run-reference-architecture-examples.sh
+endif
+
+refarch-examples-gcp:
+ifeq ($(OS),Windows_NT)
+	PROVIDER=gcp powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-reference-architecture-examples.ps1
+else
+	PROVIDER=gcp bash ./scripts/run-reference-architecture-examples.sh
+endif
+
+refarch-examples-all:
+	$(MAKE) refarch-examples-aws
+	$(MAKE) refarch-examples-gcp
+
 coverage-all:
 ifeq ($(OS),Windows_NT)
 	py -3 scripts/awscli-endpoint-coverage.py --contract-mode --fail-on $(COVERAGE_FAIL_ON)
@@ -120,6 +146,42 @@ ifeq ($(OS),Windows_NT)
 	py -3 scripts/awscli-endpoint-coverage.py --contract-mode --fail-on $(COVERAGE_FAIL_ON)
 else
 	python3 scripts/awscli-endpoint-coverage.py --contract-mode --fail-on $(COVERAGE_FAIL_ON)
+endif
+
+coverage-gcp-contracts:
+ifeq ($(OS),Windows_NT)
+	py -3 scripts/gcp-contract-coverage.py
+else
+	python3 scripts/gcp-contract-coverage.py
+endif
+
+coverage-gcp-contracts-strict:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop'; $$services='$(GCP_STRICT_SERVICES)'.Split(' ',[System.StringSplitOptions]::RemoveEmptyEntries); foreach($$svc in $$services){ Write-Host ('==> gcp contract gate: ' + $$svc) -ForegroundColor Cyan; py -3 scripts/gcp-contract-coverage.py --service $$svc --fail-on any }"
+else
+	@set -e; \
+	for svc in $(GCP_STRICT_SERVICES); do \
+		echo "==> gcp contract gate: $$svc"; \
+		python3 scripts/gcp-contract-coverage.py --service "$$svc" --fail-on any; \
+	done
+endif
+
+coverage-gcp-io-contracts:
+ifeq ($(OS),Windows_NT)
+	py -3 scripts/gcp-io-contract-coverage.py
+else
+	python3 scripts/gcp-io-contract-coverage.py
+endif
+
+coverage-gcp-io-contracts-strict:
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference='Stop'; $$services='$(GCP_STRICT_SERVICES)'.Split(' ',[System.StringSplitOptions]::RemoveEmptyEntries); foreach($$svc in $$services){ Write-Host ('==> gcp io contract gate: ' + $$svc) -ForegroundColor Cyan; py -3 scripts/gcp-io-contract-coverage.py --service $$svc --require-service $$svc --fail-on strict }"
+else
+	@set -e; \
+	for svc in $(GCP_STRICT_SERVICES); do \
+		echo "==> gcp io contract gate: $$svc"; \
+		python3 scripts/gcp-io-contract-coverage.py --service "$$svc" --require-service "$$svc" --fail-on strict; \
+	done
 endif
 
 up:

@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  policysimulator-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/policysimulator-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_ORGANIZATION_ID=123456789012
+      - STACKYARD_GCP_LOCATION=global
+      - STACKYARD_GCP_REPLAY_ID=replay-1
+      - STACKYARD_GCP_POLICY_PREVIEW_ID=preview-1
