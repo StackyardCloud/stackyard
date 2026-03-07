@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -20,13 +22,11 @@ import (
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
-	"cloud.google.com/go/storage"
 	workflows "cloud.google.com/go/workflows/apiv1"
 	"cloud.google.com/go/workflows/apiv1/workflowspb"
 	executions "cloud.google.com/go/workflows/executions/apiv1"
 	executionspb "cloud.google.com/go/workflows/executions/apiv1/executionspb"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -92,7 +92,7 @@ type app struct {
 	lakeBucket  string
 	auditBucket string
 
-	storageClient    *storage.Client
+	httpClient       *http.Client
 	kmsClient        *kms.KeyManagementClient
 	secretClient     *secretmanager.Client
 	publisherClient  *pubsub.PublisherClient
@@ -128,18 +128,7 @@ func newApp(ctx context.Context) (*app, error) {
 	projectID := getenv("STACKYARD_GCP_PROJECT_ID", defaultProjectID)
 	locationID := getenv("STACKYARD_GCP_LOCATION", defaultLocation)
 
-	if err := os.Setenv("STORAGE_EMULATOR_HOST", apiEndpoint); err != nil {
-		return nil, fmt.Errorf("set STORAGE_EMULATOR_HOST: %w", err)
-	}
-
-	storageHTTP := &http.Client{Transport: stackyardHeaderTransport{base: http.DefaultTransport, serviceName: "storage-apiv1"}}
-	storageClient, err := storage.NewClient(ctx,
-		option.WithHTTPClient(storageHTTP),
-		option.WithoutAuthentication(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("create storage client: %w", err)
-	}
+	httpClient := &http.Client{Timeout: 20 * time.Second}
 
 	kmsHTTP := &http.Client{Transport: stackyardHeaderTransport{base: http.DefaultTransport, serviceName: "kms"}}
 	kmsClient, err := kms.NewKeyManagementRESTClient(ctx,
@@ -207,7 +196,7 @@ func newApp(ctx context.Context) (*app, error) {
 		locationID:       locationID,
 		lakeBucket:       getenv("STACKYARD_DATA_LAKE_BUCKET", defaultLakeBucket),
 		auditBucket:      getenv("STACKYARD_AUDIT_BUCKET", defaultAuditBucket),
-		storageClient:    storageClient,
+		httpClient:       httpClient,
 		kmsClient:        kmsClient,
 		secretClient:     secretClient,
 		publisherClient:  publisherClient,
@@ -246,11 +235,6 @@ func (a *app) close() {
 	if a.kmsClient != nil {
 		if err := a.kmsClient.Close(); err != nil {
 			log.Printf("close kms client: %v", err)
-		}
-	}
-	if a.storageClient != nil {
-		if err := a.storageClient.Close(); err != nil {
-			log.Printf("close storage client: %v", err)
 		}
 	}
 }
@@ -542,14 +526,16 @@ func (a *app) runTenant(ctx context.Context, w http.ResponseWriter, tenantID str
 }
 
 func (a *app) ensureBucket(ctx context.Context, bucket string) error {
-	err := a.storageClient.Bucket(bucket).Create(ctx, a.projectID, &storage.BucketAttrs{Location: "US", StorageClass: "STANDARD"})
-	if err == nil {
-		return nil
+	payload := map[string]any{
+		"name":         bucket,
+		"location":     "US",
+		"storageClass": "STANDARD",
 	}
-	if isAlreadyExists(err) {
-		return nil
+	err := a.doGCPStorageJSON(ctx, http.MethodPost, "/storage/v1/b?project="+url.QueryEscape(a.projectID), payload, nil)
+	if err != nil && !isAlreadyExists(err) {
+		return err
 	}
-	return err
+	return nil
 }
 
 func (a *app) createTenantKMSKey(ctx context.Context, tenantID string) (string, string, error) {
@@ -676,42 +662,106 @@ func (a *app) startWorkflowExecution(ctx context.Context, workflowName, runID st
 }
 
 func (a *app) writeObject(ctx context.Context, bucket, key string, payload []byte) error {
-	writer := a.storageClient.Bucket(bucket).Object(key).NewWriter(ctx)
-	writer.ContentType = "application/json"
-	if _, err := writer.Write(payload); err != nil {
-		_ = writer.Close()
+	path := fmt.Sprintf("/upload/storage/v1/b/%s/o?uploadType=media&name=%s", url.PathEscape(bucket), url.QueryEscape(key))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.apiEndpoint+path, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
 		return fmt.Errorf("put object %s/%s: %w", bucket, key, err)
 	}
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("close object writer %s/%s: %w", bucket, key, err)
+	defer resp.Body.Close()
+	if resp.StatusCode >= http.StatusBadRequest {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("storage upload failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 	return nil
 }
 
 func (a *app) readObject(ctx context.Context, bucket, key string) ([]byte, error) {
-	reader, err := a.storageClient.Bucket(bucket).Object(key).NewReader(ctx)
+	path := fmt.Sprintf("/storage/v1/b/%s/o/%s?alt=media", url.PathEscape(bucket), url.PathEscape(key))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, a.apiEndpoint+path, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-	return io.ReadAll(reader)
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= http.StatusBadRequest {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("storage read failed (%d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+	return io.ReadAll(resp.Body)
 }
 
 func (a *app) listObjectsByPrefix(ctx context.Context, bucket, prefix string) ([]string, error) {
-	it := a.storageClient.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
+	path := fmt.Sprintf("/storage/v1/b/%s/o?prefix=%s", url.PathEscape(bucket), url.QueryEscape(prefix))
+	var resp struct {
+		Items []struct {
+			Name string `json:"name"`
+		} `json:"items"`
+	}
+	if err := a.doGCPStorageJSON(ctx, http.MethodGet, path, nil, &resp); err != nil {
+		return nil, err
+	}
 	keys := make([]string, 0)
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
+	for _, item := range resp.Items {
+		if strings.TrimSpace(item.Name) != "" {
+			keys = append(keys, item.Name)
 		}
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, attrs.Name)
 	}
 	sort.Strings(keys)
 	return keys, nil
+}
+
+func (a *app) doGCPStorageJSON(ctx context.Context, method, path string, payload any, out any) error {
+	var body io.Reader
+	if payload != nil {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		body = bytes.NewReader(encoded)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, a.apiEndpoint+path, body)
+	if err != nil {
+		return err
+	}
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("X-Stackyard-GCP-Service", "storage-apiv1")
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		var apiErr struct {
+			Error struct {
+				Code    int    `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(respBody, &apiErr) == nil && strings.TrimSpace(apiErr.Error.Message) != "" {
+			return fmt.Errorf("storage error: %s", apiErr.Error.Message)
+		}
+		return fmt.Errorf("storage error (%d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+	if out != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, out); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *app) ensureTenant(tenantID string) *tenantState {

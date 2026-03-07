@@ -51,23 +51,23 @@ run_smoke() {
   local backend_url="$2"
 
   if [[ "$compose_file" == *"/data-pipeline/"* ]]; then
-    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/bootstrap" >/dev/null
-    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/ingest" >/dev/null
-    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/run" >/dev/null
-    curl -fsS "$backend_url/api/v1/summary" >/dev/null
+    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/bootstrap" >/dev/null || return 1
+    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/ingest" >/dev/null || return 1
+    curl -fsS -X POST "$backend_url/api/v1/tenants/tenant-001/run" >/dev/null || return 1
+    curl -fsS "$backend_url/api/v1/summary" >/dev/null || return 1
     return
   fi
 
   if [[ "$compose_file" == *"/data-mesh/"* ]]; then
-    curl -fsS -X POST "$backend_url/api/v1/domains/orders/bootstrap" >/dev/null
+    curl -fsS -X POST "$backend_url/api/v1/domains/orders/bootstrap" >/dev/null || return 1
     curl -fsS -X POST "$backend_url/api/v1/domains/orders/tenants/tenant-123/events" \
       -H 'Content-Type: application/json' \
-      -d '{"event_type":"orders.order.created","schema_version":"v1","correlation_id":"trace-001","payload":{"entity_id":"ord-1001","amount":42.75,"customer_email":"alice@example.com"}}' >/dev/null
-    curl -fsS -X POST "$backend_url/api/v1/domains/orders/project" -H 'Content-Type: application/json' -d '{"limit":50}' >/dev/null
+      -d '{"event_type":"orders.order.created","schema_version":"v1","correlation_id":"trace-001","payload":{"entity_id":"ord-1001","amount":42.75,"customer_email":"alice@example.com"}}' >/dev/null || return 1
+    curl -fsS -X POST "$backend_url/api/v1/domains/orders/project" -H 'Content-Type: application/json' -d '{"limit":50}' >/dev/null || return 1
     curl -fsS "$backend_url/api/v1/domains/orders/products/orders/tenant-123" \
       -H 'X-Claim-Tenant-Id: tenant-123' \
-      -H 'X-Claim-Scopes: read:full' >/dev/null
-    curl -fsS "$backend_url/api/v1/summary" >/dev/null
+      -H 'X-Claim-Scopes: read:full' >/dev/null || return 1
+    curl -fsS "$backend_url/api/v1/summary" >/dev/null || return 1
     return
   fi
 }

@@ -172,23 +172,73 @@ func isGCPResourceManagerV3Path(path string) bool {
 	if !strings.HasPrefix(normalized, "/gcp/v3/") {
 		return false
 	}
-	remainder := strings.TrimPrefix(normalized, "/gcp/v3/")
-	if remainder == "" {
-		return false
-	}
-	segment := remainder
-	if idx := strings.IndexByte(segment, '/'); idx >= 0 {
-		segment = segment[:idx]
-	}
-	if idx := strings.IndexByte(segment, ':'); idx >= 0 {
-		segment = segment[:idx]
-	}
-	switch segment {
-	case "folders", "projects", "organizations", "tagKeys", "tagValues", "tagBindings", "effectiveTags", "operations":
+	switch normalized {
+	case "/gcp/v3/folders",
+		"/gcp/v3/folders:search",
+		"/gcp/v3/projects",
+		"/gcp/v3/projects:search",
+		"/gcp/v3/organizations",
+		"/gcp/v3/organizations:search",
+		"/gcp/v3/tagKeys",
+		"/gcp/v3/tagKeys/namespaced",
+		"/gcp/v3/tagValues",
+		"/gcp/v3/tagValues/namespaced",
+		"/gcp/v3/tagBindings",
+		"/gcp/v3/effectiveTags",
+		"/gcp/v3/operations":
 		return true
-	default:
-		return false
 	}
+
+	if _, ok := parseGCPResourceManagerV3FolderPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3FolderActionPath(normalized, "move"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3FolderActionPath(normalized, "undelete"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3ProjectPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3ProjectActionPath(normalized, "move"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3ProjectActionPath(normalized, "undelete"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3OrganizationPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3TagKeyPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3TagValuePath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3TagBindingPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3TagHoldsCollectionPath(normalized); ok {
+		return true
+	}
+	if _, _, ok := parseGCPResourceManagerV3TagHoldPath(normalized); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3IAMResourceActionPath(normalized, "getIamPolicy"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3IAMResourceActionPath(normalized, "setIamPolicy"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3IAMResourceActionPath(normalized, "testIamPermissions"); ok {
+		return true
+	}
+	if _, ok := parseGCPResourceManagerV3OperationPath(normalized); ok {
+		return true
+	}
+	_, ok := parseGCPResourceManagerV3OperationActionPath(normalized, "cancel")
+	return ok
 }
 
 func handleGCPResourceManagerV3ListFolders(w http.ResponseWriter, r *http.Request, path string) bool {
@@ -1142,13 +1192,17 @@ func parseGCPResourceManagerV3IAMResourceActionPath(path, action string) (resour
 }
 
 func isGCPResourceManagerV3IAMResource(resource string) bool {
-	prefixes := []string{"folders/", "projects/", "organizations/", "tagKeys/", "tagValues/"}
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(resource, prefix) && strings.TrimSpace(strings.TrimPrefix(resource, prefix)) != "" {
-			return true
-		}
+	resource = strings.Trim(resource, "/")
+	parts := strings.Split(resource, "/")
+	if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+		return false
 	}
-	return false
+	switch parts[0] {
+	case "folders", "projects", "organizations", "tagKeys", "tagValues":
+		return true
+	default:
+		return false
+	}
 }
 
 func parseGCPResourceManagerV3OperationPath(path string) (string, bool) {

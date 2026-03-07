@@ -41,7 +41,9 @@ func TestGCPContainerRouter_ListClustersInvalidPageSize(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPContainerContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/clusters?pageSize=bad", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/clusters?pageSize=bad", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "container",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp container router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -55,7 +57,10 @@ func TestGCPContainerRouter_CreateClusterRequiresName(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPContainerContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/clusters", []byte(`{"cluster":{}}`), map[string]string{"Content-Type": "application/json"})
+	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/clusters", []byte(`{"cluster":{}}`), map[string]string{
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "container",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp container router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -69,7 +74,10 @@ func TestGCPContainerRouter_SetNodePoolSizeRequiresNumericNodeCount(t *testing.T
 	t.Parallel()
 
 	ts := newGCPContainerContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:setSize", []byte(`{"nodeCount":"one"}`), map[string]string{"Content-Type": "application/json"})
+	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v1/projects/stackyard/locations/us-central1/clusters/team-cluster/nodePools/default-pool:setSize", []byte(`{"nodeCount":"one"}`), map[string]string{
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "container",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp container router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -83,7 +91,9 @@ func TestGCPContainerRouter_ListUsableSubnetworksPageTokenOutOfRange(t *testing.
 	t.Parallel()
 
 	ts := newGCPContainerContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/aggregated/usableSubnetworks?pageToken=99", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/aggregated/usableSubnetworks?pageToken=99", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "container",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp container router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -110,6 +120,7 @@ func assertGCPContainerSuccess(t *testing.T, ts *httptest.Server, method, path s
 	t.Helper()
 
 	headers := map[string]string{}
+	headers["X-Stackyard-GCP-Service"] = "container"
 	if payload != nil {
 		headers["Content-Type"] = "application/json"
 	}

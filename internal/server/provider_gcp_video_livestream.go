@@ -130,13 +130,28 @@ func isGCPVideoLivestreamPath(path string, includeHint bool) bool {
 	if strings.HasPrefix(path, gcpVideoLivestreamGRPCPathPrefix) {
 		return true
 	}
-	if _, _, _, ok := parseGCPProjectLocationPath(path); ok {
-		return includeHint
+	if !includeHint {
+		return false
 	}
-	if _, _, _, ok := parseGCPVideoLivestreamLocationTail(path); ok {
+	if _, _, _, ok := parseGCPProjectLocationPath(path); ok {
 		return true
 	}
-	return includeHint && strings.HasPrefix(path, "/gcp/v1/projects/")
+	_, _, tail, ok := parseGCPVideoLivestreamLocationTail(path)
+	if !ok {
+		return strings.HasPrefix(path, "/gcp/v1/projects/")
+	}
+	parts := gcpVideoLivestreamTailParts(tail)
+	if len(parts) == 0 {
+		return true
+	}
+	switch parts[0] {
+	case "channels", "inputs", "assets", "pools":
+		return true
+	case "operations":
+		return true
+	default:
+		return true
+	}
 }
 
 func mapGCPVideoLivestreamRESTToMethod(r *http.Request, path string) (string, gcpVideoLivestreamRouteContext, bool, bool) {

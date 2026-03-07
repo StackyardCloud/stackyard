@@ -38,7 +38,9 @@ func TestGCPAPIGatewayRouter_ListGatewaysPageTokenOutOfRange(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPAPIGatewayContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/gateways?pageToken=99", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v1/projects/stackyard/locations/us-central1/gateways?pageToken=99", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "apigateway",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp apigateway router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -62,7 +64,9 @@ func newGCPAPIGatewayContractServer(t *testing.T) *httptest.Server {
 
 func assertGCPAPIGatewaySuccess(t *testing.T, ts *httptest.Server, method, path string, payload []byte, expectBodyFragment string) {
 	t.Helper()
-	headers := map[string]string{}
+	headers := map[string]string{
+		"X-Stackyard-GCP-Service": "apigateway",
+	}
 	if payload != nil {
 		headers["Content-Type"] = "application/json"
 	}

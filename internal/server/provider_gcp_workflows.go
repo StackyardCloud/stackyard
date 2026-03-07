@@ -49,7 +49,8 @@ func (s *Server) handleGCPWorkflowsRouter(w http.ResponseWriter, r *http.Request
 		return false
 	}
 
-	if !isGCPWorkflowsPath(path, hasGCPWorkflowsHint(r)) {
+	includeHint := hasGCPWorkflowsHint(r)
+	if !isGCPWorkflowsPath(path, includeHint, includeHint) {
 		return false
 	}
 
@@ -106,9 +107,8 @@ func normalizeGCPWorkflowsPath(path string) string {
 }
 
 func hasGCPWorkflowsHint(r *http.Request) bool {
-	service := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service")))
-	switch service {
-	case "workflows", "workflows-apiv1", "workflows_apiv1", "gcp-workflows", "gcp-workflows-apiv1":
+	service := strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service"))
+	if service != "" && isGCPWorkflowsServiceHintValue(service) {
 		return true
 	}
 
@@ -116,11 +116,20 @@ func hasGCPWorkflowsHint(r *http.Request) bool {
 	return strings.Contains(ua, "stackyard-workflows-apiv1") || strings.Contains(ua, "cloud.google.com/go/workflows")
 }
 
+func isGCPWorkflowsServiceHintValue(service string) bool {
+	switch strings.ToLower(strings.TrimSpace(service)) {
+	case "workflows", "workflows-apiv1", "workflows_apiv1", "gcp-workflows", "gcp-workflows-apiv1":
+		return true
+	default:
+		return false
+	}
+}
+
 func isGCPWorkflowsLocationRequest(r *http.Request, path string) bool {
 	return hasGCPWorkflowsHint(r) && isGCPProjectLocationDiscoveryPath(path)
 }
 
-func isGCPWorkflowsPath(path string, includeHint bool) bool {
+func isGCPWorkflowsPath(path string, includeHint, allowAmbiguousOps bool) bool {
 	if strings.HasPrefix(path, gcpWorkflowsGRPCPathPrefix) ||
 		strings.HasPrefix(path, gcpWorkflowsLocationsGRPCPathPrefix) ||
 		strings.HasPrefix(path, gcpWorkflowsOperationsGRPCPathPrefix) {
@@ -129,9 +138,10 @@ func isGCPWorkflowsPath(path string, includeHint bool) bool {
 	if _, _, tail, ok := parseGCPWorkflowsLocationTail(path); ok {
 		if isGCPWorkflowsCollectionTail(tail) ||
 			isGCPWorkflowResourceTail(tail) ||
-			isGCPWorkflowListRevisionsTail(tail) ||
-			isGCPOperationsCollectionTail(tail) ||
-			isGCPOperationResourceTail(tail) {
+			isGCPWorkflowListRevisionsTail(tail) {
+			return true
+		}
+		if allowAmbiguousOps && (isGCPOperationsCollectionTail(tail) || isGCPOperationResourceTail(tail)) {
 			return true
 		}
 	}

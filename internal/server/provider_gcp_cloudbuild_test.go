@@ -37,7 +37,9 @@ func TestGCPCloudBuildRouter_ListConnectionsInvalidPageSize(t *testing.T) {
 	t.Parallel()
 
 	ts := newGCPCloudBuildContractServer(t)
-	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v2/projects/stackyard/locations/us-central1/connections?pageSize=bad", nil, nil)
+	resp := providerContractRequest(t, ts, http.MethodGet, "/gcp/v2/projects/stackyard/locations/us-central1/connections?pageSize=bad", nil, map[string]string{
+		"X-Stackyard-GCP-Service": "cloudbuild",
+	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp cloudbuild router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
@@ -52,7 +54,8 @@ func TestGCPCloudBuildRouter_CreateConnectionRequiresConnectionID(t *testing.T) 
 
 	ts := newGCPCloudBuildContractServer(t)
 	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v2/projects/stackyard/locations/us-central1/connections", []byte(`{"name":"projects/stackyard/locations/us-central1/connections/team-connection"}`), map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "cloudbuild",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp cloudbuild router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
@@ -68,7 +71,8 @@ func TestGCPCloudBuildRouter_BatchCreateRequiresRequests(t *testing.T) {
 
 	ts := newGCPCloudBuildContractServer(t)
 	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection/repositories:batchCreate", []byte(`{"requests":[]}`), map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "cloudbuild",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp cloudbuild router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
@@ -84,7 +88,8 @@ func TestGCPCloudBuildRouter_TestIAMPermissionsRequiresPermissions(t *testing.T)
 
 	ts := newGCPCloudBuildContractServer(t)
 	resp := providerContractRequest(t, ts, http.MethodPost, "/gcp/v2/projects/stackyard/locations/us-central1/connections/team-connection:testIamPermissions", []byte(`{"permissions":[]}`), map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":            "application/json",
+		"X-Stackyard-GCP-Service": "cloudbuild",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 from gcp cloudbuild router, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
@@ -111,7 +116,9 @@ func newGCPCloudBuildContractServer(t *testing.T) *httptest.Server {
 func assertGCPCloudBuildSuccess(t *testing.T, ts *httptest.Server, method, path string, payload []byte, expectBodyFragment string) {
 	t.Helper()
 
-	headers := map[string]string{}
+	headers := map[string]string{
+		"X-Stackyard-GCP-Service": "cloudbuild",
+	}
 	if payload != nil {
 		headers["Content-Type"] = "application/json"
 	}

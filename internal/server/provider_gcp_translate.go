@@ -131,10 +131,36 @@ func isGCPTranslatePath(path string, includeHint bool) bool {
 	if _, _, _, ok := parseGCPTranslateProjectLocationsPath(path); ok {
 		return includeHint
 	}
-	if _, _, _, ok := parseGCPTranslateLocationTail(path); ok {
-		return true
+	if _, _, tail, ok := parseGCPTranslateLocationTail(path); ok {
+		if isGCPTranslateLocationTailRecognized(tail) {
+			return true
+		}
+		return includeHint && strings.HasPrefix(path, "/gcp/v3/projects/")
 	}
 	return includeHint && strings.HasPrefix(path, "/gcp/v3/projects/")
+}
+
+func isGCPTranslateLocationTailRecognized(tail string) bool {
+	switch tail {
+	case ":translateText",
+		":romanizeText",
+		":detectLanguage",
+		"/supportedLanguages",
+		":translateDocument",
+		":batchTranslateText",
+		":batchTranslateDocument",
+		"/glossaries",
+		"/datasets",
+		"/adaptiveMtDatasets",
+		"/models",
+		"/operations":
+		return true
+	}
+	return strings.HasPrefix(tail, "/glossaries/") ||
+		strings.HasPrefix(tail, "/datasets/") ||
+		strings.HasPrefix(tail, "/adaptiveMtDatasets/") ||
+		strings.HasPrefix(tail, "/models/") ||
+		strings.HasPrefix(tail, "/operations/")
 }
 
 func mapGCPTranslateRESTToMethod(r *http.Request, path string) (string, gcpTranslateRouteContext, bool, bool) {

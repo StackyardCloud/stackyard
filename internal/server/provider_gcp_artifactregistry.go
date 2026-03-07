@@ -10,7 +10,7 @@ import (
 
 func (s *Server) handleGCPArtifactRegistryRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !isGCPArtifactRegistryPath(path) {
+	if !isGCPArtifactRegistryPath(path, hasGCPArtifactRegistryHint(r)) {
 		return false
 	}
 
@@ -65,7 +65,17 @@ func (s *Server) handleGCPArtifactRegistryRouter(w http.ResponseWriter, r *http.
 	}
 }
 
-func isGCPArtifactRegistryPath(path string) bool {
+func hasGCPArtifactRegistryHint(r *http.Request) bool {
+	service := strings.ToLower(strings.TrimSpace(r.Header.Get("X-Stackyard-GCP-Service")))
+	switch service {
+	case "artifactregistry", "artifact-registry", "artifact_registry", "artifactregistry-apiv1", "artifactregistry_apiv1":
+		return true
+	}
+	ua := strings.ToLower(strings.TrimSpace(r.Header.Get("User-Agent")))
+	return strings.Contains(ua, "stackyard-artifactregistry-apiv1")
+}
+
+func isGCPArtifactRegistryPath(path string, includeHint bool) bool {
 	if !strings.HasPrefix(path, "/gcp/v1/projects/") {
 		return false
 	}
@@ -73,10 +83,10 @@ func isGCPArtifactRegistryPath(path string) bool {
 		return true
 	}
 	if _, _, ok := parseGCPArtifactRegistryRepositoriesCollectionPath(path); ok {
-		return true
+		return includeHint
 	}
 	if _, _, _, ok := parseGCPArtifactRegistryRepositoryPath(path); ok {
-		return true
+		return includeHint
 	}
 	if _, _, _, ok := parseGCPArtifactRegistryPackagesCollectionPath(path); ok {
 		return true
@@ -319,7 +329,7 @@ func parseGCPArtifactRegistryRepositoryPath(path string) (project, location, rep
 	project = strings.TrimSpace(parts[3])
 	location = strings.TrimSpace(parts[5])
 	repositoryID = strings.TrimSpace(parts[7])
-	if project == "" || location == "" || repositoryID == "" {
+	if project == "" || location == "" || repositoryID == "" || strings.Contains(repositoryID, ":") {
 		return "", "", "", false
 	}
 	return project, location, repositoryID, true

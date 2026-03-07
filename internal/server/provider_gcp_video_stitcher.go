@@ -15,11 +15,11 @@ import (
 const gcpVideoStitcherGRPCPathPrefix = "/gcp/google.cloud.video.stitcher.v1.VideoStitcherService/"
 
 var (
-	gcpVideoStitcherReferenceTime       = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	gcpVideoStitcherProjectPattern      = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,62}$`)
-	gcpVideoStitcherLocationPattern     = regexp.MustCompile(`^[a-z0-9-]{2,32}$`)
-	gcpVideoStitcherIDPattern           = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
-	gcpVideoStitcherOperationIDPattern  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$`)
+	gcpVideoStitcherReferenceTime      = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+	gcpVideoStitcherProjectPattern     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,62}$`)
+	gcpVideoStitcherLocationPattern    = regexp.MustCompile(`^[a-z0-9-]{2,32}$`)
+	gcpVideoStitcherIDPattern          = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+	gcpVideoStitcherOperationIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$`)
 )
 
 type gcpVideoStitcherRouteContext struct {
@@ -144,13 +144,28 @@ func isGCPVideoStitcherPath(path string, includeHint bool) bool {
 	if strings.HasPrefix(path, gcpVideoStitcherGRPCPathPrefix) {
 		return true
 	}
-	if _, _, _, ok := parseGCPVideoStitcherLocationTail(path); ok {
-		return true
+	if !includeHint {
+		return false
 	}
 	if _, _, _, ok := parseGCPProjectLocationPath(path); ok {
-		return includeHint
+		return true
 	}
-	return includeHint && strings.HasPrefix(path, "/gcp/v1/projects/")
+	_, _, tail, ok := parseGCPVideoStitcherLocationTail(path)
+	if !ok {
+		return strings.HasPrefix(path, "/gcp/v1/projects/")
+	}
+	parts := gcpVideoStitcherTailParts(tail)
+	if len(parts) == 0 {
+		return true
+	}
+	switch parts[0] {
+	case "cdnKeys", "slates", "liveConfigs", "vodConfigs", "vodSessions", "liveSessions":
+		return true
+	case "operations":
+		return true
+	default:
+		return true
+	}
 }
 
 func mapGCPVideoStitcherRESTToMethod(r *http.Request, path string) (string, gcpVideoStitcherRouteContext, bool, bool) {
@@ -1376,8 +1391,8 @@ func gcpVideoStitcherResolveCreateID(body, resource map[string]any, query url.Va
 func gcpVideoStitcherLocationFixture(project, location string) map[string]any {
 	name := fmt.Sprintf("projects/%s/locations/%s", project, location)
 	return map[string]any{
-		"name":       name,
-		"locationId": location,
+		"name":        name,
+		"locationId":  location,
 		"displayName": strings.ToUpper(strings.ReplaceAll(location, "-", " ")),
 		"metadata": map[string]any{
 			"service": "video-stitcher",

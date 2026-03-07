@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var gcpDocumentAISupportedLocations = map[string]struct{}{
+	"us": {},
+	"eu": {},
+}
+
 func (s *Server) handleGCPDocumentAIRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
 	if !isGCPDocumentAIPath(path) {
@@ -127,38 +132,41 @@ func isGCPDocumentAIPath(path string) bool {
 	if !strings.HasPrefix(path, "/gcp/v1/projects/") {
 		return false
 	}
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) == 6 &&
-		parts[0] == "gcp" &&
-		parts[1] == "v1" &&
-		parts[2] == "projects" &&
-		parts[4] == "locations" &&
-		strings.TrimSpace(parts[3]) != "" &&
-		strings.TrimSpace(parts[5]) != "" &&
-		!strings.Contains(parts[5], ":") &&
-		!strings.Contains(strings.ToLower(parts[5]), "%3a") {
-		return true
+
+	if _, _, tail, ok := parseGCPDocumentAILocationTail(path); ok {
+		if len(tail) == 0 {
+			return true
+		}
+		switch tail[0] {
+		case "locations", "processorTypes", "processors", "operations":
+			return true
+		default:
+			return false
+		}
 	}
 
-	return strings.Contains(path, "/locations/") &&
-		(strings.Contains(path, "/processorTypes") ||
-			strings.Contains(path, "/processors") ||
-			strings.Contains(path, "/processorVersions") ||
-			strings.Contains(path, "/evaluations") ||
-			strings.Contains(path, "/operations") ||
-			strings.Contains(path, ":process") ||
-			strings.Contains(path, ":batchProcess") ||
-			strings.Contains(path, ":fetchProcessorTypes") ||
-			strings.Contains(path, ":train") ||
-			strings.Contains(path, ":deploy") ||
-			strings.Contains(path, ":undeploy") ||
-			strings.Contains(path, ":enable") ||
-			strings.Contains(path, ":disable") ||
-			strings.Contains(path, ":setDefaultProcessorVersion") ||
-			strings.Contains(path, ":reviewDocument") ||
-			strings.Contains(path, ":evaluateProcessorVersion") ||
-			strings.Contains(path, ":cancel") ||
-			strings.HasSuffix(path, "/locations"))
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) != 6 ||
+		parts[0] != "gcp" ||
+		parts[1] != "v1" ||
+		parts[2] != "projects" ||
+		parts[4] != "locations" ||
+		strings.TrimSpace(parts[3]) == "" {
+		return false
+	}
+	location, action, hasAction := strings.Cut(normalizeGCPDocumentAIActionSegment(parts[5]), ":")
+	if !hasAction || strings.TrimSpace(location) == "" {
+		return false
+	}
+	if !isGCPDocumentAISupportedLocation(location) {
+		return false
+	}
+	return action == "fetchProcessorTypes"
+}
+
+func isGCPDocumentAISupportedLocation(location string) bool {
+	_, ok := gcpDocumentAISupportedLocations[strings.ToLower(strings.TrimSpace(location))]
+	return ok
 }
 
 func handleGCPDocumentAIGetLocation(w http.ResponseWriter, path string) bool {
@@ -213,9 +221,10 @@ func handleGCPDocumentAIFetchProcessorTypes(w http.ResponseWriter, path string) 
 	project := strings.TrimSpace(parts[3])
 	locationAction := normalizeGCPDocumentAIActionSegment(parts[5])
 	location, action, hasAction := strings.Cut(locationAction, ":")
-	if project == "" || !hasAction || strings.TrimSpace(location) == "" || action != "fetchProcessorTypes" {
+	if project == "" || !hasAction || strings.TrimSpace(location) == "" || !isGCPDocumentAISupportedLocation(location) || action != "fetchProcessorTypes" {
 		return false
 	}
+	location = strings.ToLower(strings.TrimSpace(location))
 	respondJSON(w, http.StatusOK, map[string]any{
 		"processorTypes": []any{gcpDocumentAIProcessorType(project, location, "FORM_PARSER_PROCESSOR")},
 	})
@@ -531,8 +540,8 @@ func parseGCPDocumentAILocationTail(path string) (project, location string, tail
 		return "", "", nil, false
 	}
 	project = strings.TrimSpace(parts[3])
-	location = strings.TrimSpace(parts[5])
-	if project == "" || location == "" || strings.Contains(location, ":") {
+	location = strings.ToLower(strings.TrimSpace(parts[5]))
+	if project == "" || location == "" || strings.Contains(location, ":") || !isGCPDocumentAISupportedLocation(location) {
 		return "", "", nil, false
 	}
 	if len(parts) == 6 {

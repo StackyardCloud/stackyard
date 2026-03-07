@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+var gcpChronicleSupportedLocations = map[string]struct{}{
+	"us": {},
+	"eu": {},
+}
+
 func (s *Server) handleGCPChronicleRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
 	if strings.HasPrefix(path, "/gcp/google.cloud.chronicle.v1.") {
@@ -92,11 +97,14 @@ func isGCPChroniclePath(path string) bool {
 	if !strings.HasPrefix(path, "/gcp/v1/projects/") || !strings.Contains(path, "/locations/") {
 		return false
 	}
-	instanceIndex := strings.Index(path, "/instances/")
-	if instanceIndex < 0 {
+	_, _, _, tail, ok := parseGCPChronicleInstanceTail(path)
+	if !ok {
 		return false
 	}
-	afterInstance := path[instanceIndex+len("/instances/"):]
+	if len(tail) == 0 {
+		return true
+	}
+	afterInstance := strings.Join(tail, "/")
 	if afterInstance == "" {
 		return false
 	}
@@ -343,6 +351,9 @@ func parseGCPChronicleInstanceTail(path string) (project, location, instance str
 	location = strings.TrimSpace(parts[5])
 	instance = strings.TrimSpace(parts[7])
 	if project == "" || location == "" || instance == "" {
+		return "", "", "", nil, false
+	}
+	if _, ok := gcpChronicleSupportedLocations[strings.ToLower(location)]; !ok {
 		return "", "", "", nil, false
 	}
 	return project, location, instance, parts[8:], true

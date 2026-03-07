@@ -18,6 +18,7 @@ func (s *Server) handleGCPSecurityPrivateCARouter(w http.ResponseWriter, r *http
 	}
 
 	path := normalizeGCPSecurityPrivateCAPath(rawRequestPath(r))
+	hasHint := hasGCPSecurityPrivateCAHint(r)
 	if isGCPSecurityPrivateCALocationRequest(r, path) {
 		if r.Method != http.MethodGet {
 			return false
@@ -31,7 +32,7 @@ func (s *Server) handleGCPSecurityPrivateCARouter(w http.ResponseWriter, r *http
 		return false
 	}
 
-	if !isGCPSecurityPrivateCAPath(path) {
+	if !isGCPSecurityPrivateCAPathWithHint(path, hasHint) {
 		return false
 	}
 
@@ -187,6 +188,10 @@ func isGCPSecurityPrivateCALocationRequest(r *http.Request, path string) bool {
 }
 
 func isGCPSecurityPrivateCAPath(path string) bool {
+	return isGCPSecurityPrivateCAPathWithHint(path, false)
+}
+
+func isGCPSecurityPrivateCAPathWithHint(path string, includeHint bool) bool {
 	if strings.HasPrefix(path, "/gcp/google.cloud.security.privateca.v1.CertificateAuthorityService/") {
 		return true
 	}
@@ -237,13 +242,42 @@ func isGCPSecurityPrivateCAPath(path string) bool {
 		return true
 	}
 	if _, _, _, ok := parseGCPSecurityPrivateCAOperationsCollectionPath(path); ok {
-		return true
+		return includeHint
 	}
-	if _, _, _, _, ok := parseGCPSecurityPrivateCAOperationPath(path); ok {
-		return true
+	if _, _, operationID, _, ok := parseGCPSecurityPrivateCAOperationPath(path); ok {
+		return includeHint || isGCPSecurityPrivateCAOperationID(operationID)
 	}
 	if _, _, ok := parseGCPSecurityPrivateCAIAMActionPath(path); ok {
 		return true
+	}
+	return false
+}
+
+func isGCPSecurityPrivateCAOperationID(operationID string) bool {
+	operationID = strings.TrimSpace(strings.ToLower(operationID))
+	if operationID == "" {
+		return false
+	}
+	privateCAPrefixes := []string{
+		"create-ca-pool-",
+		"update-ca-pool-",
+		"delete-ca-pool-",
+		"create-certificate-authority-",
+		"update-certificate-authority-",
+		"delete-certificate-authority-",
+		"activate-certificate-authority-",
+		"enable-certificate-authority-",
+		"disable-certificate-authority-",
+		"undelete-certificate-authority-",
+		"update-certificate-revocation-list-",
+		"create-certificate-template-",
+		"update-certificate-template-",
+		"delete-certificate-template-",
+	}
+	for _, prefix := range privateCAPrefixes {
+		if strings.HasPrefix(operationID, prefix) {
+			return true
+		}
 	}
 	return false
 }
@@ -1203,15 +1237,24 @@ func parseGCPSecurityPrivateCAIAMActionPath(path string) (resource, action strin
 	if !found || strings.TrimSpace(resource) == "" {
 		return "", "", false
 	}
-	if !strings.HasPrefix(resource, "projects/") {
+	resource = strings.TrimSpace(resource)
+	if !strings.HasPrefix(resource, "projects/") || !isGCPSecurityPrivateCAIAMResource(resource) {
 		return "", "", false
 	}
 	switch action {
 	case "getIamPolicy", "setIamPolicy", "testIamPermissions":
-		return strings.TrimSpace(resource), action, true
+		return resource, action, true
 	default:
 		return "", "", false
 	}
+}
+
+func isGCPSecurityPrivateCAIAMResource(resource string) bool {
+	return strings.Contains(resource, "/caPools/") ||
+		strings.Contains(resource, "/certificateAuthorities/") ||
+		strings.Contains(resource, "/certificates/") ||
+		strings.Contains(resource, "/certificateRevocationLists/") ||
+		strings.Contains(resource, "/certificateTemplates/")
 }
 
 func parseGCPSecurityPrivateCAResourceAction(segment string) (resourceID, action string, ok bool) {

@@ -118,10 +118,6 @@ func isGCPCertificateManagerPath(path string) bool {
 		"/dnsAuthorizations",
 		"/certificateIssuanceConfigs",
 		"/trustConfigs",
-		"/operations",
-		":setIamPolicy",
-		":getIamPolicy",
-		":testIamPermissions",
 	}
 	for _, marker := range markers {
 		if strings.Contains(path, marker) {

@@ -126,6 +126,9 @@ func isGCPChatPath(path string) bool {
 			strings.Contains(normalized, "/threadReadState") ||
 			strings.Contains(normalized, "/spaceNotificationSetting")
 	}
+	if !strings.HasPrefix(normalized, "/gcp/v1/") {
+		return false
+	}
 	return strings.Contains(normalized, "/messages") ||
 		strings.Contains(normalized, "/members") ||
 		strings.Contains(normalized, "/reactions") ||

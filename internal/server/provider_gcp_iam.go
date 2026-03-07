@@ -82,13 +82,16 @@ func isGCPIAMPath(path string) bool {
 	if strings.HasPrefix(path, "/gcp/google.iam.v1.IAMPolicy/") {
 		return true
 	}
-	if !strings.HasPrefix(path, "/gcp/v1/") {
+	resource, action, ok := parseGCPIAMActionPath(path)
+	if !ok {
 		return false
 	}
-
-	return strings.Contains(path, ":getIamPolicy") ||
-		strings.Contains(path, ":setIamPolicy") ||
-		strings.Contains(path, ":testIamPermissions")
+	switch action {
+	case "getIamPolicy", "setIamPolicy", "testIamPermissions":
+		return isGCPIAMCoreResource(resource)
+	default:
+		return false
+	}
 }
 
 func parseGCPIAMActionPath(path string) (resource, action string, ok bool) {
@@ -132,6 +135,23 @@ func normalizeGCPIAMActionSegment(raw string) string {
 	segment = strings.ReplaceAll(segment, "%3A", ":")
 	segment = strings.ReplaceAll(segment, "%3a", ":")
 	return segment
+}
+
+func isGCPIAMCoreResource(resource string) bool {
+	resource = strings.Trim(resource, "/")
+	parts := strings.Split(resource, "/")
+	if len(parts) != 2 {
+		return false
+	}
+	if strings.TrimSpace(parts[1]) == "" {
+		return false
+	}
+	switch parts[0] {
+	case "projects", "folders", "organizations":
+		return true
+	default:
+		return false
+	}
 }
 
 func gcpIAMPolicy(resource string) map[string]any {
