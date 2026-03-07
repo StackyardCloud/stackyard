@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  shopping-merchant-inventories-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/shopping-merchant-inventories-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_MERCHANT_INVENTORIES_ACCOUNT_ID=123456
+      - STACKYARD_GCP_MERCHANT_INVENTORIES_PRODUCT_ID=sku-1001
+      - STACKYARD_GCP_MERCHANT_INVENTORIES_STORE_CODE=store-nyc
+      - STACKYARD_GCP_MERCHANT_INVENTORIES_REGION=us-east1

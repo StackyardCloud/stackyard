@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  config-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/config-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_CONFIG_LOCATION=us-central1
+      - STACKYARD_GCP_CONFIG_DEPLOYMENT_ID=platform-foundation
+      - STACKYARD_GCP_CONFIG_PREVIEW_ID=preview-1
+      - STACKYARD_GCP_CONFIG_TERRAFORM_VERSION_ID=1-6-6
+      - STACKYARD_GCP_CONFIG_RESOURCE_CHANGE_ID=resource-change-1
+      - STACKYARD_GCP_CONFIG_RESOURCE_DRIFT_ID=resource-drift-1
+      - STACKYARD_GCP_CONFIG_SERVICE_ACCOUNT=projects/stackyard/serviceAccounts/stackyard@stackyard.iam.gserviceaccount.com

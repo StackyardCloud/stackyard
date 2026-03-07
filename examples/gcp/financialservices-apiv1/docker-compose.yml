@@ -1,0 +1,31 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  financialservices-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/financialservices-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_FINANCIALSERVICES_LOCATION=us-central1
+      - STACKYARD_GCP_FINANCIALSERVICES_INSTANCE_ID=aml-instance
+      - STACKYARD_GCP_FINANCIALSERVICES_DATASET_ID=dataset-1
+      - STACKYARD_GCP_FINANCIALSERVICES_MODEL_ID=model-1
+      - STACKYARD_GCP_FINANCIALSERVICES_ENGINE_CONFIG_ID=engine-config-1
+      - STACKYARD_GCP_FINANCIALSERVICES_ENGINE_VERSION_ID=engine-version-1
+      - STACKYARD_GCP_FINANCIALSERVICES_PREDICTION_RESULT_ID=prediction-1
+      - STACKYARD_GCP_FINANCIALSERVICES_BACKTEST_RESULT_ID=backtest-1
+      - STACKYARD_GCP_FINANCIALSERVICES_OPERATION_ID=op-1

@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  iam-credentials-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/iam-credentials-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_IAM_CREDENTIALS_SERVICE_ACCOUNT=stackyard@example.iam.gserviceaccount.com
+      - STACKYARD_GCP_IAM_CREDENTIALS_AUDIENCE=https://example.com
+      - STACKYARD_GCP_IAM_CREDENTIALS_SCOPE=https://www.googleapis.com/auth/cloud-platform

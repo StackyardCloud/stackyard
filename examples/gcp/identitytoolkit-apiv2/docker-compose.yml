@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  identitytoolkit-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/identitytoolkit-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566

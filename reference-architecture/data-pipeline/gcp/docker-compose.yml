@@ -1,0 +1,37 @@
+services:
+  stackyard:
+    build:
+      context: ../../../../
+      dockerfile: Dockerfile
+    container_name: stackyard-data-pipeline-gcp
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  backend:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - APP_ADDR=:8080
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_DATA_LAKE_BUCKET=stackyard-ra-data-lake-gcp
+      - STACKYARD_AUDIT_BUCKET=stackyard-ra-audit-gcp
+    ports:
+      - "8181:8080"
+
+  frontend:
+    build:
+      context: ./
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8180:80"

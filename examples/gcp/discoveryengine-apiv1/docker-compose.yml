@@ -1,0 +1,30 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  discoveryengine-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/discoveryengine-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=global
+      - STACKYARD_GCP_DISCOVERYENGINE_COLLECTION_ID=default_collection
+      - STACKYARD_GCP_DISCOVERYENGINE_ENGINE_ID=orders-engine
+      - STACKYARD_GCP_DISCOVERYENGINE_DATASTORE_ID=orders-store
+      - STACKYARD_GCP_DISCOVERYENGINE_SERVING_CONFIG_ID=default_serving_config
+      - STACKYARD_GCP_DISCOVERYENGINE_CONVERSATION_ID=conv-1
+      - STACKYARD_GCP_DISCOVERYENGINE_SESSION_ID=session-1
+      - STACKYARD_GCP_DISCOVERYENGINE_OPERATION_ID=op-1

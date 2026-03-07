@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+
+  appsync:
+    build:
+      context: ../../../..
+      dockerfile: examples/aws/appsync/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - AWS_REGION=us-east-1
+      - STACKYARD_APPSYNC_API_ID=api-00000001
+      - STACKYARD_APPSYNC_API_ARN=arn:aws:appsync:us-east-1:123456789012:apis/api-00000001

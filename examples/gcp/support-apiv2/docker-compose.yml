@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  support-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/support-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PARENT=projects/stackyard
+      - STACKYARD_GCP_CASE_CLASSIFICATION=technical-issue/compute-engine

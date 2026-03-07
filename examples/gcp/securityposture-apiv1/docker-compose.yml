@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  securityposture-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/securityposture-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_ORGANIZATION_ID=123456
+      - STACKYARD_GCP_LOCATION=global
+      - STACKYARD_GCP_SECURITY_POSTURE_ID=posture-1
+      - STACKYARD_GCP_SECURITY_POSTURE_DEPLOYMENT_ID=deployment-1
+      - STACKYARD_GCP_SECURITY_POSTURE_TEMPLATE_ID=template-1

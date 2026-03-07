@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  spanner-admin-database-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/spanner-admin-database-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_SPANNER_INSTANCE=stackyard-instance
+      - STACKYARD_GCP_SPANNER_DATABASE=stackyard-db
+      - STACKYARD_GCP_SPANNER_BACKUP=backup-1
+      - STACKYARD_GCP_SPANNER_BACKUP_SCHEDULE=daily-full

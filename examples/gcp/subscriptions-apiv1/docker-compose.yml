@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  subscriptions-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/subscriptions-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_SUBSCRIPTION=subscriptions/team-subscription
+      - STACKYARD_GCP_EVENT_TYPE=google.workspace.chat.message.v1.created
+      - STACKYARD_GCP_TARGET_RESOURCE=//chat.googleapis.com/spaces/AAAA123
+      - STACKYARD_GCP_PUBSUB_TOPIC=projects/stackyard/topics/workspace-events
+      - STACKYARD_GCP_SUBSCRIPTION_FILTER=event_types:"google.workspace.chat.message.v1.created"

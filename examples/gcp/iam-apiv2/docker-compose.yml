@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  iam-apiv2:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/iam-apiv2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_IAMV2_ATTACHMENT_POINT=cloudresourcemanager.googleapis.com%2Fprojects%2Fstackyard
+      - STACKYARD_GCP_IAMV2_POLICY_ID=deny-read-access
+      - STACKYARD_GCP_IAMV2_OPERATION_NAME=operations/op-1

@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  maps-fleetengine-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/maps-fleetengine-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_FLEETENGINE_PROVIDER_ID=stackyard
+      - STACKYARD_GCP_FLEETENGINE_TRIP_ID=trip-1
+      - STACKYARD_GCP_FLEETENGINE_VEHICLE_ID=vehicle-1

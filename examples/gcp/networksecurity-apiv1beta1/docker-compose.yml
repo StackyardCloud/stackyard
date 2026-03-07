@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  networksecurity-apiv1beta1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/networksecurity-apiv1beta1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_NETWORKSECURITY_AUTHZ_POLICY_ID=authz-a
+      - STACKYARD_GCP_NETWORKSECURITY_CLIENT_TLS_POLICY_ID=clienttls-a
+      - STACKYARD_GCP_NETWORKSECURITY_SERVER_TLS_POLICY_ID=servertls-a

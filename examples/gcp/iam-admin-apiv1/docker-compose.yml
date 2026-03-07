@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  iam-admin-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/iam-admin-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_GRPC_ENDPOINT=stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_IAM_ADMIN_SERVICE_ACCOUNT_EMAIL=stackyard@example.iam.gserviceaccount.com
+      - STACKYARD_GCP_IAM_ADMIN_SERVICE_ACCOUNT_UNIQUE_ID=123456789012345678901
+      - STACKYARD_GCP_IAM_ADMIN_SERVICE_ACCOUNT_ID=stackyard-sa
+      - STACKYARD_GCP_IAM_ADMIN_KEY_ID=key-1
+      - STACKYARD_GCP_IAM_ADMIN_ROLE_ID=customViewer
+      - STACKYARD_GCP_IAM_ADMIN_FULL_RESOURCE_NAME=//cloudresourcemanager.googleapis.com/projects/stackyard

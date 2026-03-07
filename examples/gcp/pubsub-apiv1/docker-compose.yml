@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  pubsub-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/pubsub-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_PUBSUB_TOPIC_ID=orders
+      - STACKYARD_GCP_PUBSUB_SUBSCRIPTION_ID=orders-sub
+      - STACKYARD_GCP_PUBSUB_SNAPSHOT_ID=orders-snap
+      - STACKYARD_GCP_PUBSUB_SCHEMA_ID=orders-schema

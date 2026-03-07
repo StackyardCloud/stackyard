@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  storage-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/storage-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STORAGE_EMULATOR_HOST=http://stackyard:4566/gcp
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_STORAGE_BUCKET=stackyard-storage-bucket
+      - STACKYARD_GCP_STORAGE_OBJECT=orders/2026-03-06.json

@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  shell-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/shell-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_SHELL_ENV=users/me/environments/default
+      - STACKYARD_GCP_SHELL_PUBLIC_KEY=ssh-rsa c3RhY2t5YXJkLW5ldy1rZXk= stackyard@example.com

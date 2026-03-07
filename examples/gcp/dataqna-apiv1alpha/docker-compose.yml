@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  dataqna-apiv1alpha:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/dataqna-apiv1alpha/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_PROJECT_ID=stackyard
+      - STACKYARD_GCP_LOCATION=us-central1
+      - STACKYARD_GCP_DATAQNA_QUESTION_ID=question-1
+      - STACKYARD_GCP_DATAQNA_DATASET_ID=analytics
+      - STACKYARD_GCP_DATAQNA_TABLE_ID=orders

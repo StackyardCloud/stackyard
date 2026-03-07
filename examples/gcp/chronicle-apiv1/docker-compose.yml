@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    container_name: stackyard
+    ports:
+      - "4566:4566"
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,gcp
+      - STACKYARD_GCP_AUTH_MODE=emulator
+
+  chronicle-apiv1:
+    build:
+      context: ../../../..
+      dockerfile: examples/gcp/chronicle-apiv1/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_GCP_CHRONICLE_INSTANCE=projects/stackyard/locations/us/instances/default
+      - STACKYARD_GCP_CHRONICLE_DATA_ACCESS_LABEL=projects/stackyard/locations/us/instances/default/dataAccessLabels/team-label
+      - STACKYARD_GCP_CHRONICLE_DATA_ACCESS_SCOPE=projects/stackyard/locations/us/instances/default/dataAccessScopes/team-scope
+      - STACKYARD_GCP_CHRONICLE_REFERENCE_LIST=projects/stackyard/locations/us/instances/default/referenceLists/team-reference-list
+      - STACKYARD_GCP_CHRONICLE_RULE=projects/stackyard/locations/us/instances/default/rules/team-rule
+      - STACKYARD_GCP_CHRONICLE_RULE_DEPLOYMENT=projects/stackyard/locations/us/instances/default/rules/team-rule/deployment
+      - STACKYARD_GCP_CHRONICLE_RETROHUNT=projects/stackyard/locations/us/instances/default/rules/team-rule/retrohunts/team-retrohunt
+      - STACKYARD_GCP_CHRONICLE_WATCHLIST=projects/stackyard/locations/us/instances/default/watchlists/high-risk-entities

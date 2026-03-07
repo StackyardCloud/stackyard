@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stackyard Docs | GCP</title>
+    <meta name="description" content="GCP-focused documentation area for Stackyard local cloud emulation." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="../index.html">
+          <span class="brand-mark">S</span>
+          <span>Stackyard Docs</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="../index.html">Overview</a>
+          <a href="../aws/index.html">AWS</a>
+          <a href="../aws/services/index.html">AWS Services</a>
+          <a href="./index.html" aria-current="page">GCP</a>
+          <a href="./services/index.html">GCP Services</a>
+          <a href="../tree/index.html">Service Tree</a>
+          <a href="../../gcp.html">Legacy GCP API</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="landing-main">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">Docs / GCP</nav>
+
+      <section class="hero reveal">
+        <h1>GCP on Stackyard</h1>
+        <p>
+          Stackyard emulates Google Cloud-compatible APIs for local integration testing. Use this area to explore
+          supported GCP services, staged implementation plans, and contract capability coverage.
+        </p>
+        <div class="hero-meta">
+          <span class="pill accent">REST + gRPC-oriented emulation</span>
+          <span class="pill neutral">Service-level capability tracking</span>
+          <span class="pill warn">SDK example workflows</span>
+        </div>
+      </section>
+
+      <section class="summary-grid reveal">
+        <article class="summary-card">
+          <h2>Service Catalog</h2>
+          <p>Browse supported GCP services with search, category filters, and links to staged implementation plans.</p>
+          <p><a class="btn primary" href="./services/index.html">Go To GCP Services</a></p>
+        </article>
+
+        <article class="summary-card">
+          <h2>Capability Coverage</h2>
+          <p>
+            Contract gates (validation, fixtures, negative tests):
+            <strong><span data-gcp-contract-strict>0</span> / <span data-gcp-provider-services>0</span></strong>
+          </p>
+          <p>
+            I/O contract gates (input/output implementation + tests):
+            <strong><span data-gcp-io-strict>0</span> / <span data-gcp-provider-services>0</span></strong>
+          </p>
+        </article>
+
+        <article class="summary-card">
+          <h2>Examples & Plans</h2>
+          <p>
+            <strong><span data-gcp-examples>0</span></strong> runnable SDK examples and
+            <strong><span data-gcp-plans>0</span></strong> linked staged plan docs in the web catalog.
+          </p>
+          <p>
+            Catalog currently lists <strong><span data-gcp-services-listed>0</span></strong> GCP service entries.
+          </p>
+        </article>
+
+        <article class="summary-card">
+          <h2>Legacy API Surface</h2>
+          <p>
+            Open the legacy GCP API surface page for anchor-based service navigation and per-service capability detail.
+          </p>
+          <p><a class="btn ghost" href="../../gcp.html">Open Legacy GCP API</a></p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      GCP docs area rooted at <code>docs/web/gcp/</code>.
+    </footer>
+
+    <script src="../assets/gcp-catalog.js" defer></script>
+    <script src="../assets/gcp-overview.js" defer></script>
+  </body>
+</html>
