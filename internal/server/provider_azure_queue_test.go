@@ -109,4 +109,10 @@ func TestAzureQueueValidation(t *testing.T) {
 		t.Fatalf("expected 400 invalid numofmessages, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
 	_ = providerContractBody(t, resp)
+
+	resp = providerContractRequest(t, ts, http.MethodPost, "/azure/queue/devstoreaccount1/work-items/messages/dequeue?numofmessages=33", nil, authHeaders)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 oversize numofmessages, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	_ = providerContractBody(t, resp)
 }
