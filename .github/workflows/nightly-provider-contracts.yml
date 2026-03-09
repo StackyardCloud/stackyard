@@ -1,0 +1,55 @@
+name: Nightly Provider Contracts
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-provider-contracts
+  cancel-in-progress: false
+
+jobs:
+  provider-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: aws
+            target: aws-provider-contracts-nightly
+          - provider: azure
+            target: azure-provider-contracts-nightly
+          - provider: gcp
+            target: gcp-provider-contracts-nightly
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Install AWS CLI
+        if: matrix.provider == 'aws'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Run nightly provider contract suite
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          make "${{ matrix.target }}" 2>&1 | tee "reports/${{ matrix.provider }}-provider-contracts.log"
+
+      - name: Upload provider contract logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-provider-contracts-${{ matrix.provider }}
+          path: reports/${{ matrix.provider }}-provider-contracts.log

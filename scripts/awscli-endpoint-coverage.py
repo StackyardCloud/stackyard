@@ -48666,11 +48666,24 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Seconds to wait between Stackyard health checks.",
     )
+    parser.add_argument(
+        "--list-services",
+        action="store_true",
+        help="List discovered AWS services and exit.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+
+    if args.list_services:
+        services = sorted(SERVICE_CONFIG)
+        for service in services:
+            cli_name = str(SERVICE_CONFIG[service]["cli"])
+            print(f"{service}\t{cli_name}")
+        print(f"total: {len(services)}")
+        return 0
 
     include_services = [normalize_service_name(s) for s in parse_csv_args(args.include_services)]
     exclude_services = [normalize_service_name(s) for s in parse_csv_args(args.exclude_services)]

@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  search-management-resource-manager-private-endpoint-connections-2025-05-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/search-management/search-management-resource-manager-private-endpoint-connections-2025-05-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_SEARCH_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_SEARCH_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-search
+      - STACKYARD_AZURE_SEARCH_SERVICE_NAME=my-search
+      - STACKYARD_AZURE_PRIVATE_ENDPOINT_CONNECTION_NAME=connectionA

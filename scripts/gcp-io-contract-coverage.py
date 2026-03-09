@@ -1056,6 +1056,14 @@ def print_text_report(services: list[ServiceIOCoverage], verbose: bool) -> None:
             )
 
 
+def write_report_json(path: str, payload: dict[str, object]) -> None:
+    if not path:
+        return
+    report_path = Path(path)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze GCP input/output contract coverage.")
     parser.add_argument(
@@ -1069,18 +1077,48 @@ def main() -> int:
         help="Fail if the normalized exact service is not discovered (aliases supported, e.g. rma).",
     )
     parser.add_argument("--format", choices=("text", "json"), default="text", help="Output format.")
+    parser.add_argument("--json", action="store_true", help="Alias for --format json.")
     parser.add_argument("--verbose", action="store_true", help="Include per-service detail in text output.")
     parser.add_argument(
         "--fail-on",
         default="",
         help="Comma-separated fail gates: input_impl,output_impl,input_tests,output_tests,strict,any",
     )
+    parser.add_argument(
+        "--report-json",
+        default="",
+        help="Optional path to write JSON output payload.",
+    )
+    parser.add_argument(
+        "--list-services",
+        action="store_true",
+        help="List discovered services and exit.",
+    )
     args = parser.parse_args()
+    if args.json:
+        args.format = "json"
 
     service_selector = normalize_service_selector(args.service)
     required_service = normalize_service_selector(args.require_service) if args.require_service else ""
     matched_services: list[str] = []
     sources = list_service_sources()
+
+    if args.list_services:
+        discovered = sorted(sources)
+        if args.format == "json":
+            payload = {
+                "provider": "gcp",
+                "mode": "io_contract",
+                "services": discovered,
+                "count": len(discovered),
+            }
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            write_report_json(args.report_json, payload)
+        else:
+            for service in discovered:
+                print(service)
+            print(f"total: {len(discovered)}")
+        return 0
 
     services: list[ServiceIOCoverage] = []
     for service, source_path in sorted(sources.items()):
@@ -1097,22 +1135,28 @@ def main() -> int:
         print(f"required service not matched by selector: {required_service}", file=sys.stderr)
         return 2
 
+    payload = {
+        "provider": "gcp",
+        "mode": "io_contract",
+        "service_selector": service_selector,
+        "required_service": required_service,
+        "services": [asdict(s) for s in services],
+        "summary": {
+            "total": len(services),
+            "input_validation_impl": sum(1 for s in services if s.input_validation_impl),
+            "output_fixture_impl": sum(1 for s in services if s.output_fixture_impl),
+            "input_validation_tests": sum(1 for s in services if s.input_validation_tests),
+            "output_shape_tests": sum(1 for s in services if s.output_shape_tests),
+            "strict_all_four": sum(1 for s in services if s.strict),
+        },
+    }
+
     if args.format == "json":
-        payload = {
-            "services": [asdict(s) for s in services],
-            "summary": {
-                "total": len(services),
-                "input_validation_impl": sum(1 for s in services if s.input_validation_impl),
-                "output_fixture_impl": sum(1 for s in services if s.output_fixture_impl),
-                "input_validation_tests": sum(1 for s in services if s.input_validation_tests),
-                "output_shape_tests": sum(1 for s in services if s.output_shape_tests),
-                "strict_all_four": sum(1 for s in services if s.strict),
-            },
-        }
         json.dump(payload, sys.stdout, indent=2)
         sys.stdout.write("\n")
     else:
         print_text_report(services, verbose=args.verbose)
+    write_report_json(args.report_json, payload)
 
     if should_fail(services, parse_fail_on(args.fail_on)):
         return 1

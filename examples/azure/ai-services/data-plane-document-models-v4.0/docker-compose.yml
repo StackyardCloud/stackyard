@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  ai-services-data-plane-document-models-v4-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/data-plane-document-models-v4.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_AISERVICES_MODEL_ID=custom-model
+      - STACKYARD_AZURE_AISERVICES_TARGET_MODEL_ID=custom-model-copy
+      - STACKYARD_AZURE_AISERVICES_RESULT_ID=result-1
+      - STACKYARD_AZURE_AISERVICES_BATCH_RESULT_ID=batch-result-1
+      - STACKYARD_AZURE_AISERVICES_FIGURE_ID=1.1

@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azure-bot-service-4-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-bot-service/bot-service-4.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_BOT_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_BOT_ID=bot-1
+      - STACKYARD_AZURE_BOT_USER_ID=user-1

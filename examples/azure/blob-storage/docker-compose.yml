@@ -1,0 +1,21 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azure-blob-storage:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/blob-storage/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_STORAGE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_STORAGE_CONTAINER=ingress
+      - STACKYARD_AZURE_STORAGE_BLOB=orders/2026-03-07.json

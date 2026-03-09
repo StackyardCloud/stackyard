@@ -298,9 +298,9 @@ func handleGCPShoppingMerchantNotificationsGetHealth(w http.ResponseWriter, path
 	}
 	name := fmt.Sprintf("accounts/%s/notificationsubscriptions/%s", account, subscriptionID)
 	respondJSON(w, http.StatusOK, map[string]any{
-		"name":                                  name,
-		"acknowledgedMessagesCount":             "42",
-		"undeliveredMessagesCount":              "3",
+		"name":                                   name,
+		"acknowledgedMessagesCount":              "42",
+		"undeliveredMessagesCount":               "3",
 		"oldestUnacknowledgedMessageWaitingTime": "3600",
 	})
 	return true
@@ -568,9 +568,9 @@ func gcpShoppingMerchantNotificationsSubscriptionIDFor(event int32, allManaged b
 
 func gcpShoppingMerchantNotificationsSubscriptionFixture(account, subscriptionID string, event int32, callbackURI string, allManaged bool, targetAccount string) map[string]any {
 	out := map[string]any{
-		"name":          fmt.Sprintf("accounts/%s/notificationsubscriptions/%s", account, subscriptionID),
+		"name":            fmt.Sprintf("accounts/%s/notificationsubscriptions/%s", account, subscriptionID),
 		"registeredEvent": event,
-		"callBackUri":   callbackURI,
+		"callBackUri":     callbackURI,
 	}
 	if allManaged {
 		out["allManagedAccounts"] = true

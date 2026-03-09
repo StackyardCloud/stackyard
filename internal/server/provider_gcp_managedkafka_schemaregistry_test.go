@@ -123,4 +123,3 @@ func TestGCPManagedkafkaSchemaregistryRouter_OutputShapeContractProbe(t *testing
 		t.Fatalf("expected typed name field in contract probe response, got %#v", body["name"])
 	}
 }
-
