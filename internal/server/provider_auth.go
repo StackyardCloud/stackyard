@@ -3,12 +3,8 @@ package server
 import (
 	"net/http"
 	"strings"
-)
 
-const (
-	defaultGCPAuthMode   = "emulator"
-	defaultAzureAuthMode = "shared_key_or_sas"
-	defaultOCIAuthMode   = "signature"
+	"github.com/stackyard/stackyard/internal/providerconfig"
 )
 
 type awsRequestAuthValidator interface {
@@ -123,36 +119,27 @@ func newProviderAuthValidators(cfg Config) map[string]providerRequestAuthValidat
 }
 
 func normalizeGCPAuthMode(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", defaultGCPAuthMode:
-		return defaultGCPAuthMode
-	case "bearer_tolerant", "bearer_required":
-		return strings.ToLower(strings.TrimSpace(raw))
-	default:
-		return defaultGCPAuthMode
+	mode, ok := providerconfig.NormalizeGCPAuthMode(raw)
+	if !ok {
+		return providerconfig.DefaultGCPAuthMode
 	}
+	return mode
 }
 
 func normalizeAzureAuthMode(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", defaultAzureAuthMode:
-		return defaultAzureAuthMode
-	case "shared_key", "sas", "disabled":
-		return strings.ToLower(strings.TrimSpace(raw))
-	default:
-		return defaultAzureAuthMode
+	mode, ok := providerconfig.NormalizeAzureAuthMode(raw)
+	if !ok {
+		return providerconfig.DefaultAzureAuthMode
 	}
+	return mode
 }
 
 func normalizeOCIAuthMode(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", defaultOCIAuthMode:
-		return defaultOCIAuthMode
-	case "disabled":
-		return "disabled"
-	default:
-		return defaultOCIAuthMode
+	mode, ok := providerconfig.NormalizeOCIAuthMode(raw)
+	if !ok {
+		return providerconfig.DefaultOCIAuthMode
 	}
+	return mode
 }
 
 func hasAzureSharedKeyAuth(r *http.Request) bool {

@@ -21,11 +21,11 @@ import copy
 import datetime
 import fnmatch
 import hashlib
-import hmac
 import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -3303,6 +3303,63 @@ class Result:
     command: str
 
 
+_OPENSSL_BIN: str | None = None
+
+
+def openssl_bin() -> str:
+    global _OPENSSL_BIN
+    if _OPENSSL_BIN:
+        return _OPENSSL_BIN
+    path = shutil.which("openssl")
+    if not path:
+        raise RuntimeError("openssl is required for AWS SigV4 signing")
+    _OPENSSL_BIN = path
+    return path
+
+
+def sigv4_sha256_digest(data: bytes) -> bytes:
+    # AWS SigV4 requires SHA-256 for payload and canonical request hashing.
+    proc = subprocess.run(
+        [openssl_bin(), "dgst", "-sha256", "-binary"],
+        input=data,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"openssl sha256 failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    return proc.stdout
+
+
+def sigv4_sha256_hexdigest(data: bytes) -> str:
+    return sigv4_sha256_digest(data).hex()
+
+
+def sigv4_hmac_sha256_digest(key: bytes, msg: str) -> bytes:
+    # AWS SigV4 key derivation is defined in terms of HMAC-SHA256.
+    proc = subprocess.run(
+        [
+            openssl_bin(),
+            "dgst",
+            "-sha256",
+            "-mac",
+            "HMAC",
+            "-macopt",
+            f"hexkey:{key.hex()}",
+            "-binary",
+        ],
+        input=msg.encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"openssl hmac-sha256 failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    return proc.stdout
+
+
+def sigv4_hmac_sha256_hexdigest(key: bytes, data: str) -> str:
+    return sigv4_hmac_sha256_digest(key, data).hex()
+
+
 def sigv4_sign(
     method: str,
     url: str,
@@ -3324,7 +3381,7 @@ def sigv4_sign(
     now = datetime.datetime.now(datetime.timezone.utc)
     amz_date = now.strftime("%Y%m%dT%H%M%SZ")
     date_stamp = now.strftime("%Y%m%d")
-    payload_hash = hashlib.sha256(body).hexdigest()
+    payload_hash = sigv4_sha256_hexdigest(body)
 
     headers: dict[str, str] = {
         "host": host,
@@ -3358,18 +3415,14 @@ def sigv4_sign(
             "AWS4-HMAC-SHA256",
             amz_date,
             credential_scope,
-            hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+            sigv4_sha256_hexdigest(canonical_request.encode("utf-8")),
         ]
     )
-
-    def _hmac(key: bytes, msg: str) -> bytes:
-        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
-
-    k_date = _hmac(("AWS4" + secret_key).encode("utf-8"), date_stamp)
-    k_region = _hmac(k_date, region)
-    k_service = _hmac(k_region, service)
-    k_signing = _hmac(k_service, "aws4_request")
-    signature = hmac.new(k_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+    k_date = sigv4_hmac_sha256_digest(("AWS4" + secret_key).encode("utf-8"), date_stamp)
+    k_region = sigv4_hmac_sha256_digest(k_date, region)
+    k_service = sigv4_hmac_sha256_digest(k_region, service)
+    k_signing = sigv4_hmac_sha256_digest(k_service, "aws4_request")
+    signature = sigv4_hmac_sha256_hexdigest(k_signing, string_to_sign)
 
     authorization = (
         "AWS4-HMAC-SHA256 "
@@ -48666,11 +48719,24 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Seconds to wait between Stackyard health checks.",
     )
+    parser.add_argument(
+        "--list-services",
+        action="store_true",
+        help="List discovered AWS services and exit.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+
+    if args.list_services:
+        services = sorted(SERVICE_CONFIG)
+        for service in services:
+            cli_name = str(SERVICE_CONFIG[service]["cli"])
+            print(f"{service}\t{cli_name}")
+        print(f"total: {len(services)}")
+        return 0
 
     include_services = [normalize_service_name(s) for s in parse_csv_args(args.include_services)]
     exclude_services = [normalize_service_name(s) for s in parse_csv_args(args.exclude_services)]

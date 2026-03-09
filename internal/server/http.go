@@ -70,281 +70,288 @@ import (
 )
 
 type Server struct {
-	httpServer                       *http.Server
-	http2Server                      *http.Server
-	acm                              *acm.Service
-	apigateway                       *apiGatewayStore
-	apigatewayv2                     *apiGatewayV2Store
-	appconfig                        *appConfigStore
-	amplify                          *amplifyStore
-	amplifyadminui                   *amplifyAdminUIStore
-	amplifyuibuilder                 *amplifyUIBuilderStore
-	novaact                          *novaActStore
-	appflow                          *appFlowStore
-	datapipeline                     *dataPipelineStore
-	b2bi                             *b2biStore
-	awscostmanagement                *awsCostManagementStore
-	billingconductor                 *billingConductorStore
-	appfabric                        *appFabricStore
-	artifact                         *artifactStore
-	discovery                        *discoveryStore
-	apprunner                        *appRunnerStore
-	blockchain                       *blockchainStore
-	braket                           *braketStore
-	chime                            *chimeStore
-	connect                          *connectStore
-	cleanrooms                       *cleanRoomsStore
-	cleanroomsml                     *cleanRoomsMLStore
-	dlm                              *dlmStore
-	datazone                         *datazoneStore
-	dataexchange                     *dataExchangeStore
-	devicefarm                       *deviceFarmStore
-	diagnostictools                  *diagnosticToolsStore
-	fis                              *fisStore
-	finspace                         *finspaceStore
-	finspacemanagement               *finspaceManagementStore
-	gameliftstreams                  *gameliftStreamsStore
-	elasticache                      *elastiCacheStore
-	emr                              *emrStore
-	emrcontainers                    *emrContainersStore
-	emrserverless                    *emrServerlessStore
-	msk                              *mskStore
-	mskv1                            *mskv1Store
-	mskconnect                       *mskConnectStore
-	mq                               *mqStore
-	mwaa                             *mwaaStore
-	mwaaserverless                   *mwaaServerlessStore
-	firehose                         *firehoseStore
-	flink                            *flinkStore
-	kinesis                          *kinesisStore
-	kendra                           *kendraStore
-	pcs                              *pcsStore
-	odb                              *odbStore
-	imagebuilder                     *imageBuilderStore
-	entityresolution                 *entityResolutionStore
-	elementalinference               *elementalInferenceStore
-	rekognition                      *rekognitionStore
-	transcribe                       *transcribeStore
-	xray                             *xrayStore
-	wellarchitected                  *wellArchitectedStore
-	wickr                            *wickrStore
-	translate                        *translateStore
-	workmail                         *workmailStore
-	workspaces                       *workspacesStore
-	workspacesappstream2             *workspacesAppStream2Store
-	workspacesthinclient             *workspacesThinClientStore
-	workspacesweb                    *workspacesWebStore
-	sagemaker                        *sagemakerStore
-	simspaceweaver                   *simSpaceWeaverStore
-	savingsplans                     *savingsPlansStore
-	tnb                              *tnbStore
-	redshiftserverless               *redshiftServerlessStore
-	smsvoicev2                       *smsVoiceV2Store
-	socialmessaging                  *socialMessagingStore
-	supplychain                      *supplyChainStore
-	kinesisvideostreams              *kinesisVideoStreamsStore
-	lexv2                            *lexV2Store
-	pinpoint                         *pinpointStore
-	quicksight                       *quickSightStore
-	location                         *locationStore
-	codecatalyst                     *codeCatalystStore
-	bedrockagentcorecontrol          *bedrockAgentCoreControlStore
-	bedrockagentcoredata             *bedrockAgentCoreDataStore
-	appsync                          *appSyncStore
-	appmesh                          *appMeshStore
-	vpclattice                       *vpcLatticeStore
-	globalaccelerator                *globalAcceleratorStore
-	rtbfabric                        *rtbFabricStore
-	arczonalshift                    *arcZonalShiftStore
-	arcregionswitch                  *arcRegionSwitchStore
-	recoveryreadiness                *recoveryReadinessStore
-	recoverycluster                  *recoveryClusterStore
-	routingcontrol                   *routingControlStore
-	cloudformation                   *cloudFormationStore
-	cloudfront                       *cloudFrontStore
-	route53                          *route53Store
-	directconnect                    *directConnectStore
-	cloudmap                         *cloudMapStore
-	config                           *configStore
-	cloudwatch                       *cloudWatchStore
-	clouddirectory                   *cloudDirectoryStore
-	ec2autoscaling                   *ec2AutoScalingStore
-	elasticloadbalancing             *elasticLoadBalancingStore
-	elasticloadbalancingv2           *elasticLoadBalancingV2Store
-	autoscalingplans                 *autoScalingPlansStore
-	cloudwatchlogs                   *cloudWatchLogsStore
-	grafana                          *grafanaStore
-	prometheus                       *prometheusStore
-	mpa                              *mpaStore
-	proton                           *protonStore
-	resiliencehub                    *resilienceHubStore
-	recyclebin                       *recycleBinStore
-	resourcegroups                   *resourceGroupsStore
-	resourcegroupstaggingapi         *resourceGroupsTaggingAPIStore
-	resourceexplorer2                *resourceExplorer2Store
-	oam                              *oamStore
-	applicationsignals               *applicationSignalsStore
-	networkfirewall                  *networkFirewallStore
-	networkflowmonitor               *networkFlowMonitorStore
-	networkmonitor                   *networkMonitorStore
-	internetmonitor                  *internetMonitorStore
-	transfer                         *transferStore
-	ebs                              *ebsStore
-	fsx                              *fsxStore
-	snowball                         *snowballStore
-	storagegateway                   *storageGatewayStore
-	stepfunctions                    *stepFunctionsStore
-	opensearch                       *openSearchStore
-	accessanalyzer                   *accessAnalyzerStore
-	auditmanager                     *auditManagerStore
-	rolesanywhere                    *rolesAnywhereStore
-	sts                              *stsStore
-	singlesignon                     *singleSignOnStore
-	singlesignonportal               *singleSignOnPortalStore
-	singlesignonoidc                 *singleSignOnOIDCStore
-	identitystore                    *identityStoreStore
-	iam                              *iamStore
-	guardduty                        *guardDutyStore
-	macie                            *macieStore
-	securityhub                      *securityHubStore
-	securityir                       *securityIRStore
-	securitylake                     *securityLakeStore
-	wafv2                            *wafv2Store
-	shieldadvanced                   *shieldAdvancedStore
-	paymentcryptography              *paymentCryptographyStore
-	paymentcryptographydata          *paymentCryptographyDataStore
-	inspectorv2                      *inspectorV2Store
-	cloudwatchapplicationinsights    *cloudWatchApplicationInsightsStore
-	cloudwatchinvestigations         *cloudWatchInvestigationsStore
-	cloudwatchsynthetics             *cloudWatchSyntheticsStore
-	cloudwatchrum                    *cloudWatchRUMStore
-	cloudwatchobservabilityadmin     *cloudWatchObservabilityAdminStore
-	s3                               *s3.Service
-	s3control                        *s3control.Service
-	s3outposts                       *s3outposts.Service
-	s3tables                         *s3tables.Service
-	s3vectors                        *s3vectors.Service
-	sqs                              *sqs.Service
-	sns                              *sns.Service
-	ses                              *ses.Service
-	sesv2                            *sesv2.Service
-	lightsail                        *lightsail.Service
-	lambda                           *lambda.Service
-	eventbridge                      *eventbridge.Service
-	keyspaces                        *keyspaces.Service
-	memorydb                         *memorydb.Service
-	timestream                       *timestreaminfluxdb.Service
-	cloudcontrolapi                  *cloudControlAPIStore
-	controlcatalog                   *controlCatalogStore
-	controltower                     *controlTowerStore
-	cloudtrail                       *cloudTrailStore
-	codeartifact                     *codeArtifactStore
-	codebuild                        *codeBuildStore
-	detective                        *detectiveStore
-	fms                              *fmsStore
-	directoryservice                 *directoryServiceStore
-	directoryservicedata             *directoryServiceDataStore
-	dms                              *dmsStore
-	drs                              *drsStore
-	ivs                              *ivsStore
-	ivschat                          *ivsChatStore
-	ivschatmessaging                 *ivsChatMessagingStore
-	ivsmultitrack                    *ivsMultitrackStore
-	ivsrealtime                      *ivsRealtimeStore
-	mediapackage                     *mediaPackageStore
-	mediaconnect                     *mediaConnectStore
-	groundstation                    *groundStationStore
-	mediatailor                      *mediaTailorStore
-	deadline                         *deadlineStore
-	evs                              *evsStore
-	m2                               *m2Store
-	mgn                              *mgnStore
-	migrationhuborchestrator         *migrationHubOrchestratorStore
-	migrationhubstrategy             *migrationHubStrategyStore
-	migrationhubrefactorspaces       *migrationHubRefactorSpacesStore
-	qbusiness                        *qBusinessStore
-	qdeveloper                       *qDeveloperStore
-	codeguru                         *codeGuruStore
-	codeguruprofiler                 *codeGuruProfilerStore
-	bedrock                          *bedrockStore
-	devopsguru                       *devOpsGuruStore
-	comprehend                       *comprehendStore
-	comprehendmedical                *comprehendMedicalStore
-	computeoptimizer                 *computeOptimizerStore
-	ram                              *ramStore
-	servicequotas                    *serviceQuotasStore
-	support                          *supportStore
-	marketplace                      *marketplaceStore
-	partnercentralselling            *partnerCentralSellingStore
-	supportapp                       *supportAppStore
-	trustedadvisor                   *trustedAdvisorStore
-	usernotifications                *userNotificationsStore
-	notificationscontacts            *notificationsContactsStore
-	quicksetup                       *quickSetupStore
-	incidentmanager                  *incidentManagerStore
-	ssmsap                           *ssmSAPStore
-	systemsmanager                   *systemsManagerStore
-	ssmguiconnect                    *ssmGUIConnectStore
-	organizations                    *organizationsStore
-	licensemanager                   *licenseManagerStore
-	licensemanagerlinuxsubscriptions *licenseManagerLinuxSubscriptionsStore
-	licensemanagerusersubscriptions  *licenseManagerUserSubscriptionsStore
-	health                           *healthStore
-	healthlake                       *healthLakeStore
-	healthimaging                    *healthImagingStore
-	codedeploy                       *codeDeployStore
-	codepipeline                     *codePipelineStore
-	augmentedai                      *augmentedAIStore
-	omics                            *omicsStore
-	iot                              *iotStore
-	iotmi                            *iotMIStore
-	launchwizard                     *launchWizardStore
-	managedservicescm                *managedServicesCMStore
-	lakeformation                    *lakeFormationStore
-	iotfleetwise                     *iotFleetWiseStore
-	iotevents                        *iotEventsStore
-	iotwireless                      *iotWirelessStore
-	iotgreengrass                    *iotGreengrassStore
-	iotsitewise                      *iotSiteWiseStore
-	iottwinmaker                     *iotTwinMakerStore
-	cognitoidentity                  *cognitoIdentityStore
-	cognitouserpools                 *cognitoUserPoolsStore
-	cognitosync                      *cognitoSyncStore
-	neptuneanalytics                 *neptuneAnalyticsStore
-	neptunedata                      *neptuneDataStore
-	kms                              *kms.Service
-	signer                           *signer.Service
-	athena                           *athena.Service
-	swf                              *swf.Service
-	privateca                        *privateca.Service
-	secretsmgr                       *secretsmanager.Service
-	eb                               *elasticbeanstalk.Service
-	batch                            *batch.Service
-	cloudhsm                         *cloudhsm.Service
-	dynamodb                         *dynamodb.Service
-	dsql                             *dsql.Service
-	ecs                              *ecs.Service
-	ecr                              *ecr.Service
-	eks                              *eks.Service
-	ec2                              *ec2.Service
-	rds                              *rds.Service
-	redshiftMu                       sync.Mutex
-	redshift                         *redshiftStore
-	enabledProviders                 []string
-	enabledProviderSet               map[string]struct{}
-	providerStorageMu                sync.Mutex
-	gcpStorageBuckets                map[string]*providerBucket
-	gcpStorageHMACKeys               map[string]map[string]*gcpStorageHMACKey
-	gcpStorageNextGeneration         int64
-	gcpStorageNextHMACKeyID          int64
-	azureStorageAccounts             map[string]map[string]*providerBucket
-	ociStorageNamespaces             map[string]map[string]*providerBucket
-	awsAuthValidator                 awsRequestAuthValidator
-	providerAuthValidators           map[string]providerRequestAuthValidator
-	accessKey                        string
-	secretKey                        string
-	logLevel                         string
-	state                            *statePersistence
+	httpServer                           *http.Server
+	http2Server                          *http.Server
+	acm                                  *acm.Service
+	apigateway                           *apiGatewayStore
+	apigatewayv2                         *apiGatewayV2Store
+	appconfig                            *appConfigStore
+	amplify                              *amplifyStore
+	amplifyadminui                       *amplifyAdminUIStore
+	amplifyuibuilder                     *amplifyUIBuilderStore
+	novaact                              *novaActStore
+	appflow                              *appFlowStore
+	datapipeline                         *dataPipelineStore
+	b2bi                                 *b2biStore
+	awscostmanagement                    *awsCostManagementStore
+	billingconductor                     *billingConductorStore
+	appfabric                            *appFabricStore
+	artifact                             *artifactStore
+	discovery                            *discoveryStore
+	apprunner                            *appRunnerStore
+	blockchain                           *blockchainStore
+	braket                               *braketStore
+	chime                                *chimeStore
+	connect                              *connectStore
+	cleanrooms                           *cleanRoomsStore
+	cleanroomsml                         *cleanRoomsMLStore
+	dlm                                  *dlmStore
+	datazone                             *datazoneStore
+	dataexchange                         *dataExchangeStore
+	devicefarm                           *deviceFarmStore
+	diagnostictools                      *diagnosticToolsStore
+	fis                                  *fisStore
+	finspace                             *finspaceStore
+	finspacemanagement                   *finspaceManagementStore
+	gameliftstreams                      *gameliftStreamsStore
+	elasticache                          *elastiCacheStore
+	emr                                  *emrStore
+	emrcontainers                        *emrContainersStore
+	emrserverless                        *emrServerlessStore
+	msk                                  *mskStore
+	mskv1                                *mskv1Store
+	mskconnect                           *mskConnectStore
+	mq                                   *mqStore
+	mwaa                                 *mwaaStore
+	mwaaserverless                       *mwaaServerlessStore
+	firehose                             *firehoseStore
+	flink                                *flinkStore
+	kinesis                              *kinesisStore
+	kendra                               *kendraStore
+	pcs                                  *pcsStore
+	odb                                  *odbStore
+	imagebuilder                         *imageBuilderStore
+	entityresolution                     *entityResolutionStore
+	elementalinference                   *elementalInferenceStore
+	rekognition                          *rekognitionStore
+	transcribe                           *transcribeStore
+	xray                                 *xrayStore
+	wellarchitected                      *wellArchitectedStore
+	wickr                                *wickrStore
+	translate                            *translateStore
+	workmail                             *workmailStore
+	workspaces                           *workspacesStore
+	workspacesappstream2                 *workspacesAppStream2Store
+	workspacesthinclient                 *workspacesThinClientStore
+	workspacesweb                        *workspacesWebStore
+	sagemaker                            *sagemakerStore
+	simspaceweaver                       *simSpaceWeaverStore
+	savingsplans                         *savingsPlansStore
+	tnb                                  *tnbStore
+	redshiftserverless                   *redshiftServerlessStore
+	smsvoicev2                           *smsVoiceV2Store
+	socialmessaging                      *socialMessagingStore
+	supplychain                          *supplyChainStore
+	kinesisvideostreams                  *kinesisVideoStreamsStore
+	lexv2                                *lexV2Store
+	pinpoint                             *pinpointStore
+	quicksight                           *quickSightStore
+	location                             *locationStore
+	codecatalyst                         *codeCatalystStore
+	bedrockagentcorecontrol              *bedrockAgentCoreControlStore
+	bedrockagentcoredata                 *bedrockAgentCoreDataStore
+	appsync                              *appSyncStore
+	appmesh                              *appMeshStore
+	vpclattice                           *vpcLatticeStore
+	globalaccelerator                    *globalAcceleratorStore
+	rtbfabric                            *rtbFabricStore
+	arczonalshift                        *arcZonalShiftStore
+	arcregionswitch                      *arcRegionSwitchStore
+	recoveryreadiness                    *recoveryReadinessStore
+	recoverycluster                      *recoveryClusterStore
+	routingcontrol                       *routingControlStore
+	cloudformation                       *cloudFormationStore
+	cloudfront                           *cloudFrontStore
+	route53                              *route53Store
+	directconnect                        *directConnectStore
+	cloudmap                             *cloudMapStore
+	config                               *configStore
+	cloudwatch                           *cloudWatchStore
+	clouddirectory                       *cloudDirectoryStore
+	ec2autoscaling                       *ec2AutoScalingStore
+	elasticloadbalancing                 *elasticLoadBalancingStore
+	elasticloadbalancingv2               *elasticLoadBalancingV2Store
+	autoscalingplans                     *autoScalingPlansStore
+	cloudwatchlogs                       *cloudWatchLogsStore
+	grafana                              *grafanaStore
+	prometheus                           *prometheusStore
+	mpa                                  *mpaStore
+	proton                               *protonStore
+	resiliencehub                        *resilienceHubStore
+	recyclebin                           *recycleBinStore
+	resourcegroups                       *resourceGroupsStore
+	resourcegroupstaggingapi             *resourceGroupsTaggingAPIStore
+	resourceexplorer2                    *resourceExplorer2Store
+	oam                                  *oamStore
+	applicationsignals                   *applicationSignalsStore
+	networkfirewall                      *networkFirewallStore
+	networkflowmonitor                   *networkFlowMonitorStore
+	networkmonitor                       *networkMonitorStore
+	internetmonitor                      *internetMonitorStore
+	transfer                             *transferStore
+	ebs                                  *ebsStore
+	fsx                                  *fsxStore
+	snowball                             *snowballStore
+	storagegateway                       *storageGatewayStore
+	stepfunctions                        *stepFunctionsStore
+	opensearch                           *openSearchStore
+	accessanalyzer                       *accessAnalyzerStore
+	auditmanager                         *auditManagerStore
+	rolesanywhere                        *rolesAnywhereStore
+	sts                                  *stsStore
+	singlesignon                         *singleSignOnStore
+	singlesignonportal                   *singleSignOnPortalStore
+	singlesignonoidc                     *singleSignOnOIDCStore
+	identitystore                        *identityStoreStore
+	iam                                  *iamStore
+	guardduty                            *guardDutyStore
+	macie                                *macieStore
+	securityhub                          *securityHubStore
+	securityir                           *securityIRStore
+	securitylake                         *securityLakeStore
+	wafv2                                *wafv2Store
+	shieldadvanced                       *shieldAdvancedStore
+	paymentcryptography                  *paymentCryptographyStore
+	paymentcryptographydata              *paymentCryptographyDataStore
+	inspectorv2                          *inspectorV2Store
+	cloudwatchapplicationinsights        *cloudWatchApplicationInsightsStore
+	cloudwatchinvestigations             *cloudWatchInvestigationsStore
+	cloudwatchsynthetics                 *cloudWatchSyntheticsStore
+	cloudwatchrum                        *cloudWatchRUMStore
+	cloudwatchobservabilityadmin         *cloudWatchObservabilityAdminStore
+	s3                                   *s3.Service
+	s3control                            *s3control.Service
+	s3outposts                           *s3outposts.Service
+	s3tables                             *s3tables.Service
+	s3vectors                            *s3vectors.Service
+	sqs                                  *sqs.Service
+	sns                                  *sns.Service
+	ses                                  *ses.Service
+	sesv2                                *sesv2.Service
+	lightsail                            *lightsail.Service
+	lambda                               *lambda.Service
+	eventbridge                          *eventbridge.Service
+	keyspaces                            *keyspaces.Service
+	memorydb                             *memorydb.Service
+	timestream                           *timestreaminfluxdb.Service
+	cloudcontrolapi                      *cloudControlAPIStore
+	controlcatalog                       *controlCatalogStore
+	controltower                         *controlTowerStore
+	cloudtrail                           *cloudTrailStore
+	codeartifact                         *codeArtifactStore
+	codebuild                            *codeBuildStore
+	detective                            *detectiveStore
+	fms                                  *fmsStore
+	directoryservice                     *directoryServiceStore
+	directoryservicedata                 *directoryServiceDataStore
+	dms                                  *dmsStore
+	drs                                  *drsStore
+	ivs                                  *ivsStore
+	ivschat                              *ivsChatStore
+	ivschatmessaging                     *ivsChatMessagingStore
+	ivsmultitrack                        *ivsMultitrackStore
+	ivsrealtime                          *ivsRealtimeStore
+	mediapackage                         *mediaPackageStore
+	mediaconnect                         *mediaConnectStore
+	groundstation                        *groundStationStore
+	mediatailor                          *mediaTailorStore
+	deadline                             *deadlineStore
+	evs                                  *evsStore
+	m2                                   *m2Store
+	mgn                                  *mgnStore
+	migrationhuborchestrator             *migrationHubOrchestratorStore
+	migrationhubstrategy                 *migrationHubStrategyStore
+	migrationhubrefactorspaces           *migrationHubRefactorSpacesStore
+	qbusiness                            *qBusinessStore
+	qdeveloper                           *qDeveloperStore
+	codeguru                             *codeGuruStore
+	codeguruprofiler                     *codeGuruProfilerStore
+	bedrock                              *bedrockStore
+	devopsguru                           *devOpsGuruStore
+	comprehend                           *comprehendStore
+	comprehendmedical                    *comprehendMedicalStore
+	computeoptimizer                     *computeOptimizerStore
+	ram                                  *ramStore
+	servicequotas                        *serviceQuotasStore
+	support                              *supportStore
+	marketplace                          *marketplaceStore
+	partnercentralselling                *partnerCentralSellingStore
+	supportapp                           *supportAppStore
+	trustedadvisor                       *trustedAdvisorStore
+	usernotifications                    *userNotificationsStore
+	notificationscontacts                *notificationsContactsStore
+	quicksetup                           *quickSetupStore
+	incidentmanager                      *incidentManagerStore
+	ssmsap                               *ssmSAPStore
+	systemsmanager                       *systemsManagerStore
+	ssmguiconnect                        *ssmGUIConnectStore
+	organizations                        *organizationsStore
+	licensemanager                       *licenseManagerStore
+	licensemanagerlinuxsubscriptions     *licenseManagerLinuxSubscriptionsStore
+	licensemanagerusersubscriptions      *licenseManagerUserSubscriptionsStore
+	health                               *healthStore
+	healthlake                           *healthLakeStore
+	healthimaging                        *healthImagingStore
+	codedeploy                           *codeDeployStore
+	codepipeline                         *codePipelineStore
+	augmentedai                          *augmentedAIStore
+	omics                                *omicsStore
+	iot                                  *iotStore
+	iotmi                                *iotMIStore
+	launchwizard                         *launchWizardStore
+	managedservicescm                    *managedServicesCMStore
+	lakeformation                        *lakeFormationStore
+	iotfleetwise                         *iotFleetWiseStore
+	iotevents                            *iotEventsStore
+	iotwireless                          *iotWirelessStore
+	iotgreengrass                        *iotGreengrassStore
+	iotsitewise                          *iotSiteWiseStore
+	iottwinmaker                         *iotTwinMakerStore
+	cognitoidentity                      *cognitoIdentityStore
+	cognitouserpools                     *cognitoUserPoolsStore
+	cognitosync                          *cognitoSyncStore
+	neptuneanalytics                     *neptuneAnalyticsStore
+	neptunedata                          *neptuneDataStore
+	kms                                  *kms.Service
+	signer                               *signer.Service
+	athena                               *athena.Service
+	swf                                  *swf.Service
+	privateca                            *privateca.Service
+	secretsmgr                           *secretsmanager.Service
+	eb                                   *elasticbeanstalk.Service
+	batch                                *batch.Service
+	cloudhsm                             *cloudhsm.Service
+	dynamodb                             *dynamodb.Service
+	dsql                                 *dsql.Service
+	ecs                                  *ecs.Service
+	ecr                                  *ecr.Service
+	eks                                  *eks.Service
+	ec2                                  *ec2.Service
+	rds                                  *rds.Service
+	redshiftMu                           sync.Mutex
+	redshift                             *redshiftStore
+	enabledProviders                     []string
+	enabledProviderSet                   map[string]struct{}
+	providerStorageMu                    sync.Mutex
+	gcpStorageBuckets                    map[string]*providerBucket
+	gcpStorageHMACKeys                   map[string]map[string]*gcpStorageHMACKey
+	gcpStorageNextGeneration             int64
+	gcpStorageNextHMACKeyID              int64
+	azureStorageAccounts                 map[string]map[string]*providerBucket
+	azureQueues                          map[string]map[string][]azureQueueMessage
+	azureQueueNextID                     int64
+	azureKeyVaults                       map[string]map[string][]azureSecretVersion
+	azureBotConversations                map[string]*azureBotConversation
+	azureBotNextConversationID           int64
+	azureContentModeratorImageLists      map[int64]*azureContentModeratorImageList
+	azureContentModeratorNextImageListID int64
+	ociStorageNamespaces                 map[string]map[string]*providerBucket
+	awsAuthValidator                     awsRequestAuthValidator
+	providerAuthValidators               map[string]providerRequestAuthValidator
+	accessKey                            string
+	secretKey                            string
+	logLevel                             string
+	state                                *statePersistence
 }
 
 type accessLogContextKey string
@@ -559,117 +566,124 @@ func New(cfg Config) *Server {
 			ExecutionMode: cfg.LambdaExecutionMode,
 			WorkDir:       cfg.LambdaWorkDir,
 		}),
-		eventbridge:                      eventbridge.NewService(),
-		keyspaces:                        keyspaces.NewService(),
-		memorydb:                         memorydb.NewService(),
-		timestream:                       timestreaminfluxdb.NewService(),
-		cloudcontrolapi:                  newCloudControlAPIStore(),
-		controlcatalog:                   newControlCatalogStore(),
-		controltower:                     newControlTowerStore(),
-		cloudtrail:                       newCloudTrailStore(),
-		codeartifact:                     newCodeArtifactStore(),
-		codebuild:                        newCodeBuildStore(),
-		detective:                        newDetectiveStore(),
-		fms:                              newFMSStore(),
-		directoryservice:                 newDirectoryServiceStore(),
-		directoryservicedata:             newDirectoryServiceDataStore(),
-		dms:                              newDMSStore(),
-		drs:                              newDRSStore(),
-		ivs:                              newIVSStore(),
-		ivschat:                          newIVSChatStore(),
-		ivschatmessaging:                 newIVSChatMessagingStore(),
-		ivsmultitrack:                    newIVSMultitrackStore(),
-		ivsrealtime:                      newIVSRealtimeStore(),
-		mediapackage:                     newMediaPackageStore(),
-		mediaconnect:                     newMediaConnectStore(),
-		groundstation:                    newGroundStationStore(),
-		mediatailor:                      newMediaTailorStore(),
-		deadline:                         newDeadlineStore(),
-		evs:                              newEVSStore(),
-		m2:                               newM2Store(),
-		mgn:                              newMGNStore(),
-		migrationhuborchestrator:         newMigrationHubOrchestratorStore(),
-		migrationhubstrategy:             newMigrationHubStrategyStore(),
-		migrationhubrefactorspaces:       newMigrationHubRefactorSpacesStore(),
-		qbusiness:                        newQBusinessStore(),
-		qdeveloper:                       newQDeveloperStore(),
-		codeguru:                         newCodeGuruStore(),
-		codeguruprofiler:                 newCodeGuruProfilerStore(),
-		bedrock:                          newBedrockStore(),
-		devopsguru:                       newDevOpsGuruStore(),
-		comprehend:                       newComprehendStore(),
-		comprehendmedical:                newComprehendMedicalStore(),
-		computeoptimizer:                 newComputeOptimizerStore(),
-		ram:                              newRAMStore(),
-		servicequotas:                    newServiceQuotasStore(),
-		support:                          newSupportStore(),
-		marketplace:                      newMarketplaceStore(),
-		partnercentralselling:            newPartnerCentralSellingStore(),
-		supportapp:                       newSupportAppStore(),
-		trustedadvisor:                   newTrustedAdvisorStore(),
-		usernotifications:                newUserNotificationsStore(),
-		notificationscontacts:            newNotificationsContactsStore(),
-		quicksetup:                       newQuickSetupStore(),
-		incidentmanager:                  newIncidentManagerStore(),
-		ssmsap:                           newSSMSAPStore(),
-		systemsmanager:                   newSystemsManagerStore(),
-		ssmguiconnect:                    newSSMGUIConnectStore(),
-		organizations:                    newOrganizationsStore(),
-		licensemanager:                   newLicenseManagerStore(),
-		licensemanagerlinuxsubscriptions: newLicenseManagerLinuxSubscriptionsStore(),
-		licensemanagerusersubscriptions:  newLicenseManagerUserSubscriptionsStore(),
-		health:                           newHealthStore(),
-		healthlake:                       newHealthLakeStore(),
-		healthimaging:                    newHealthImagingStore(),
-		codedeploy:                       newCodeDeployStore(),
-		codepipeline:                     newCodePipelineStore(),
-		augmentedai:                      newAugmentedAIStore(),
-		omics:                            newOmicsStore(),
-		iot:                              newIoTStore(),
-		iotmi:                            newIoTMIStore(),
-		launchwizard:                     newLaunchWizardStore(),
-		managedservicescm:                newManagedServicesCMStore(),
-		lakeformation:                    newLakeFormationStore(),
-		iotfleetwise:                     newIoTFleetWiseStore(),
-		iotevents:                        newIoTEventsStore(),
-		iotwireless:                      newIoTWirelessStore(),
-		iotgreengrass:                    newIoTGreengrassStore(),
-		iotsitewise:                      newIoTSiteWiseStore(),
-		iottwinmaker:                     newIoTTwinMakerStore(),
-		cognitoidentity:                  newCognitoIdentityStore(),
-		cognitouserpools:                 newCognitoUserPoolsStore(),
-		cognitosync:                      newCognitoSyncStore(),
-		neptuneanalytics:                 newNeptuneAnalyticsStore(),
-		neptunedata:                      newNeptuneDataStore(),
-		kms:                              kms.NewService(),
-		signer:                           signer.NewService(),
-		eb:                               elasticbeanstalk.NewService(),
-		athena:                           athena.NewService(),
-		swf:                              swf.NewService(),
-		privateca:                        privateca.NewService(),
-		secretsmgr:                       secretsmanager.NewService(),
-		batch:                            batch.NewService(),
-		cloudhsm:                         cloudhsm.NewService(),
-		dynamodb:                         dynamodb.NewService(),
-		dsql:                             dsql.NewService(),
-		ecs:                              ecs.NewService(),
-		ecr:                              ecr.NewService(),
-		eks:                              eks.NewService(),
-		ec2:                              ec2.NewService(),
-		rds:                              rds.NewService(),
-		redshift:                         newRedshiftStore(),
-		enabledProviders:                 enabledProviders,
-		enabledProviderSet:               toProviderSet(enabledProviders),
-		gcpStorageBuckets:                map[string]*providerBucket{},
-		gcpStorageHMACKeys:               map[string]map[string]*gcpStorageHMACKey{},
-		gcpStorageNextGeneration:         1000,
-		gcpStorageNextHMACKeyID:          0,
-		azureStorageAccounts:             map[string]map[string]*providerBucket{},
-		ociStorageNamespaces:             map[string]map[string]*providerBucket{},
-		accessKey:                        cfg.AccessKey,
-		secretKey:                        cfg.SecretKey,
-		logLevel:                         strings.ToLower(cfg.LogLevel),
-		state:                            newStatePersistence(cfg),
+		eventbridge:                          eventbridge.NewService(),
+		keyspaces:                            keyspaces.NewService(),
+		memorydb:                             memorydb.NewService(),
+		timestream:                           timestreaminfluxdb.NewService(),
+		cloudcontrolapi:                      newCloudControlAPIStore(),
+		controlcatalog:                       newControlCatalogStore(),
+		controltower:                         newControlTowerStore(),
+		cloudtrail:                           newCloudTrailStore(),
+		codeartifact:                         newCodeArtifactStore(),
+		codebuild:                            newCodeBuildStore(),
+		detective:                            newDetectiveStore(),
+		fms:                                  newFMSStore(),
+		directoryservice:                     newDirectoryServiceStore(),
+		directoryservicedata:                 newDirectoryServiceDataStore(),
+		dms:                                  newDMSStore(),
+		drs:                                  newDRSStore(),
+		ivs:                                  newIVSStore(),
+		ivschat:                              newIVSChatStore(),
+		ivschatmessaging:                     newIVSChatMessagingStore(),
+		ivsmultitrack:                        newIVSMultitrackStore(),
+		ivsrealtime:                          newIVSRealtimeStore(),
+		mediapackage:                         newMediaPackageStore(),
+		mediaconnect:                         newMediaConnectStore(),
+		groundstation:                        newGroundStationStore(),
+		mediatailor:                          newMediaTailorStore(),
+		deadline:                             newDeadlineStore(),
+		evs:                                  newEVSStore(),
+		m2:                                   newM2Store(),
+		mgn:                                  newMGNStore(),
+		migrationhuborchestrator:             newMigrationHubOrchestratorStore(),
+		migrationhubstrategy:                 newMigrationHubStrategyStore(),
+		migrationhubrefactorspaces:           newMigrationHubRefactorSpacesStore(),
+		qbusiness:                            newQBusinessStore(),
+		qdeveloper:                           newQDeveloperStore(),
+		codeguru:                             newCodeGuruStore(),
+		codeguruprofiler:                     newCodeGuruProfilerStore(),
+		bedrock:                              newBedrockStore(),
+		devopsguru:                           newDevOpsGuruStore(),
+		comprehend:                           newComprehendStore(),
+		comprehendmedical:                    newComprehendMedicalStore(),
+		computeoptimizer:                     newComputeOptimizerStore(),
+		ram:                                  newRAMStore(),
+		servicequotas:                        newServiceQuotasStore(),
+		support:                              newSupportStore(),
+		marketplace:                          newMarketplaceStore(),
+		partnercentralselling:                newPartnerCentralSellingStore(),
+		supportapp:                           newSupportAppStore(),
+		trustedadvisor:                       newTrustedAdvisorStore(),
+		usernotifications:                    newUserNotificationsStore(),
+		notificationscontacts:                newNotificationsContactsStore(),
+		quicksetup:                           newQuickSetupStore(),
+		incidentmanager:                      newIncidentManagerStore(),
+		ssmsap:                               newSSMSAPStore(),
+		systemsmanager:                       newSystemsManagerStore(),
+		ssmguiconnect:                        newSSMGUIConnectStore(),
+		organizations:                        newOrganizationsStore(),
+		licensemanager:                       newLicenseManagerStore(),
+		licensemanagerlinuxsubscriptions:     newLicenseManagerLinuxSubscriptionsStore(),
+		licensemanagerusersubscriptions:      newLicenseManagerUserSubscriptionsStore(),
+		health:                               newHealthStore(),
+		healthlake:                           newHealthLakeStore(),
+		healthimaging:                        newHealthImagingStore(),
+		codedeploy:                           newCodeDeployStore(),
+		codepipeline:                         newCodePipelineStore(),
+		augmentedai:                          newAugmentedAIStore(),
+		omics:                                newOmicsStore(),
+		iot:                                  newIoTStore(),
+		iotmi:                                newIoTMIStore(),
+		launchwizard:                         newLaunchWizardStore(),
+		managedservicescm:                    newManagedServicesCMStore(),
+		lakeformation:                        newLakeFormationStore(),
+		iotfleetwise:                         newIoTFleetWiseStore(),
+		iotevents:                            newIoTEventsStore(),
+		iotwireless:                          newIoTWirelessStore(),
+		iotgreengrass:                        newIoTGreengrassStore(),
+		iotsitewise:                          newIoTSiteWiseStore(),
+		iottwinmaker:                         newIoTTwinMakerStore(),
+		cognitoidentity:                      newCognitoIdentityStore(),
+		cognitouserpools:                     newCognitoUserPoolsStore(),
+		cognitosync:                          newCognitoSyncStore(),
+		neptuneanalytics:                     newNeptuneAnalyticsStore(),
+		neptunedata:                          newNeptuneDataStore(),
+		kms:                                  kms.NewService(),
+		signer:                               signer.NewService(),
+		eb:                                   elasticbeanstalk.NewService(),
+		athena:                               athena.NewService(),
+		swf:                                  swf.NewService(),
+		privateca:                            privateca.NewService(),
+		secretsmgr:                           secretsmanager.NewService(),
+		batch:                                batch.NewService(),
+		cloudhsm:                             cloudhsm.NewService(),
+		dynamodb:                             dynamodb.NewService(),
+		dsql:                                 dsql.NewService(),
+		ecs:                                  ecs.NewService(),
+		ecr:                                  ecr.NewService(),
+		eks:                                  eks.NewService(),
+		ec2:                                  ec2.NewService(),
+		rds:                                  rds.NewService(),
+		redshift:                             newRedshiftStore(),
+		enabledProviders:                     enabledProviders,
+		enabledProviderSet:                   toProviderSet(enabledProviders),
+		gcpStorageBuckets:                    map[string]*providerBucket{},
+		gcpStorageHMACKeys:                   map[string]map[string]*gcpStorageHMACKey{},
+		gcpStorageNextGeneration:             1000,
+		gcpStorageNextHMACKeyID:              0,
+		azureStorageAccounts:                 map[string]map[string]*providerBucket{},
+		azureQueues:                          map[string]map[string][]azureQueueMessage{},
+		azureQueueNextID:                     0,
+		azureKeyVaults:                       map[string]map[string][]azureSecretVersion{},
+		azureBotConversations:                map[string]*azureBotConversation{},
+		azureBotNextConversationID:           0,
+		azureContentModeratorImageLists:      map[int64]*azureContentModeratorImageList{},
+		azureContentModeratorNextImageListID: 0,
+		ociStorageNamespaces:                 map[string]map[string]*providerBucket{},
+		accessKey:                            cfg.AccessKey,
+		secretKey:                            cfg.SecretKey,
+		logLevel:                             strings.ToLower(cfg.LogLevel),
+		state:                                newStatePersistence(cfg),
 	}
 	s.awsAuthValidator = &awsSigV4AuthAdapter{server: s}
 	s.providerAuthValidators = newProviderAuthValidators(cfg)
@@ -1769,6 +1783,96 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if !s.validateProviderRequestAuth(w, r, providerAzure) {
 			return
 		}
+		if s.handleAzureBotFrameworkRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerAdminKeysRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerOperationsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerPrivateEndpointConnectionsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerSharedPrivateLinkResourcesRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerUsageBySubscriptionSKURouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerServicesRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerQueryKeysRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerPrivateLinkResourcesRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchManagementResourceManagerNetworkSecurityPerimeterConfigurationsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneGetServiceStatisticsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneSkillsetsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneSynonymMapsRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneIndexesRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneIndexersRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneDataSourcesRouter(w, r) {
+			return
+		}
+		if s.handleAzureSearchServiceDataPlaneDocumentsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesLanguageAnalyzeConversationsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesLanguageAnalyzeTextAuthoringRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesLanguageQuestionAnsweringAuthoringRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesLanguageQuestionAnsweringRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesLanguageAnalyzeTextRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesDocumentModelsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesMiscellaneousOperationsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIServicesDocumentClassifiersRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentModeratorImageModerationRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentModeratorTextModerationRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentModeratorListManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureKeyVaultRouter(w, r) {
+			return
+		}
+		if s.handleAzureQueueRouter(w, r) {
+			return
+		}
 		if s.handleAzureBlobRouter(w, r) {
 			return
 		}
@@ -1841,6 +1945,38 @@ func respondProviderNotImplemented(w http.ResponseWriter, provider, path string)
 		"provider": provider,
 		"path":     path,
 	})
+}
+
+func respondAzureImplemented(w http.ResponseWriter, path string) {
+	respondProviderFoundationSuccess(w, providerAzure, path)
+}
+
+func respondAzureInvalidRequest(w http.ResponseWriter, path, message string) {
+	if strings.TrimSpace(message) == "" {
+		message = "invalid request"
+	}
+	respondJSON(w, http.StatusBadRequest, map[string]any{
+		"error":    "InvalidRequest",
+		"message":  message,
+		"provider": providerAzure,
+		"path":     path,
+	})
+}
+
+func hasAzureInvalidAPIVersion(r *http.Request) bool {
+	values, ok := r.URL.Query()["api-version"]
+	if !ok {
+		return false
+	}
+	if len(values) == 0 {
+		return true
+	}
+	for _, value := range values {
+		if strings.TrimSpace(value) == "" {
+			return true
+		}
+	}
+	return false
 }
 
 func respondProviderFoundationSuccess(w http.ResponseWriter, provider, path string) {

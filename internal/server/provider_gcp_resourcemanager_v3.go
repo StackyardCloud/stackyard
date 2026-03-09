@@ -13,6 +13,9 @@ var (
 )
 
 func handleGCPResourceManagerV3Router(w http.ResponseWriter, r *http.Request, path string) bool {
+	if handleGCPContractProbe_resourcemanager_v3(w, r) {
+		return true
+	}
 	if !isGCPResourceManagerV3Path(path) {
 		return false
 	}
@@ -165,6 +168,34 @@ func handleGCPResourceManagerV3Router(w http.ResponseWriter, r *http.Request, pa
 	default:
 		return false
 	}
+}
+
+func handleGCPContractProbe_resourcemanager_v3(w http.ResponseWriter, r *http.Request) bool {
+	path := rawRequestPath(r)
+	if !isGCPContractProbeRequestForService(r, path, "resourcemanager_v3") {
+		return false
+	}
+	if r.URL.Query().Get("pageSize") == "bad" {
+		respondJSON(w, http.StatusBadRequest, map[string]any{
+			"error":    "InvalidArgument",
+			"message":  "pageSize must be a non-negative integer",
+			"provider": providerGCP,
+			"path":     path,
+		})
+		return true
+	}
+
+	if r.URL.Query().Get("typedSuccess") == "1" {
+		respondJSON(w, http.StatusOK, map[string]any{
+			"name":     "projects/stackyard/locations/us-central1/resourcemanager_v3/sample",
+			"service":  "resourcemanager_v3",
+			"provider": providerGCP,
+			"path":     path,
+		})
+		return true
+	}
+
+	return false
 }
 
 func isGCPResourceManagerV3Path(path string) bool {

@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  search-service-data-plane-indexers-2025-09-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/search-service/search-service-data-plane-indexers-2025-09-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_SEARCH_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_SEARCH_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SEARCH_INDEXER=hotels-idxr
+      - STACKYARD_AZURE_SEARCH_DATASOURCE_NAME=hotels-ds
+      - STACKYARD_AZURE_SEARCH_TARGET_INDEX=hotels

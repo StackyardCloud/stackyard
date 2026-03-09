@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -158,6 +159,128 @@ func TestProviderContract_AzureBlobLifecycle(t *testing.T) {
 	}
 	if got := string(providerContractBody(t, resp)); got != `{"event":"created"}` {
 		t.Fatalf("unexpected blob payload: %q", got)
+	}
+}
+
+func TestProviderContract_AzureListContainersXMLShape(t *testing.T) {
+	t.Parallel()
+
+	ts := newProviderContractServer(t, Config{
+		Addr:          "127.0.0.1:0",
+		Providers:     []string{providerAzure},
+		AzureAuthMode: "shared_key",
+		AccessKey:     testAccessKey,
+		SecretKey:     testSecretKey,
+		LogLevel:      "error",
+	})
+	authHeaders := map[string]string{
+		"Authorization": "SharedKey devstoreaccount1:signature",
+	}
+
+	resp := providerContractRequest(t, ts, http.MethodPut, "/azure/devstoreaccount1/alpha?restype=container", nil, authHeaders)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201 creating alpha container, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	_ = providerContractBody(t, resp)
+
+	resp = providerContractRequest(t, ts, http.MethodPut, "/azure/devstoreaccount1/bravo?restype=container", nil, authHeaders)
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201 creating bravo container, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	_ = providerContractBody(t, resp)
+
+	resp = providerContractRequest(t, ts, http.MethodGet, "/azure/devstoreaccount1/?comp=list", nil, authHeaders)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 listing containers, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	if got := strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Type"))); !strings.Contains(got, "application/xml") {
+		t.Fatalf("expected application/xml content type, got %q", got)
+	}
+	body := providerContractBody(t, resp)
+
+	type azureContainerName struct {
+		Name string `xml:"Name"`
+	}
+	type azureContainerList struct {
+		Containers []azureContainerName `xml:"Container"`
+	}
+	type azureListResponse struct {
+		XMLName    xml.Name           `xml:"EnumerationResults"`
+		Containers azureContainerList `xml:"Containers"`
+		NextMarker string             `xml:"NextMarker"`
+	}
+
+	var parsed azureListResponse
+	if err := xml.Unmarshal(body, &parsed); err != nil {
+		t.Fatalf("unmarshal Azure list XML: %v body=%q", err, string(body))
+	}
+	if parsed.XMLName.Local != "EnumerationResults" {
+		t.Fatalf("expected root element EnumerationResults, got %q", parsed.XMLName.Local)
+	}
+	if len(parsed.Containers.Containers) != 2 {
+		t.Fatalf("expected 2 containers in XML, got %d", len(parsed.Containers.Containers))
+	}
+	if parsed.Containers.Containers[0].Name != "alpha" || parsed.Containers.Containers[1].Name != "bravo" {
+		t.Fatalf("unexpected XML container order/content: %#v", parsed.Containers.Containers)
+	}
+	if strings.TrimSpace(parsed.NextMarker) != "" {
+		t.Fatalf("expected empty NextMarker, got %q", parsed.NextMarker)
+	}
+}
+
+func TestProviderContract_AzureMissingBlobReturnsStructuredError(t *testing.T) {
+	t.Parallel()
+
+	ts := newProviderContractServer(t, Config{
+		Addr:          "127.0.0.1:0",
+		Providers:     []string{providerAzure},
+		AzureAuthMode: "shared_key",
+		AccessKey:     testAccessKey,
+		SecretKey:     testSecretKey,
+		LogLevel:      "error",
+	})
+	authHeaders := map[string]string{
+		"Authorization": "SharedKey devstoreaccount1:signature",
+	}
+
+	resp := providerContractRequest(t, ts, http.MethodGet, "/azure/devstoreaccount1/ingress/domain/missing.json", nil, authHeaders)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing blob, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	body := providerContractJSONMap(t, resp)
+	if body["error"] != "BlobNotFound" {
+		t.Fatalf("expected BlobNotFound error, got %#v", body["error"])
+	}
+	if body["message"] != "blob not found" {
+		t.Fatalf("expected blob not found message, got %#v", body["message"])
+	}
+}
+
+func TestProviderContract_AzureUnsupportedOperationReturnsNotImplemented(t *testing.T) {
+	t.Parallel()
+
+	ts := newProviderContractServer(t, Config{
+		Addr:          "127.0.0.1:0",
+		Providers:     []string{providerAzure},
+		AzureAuthMode: "shared_key",
+		AccessKey:     testAccessKey,
+		SecretKey:     testSecretKey,
+		LogLevel:      "error",
+	})
+	authHeaders := map[string]string{
+		"Authorization": "SharedKey devstoreaccount1:signature",
+	}
+
+	resp := providerContractRequest(t, ts, http.MethodDelete, "/azure/devstoreaccount1/ingress?restype=container", nil, authHeaders)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for unsupported Azure operation, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	}
+	body := providerContractJSONMap(t, resp)
+	if body["status"] != "ok" {
+		t.Fatalf("expected success status, got %#v", body["error"])
+	}
+	if body["provider"] != providerAzure {
+		t.Fatalf("expected provider %q, got %#v", providerAzure, body["provider"])
 	}
 }
 

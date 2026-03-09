@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azure-keyvault-secrets:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/keyvault-secrets/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_KEYVAULT_NAME=demo-vault
+      - STACKYARD_AZURE_KEYVAULT_SECRET_NAME=api-token

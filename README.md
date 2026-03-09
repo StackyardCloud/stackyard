@@ -214,7 +214,8 @@ stackyard stop
 Provider support status:
 
 - `aws`: broad emulation coverage
-- `gcp`, `azure`, `oci`: foundational routing plus object storage SDK paths enabled; broader service emulation in progress
+- `gcp`, `oci`: foundational routing plus object storage SDK paths enabled; broader service emulation in progress
+- `azure`: foundational provider with Blob Storage, Queue Storage, Key Vault Secrets, Bot Framework Connector, Bot Connector v3.1 naming compatibility, Direct Line v3.0/v1.1 scaffolding, and AI Services Data Plane Image/Text/List Management coverage for local workflows
 
 Foundational object storage routes for non-AWS providers:
 
@@ -222,8 +223,28 @@ Foundational object storage routes for non-AWS providers:
 - `azure`: Blob container/blob create, list, get, and head via `/azure/{account}/*`
 - `oci`: Object Storage namespace, bucket, and object lifecycle via `/oci/n/*`
 
+Azure foundational service routes:
+
+- `azure blob`: container/blob lifecycle with metadata, conditional headers, and pagination (`/azure/{account}/*`)
+- `azure queue`: queue and message lifecycle (`/azure/queue/{account}/{queue}/*`)
+- `azure keyvault`: secret set/get/list-version lifecycle (`/azure/keyvault/{vault}/secrets/*`)
+- `azure botframework`: conversation/activity/member Connector API lifecycle (`/azure/botframework/v3/*`)
+- `azure ai bot service bot connector (v3.1)`: alias-compatible conversation/activity/member Connector API lifecycle (`/azure/botframework/v3/*`)
+- `azure ai bot service direct line v3.0 (staged)`: direct line route envelope for token, conversation, and activity flows (`/azure/directline/v3/directline/*`)
+- `azure ai bot service direct line v1.1 (staged)`: direct line route envelope for token, conversation, and message flows (`/azure/directline/v1.1/api/*`)
+- `azure data plane image moderation`: evaluate/find-faces/match/ocr workflows (`/azure/contentmoderator/moderate/v1.0/ProcessImage/*`)
+- `azure data plane text moderation`: detect-language and screen workflows (`/azure/contentmoderator/moderate/v1.0/ProcessText/*`)
+- `azure data plane list management`: imagelist create/list/get/update/refresh/delete workflows (`/azure/contentmoderator/lists/v1.0/imagelists*`)
+
 Planned non-AWS expansion:
 
+- `azure bot service/connector (azure-bot-service-4.0)`: staged implementation for conversation/activity/member connector workflows (`docs/azure-bot-service-4.0-plan.md`)
+- `azure ai bot service - bot connector (bot-framework-bot-connector-v3.1)`: staged implementation for Swagger v3.1 connector workflows (`docs/bot-framework-bot-connector-v3.1-plan.md`)
+- `azure ai bot service - direct line (bot-framework-direct-line-v3.0)`: staged implementation for Direct Line v3.0 token, conversation, and activity workflows (`docs/bot-framework-direct-line-v3.0-plan.md`)
+- `azure ai bot service - direct line (bot-framework-direct-line-v1.1)`: staged implementation for Direct Line v1.1 token, conversation, and message workflows (`docs/bot-framework-direct-line-v1.1-plan.md`)
+- `azure data plane image moderation/v1.0`: staged implementation for evaluate/find-faces/match/ocr workflows (`docs/ai-services-data-plane-image-moderation-v1.0-plan.md`)
+- `azure data plane text moderation/v1.0`: staged implementation for detect-language/screen workflows (`docs/ai-services-data-plane-text-moderation-v1.0-plan.md`)
+- `azure data plane list management/v1.0`: staged implementation for imagelist lifecycle and refresh-index workflows (`docs/ai-services-data-plane-list-management-v1.0-plan.md`)
 - `gcp generativelanguage/apiv1`: staged implementation for model discovery and generative RPCs (`docs/gcp-generativelanguage-apiv1-plan.md`)
 - `gcp geminidataanalytics/apiv1beta`: staged implementation for data agent lifecycle, conversational analytics workflows, and operation controls (`docs/gcp-geminidataanalytics-apiv1beta-plan.md`)
 - `gcp aiplatform/apiv1`: staged implementation for Vertex AI resources, jobs, and prediction flows (`docs/gcp-aiplatform-apiv1-plan.md`)
@@ -359,6 +380,13 @@ SDK endpoint override base URLs:
 
 - GCP Cloud Storage SDK: `http://localhost:4566/gcp`
 - Azure Blob SDK: `http://localhost:4566/azure/<storage-account>`
+- Azure Bot Framework Connector (Azure Go SDK `azcore`): `http://localhost:4566/azure/botframework`
+- Azure AI Bot Service - Bot Connector v3.1 (Azure Go SDK `azcore`): `http://localhost:4566/azure/botframework`
+- Azure AI Bot Service - Direct Line v3.0 (Azure Go SDK `azcore`): `http://localhost:4566/azure/directline`
+- Azure AI Bot Service - Direct Line v1.1 (Azure Go SDK `azcore`): `http://localhost:4566/azure/directline`
+- Azure AI Services Data Plane - Image Moderation (Azure Go SDK `azcore`): `http://localhost:4566/azure/contentmoderator`
+- Azure AI Services Data Plane - Text Moderation (Azure Go SDK `azcore`): `http://localhost:4566/azure/contentmoderator`
+- Azure AI Services Data Plane - List Management (Azure Go SDK `azcore`): `http://localhost:4566/azure/contentmoderator`
 - OCI Object Storage SDK: `http://localhost:4566/oci`
 
 Provider auth modes (configurable via CLI flags or env vars):

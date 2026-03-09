@@ -1,46 +1,26 @@
 package server
 
-import "strings"
+import (
+	"strings"
 
-const (
-	providerAWS   = "aws"
-	providerGCP   = "gcp"
-	providerAzure = "azure"
-	providerOCI   = "oci"
+	"github.com/stackyard/stackyard/internal/providerconfig"
 )
 
-var supportedProviderSet = map[string]struct{}{
-	providerAWS:   {},
-	providerGCP:   {},
-	providerAzure: {},
-	providerOCI:   {},
-}
+const (
+	providerAWS   = providerconfig.ProviderAWS
+	providerGCP   = providerconfig.ProviderGCP
+	providerAzure = providerconfig.ProviderAzure
+	providerOCI   = providerconfig.ProviderOCI
+)
+
+var supportedProviderSet = toProviderSet(providerconfig.SupportedProviders())
 
 func supportedProviders() []string {
-	return []string{providerAWS, providerGCP, providerAzure, providerOCI}
+	return providerconfig.SupportedProviders()
 }
 
 func normalizeEnabledProviders(raw []string) []string {
-	seen := map[string]struct{}{}
-	out := make([]string, 0, len(raw))
-	for _, item := range raw {
-		provider := strings.ToLower(strings.TrimSpace(item))
-		if provider == "" {
-			continue
-		}
-		if _, ok := supportedProviderSet[provider]; !ok {
-			continue
-		}
-		if _, ok := seen[provider]; ok {
-			continue
-		}
-		seen[provider] = struct{}{}
-		out = append(out, provider)
-	}
-	if len(out) == 0 {
-		return []string{providerAWS}
-	}
-	return out
+	return providerconfig.NormalizeEnabledProviders(raw)
 }
 
 func toProviderSet(providers []string) map[string]struct{} {

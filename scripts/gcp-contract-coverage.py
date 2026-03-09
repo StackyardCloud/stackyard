@@ -1038,6 +1038,14 @@ def should_fail(services: list[ServiceCoverage], fail_on: set[str]) -> bool:
     return any(checks.get(token, False) for token in fail_on)
 
 
+def write_report_json(path: str, payload: dict[str, object]) -> None:
+    if not path:
+        return
+    report_path = Path(path)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze GCP validation/fixture/negative-test coverage.")
     parser.add_argument(
@@ -1057,6 +1065,11 @@ def main() -> int:
         help="Output format.",
     )
     parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Alias for --format json.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Include per-service detail rows in text output.",
@@ -1066,11 +1079,41 @@ def main() -> int:
         default="",
         help="Comma-separated fail gates: validation,fixtures,negative,any",
     )
+    parser.add_argument(
+        "--report-json",
+        default="",
+        help="Optional path to write JSON output payload.",
+    )
+    parser.add_argument(
+        "--list-services",
+        action="store_true",
+        help="List discovered services and exit.",
+    )
     args = parser.parse_args()
+    if args.json:
+        args.format = "json"
 
     sources = list_service_sources()
     service_selector = normalize_service_selector(args.service)
     required_service = normalize_service_selector(args.require_service) if args.require_service else ""
+
+    if args.list_services:
+        discovered = sorted(sources)
+        if args.format == "json":
+            payload = {
+                "provider": "gcp",
+                "mode": "contract",
+                "services": discovered,
+                "count": len(discovered),
+            }
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            write_report_json(args.report_json, payload)
+        else:
+            for service in discovered:
+                print(service)
+            print(f"total: {len(discovered)}")
+        return 0
+
     matched_services: list[str] = []
     services: list[ServiceCoverage] = []
     for service, source_path in sorted(sources.items()):
@@ -1087,21 +1130,27 @@ def main() -> int:
         print(f"required service not matched by selector: {required_service}", file=sys.stderr)
         return 2
 
+    payload = {
+        "provider": "gcp",
+        "mode": "contract",
+        "service_selector": service_selector,
+        "required_service": required_service,
+        "services": [asdict(svc) for svc in services],
+        "summary": {
+            "total": len(services),
+            "request_validation": sum(1 for svc in services if svc.request_validation),
+            "typed_success_fixtures": sum(1 for svc in services if svc.typed_success_fixtures),
+            "negative_contract_tests": sum(1 for svc in services if svc.negative_contract_tests),
+            "strict_all_three": sum(1 for svc in services if svc.score == 3),
+        },
+    }
+
     if args.format == "json":
-        payload = {
-            "services": [asdict(svc) for svc in services],
-            "summary": {
-                "total": len(services),
-                "request_validation": sum(1 for svc in services if svc.request_validation),
-                "typed_success_fixtures": sum(1 for svc in services if svc.typed_success_fixtures),
-                "negative_contract_tests": sum(1 for svc in services if svc.negative_contract_tests),
-                "strict_all_three": sum(1 for svc in services if svc.score == 3),
-            },
-        }
         json.dump(payload, sys.stdout, indent=2)
         sys.stdout.write("\n")
     else:
         print_text_report(services, verbose=args.verbose)
+    write_report_json(args.report_json, payload)
 
     fail_on = parse_fail_on(args.fail_on)
     if should_fail(services, fail_on):
