@@ -681,8 +681,8 @@ func respondGCPVisionAIList(w http.ResponseWriter, key string, items []map[strin
 
 func gcpVisionAILocation(project, location string) map[string]any {
 	return map[string]any{
-		"name":       fmt.Sprintf("projects/%s/locations/%s", project, location),
-		"locationId": location,
+		"name":        fmt.Sprintf("projects/%s/locations/%s", project, location),
+		"locationId":  location,
 		"displayName": strings.ToUpper(strings.ReplaceAll(location, "-", " ")),
 		"metadata": map[string]any{
 			"service": "visionai",
@@ -717,11 +717,11 @@ func gcpVisionAIApplicationFixture(project, location, appID string) map[string]a
 
 func gcpVisionAIOperatorFixture(project, location, operatorID string) map[string]any {
 	return map[string]any{
-		"name":          fmt.Sprintf("projects/%s/locations/%s/operators/%s", project, location, operatorID),
-		"dockerImage":   "gcr.io/stackyard/visionai/operator:latest",
-		"createTime":    gcpVisionAIReferenceTime.Format(time.RFC3339Nano),
-		"updateTime":    gcpVisionAIReferenceTime.Add(2 * time.Second).Format(time.RFC3339Nano),
-		"labels":        map[string]any{"source": "public"},
+		"name":        fmt.Sprintf("projects/%s/locations/%s/operators/%s", project, location, operatorID),
+		"dockerImage": "gcr.io/stackyard/visionai/operator:latest",
+		"createTime":  gcpVisionAIReferenceTime.Format(time.RFC3339Nano),
+		"updateTime":  gcpVisionAIReferenceTime.Add(2 * time.Second).Format(time.RFC3339Nano),
+		"labels":      map[string]any{"source": "public"},
 		"operatorDefinition": map[string]any{
 			"operator": operatorID,
 		},

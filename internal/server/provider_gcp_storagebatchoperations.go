@@ -1023,12 +1023,12 @@ func gcpStorageBatchOperationsJob(project, jobID, state string) map[string]any {
 		"deleteObject": map[string]any{
 			"permanentObjectDeletionEnabled": true,
 		},
-		"createTime":     createTime.Format(time.RFC3339Nano),
-		"scheduleTime":   scheduleTime.Format(time.RFC3339Nano),
-		"counters":       counters,
-		"errorSummaries": errorSummaries,
-		"state":          state,
-		"dryRun":         false,
+		"createTime":       createTime.Format(time.RFC3339Nano),
+		"scheduleTime":     scheduleTime.Format(time.RFC3339Nano),
+		"counters":         counters,
+		"errorSummaries":   errorSummaries,
+		"state":            state,
+		"dryRun":           false,
 		"isMultiBucketJob": false,
 	}
 	if state != "RUNNING" && state != "QUEUED" {

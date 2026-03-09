@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  ai-services-data-plane-document-classifiers-v4-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/data-plane-document-classifiers-v4.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_AISERVICES_CLASSIFIER_ID=invoice-classifier
+      - STACKYARD_AZURE_AISERVICES_TARGET_CLASSIFIER_ID=invoice-classifier-copy
+      - STACKYARD_AZURE_AISERVICES_RESULT_ID=result-1
+      - STACKYARD_AZURE_AISERVICES_DOCUMENT_URL=https://example.com/invoice.pdf

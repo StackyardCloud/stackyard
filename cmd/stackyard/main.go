@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stackyard/stackyard/internal/providerconfig"
 	"github.com/stackyard/stackyard/internal/server"
 )
 
@@ -24,15 +25,7 @@ const (
 	defaultHTTP2Port       = 4567
 	defaultShutdownTimeout = 10 * time.Second
 	startupWaitTimeout     = 5 * time.Second
-	supportedProvidersText = "aws, gcp, azure, oci"
 )
-
-var supportedProviders = map[string]struct{}{
-	"aws":   {},
-	"gcp":   {},
-	"azure": {},
-	"oci":   {},
-}
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr, os.Getenv); err != nil {
@@ -491,7 +484,7 @@ func bindServeFlags(fs *flag.FlagSet, getenv func(string) string) *serveFlagValu
 		snapshotLoadStrategy: envOrDefault(getenv, "STACKYARD_SNAPSHOT_LOAD_STRATEGY", "on_startup"),
 		snapshotSaveStrategy: envOrDefault(getenv, "STACKYARD_SNAPSHOT_SAVE_STRATEGY", "on_request"),
 	}
-	fs.StringVar(&values.providersValue, "providers", values.providersValue, "Comma-separated providers to enable (currently: "+supportedProvidersText+")")
+	fs.StringVar(&values.providersValue, "providers", values.providersValue, "Comma-separated providers to enable (currently: "+providerconfig.SupportedProvidersText()+")")
 	fs.StringVar(&values.addr, "addr", values.addr, "HTTP listen address (example: :4566)")
 	fs.IntVar(&values.port, "port", values.port, "HTTP listen port (used when --addr is not provided)")
 	fs.StringVar(&values.h2Addr, "h2-addr", values.h2Addr, "HTTP/2 listen address for gRPC clients (example: :4567)")
@@ -499,9 +492,9 @@ func bindServeFlags(fs *flag.FlagSet, getenv func(string) string) *serveFlagValu
 	fs.StringVar(&values.accessKey, "aws-access-key", values.accessKey, "Access key expected by SigV4 validation")
 	fs.StringVar(&values.secretKey, "aws-secret-key", values.secretKey, "Secret key expected by SigV4 validation")
 	fs.StringVar(&values.logLevel, "log-level", values.logLevel, "Log level (debug, info, warn, error)")
-	fs.StringVar(&values.gcpAuthMode, "gcp-auth-mode", values.gcpAuthMode, "GCP request auth mode (emulator, bearer_tolerant, bearer_required)")
-	fs.StringVar(&values.azureAuthMode, "azure-auth-mode", values.azureAuthMode, "Azure request auth mode (shared_key_or_sas, shared_key, sas, disabled)")
-	fs.StringVar(&values.ociAuthMode, "oci-auth-mode", values.ociAuthMode, "OCI request auth mode (signature, disabled)")
+	fs.StringVar(&values.gcpAuthMode, "gcp-auth-mode", values.gcpAuthMode, "GCP request auth mode ("+providerconfig.GCPAuthModesText()+")")
+	fs.StringVar(&values.azureAuthMode, "azure-auth-mode", values.azureAuthMode, "Azure request auth mode ("+providerconfig.AzureAuthModesText()+")")
+	fs.StringVar(&values.ociAuthMode, "oci-auth-mode", values.ociAuthMode, "OCI request auth mode ("+providerconfig.OCIAuthModesText()+")")
 	fs.StringVar(&values.lambdaExecutionMode, "lambda-execution-mode", values.lambdaExecutionMode, "Lambda invoke behavior (mock, local)")
 	fs.StringVar(&values.lambdaWorkDir, "lambda-work-dir", values.lambdaWorkDir, "Lambda local execution workspace directory")
 	fs.BoolVar(&values.persistenceEnabled, "persist-state", values.persistenceEnabled, "Enable persistent state journal and startup replay")
@@ -564,29 +557,17 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 	if err != nil {
 		return serveOptions{}, err
 	}
-	gcpAuthMode := strings.ToLower(strings.TrimSpace(values.gcpAuthMode))
-	switch gcpAuthMode {
-	case "", "emulator":
-		gcpAuthMode = "emulator"
-	case "bearer_tolerant", "bearer_required":
-	default:
-		return serveOptions{}, fmt.Errorf("unsupported --gcp-auth-mode %q (supported: emulator, bearer_tolerant, bearer_required)", values.gcpAuthMode)
+	gcpAuthMode, ok := providerconfig.NormalizeGCPAuthMode(values.gcpAuthMode)
+	if !ok {
+		return serveOptions{}, fmt.Errorf("unsupported --gcp-auth-mode %q (supported: %s)", values.gcpAuthMode, providerconfig.GCPAuthModesText())
 	}
-	azureAuthMode := strings.ToLower(strings.TrimSpace(values.azureAuthMode))
-	switch azureAuthMode {
-	case "", "shared_key_or_sas":
-		azureAuthMode = "shared_key_or_sas"
-	case "shared_key", "sas", "disabled":
-	default:
-		return serveOptions{}, fmt.Errorf("unsupported --azure-auth-mode %q (supported: shared_key_or_sas, shared_key, sas, disabled)", values.azureAuthMode)
+	azureAuthMode, ok := providerconfig.NormalizeAzureAuthMode(values.azureAuthMode)
+	if !ok {
+		return serveOptions{}, fmt.Errorf("unsupported --azure-auth-mode %q (supported: %s)", values.azureAuthMode, providerconfig.AzureAuthModesText())
 	}
-	ociAuthMode := strings.ToLower(strings.TrimSpace(values.ociAuthMode))
-	switch ociAuthMode {
-	case "", "signature":
-		ociAuthMode = "signature"
-	case "disabled":
-	default:
-		return serveOptions{}, fmt.Errorf("unsupported --oci-auth-mode %q (supported: signature, disabled)", values.ociAuthMode)
+	ociAuthMode, ok := providerconfig.NormalizeOCIAuthMode(values.ociAuthMode)
+	if !ok {
+		return serveOptions{}, fmt.Errorf("unsupported --oci-auth-mode %q (supported: %s)", values.ociAuthMode, providerconfig.OCIAuthModesText())
 	}
 	lambdaExecutionMode := strings.ToLower(strings.TrimSpace(values.lambdaExecutionMode))
 	switch lambdaExecutionMode {
@@ -633,27 +614,7 @@ func finalizeServeOptions(fs *flag.FlagSet, values *serveFlagValues) (serveOptio
 }
 
 func parseProviders(raw string) ([]string, error) {
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	seen := map[string]struct{}{}
-	for _, part := range parts {
-		p := strings.ToLower(strings.TrimSpace(part))
-		if p == "" {
-			continue
-		}
-		if _, ok := seen[p]; ok {
-			continue
-		}
-		if _, ok := supportedProviders[p]; !ok {
-			return nil, fmt.Errorf("unsupported provider %q (supported: %s)", p, supportedProvidersText)
-		}
-		seen[p] = struct{}{}
-		out = append(out, p)
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("at least one provider must be set (supported: %s)", supportedProvidersText)
-	}
-	return out, nil
+	return providerconfig.ParseProvidersCSV(raw)
 }
 
 func resolveSiblingPortAddr(addr string, port int) string {

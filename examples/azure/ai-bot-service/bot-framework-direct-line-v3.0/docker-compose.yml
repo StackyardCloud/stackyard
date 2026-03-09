@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  bot-framework-direct-line-v3-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-bot-service/bot-framework-direct-line-v3.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DIRECTLINE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DIRECTLINE_USER_ID=directline-user-1

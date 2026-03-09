@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azure-queue-storage:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/queue-storage/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_QUEUE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_QUEUE_NAME=work-items

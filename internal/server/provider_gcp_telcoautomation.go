@@ -480,8 +480,8 @@ func handleGCPTelcoAutomationCreateEdgeSlm(w http.ResponseWriter, r *http.Reques
 		"create",
 		edgeName,
 		map[string]any{
-			"@type": "type.googleapis.com/google.cloud.telcoautomation.v1.EdgeSlm",
-			"name":  edge["name"],
+			"@type":                "type.googleapis.com/google.cloud.telcoautomation.v1.EdgeSlm",
+			"name":                 edge["name"],
 			"orchestrationCluster": edge["orchestrationCluster"],
 			"createTime":           edge["createTime"],
 			"updateTime":           edge["updateTime"],
@@ -1198,8 +1198,8 @@ func handleGCPTelcoAutomationGetOperation(w http.ResponseWriter, path string) bo
 		target = fmt.Sprintf("projects/%s/locations/%s/edgeSlms/%s", project, location, edgeID)
 		edge := gcpTelcoAutomationEdgeSlm(project, location, edgeID, "cluster-1", 2)
 		response = map[string]any{
-			"@type": "type.googleapis.com/google.cloud.telcoautomation.v1.EdgeSlm",
-			"name":  edge["name"],
+			"@type":                "type.googleapis.com/google.cloud.telcoautomation.v1.EdgeSlm",
+			"name":                 edge["name"],
 			"orchestrationCluster": edge["orchestrationCluster"],
 			"createTime":           edge["createTime"],
 			"updateTime":           edge["updateTime"],
@@ -1754,13 +1754,13 @@ func gcpTelcoAutomationBlueprint(project, location, clusterID, blueprintID, revi
 		name += "@" + revisionID
 	}
 	return map[string]any{
-		"name":              name,
-		"revisionId":        revisionID,
-		"sourceBlueprint":   fmt.Sprintf("projects/%s/locations/%s/publicBlueprints/public-blueprint-1", project, location),
+		"name":               name,
+		"revisionId":         revisionID,
+		"sourceBlueprint":    fmt.Sprintf("projects/%s/locations/%s/publicBlueprints/public-blueprint-1", project, location),
 		"revisionCreateTime": gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"approvalState":     approvalState,
-		"displayName":       "Stackyard Blueprint " + blueprintID,
-		"repository":        fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/blueprints/%s/repository", project, location, clusterID, blueprintID),
+		"approvalState":      approvalState,
+		"displayName":        "Stackyard Blueprint " + blueprintID,
+		"repository":         fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/blueprints/%s/repository", project, location, clusterID, blueprintID),
 		"files": []map[string]any{
 			{
 				"path":     "deployments/main.yaml",
@@ -1771,11 +1771,11 @@ func gcpTelcoAutomationBlueprint(project, location, clusterID, blueprintID, revi
 		"labels": map[string]string{
 			"env": "staged",
 		},
-		"createTime":       gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"updateTime":       gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"sourceProvider":   "Google",
-		"deploymentLevel":  2,
-		"rollbackSupport":  true,
+		"createTime":      gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
+		"updateTime":      gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
+		"sourceProvider":  "Google",
+		"deploymentLevel": 2,
+		"rollbackSupport": true,
 	}
 }
 
@@ -1796,13 +1796,13 @@ func gcpTelcoAutomationDeployment(project, location, clusterID, deploymentID, re
 		name += "@" + revisionID
 	}
 	return map[string]any{
-		"name":                   name,
-		"revisionId":             revisionID,
+		"name":                    name,
+		"revisionId":              revisionID,
 		"sourceBlueprintRevision": fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/blueprints/blueprint-approved@rev-3", project, location, clusterID),
-		"revisionCreateTime":     gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"state":                  state,
-		"displayName":            "Stackyard Deployment " + deploymentID,
-		"repository":             fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/deployments/%s/repository", project, location, clusterID, deploymentID),
+		"revisionCreateTime":      gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
+		"state":                   state,
+		"displayName":             "Stackyard Deployment " + deploymentID,
+		"repository":              fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/deployments/%s/repository", project, location, clusterID, deploymentID),
 		"files": []map[string]any{
 			{
 				"path":     "deployments/workload.yaml",
@@ -1813,18 +1813,18 @@ func gcpTelcoAutomationDeployment(project, location, clusterID, deploymentID, re
 		"labels": map[string]string{
 			"env": "staged",
 		},
-		"createTime":       gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"updateTime":       gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
-		"sourceProvider":   "Google",
-		"deploymentLevel":  2,
-		"rollbackSupport":  true,
-		"workloadCluster":  fmt.Sprintf("projects/%s/locations/%s/workloadClusters/workload-1", project, location),
+		"createTime":      gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
+		"updateTime":      gcpTelcoAutomationReferenceTime.Format(time.RFC3339),
+		"sourceProvider":  "Google",
+		"deploymentLevel": 2,
+		"rollbackSupport": true,
+		"workloadCluster": fmt.Sprintf("projects/%s/locations/%s/workloadClusters/workload-1", project, location),
 	}
 }
 
 func gcpTelcoAutomationHydratedDeployment(project, location, clusterID, deploymentID, hydratedID string, state int32) map[string]any {
 	return map[string]any{
-		"name": fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/deployments/%s/hydratedDeployments/%s", project, location, clusterID, deploymentID, hydratedID),
+		"name":  fmt.Sprintf("projects/%s/locations/%s/orchestrationClusters/%s/deployments/%s/hydratedDeployments/%s", project, location, clusterID, deploymentID, hydratedID),
 		"state": state,
 		"files": []map[string]any{
 			{

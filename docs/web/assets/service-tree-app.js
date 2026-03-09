@@ -101,6 +101,37 @@ function buildTreeData() {
     });
   }
 
+  if (
+    typeof window !== "undefined" &&
+    window.AZURE_SERVICE_CATALOG &&
+    Array.isArray(window.AZURE_SERVICE_CATALOG.services)
+  ) {
+    const azureCatalog = window.AZURE_SERVICE_CATALOG;
+    const azureCategories = azureCatalog.categories || {};
+    const categories = {};
+
+    azureCatalog.services.forEach((service) => {
+      const categoryId = service.category || "uncategorized";
+      const categoryName = azureCategories[categoryId]?.label || categoryId;
+      if (!categories[categoryId]) {
+        categories[categoryId] = {
+          name: categoryName,
+          services: []
+        };
+      }
+      categories[categoryId].services.push({
+        name: service.name,
+        id: service.id,
+        endpoints: serviceEndpointNodes(service)
+      });
+    });
+
+    providers.push({
+      name: "azure",
+      categories: Object.values(categories).sort((a, b) => a.name.localeCompare(b.name))
+    });
+  }
+
   providers.forEach((provider) => {
     provider.categories.forEach((category) => {
       category.services.sort((a, b) => a.name.localeCompare(b.name));

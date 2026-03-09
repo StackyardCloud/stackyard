@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  ai-services-data-plane-image-moderation-v1-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/data-plane-image-moderation-v1.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATA_PLANE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATA_PLANE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_DATA_PLANE_LIST_ID=12345
+      - STACKYARD_AZURE_DATA_PLANE_LANGUAGE=eng
+      - STACKYARD_AZURE_DATA_PLANE_IMAGE_URL=https://example.com/safe-image.jpg

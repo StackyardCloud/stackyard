@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stackyard Docs | Azure Services</title>
+    <meta
+      name="description"
+      content="Stackyard Azure services catalog for local cloud API emulation and capability tracking."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="../../index.html">
+          <span class="brand-mark">S</span>
+          <span>Stackyard Docs</span>
+        </a>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="../../index.html">Overview</a>
+          <a href="../../aws/index.html">AWS</a>
+          <a href="../../aws/services/index.html">AWS Services</a>
+          <a href="../../gcp/index.html">GCP</a>
+          <a href="../../gcp/services/index.html">GCP Services</a>
+          <a href="../index.html">Azure</a>
+          <a href="./index.html" aria-current="page">Azure Services</a>
+          <a href="../../tree/index.html">Service Tree</a>
+          <a href="../../../azure-provider-foundation-plan.md">Azure Foundation Plan</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="docs-shell">
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <section class="sidebar-card">
+          <p class="sidebar-title">Navigation</p>
+          <nav class="sidebar-links">
+            <a href="../../index.html">Docs Overview</a>
+            <a href="../index.html">Azure Overview</a>
+            <a href="./index.html" aria-current="page">Azure Services</a>
+            <a href="../../aws/services/index.html">AWS Services</a>
+            <a href="../../gcp/services/index.html">GCP Services</a>
+            <a href="../../tree/index.html">Service Tree</a>
+            <a href="../../../azure-provider-foundation-plan.md">Azure Foundation Plan</a>
+          </nav>
+        </section>
+
+        <section class="sidebar-card">
+          <h2>Service Index</h2>
+          <nav class="service-nav" data-service-nav aria-label="Service index"></nav>
+        </section>
+      </aside>
+
+      <main class="content">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">Docs / Azure / Services</nav>
+
+        <section class="hero reveal" id="catalog-overview">
+          <h1>Azure Services in Stackyard</h1>
+          <p>
+            Browse Stackyard Azure-compatible services, filter by capability domain, and jump directly into the staged
+            implementation plan and runnable examples.
+          </p>
+          <p>
+            Current services include Blob Storage, Queue Storage, Azure Bot Framework, Key Vault Secrets, AI Services
+            Data Plane Image Moderation, Data Plane Text Moderation, Data Plane List Management, and Bot
+            Connector v3.1 plus Direct Line v3.0 and Direct Line v1.1.
+          </p>
+          <div class="hero-meta">
+            <span class="pill accent"><span data-total-services>0</span> services listed</span>
+            <span class="pill neutral"><span data-example-services>0</span> with SDK examples</span>
+            <span class="pill warn"><span data-documented-services>0</span> with staged plans</span>
+            <span class="pill neutral"><span data-full-gates>0</span> provider services at full contract gates</span>
+          </div>
+        </section>
+
+        <section class="filters reveal" aria-label="Service filters">
+          <div class="search-wrap">
+            <input
+              type="search"
+              placeholder="Search services, categories, IDs, or capabilities"
+              aria-label="Search services"
+              data-service-search
+            />
+          </div>
+          <div class="filter-chips" data-filter-chips></div>
+          <p class="filter-meta" data-visible-count>Showing 0 services</p>
+        </section>
+
+        <div class="service-catalog" data-services></div>
+      </main>
+
+      <aside class="toc" aria-label="On this page">
+        <section class="toc-card">
+          <h2>On this page</h2>
+          <p>Quick jumps for the Azure catalog sections.</p>
+          <nav class="toc-links">
+            <a href="#catalog-overview">Overview</a>
+            <a href="#category-storage">Storage</a>
+            <a href="#category-integration">Integration</a>
+            <a href="#category-security">Security</a>
+          </nav>
+        </section>
+      </aside>
+    </div>
+
+    <footer>
+      Azure service source data lives in <code>docs/web/assets/azure-catalog.js</code>.
+    </footer>
+
+    <script src="../../assets/azure-catalog.js" defer></script>
+    <script src="../../assets/azure-app.js" defer></script>
+  </body>
+</html>
