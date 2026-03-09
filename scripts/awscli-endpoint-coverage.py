@@ -3303,6 +3303,24 @@ class Result:
     command: str
 
 
+def sigv4_sha256_hexdigest(data: bytes) -> str:
+    # AWS SigV4 requires SHA-256 for payload and canonical request hashing.
+    # lgtm [py/weak-sensitive-data-hashing]
+    return hashlib.sha256(data).hexdigest()
+
+
+def sigv4_hmac_sha256_digest(key: bytes, msg: str) -> bytes:
+    # AWS SigV4 key derivation is defined in terms of HMAC-SHA256.
+    # lgtm [py/weak-sensitive-data-hashing]
+    return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+
+def sigv4_hmac_sha256_hexdigest(key: bytes, data: str) -> str:
+    # AWS SigV4 request signing is defined in terms of HMAC-SHA256.
+    # lgtm [py/weak-sensitive-data-hashing]
+    return hmac.new(key, data.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 def sigv4_sign(
     method: str,
     url: str,
@@ -3324,7 +3342,7 @@ def sigv4_sign(
     now = datetime.datetime.now(datetime.timezone.utc)
     amz_date = now.strftime("%Y%m%dT%H%M%SZ")
     date_stamp = now.strftime("%Y%m%d")
-    payload_hash = hashlib.sha256(body).hexdigest()
+    payload_hash = sigv4_sha256_hexdigest(body)
 
     headers: dict[str, str] = {
         "host": host,
@@ -3358,18 +3376,14 @@ def sigv4_sign(
             "AWS4-HMAC-SHA256",
             amz_date,
             credential_scope,
-            hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+            sigv4_sha256_hexdigest(canonical_request.encode("utf-8")),
         ]
     )
-
-    def _hmac(key: bytes, msg: str) -> bytes:
-        return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
-
-    k_date = _hmac(("AWS4" + secret_key).encode("utf-8"), date_stamp)
-    k_region = _hmac(k_date, region)
-    k_service = _hmac(k_region, service)
-    k_signing = _hmac(k_service, "aws4_request")
-    signature = hmac.new(k_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+    k_date = sigv4_hmac_sha256_digest(("AWS4" + secret_key).encode("utf-8"), date_stamp)
+    k_region = sigv4_hmac_sha256_digest(k_date, region)
+    k_service = sigv4_hmac_sha256_digest(k_region, service)
+    k_signing = sigv4_hmac_sha256_digest(k_service, "aws4_request")
+    signature = sigv4_hmac_sha256_hexdigest(k_signing, string_to_sign)
 
     authorization = (
         "AWS4-HMAC-SHA256 "
