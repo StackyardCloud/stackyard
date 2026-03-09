@@ -21,11 +21,11 @@ import copy
 import datetime
 import fnmatch
 import hashlib
-import hmac
 import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -3303,22 +3303,61 @@ class Result:
     command: str
 
 
-def sigv4_sha256_hexdigest(data: bytes) -> str:
+_OPENSSL_BIN: str | None = None
+
+
+def openssl_bin() -> str:
+    global _OPENSSL_BIN
+    if _OPENSSL_BIN:
+        return _OPENSSL_BIN
+    path = shutil.which("openssl")
+    if not path:
+        raise RuntimeError("openssl is required for AWS SigV4 signing")
+    _OPENSSL_BIN = path
+    return path
+
+
+def sigv4_sha256_digest(data: bytes) -> bytes:
     # AWS SigV4 requires SHA-256 for payload and canonical request hashing.
-    # lgtm [py/weak-sensitive-data-hashing]
-    return hashlib.sha256(data).hexdigest()
+    proc = subprocess.run(
+        [openssl_bin(), "dgst", "-sha256", "-binary"],
+        input=data,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"openssl sha256 failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    return proc.stdout
+
+
+def sigv4_sha256_hexdigest(data: bytes) -> str:
+    return sigv4_sha256_digest(data).hex()
 
 
 def sigv4_hmac_sha256_digest(key: bytes, msg: str) -> bytes:
     # AWS SigV4 key derivation is defined in terms of HMAC-SHA256.
-    # lgtm [py/weak-sensitive-data-hashing]
-    return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+    proc = subprocess.run(
+        [
+            openssl_bin(),
+            "dgst",
+            "-sha256",
+            "-mac",
+            "HMAC",
+            "-macopt",
+            f"hexkey:{key.hex()}",
+            "-binary",
+        ],
+        input=msg.encode("utf-8"),
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"openssl hmac-sha256 failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    return proc.stdout
 
 
 def sigv4_hmac_sha256_hexdigest(key: bytes, data: str) -> str:
-    # AWS SigV4 request signing is defined in terms of HMAC-SHA256.
-    # lgtm [py/weak-sensitive-data-hashing]
-    return hmac.new(key, data.encode("utf-8"), hashlib.sha256).hexdigest()
+    return sigv4_hmac_sha256_digest(key, data).hex()
 
 
 def sigv4_sign(
