@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const azureQueueMaxDequeueMessages = 32
+
 type azureQueueMessage struct {
 	ID         string
 	PopReceipt string
@@ -105,8 +107,11 @@ func (s *Server) handleAzureQueueDequeue(w http.ResponseWriter, r *http.Request,
 	num := 1
 	if raw := strings.TrimSpace(r.URL.Query().Get("numofmessages")); raw != "" {
 		value, err := strconv.Atoi(raw)
-		if err != nil || value <= 0 {
-			respondJSON(w, http.StatusBadRequest, map[string]any{"error": "InvalidQueryParameterValue", "message": "numofmessages must be a positive integer"})
+		if err != nil || value <= 0 || value > azureQueueMaxDequeueMessages {
+			respondJSON(w, http.StatusBadRequest, map[string]any{
+				"error":   "InvalidQueryParameterValue",
+				"message": fmt.Sprintf("numofmessages must be between 1 and %d", azureQueueMaxDequeueMessages),
+			})
 			return
 		}
 		num = value
