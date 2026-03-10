@@ -35,11 +35,23 @@ jobs:
         with:
           go-version: "1.23"
 
-      - name: Install AWS CLI
+      - name: Install AWS CLI v2
         if: matrix.provider == 'aws'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
+          set -euo pipefail
+          case "$(uname -m)" in
+            x86_64|amd64) aws_arch="x86_64" ;;
+            aarch64|arm64) aws_arch="aarch64" ;;
+            *)
+              echo "unsupported runner architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}.zip" -o /tmp/awscliv2.zip
+          rm -rf /tmp/aws
+          unzip -q /tmp/awscliv2.zip -d /tmp
+          sudo /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+          aws --version
 
       - name: Run nightly provider contract suite
         run: |
