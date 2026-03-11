@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  account-management-2024-10-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/account-management-2024-10-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-ai
+      - STACKYARD_AZURE_ACCOUNT_NAME=stackyard-ai
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_DEPLOYMENT_NAME=gpt4o

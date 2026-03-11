@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  openai-2024-10-21:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/openai-2024-10-21/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_OPENAI_FILE_ID=file-abc
+      - STACKYARD_AZURE_OPENAI_BATCH_ID=batch-123
+      - STACKYARD_AZURE_OPENAI_FINE_TUNING_JOB_ID=ftjob-123
+      - STACKYARD_AZURE_OPENAI_UPLOAD_ID=upload-123
+      - STACKYARD_AZURE_OPENAI_MODEL_NAME=gpt-4o-mini

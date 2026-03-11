@@ -1786,6 +1786,81 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureBotFrameworkRouter(w, r) {
 			return
 		}
+		if s.handleAzureTextToSpeechRouter(w, r) {
+			return
+		}
+		if s.handleAzureBatchAvatarRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputerVisionRouter(w, r) {
+			return
+		}
+		if s.handleAzureCustomVisionRouter(w, r) {
+			return
+		}
+		if s.handleAzureFaceRouter(w, r) {
+			return
+		}
+		if s.handleAzureCustomVoiceRouter(w, r) {
+			return
+		}
+		if s.handleAzureOpenAIRouter(w, r) {
+			return
+		}
+		if s.handleAzureAKSRouter(w, r) {
+			return
+		}
+		if s.handleAzureAnalysisServicesRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPICenterDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPICenterResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPIManagementResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppConfigurationResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppConfigurationDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppComplianceRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIFoundryModelInferenceRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIFoundryAccountManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureAccountManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureLuisRouter(w, r) {
+			return
+		}
+		if s.handleAzurePersonalizerRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpeakerRecognitionRouter(w, r) {
+			return
+		}
+		if s.handleAzureTranslatorRouter(w, r) {
+			return
+		}
+		if s.handleAzureVideoTranslationRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpeechToTextRouter(w, r) {
+			return
+		}
+		if s.handleAzureHealthInsightsRouter(w, r) {
+			return
+		}
 		if s.handleAzureSearchManagementResourceManagerAdminKeysRouter(w, r) {
 			return
 		}
@@ -1858,6 +1933,12 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureAIServicesDocumentClassifiersRouter(w, r) {
 			return
 		}
+		if s.handleAzureContentUnderstandingRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentSafetyRouter(w, r) {
+			return
+		}
 		if s.handleAzureContentModeratorImageModerationRouter(w, r) {
 			return
 		}
@@ -1865,6 +1946,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureContentModeratorListManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentModeratorRouter(w, r) {
 			return
 		}
 		if s.handleAzureKeyVaultRouter(w, r) {

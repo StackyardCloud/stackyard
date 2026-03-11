@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  content-understanding-2025-11-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/content-understanding-2025-11-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_CONTENT_UNDERSTANDING_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_CONTENT_UNDERSTANDING_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_CONTENT_UNDERSTANDING_ANALYZER_ID=analyzer-a
+      - STACKYARD_AZURE_CONTENT_UNDERSTANDING_OPERATION_ID=op-1
+      - STACKYARD_AZURE_CONTENT_UNDERSTANDING_FILE_ID=file-1

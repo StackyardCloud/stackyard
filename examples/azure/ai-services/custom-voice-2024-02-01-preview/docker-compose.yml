@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  custom-voice-2024-02-01-preview:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/custom-voice-2024-02-01-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_CUSTOM_VOICE_PROJECT_ID=project-a
+      - STACKYARD_AZURE_CUSTOM_VOICE_ENDPOINT_ID=endpoint-a
+      - STACKYARD_AZURE_CUSTOM_VOICE_MODEL_ID=model-a
+      - STACKYARD_AZURE_CUSTOM_VOICE_CONSENT_ID=consent-a
+      - STACKYARD_AZURE_CUSTOM_VOICE_PERSONAL_VOICE_ID=personal-a
+      - STACKYARD_AZURE_CUSTOM_VOICE_TRAINING_SET_ID=set-a

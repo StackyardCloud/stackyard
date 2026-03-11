@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  custom-vision-v3-3:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/custom-vision-v3.3/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_CUSTOM_VISION_PROJECT_ID=project-a
+      - STACKYARD_AZURE_CUSTOM_VISION_ITERATION_ID=iteration-a
+      - STACKYARD_AZURE_CUSTOM_VISION_PREDICTION_ID=prediction-a
+      - STACKYARD_AZURE_CUSTOM_VISION_TAG_ID=tag-a

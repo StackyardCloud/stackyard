@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  data-plane-2024-02-01-preview:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/api-center/data-plane-2024-02-01-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_APICENTER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_APICENTER_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_APICENTER_WORKSPACE=default
+      - STACKYARD_AZURE_APICENTER_API=echo-api
+      - STACKYARD_AZURE_APICENTER_VERSION=2023-01-01
+      - STACKYARD_AZURE_APICENTER_DEFINITION=default
+      - STACKYARD_AZURE_APICENTER_DEPLOYMENT=production
+      - STACKYARD_AZURE_APICENTER_ENVIRONMENT=production
+      - STACKYARD_AZURE_APICENTER_OPERATION_ID=00000000-0000-0000-0000-000000000001
