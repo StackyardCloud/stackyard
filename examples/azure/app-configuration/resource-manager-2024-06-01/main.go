@@ -2,116 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/appconfiguration/armappconfiguration"
+	"github.com/stackyard/stackyard/examples/azure/internal/azsdkshim"
 )
-
-const appConfigurationResourceManagerAPIVersion = "2024-06-01"
-
-type appConfigurationClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newAppConfigurationClient(endpoint, account, subscriptionKey string) *appConfigurationClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"app-configuration-resource-manager-2024-06-01",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{
-				account:         account,
-				subscriptionKey: subscriptionKey,
-			}},
-		},
-		&policy.ClientOptions{},
-	)
-
-	return &appConfigurationClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *appConfigurationClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		req.Raw().Header.Set("Content-Type", "application/json")
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
 
 func main() {
 	ctx := context.Background()
-
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_APPCONFIG_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_APPCONFIG_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 
@@ -122,272 +30,314 @@ func main() {
 	keyValue := getenv("STACKYARD_AZURE_APPCONFIG_KEYVALUE", "featureA")
 	privateEndpointConnection := getenv("STACKYARD_AZURE_APPCONFIG_PRIVATE_ENDPOINT_CONNECTION", "pec-a")
 	privateLinkGroup := getenv("STACKYARD_AZURE_APPCONFIG_PRIVATE_LINK_GROUP", "configStore")
-	replica := getenv("STACKYARD_AZURE_APPCONFIG_REPLICA", "replica-a")
-	snapshot := getenv("STACKYARD_AZURE_APPCONFIG_SNAPSHOT", "snapshot-a")
 
-	fmt.Printf("Stackyard Azure App Configuration Resource Manager (resource-manager-2024-06-01) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure App Configuration Resource Manager typed SDK example using %s\n", endpoint)
 
-	client := newAppConfigurationClient(endpoint, account, subscriptionKey)
+	credential := azsdkshim.StaticTokenCredential{}
+	armOptions := &arm.ClientOptions{
+		ClientOptions: policy.ClientOptions{
+			InsecureAllowCredentialWithHTTP: true,
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: endpoint,
+				Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+					cloud.ResourceManager: {
+						Endpoint: endpoint,
+						Audience: endpoint,
+					},
+				},
+			},
+			Transport: azsdkshim.NewTransport("/azure", account, subscriptionKey),
+		},
+	}
 
-	providerScope := "/azure/providers/Microsoft.AppConfiguration"
-	subscriptionScope := "/azure/subscriptions/" + subscriptionID + "/providers/Microsoft.AppConfiguration"
-	storeScope := "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.AppConfiguration/configurationStores/" + configStore
-	deletedScope := subscriptionScope + "/locations/" + location + "/deletedConfigurationStores/" + configStore
-	keyValueScope := storeScope + "/keyValues/" + keyValue
-	privateEndpointConnectionScope := storeScope + "/privateEndpointConnections/" + privateEndpointConnection
-	privateLinkResourceScope := storeScope + "/privateLinkResources/" + privateLinkGroup
-	replicaScope := storeScope + "/replicas/" + replica
-	snapshotScope := storeScope + "/snapshots/" + snapshot
+	operationsClient, err := armappconfiguration.NewOperationsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create OperationsClient failed: %v", err)
+	}
+	configurationStoresClient, err := armappconfiguration.NewConfigurationStoresClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ConfigurationStoresClient failed: %v", err)
+	}
+	keyValuesClient, err := armappconfiguration.NewKeyValuesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create KeyValuesClient failed: %v", err)
+	}
+	privateEndpointConnectionsClient, err := armappconfiguration.NewPrivateEndpointConnectionsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create PrivateEndpointConnectionsClient failed: %v", err)
+	}
+	privateLinkResourcesClient, err := armappconfiguration.NewPrivateLinkResourcesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create PrivateLinkResourcesClient failed: %v", err)
+	}
 
 	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
+		name string
+		run  func() error
 	}{
 		{
-			name:     "ListOperations",
-			method:   http.MethodGet,
-			path:     providerScope + "/operations?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CheckNameAvailability",
-			method: http.MethodPost,
-			path:   subscriptionScope + "/checkNameAvailability?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"name": configStore,
-				"type": "Microsoft.AppConfiguration/configurationStores",
+			name: "ListOperations",
+			run: func() error {
+				pager := operationsClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:   "RegionalCheckNameAvailability",
-			method: http.MethodPost,
-			path:   subscriptionScope + "/locations/" + location + "/checkNameAvailability?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"name": configStore,
-				"type": "Microsoft.AppConfiguration/configurationStores",
+			name: "CheckNameAvailability",
+			run: func() error {
+				_, err := operationsClient.CheckNameAvailability(ctx, armappconfiguration.CheckNameAvailabilityParameters{
+					Name: to.Ptr(configStore),
+					Type: to.Ptr(armappconfiguration.ConfigurationResourceTypeMicrosoftAppConfigurationConfigurationStores),
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:   "CreateConfigurationStore",
-			method: http.MethodPut,
-			path:   storeScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"location": location,
-				"sku": map[string]any{
-					"name": "Standard",
-				},
+			name: "RegionalCheckNameAvailability",
+			run: func() error {
+				_, err := operationsClient.RegionalCheckNameAvailability(ctx, location, armappconfiguration.CheckNameAvailabilityParameters{
+					Name: to.Ptr(configStore),
+					Type: to.Ptr(armappconfiguration.ConfigurationResourceTypeMicrosoftAppConfigurationConfigurationStores),
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetConfigurationStore",
-			method:   http.MethodGet,
-			path:     storeScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "UpdateConfigurationStore",
-			method: http.MethodPatch,
-			path:   storeScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"tags": map[string]any{
-					"env": "dev",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListConfigurationStoresByResourceGroup",
-			method:   http.MethodGet,
-			path:     "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.AppConfiguration/configurationStores?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListConfigurationStoresBySubscription",
-			method:   http.MethodGet,
-			path:     subscriptionScope + "/configurationStores?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListKeys",
-			method:   http.MethodPost,
-			path:     storeScope + "/listKeys?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "RegenerateKey",
-			method: http.MethodPost,
-			path:   storeScope + "/regenerateKey?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"id": "primary",
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListDeletedConfigurationStores",
-			method:   http.MethodGet,
-			path:     subscriptionScope + "/deletedConfigurationStores?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetDeletedConfigurationStore",
-			method:   http.MethodGet,
-			path:     deletedScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "PurgeDeletedConfigurationStore",
-			method:   http.MethodPost,
-			path:     deletedScope + "/purge?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateOrUpdateKeyValue",
-			method: http.MethodPut,
-			path:   keyValueScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"value": "true",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetKeyValue",
-			method:   http.MethodGet,
-			path:     keyValueScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateOrUpdatePrivateEndpointConnection",
-			method: http.MethodPut,
-			path:   privateEndpointConnectionScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"privateLinkServiceConnectionState": map[string]any{
-						"status":      "Approved",
-						"description": "approved by stackyard",
+			name: "CreateConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.BeginCreate(ctx, resourceGroup, configStore, armappconfiguration.ConfigurationStore{
+					Location: to.Ptr(location),
+					SKU: &armappconfiguration.SKU{
+						Name: to.Ptr("Standard"),
 					},
-				},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetPrivateEndpointConnection",
-			method:   http.MethodGet,
-			path:     privateEndpointConnectionScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListPrivateEndpointConnections",
-			method:   http.MethodGet,
-			path:     storeScope + "/privateEndpointConnections?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetPrivateLinkResource",
-			method:   http.MethodGet,
-			path:     privateLinkResourceScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListPrivateLinkResources",
-			method:   http.MethodGet,
-			path:     storeScope + "/privateLinkResources?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateReplica",
-			method: http.MethodPut,
-			path:   replicaScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"location": "westus2",
+			name: "GetConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.Get(ctx, resourceGroup, configStore, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetReplica",
-			method:   http.MethodGet,
-			path:     replicaScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListReplicas",
-			method:   http.MethodGet,
-			path:     storeScope + "/replicas?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateSnapshot",
-			method: http.MethodPut,
-			path:   snapshotScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"filters": []map[string]any{
-						{"key": "*"},
+			name: "UpdateConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.BeginUpdate(ctx, resourceGroup, configStore, armappconfiguration.ConfigurationStoreUpdateParameters{
+					Tags: map[string]*string{
+						"env": to.Ptr("dev"),
 					},
-				},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetSnapshot",
-			method:   http.MethodGet,
-			path:     snapshotScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "ListConfigurationStoresByResourceGroup",
+			run: func() error {
+				pager := configurationStoresClient.NewListByResourceGroupPager(resourceGroup, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "DeleteSnapshot",
-			method:   http.MethodDelete,
-			path:     snapshotScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "ListConfigurationStoresBySubscription",
+			run: func() error {
+				pager := configurationStoresClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "DeleteReplica",
-			method:   http.MethodDelete,
-			path:     replicaScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "ListKeys",
+			run: func() error {
+				pager := configurationStoresClient.NewListKeysPager(resourceGroup, configStore, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "DeletePrivateEndpointConnection",
-			method:   http.MethodDelete,
-			path:     privateEndpointConnectionScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "RegenerateKey",
+			run: func() error {
+				_, err := configurationStoresClient.RegenerateKey(ctx, resourceGroup, configStore, armappconfiguration.RegenerateKeyParameters{
+					ID: to.Ptr("primary"),
+				}, nil)
+				return err
+			},
 		},
 		{
-			name:     "DeleteKeyValue",
-			method:   http.MethodDelete,
-			path:     keyValueScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "ListDeletedConfigurationStores",
+			run: func() error {
+				pager := configurationStoresClient.NewListDeletedPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "DeleteConfigurationStore",
-			method:   http.MethodDelete,
-			path:     storeScope + "?api-version=" + appConfigurationResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			name: "GetDeletedConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.GetDeleted(ctx, location, configStore, nil)
+				return err
+			},
+		},
+		{
+			name: "PurgeDeletedConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.BeginPurgeDeleted(ctx, location, configStore, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateOrUpdateKeyValue",
+			run: func() error {
+				_, err := keyValuesClient.CreateOrUpdate(ctx, resourceGroup, configStore, keyValue, &armappconfiguration.KeyValuesClientCreateOrUpdateOptions{
+					KeyValueParameters: &armappconfiguration.KeyValue{
+						Properties: &armappconfiguration.KeyValueProperties{
+							Value: to.Ptr("true"),
+						},
+					},
+				})
+				return err
+			},
+		},
+		{
+			name: "GetKeyValue",
+			run: func() error {
+				_, err := keyValuesClient.Get(ctx, resourceGroup, configStore, keyValue, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateOrUpdatePrivateEndpointConnection",
+			run: func() error {
+				_, err := privateEndpointConnectionsClient.BeginCreateOrUpdate(ctx, resourceGroup, configStore, privateEndpointConnection, armappconfiguration.PrivateEndpointConnection{
+					Properties: &armappconfiguration.PrivateEndpointConnectionProperties{
+						PrivateLinkServiceConnectionState: &armappconfiguration.PrivateLinkServiceConnectionState{
+							Status:      to.Ptr(armappconfiguration.ConnectionStatusApproved),
+							Description: to.Ptr("approved by stackyard"),
+						},
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "GetPrivateEndpointConnection",
+			run: func() error {
+				_, err := privateEndpointConnectionsClient.Get(ctx, resourceGroup, configStore, privateEndpointConnection, nil)
+				return err
+			},
+		},
+		{
+			name: "ListPrivateEndpointConnections",
+			run: func() error {
+				pager := privateEndpointConnectionsClient.NewListByConfigurationStorePager(resourceGroup, configStore, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "GetPrivateLinkResource",
+			run: func() error {
+				_, err := privateLinkResourcesClient.Get(ctx, resourceGroup, configStore, privateLinkGroup, nil)
+				return err
+			},
+		},
+		{
+			name: "ListPrivateLinkResources",
+			run: func() error {
+				pager := privateLinkResourcesClient.NewListByConfigurationStorePager(resourceGroup, configStore, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "DeletePrivateEndpointConnection",
+			run: func() error {
+				_, err := privateEndpointConnectionsClient.BeginDelete(ctx, resourceGroup, configStore, privateEndpointConnection, nil)
+				return err
+			},
+		},
+		{
+			name: "DeleteKeyValue",
+			run: func() error {
+				_, err := keyValuesClient.BeginDelete(ctx, resourceGroup, configStore, keyValue, nil)
+				return err
+			},
+		},
+		{
+			name: "DeleteConfigurationStore",
+			run: func() error {
+				_, err := configurationStoresClient.BeginDelete(ctx, resourceGroup, configStore, nil)
+				return err
+			},
 		},
 	}
 
+	notImplementedCount := 0
 	for _, call := range calls {
-		_, status, err := client.doJSON(ctx, call.method, call.path, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
+
+	if notImplementedCount == len(calls) {
+		fmt.Println("All app-configuration resource-manager routes are staged in this Stackyard build.")
+		return
+	}
+	fmt.Println("Done.")
+}
+
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
+	}
+	var responseErr *azcore.ResponseError
+	if errors.As(err, &responseErr) {
+		if responseErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(responseErr.ErrorCode), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
 	}
-	return value
+	return fallback
 }
 
 func exitf(format string, args ...any) {

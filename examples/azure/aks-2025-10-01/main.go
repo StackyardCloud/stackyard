@@ -2,110 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
+	"github.com/stackyard/stackyard/examples/azure/internal/azsdkshim"
 )
-
-const aksAPIVersion = "2025-10-01"
-
-type aksClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newAKSClient(endpoint, account, subscriptionKey string) *aksClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"aks-2025-10-01",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{account: account, subscriptionKey: subscriptionKey}},
-		},
-		&policy.ClientOptions{},
-	)
-	return &aksClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *aksClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		req.Raw().Header.Set("Content-Type", "application/json")
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
 
 func main() {
 	ctx := context.Background()
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_AISERVICES_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 	subscriptionID := getenv("STACKYARD_AZURE_SUBSCRIPTION_ID", "00000000-0000-0000-0000-000000000000")
@@ -114,166 +28,230 @@ func main() {
 	clusterName := getenv("STACKYARD_AZURE_AKS_CLUSTER", "cluster-a")
 	agentPoolName := getenv("STACKYARD_AZURE_AKS_AGENT_POOL", "system")
 	snapshotName := getenv("STACKYARD_AZURE_AKS_SNAPSHOT", "snapshot-a")
-	managedNamespace := getenv("STACKYARD_AZURE_AKS_MANAGED_NAMESPACE", "ns-a")
 
-	fmt.Printf("Stackyard Azure AKS (aks-2025-10-01) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure AKS typed SDK example using %s\n", endpoint)
 
-	client := newAKSClient(endpoint, account, subscriptionKey)
-	scope := "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.ContainerService/managedClusters/" + clusterName
+	credential := azsdkshim.StaticTokenCredential{}
+	armOptions := &arm.ClientOptions{
+		ClientOptions: policy.ClientOptions{
+			InsecureAllowCredentialWithHTTP: true,
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: endpoint,
+				Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+					cloud.ResourceManager: {
+						Endpoint: endpoint,
+						Audience: endpoint,
+					},
+				},
+			},
+			Transport: azsdkshim.NewTransport("/azure", account, subscriptionKey),
+		},
+	}
+
+	operationsClient, err := armcontainerservice.NewOperationsClient(credential, armOptions)
+	if err != nil {
+		exitf("create OperationsClient failed: %v", err)
+	}
+	clustersClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ManagedClustersClient failed: %v", err)
+	}
+	agentPoolsClient, err := armcontainerservice.NewAgentPoolsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create AgentPoolsClient failed: %v", err)
+	}
+	maintenanceClient, err := armcontainerservice.NewMaintenanceConfigurationsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create MaintenanceConfigurationsClient failed: %v", err)
+	}
+	privateEndpointClient, err := armcontainerservice.NewPrivateEndpointConnectionsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create PrivateEndpointConnectionsClient failed: %v", err)
+	}
+	privateLinkClient, err := armcontainerservice.NewPrivateLinkResourcesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create PrivateLinkResourcesClient failed: %v", err)
+	}
+	resolvePrivateLinkServiceIDClient, err := armcontainerservice.NewResolvePrivateLinkServiceIDClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ResolvePrivateLinkServiceIDClient failed: %v", err)
+	}
+	snapshotsClient, err := armcontainerservice.NewSnapshotsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create SnapshotsClient failed: %v", err)
+	}
 
 	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
+		name string
+		run  func() error
 	}{
 		{
-			name:     "ListOperations",
-			method:   http.MethodGet,
-			path:     "/azure/providers/Microsoft.ContainerService/operations?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateManagedCluster",
-			method: http.MethodPut,
-			path:   scope + "?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"location": location,
-				"identity": map[string]any{
-					"type": "SystemAssigned",
-				},
-				"properties": map[string]any{
-					"dnsPrefix": "stackyardaks",
-				},
+			name: "ListOperations",
+			run: func() error {
+				pager := operationsClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:     "ListManagedClustersBySubscription",
-			method:   http.MethodGet,
-			path:     "/azure/subscriptions/" + subscriptionID + "/providers/Microsoft.ContainerService/managedClusters?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateAgentPool",
-			method: http.MethodPut,
-			path:   scope + "/agentPools/" + agentPoolName + "?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"count":  1,
-					"vmSize": "Standard_DS2_v2",
-					"mode":   "System",
-				},
+			name: "ListManagedClustersBySubscription",
+			run: func() error {
+				pager := clustersClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:     "ListMachines",
-			method:   http.MethodGet,
-			path:     scope + "/agentPools/" + agentPoolName + "/machines?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateMaintenanceConfiguration",
-			method: http.MethodPut,
-			path:   scope + "/maintenanceConfigurations/default?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"maintenanceWindow": map[string]any{
-						"schedule": map[string]any{
-							"weekly": map[string]any{
-								"dayOfWeek":     "Monday",
-								"intervalWeeks": 1,
-							},
-						},
-					},
-				},
+			name: "ListManagedClustersByResourceGroup",
+			run: func() error {
+				pager := clustersClient.NewListByResourceGroupPager(resourceGroup, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:   "CreateManagedNamespace",
-			method: http.MethodPut,
-			path:   scope + "/managedNamespaces/" + managedNamespace + "?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"namespaceLabels": map[string]any{"env": "dev"},
-				},
+			name: "GetManagedCluster",
+			run: func() error {
+				_, err := clustersClient.Get(ctx, resourceGroup, clusterName, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:     "ListPrivateEndpointConnections",
-			method:   http.MethodGet,
-			path:     scope + "/privateEndpointConnections?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:     "ListPrivateLinkResources",
-			method:   http.MethodGet,
-			path:     scope + "/privateLinkResources?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "ResolvePrivateLinkServiceID",
-			method: http.MethodPost,
-			path:   scope + "/resolvePrivateLinkServiceId?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"name": clusterName,
-				"privateLinkServiceConnectionState": map[string]any{
-					"status":      "Approved",
-					"description": "approved by stackyard",
-				},
+			name: "ListAgentPools",
+			run: func() error {
+				pager := agentPoolsClient.NewListPager(resourceGroup, clusterName, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:   "CreateSnapshot",
-			method: http.MethodPut,
-			path:   "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.ContainerService/snapshots/" + snapshotName + "?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"location": location,
-				"properties": map[string]any{
-					"snapshotType": "NodePool",
-				},
+			name: "GetAgentPool",
+			run: func() error {
+				_, err := agentPoolsClient.Get(ctx, resourceGroup, clusterName, agentPoolName, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
 		},
 		{
-			name:     "ListTrustedAccessRoles",
-			method:   http.MethodGet,
-			path:     "/azure/subscriptions/" + subscriptionID + "/providers/Microsoft.ContainerService/locations/" + location + "/trustedAccessRoles?api-version=" + aksAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateTrustedAccessRoleBinding",
-			method: http.MethodPut,
-			path:   scope + "/trustedAccessRoleBindings/binding-a?api-version=" + aksAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"sourceResourceId": "/subscriptions/" + subscriptionID + "/resourceGroups/rg-app/providers/Microsoft.App/containerApps/app-a",
-					"roles": []string{
-						"Microsoft.ContainerService/managedClusters/trustedAccessRoleBindings/read",
-					},
-				},
+			name: "ListMaintenanceConfigurations",
+			run: func() error {
+				pager := maintenanceClient.NewListByManagedClusterPager(resourceGroup, clusterName, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted, http.StatusNotImplemented},
+		},
+		{
+			name: "GetMaintenanceConfiguration",
+			run: func() error {
+				_, err := maintenanceClient.Get(ctx, resourceGroup, clusterName, "default", nil)
+				return err
+			},
+		},
+		{
+			name: "ListPrivateEndpointConnections",
+			run: func() error {
+				_, err := privateEndpointClient.List(ctx, resourceGroup, clusterName, nil)
+				return err
+			},
+		},
+		{
+			name: "ListPrivateLinkResources",
+			run: func() error {
+				_, err := privateLinkClient.List(ctx, resourceGroup, clusterName, nil)
+				return err
+			},
+		},
+		{
+			name: "ResolvePrivateLinkServiceID",
+			run: func() error {
+				_, err := resolvePrivateLinkServiceIDClient.POST(ctx, resourceGroup, clusterName, armcontainerservice.PrivateLinkResource{
+					Name: to.Ptr(clusterName),
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "ListSnapshotsBySubscription",
+			run: func() error {
+				pager := snapshotsClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "ListSnapshotsByResourceGroup",
+			run: func() error {
+				pager := snapshotsClient.NewListByResourceGroupPager(resourceGroup, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "CreateOrUpdateSnapshot",
+			run: func() error {
+				_, err := snapshotsClient.CreateOrUpdate(ctx, resourceGroup, snapshotName, armcontainerservice.Snapshot{
+					Location: to.Ptr(location),
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "GetSnapshot",
+			run: func() error {
+				_, err := snapshotsClient.Get(ctx, resourceGroup, snapshotName, nil)
+				return err
+			},
+		},
+		{
+			name: "UpdateSnapshotTags",
+			run: func() error {
+				_, err := snapshotsClient.UpdateTags(ctx, resourceGroup, snapshotName, armcontainerservice.TagsObject{
+					Tags: map[string]*string{"env": to.Ptr("dev")},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "DeleteSnapshot",
+			run: func() error {
+				_, err := snapshotsClient.Delete(ctx, resourceGroup, snapshotName, nil)
+				return err
+			},
 		},
 	}
 
 	notImplementedCount := 0
 	for _, call := range calls {
-		_, status, err := client.doJSON(ctx, call.method, call.path, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		if status == http.StatusNotImplemented {
-			notImplementedCount++
-			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.path)
-			continue
-		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
 
 	if notImplementedCount == len(calls) {
@@ -281,6 +259,22 @@ func main() {
 		return
 	}
 	fmt.Println("Done.")
+}
+
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
+	}
+	var responseErr *azcore.ResponseError
+	if errors.As(err, &responseErr) {
+		if responseErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(responseErr.ErrorCode), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {

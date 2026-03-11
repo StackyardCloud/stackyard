@@ -2,115 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/apimanagement/armapimanagement"
+	"github.com/stackyard/stackyard/examples/azure/internal/azsdkshim"
 )
-
-const apiManagementResourceManagerAPIVersion = "2024-05-01"
-
-type apiManagementClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newAPIManagementClient(endpoint, account, subscriptionKey string) *apiManagementClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"api-management-resource-manager-2024-05-01",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{
-				account:         account,
-				subscriptionKey: subscriptionKey,
-			}},
-		},
-		&policy.ClientOptions{},
-	)
-	return &apiManagementClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *apiManagementClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		req.Raw().Header.Set("Content-Type", "application/json")
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
 
 func main() {
 	ctx := context.Background()
-
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_APIM_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_APIM_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 
@@ -124,253 +33,284 @@ func main() {
 	userID := getenv("STACKYARD_AZURE_APIM_USER", "user-1")
 	namedValueID := getenv("STACKYARD_AZURE_APIM_NAMED_VALUE", "kv-endpoint")
 	gatewayID := getenv("STACKYARD_AZURE_APIM_GATEWAY", "gw-a")
-	workspaceID := getenv("STACKYARD_AZURE_APIM_WORKSPACE", "ws-a")
-	workspaceSubscriptionID := getenv("STACKYARD_AZURE_APIM_WORKSPACE_SUBSCRIPTION", "sub-a")
 	notificationID := getenv("STACKYARD_AZURE_APIM_NOTIFICATION", "NewCommentNotificationMessage")
-	recipientID := getenv("STACKYARD_AZURE_APIM_RECIPIENT", "dev-example-com")
+	recipientID := getenv("STACKYARD_AZURE_APIM_RECIPIENT", "dev@example.com")
 
-	fmt.Printf("Stackyard Azure API Management Resource Manager (resource-manager-2024-05-01) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure API Management Resource Manager typed SDK example using %s\n", endpoint)
 
-	client := newAPIManagementClient(endpoint, account, subscriptionKey)
-
-	subscriptionScope := "/azure/subscriptions/" + subscriptionID + "/providers/Microsoft.ApiManagement"
-	serviceScope := "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.ApiManagement/service/" + serviceName
-	workspaceScope := serviceScope + "/workspaces/" + workspaceID
-	apiScope := serviceScope + "/apis/" + apiID
-	workspaceAPIScope := workspaceScope + "/apis/" + apiID
-	operationScope := apiScope + "/operations/" + operationID
-
-	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
-	}{
-		{
-			name:     "ListOperations",
-			method:   http.MethodGet,
-			path:     "/azure/providers/Microsoft.ApiManagement/operations?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListSKUs",
-			method:   http.MethodGet,
-			path:     subscriptionScope + "/skus?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateService",
-			method: http.MethodPut,
-			path:   serviceScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"location": location,
-				"sku": map[string]any{
-					"name":     "Developer",
-					"capacity": 1,
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetService",
-			method:   http.MethodGet,
-			path:     serviceScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "HeadService",
-			method:   http.MethodHead,
-			path:     serviceScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "ApplyNetworkConfigurationUpdates",
-			method: http.MethodPost,
-			path:   serviceScope + "/applynetworkconfigurationupdates?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"location": location,
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateAPI",
-			method: http.MethodPut,
-			path:   apiScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "Echo API",
-					"path":        "echo",
-					"protocols":   []string{"https"},
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateAPIOperation",
-			method: http.MethodPut,
-			path:   operationScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "Get Echo",
-					"method":      "GET",
-					"urlTemplate": "/echo",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateAPIOperationPolicy",
-			method: http.MethodPut,
-			path:   operationScope + "/policies/policy?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"format": "rawxml",
-					"value":  "<policies></policies>",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateProduct",
-			method: http.MethodPut,
-			path:   serviceScope + "/products/" + productID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName":          "Starter",
-					"subscriptionRequired": false,
-					"state":                "published",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateUser",
-			method: http.MethodPut,
-			path:   serviceScope + "/users/" + userID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"firstName": "Dev",
-					"lastName":  "User",
-					"email":     "dev@example.com",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateNamedValue",
-			method: http.MethodPut,
-			path:   serviceScope + "/namedValues/" + namedValueID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "KeyVaultEndpoint",
-					"value":       "https://example.vault.azure.net/",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateGateway",
-			method: http.MethodPut,
-			path:   serviceScope + "/gateways/" + gatewayID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"description": "gateway a",
-					"locationData": map[string]any{
-						"name": location,
+	credential := azsdkshim.StaticTokenCredential{}
+	armOptions := &arm.ClientOptions{
+		ClientOptions: policy.ClientOptions{
+			InsecureAllowCredentialWithHTTP: true,
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: endpoint,
+				Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+					cloud.ResourceManager: {
+						Endpoint: endpoint,
+						Audience: endpoint,
 					},
 				},
 			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateWorkspace",
-			method: http.MethodPut,
-			path:   workspaceScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"title": workspaceID,
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateWorkspaceAPI",
-			method: http.MethodPut,
-			path:   workspaceAPIScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "Echo API",
-					"path":        "echo",
-					"protocols":   []string{"https"},
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateWorkspaceProduct",
-			method: http.MethodPut,
-			path:   workspaceScope + "/products/" + productID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "Starter",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateWorkspaceSubscription",
-			method: http.MethodPut,
-			path:   workspaceScope + "/subscriptions/" + workspaceSubscriptionID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": workspaceSubscriptionID,
-					"scope":       "/products/" + productID,
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateWorkspaceNamedValue",
-			method: http.MethodPut,
-			path:   workspaceScope + "/namedValues/" + namedValueID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"displayName": "KeyVaultEndpoint",
-					"value":       "https://example.vault.azure.net/",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "HeadNotificationRecipientEmail",
-			method:   http.MethodHead,
-			path:     serviceScope + "/notifications/" + notificationID + "/recipientEmails/" + recipientID + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "DeleteService",
-			method:   http.MethodDelete,
-			path:     serviceScope + "?api-version=" + apiManagementResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
+			Transport: azsdkshim.NewTransport("/azure", account, subscriptionKey),
 		},
 	}
 
+	operationsClient, err := armapimanagement.NewOperationsClient(credential, armOptions)
+	if err != nil {
+		exitf("create OperationsClient failed: %v", err)
+	}
+	skusClient, err := armapimanagement.NewSKUsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create SKUsClient failed: %v", err)
+	}
+	serviceClient, err := armapimanagement.NewServiceClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ServiceClient failed: %v", err)
+	}
+	apiClient, err := armapimanagement.NewAPIClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create APIClient failed: %v", err)
+	}
+	apiOperationClient, err := armapimanagement.NewAPIOperationClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create APIOperationClient failed: %v", err)
+	}
+	apiOperationPolicyClient, err := armapimanagement.NewAPIOperationPolicyClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create APIOperationPolicyClient failed: %v", err)
+	}
+	productClient, err := armapimanagement.NewProductClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ProductClient failed: %v", err)
+	}
+	userClient, err := armapimanagement.NewUserClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create UserClient failed: %v", err)
+	}
+	namedValueClient, err := armapimanagement.NewNamedValueClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create NamedValueClient failed: %v", err)
+	}
+	gatewayClient, err := armapimanagement.NewGatewayClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create GatewayClient failed: %v", err)
+	}
+	notificationRecipientEmailClient, err := armapimanagement.NewNotificationRecipientEmailClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create NotificationRecipientEmailClient failed: %v", err)
+	}
+
+	calls := []struct {
+		name string
+		run  func() error
+	}{
+		{
+			name: "ListOperations",
+			run: func() error {
+				pager := operationsClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "ListSKUs",
+			run: func() error {
+				pager := skusClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			name: "CreateService",
+			run: func() error {
+				_, err := serviceClient.BeginCreateOrUpdate(ctx, resourceGroup, serviceName, armapimanagement.ServiceResource{
+					Location: to.Ptr(location),
+					SKU: &armapimanagement.ServiceSKUProperties{
+						Name:     to.Ptr(armapimanagement.SKUTypeDeveloper),
+						Capacity: to.Ptr[int32](1),
+					},
+					Properties: &armapimanagement.ServiceProperties{
+						PublisherEmail: to.Ptr("dev@example.com"),
+						PublisherName:  to.Ptr("Stackyard"),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "GetService",
+			run: func() error {
+				_, err := serviceClient.Get(ctx, resourceGroup, serviceName, nil)
+				return err
+			},
+		},
+		{
+			name: "ApplyNetworkConfigurationUpdates",
+			run: func() error {
+				_, err := serviceClient.BeginApplyNetworkConfigurationUpdates(ctx, resourceGroup, serviceName, &armapimanagement.ServiceClientBeginApplyNetworkConfigurationUpdatesOptions{
+					Parameters: &armapimanagement.ServiceApplyNetworkConfigurationParameters{
+						Location: to.Ptr(location),
+					},
+				})
+				return err
+			},
+		},
+		{
+			name: "CreateAPI",
+			run: func() error {
+				_, err := apiClient.BeginCreateOrUpdate(ctx, resourceGroup, serviceName, apiID, armapimanagement.APICreateOrUpdateParameter{
+					Properties: &armapimanagement.APICreateOrUpdateProperties{
+						DisplayName: to.Ptr("Echo API"),
+						Path:        to.Ptr("echo"),
+						Protocols: []*armapimanagement.Protocol{
+							to.Ptr(armapimanagement.ProtocolHTTPS),
+						},
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateAPIOperation",
+			run: func() error {
+				_, err := apiOperationClient.CreateOrUpdate(ctx, resourceGroup, serviceName, apiID, operationID, armapimanagement.OperationContract{
+					Properties: &armapimanagement.OperationContractProperties{
+						DisplayName: to.Ptr("Get Echo"),
+						Method:      to.Ptr(http.MethodGet),
+						URLTemplate: to.Ptr("/echo"),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateAPIOperationPolicy",
+			run: func() error {
+				_, err := apiOperationPolicyClient.CreateOrUpdate(ctx, resourceGroup, serviceName, apiID, operationID, armapimanagement.PolicyIDNamePolicy, armapimanagement.PolicyContract{
+					Properties: &armapimanagement.PolicyContractProperties{
+						Format: to.Ptr(armapimanagement.PolicyContentFormatRawxml),
+						Value:  to.Ptr("<policies></policies>"),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateProduct",
+			run: func() error {
+				_, err := productClient.CreateOrUpdate(ctx, resourceGroup, serviceName, productID, armapimanagement.ProductContract{
+					Properties: &armapimanagement.ProductContractProperties{
+						DisplayName:          to.Ptr("Starter"),
+						SubscriptionRequired: to.Ptr(false),
+						State:                to.Ptr(armapimanagement.ProductStatePublished),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateUser",
+			run: func() error {
+				_, err := userClient.CreateOrUpdate(ctx, resourceGroup, serviceName, userID, armapimanagement.UserCreateParameters{
+					Properties: &armapimanagement.UserCreateParameterProperties{
+						FirstName: to.Ptr("Dev"),
+						LastName:  to.Ptr("User"),
+						Email:     to.Ptr("dev@example.com"),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateNamedValue",
+			run: func() error {
+				_, err := namedValueClient.BeginCreateOrUpdate(ctx, resourceGroup, serviceName, namedValueID, armapimanagement.NamedValueCreateContract{
+					Properties: &armapimanagement.NamedValueCreateContractProperties{
+						DisplayName: to.Ptr("KeyVaultEndpoint"),
+						Value:       to.Ptr("https://example.vault.azure.net/"),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateGateway",
+			run: func() error {
+				_, err := gatewayClient.CreateOrUpdate(ctx, resourceGroup, serviceName, gatewayID, armapimanagement.GatewayContract{
+					Properties: &armapimanagement.GatewayContractProperties{
+						Description: to.Ptr("gateway a"),
+						LocationData: &armapimanagement.ResourceLocationDataContract{
+							Name: to.Ptr(location),
+						},
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "HeadNotificationRecipientEmail",
+			run: func() error {
+				_, err := notificationRecipientEmailClient.CheckEntityExists(ctx, resourceGroup, serviceName, armapimanagement.NotificationName(notificationID), recipientID, nil)
+				return err
+			},
+		},
+		{
+			name: "DeleteService",
+			run: func() error {
+				_, err := serviceClient.BeginDelete(ctx, resourceGroup, serviceName, nil)
+				return err
+			},
+		},
+	}
+
+	notImplementedCount := 0
 	for _, call := range calls {
-		_, status, err := client.doJSON(ctx, call.method, call.path, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
+
+	if notImplementedCount == len(calls) {
+		fmt.Println("All api-management resource-manager routes are staged in this Stackyard build.")
+		return
+	}
+	fmt.Println("Done.")
+}
+
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
+	}
+	var responseErr *azcore.ResponseError
+	if errors.As(err, &responseErr) {
+		if responseErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(responseErr.ErrorCode), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
 	}
-	return value
+	return fallback
 }
 
 func exitf(format string, args ...any) {

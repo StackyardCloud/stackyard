@@ -1,9 +1,15 @@
-.PHONY: fmt tidy test ci install examples-docker examples-docker-provider examples-docker-aws examples-docker-gcp examples-docker-azure examples-docker-oci refarch-examples refarch-examples-aws refarch-examples-gcp refarch-examples-all coverage-all coverage-all-strict coverage-aws-contracts coverage-aws-contracts-strict coverage-aws-contracts-all-strict coverage-aws-io-contracts coverage-aws-io-contracts-strict coverage-aws-io-contracts-all-strict coverage-aws-doc-contracts coverage-aws-doc-contracts-strict coverage-aws-doc-contracts-all-strict coverage-aws-endpoints-smoke coverage-gcp-contracts coverage-gcp-contracts-strict coverage-gcp-contracts-all-strict coverage-gcp-io-contracts coverage-gcp-io-contracts-strict coverage-gcp-io-contracts-all-strict coverage-gcp-doc-contracts coverage-gcp-doc-contracts-strict coverage-gcp-doc-contracts-all-strict coverage-gcp-endpoints coverage-gcp-endpoints-strict coverage-azure-contracts coverage-azure-contracts-strict coverage-azure-contracts-all-strict coverage-azure-io-contracts coverage-azure-io-contracts-strict coverage-azure-io-contracts-all-strict coverage-azure-doc-contracts coverage-azure-doc-contracts-strict coverage-azure-doc-contracts-all-strict coverage-azure-endpoints coverage-azure-endpoints-strict provider-contracts provider-contracts-pr provider-contracts-nightly provider-contracts-all-strict aws-provider-contracts aws-provider-contracts-pr aws-provider-contracts-nightly aws-provider-contracts-all-strict azure-provider-contracts azure-provider-contracts-pr azure-provider-contracts-nightly azure-provider-contracts-all-strict gcp-provider-contracts gcp-provider-contracts-pr gcp-provider-contracts-nightly gcp-provider-contracts-all-strict up down restart
+.PHONY: fmt tidy test ci install examples-docker examples-docker-provider examples-docker-aws examples-docker-gcp examples-docker-azure examples-docker-oci refarch-examples refarch-examples-aws refarch-examples-gcp refarch-examples-all coverage-all coverage-all-strict coverage-aws-contracts coverage-aws-contracts-strict coverage-aws-contracts-all-strict coverage-aws-io-contracts coverage-aws-io-contracts-strict coverage-aws-io-contracts-all-strict coverage-aws-doc-contracts coverage-aws-doc-contracts-strict coverage-aws-doc-contracts-all-strict coverage-aws-endpoints-smoke coverage-gcp-contracts coverage-gcp-contracts-strict coverage-gcp-contracts-all-strict coverage-gcp-io-contracts coverage-gcp-io-contracts-strict coverage-gcp-io-contracts-all-strict coverage-gcp-doc-contracts coverage-gcp-doc-contracts-strict coverage-gcp-doc-contracts-all-strict coverage-gcp-endpoints coverage-gcp-endpoints-strict coverage-azure-contracts coverage-azure-contracts-strict coverage-azure-contracts-all-strict coverage-azure-io-contracts coverage-azure-io-contracts-strict coverage-azure-io-contracts-all-strict coverage-azure-doc-contracts coverage-azure-doc-contracts-strict coverage-azure-doc-contracts-all-strict coverage-azure-endpoints coverage-azure-endpoints-strict provider-contracts provider-contracts-pr provider-contracts-nightly provider-contracts-all-strict aws-provider-contracts aws-provider-contracts-pr aws-provider-contracts-nightly aws-provider-contracts-nightly-contracts aws-provider-contracts-nightly-io aws-provider-contracts-nightly-docs aws-provider-contracts-all-strict azure-provider-contracts azure-provider-contracts-pr azure-provider-contracts-nightly azure-provider-contracts-nightly-contracts azure-provider-contracts-nightly-io azure-provider-contracts-nightly-docs azure-provider-contracts-nightly-endpoints azure-provider-contracts-all-strict gcp-provider-contracts gcp-provider-contracts-pr gcp-provider-contracts-nightly gcp-provider-contracts-nightly-contracts gcp-provider-contracts-nightly-io gcp-provider-contracts-nightly-docs gcp-provider-contracts-nightly-endpoints gcp-provider-contracts-all-strict up down restart
 
 BUILD ?= 0
 VOLUMES ?= 0
 PROVIDER ?= aws
 COVERAGE_FAIL_ON ?= not_implemented,service_error,client_error,contract_error,transport_error,skeleton_error,unknown_error,auth_error
+AWS_CONTRACT_SHARD_COUNT ?= 1
+AWS_CONTRACT_SHARD_INDEX ?= 0
+AWS_IO_SHARD_COUNT ?= 1
+AWS_IO_SHARD_INDEX ?= 0
+AWS_DOC_SHARD_COUNT ?= 1
+AWS_DOC_SHARD_INDEX ?= 0
 AWS_STRICT_SERVICES ?= sts sqs
 AWS_PR_SMOKE_SERVICES ?= dynamodb,sqs,ecr,lambda,sns,s3,sts,ses,athena,bedrock,cloudfront,ec2,ecs,eks,elasticache,elasticloadbalancing,eventbridge,iam,kinesis,kms,neptune,opensearch,rds,redshift,route53,waf
 AWS_PR_SMOKE_ENDPOINTS ?= sqs.CreateQueue,sqs.GetQueueAttributes,sqs.SendMessage,sqs.ReceiveMessage,sqs.DeleteMessage,dynamodb.CreateTable,dynamodb.DescribeTable,dynamodb.GetItem,dynamodb.ListTables,dynamodb.DeleteTable,ecr.CreateRepository,ecr.DescribeRepositories,ecr.DeleteRepository,lambda.CreateFunction,lambda.Invoke,lambda.DeleteFunction,sns.CreateTopic,sns.ListTopics,s3.CreateBucket,sts.GetCallerIdentity,ses.ListConfigurationSets,athena.ListWorkGroups,bedrock.CreateGuardrail,cloudfront.CreateCachePolicy,ec2.AllocateAddress,ecs.ListClusters,eks.CreateCluster,elasticache.CreateCacheParameterGroup,elasticloadbalancing.CreateTargetGroup,eventbridge.CreateEventBus,iam.CreateGroup,kinesis.CreateStream,kms.CreateKey,neptune.CreateDBParameterGroup,opensearch.DescribeDomain,rds.CreateDbParameterGroup,redshift.DescribeClusters,route53.GetHostedZoneCount,wafv2.CreateIPSet
@@ -172,9 +178,9 @@ endif
 
 coverage-aws-contracts-all-strict:
 ifeq ($(OS),Windows_NT)
-	py -3 scripts/aws-contract-coverage.py --service "*" --fail-on any --no-rebuild-stackyard
+	py -3 scripts/aws-contract-coverage.py --service "*" --fail-on any --no-rebuild-stackyard --shard-count $(AWS_CONTRACT_SHARD_COUNT) --shard-index $(AWS_CONTRACT_SHARD_INDEX)
 else
-	python3 scripts/aws-contract-coverage.py --service "*" --fail-on any --no-rebuild-stackyard
+	python3 scripts/aws-contract-coverage.py --service "*" --fail-on any --no-rebuild-stackyard --shard-count $(AWS_CONTRACT_SHARD_COUNT) --shard-index $(AWS_CONTRACT_SHARD_INDEX)
 endif
 
 coverage-aws-io-contracts:
@@ -197,9 +203,9 @@ endif
 
 coverage-aws-io-contracts-all-strict:
 ifeq ($(OS),Windows_NT)
-	py -3 scripts/aws-io-contract-coverage.py --service "*" --fail-on strict --no-rebuild-stackyard
+	py -3 scripts/aws-io-contract-coverage.py --service "*" --fail-on strict --no-rebuild-stackyard --shard-count $(AWS_IO_SHARD_COUNT) --shard-index $(AWS_IO_SHARD_INDEX)
 else
-	python3 scripts/aws-io-contract-coverage.py --service "*" --fail-on strict --no-rebuild-stackyard
+	python3 scripts/aws-io-contract-coverage.py --service "*" --fail-on strict --no-rebuild-stackyard --shard-count $(AWS_IO_SHARD_COUNT) --shard-index $(AWS_IO_SHARD_INDEX)
 endif
 
 coverage-aws-doc-contracts:
@@ -222,9 +228,9 @@ endif
 
 coverage-aws-doc-contracts-all-strict:
 ifeq ($(OS),Windows_NT)
-	py -3 scripts/aws-doc-contract-coverage.py --service "*" --fail-on any
+	py -3 scripts/aws-doc-contract-coverage.py --service "*" --fail-on any --shard-count $(AWS_DOC_SHARD_COUNT) --shard-index $(AWS_DOC_SHARD_INDEX)
 else
-	python3 scripts/aws-doc-contract-coverage.py --service "*" --fail-on any
+	python3 scripts/aws-doc-contract-coverage.py --service "*" --fail-on any --shard-count $(AWS_DOC_SHARD_COUNT) --shard-index $(AWS_DOC_SHARD_INDEX)
 endif
 
 coverage-aws-endpoints-smoke:
@@ -439,11 +445,15 @@ else
 endif
 	$(MAKE) coverage-aws-endpoints-smoke
 
-aws-provider-contracts-nightly: aws-provider-contracts-all-strict
+aws-provider-contracts-nightly: aws-provider-contracts-nightly-contracts aws-provider-contracts-nightly-io aws-provider-contracts-nightly-docs
 
-aws-provider-contracts-all-strict:
+aws-provider-contracts-nightly-contracts:
 	$(MAKE) coverage-aws-contracts-all-strict
+
+aws-provider-contracts-nightly-io:
 	$(MAKE) coverage-aws-io-contracts-all-strict
+
+aws-provider-contracts-nightly-docs:
 ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$docs = Get-ChildItem -Path docs -Filter 'aws-*-plan.md' -File -ErrorAction SilentlyContinue; if ($$docs.Count -gt 0) { & '$(MAKE)' coverage-aws-doc-contracts-all-strict } else { Write-Host '==> skipping aws doc contract gate (no docs/aws-*-plan.md files present)' -ForegroundColor Yellow }"
 else
@@ -454,6 +464,8 @@ else
 	fi
 endif
 
+aws-provider-contracts-all-strict: aws-provider-contracts-nightly
+
 azure-provider-contracts: azure-provider-contracts-pr
 
 azure-provider-contracts-pr:
@@ -461,13 +473,21 @@ azure-provider-contracts-pr:
 	$(MAKE) coverage-azure-io-contracts-strict
 	$(MAKE) coverage-azure-doc-contracts-strict
 
-azure-provider-contracts-nightly: azure-provider-contracts-all-strict
+azure-provider-contracts-nightly: azure-provider-contracts-nightly-contracts azure-provider-contracts-nightly-io azure-provider-contracts-nightly-docs azure-provider-contracts-nightly-endpoints
 
-azure-provider-contracts-all-strict:
+azure-provider-contracts-nightly-contracts:
 	$(MAKE) coverage-azure-contracts-all-strict
+
+azure-provider-contracts-nightly-io:
 	$(MAKE) coverage-azure-io-contracts-all-strict
+
+azure-provider-contracts-nightly-docs:
 	$(MAKE) coverage-azure-doc-contracts-all-strict
+
+azure-provider-contracts-nightly-endpoints:
 	$(MAKE) coverage-azure-endpoints-strict
+
+azure-provider-contracts-all-strict: azure-provider-contracts-nightly
 
 gcp-provider-contracts: gcp-provider-contracts-pr
 
@@ -484,11 +504,15 @@ else
 	fi
 endif
 
-gcp-provider-contracts-nightly: gcp-provider-contracts-all-strict
+gcp-provider-contracts-nightly: gcp-provider-contracts-nightly-contracts gcp-provider-contracts-nightly-io gcp-provider-contracts-nightly-docs gcp-provider-contracts-nightly-endpoints
 
-gcp-provider-contracts-all-strict:
+gcp-provider-contracts-nightly-contracts:
 	$(MAKE) coverage-gcp-contracts-all-strict
+
+gcp-provider-contracts-nightly-io:
 	$(MAKE) coverage-gcp-io-contracts-all-strict
+
+gcp-provider-contracts-nightly-docs:
 ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -ExecutionPolicy Bypass -Command "$$docs = Get-ChildItem -Path docs -Filter 'gcp-*-plan.md' -File -ErrorAction SilentlyContinue; if ($$docs.Count -gt 0) { & '$(MAKE)' coverage-gcp-doc-contracts-all-strict } else { Write-Host '==> skipping gcp doc contract gate (no docs/gcp-*-plan.md files present)' -ForegroundColor Yellow }"
 else
@@ -498,7 +522,11 @@ else
 		echo "==> skipping gcp doc contract gate (no docs/gcp-*-plan.md files present)"; \
 	fi
 endif
+
+gcp-provider-contracts-nightly-endpoints:
 	$(MAKE) coverage-gcp-endpoints-strict
+
+gcp-provider-contracts-all-strict: gcp-provider-contracts-nightly
 
 up:
 	if [ "$(BUILD)" = "1" ]; then \

@@ -18,6 +18,14 @@ import sys
 import tempfile
 from pathlib import Path
 
+from aws_service_shards import (
+    aws_endpoint_service_weights,
+    discover_services,
+    filter_services,
+    select_shard,
+    validate_shard_args,
+)
+
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 AWSCLI_COVERAGE_SCRIPT = SCRIPT_DIR / "awscli-endpoint-coverage.py"
@@ -118,6 +126,18 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
         help="List discovered services and exit.",
     )
     parser.add_argument(
+        "--shard-count",
+        type=int,
+        default=1,
+        help="Split the selected services into N balanced shards.",
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+        help="Zero-based shard index when --shard-count is greater than 1.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Include extra context in text output.",
@@ -196,6 +216,22 @@ def ensure_required_service(args: argparse.Namespace) -> int:
     return 0
 
 
+def resolve_services(args: argparse.Namespace) -> list[str]:
+    discovered = discover_services()
+    selected = filter_services(discovered, args.service)
+    if args.require_service and args.require_service not in discovered:
+        raise ValueError(f"required service {args.require_service!r} not discovered")
+    if args.require_service and args.require_service not in selected:
+        raise ValueError(f"required service {args.require_service!r} not matched by selector")
+    if args.shard_count == 1:
+        return selected
+    weights = aws_endpoint_service_weights(selected)
+    sharded = select_shard(selected, weights, args.shard_count, args.shard_index)
+    if args.require_service and args.require_service not in sharded:
+        raise ValueError(f"required service {args.require_service!r} not matched by shard")
+    return sharded
+
+
 def load_report(path: Path) -> object | None:
     if not path.exists():
         return None
@@ -241,21 +277,6 @@ def parse_fail_on(raw: str) -> str:
     return ",".join(ordered)
 
 
-def list_services(args: argparse.Namespace) -> tuple[int, list[str], str]:
-    command = build_base_command(args)
-    if not args.no_start_stackyard:
-        command.append("--no-start-stackyard")
-    command.extend(["--dry-run", "--fail-on", ""])
-    cp = subprocess.run(command, check=False, text=True, capture_output=True)
-    combined = (cp.stdout or "") + "\n" + (cp.stderr or "")
-    services: set[str] = set()
-    for line in (cp.stdout or "").splitlines():
-        match = re.match(r"^([a-z0-9_]+)\.[A-Za-z0-9_]+\s+\[", line.strip())
-        if match:
-            services.add(match.group(1))
-    return cp.returncode, sorted(services), combined.strip()
-
-
 def run_with_json_output(command: list[str], report_path: Path) -> int:
     cp = subprocess.run(command, check=False, text=True, capture_output=True)
     report_payload = load_report(report_path)
@@ -285,15 +306,26 @@ def main() -> int:
     args, passthrough = parse_args()
     if args.json:
         args.format = "json"
+    try:
+        validate_shard_args(args.shard_count, args.shard_index)
+        selected_services = resolve_services(args)
+    except ValueError as err:
+        print(f"aws-contract-coverage: {err}", file=sys.stderr)
+        return 2
 
     if args.list_services:
-        rc, services, detail = list_services(args)
+        rc = 0
+        services = selected_services
+        detail = ""
         payload = {
             "provider": "aws",
             "mode": "contract",
             "service_selector": args.service,
+            "selected_services": services,
             "services": services,
             "count": len(services),
+            "shard_count": args.shard_count,
+            "shard_index": args.shard_index,
         }
         if args.format == "json":
             print(json.dumps(payload, indent=2, sort_keys=True))
@@ -310,11 +342,28 @@ def main() -> int:
                 print(detail)
         return 0 if rc == 0 else rc
 
+    if not selected_services:
+        payload = {
+            "provider": "aws",
+            "mode": "contract",
+            "service_selector": args.service,
+            "selected_services": [],
+            "count": 0,
+            "shard_count": args.shard_count,
+            "shard_index": args.shard_index,
+        }
+        if args.format == "json":
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print("No services selected for this shard.")
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+
     require_status = ensure_required_service(args)
     if require_status != 0:
         return require_status
 
-    command = build_base_command(args)
+    command = build_base_command(args, service_override=",".join(selected_services))
     command.extend(["--fail-on", parse_fail_on(args.fail_on)])
 
     if args.dry_run:

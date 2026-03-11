@@ -2,234 +2,169 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/search/armsearch"
+	"github.com/stackyard/stackyard/examples/azure/internal/azsdkshim"
 )
-
-const searchManagementServicesAPIVersion = "2025-05-01"
-
-type searchManagementServicesClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newSearchManagementServicesClient(endpoint, account, subscriptionKey string) *searchManagementServicesClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"search-management-resource-manager-services-2025-05-01",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{account: account, subscriptionKey: subscriptionKey}},
-		},
-		&policy.ClientOptions{},
-	)
-	return &searchManagementServicesClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *searchManagementServicesClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
 
 func main() {
 	ctx := context.Background()
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_SEARCH_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_SEARCH_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 	subscriptionID := getenv("STACKYARD_AZURE_SUBSCRIPTION_ID", "00000000-0000-0000-0000-000000000000")
 	resourceGroup := getenv("STACKYARD_AZURE_RESOURCE_GROUP", "rg-search")
 	searchServiceName := getenv("STACKYARD_AZURE_SEARCH_SERVICE_NAME", "my-search")
 
-	fmt.Printf("Stackyard Azure Search Management - Resource Manager - Services (search-management-resource-manager-services-2025-05-01) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure Search Management Services typed SDK example using %s\n", endpoint)
 
-	client := newSearchManagementServicesClient(endpoint, account, subscriptionKey)
-	subscriptionBase := "/azure/subscriptions/" + subscriptionID
-	resourceBase := subscriptionBase +
-		"/resourceGroups/" + resourceGroup +
-		"/providers/Microsoft.Search/searchServices/" + searchServiceName
-
-	createPayload := map[string]any{
-		"location": "eastus",
-		"sku": map[string]any{
-			"name": "basic",
-		},
-		"properties": map[string]any{
-			"replicaCount":   1,
-			"partitionCount": 1,
+	credential := azsdkshim.StaticTokenCredential{}
+	armOptions := &arm.ClientOptions{
+		ClientOptions: policy.ClientOptions{
+			InsecureAllowCredentialWithHTTP: true,
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: endpoint,
+				Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+					cloud.ResourceManager: {
+						Endpoint: endpoint,
+						Audience: endpoint,
+					},
+				},
+			},
+			Transport: azsdkshim.NewTransport("/azure", account, subscriptionKey),
 		},
 	}
-	updatePayload := map[string]any{
-		"tags": map[string]any{
-			"env": "test",
-		},
-	}
-	checkNamePayload := map[string]any{
-		"name": searchServiceName,
-		"type": "searchServices",
+
+	servicesClient, err := armsearch.NewServicesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ServicesClient failed: %v", err)
 	}
 
 	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
+		name string
+		run  func() error
 	}{
 		{
-			name:     "CheckNameAvailability",
-			method:   http.MethodPost,
-			path:     subscriptionBase + "/providers/Microsoft.Search/checkNameAvailability",
-			payload:  checkNamePayload,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
+			name: "CheckNameAvailability",
+			run: func() error {
+				_, err := servicesClient.CheckNameAvailability(ctx, armsearch.CheckNameAvailabilityInput{
+					Name: to.Ptr(searchServiceName),
+					Type: to.Ptr("searchServices"),
+				}, nil, nil)
+				return err
+			},
 		},
 		{
-			name:     "CreateOrUpdate",
-			method:   http.MethodPut,
-			path:     resourceBase,
-			payload:  createPayload,
-			statuses: []int{http.StatusCreated, http.StatusOK, http.StatusAccepted, http.StatusNotImplemented},
+			name: "CreateOrUpdate",
+			run: func() error {
+				_, err := servicesClient.BeginCreateOrUpdate(ctx, resourceGroup, searchServiceName, armsearch.Service{
+					Location: to.Ptr("eastus"),
+					SKU: &armsearch.SKU{
+						Name: to.Ptr(armsearch.SKUNameBasic),
+					},
+				}, nil, nil)
+				return err
+			},
 		},
 		{
-			name:     "Get",
-			method:   http.MethodGet,
-			path:     resourceBase,
-			statuses: []int{http.StatusOK, http.StatusNotFound, http.StatusNotImplemented},
+			name: "Get",
+			run: func() error {
+				_, err := servicesClient.Get(ctx, resourceGroup, searchServiceName, nil, nil)
+				return err
+			},
 		},
 		{
-			name:     "Update",
-			method:   http.MethodPatch,
-			path:     resourceBase,
-			payload:  updatePayload,
-			statuses: []int{http.StatusOK, http.StatusNotFound, http.StatusNotImplemented},
+			name: "Update",
+			run: func() error {
+				_, err := servicesClient.Update(ctx, resourceGroup, searchServiceName, armsearch.ServiceUpdate{
+					Tags: map[string]*string{"env": to.Ptr("test")},
+				}, nil, nil)
+				return err
+			},
 		},
 		{
-			name:     "ListByResourceGroup",
-			method:   http.MethodGet,
-			path:     subscriptionBase + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.Search/searchServices",
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
+			name: "ListByResourceGroup",
+			run: func() error {
+				pager := servicesClient.NewListByResourceGroupPager(resourceGroup, nil, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "ListBySubscription",
-			method:   http.MethodGet,
-			path:     subscriptionBase + "/providers/Microsoft.Search/searchServices",
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
+			name: "ListBySubscription",
+			run: func() error {
+				pager := servicesClient.NewListBySubscriptionPager(nil, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
+			},
 		},
 		{
-			name:     "Upgrade",
-			method:   http.MethodPost,
-			path:     resourceBase + "/upgrade",
-			statuses: []int{http.StatusOK, http.StatusAccepted, http.StatusNotImplemented},
+			name: "Upgrade",
+			run: func() error {
+				_, err := servicesClient.BeginUpgrade(ctx, resourceGroup, searchServiceName, nil)
+				return err
+			},
 		},
 		{
-			name:     "Delete",
-			method:   http.MethodDelete,
-			path:     resourceBase,
-			statuses: []int{http.StatusOK, http.StatusNoContent, http.StatusAccepted, http.StatusNotFound, http.StatusNotImplemented},
+			name: "Delete",
+			run: func() error {
+				_, err := servicesClient.Delete(ctx, resourceGroup, searchServiceName, nil, nil)
+				return err
+			},
 		},
 	}
 
 	notImplementedCount := 0
 	for _, call := range calls {
-		fullPath := withAPIVersion(call.path, searchManagementServicesAPIVersion)
-		_, status, err := client.doJSON(ctx, call.method, fullPath, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		if status == http.StatusNotImplemented {
-			notImplementedCount++
-			notImplemented(fullPath)
-			continue
-		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
 
 	if notImplementedCount == len(calls) {
-		fmt.Println("All search-management resource-manager services routes are staged in this Stackyard build.")
+		fmt.Println("All search-management services routes are staged in this Stackyard build.")
 		return
 	}
 	fmt.Println("Done.")
 }
 
-func withAPIVersion(path, apiVersion string) string {
-	if strings.Contains(path, "?") {
-		return path + "&api-version=" + apiVersion
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
 	}
-	return path + "?api-version=" + apiVersion
-}
-
-func notImplemented(path string) {
-	fmt.Printf("Route is recognized but not implemented yet: %s\n", path)
+	var responseErr *azcore.ResponseError
+	if errors.As(err, &responseErr) {
+		if responseErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(responseErr.ErrorCode), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {

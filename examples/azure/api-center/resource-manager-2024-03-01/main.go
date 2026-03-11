@@ -2,118 +2,30 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/apicenter/armapicenter"
+	"github.com/stackyard/stackyard/examples/azure/internal/azsdkshim"
 )
-
-const apiCenterResourceManagerAPIVersion = "2024-03-01"
-
-type apiCenterClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newAPICenterClient(endpoint, account, subscriptionKey string) *apiCenterClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"api-center-resource-manager-2024-03-01",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{
-				account:         account,
-				subscriptionKey: subscriptionKey,
-			}},
-		},
-		&policy.ClientOptions{},
-	)
-	return &apiCenterClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *apiCenterClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		req.Raw().Header.Set("Content-Type", "application/json")
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
 
 func main() {
 	ctx := context.Background()
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_APICENTER_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_APICENTER_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 
 	subscriptionID := getenv("STACKYARD_AZURE_SUBSCRIPTION_ID", "00000000-0000-0000-0000-000000000000")
 	resourceGroup := getenv("STACKYARD_AZURE_RESOURCE_GROUP", "rg-apic")
+	location := getenv("STACKYARD_AZURE_REGION", "eastus")
 	serviceName := getenv("STACKYARD_AZURE_APICENTER_SERVICE", "contoso")
 	workspaceName := getenv("STACKYARD_AZURE_APICENTER_WORKSPACE", "default")
 	apiName := getenv("STACKYARD_AZURE_APICENTER_API", "echo-api")
@@ -123,190 +35,276 @@ func main() {
 	environmentName := getenv("STACKYARD_AZURE_APICENTER_ENVIRONMENT", "public")
 	metadataSchemaName := getenv("STACKYARD_AZURE_APICENTER_METADATA_SCHEMA", "author")
 
-	fmt.Printf("Stackyard Azure API Center Resource Manager (resource-manager-2024-03-01) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure API Center Resource Manager typed SDK example using %s\n", endpoint)
 
-	client := newAPICenterClient(endpoint, account, subscriptionKey)
+	credential := azsdkshim.StaticTokenCredential{}
+	armOptions := &arm.ClientOptions{
+		ClientOptions: policy.ClientOptions{
+			InsecureAllowCredentialWithHTTP: true,
+			Cloud: cloud.Configuration{
+				ActiveDirectoryAuthorityHost: endpoint,
+				Services: map[cloud.ServiceName]cloud.ServiceConfiguration{
+					cloud.ResourceManager: {
+						Endpoint: endpoint,
+						Audience: endpoint,
+					},
+				},
+			},
+			Transport: azsdkshim.NewTransport("/azure", account, subscriptionKey),
+		},
+	}
 
-	serviceScope := "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.ApiCenter/services/" + serviceName
-	workspaceScope := serviceScope + "/workspaces/" + workspaceName
-	apiScope := workspaceScope + "/apis/" + apiName
-	versionScope := apiScope + "/versions/" + versionName
-	definitionScope := versionScope + "/definitions/" + definitionName
-	deploymentScope := apiScope + "/deployments/" + deploymentName
-	environmentScope := workspaceScope + "/environments/" + environmentName
-	metadataSchemaScope := serviceScope + "/metadataSchemas/" + metadataSchemaName
+	operationsClient, err := armapicenter.NewOperationsClient(credential, armOptions)
+	if err != nil {
+		exitf("create OperationsClient failed: %v", err)
+	}
+	servicesClient, err := armapicenter.NewServicesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ServicesClient failed: %v", err)
+	}
+	workspacesClient, err := armapicenter.NewWorkspacesClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create WorkspacesClient failed: %v", err)
+	}
+	apisClient, err := armapicenter.NewApisClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create ApisClient failed: %v", err)
+	}
+	apiVersionsClient, err := armapicenter.NewAPIVersionsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create APIVersionsClient failed: %v", err)
+	}
+	apiDefinitionsClient, err := armapicenter.NewAPIDefinitionsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create APIDefinitionsClient failed: %v", err)
+	}
+	deploymentsClient, err := armapicenter.NewDeploymentsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create DeploymentsClient failed: %v", err)
+	}
+	environmentsClient, err := armapicenter.NewEnvironmentsClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create EnvironmentsClient failed: %v", err)
+	}
+	metadataSchemasClient, err := armapicenter.NewMetadataSchemasClient(subscriptionID, credential, armOptions)
+	if err != nil {
+		exitf("create MetadataSchemasClient failed: %v", err)
+	}
 
 	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
+		name string
+		run  func() error
 	}{
 		{
-			name:     "ListOperations",
-			method:   http.MethodGet,
-			path:     "/azure/providers/Microsoft.ApiCenter/operations?api-version=" + apiCenterResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateService",
-			method: http.MethodPut,
-			path:   serviceScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"location": "eastus",
-				"sku": map[string]any{
-					"name": "Standard",
-				},
+			name: "ListOperations",
+			run: func() error {
+				pager := operationsClient.NewListPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:     "GetService",
-			method:   http.MethodGet,
-			path:     serviceScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "HeadService",
-			method:   http.MethodHead,
-			path:     serviceScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "UpdateService",
-			method: http.MethodPatch,
-			path:   serviceScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"tags": map[string]any{
-					"env": "dev",
-				},
+			name: "CreateService",
+			run: func() error {
+				_, err := servicesClient.CreateOrUpdate(ctx, resourceGroup, serviceName, armapicenter.Service{
+					Location: to.Ptr(location),
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "ListServicesByResourceGroup",
-			method:   http.MethodGet,
-			path:     "/azure/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.ApiCenter/services?api-version=" + apiCenterResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListServicesBySubscription",
-			method:   http.MethodGet,
-			path:     "/azure/subscriptions/" + subscriptionID + "/providers/Microsoft.ApiCenter/services?api-version=" + apiCenterResourceManagerAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "ExportMetadataSchema",
-			method: http.MethodPost,
-			path:   serviceScope + "/exportMetadataSchema?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"assignedTo": "api",
+			name: "GetService",
+			run: func() error {
+				_, err := servicesClient.Get(ctx, resourceGroup, serviceName, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
 		},
 		{
-			name:   "CreateWorkspace",
-			method: http.MethodPut,
-			path:   workspaceScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": workspaceName},
+			name: "UpdateService",
+			run: func() error {
+				_, err := servicesClient.Update(ctx, resourceGroup, serviceName, armapicenter.ServiceUpdate{
+					Tags: map[string]*string{
+						"env": to.Ptr("dev"),
+					},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "CreateAPI",
-			method: http.MethodPut,
-			path:   apiScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": apiName},
+			name: "ListServicesByResourceGroup",
+			run: func() error {
+				pager := servicesClient.NewListByResourceGroupPager(resourceGroup, nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "CreateAPIVersion",
-			method: http.MethodPut,
-			path:   versionScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": versionName},
+			name: "ListServicesBySubscription",
+			run: func() error {
+				pager := servicesClient.NewListBySubscriptionPager(nil)
+				if pager.More() {
+					_, err := pager.NextPage(ctx)
+					return err
+				}
+				return nil
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "CreateAPIDefinition",
-			method: http.MethodPut,
-			path:   definitionScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": definitionName},
+			name: "ExportMetadataSchema",
+			run: func() error {
+				_, err := servicesClient.BeginExportMetadataSchema(ctx, resourceGroup, serviceName, armapicenter.MetadataSchemaExportRequest{
+					AssignedTo: to.Ptr(armapicenter.MetadataAssignmentEntityAPI),
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "ExportSpecification",
-			method: http.MethodPost,
-			path:   definitionScope + "/exportSpecification?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"format": "openapi",
+			name: "CreateWorkspace",
+			run: func() error {
+				_, err := workspacesClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, armapicenter.Workspace{
+					Properties: &armapicenter.WorkspaceProperties{
+						Title: to.Ptr(workspaceName),
+					},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
 		},
 		{
-			name:   "ImportSpecification",
-			method: http.MethodPost,
-			path:   definitionScope + "/importSpecification?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"value": "{\"openapi\":\"3.0.0\"}",
+			name: "CreateAPI",
+			run: func() error {
+				_, err := apisClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, apiName, armapicenter.API{
+					Properties: &armapicenter.APIProperties{
+						Kind:  to.Ptr(armapicenter.APIKindRest),
+						Title: to.Ptr(apiName),
+					},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
 		},
 		{
-			name:   "CreateDeployment",
-			method: http.MethodPut,
-			path:   deploymentScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": deploymentName},
+			name: "CreateAPIVersion",
+			run: func() error {
+				_, err := apiVersionsClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, apiName, versionName, armapicenter.APIVersion{
+					Properties: &armapicenter.APIVersionProperties{
+						LifecycleStage: to.Ptr(armapicenter.LifecycleStageDesign),
+						Title:          to.Ptr(versionName),
+					},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "CreateEnvironment",
-			method: http.MethodPut,
-			path:   environmentScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{"title": environmentName},
+			name: "CreateAPIDefinition",
+			run: func() error {
+				_, err := apiDefinitionsClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, apiName, versionName, definitionName, armapicenter.APIDefinition{
+					Properties: &armapicenter.APIDefinitionProperties{
+						Title: to.Ptr(definitionName),
+					},
+				}, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
 		},
 		{
-			name:   "CreateMetadataSchema",
-			method: http.MethodPut,
-			path:   metadataSchemaScope + "?api-version=" + apiCenterResourceManagerAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"schema": map[string]any{"type": "object"},
-				},
+			name: "ExportSpecification",
+			run: func() error {
+				_, err := apiDefinitionsClient.BeginExportSpecification(ctx, resourceGroup, serviceName, workspaceName, apiName, versionName, definitionName, nil)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
+		{
+			name: "ImportSpecification",
+			run: func() error {
+				_, err := apiDefinitionsClient.BeginImportSpecification(ctx, resourceGroup, serviceName, workspaceName, apiName, versionName, definitionName, armapicenter.APISpecImportRequest{
+					Format: to.Ptr(armapicenter.APISpecImportSourceFormatInline),
+					Value:  to.Ptr("{\"openapi\":\"3.0.0\"}"),
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateDeployment",
+			run: func() error {
+				_, err := deploymentsClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, apiName, deploymentName, armapicenter.Deployment{
+					Properties: &armapicenter.DeploymentProperties{
+						Title: to.Ptr(deploymentName),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateEnvironment",
+			run: func() error {
+				_, err := environmentsClient.CreateOrUpdate(ctx, resourceGroup, serviceName, workspaceName, environmentName, armapicenter.Environment{
+					Properties: &armapicenter.EnvironmentProperties{
+						Kind:  to.Ptr(armapicenter.EnvironmentKindDevelopment),
+						Title: to.Ptr(environmentName),
+					},
+				}, nil)
+				return err
+			},
+		},
+		{
+			name: "CreateMetadataSchema",
+			run: func() error {
+				_, err := metadataSchemasClient.CreateOrUpdate(ctx, resourceGroup, serviceName, metadataSchemaName, armapicenter.MetadataSchema{
+					Properties: &armapicenter.MetadataSchemaProperties{
+						Schema: to.Ptr("{\"type\":\"string\"}"),
+					},
+				}, nil)
+				return err
+			},
 		},
 	}
 
+	notImplementedCount := 0
 	for _, call := range calls {
-		_, status, err := client.doJSON(ctx, call.method, call.path, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
 
-	fmt.Println("Azure API Center Resource Manager staged routes completed successfully.")
+	if notImplementedCount == len(calls) {
+		fmt.Println("All api-center resource-manager routes are staged in this Stackyard build.")
+		return
+	}
+	fmt.Println("Done.")
+}
+
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
+	}
+	var responseErr *azcore.ResponseError
+	if errors.As(err, &responseErr) {
+		if responseErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(responseErr.ErrorCode), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
 	}
-	return value
+	return fallback
 }
 
 func exitf(format string, args ...any) {

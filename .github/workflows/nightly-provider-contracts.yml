@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   provider-contracts:
+    name: ${{ matrix.provider }} / ${{ matrix.suite }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     strategy:
@@ -21,11 +22,101 @@ jobs:
       matrix:
         include:
           - provider: aws
-            target: aws-provider-contracts-nightly
+            suite: contracts-1-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=0
+          - provider: aws
+            suite: contracts-2-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=1
+          - provider: aws
+            suite: contracts-3-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=2
+          - provider: aws
+            suite: contracts-4-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=3
+          - provider: aws
+            suite: contracts-5-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=4
+          - provider: aws
+            suite: contracts-6-of-6
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=6 AWS_CONTRACT_SHARD_INDEX=5
+          - provider: aws
+            suite: io-1-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=0
+          - provider: aws
+            suite: io-2-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=1
+          - provider: aws
+            suite: io-3-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=2
+          - provider: aws
+            suite: io-4-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=3
+          - provider: aws
+            suite: io-5-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=4
+          - provider: aws
+            suite: io-6-of-6
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=6 AWS_IO_SHARD_INDEX=5
+          - provider: aws
+            suite: docs-1-of-4
+            target: aws-provider-contracts-nightly-docs
+            make_vars: AWS_DOC_SHARD_COUNT=4 AWS_DOC_SHARD_INDEX=0
+          - provider: aws
+            suite: docs-2-of-4
+            target: aws-provider-contracts-nightly-docs
+            make_vars: AWS_DOC_SHARD_COUNT=4 AWS_DOC_SHARD_INDEX=1
+          - provider: aws
+            suite: docs-3-of-4
+            target: aws-provider-contracts-nightly-docs
+            make_vars: AWS_DOC_SHARD_COUNT=4 AWS_DOC_SHARD_INDEX=2
+          - provider: aws
+            suite: docs-4-of-4
+            target: aws-provider-contracts-nightly-docs
+            make_vars: AWS_DOC_SHARD_COUNT=4 AWS_DOC_SHARD_INDEX=3
           - provider: azure
-            target: azure-provider-contracts-nightly
+            suite: contracts
+            target: azure-provider-contracts-nightly-contracts
+            make_vars: ""
+          - provider: azure
+            suite: io
+            target: azure-provider-contracts-nightly-io
+            make_vars: ""
+          - provider: azure
+            suite: docs
+            target: azure-provider-contracts-nightly-docs
+            make_vars: ""
+          - provider: azure
+            suite: endpoints
+            target: azure-provider-contracts-nightly-endpoints
+            make_vars: ""
           - provider: gcp
-            target: gcp-provider-contracts-nightly
+            suite: contracts
+            target: gcp-provider-contracts-nightly-contracts
+            make_vars: ""
+          - provider: gcp
+            suite: io
+            target: gcp-provider-contracts-nightly-io
+            make_vars: ""
+          - provider: gcp
+            suite: docs
+            target: gcp-provider-contracts-nightly-docs
+            make_vars: ""
+          - provider: gcp
+            suite: endpoints
+            target: gcp-provider-contracts-nightly-endpoints
+            make_vars: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,15 +144,15 @@ jobs:
           sudo /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
           aws --version
 
-      - name: Run nightly provider contract suite
+      - name: Run nightly provider contract task
         run: |
           set -euo pipefail
           mkdir -p reports
-          make "${{ matrix.target }}" 2>&1 | tee "reports/${{ matrix.provider }}-provider-contracts.log"
+          make ${{ matrix.make_vars }} "${{ matrix.target }}" 2>&1 | tee "reports/${{ matrix.provider }}-${{ matrix.suite }}-provider-contracts.log"
 
       - name: Upload provider contract logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-provider-contracts-${{ matrix.provider }}
-          path: reports/${{ matrix.provider }}-provider-contracts.log
+          name: nightly-provider-contracts-${{ matrix.provider }}-${{ matrix.suite }}
+          path: reports/${{ matrix.provider }}-${{ matrix.suite }}-provider-contracts.log

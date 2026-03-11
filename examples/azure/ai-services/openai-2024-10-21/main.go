@@ -2,109 +2,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 )
 
 const openAIAPIVersion = "2024-10-21"
 
-type openAIClient struct {
-	endpoint string
-	pipeline runtime.Pipeline
-}
-
-type sharedKeyAndSubscriptionPolicy struct {
-	account         string
-	subscriptionKey string
-}
-
-func (p *sharedKeyAndSubscriptionPolicy) Do(req *policy.Request) (*http.Response, error) {
-	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
-	if strings.TrimSpace(p.subscriptionKey) != "" {
-		req.Raw().Header.Set("Ocp-Apim-Subscription-Key", p.subscriptionKey)
-	}
-	return req.Next()
-}
-
-func newOpenAIClient(endpoint, account, subscriptionKey string) *openAIClient {
-	pipeline := runtime.NewPipeline(
-		"stackyard",
-		"openai-2024-10-21",
-		runtime.PipelineOptions{
-			PerRetry: []policy.Policy{&sharedKeyAndSubscriptionPolicy{account: account, subscriptionKey: subscriptionKey}},
-		},
-		&policy.ClientOptions{},
-	)
-	return &openAIClient{
-		endpoint: strings.TrimRight(endpoint, "/"),
-		pipeline: pipeline,
-	}
-}
-
-func (c *openAIClient) doJSON(ctx context.Context, method, path string, payload any, expectedStatuses ...int) (map[string]any, int, error) {
-	req, err := runtime.NewRequest(ctx, method, c.endpoint+path)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request %s %s: %w", method, path, err)
-	}
-	req.Raw().Header.Set("Accept", "application/json")
-
-	if payload != nil {
-		if err := runtime.MarshalAsJSON(req, payload); err != nil {
-			return nil, 0, fmt.Errorf("marshal payload %s %s: %w", method, path, err)
-		}
-	}
-
-	resp, err := c.pipeline.Do(req)
-	if err != nil {
-		return nil, 0, fmt.Errorf("execute request %s %s: %w", method, path, err)
-	}
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, resp.StatusCode, fmt.Errorf("read response body %s %s: %w", method, path, readErr)
-	}
-
-	if len(expectedStatuses) == 0 {
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	} else {
-		matched := false
-		for _, status := range expectedStatuses {
-			if resp.StatusCode == status {
-				matched = true
-				break
-			}
-		}
-		if !matched {
-			return nil, resp.StatusCode, fmt.Errorf("unexpected status %d body=%s", resp.StatusCode, strings.TrimSpace(string(body)))
-		}
-	}
-
-	if strings.TrimSpace(string(body)) == "" {
-		return map[string]any{}, resp.StatusCode, nil
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("decode JSON body for %s %s: %w", method, path, err)
-	}
-	if decoded == nil {
-		decoded = map[string]any{}
-	}
-	return decoded, resp.StatusCode, nil
-}
-
 func main() {
 	ctx := context.Background()
-	endpoint := getenv("STACKYARD_ENDPOINT", "http://localhost:4566")
+	endpoint := strings.TrimRight(getenv("STACKYARD_ENDPOINT", "http://localhost:4566"), "/")
 	account := getenv("STACKYARD_AZURE_AISERVICES_ACCOUNT", "devstoreaccount1")
 	subscriptionKey := getenv("STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY", "stackyard-local-subscription-key")
 
@@ -114,117 +26,127 @@ func main() {
 	uploadID := getenv("STACKYARD_AZURE_OPENAI_UPLOAD_ID", "upload-123")
 	modelName := getenv("STACKYARD_AZURE_OPENAI_MODEL_NAME", "gpt-4o-mini")
 
-	fmt.Printf("Stackyard Azure OpenAI (openai-2024-10-21) example using %s\n", strings.TrimRight(endpoint, "/"))
+	fmt.Printf("Stackyard Azure OpenAI typed SDK example using %s\n", endpoint)
 
-	client := newOpenAIClient(endpoint, account, subscriptionKey)
+	requestOptions := []option.RequestOption{
+		option.WithBaseURL(endpoint + "/azure/openai"),
+		option.WithHeader("Authorization", "SharedKey "+account+":signature"),
+		option.WithQuery("api-version", openAIAPIVersion),
+	}
+	if strings.TrimSpace(subscriptionKey) != "" {
+		requestOptions = append(requestOptions, option.WithHeader("Ocp-Apim-Subscription-Key", subscriptionKey))
+	}
+	client := openai.NewClient(requestOptions...)
 
 	calls := []struct {
-		name     string
-		method   string
-		path     string
-		payload  any
-		statuses []int
+		name string
+		run  func() error
 	}{
 		{
-			name:   "UploadFile",
-			method: http.MethodPost,
-			path:   "/azure/openai/files?api-version=" + openAIAPIVersion,
-			payload: map[string]any{
-				"purpose": "assistants",
+			name: "UploadFile",
+			run: func() error {
+				_, err := client.Files.New(ctx, openai.FileNewParams{
+					File:    strings.NewReader("{\"messages\":[]}"),
+					Purpose: openai.FilePurposeAssistants,
+				})
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
 		},
 		{
-			name:     "GetFile",
-			method:   http.MethodGet,
-			path:     "/azure/openai/files/" + fileID + "?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateBatch",
-			method: http.MethodPost,
-			path:   "/azure/openai/batches?api-version=" + openAIAPIVersion,
-			payload: map[string]any{
-				"input_file_id":      fileID,
-				"endpoint":           "/chat/completions",
-				"completion_window":  "24h",
-				"metadata":           map[string]any{"env": "local"},
-				"additional_details": map[string]any{},
+			name: "GetFile",
+			run: func() error {
+				_, err := client.Files.Get(ctx, fileID)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
 		},
 		{
-			name:     "GetBatch",
-			method:   http.MethodGet,
-			path:     "/azure/openai/batches/" + batchID + "?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:     "CancelBatch",
-			method:   http.MethodPost,
-			path:     "/azure/openai/batches/" + batchID + "/cancel?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "CreateFineTuningJob",
-			method: http.MethodPost,
-			path:   "/azure/openai/fine_tuning/jobs?api-version=" + openAIAPIVersion,
-			payload: map[string]any{
-				"training_file": fileID,
-				"model":         modelName,
+			name: "CreateBatch",
+			run: func() error {
+				_, err := client.Batches.New(ctx, openai.BatchNewParams{
+					CompletionWindow: openai.BatchNewParamsCompletionWindow24h,
+					Endpoint:         openai.BatchNewParamsEndpointV1ChatCompletions,
+					InputFileID:      fileID,
+				})
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
 		},
 		{
-			name:     "ListFineTuningEvents",
-			method:   http.MethodGet,
-			path:     "/azure/openai/fine_tuning/jobs/" + fineTuningJobID + "/events?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:     "ListModels",
-			method:   http.MethodGet,
-			path:     "/azure/openai/models?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:     "GetModel",
-			method:   http.MethodGet,
-			path:     "/azure/openai/models/" + modelName + "?api-version=" + openAIAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
-		},
-		{
-			name:   "AddUploadPart",
-			method: http.MethodPost,
-			path:   "/azure/openai/uploads/" + uploadID + "/parts?api-version=" + openAIAPIVersion,
-			payload: map[string]any{
-				"content": "cGFydA==",
+			name: "GetBatch",
+			run: func() error {
+				_, err := client.Batches.Get(ctx, batchID)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
 		},
 		{
-			name:   "CompleteUpload",
-			method: http.MethodPost,
-			path:   "/azure/openai/uploads/" + uploadID + "/complete?api-version=" + openAIAPIVersion,
-			payload: map[string]any{
-				"part_ids": []string{"part-1", "part-2"},
+			name: "CancelBatch",
+			run: func() error {
+				_, err := client.Batches.Cancel(ctx, batchID)
+				return err
 			},
-			statuses: []int{http.StatusOK, http.StatusNotImplemented},
+		},
+		{
+			name: "CreateFineTuningJob",
+			run: func() error {
+				_, err := client.FineTuning.Jobs.New(ctx, openai.FineTuningJobNewParams{
+					Model:        openai.FineTuningJobNewParamsModel(modelName),
+					TrainingFile: fileID,
+				})
+				return err
+			},
+		},
+		{
+			name: "ListFineTuningEvents",
+			run: func() error {
+				_, err := client.FineTuning.Jobs.ListEvents(ctx, fineTuningJobID, openai.FineTuningJobListEventsParams{})
+				return err
+			},
+		},
+		{
+			name: "ListModels",
+			run: func() error {
+				_, err := client.Models.List(ctx)
+				return err
+			},
+		},
+		{
+			name: "GetModel",
+			run: func() error {
+				_, err := client.Models.Get(ctx, modelName)
+				return err
+			},
+		},
+		{
+			name: "AddUploadPart",
+			run: func() error {
+				_, err := client.Uploads.Parts.New(ctx, uploadID, openai.UploadPartNewParams{
+					Data: strings.NewReader("part-data"),
+				})
+				return err
+			},
+		},
+		{
+			name: "CompleteUpload",
+			run: func() error {
+				_, err := client.Uploads.Complete(ctx, uploadID, openai.UploadCompleteParams{
+					PartIDs: []string{"part-1", "part-2"},
+				})
+				return err
+			},
 		},
 	}
 
 	notImplementedCount := 0
 	for _, call := range calls {
-		_, status, err := client.doJSON(ctx, call.method, call.path, call.payload, call.statuses...)
-		if err != nil {
+		err := call.run()
+		switch {
+		case err == nil:
+			fmt.Printf("%s: ok\n", call.name)
+		case isNotImplemented(err):
+			notImplementedCount++
+			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.name)
+		default:
 			exitf("%s failed: %v", call.name, err)
 		}
-		if status == http.StatusNotImplemented {
-			notImplementedCount++
-			fmt.Printf("Route is recognized but not implemented yet: %s\n", call.path)
-			continue
-		}
-		fmt.Printf("%s: status=%d\n", call.name, status)
 	}
 
 	if notImplementedCount == len(calls) {
@@ -232,6 +154,22 @@ func main() {
 		return
 	}
 	fmt.Println("Done.")
+}
+
+func isNotImplemented(err error) bool {
+	if err == nil {
+		return false
+	}
+	var apiErr *openai.Error
+	if errors.As(err, &apiErr) {
+		if apiErr.StatusCode == http.StatusNotImplemented {
+			return true
+		}
+		if strings.EqualFold(strings.TrimSpace(apiErr.Code), "NotImplemented") {
+			return true
+		}
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "notimplemented")
 }
 
 func getenv(key, fallback string) string {
