@@ -32,16 +32,20 @@ func (s *Server) handleCognitoUserPoolsStage7Action(w http.ResponseWriter, actio
 		if !versionSet {
 			version = nil
 		}
-		if _, err := s.cognitouserpools.UpdateUserPoolDomain(
+		record, err := s.cognitouserpools.UpdateUserPoolDomain(
 			cognitoUserPoolsString(payload["UserPoolId"]),
 			cognitoUserPoolsString(payload["Domain"]),
 			version,
 			certificateARN,
-		); err != nil {
+		)
+		if err != nil {
 			respondCognitoUserPoolsErrorForErr(w, err)
 			return true
 		}
-		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{})
+		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{
+			"CloudFrontDomain":    record.CloudFrontDomain,
+			"ManagedLoginVersion": record.Version,
+		})
 		return true
 
 	case "SetUICustomization":
@@ -453,8 +457,8 @@ func cognitoUserPoolsTermsPayload(record cognitoUserPoolsTermsRecord) map[string
 		"CreationDate":     float64(record.CreationDate.Unix()),
 		"LastModifiedDate": float64(record.LastModifiedDate.Unix()),
 	}
-	if len(record.TermsDetails) > 0 {
-		out["TermsDetails"] = cloneCognitoUserPoolsMapAny(record.TermsDetails)
+	for key, value := range cloneCognitoUserPoolsMapAny(record.TermsDetails) {
+		out[key] = value
 	}
 	return out
 }

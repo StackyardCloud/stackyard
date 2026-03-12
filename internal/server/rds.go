@@ -582,12 +582,7 @@ func (s *Server) handleRDSStartExportTask(w http.ResponseWriter, r *http.Request
 		respondRDSServiceError(w, "StartExportTask", err)
 		return
 	}
-	respondRDSXML(w, "StartExportTask", struct {
-		XMLName    xml.Name         `xml:"StartExportTaskResult"`
-		ExportTask rdsExportTaskXML `xml:"ExportTask"`
-	}{
-		ExportTask: rdsExportTaskToXML(task),
-	})
+	respondRDSXML(w, "StartExportTask", rdsExportTaskResultToXML("StartExportTaskResult", task))
 }
 
 func (s *Server) handleRDSDescribeExportTasks(w http.ResponseWriter, r *http.Request) {
@@ -628,12 +623,7 @@ func (s *Server) handleRDSCancelExportTask(w http.ResponseWriter, r *http.Reques
 		respondRDSServiceError(w, "CancelExportTask", err)
 		return
 	}
-	respondRDSXML(w, "CancelExportTask", struct {
-		XMLName    xml.Name         `xml:"CancelExportTaskResult"`
-		ExportTask rdsExportTaskXML `xml:"ExportTask"`
-	}{
-		ExportTask: rdsExportTaskToXML(task),
-	})
+	respondRDSXML(w, "CancelExportTask", rdsExportTaskResultToXML("CancelExportTaskResult", task))
 }
 
 func (s *Server) handleRDSStartDBInstanceAutomatedBackupsReplication(w http.ResponseWriter, r *http.Request) {
@@ -1097,12 +1087,44 @@ type rdsExportTaskXML struct {
 	Status               string `xml:"Status,omitempty"`
 }
 
+type rdsExportTaskResultXML struct {
+	XMLName                xml.Name `xml:""`
+	ExportTaskIdentifier   string   `xml:"ExportTaskIdentifier,omitempty"`
+	SourceArn              string   `xml:"SourceArn,omitempty"`
+	S3Bucket               string   `xml:"S3Bucket,omitempty"`
+	S3Prefix               string   `xml:"S3Prefix,omitempty"`
+	KmsKeyId               string   `xml:"KmsKeyId,omitempty"`
+	Status                 string   `xml:"Status,omitempty"`
+	TaskStartTime          string   `xml:"TaskStartTime,omitempty"`
+	TaskEndTime            string   `xml:"TaskEndTime,omitempty"`
+	PercentProgress        int      `xml:"PercentProgress,omitempty"`
+	TotalExtractedDataInGB int      `xml:"TotalExtractedDataInGB,omitempty"`
+	SourceType             string   `xml:"SourceType,omitempty"`
+}
+
 type rdsAutomatedBackupShortXML struct {
 	DbiResourceId string `xml:"DbiResourceId,omitempty"`
 	DBInstanceArn string `xml:"DBInstanceArn,omitempty"`
 	Status        string `xml:"Status,omitempty"`
 	Region        string `xml:"Region,omitempty"`
 	KmsKeyId      string `xml:"KmsKeyId,omitempty"`
+}
+
+func rdsExportTaskResultToXML(root string, in rdssvc.ExportTask) rdsExportTaskResultXML {
+	return rdsExportTaskResultXML{
+		XMLName:                xml.Name{Local: root},
+		ExportTaskIdentifier:   in.Identifier,
+		SourceArn:              in.SourceArn,
+		S3Bucket:               in.S3Bucket,
+		S3Prefix:               in.S3Prefix,
+		KmsKeyId:               in.KmsKeyID,
+		Status:                 in.Status,
+		TaskStartTime:          formatRDSTime(in.CreatedAt),
+		TaskEndTime:            formatRDSTime(in.UpdatedAt),
+		PercentProgress:        0,
+		TotalExtractedDataInGB: 0,
+		SourceType:             "SNAPSHOT",
+	}
 }
 
 type rdsAutomatedBackupXML struct {

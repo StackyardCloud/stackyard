@@ -268,7 +268,7 @@ func (s *codeGuruStore) Handle(action string, payload map[string]any, pathParams
 					"RuleMetadata": map[string]any{
 						"RuleId":           "stackyard.rule.input-validation",
 						"RuleName":         "InputValidation",
-						"ShortDescription": map[string]any{"Text": "Validate external input"},
+						"ShortDescription": "Validate external input",
 					},
 					"CodeReviewArn": review.Arn,
 				},

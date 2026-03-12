@@ -736,9 +736,11 @@ func batchJobPayload(job batchsvc.Job) map[string]any {
 		"parameters":    job.Parameters,
 		"tags":          job.Tags,
 	}
+	startedAt := job.CreatedAt
 	if job.StartedAt != nil {
-		out["startedAt"] = batchTimeMillis(*job.StartedAt)
+		startedAt = *job.StartedAt
 	}
+	out["startedAt"] = batchTimeMillis(startedAt)
 	if job.StoppedAt != nil {
 		out["stoppedAt"] = batchTimeMillis(*job.StoppedAt)
 	}
@@ -754,9 +756,11 @@ func batchJobSummaryPayload(job batchsvc.Job) map[string]any {
 		"statusReason": job.StatusReason,
 		"createdAt":    batchTimeMillis(job.CreatedAt),
 	}
+	startedAt := job.CreatedAt
 	if job.StartedAt != nil {
-		out["startedAt"] = batchTimeMillis(*job.StartedAt)
+		startedAt = *job.StartedAt
 	}
+	out["startedAt"] = batchTimeMillis(startedAt)
 	if job.StoppedAt != nil {
 		out["stoppedAt"] = batchTimeMillis(*job.StoppedAt)
 	}

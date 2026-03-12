@@ -149,7 +149,7 @@ func (s *Server) handleElasticBeanstalkQueryRouter(w http.ResponseWriter, r *htt
 			respondElasticBeanstalkErrorForErr(w, err)
 			return true
 		}
-		respondElasticBeanstalkXML(w, action, elasticBeanstalkCreateConfigurationTemplateResult{Template: toAWSEBConfigurationSettingsFromTemplate(tpl)})
+		respondElasticBeanstalkXML(w, action, newElasticBeanstalkConfigurationTemplateResult("CreateConfigurationTemplateResult", tpl))
 		return true
 	case "UpdateConfigurationTemplate":
 		tpl, err := s.eb.UpdateConfigurationTemplate(
@@ -163,7 +163,7 @@ func (s *Server) handleElasticBeanstalkQueryRouter(w http.ResponseWriter, r *htt
 			respondElasticBeanstalkErrorForErr(w, err)
 			return true
 		}
-		respondElasticBeanstalkXML(w, action, elasticBeanstalkUpdateConfigurationTemplateResult{Template: toAWSEBConfigurationSettingsFromTemplate(tpl)})
+		respondElasticBeanstalkXML(w, action, newElasticBeanstalkConfigurationTemplateResult("UpdateConfigurationTemplateResult", tpl))
 		return true
 	case "DeleteConfigurationTemplate":
 		if err := s.eb.DeleteConfigurationTemplate(
@@ -1346,6 +1346,27 @@ func toAWSEBConfigurationSettingsFromTemplate(in ebservice.ConfigurationTemplate
 	})
 }
 
+func newElasticBeanstalkConfigurationTemplateResult(xmlName string, in ebservice.ConfigurationTemplate) elasticBeanstalkConfigurationTemplateResult {
+	out := elasticBeanstalkConfigurationTemplateResult{
+		XMLName:           xml.Name{Local: xmlName},
+		SolutionStackName: in.SolutionStackName,
+		ApplicationName:   in.ApplicationName,
+		TemplateName:      in.TemplateName,
+		Description:       in.Description,
+		DateCreated:       in.DateCreated,
+		DateUpdated:       in.DateUpdated,
+	}
+	for _, setting := range in.OptionSettings {
+		out.OptionSettings = append(out.OptionSettings, awsebtypes.ConfigurationOptionSetting{
+			Namespace:    strPtr(setting.Namespace),
+			OptionName:   strPtr(setting.OptionName),
+			ResourceName: strPtr(setting.ResourceName),
+			Value:        strPtr(setting.Value),
+		})
+	}
+	return out
+}
+
 func toAWSEBConfigurationOption(in ebservice.ConfigurationOptionDescription) awsebtypes.ConfigurationOptionDescription {
 	valueType := awsebtypes.ConfigurationOptionValueType(in.ValueType)
 	return awsebtypes.ConfigurationOptionDescription{
@@ -1650,14 +1671,15 @@ type elasticBeanstalkDescribeApplicationVersionsResult struct {
 	ApplicationVersions []awsebtypes.ApplicationVersionDescription `xml:"ApplicationVersions>member,omitempty"`
 }
 
-type elasticBeanstalkCreateConfigurationTemplateResult struct {
-	XMLName  xml.Name                                    `xml:"CreateConfigurationTemplateResult"`
-	Template awsebtypes.ConfigurationSettingsDescription `xml:"Template"`
-}
-
-type elasticBeanstalkUpdateConfigurationTemplateResult struct {
-	XMLName  xml.Name                                    `xml:"UpdateConfigurationTemplateResult"`
-	Template awsebtypes.ConfigurationSettingsDescription `xml:"Template"`
+type elasticBeanstalkConfigurationTemplateResult struct {
+	XMLName           xml.Name                                `xml:""`
+	SolutionStackName string                                  `xml:"SolutionStackName,omitempty"`
+	ApplicationName   string                                  `xml:"ApplicationName,omitempty"`
+	TemplateName      string                                  `xml:"TemplateName,omitempty"`
+	Description       string                                  `xml:"Description,omitempty"`
+	DateCreated       time.Time                               `xml:"DateCreated,omitempty"`
+	DateUpdated       time.Time                               `xml:"DateUpdated,omitempty"`
+	OptionSettings    []awsebtypes.ConfigurationOptionSetting `xml:"OptionSettings>member,omitempty"`
 }
 
 type elasticBeanstalkDeleteConfigurationTemplateResult struct {

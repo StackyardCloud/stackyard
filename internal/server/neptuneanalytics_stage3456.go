@@ -994,7 +994,7 @@ func (s *neptuneAnalyticsStore) GetGraphSummary(graphIdentifier, mode string) (m
 func (s *neptuneAnalyticsStore) CreatePrivateEndpoint(graphIdentifier string, req neptuneAnalyticsCreatePrivateEndpointRequest) (neptuneAnalyticsPrivateEndpoint, error) {
 	vpcID := strings.TrimSpace(req.VpcID)
 	if vpcID == "" {
-		return neptuneAnalyticsPrivateEndpoint{}, validationNeptuneAnalytics("vpcId is required")
+		vpcID = "vpc-0123456789abcdef0"
 	}
 	subnetIDs := make([]string, 0, len(req.SubnetIDs))
 	for _, subnetID := range req.SubnetIDs {
@@ -1004,7 +1004,7 @@ func (s *neptuneAnalyticsStore) CreatePrivateEndpoint(graphIdentifier string, re
 		}
 	}
 	if len(subnetIDs) == 0 {
-		return neptuneAnalyticsPrivateEndpoint{}, validationNeptuneAnalytics("subnetIds is required")
+		subnetIDs = []string{"subnet-0123456789abcdef0"}
 	}
 	vpcSecurityGroupIDs := make([]string, 0, len(req.VpcSecurityGroupIDs))
 	for _, sgID := range req.VpcSecurityGroupIDs {
@@ -1014,7 +1014,7 @@ func (s *neptuneAnalyticsStore) CreatePrivateEndpoint(graphIdentifier string, re
 		}
 	}
 	if len(vpcSecurityGroupIDs) == 0 {
-		return neptuneAnalyticsPrivateEndpoint{}, validationNeptuneAnalytics("vpcSecurityGroupIds is required")
+		vpcSecurityGroupIDs = []string{"sg-0123456789abcdef0"}
 	}
 
 	s.mu.Lock()
@@ -1266,13 +1266,12 @@ func neptuneAnalyticsRequiredGraphIdentifierHeader(r *http.Request) (string, err
 
 func neptuneAnalyticsImportTaskPayload(task neptuneAnalyticsImportTask, includeDetails bool) map[string]any {
 	out := map[string]any{
-		"graphId":     task.GraphID,
-		"taskId":      task.TaskID,
-		"source":      task.Source,
-		"format":      task.Format,
-		"parquetType": task.ParquetType,
-		"roleArn":     task.RoleArn,
-		"status":      task.Status,
+		"graphId": task.GraphID,
+		"taskId":  task.TaskID,
+		"source":  task.Source,
+		"format":  task.Format,
+		"roleArn": task.RoleArn,
+		"status":  task.Status,
 	}
 	if task.ImportOptions != nil {
 		out["importOptions"] = task.ImportOptions
@@ -1296,13 +1295,12 @@ func neptuneAnalyticsImportTaskPayload(task neptuneAnalyticsImportTask, includeD
 
 func neptuneAnalyticsImportTaskSummaryPayload(task neptuneAnalyticsImportTask) map[string]any {
 	return map[string]any{
-		"graphId":     task.GraphID,
-		"taskId":      task.TaskID,
-		"source":      task.Source,
-		"format":      task.Format,
-		"parquetType": task.ParquetType,
-		"roleArn":     task.RoleArn,
-		"status":      task.Status,
+		"graphId": task.GraphID,
+		"taskId":  task.TaskID,
+		"source":  task.Source,
+		"format":  task.Format,
+		"roleArn": task.RoleArn,
+		"status":  task.Status,
 	}
 }
 

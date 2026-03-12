@@ -570,7 +570,7 @@ func (s *Server) handleSNSQueryRouter(w http.ResponseWriter, r *http.Request) bo
 		return true
 	case "ListOriginationNumbers":
 		page, nextToken := paginateSNS([]snsOriginationNumberEntry{}, r.Form.Get("NextToken"), r.Form.Get("MaxResults"))
-		respondSNSXML(w, action, snsListOriginationNumbersResult{OriginationNumbers: page, NextToken: nextToken})
+		respondSNSXML(w, action, snsListOriginationNumbersResult{PhoneNumbers: page, NextToken: nextToken})
 		return true
 	default:
 		respondSNSErrorXML(w, http.StatusNotImplemented, "NotImplemented", "operation not implemented")
@@ -961,9 +961,9 @@ type snsOptInPhoneNumberResult struct {
 }
 
 type snsListOriginationNumbersResult struct {
-	XMLName            xml.Name                    `xml:"ListOriginationNumbersResult"`
-	OriginationNumbers []snsOriginationNumberEntry `xml:"OriginationNumbers>member"`
-	NextToken          string                      `xml:"NextToken,omitempty"`
+	XMLName      xml.Name                    `xml:"ListOriginationNumbersResult"`
+	PhoneNumbers []snsOriginationNumberEntry `xml:"PhoneNumbers>member"`
+	NextToken    string                      `xml:"NextToken,omitempty"`
 }
 
 func parseSNSAttributes(values url.Values, prefix string) map[string]string {

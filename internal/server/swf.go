@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/stackyard/stackyard/internal/services/swf"
 )
@@ -231,10 +232,17 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 			ActivityType: swfActivityType{Name: activity.Name, Version: activity.Version},
 			Status:       activity.Status,
 			Description:  activity.Description,
+			CreationDate: swfSyntheticCreationDate(activity.Name, activity.Version),
 		}
 		respondSWFJSON(w, http.StatusOK, map[string]any{
-			"typeInfo":      info,
-			"configuration": map[string]any{},
+			"typeInfo": info,
+			"configuration": map[string]any{
+				"defaultTaskHeartbeatTimeout":       "60",
+				"defaultTaskList":                   swfTaskList{Name: swfDefaultTaskListName(activity.Domain)},
+				"defaultTaskScheduleToCloseTimeout": "120",
+				"defaultTaskScheduleToStartTimeout": "60",
+				"defaultTaskStartToCloseTimeout":    "60",
+			},
 		})
 		return true
 	case "ListActivityTypes":
@@ -254,6 +262,7 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 				ActivityType: swfActivityType{Name: activity.Name, Version: activity.Version},
 				Status:       activity.Status,
 				Description:  activity.Description,
+				CreationDate: swfSyntheticCreationDate(activity.Name, activity.Version),
 			})
 		}
 		respondSWFJSON(w, http.StatusOK, map[string]any{"typeInfos": out})
@@ -333,10 +342,11 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 			WorkflowType: swfWorkflowType{Name: workflow.Name, Version: workflow.Version},
 			Status:       workflow.Status,
 			Description:  workflow.Description,
+			CreationDate: swfSyntheticCreationDate(workflow.Name, workflow.Version),
 		}
 		respondSWFJSON(w, http.StatusOK, map[string]any{
 			"typeInfo":      info,
-			"configuration": map[string]any{},
+			"configuration": swfWorkflowExecutionConfiguration(swfDefaultTaskListName(workflow.Domain)),
 		})
 		return true
 	case "ListWorkflowTypes":
@@ -356,6 +366,7 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 				WorkflowType: swfWorkflowType{Name: workflow.Name, Version: workflow.Version},
 				Status:       workflow.Status,
 				Description:  workflow.Description,
+				CreationDate: swfSyntheticCreationDate(workflow.Name, workflow.Version),
 			})
 		}
 		respondSWFJSON(w, http.StatusOK, map[string]any{"typeInfos": out})
@@ -445,10 +456,8 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 			TagList:         exec.Tags,
 		}
 		respondSWFJSON(w, http.StatusOK, map[string]any{
-			"executionInfo": info,
-			"executionConfiguration": map[string]any{
-				"taskList": swfTaskList{Name: exec.TaskList},
-			},
+			"executionInfo":          info,
+			"executionConfiguration": swfWorkflowExecutionConfiguration(exec.TaskList),
 			"openCounts": map[string]any{
 				"openActivityTasks":           0,
 				"openDecisionTasks":           0,
@@ -552,10 +561,51 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 		respondSWFJSON(w, http.StatusOK, map[string]any{"count": 0, "truncated": false})
 		return true
 	case "PollForActivityTask":
-		respondSWFJSON(w, http.StatusOK, map[string]any{})
+		var input struct {
+			Domain   string      `json:"domain"`
+			TaskList swfTaskList `json:"taskList"`
+		}
+		_ = json.Unmarshal(body, &input)
+		execution := s.swfPollExecution(input.Domain)
+		activityType := s.swfPollActivityType(input.Domain)
+		respondSWFJSON(w, http.StatusOK, map[string]any{
+			"activityId":        "stackyard-activity-1",
+			"activityType":      activityType,
+			"startedEventId":    int64(1),
+			"taskToken":         "stackyard-activity-task-token",
+			"workflowExecution": execution,
+			"input":             "{}",
+		})
 		return true
 	case "PollForDecisionTask":
-		respondSWFJSON(w, http.StatusOK, map[string]any{})
+		var input struct {
+			Domain   string      `json:"domain"`
+			TaskList swfTaskList `json:"taskList"`
+		}
+		_ = json.Unmarshal(body, &input)
+		execution := s.swfPollExecution(input.Domain)
+		workflowType := s.swfPollWorkflowType(input.Domain)
+		respondSWFJSON(w, http.StatusOK, map[string]any{
+			"events": []any{
+				map[string]any{
+					"eventId":   int64(1),
+					"eventType": "WorkflowExecutionStarted",
+					"workflowExecutionStartedEventAttributes": map[string]any{
+						"childPolicy":                  "TERMINATE",
+						"executionStartToCloseTimeout": "3600",
+						"input":                        "{}",
+						"taskList":                     map[string]any{"name": swfDefaultTaskListName(input.TaskList.Name)},
+						"taskStartToCloseTimeout":      "300",
+						"workflowType":                 workflowType,
+					},
+				},
+			},
+			"startedEventId":         int64(1),
+			"taskToken":              "stackyard-decision-task-token",
+			"workflowExecution":      execution,
+			"workflowType":           workflowType,
+			"previousStartedEventId": int64(0),
+		})
 		return true
 	case "RecordActivityTaskHeartbeat":
 		respondSWFJSON(w, http.StatusOK, map[string]any{"cancelRequested": false})
@@ -693,4 +743,57 @@ func closeTimestamp(exec swf.WorkflowExecution) float64 {
 		return 0
 	}
 	return float64(exec.CloseTime.Unix())
+}
+
+func swfSyntheticCreationDate(name, version string) float64 {
+	base := time.Date(2025, time.January, 1, 0, 0, 0, 0, time.UTC)
+	offset := time.Duration(len(strings.TrimSpace(name))+len(strings.TrimSpace(version))) * time.Minute
+	return float64(base.Add(offset).Unix())
+}
+
+func swfDefaultTaskListName(domain string) string {
+	if strings.TrimSpace(domain) == "" {
+		return "stackyard-swf-tasklist"
+	}
+	return strings.TrimSpace(domain) + "-tasklist"
+}
+
+func swfWorkflowExecutionConfiguration(taskList string) map[string]any {
+	if strings.TrimSpace(taskList) == "" {
+		taskList = swfDefaultTaskListName("")
+	}
+	return map[string]any{
+		"childPolicy":                  "TERMINATE",
+		"executionStartToCloseTimeout": "600",
+		"taskList":                     swfTaskList{Name: taskList},
+		"taskStartToCloseTimeout":      "60",
+	}
+}
+
+func (s *Server) swfPollExecution(domain string) swfExecution {
+	executions := s.swf.ListWorkflowExecutions(domain, swf.StatusOpen)
+	if len(executions) == 0 {
+		executions = s.swf.ListWorkflowExecutions(domain, "")
+	}
+	if len(executions) == 0 {
+		return swfExecution{WorkflowId: "stackyard-swf-workflow-id", RunId: "stackyard-swf-run-id"}
+	}
+	exec := executions[0]
+	return swfExecution{WorkflowId: exec.WorkflowID, RunId: exec.RunID}
+}
+
+func (s *Server) swfPollActivityType(domain string) swfActivityType {
+	types := s.swf.ListActivityTypes(domain, "")
+	if len(types) == 0 {
+		return swfActivityType{Name: "stackyard-swf-activity", Version: "1"}
+	}
+	return swfActivityType{Name: types[0].Name, Version: types[0].Version}
+}
+
+func (s *Server) swfPollWorkflowType(domain string) swfWorkflowType {
+	types := s.swf.ListWorkflowTypes(domain, "")
+	if len(types) == 0 {
+		return swfWorkflowType{Name: "stackyard-swf-workflow", Version: "1"}
+	}
+	return swfWorkflowType{Name: types[0].Name, Version: types[0].Version}
 }

@@ -177,7 +177,7 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 			"targetInstanceTypeRightSizingMethod": drsFirstNonEmpty(drsString(payload, "targetInstanceTypeRightSizingMethod"), "NONE"),
 		}
 		s.launchConfigurationTemplates[id] = item
-		return drsCloneMap(item)
+		return drsResponseWithNestedObject("launchConfigurationTemplate", item)
 
 	case "DescribeLaunchConfigurationTemplates":
 		return map[string]any{
@@ -194,7 +194,7 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 		for key, value := range payload {
 			item[key] = value
 		}
-		return drsCloneMap(item)
+		return drsResponseWithNestedObject("launchConfigurationTemplate", item)
 
 	case "DeleteLaunchConfigurationTemplate":
 		id := drsFirstNonEmpty(
@@ -264,10 +264,11 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 
 	case "AssociateSourceNetworkStack":
 		network := s.ensureSourceNetworkLocked(sourceNetworkID)
-		network["stackName"] = drsFirstNonEmpty(drsString(payload, "cfnStackName", "stackName", "CfnStackName"), "stackyard-source-network-stack")
-		return map[string]any{
-			"sourceNetworkID": sourceNetworkID,
-		}
+		network["cfnStackName"] = drsFirstNonEmpty(drsString(payload, "cfnStackName", "stackName", "CfnStackName"), "stackyard-source-network-stack")
+		job := s.createJobLocked(action)
+		response := drsResponseWithNestedObject("job", job)
+		response["sourceNetworkID"] = sourceNetworkID
+		return response
 
 	case "ExportSourceNetworkCfnTemplate":
 		_ = s.ensureSourceNetworkLocked(sourceNetworkID)
@@ -276,7 +277,17 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 			"s3DestinationUrl": "s3://stackyard-drs/source-network-template.yaml",
 		}
 
-	case "StartSourceNetworkReplication", "StopSourceNetworkReplication", "StartSourceNetworkRecovery":
+	case "StartSourceNetworkReplication":
+		network := s.ensureSourceNetworkLocked(sourceNetworkID)
+		network["replicationStatus"] = "CONTINUOUS"
+		return drsResponseWithNestedObject("sourceNetwork", network)
+
+	case "StopSourceNetworkReplication":
+		network := s.ensureSourceNetworkLocked(sourceNetworkID)
+		network["replicationStatus"] = "STOPPED"
+		return drsResponseWithNestedObject("sourceNetwork", network)
+
+	case "StartSourceNetworkRecovery":
 		_ = s.ensureSourceNetworkLocked(sourceNetworkID)
 		job := s.createJobLocked(action)
 		return map[string]any{"job": drsCloneMap(job)}
@@ -296,7 +307,7 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 			"lastLaunchResult": "NOT_STARTED",
 		}
 		s.sourceServers[id] = item
-		return drsCloneMap(item)
+		return drsResponseWithNestedObject("sourceServer", item)
 
 	case "DescribeSourceServers":
 		return map[string]any{
@@ -311,7 +322,7 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 	case "DisconnectSourceServer":
 		server := s.ensureSourceServerLocked(sourceServerID)
 		server["isArchived"] = true
-		return map[string]any{}
+		return drsResponseWithNestedObject("sourceServer", server)
 
 	case "GetLaunchConfiguration":
 		_ = s.ensureSourceServerLocked(sourceServerID)
@@ -353,8 +364,11 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 	case "GetFailbackReplicationConfiguration":
 		_ = s.ensureSourceServerLocked(sourceServerID)
 		return map[string]any{
-			"sourceServerID": sourceServerID,
-			"name":           "stackyard-failback",
+			"sourceServerID":      sourceServerID,
+			"recoveryInstanceID":  recoveryInstanceID,
+			"bandwidthThrottling": 0,
+			"name":                "stackyard-failback",
+			"usePrivateIP":        false,
 		}
 
 	case "UpdateFailbackReplicationConfiguration":
@@ -370,14 +384,30 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 			"nextToken": "",
 		}
 
-	case "StartReplication", "StopReplication", "RetryDataReplication", "ReverseReplication", "StopFailback":
+	case "StartReplication":
 		server := s.ensureSourceServerLocked(sourceServerID)
-		switch action {
-		case "StartReplication":
-			server["dataReplicationInfo"] = map[string]any{"dataReplicationState": "CONTINUOUS"}
-		case "StopReplication":
-			server["dataReplicationInfo"] = map[string]any{"dataReplicationState": "PAUSED"}
-		}
+		server["dataReplicationInfo"] = map[string]any{"dataReplicationState": "CONTINUOUS"}
+		return drsResponseWithNestedObject("sourceServer", server)
+
+	case "StopReplication":
+		server := s.ensureSourceServerLocked(sourceServerID)
+		server["dataReplicationInfo"] = map[string]any{"dataReplicationState": "PAUSED"}
+		return drsResponseWithNestedObject("sourceServer", server)
+
+	case "RetryDataReplication":
+		server := s.ensureSourceServerLocked(sourceServerID)
+		server["dataReplicationInfo"] = map[string]any{"dataReplicationState": "CONTINUOUS"}
+		return drsResponseWithNestedObject("sourceServer", server)
+
+	case "ReverseReplication":
+		server := s.ensureSourceServerLocked(sourceServerID)
+		server["reversedDirectionSourceServerArn"] = drsString(server, "arn")
+		response := drsResponseWithNestedObject("sourceServer", server)
+		response["reversedDirectionSourceServerArn"] = drsString(server, "reversedDirectionSourceServerArn")
+		return response
+
+	case "StopFailback":
+		_ = s.ensureSourceServerLocked(sourceServerID)
 		job := s.createJobLocked(action)
 		return map[string]any{"job": drsCloneMap(job)}
 
@@ -439,6 +469,7 @@ func (s *drsStore) Handle(action string, payload map[string]any) map[string]any 
 		return map[string]any{
 			"items": []any{
 				map[string]any{
+					"snapshotID":         "rs-00000001",
 					"recoverySnapshotID": "rs-00000001",
 					"sourceServerID":     sourceServerID,
 					"expectedTimestamp":  time.Now().UTC().Format(time.RFC3339),
@@ -607,9 +638,13 @@ func (s *drsStore) ensureSourceNetworkLocked(id string) map[string]any {
 		return item
 	}
 	item := map[string]any{
-		"sourceNetworkID": id,
-		"arn":             drsResourceARN("source-network", id),
-		"createdDateTime": time.Now().UTC().Format(time.RFC3339),
+		"sourceNetworkID":   id,
+		"arn":               drsResourceARN("source-network", id),
+		"createdDateTime":   time.Now().UTC().Format(time.RFC3339),
+		"sourceAccountID":   "123456789012",
+		"sourceRegion":      "us-east-1",
+		"replicationStatus": "STOPPED",
+		"tags":              map[string]string{},
 	}
 	s.sourceNetworks[id] = item
 	return item
@@ -634,6 +669,8 @@ func (s *drsStore) ensureSourceServerLocked(id string) map[string]any {
 			"dataReplicationState": "CONTINUOUS",
 		},
 		"lastLaunchResult": "NOT_STARTED",
+		"sourceNetworkID":  s.firstSourceNetworkIDLocked(),
+		"tags":             map[string]string{},
 	}
 	s.sourceServers[id] = item
 	return item
@@ -1015,6 +1052,13 @@ func drsCloneAny(v any) any {
 	default:
 		return typed
 	}
+}
+
+func drsResponseWithNestedObject(field string, item map[string]any) map[string]any {
+	cloned := drsCloneMap(item)
+	response := drsCloneMap(cloned)
+	response[field] = cloned
+	return response
 }
 
 func drsResourceARN(resourceType, resourceID string) string {

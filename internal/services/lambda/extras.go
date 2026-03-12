@@ -459,10 +459,10 @@ func (s *Service) GetFunctionRecursionConfig(ref string) (map[string]any, error)
 	return cloneAnyMap(cfg), nil
 }
 
-func (s *Service) PutFunctionScalingConfig(ref string, payload map[string]any) (map[string]any, error) {
+func (s *Service) PutFunctionScalingConfig(ref, qualifier string, payload map[string]any) (map[string]any, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	name, _ := parseFunctionRef(ref)
+	name, existingQualifier := parseFunctionRef(ref)
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -471,18 +471,24 @@ func (s *Service) PutFunctionScalingConfig(ref string, payload map[string]any) (
 	if fn == nil {
 		return nil, ErrNotFound
 	}
-	cfg := map[string]any{
-		"FunctionArn":        fn.latest.ARN,
-		"MaximumConcurrency": int32Value(payload["MaximumConcurrency"], 0),
+	qualifier = strings.TrimSpace(firstNonEmpty(qualifier, existingQualifier))
+	if qualifier == "" {
+		return nil, ErrInvalidParameter
 	}
-	s.extras.functionScalingConfigs[name] = cloneAnyMap(cfg)
-	return cfg, nil
+	requested := lambdaFunctionScalingConfigPayload(mapValue(payload["FunctionScalingConfig"]))
+	cfg := map[string]any{
+		"FunctionArn":                    fn.latest.ARN,
+		"AppliedFunctionScalingConfig":   cloneAnyMap(requested),
+		"RequestedFunctionScalingConfig": cloneAnyMap(requested),
+	}
+	s.extras.functionScalingConfigs[functionQualifierKey(ref, qualifier)] = cloneAnyMap(cfg)
+	return map[string]any{"FunctionState": "Active"}, nil
 }
 
-func (s *Service) GetFunctionScalingConfig(ref string) (map[string]any, error) {
+func (s *Service) GetFunctionScalingConfig(ref, qualifier string) (map[string]any, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	name, _ := parseFunctionRef(ref)
+	name, existingQualifier := parseFunctionRef(ref)
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, ErrInvalidParameter
@@ -490,7 +496,11 @@ func (s *Service) GetFunctionScalingConfig(ref string) (map[string]any, error) {
 	if s.functions[name] == nil {
 		return nil, ErrNotFound
 	}
-	cfg := s.extras.functionScalingConfigs[name]
+	qualifier = strings.TrimSpace(firstNonEmpty(qualifier, existingQualifier))
+	if qualifier == "" {
+		return nil, ErrInvalidParameter
+	}
+	cfg := s.extras.functionScalingConfigs[functionQualifierKey(ref, qualifier)]
 	if cfg == nil {
 		return nil, ErrNotFound
 	}
@@ -676,7 +686,10 @@ func (s *Service) PutFunctionCodeSigningConfig(ref, codeSigningConfigArn string)
 		return nil, ErrNotFound
 	}
 	s.extras.functionCodeSigningConfig[name] = stringValue(cfg["CodeSigningConfigArn"])
-	return map[string]any{"CodeSigningConfigArn": stringValue(cfg["CodeSigningConfigArn"])}, nil
+	return map[string]any{
+		"CodeSigningConfigArn": stringValue(cfg["CodeSigningConfigArn"]),
+		"FunctionName":         name,
+	}, nil
 }
 
 func (s *Service) GetFunctionCodeSigningConfig(ref string) (map[string]any, error) {
@@ -694,7 +707,10 @@ func (s *Service) GetFunctionCodeSigningConfig(ref string) (map[string]any, erro
 	if arn == "" {
 		return nil, ErrNotFound
 	}
-	return map[string]any{"CodeSigningConfigArn": arn}, nil
+	return map[string]any{
+		"CodeSigningConfigArn": arn,
+		"FunctionName":         name,
+	}, nil
 }
 
 func (s *Service) DeleteFunctionCodeSigningConfig(ref string) error {
@@ -712,7 +728,7 @@ func (s *Service) DeleteFunctionCodeSigningConfig(ref string) error {
 	return nil
 }
 
-func (s *Service) ListFunctionsByCodeSigningConfig(ref string, maxItems, marker int) ([]map[string]any, string, error) {
+func (s *Service) ListFunctionsByCodeSigningConfig(ref string, maxItems, marker int) ([]string, string, error) {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		return nil, "", ErrInvalidParameter
@@ -725,16 +741,14 @@ func (s *Service) ListFunctionsByCodeSigningConfig(ref string, maxItems, marker 
 	} else {
 		return nil, "", ErrNotFound
 	}
-	out := make([]map[string]any, 0)
+	out := make([]string, 0)
 	for fnName, bound := range s.extras.functionCodeSigningConfig {
 		if bound != arn {
 			continue
 		}
-		out = append(out, map[string]any{"FunctionArn": functionARN(fnName)})
+		out = append(out, functionARN(fnName))
 	}
-	sort.Slice(out, func(i, j int) bool {
-		return stringValue(out[i]["FunctionArn"]) < stringValue(out[j]["FunctionArn"])
-	})
+	sort.Strings(out)
 	paged, next := paginateLambdaSlice(out, maxItems, marker)
 	return paged, next, nil
 }
@@ -1099,15 +1113,12 @@ func (s *Service) GetDurableExecutionHistory(arn string, maxItems, marker int) (
 }
 
 func (s *Service) GetDurableExecutionState(arn string) (map[string]any, error) {
-	rec, err := s.GetDurableExecution(arn)
+	_, err := s.GetDurableExecution(arn)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"DurableExecutionArn": rec["DurableExecutionArn"],
-		"Status":              rec["Status"],
-		"Output":              rec["Output"],
-		"FailureReason":       rec["FailureReason"],
+		"Operations": []any{},
 	}, nil
 }
 
@@ -1121,24 +1132,33 @@ func (s *Service) CheckpointDurableExecution(arn string, payload map[string]any)
 	rec := s.extras.durableExecutions[arn]
 	if rec == nil {
 		rec = map[string]any{
-			"DurableExecutionArn": arn,
-			"FunctionArn":         stringValue(payload["FunctionArn"]),
-			"Status":              "RUNNING",
-			"CreatedAt":           time.Now().UTC().Format(time.RFC3339),
+			"DurableExecutionArn":  arn,
+			"DurableExecutionName": lambdaDurableExecutionName(arn),
+			"FunctionArn":          firstNonEmpty(stringValue(payload["FunctionArn"]), functionARN("stackyard-lambda-function")),
+			"StartTimestamp":       time.Now().UTC(),
+			"Status":               "RUNNING",
+			"Version":              "$LATEST",
+			"InputPayload":         "{}",
 		}
 		s.extras.durableExecutions[arn] = rec
 	}
-	rec["LastUpdatedAt"] = time.Now().UTC().Format(time.RFC3339)
-	if v, ok := payload["Output"]; ok {
-		rec["Output"] = v
+	checkpointToken := strings.TrimSpace(firstNonEmpty(stringValue(payload["CheckpointToken"]), stringValue(rec["CheckpointToken"])))
+	if checkpointToken == "" {
+		checkpointToken = "stackyard-checkpoint-token"
 	}
+	rec["CheckpointToken"] = checkpointToken + "-next"
 	entry := map[string]any{
 		"Type":      "CHECKPOINT",
 		"Timestamp": time.Now().UTC().Format(time.RFC3339),
 		"Details":   cloneAnyMap(payload),
 	}
 	s.extras.durableExecutionHistory[arn] = append(s.extras.durableExecutionHistory[arn], entry)
-	return map[string]any{}, nil
+	return map[string]any{
+		"CheckpointToken": rec["CheckpointToken"],
+		"NewExecutionState": map[string]any{
+			"Operations": []any{},
+		},
+	}, nil
 }
 
 func (s *Service) StopDurableExecution(arn string, payload map[string]any) (map[string]any, error) {
@@ -1149,14 +1169,16 @@ func (s *Service) StopDurableExecution(arn string, payload map[string]any) (map[
 		return nil, ErrNotFound
 	}
 	rec["Status"] = "STOPPED"
-	rec["FailureReason"] = stringValue(payload["Reason"])
-	rec["LastUpdatedAt"] = time.Now().UTC().Format(time.RFC3339)
+	rec["Error"] = cloneAnyMap(mapValue(payload["Error"]))
+	rec["EndTimestamp"] = time.Now().UTC()
 	s.extras.durableExecutionHistory[arn] = append(s.extras.durableExecutionHistory[arn], map[string]any{
 		"Type":      "STOP",
 		"Timestamp": time.Now().UTC().Format(time.RFC3339),
 		"Details":   cloneAnyMap(payload),
 	})
-	return map[string]any{}, nil
+	return map[string]any{
+		"StopTimestamp": rec["EndTimestamp"],
+	}, nil
 }
 
 func (s *Service) DurableExecutionCallback(callbackID, status string, payload map[string]any) (map[string]any, error) {
@@ -1231,6 +1253,33 @@ func functionQualifierKey(ref, qualifier string) string {
 	name = strings.TrimSpace(name)
 	q = strings.TrimSpace(firstNonEmpty(strings.TrimSpace(qualifier), q, "$LATEST"))
 	return name + "|" + q
+}
+
+func lambdaFunctionScalingConfigPayload(payload map[string]any) map[string]any {
+	if payload == nil {
+		return map[string]any{}
+	}
+	out := map[string]any{}
+	if max := int32Value(payload["MaxExecutionEnvironments"], 0); max > 0 {
+		out["MaxExecutionEnvironments"] = max
+	}
+	if min := int32Value(payload["MinExecutionEnvironments"], 0); min > 0 {
+		out["MinExecutionEnvironments"] = min
+	}
+	return out
+}
+
+func lambdaDurableExecutionName(arn string) string {
+	arn = strings.TrimSpace(arn)
+	if arn == "" {
+		return "stackyard-durable-execution"
+	}
+	if idx := strings.LastIndex(arn, ":"); idx >= 0 && idx+1 < len(arn) {
+		if name := strings.TrimSpace(arn[idx+1:]); name != "" {
+			return name
+		}
+	}
+	return arn
 }
 
 func boolState(v any, def bool) string {

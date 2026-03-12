@@ -266,6 +266,7 @@ func (s *snowballStore) Handle(action string, payload map[string]any) map[string
 	case "ListServiceVersions":
 		serviceName := snowballPayloadString(payload, "ServiceName", snowballDefaultServiceName)
 		return map[string]any{
+			"ServiceName": serviceName,
 			"ServiceVersions": []any{
 				map[string]any{
 					"ServiceName": serviceName,

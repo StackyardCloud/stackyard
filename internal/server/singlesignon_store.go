@@ -42,16 +42,12 @@ func newSingleSignOnStore() *singleSignOnStore {
 	s := &singleSignOnStore{
 		nextID: 2,
 		instance: map[string]any{
-			"InstanceArn":       instArn,
-			"IdentityStoreId":   "d-1234567890",
-			"OwnerAccountId":    "123456789012",
-			"CreatedDate":       t,
-			"Name":              "stackyard",
-			"Status":            "ACTIVE",
-			"StatusReason":      "",
-			"AccessUrl":         "https://stackyard.awsapps.com/start",
-			"Region":            "us-east-1",
-			"IdentityStoreType": "IDENTITY_STORE",
+			"InstanceArn":     instArn,
+			"IdentityStoreId": "d-1234567890",
+			"OwnerAccountId":  "123456789012",
+			"CreatedDate":     t,
+			"Name":            "stackyard",
+			"Status":          "ACTIVE",
 		},
 		regions:                  map[string]bool{"us-east-1": true},
 		permissionSets:           map[string]map[string]any{},
@@ -89,14 +85,17 @@ func newSingleSignOnStore() *singleSignOnStore {
 
 	s.applications[appArn] = map[string]any{
 		"ApplicationArn":         appArn,
+		"ApplicationAccount":     "123456789012",
 		"ApplicationProviderArn": "arn:aws:sso::aws:applicationProvider/custom",
+		"CreatedDate":            t,
+		"InstanceArn":            instArn,
 		"Name":                   "stackyard-application",
 		"Description":            "seed application",
 		"Status":                 "ENABLED",
 		"PortalOptions":          map[string]any{"SignInOptions": map[string]any{"Origin": "APPLICATION"}},
 	}
 	s.appAccessScopes[appArn] = map[string]any{"Scope": "all", "AuthorizedTargets": []any{}}
-	s.appAuthMethods[appArn] = map[string]any{"AuthenticationMethodType": "IAM"}
+	s.appAuthMethods[appArn] = ssoDefaultAuthenticationMethod()
 	s.appGrants[appArn] = map[string]any{"AuthorizationCode": map[string]any{"RedirectUris": []any{"https://example.com/callback"}}}
 	s.appSessionConfigs[appArn] = map[string]any{"SessionDuration": "PT1H"}
 
@@ -136,9 +135,9 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 	case "CreateInstance":
 		return map[string]any{"InstanceArn": instanceArn}
 	case "DescribeInstance":
-		return map[string]any{"Instance": cloneAnyMap(s.instance)}
+		return ssoInstanceMetadata(s.instance)
 	case "ListInstances":
-		return map[string]any{"Instances": []any{cloneAnyMap(s.instance)}, "NextToken": ""}
+		return map[string]any{"Instances": []any{ssoInstanceMetadata(s.instance)}, "NextToken": ""}
 	case "UpdateInstance", "DeleteInstance":
 		return map[string]any{}
 	case "AddRegion":
@@ -367,20 +366,24 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		arn := fmt.Sprintf("arn:aws:sso::123456789012:application/ssoins-0000000000000000/apl-%s", s.nextTokenLocked(16))
 		app := map[string]any{
 			"ApplicationArn":         arn,
+			"ApplicationAccount":     "123456789012",
 			"ApplicationProviderArn": ssoPayloadString(payload, "ApplicationProviderArn", "arn:aws:sso::aws:applicationProvider/custom"),
+			"CreatedDate":            now,
+			"InstanceArn":            ssoPayloadString(payload, "InstanceArn", instanceArn),
 			"Name":                   ssoPayloadString(payload, "Name", "stackyard-application"),
 			"Description":            ssoPayloadString(payload, "Description", ""),
 			"Status":                 "ENABLED",
+			"PortalOptions":          map[string]any{"SignInOptions": map[string]any{"Origin": "APPLICATION"}},
 		}
 		s.applications[arn] = app
 		s.appAccessScopes[arn] = map[string]any{"Scope": "all", "AuthorizedTargets": []any{}}
-		s.appAuthMethods[arn] = map[string]any{"AuthenticationMethodType": "IAM"}
+		s.appAuthMethods[arn] = ssoDefaultAuthenticationMethod()
 		s.appGrants[arn] = map[string]any{"AuthorizationCode": map[string]any{"RedirectUris": []any{"https://example.com/callback"}}}
 		s.appSessionConfigs[arn] = map[string]any{"SessionDuration": "PT1H"}
 		return map[string]any{"ApplicationArn": arn}
 	case "DescribeApplication":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
-		return map[string]any{"Application": cloneAnyMap(s.ensureApplicationLocked(arn))}
+		return cloneAnyMap(s.ensureApplicationLocked(arn))
 	case "ListApplications":
 		items := make([]any, 0, len(s.applications))
 		for _, arn := range sortedStringKeysAnyMap(s.applications) {
@@ -403,9 +406,13 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		return map[string]any{}
 	case "DescribeApplicationAssignment":
 		if len(s.appAssignments) > 0 {
-			return map[string]any{"ApplicationAssignment": cloneAnyMap(s.appAssignments[0])}
+			return cloneAnyMap(s.appAssignments[0])
 		}
-		return map[string]any{"ApplicationAssignment": map[string]any{"ApplicationArn": firstKeyAnyMap(s.applications), "PrincipalId": "11111111-2222-3333-4444-555555555555", "PrincipalType": "USER"}}
+		return map[string]any{
+			"ApplicationArn": firstKeyAnyMap(s.applications),
+			"PrincipalId":    "11111111-2222-3333-4444-555555555555",
+			"PrincipalType":  "USER",
+		}
 	case "DeleteApplicationAssignment":
 		return map[string]any{}
 	case "ListApplicationAssignments", "ListApplicationAssignmentsForPrincipal":
@@ -436,16 +443,20 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		if m == nil {
 			m = map[string]any{"Scope": "all", "AuthorizedTargets": []any{}}
 		}
-		return map[string]any{"ApplicationAccessScopes": []any{cloneAnyMap(m)}, "NextToken": ""}
+		return map[string]any{"Scopes": []any{cloneAnyMap(m)}, "NextToken": ""}
 	case "PutApplicationAuthenticationMethod":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
-		s.appAuthMethods[arn] = map[string]any{"AuthenticationMethodType": "IAM"}
+		method, ok := payloadCaseInsensitiveMap(payload, "AuthenticationMethod")
+		if !ok || len(method) == 0 {
+			method = ssoDefaultAuthenticationMethod()
+		}
+		s.appAuthMethods[arn] = cloneAnyMap(method)
 		return map[string]any{}
 	case "GetApplicationAuthenticationMethod":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
 		m := s.appAuthMethods[arn]
 		if m == nil {
-			m = map[string]any{"AuthenticationMethodType": "IAM"}
+			m = ssoDefaultAuthenticationMethod()
 		}
 		return map[string]any{"AuthenticationMethod": cloneAnyMap(m)}
 	case "DeleteApplicationAuthenticationMethod":
@@ -454,9 +465,17 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
 		m := s.appAuthMethods[arn]
 		if m == nil {
-			m = map[string]any{"AuthenticationMethodType": "IAM"}
+			m = ssoDefaultAuthenticationMethod()
 		}
-		return map[string]any{"AuthenticationMethods": []any{cloneAnyMap(m)}, "NextToken": ""}
+		return map[string]any{
+			"AuthenticationMethods": []any{
+				map[string]any{
+					"AuthenticationMethodType": "IAM",
+					"AuthenticationMethod":     cloneAnyMap(m),
+				},
+			},
+			"NextToken": "",
+		}
 	case "PutApplicationGrant":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
 		grant := map[string]any{
@@ -484,7 +503,15 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		if m == nil {
 			m = map[string]any{"AuthorizationCode": map[string]any{"RedirectUris": []any{"https://example.com/callback"}}}
 		}
-		return map[string]any{"Grants": []any{cloneAnyMap(m)}, "NextToken": ""}
+		return map[string]any{
+			"Grants": []any{
+				map[string]any{
+					"GrantType": "authorization_code",
+					"Grant":     cloneAnyMap(m),
+				},
+			},
+			"NextToken": "",
+		}
 	case "PutApplicationSessionConfiguration":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
 		s.appSessionConfigs[arn] = map[string]any{"SessionDuration": ssoPayloadString(payload, "SessionDuration", "PT1H")}
@@ -503,21 +530,32 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 	case "ListApplicationProviders":
 		return map[string]any{"ApplicationProviders": []any{s.defaultApplicationProvider()}, "NextToken": ""}
 	case "DescribeApplicationProvider":
-		return map[string]any{"ApplicationProvider": s.defaultApplicationProvider()}
+		return s.defaultApplicationProvider()
 
 	case "CreateTrustedTokenIssuer":
 		arn := fmt.Sprintf("arn:aws:sso::123456789012:trustedTokenIssuer/ssoins-0000000000000000/tti-%s", s.nextTokenLocked(16))
+		config, ok := payloadCaseInsensitiveMap(payload, "TrustedTokenIssuerConfiguration")
+		if !ok || len(config) == 0 {
+			config = map[string]any{
+				"OidcJwtConfiguration": map[string]any{
+					"IssuerUrl":                  "https://issuer.example.com",
+					"ClaimAttributePath":         "sub",
+					"IdentityStoreAttributePath": "userName",
+					"JwksRetrievalOption":        "OPEN_ID_DISCOVERY",
+				},
+			}
+		}
 		tti := map[string]any{
 			"TrustedTokenIssuerArn":           arn,
 			"Name":                            ssoPayloadString(payload, "Name", "stackyard-tti"),
 			"TrustedTokenIssuerType":          ssoPayloadString(payload, "TrustedTokenIssuerType", "OIDC_JWT"),
-			"TrustedTokenIssuerConfiguration": map[string]any{},
+			"TrustedTokenIssuerConfiguration": cloneAnyMap(config),
 		}
 		s.trustedTokenIssuers[arn] = tti
 		return map[string]any{"TrustedTokenIssuerArn": arn}
 	case "DescribeTrustedTokenIssuer":
 		arn := ssoPayloadString(payload, "TrustedTokenIssuerArn", firstKeyAnyMap(s.trustedTokenIssuers))
-		return map[string]any{"TrustedTokenIssuer": cloneAnyMap(s.ensureTrustedTokenIssuerLocked(arn))}
+		return cloneAnyMap(s.ensureTrustedTokenIssuerLocked(arn))
 	case "UpdateTrustedTokenIssuer", "DeleteTrustedTokenIssuer":
 		if action == "DeleteTrustedTokenIssuer" {
 			delete(s.trustedTokenIssuers, ssoPayloadString(payload, "TrustedTokenIssuerArn", ""))
@@ -610,10 +648,14 @@ func (s *singleSignOnStore) ensureApplicationLocked(arn string) map[string]any {
 	}
 	app := map[string]any{
 		"ApplicationArn":         arn,
+		"ApplicationAccount":     "123456789012",
 		"ApplicationProviderArn": "arn:aws:sso::aws:applicationProvider/custom",
+		"CreatedDate":            time.Now().UTC().Format(time.RFC3339),
+		"InstanceArn":            s.instanceArn(),
 		"Name":                   "stackyard-application",
 		"Description":            "",
 		"Status":                 "ENABLED",
+		"PortalOptions":          map[string]any{"SignInOptions": map[string]any{"Origin": "APPLICATION"}},
 	}
 	s.applications[arn] = app
 	return app
@@ -654,6 +696,28 @@ func (s *singleSignOnStore) defaultApplicationProvider() map[string]any {
 		"ApplicationProviderArn": "arn:aws:sso::aws:applicationProvider/custom",
 		"DisplayData":            map[string]any{"DisplayName": "Custom", "IconUrl": "https://example.com/icon.png"},
 		"FederationProtocol":     "SAML",
+	}
+}
+
+func ssoDefaultAuthenticationMethod() map[string]any {
+	return map[string]any{
+		"Iam": map[string]any{
+			"ActorPolicy": map[string]any{
+				"Version":   "2012-10-17",
+				"Statement": []any{},
+			},
+		},
+	}
+}
+
+func ssoInstanceMetadata(instance map[string]any) map[string]any {
+	return map[string]any{
+		"CreatedDate":     instance["CreatedDate"],
+		"IdentityStoreId": instance["IdentityStoreId"],
+		"InstanceArn":     instance["InstanceArn"],
+		"Name":            instance["Name"],
+		"OwnerAccountId":  instance["OwnerAccountId"],
+		"Status":          instance["Status"],
 	}
 }
 

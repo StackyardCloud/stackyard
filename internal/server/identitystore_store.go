@@ -22,12 +22,18 @@ type identityStoreStore struct {
 	groupByName map[string]string
 }
 
+const (
+	identityStoreSeedUserID       = "0000000011-00000000-0000-0000-0000-000000000011"
+	identityStoreSeedGroupID      = "0000000012-00000000-0000-0000-0000-000000000012"
+	identityStoreSeedMembershipID = "0000000013-00000000-0000-0000-0000-000000000013"
+)
+
 func newIdentityStoreStore() *identityStoreStore {
 	s := &identityStoreStore{
 		identityStoreID:  "d-1234567890",
-		nextUserID:       1,
-		nextGroupID:      1,
-		nextMembershipID: 1,
+		nextUserID:       2,
+		nextGroupID:      2,
+		nextMembershipID: 2,
 		users:            map[string]map[string]any{},
 		groups:           map[string]map[string]any{},
 		memberships:      map[string]map[string]any{},
@@ -35,9 +41,9 @@ func newIdentityStoreStore() *identityStoreStore {
 		groupByName:      map[string]string{},
 	}
 
-	userID := "u-0000000000"
-	groupID := "g-0000000000"
-	membershipID := "gm-0000000000"
+	userID := identityStoreSeedUserID
+	groupID := identityStoreSeedGroupID
+	membershipID := identityStoreSeedMembershipID
 
 	s.users[userID] = map[string]any{
 		"UserName":          "stackyard.user",
@@ -83,9 +89,9 @@ func (s *identityStoreStore) Handle(action string, payload map[string]any) map[s
 	defer s.mu.Unlock()
 
 	identityStoreID := identityStorePayloadString(payload, "IdentityStoreId", s.identityStoreID)
-	groupID := identityStorePayloadString(payload, "GroupId", "g-0000000000")
-	userID := identityStorePayloadString(payload, "UserId", "u-0000000000")
-	membershipID := identityStorePayloadString(payload, "MembershipId", "gm-0000000000")
+	groupID := identityStorePayloadString(payload, "GroupId", identityStoreSeedGroupID)
+	userID := identityStorePayloadString(payload, "UserId", identityStoreSeedUserID)
+	membershipID := identityStorePayloadString(payload, "MembershipId", identityStoreSeedMembershipID)
 	memberUserID := identityStoreMemberUserID(payload, "MemberId", userID)
 
 	switch action {
@@ -340,19 +346,19 @@ func (s *identityStoreStore) Handle(action string, payload map[string]any) map[s
 }
 
 func (s *identityStoreStore) nextUserIdentifierLocked() string {
-	id := fmt.Sprintf("u-%010d", s.nextUserID)
+	id := identityStoreResourceID(1, s.nextUserID)
 	s.nextUserID++
 	return id
 }
 
 func (s *identityStoreStore) nextGroupIdentifierLocked() string {
-	id := fmt.Sprintf("g-%010d", s.nextGroupID)
+	id := identityStoreResourceID(2, s.nextGroupID)
 	s.nextGroupID++
 	return id
 }
 
 func (s *identityStoreStore) nextMembershipIdentifierLocked() string {
-	id := fmt.Sprintf("gm-%010d", s.nextMembershipID)
+	id := identityStoreResourceID(3, s.nextMembershipID)
 	s.nextMembershipID++
 	return id
 }
@@ -360,7 +366,7 @@ func (s *identityStoreStore) nextMembershipIdentifierLocked() string {
 func (s *identityStoreStore) ensureUserLocked(userID, userName string) map[string]any {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
-		userID = "u-0000000000"
+		userID = identityStoreSeedUserID
 	}
 	if user, ok := s.users[userID]; ok {
 		return user
@@ -394,7 +400,7 @@ func (s *identityStoreStore) ensureUserLocked(userID, userName string) map[strin
 func (s *identityStoreStore) ensureGroupLocked(groupID, displayName string) map[string]any {
 	groupID = strings.TrimSpace(groupID)
 	if groupID == "" {
-		groupID = "g-0000000000"
+		groupID = identityStoreSeedGroupID
 	}
 	if group, ok := s.groups[groupID]; ok {
 		return group
@@ -417,7 +423,7 @@ func (s *identityStoreStore) ensureGroupLocked(groupID, displayName string) map[
 func (s *identityStoreStore) ensureMembershipLocked(membershipID, groupID, userID string) map[string]any {
 	membershipID = strings.TrimSpace(membershipID)
 	if membershipID == "" {
-		membershipID = "gm-0000000000"
+		membershipID = identityStoreSeedMembershipID
 	}
 	if membership, ok := s.memberships[membershipID]; ok {
 		return membership
@@ -432,6 +438,11 @@ func (s *identityStoreStore) ensureMembershipLocked(membershipID, groupID, userI
 	}
 	s.memberships[membershipID] = membership
 	return membership
+}
+
+func identityStoreResourceID(namespace, counter int64) string {
+	token := (counter << 4) | (namespace & 0xf)
+	return fmt.Sprintf("%010x-00000000-0000-0000-0000-%012x", token, token)
 }
 
 func (s *identityStoreStore) findMembershipByGroupUserLocked(groupID, userID string) string {

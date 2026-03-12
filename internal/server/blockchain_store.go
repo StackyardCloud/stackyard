@@ -105,7 +105,7 @@ func (s *blockchainStore) Handle(action string, payload map[string]any, _ map[st
 	case "ListFilteredTransactionEvents", "ListTransactionEvents":
 		return map[string]any{
 			"events": []any{
-				blockchainTransactionEventPayload(network, contractAddress, address, transactionHash, transactionID),
+				blockchainTransactionEventPayload(network, contractAddress, address, transactionHash),
 			},
 			"nextToken": "",
 		}
@@ -123,7 +123,6 @@ func (s *blockchainStore) Handle(action string, payload map[string]any, _ map[st
 			"transactions": []any{
 				map[string]any{
 					"transactionHash":      transactionHash,
-					"transactionId":        transactionID,
 					"network":              network,
 					"transactionTimestamp": time.Now().UTC().Format(time.RFC3339),
 					"confirmationStatus":   "FINAL",
@@ -198,24 +197,18 @@ func blockchainTransactionPayload(network, contractAddress, address, transaction
 	}
 }
 
-func blockchainTransactionEventPayload(network, contractAddress, address, transactionHash, transactionID string) map[string]any {
+func blockchainTransactionEventPayload(network, contractAddress, address, transactionHash string) map[string]any {
 	return map[string]any{
-		"network":                  network,
-		"transactionHash":          transactionHash,
-		"eventType":                "TRANSFER",
-		"from":                     "0x2222222222222222222222222222222222222222",
-		"to":                       address,
-		"value":                    "10",
-		"contractAddress":          contractAddress,
-		"tokenId":                  "1",
-		"transactionId":            transactionID,
-		"voutIndex":                0,
-		"voutSpent":                false,
-		"spentVoutTransactionId":   "",
-		"spentVoutTransactionHash": "",
-		"spentVoutIndex":           0,
-		"blockchainInstant":        map[string]any{"time": time.Now().UTC().Format(time.RFC3339)},
-		"confirmationStatus":       "FINAL",
+		"network":            network,
+		"transactionHash":    transactionHash,
+		"eventType":          "TRANSFER",
+		"from":               "0x2222222222222222222222222222222222222222",
+		"to":                 address,
+		"value":              "10",
+		"contractAddress":    contractAddress,
+		"tokenId":            "1",
+		"blockchainInstant":  map[string]any{"time": time.Now().UTC().Format(time.RFC3339)},
+		"confirmationStatus": "FINAL",
 	}
 }
 

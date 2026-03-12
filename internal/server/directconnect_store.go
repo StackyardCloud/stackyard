@@ -49,8 +49,10 @@ func (s *directConnectStore) Handle(action string, payload map[string]any) map[s
 		return map[string]any{"resourceTags": []any{map[string]any{"resourceArn": arn, "tags": []any{map[string]any{"key": "stackyard", "value": "true"}}}}}
 	case "DescribeRouterConfiguration":
 		return map[string]any{"customerRouterConfig": "router bgp 65000\n neighbor 169.254.0.1 remote-as 7224"}
-	case "DescribeConnectionLoa", "DescribeInterconnectLoa", "DescribeLoa":
+	case "DescribeConnectionLoa", "DescribeInterconnectLoa":
 		return map[string]any{"loa": map[string]any{"loaContent": "c3RhY2t5YXJk", "loaContentType": "application/pdf"}}
+	case "DescribeLoa":
+		return map[string]any{"loaContent": "c3RhY2t5YXJk", "loaContentType": "application/pdf"}
 	case "DescribeCustomerMetadata":
 		return map[string]any{"agreements": []any{map[string]any{"status": "SIGNED", "agreementName": "AWS Customer Agreement"}}}
 
@@ -59,35 +61,32 @@ func (s *directConnectStore) Handle(action string, payload map[string]any) map[s
 		if id == "" || strings.HasPrefix(action, "Create") || strings.HasPrefix(action, "Allocate") {
 			id = s.nextTokenLocked("dxcon", 8)
 		}
-		return map[string]any{"connection": s.connectionPayload(id)}
+		return s.connectionPayload(id)
 	case "DeleteConnection":
 		id := directConnectPayloadString(payload, "connectionId", "dxcon-00000001")
 		conn := s.connectionPayload(id)
 		conn["connectionState"] = "deleted"
-		return map[string]any{"connection": conn}
+		return conn
 	case "ConfirmConnection":
 		return map[string]any{"connectionState": "available"}
 
 	case "CreateInterconnect":
 		id := s.nextTokenLocked("dxi", 8)
-		return map[string]any{"interconnect": s.interconnectPayload(id)}
+		return s.interconnectPayload(id)
 	case "DeleteInterconnect":
-		id := directConnectPayloadString(payload, "interconnectId", "dxi-00000001")
-		ic := s.interconnectPayload(id)
-		ic["interconnectState"] = "deleted"
-		return map[string]any{"interconnect": ic}
+		return map[string]any{"interconnectState": "deleted"}
 
 	case "CreateLag", "UpdateLag":
 		id := directConnectPayloadString(payload, "lagId", "")
 		if id == "" || action == "CreateLag" {
 			id = s.nextTokenLocked("dxlag", 8)
 		}
-		return map[string]any{"lag": s.lagPayload(id)}
+		return s.lagPayload(id)
 	case "DeleteLag":
 		id := directConnectPayloadString(payload, "lagId", "dxlag-00000001")
 		lag := s.lagPayload(id)
 		lag["lagState"] = "deleted"
-		return map[string]any{"lag": lag}
+		return lag
 
 	case "CreatePrivateVirtualInterface", "CreatePublicVirtualInterface", "CreateTransitVirtualInterface",
 		"AllocatePrivateVirtualInterface", "AllocatePublicVirtualInterface", "AllocateTransitVirtualInterface",
@@ -96,11 +95,13 @@ func (s *directConnectStore) Handle(action string, payload map[string]any) map[s
 		if id == "" {
 			id = s.nextTokenLocked("dxvif", 8)
 		}
-		return map[string]any{"virtualInterface": s.virtualInterfacePayload(id)}
+		return s.virtualInterfacePayload(id)
 	case "DeleteVirtualInterface":
 		return map[string]any{"virtualInterfaceState": "deleted"}
 	case "ConfirmPrivateVirtualInterface", "ConfirmPublicVirtualInterface", "ConfirmTransitVirtualInterface":
 		return map[string]any{"virtualInterfaceState": "available"}
+	case "ConfirmCustomerAgreement":
+		return map[string]any{"status": "signed"}
 
 	case "CreateDirectConnectGateway", "UpdateDirectConnectGateway":
 		id := directConnectPayloadString(payload, "directConnectGatewayId", "")

@@ -481,9 +481,9 @@ func (s *Server) handleKMSJSONRouter(w http.ResponseWriter, r *http.Request) boo
 			respondKMSErrorForErr(w, err)
 			return true
 		}
+		_ = policyName
 		respondKMSJSON(w, http.StatusOK, map[string]any{
-			"PolicyName": policyName,
-			"Policy":     policy,
+			"Policy": policy,
 		})
 		return true
 

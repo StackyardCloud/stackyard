@@ -685,7 +685,7 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		if !decodeBody() {
 			return true
 		}
-		cfg, err := s.lambda.PutFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), body)
+		cfg, err := s.lambda.PutFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), qualifier, body)
 		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true
@@ -693,7 +693,7 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		respondLambdaJSON(w, http.StatusOK, cfg)
 		return true
 	case "GetFunctionScalingConfig":
-		cfg, err := s.lambda.GetFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"))
+		cfg, err := s.lambda.GetFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), qualifier)
 		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true

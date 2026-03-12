@@ -3791,7 +3791,7 @@ type redshiftParameterGroupResponse struct {
 
 type redshiftParameterGroupsResult struct {
 	XMLName         xml.Name                    `xml:""`
-	ParameterGroups []redshiftParameterGroupXML `xml:"ClusterParameterGroups>ClusterParameterGroup"`
+	ParameterGroups []redshiftParameterGroupXML `xml:"ParameterGroups>ClusterParameterGroup"`
 }
 
 type redshiftParameterGroupsResponse struct {
@@ -4014,7 +4014,7 @@ type redshiftEndpointAccessResponse struct {
 
 type redshiftEndpointAccessesResult struct {
 	XMLName        xml.Name                    `xml:""`
-	EndpointAccess []redshiftEndpointAccessXML `xml:"EndpointAccesses>EndpointAccess"`
+	EndpointAccess []redshiftEndpointAccessXML `xml:"EndpointAccessList>EndpointAccess"`
 }
 
 type redshiftEndpointAccessesResponse struct {
@@ -4052,10 +4052,14 @@ type redshiftPolicyXML struct {
 	Value string `xml:",innerxml"`
 }
 
-type redshiftResourcePolicyResult struct {
-	XMLName     xml.Name          `xml:""`
+type redshiftResourcePolicyXML struct {
 	ResourceArn string            `xml:"ResourceArn,omitempty"`
 	Policy      redshiftPolicyXML `xml:"Policy"`
+}
+
+type redshiftResourcePolicyResult struct {
+	XMLName        xml.Name                  `xml:""`
+	ResourcePolicy redshiftResourcePolicyXML `xml:"ResourcePolicy"`
 }
 
 type redshiftResourcePolicyResponse struct {
@@ -4171,7 +4175,7 @@ type redshiftEventSubscriptionResponse struct {
 
 type redshiftEventSubscriptionsResult struct {
 	XMLName            xml.Name                       `xml:""`
-	EventSubscriptions []redshiftEventSubscriptionXML `xml:"EventSubscriptions>EventSubscription"`
+	EventSubscriptions []redshiftEventSubscriptionXML `xml:"EventSubscriptionsList>EventSubscription"`
 }
 
 type redshiftEventSubscriptionsResponse struct {
@@ -5155,23 +5159,28 @@ func (s *Server) handleRedshiftAcceptReservedNodeExchange(w http.ResponseWriter,
 		XMLName xml.Name `xml:"AcceptReservedNodeExchangeResponse"`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName        xml.Name                              `xml:"AcceptReservedNodeExchangeResult"`
-			ExchangeStatus redshiftReservedNodeExchangeStatusXML `xml:"ExchangeStatus"`
+			XMLName               xml.Name                `xml:"AcceptReservedNodeExchangeResult"`
+			ExchangedReservedNode redshiftReservedNodeXML `xml:"ExchangedReservedNode"`
 		} `xml:"AcceptReservedNodeExchangeResult"`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLNS: redshiftNamespace,
 		Result: struct {
-			XMLName        xml.Name                              `xml:"AcceptReservedNodeExchangeResult"`
-			ExchangeStatus redshiftReservedNodeExchangeStatusXML `xml:"ExchangeStatus"`
+			XMLName               xml.Name                `xml:"AcceptReservedNodeExchangeResult"`
+			ExchangedReservedNode redshiftReservedNodeXML `xml:"ExchangedReservedNode"`
 		}{
 			XMLName: xml.Name{Local: "AcceptReservedNodeExchangeResult"},
-			ExchangeStatus: redshiftReservedNodeExchangeStatusXML{
-				ReservedNodeExchangeRequestId: exchange.RequestID,
-				Status:                        exchange.Status,
-				ReservedNodeId:                exchange.ReservedNodeID,
-				SourceReservedNodeOfferingId:  exchange.SourceOfferingID,
-				TargetReservedNodeOfferingId:  exchange.TargetOfferingID,
+			ExchangedReservedNode: redshiftReservedNodeXML{
+				ReservedNodeId:         exchange.ReservedNodeID,
+				ReservedNodeOfferingId: exchange.TargetOfferingID,
+				NodeType:               "dc2.large",
+				State:                  "exchanging",
+				StartTime:              exchange.CreatedAt.Format(time.RFC3339),
+				Duration:               31536000,
+				FixedPrice:             0,
+				UsagePrice:             0,
+				CurrencyCode:           "USD",
+				NodeCount:              1,
 			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
@@ -5381,22 +5390,29 @@ func (s *Server) handleRedshiftDescribeStorage(w http.ResponseWriter, r *http.Re
 			})
 		}
 	}
+	var total float64
+	for _, item := range items {
+		total += float64(item.TotalStorageCapacityInMegaBytes)
+	}
 	respondRedshiftXML(w, http.StatusOK, struct {
 		XMLName xml.Name `xml:"DescribeStorageResponse"`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName  xml.Name  `xml:"DescribeStorageResult"`
-			Storages []storage `xml:"Storages>Storage"`
+			XMLName                            xml.Name `xml:"DescribeStorageResult"`
+			TotalBackupSizeInMegaBytes         float64  `xml:"TotalBackupSizeInMegaBytes,omitempty"`
+			TotalProvisionedStorageInMegaBytes float64  `xml:"TotalProvisionedStorageInMegaBytes,omitempty"`
 		} `xml:"DescribeStorageResult"`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLNS: redshiftNamespace,
 		Result: struct {
-			XMLName  xml.Name  `xml:"DescribeStorageResult"`
-			Storages []storage `xml:"Storages>Storage"`
+			XMLName                            xml.Name `xml:"DescribeStorageResult"`
+			TotalBackupSizeInMegaBytes         float64  `xml:"TotalBackupSizeInMegaBytes,omitempty"`
+			TotalProvisionedStorageInMegaBytes float64  `xml:"TotalProvisionedStorageInMegaBytes,omitempty"`
 		}{
-			XMLName:  xml.Name{Local: "DescribeStorageResult"},
-			Storages: items,
+			XMLName:                            xml.Name{Local: "DescribeStorageResult"},
+			TotalBackupSizeInMegaBytes:         total / 2,
+			TotalProvisionedStorageInMegaBytes: total,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -5595,7 +5611,7 @@ func (s *Server) handleRedshiftBatchDeleteClusterSnapshots(w http.ResponseWriter
 	for _, snapshot := range snapshots {
 		delete(s.redshift.snapshots, snapshot.ID)
 	}
-	respondRedshiftSnapshotsResponse(w, http.StatusOK, "BatchDeleteClusterSnapshots", snapshots)
+	respondRedshiftBatchClusterSnapshotsResponse(w, http.StatusOK, "BatchDeleteClusterSnapshots", snapshots)
 }
 
 func (s *Server) handleRedshiftBatchModifyClusterSnapshots(w http.ResponseWriter, r *http.Request) {
@@ -5633,7 +5649,7 @@ func (s *Server) handleRedshiftBatchModifyClusterSnapshots(w http.ResponseWriter
 		}
 		snapshots = append(snapshots, snapshot)
 	}
-	respondRedshiftSnapshotsResponse(w, http.StatusOK, "BatchModifyClusterSnapshots", snapshots)
+	respondRedshiftBatchClusterSnapshotsResponse(w, http.StatusOK, "BatchModifyClusterSnapshots", snapshots)
 }
 
 func (s *Server) handleRedshiftModifyClusterSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -6660,33 +6676,7 @@ func (s *Server) handleRedshiftCreateUsageLimit(w http.ResponseWriter, r *http.R
 		CreatedAt:         time.Now().UTC(),
 	}
 	s.redshift.usageLimits[limitID] = limit
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"CreateUsageLimitResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName    xml.Name              `xml:"CreateUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		} `xml:"CreateUsageLimitResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName    xml.Name              `xml:"CreateUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		}{
-			XMLName: xml.Name{Local: "CreateUsageLimitResult"},
-			UsageLimit: redshiftUsageLimitXML{
-				UsageLimitId:      limit.ID,
-				ClusterIdentifier: limit.ClusterIdentifier,
-				FeatureType:       limit.FeatureType,
-				LimitType:         limit.LimitType,
-				Amount:            limit.Amount,
-				Period:            limit.Period,
-				BreachAction:      limit.BreachAction,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftUsageLimitResponse(w, http.StatusOK, "CreateUsageLimit", limit)
 }
 
 func (s *Server) handleRedshiftDescribeUsageLimits(w http.ResponseWriter, r *http.Request) {
@@ -6795,33 +6785,7 @@ func (s *Server) handleRedshiftModifyUsageLimit(w http.ResponseWriter, r *http.R
 	if breachAction != "" {
 		limit.BreachAction = breachAction
 	}
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"ModifyUsageLimitResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName    xml.Name              `xml:"ModifyUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		} `xml:"ModifyUsageLimitResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName    xml.Name              `xml:"ModifyUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		}{
-			XMLName: xml.Name{Local: "ModifyUsageLimitResult"},
-			UsageLimit: redshiftUsageLimitXML{
-				UsageLimitId:      limit.ID,
-				ClusterIdentifier: limit.ClusterIdentifier,
-				FeatureType:       limit.FeatureType,
-				LimitType:         limit.LimitType,
-				Amount:            limit.Amount,
-				Period:            limit.Period,
-				BreachAction:      limit.BreachAction,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftUsageLimitResponse(w, http.StatusOK, "ModifyUsageLimit", limit)
 }
 
 func (s *Server) handleRedshiftDeleteUsageLimit(w http.ResponseWriter, r *http.Request) {
@@ -6886,28 +6850,7 @@ func (s *Server) handleRedshiftCreateAuthenticationProfile(w http.ResponseWriter
 		CreatedAt: time.Now().UTC(),
 	}
 	s.redshift.authProfiles[name] = profile
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"CreateAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"CreateAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"CreateAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"CreateAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "CreateAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "CreateAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftDescribeAuthenticationProfiles(w http.ResponseWriter, r *http.Request) {
@@ -6983,28 +6926,7 @@ func (s *Server) handleRedshiftModifyAuthenticationProfile(w http.ResponseWriter
 		return
 	}
 	profile.Content = content
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"ModifyAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"ModifyAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"ModifyAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"ModifyAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "ModifyAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "ModifyAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftDeleteAuthenticationProfile(w http.ResponseWriter, r *http.Request) {
@@ -7021,28 +6943,7 @@ func (s *Server) handleRedshiftDeleteAuthenticationProfile(w http.ResponseWriter
 		return
 	}
 	delete(s.redshift.authProfiles, name)
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"DeleteAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"DeleteAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"DeleteAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"DeleteAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "DeleteAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "DeleteAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftCreateRedshiftIdcApplication(w http.ResponseWriter, r *http.Request) {
@@ -7529,7 +7430,7 @@ func (s *Server) handleRedshiftModifyClusterParameterGroup(w http.ResponseWriter
 		}
 		group.Parameters[param.ParameterName] = param.ParameterValue
 	}
-	respondRedshiftParameterGroupResponse(w, http.StatusOK, "ModifyClusterParameterGroup", group)
+	respondRedshiftParameterGroupStatusResponse(w, http.StatusOK, "ModifyClusterParameterGroup", group)
 }
 
 func (s *Server) handleRedshiftResetClusterParameterGroup(w http.ResponseWriter, r *http.Request) {
@@ -7553,7 +7454,7 @@ func (s *Server) handleRedshiftResetClusterParameterGroup(w http.ResponseWriter,
 			delete(group.Parameters, param.ParameterName)
 		}
 	}
-	respondRedshiftParameterGroupResponse(w, http.StatusOK, "ResetClusterParameterGroup", group)
+	respondRedshiftParameterGroupStatusResponse(w, http.StatusOK, "ResetClusterParameterGroup", group)
 }
 
 func (s *Server) handleRedshiftDeleteClusterParameterGroup(w http.ResponseWriter, r *http.Request) {
@@ -8513,7 +8414,7 @@ func (s *Server) handleRedshiftCreateCustomDomainAssociation(w http.ResponseWrit
 		CreatedAt:         time.Now().UTC(),
 	}
 	s.redshift.customDomains[domainName] = item
-	respondRedshiftCustomDomainAssociationResponse(w, http.StatusOK, "CreateCustomDomainAssociation", item)
+	respondRedshiftCustomDomainAssociationFlatResponse(w, http.StatusOK, "CreateCustomDomainAssociation", item)
 }
 
 func (s *Server) handleRedshiftDescribeCustomDomainAssociations(w http.ResponseWriter, r *http.Request) {
@@ -8559,7 +8460,7 @@ func (s *Server) handleRedshiftModifyCustomDomainAssociation(w http.ResponseWrit
 		item.CertificateArn = certificateARN
 	}
 	item.Status = "associated"
-	respondRedshiftCustomDomainAssociationResponse(w, http.StatusOK, "ModifyCustomDomainAssociation", item)
+	respondRedshiftCustomDomainAssociationFlatResponse(w, http.StatusOK, "ModifyCustomDomainAssociation", item)
 }
 
 func (s *Server) handleRedshiftDeleteCustomDomainAssociation(w http.ResponseWriter, r *http.Request) {
@@ -8702,7 +8603,7 @@ func (s *Server) handleRedshiftDescribeInboundIntegrations(w http.ResponseWriter
 			items = append(items, integration)
 		}
 	}
-	respondRedshiftIntegrationsResponse(w, http.StatusOK, "DescribeInboundIntegrations", items)
+	respondRedshiftInboundIntegrationsResponse(w, http.StatusOK, "DescribeInboundIntegrations", items)
 }
 
 func (s *Server) handleRedshiftGetClusterCredentials(w http.ResponseWriter, r *http.Request) {
@@ -8975,9 +8876,11 @@ func (s *Server) handleRedshiftPutResourcePolicy(w http.ResponseWriter, r *http.
 		XMLName: xml.Name{Local: "PutResourcePolicyResponse"},
 		XMLNS:   redshiftNamespace,
 		Result: redshiftResourcePolicyResult{
-			XMLName:     xml.Name{Local: "PutResourcePolicyResult"},
-			ResourceArn: resourceArn,
-			Policy:      redshiftPolicyXML{Value: policy},
+			XMLName: xml.Name{Local: "PutResourcePolicyResult"},
+			ResourcePolicy: redshiftResourcePolicyXML{
+				ResourceArn: resourceArn,
+				Policy:      redshiftPolicyXML{Value: policy},
+			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -9004,9 +8907,11 @@ func (s *Server) handleRedshiftGetResourcePolicy(w http.ResponseWriter, r *http.
 		XMLName: xml.Name{Local: "GetResourcePolicyResponse"},
 		XMLNS:   redshiftNamespace,
 		Result: redshiftResourcePolicyResult{
-			XMLName:     xml.Name{Local: "GetResourcePolicyResult"},
-			ResourceArn: resourceArn,
-			Policy:      redshiftPolicyXML{Value: policy},
+			XMLName: xml.Name{Local: "GetResourcePolicyResult"},
+			ResourcePolicy: redshiftResourcePolicyXML{
+				ResourceArn: resourceArn,
+				Policy:      redshiftPolicyXML{Value: policy},
+			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -10053,18 +9958,41 @@ func respondRedshiftEndpointAccessResponse(w http.ResponseWriter, status int, ac
 	for _, group := range endpoint.VpcSecurityGroupId {
 		vpcGroups = append(vpcGroups, redshiftVpcSecurityGroupXML{VpcSecurityGroupId: group})
 	}
-	resp := redshiftEndpointAccessResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName            xml.Name                      `xml:""`
+			ClusterIdentifier  string                        `xml:"ClusterIdentifier,omitempty"`
+			ResourceOwner      string                        `xml:"ResourceOwner,omitempty"`
+			SubnetGroupName    string                        `xml:"SubnetGroupName,omitempty"`
+			EndpointStatus     string                        `xml:"EndpointStatus,omitempty"`
+			EndpointName       string                        `xml:"EndpointName,omitempty"`
+			EndpointCreateTime time.Time                     `xml:"EndpointCreateTime,omitempty"`
+			VpcSecurityGroups  []redshiftVpcSecurityGroupXML `xml:"VpcSecurityGroups>VpcSecurityGroup,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftEndpointAccessResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			EndpointAccess: redshiftEndpointAccessXML{
-				EndpointName:      endpoint.Name,
-				ClusterIdentifier: endpoint.ClusterIdentifier,
-				SubnetGroupName:   endpoint.SubnetGroupName,
-				EndpointStatus:    endpoint.Status,
-				VpcSecurityGroups: vpcGroups,
-			},
+		Result: struct {
+			XMLName            xml.Name                      `xml:""`
+			ClusterIdentifier  string                        `xml:"ClusterIdentifier,omitempty"`
+			ResourceOwner      string                        `xml:"ResourceOwner,omitempty"`
+			SubnetGroupName    string                        `xml:"SubnetGroupName,omitempty"`
+			EndpointStatus     string                        `xml:"EndpointStatus,omitempty"`
+			EndpointName       string                        `xml:"EndpointName,omitempty"`
+			EndpointCreateTime time.Time                     `xml:"EndpointCreateTime,omitempty"`
+			VpcSecurityGroups  []redshiftVpcSecurityGroupXML `xml:"VpcSecurityGroups>VpcSecurityGroup,omitempty"`
+		}{
+			XMLName:            xml.Name{Local: action + "Result"},
+			ClusterIdentifier:  endpoint.ClusterIdentifier,
+			ResourceOwner:      "123456789012",
+			SubnetGroupName:    endpoint.SubnetGroupName,
+			EndpointStatus:     endpoint.Status,
+			EndpointName:       endpoint.Name,
+			EndpointCreateTime: endpoint.CreatedAt,
+			VpcSecurityGroups:  vpcGroups,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10103,23 +10031,42 @@ func respondRedshiftEndpointAuthorizationResponse(w http.ResponseWriter, status 
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName               xml.Name                         `xml:""`
-			EndpointAuthorization redshiftEndpointAuthorizationXML `xml:"EndpointAuthorization"`
+			XMLName           xml.Name  `xml:""`
+			Grantor           string    `xml:"Grantor,omitempty"`
+			Grantee           string    `xml:"Grantee,omitempty"`
+			ClusterIdentifier string    `xml:"ClusterIdentifier,omitempty"`
+			AuthorizeTime     time.Time `xml:"AuthorizeTime,omitempty"`
+			ClusterStatus     string    `xml:"ClusterStatus,omitempty"`
+			Status            string    `xml:"Status,omitempty"`
+			AllowedAllVPCs    bool      `xml:"AllowedAllVPCs,omitempty"`
+			AllowedVPCs       []string  `xml:"AllowedVPCs>VpcIdentifier,omitempty"`
+			EndpointCount     int       `xml:"EndpointCount,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName               xml.Name                         `xml:""`
-			EndpointAuthorization redshiftEndpointAuthorizationXML `xml:"EndpointAuthorization"`
+			XMLName           xml.Name  `xml:""`
+			Grantor           string    `xml:"Grantor,omitempty"`
+			Grantee           string    `xml:"Grantee,omitempty"`
+			ClusterIdentifier string    `xml:"ClusterIdentifier,omitempty"`
+			AuthorizeTime     time.Time `xml:"AuthorizeTime,omitempty"`
+			ClusterStatus     string    `xml:"ClusterStatus,omitempty"`
+			Status            string    `xml:"Status,omitempty"`
+			AllowedAllVPCs    bool      `xml:"AllowedAllVPCs,omitempty"`
+			AllowedVPCs       []string  `xml:"AllowedVPCs>VpcIdentifier,omitempty"`
+			EndpointCount     int       `xml:"EndpointCount,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			EndpointAuthorization: redshiftEndpointAuthorizationXML{
-				ClusterIdentifier: authz.ClusterIdentifier,
-				Account:           authz.Account,
-				VpcIds:            authz.VpcIds,
-			},
+			XMLName:           xml.Name{Local: action + "Result"},
+			Grantor:           "123456789012",
+			Grantee:           authz.Account,
+			ClusterIdentifier: authz.ClusterIdentifier,
+			AuthorizeTime:     authz.CreatedAt,
+			ClusterStatus:     "available",
+			Status:            "authorized",
+			AllowedVPCs:       authz.VpcIds,
+			EndpointCount:     len(authz.VpcIds),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10175,6 +10122,130 @@ func respondRedshiftParameterGroupResponse(w http.ResponseWriter, status int, ac
 	respondRedshiftXML(w, status, resp)
 }
 
+func respondRedshiftParameterGroupStatusResponse(w http.ResponseWriter, status int, action string, group *redshiftParameterGroup) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName              xml.Name `xml:""`
+			ParameterGroupName   string   `xml:"ParameterGroupName,omitempty"`
+			ParameterGroupStatus string   `xml:"ParameterGroupStatus,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName              xml.Name `xml:""`
+			ParameterGroupName   string   `xml:"ParameterGroupName,omitempty"`
+			ParameterGroupStatus string   `xml:"ParameterGroupStatus,omitempty"`
+		}{
+			XMLName:              xml.Name{Local: action + "Result"},
+			ParameterGroupName:   group.Name,
+			ParameterGroupStatus: "in-sync",
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftUsageLimitResponse(w http.ResponseWriter, status int, action string, limit *redshiftUsageLimit) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName           xml.Name `xml:""`
+			UsageLimitId      string   `xml:"UsageLimitId,omitempty"`
+			ClusterIdentifier string   `xml:"ClusterIdentifier,omitempty"`
+			FeatureType       string   `xml:"FeatureType,omitempty"`
+			LimitType         string   `xml:"LimitType,omitempty"`
+			Amount            int64    `xml:"Amount,omitempty"`
+			Period            string   `xml:"Period,omitempty"`
+			BreachAction      string   `xml:"BreachAction,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName           xml.Name `xml:""`
+			UsageLimitId      string   `xml:"UsageLimitId,omitempty"`
+			ClusterIdentifier string   `xml:"ClusterIdentifier,omitempty"`
+			FeatureType       string   `xml:"FeatureType,omitempty"`
+			LimitType         string   `xml:"LimitType,omitempty"`
+			Amount            int64    `xml:"Amount,omitempty"`
+			Period            string   `xml:"Period,omitempty"`
+			BreachAction      string   `xml:"BreachAction,omitempty"`
+		}{
+			XMLName:           xml.Name{Local: action + "Result"},
+			UsageLimitId:      limit.ID,
+			ClusterIdentifier: limit.ClusterIdentifier,
+			FeatureType:       limit.FeatureType,
+			LimitType:         limit.LimitType,
+			Amount:            limit.Amount,
+			Period:            limit.Period,
+			BreachAction:      limit.BreachAction,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftAuthenticationProfileResponse(w http.ResponseWriter, status int, action string, profile *redshiftAuthenticationProfile) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                      xml.Name `xml:""`
+			AuthenticationProfileName    string   `xml:"AuthenticationProfileName,omitempty"`
+			AuthenticationProfileContent string   `xml:"AuthenticationProfileContent,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                      xml.Name `xml:""`
+			AuthenticationProfileName    string   `xml:"AuthenticationProfileName,omitempty"`
+			AuthenticationProfileContent string   `xml:"AuthenticationProfileContent,omitempty"`
+		}{
+			XMLName:                      xml.Name{Local: action + "Result"},
+			AuthenticationProfileName:    profile.Name,
+			AuthenticationProfileContent: profile.Content,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftBatchClusterSnapshotsResponse(w http.ResponseWriter, status int, action string, snapshots []*redshiftSnapshot) {
+	resources := make([]string, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		resources = append(resources, snapshot.ID)
+	}
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName   xml.Name `xml:""`
+			Resources []string `xml:"Resources>String,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName   xml.Name `xml:""`
+			Resources []string `xml:"Resources>String,omitempty"`
+		}{
+			XMLName:   xml.Name{Local: action + "Result"},
+			Resources: resources,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
 func respondRedshiftParameterGroupsResponse(w http.ResponseWriter, status int, action string, groups []*redshiftParameterGroup) {
 	items := make([]redshiftParameterGroupXML, 0, len(groups))
 	for _, group := range groups {
@@ -10210,17 +10281,35 @@ func respondRedshiftParametersResponse(w http.ResponseWriter, status int, action
 }
 
 func respondRedshiftDataShareResponse(w http.ResponseWriter, status int, action string, share *redshiftDataShare) {
-	resp := redshiftDataShareResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                          xml.Name `xml:""`
+			DataShareArn                     string   `xml:"DataShareArn,omitempty"`
+			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
+			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
+			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
+			DataShareType                    string   `xml:"DataShareType,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftDataShareResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			DataShare: redshiftDataShareXML{
-				DataShareArn:  share.Arn,
-				DataShareName: share.Name,
-				ProducerArn:   share.ProducerArn,
-				Status:        share.Status,
-			},
+		Result: struct {
+			XMLName                          xml.Name `xml:""`
+			DataShareArn                     string   `xml:"DataShareArn,omitempty"`
+			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
+			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
+			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
+			DataShareType                    string   `xml:"DataShareType,omitempty"`
+		}{
+			XMLName:                          xml.Name{Local: action + "Result"},
+			DataShareArn:                     share.Arn,
+			ProducerArn:                      share.ProducerArn,
+			AllowPubliclyAccessibleConsumers: false,
+			ManagedBy:                        "stackyard",
+			DataShareType:                    "INBOUND",
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10254,25 +10343,22 @@ func respondRedshiftPartnerResponse(w http.ResponseWriter, status int, action st
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName       xml.Name                      `xml:""`
-			PartnerDetail redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfo"`
+			XMLName      xml.Name `xml:""`
+			DatabaseName string   `xml:"DatabaseName,omitempty"`
+			PartnerName  string   `xml:"PartnerName,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName       xml.Name                      `xml:""`
-			PartnerDetail redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfo"`
+			XMLName      xml.Name `xml:""`
+			DatabaseName string   `xml:"DatabaseName,omitempty"`
+			PartnerName  string   `xml:"PartnerName,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			PartnerDetail: redshiftPartnerIntegrationXML{
-				AccountID:         item.AccountID,
-				ClusterIdentifier: item.ClusterIdentifier,
-				DatabaseName:      item.DatabaseName,
-				PartnerName:       item.PartnerName,
-				Status:            item.Status,
-			},
+			XMLName:      xml.Name{Local: action + "Result"},
+			DatabaseName: item.DatabaseName,
+			PartnerName:  item.PartnerName,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10295,7 +10381,7 @@ func respondRedshiftPartnersResponse(w http.ResponseWriter, status int, action s
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
 			XMLName  xml.Name                        `xml:""`
-			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfos>PartnerIntegrationInfo"`
+			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfoList>PartnerIntegrationInfo"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
@@ -10303,10 +10389,43 @@ func respondRedshiftPartnersResponse(w http.ResponseWriter, status int, action s
 		XMLNS:   redshiftNamespace,
 		Result: struct {
 			XMLName  xml.Name                        `xml:""`
-			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfos>PartnerIntegrationInfo"`
+			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfoList>PartnerIntegrationInfo"`
 		}{
 			XMLName:  xml.Name{Local: action + "Result"},
 			Partners: out,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftCustomDomainAssociationFlatResponse(w http.ResponseWriter, status int, action string, item *redshiftCustomDomainAssociation) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                    xml.Name `xml:""`
+			CustomDomainName           string   `xml:"CustomDomainName,omitempty"`
+			CustomDomainCertificateArn string   `xml:"CustomDomainCertificateArn,omitempty"`
+			ClusterIdentifier          string   `xml:"ClusterIdentifier,omitempty"`
+			CustomDomainCertExpiryTime string   `xml:"CustomDomainCertExpiryTime,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                    xml.Name `xml:""`
+			CustomDomainName           string   `xml:"CustomDomainName,omitempty"`
+			CustomDomainCertificateArn string   `xml:"CustomDomainCertificateArn,omitempty"`
+			ClusterIdentifier          string   `xml:"ClusterIdentifier,omitempty"`
+			CustomDomainCertExpiryTime string   `xml:"CustomDomainCertExpiryTime,omitempty"`
+		}{
+			XMLName:                    xml.Name{Local: action + "Result"},
+			CustomDomainName:           item.CustomDomainName,
+			CustomDomainCertificateArn: item.CertificateArn,
+			ClusterIdentifier:          item.ClusterIdentifier,
+			CustomDomainCertExpiryTime: item.CreatedAt.Add(365 * 24 * time.Hour).Format(time.RFC3339),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10421,21 +10540,81 @@ func respondRedshiftIntegrationsResponse(w http.ResponseWriter, status int, acti
 	respondRedshiftXML(w, status, resp)
 }
 
-func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, action string, scheduled *redshiftScheduledAction) {
-	resp := redshiftScheduledActionResponse{
+func respondRedshiftInboundIntegrationsResponse(w http.ResponseWriter, status int, action string, integrations []*redshiftIntegration) {
+	type inboundIntegrationXML struct {
+		XMLName        xml.Name `xml:"InboundIntegration"`
+		IntegrationArn string   `xml:"IntegrationArn,omitempty"`
+		SourceArn      string   `xml:"SourceArn,omitempty"`
+		TargetArn      string   `xml:"TargetArn,omitempty"`
+		Status         string   `xml:"Status,omitempty"`
+		CreateTime     string   `xml:"CreateTime,omitempty"`
+	}
+	items := make([]inboundIntegrationXML, 0, len(integrations))
+	for _, integration := range integrations {
+		items = append(items, inboundIntegrationXML{
+			IntegrationArn: integration.Arn,
+			SourceArn:      integration.SourceArn,
+			TargetArn:      integration.TargetArn,
+			Status:         integration.Status,
+			CreateTime:     integration.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName             xml.Name                `xml:""`
+			InboundIntegrations []inboundIntegrationXML `xml:"InboundIntegrations>InboundIntegration"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftScheduledActionResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			ScheduledAction: redshiftScheduledActionXML{
-				ScheduledActionName: scheduled.Name,
-				TargetAction:        scheduled.TargetAction,
-				Schedule:            scheduled.Schedule,
-				State:               scheduled.State,
-				RoleArn:             scheduled.IamRole,
-				Description:         scheduled.Description,
-				CreationDate:        scheduled.CreatedAt.Format(time.RFC3339),
-			},
+		Result: struct {
+			XMLName             xml.Name                `xml:""`
+			InboundIntegrations []inboundIntegrationXML `xml:"InboundIntegrations>InboundIntegration"`
+		}{
+			XMLName:             xml.Name{Local: action + "Result"},
+			InboundIntegrations: items,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, action string, scheduled *redshiftScheduledAction) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                    xml.Name  `xml:""`
+			ScheduledActionName        string    `xml:"ScheduledActionName,omitempty"`
+			Schedule                   string    `xml:"Schedule,omitempty"`
+			IamRole                    string    `xml:"IamRole,omitempty"`
+			ScheduledActionDescription string    `xml:"ScheduledActionDescription,omitempty"`
+			State                      string    `xml:"State,omitempty"`
+			StartTime                  time.Time `xml:"StartTime,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                    xml.Name  `xml:""`
+			ScheduledActionName        string    `xml:"ScheduledActionName,omitempty"`
+			Schedule                   string    `xml:"Schedule,omitempty"`
+			IamRole                    string    `xml:"IamRole,omitempty"`
+			ScheduledActionDescription string    `xml:"ScheduledActionDescription,omitempty"`
+			State                      string    `xml:"State,omitempty"`
+			StartTime                  time.Time `xml:"StartTime,omitempty"`
+		}{
+			XMLName:                    xml.Name{Local: action + "Result"},
+			ScheduledActionName:        scheduled.Name,
+			Schedule:                   scheduled.Schedule,
+			IamRole:                    scheduled.IamRole,
+			ScheduledActionDescription: scheduled.Description,
+			State:                      scheduled.State,
+			StartTime:                  scheduled.CreatedAt,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10443,17 +10622,35 @@ func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, a
 }
 
 func respondRedshiftResizeResponse(w http.ResponseWriter, status int, action string, resize *redshiftResizeStatus) {
-	resp := redshiftResizeResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName             xml.Name `xml:""`
+			TargetNodeType      string   `xml:"TargetNodeType,omitempty"`
+			TargetNumberOfNodes int      `xml:"TargetNumberOfNodes,omitempty"`
+			Status              string   `xml:"Status,omitempty"`
+			ResizeType          string   `xml:"ResizeType,omitempty"`
+			Message             string   `xml:"Message,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftResizeResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			ResizeInfo: redshiftResizeInfoXML{
-				ResizeType:          "ClassicResize",
-				Status:              resize.Status,
-				TargetNodeType:      resize.TargetNodeType,
-				TargetNumberOfNodes: resize.TargetNodeCount,
-			},
+		Result: struct {
+			XMLName             xml.Name `xml:""`
+			TargetNodeType      string   `xml:"TargetNodeType,omitempty"`
+			TargetNumberOfNodes int      `xml:"TargetNumberOfNodes,omitempty"`
+			Status              string   `xml:"Status,omitempty"`
+			ResizeType          string   `xml:"ResizeType,omitempty"`
+			Message             string   `xml:"Message,omitempty"`
+		}{
+			XMLName:             xml.Name{Local: action + "Result"},
+			TargetNodeType:      resize.TargetNodeType,
+			TargetNumberOfNodes: resize.TargetNodeCount,
+			Status:              resize.Status,
+			ResizeType:          "ClassicResize",
+			Message:             "stackyard resize in progress",
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -18417,7 +18614,11 @@ func (s *Server) handleS3WriteAWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Query().Has("encryption") {
-		s.putBucketEncryption(w, r, bucket)
+		if key == "" {
+			s.putBucketEncryption(w, r, bucket)
+		} else {
+			s.updateObjectEncryptionAWS(w, r, bucket, key)
+		}
 		return
 	}
 	if r.URL.Query().Has("notification") {
@@ -24195,6 +24396,16 @@ type s3ObjectLockDefaultRetention struct {
 	Years int    `xml:"Years,omitempty"`
 }
 
+type s3ObjectEncryptionUpdate struct {
+	XMLName xml.Name             `xml:"ObjectEncryption"`
+	SSEKMS  *s3ObjectSSEKMSEntry `xml:"SSE-KMS"`
+}
+
+type s3ObjectSSEKMSEntry struct {
+	KMSKeyARN        string `xml:"KMSKeyArn"`
+	BucketKeyEnabled *bool  `xml:"BucketKeyEnabled,omitempty"`
+}
+
 func (s *Server) getBucketVersioning(w http.ResponseWriter, r *http.Request, bucket string) {
 	if !s.requireSigV4(w, r) {
 		return
@@ -25164,6 +25375,46 @@ func (s *Server) putBucketEncryption(w http.ResponseWriter, r *http.Request, buc
 	if err := s.s3.SetBucketEncryption(bucket, out); err != nil {
 		if errors.Is(err, s3.ErrBucketNotFound) {
 			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchBucket", err.Error())
+			return
+		}
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) updateObjectEncryptionAWS(w http.ResponseWriter, r *http.Request, bucket, key string) {
+	if !s.requireSigV4(w, r) {
+		return
+	}
+	bucketInfo, err := s.s3.GetBucket(bucket)
+	if err != nil {
+		if errors.Is(err, s3.ErrBucketNotFound) {
+			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchBucket", err.Error())
+			return
+		}
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())
+		return
+	}
+	if !s.authorizeS3Request(r, bucket, key, "s3:PutObject", bucketInfo.ACL) {
+		respondS3ErrorXML(w, http.StatusForbidden, "AccessDenied", "access denied")
+		return
+	}
+
+	var req s3ObjectEncryptionUpdate
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	if req.SSEKMS == nil || strings.TrimSpace(req.SSEKMS.KMSKeyARN) == "" {
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing SSE-KMS key ARN")
+		return
+	}
+
+	versionID := strings.TrimSpace(r.URL.Query().Get("versionId"))
+	if err := s.s3.SetObjectEncryption(bucket, key, versionID, "aws:kms", "", ""); err != nil {
+		if errors.Is(err, s3.ErrObjectNotFound) {
+			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchKey", err.Error())
 			return
 		}
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())

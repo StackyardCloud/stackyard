@@ -31,14 +31,13 @@ func TestKMSStage3PoliciesGrantsAndTags(t *testing.T) {
 	}))
 	assertStatus(t, resp, http.StatusOK)
 	var getPolicyOut struct {
-		PolicyName string `json:"PolicyName"`
-		Policy     string `json:"Policy"`
+		Policy string `json:"Policy"`
 	}
 	if err := json.Unmarshal(mustBody(t, resp), &getPolicyOut); err != nil {
 		t.Fatalf("unmarshal get key policy response: %v", err)
 	}
-	if getPolicyOut.PolicyName != "default" || getPolicyOut.Policy == "" {
-		t.Fatalf("expected default policy response")
+	if getPolicyOut.Policy == "" {
+		t.Fatalf("expected key policy document")
 	}
 
 	resp = kmsRequest(t, ts, "ListKeyPolicies", mustJSON(t, map[string]any{

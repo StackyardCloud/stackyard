@@ -538,14 +538,34 @@ func toSESEventDestinations(in map[string]*ses.ConfigurationSetEventDestination)
 			Name:               destination.Name,
 			Enabled:            destination.Enabled,
 			MatchingEventTypes: append([]string(nil), destination.MatchingEventTypes...),
-			SNSDestination:     sesEventDestinationSNS{TopicARN: destination.SNSDestinationTopicARN},
-			KinesisFirehoseDestination: sesEventDestinationKinesisFirehose{
-				IAMRoleARN:        destination.KinesisFirehoseIAMRoleARN,
-				DeliveryStreamARN: destination.KinesisFirehoseDeliveryStream,
-			},
+			SNSDestination:     sesEventDestinationSNSOrNil(destination.SNSDestinationTopicARN),
+			KinesisFirehoseDestination: sesEventDestinationKinesisFirehoseOrNil(
+				destination.KinesisFirehoseIAMRoleARN,
+				destination.KinesisFirehoseDeliveryStream,
+			),
 		})
 	}
 	return out
+}
+
+func sesEventDestinationSNSOrNil(topicARN string) *sesEventDestinationSNS {
+	topicARN = strings.TrimSpace(topicARN)
+	if topicARN == "" {
+		return nil
+	}
+	return &sesEventDestinationSNS{TopicARN: topicARN}
+}
+
+func sesEventDestinationKinesisFirehoseOrNil(roleARN, deliveryStreamARN string) *sesEventDestinationKinesisFirehose {
+	roleARN = strings.TrimSpace(roleARN)
+	deliveryStreamARN = strings.TrimSpace(deliveryStreamARN)
+	if roleARN == "" || deliveryStreamARN == "" {
+		return nil
+	}
+	return &sesEventDestinationKinesisFirehose{
+		IAMRoleARN:        roleARN,
+		DeliveryStreamARN: deliveryStreamARN,
+	}
 }
 
 func toSESReceiptRules(in []*ses.ReceiptRule) []sesReceiptRule {
@@ -611,11 +631,11 @@ type sesDeliveryOptions struct {
 }
 
 type sesConfigurationSetEventDestination struct {
-	Name                       string                             `xml:"Name"`
-	Enabled                    bool                               `xml:"Enabled"`
-	MatchingEventTypes         []string                           `xml:"MatchingEventTypes>member,omitempty"`
-	SNSDestination             sesEventDestinationSNS             `xml:"SNSDestination,omitempty"`
-	KinesisFirehoseDestination sesEventDestinationKinesisFirehose `xml:"KinesisFirehoseDestination,omitempty"`
+	Name                       string                              `xml:"Name"`
+	Enabled                    bool                                `xml:"Enabled"`
+	MatchingEventTypes         []string                            `xml:"MatchingEventTypes>member,omitempty"`
+	SNSDestination             *sesEventDestinationSNS             `xml:"SNSDestination,omitempty"`
+	KinesisFirehoseDestination *sesEventDestinationKinesisFirehose `xml:"KinesisFirehoseDestination,omitempty"`
 }
 
 type sesEventDestinationSNS struct {

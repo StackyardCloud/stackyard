@@ -508,7 +508,6 @@ func cloudhsmHsmPayload(hsm cloudhsmsvc.Hsm) map[string]any {
 		"SubnetId":         hsm.SubnetID,
 		"EniId":            hsm.EniID,
 		"EniIp":            hsm.EniIP,
-		"EniIpV6":          hsm.EniIPv6,
 		"HsmId":            hsm.HsmID,
 		"State":            hsm.State,
 		"StateMessage":     hsm.StateMessage,
@@ -538,7 +537,6 @@ func cloudhsmClusterPayload(cluster cloudhsmsvc.Cluster) map[string]any {
 		"StateMessage":    cluster.StateMessage,
 		"SubnetMapping":   cluster.SubnetMapping,
 		"VpcId":           cluster.VpcID,
-		"NetworkType":     cluster.NetworkType,
 		"Certificates": map[string]any{
 			"ClusterCsr":                      cluster.Certificates.ClusterCsr,
 			"HsmCertificate":                  cluster.Certificates.HsmCertificate,
@@ -547,7 +545,6 @@ func cloudhsmClusterPayload(cluster cloudhsmsvc.Cluster) map[string]any {
 			"ClusterCertificate":              cluster.Certificates.ClusterCertificate,
 		},
 		"TagList": cloudhsmTagListPayload(cluster.TagList),
-		"Mode":    cluster.Mode,
 	}
 }
 
@@ -562,7 +559,6 @@ func cloudhsmClusterListPayload(clusters []cloudhsmsvc.Cluster) []map[string]any
 func cloudhsmBackupPayload(backup cloudhsmsvc.Backup) map[string]any {
 	out := map[string]any{
 		"BackupId":        backup.BackupID,
-		"BackupArn":       backup.BackupARN,
 		"BackupState":     backup.BackupState,
 		"ClusterId":       backup.ClusterID,
 		"CreateTimestamp": backup.CreateTimestamp,
@@ -571,8 +567,6 @@ func cloudhsmBackupPayload(backup cloudhsmsvc.Backup) map[string]any {
 		"SourceBackup":    backup.SourceBackup,
 		"SourceCluster":   backup.SourceCluster,
 		"TagList":         cloudhsmTagListPayload(backup.TagList),
-		"HsmType":         backup.HsmType,
-		"Mode":            backup.Mode,
 	}
 	if !backup.CopyTimestamp.IsZero() {
 		out["CopyTimestamp"] = backup.CopyTimestamp

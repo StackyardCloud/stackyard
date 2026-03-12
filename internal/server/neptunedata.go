@@ -201,9 +201,8 @@ func (s *Server) handleNeptuneDataCancelGremlinQuery(w http.ResponseWriter, r *h
 	}
 	query := s.neptunedata.CancelQuery("gremlin", queryID)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
-		"queryId":     query.ID,
-		"queryStatus": query.Status,
-		"cancelled":   true,
+		"queryId": query.ID,
+		"status":  fmt.Sprintf("cancelled:%s", query.Status),
 	})
 }
 
@@ -220,11 +219,15 @@ func (s *Server) handleNeptuneDataExecuteGremlinQuery(w http.ResponseWriter, r *
 	}
 	query := s.neptunedata.ExecuteQuery("gremlin", queryString)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
-		"queryId": query.ID,
-		"result":  []any{},
-		"meta": map[string]any{
-			"queryStatus": query.Status,
+		"queryId":   query.ID,
+		"requestId": query.ID,
+		"status": map[string]any{
+			"message":    query.Status,
+			"code":       200,
+			"attributes": map[string]any{},
 		},
+		"result": map[string]any{},
+		"meta":   map[string]any{},
 	})
 }
 
@@ -260,10 +263,7 @@ func (s *Server) handleNeptuneDataExecuteGremlinProfileQuery(w http.ResponseWrit
 	query := s.neptunedata.ExecuteQuery("gremlin", queryString)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
 		"queryId": query.ID,
-		"profile": map[string]any{
-			"elapsedMillis": time.Since(query.CreatedAt).Milliseconds(),
-			"resultCount":   0,
-		},
+		"output":  fmt.Sprintf("profile unavailable for %s", query.ID),
 	})
 }
 
@@ -291,9 +291,9 @@ func (s *Server) handleNeptuneDataCancelOpenCypherQuery(w http.ResponseWriter, r
 	}
 	query := s.neptunedata.CancelQuery("opencypher", queryID)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
-		"queryId":     query.ID,
-		"queryStatus": query.Status,
-		"cancelled":   true,
+		"queryId": query.ID,
+		"status":  fmt.Sprintf("cancelled:%s", query.Status),
+		"payload": true,
 	})
 }
 
@@ -311,10 +311,7 @@ func (s *Server) handleNeptuneDataExecuteOpenCypherQuery(w http.ResponseWriter, 
 	query := s.neptunedata.ExecuteQuery("opencypher", queryString)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
 		"queryId": query.ID,
-		"results": []any{},
-		"summary": map[string]any{
-			"queryStatus": query.Status,
-		},
+		"results": map[string]any{},
 	})
 }
 
@@ -332,7 +329,7 @@ func (s *Server) handleNeptuneDataExecuteOpenCypherExplainQuery(w http.ResponseW
 	query := s.neptunedata.ExecuteQuery("opencypher", queryString)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
 		"queryId": query.ID,
-		"output":  "Neptune openCypher explain output unavailable in stage-2 emulation.",
+		"results": "TmVwdHVuZSBvcGVuQ3lwaGVyIGV4cGxhaW4gb3V0cHV0IHVuYXZhaWxhYmxlLg==",
 	})
 }
 
@@ -397,9 +394,8 @@ func (s *Server) handleNeptuneDataStartLoaderJob(w http.ResponseWriter, r *http.
 		"status": "200 OK",
 		"payload": map[string]any{
 			"loadId":    job.ID,
-			"loadIds":   []string{job.ID},
 			"fullUri":   job.Source,
-			"runNumber": 1,
+			"runNumber": "1",
 		},
 	})
 }
@@ -448,18 +444,14 @@ func (s *Server) handleNeptuneDataGetLoaderJobStatus(w http.ResponseWriter, r *h
 		respondNeptuneDataError(w, http.StatusBadRequest, "BadRequestException", "errorsPerPage must be a positive integer")
 		return
 	}
+	_ = page
+	_ = errorsPerPage
 
 	job := s.neptunedata.GetOrCreateLoaderJob(loadID)
 	respondNeptuneDataJSON(w, http.StatusOK, map[string]any{
-		"status": "200 OK",
-		"payload": map[string]any{
-			"loadId":          job.ID,
-			"overallStatus":   neptuneDataLoaderJobStatusPayload(job),
-			"feedCount":       []any{},
-			"errors":          neptuneDataLoaderJobErrorsPayload(job, page, errorsPerPage),
-			"retryNumber":     0,
-			"lastUpdatedTime": job.UpdatedAt.UnixMilli(),
-		},
+		"status":  "200 OK",
+		"loadId":  job.ID,
+		"payload": map[string]any{},
 	})
 }
 
@@ -544,16 +536,19 @@ func (s *Server) handleNeptuneDataGetPropertygraphStream(w http.ResponseWriter, 
 	records := make([]map[string]any, 0, recordCount)
 	for i := 0; i < recordCount; i++ {
 		records = append(records, map[string]any{
-			"commitTimestampInMillis": nowMillis,
+			"commitTimestamp": nowMillis,
 			"eventId": map[string]string{
 				"commitNum": commitNum,
 				"opNum":     strconv.Itoa(i + 1),
 			},
 			"data": map[string]any{
-				"id":    fmt.Sprintf("vertex-%d", i+1),
-				"type":  "vertex",
-				"key":   "label",
-				"value": "node",
+				"id":   fmt.Sprintf("vertex-%d", i+1),
+				"type": "v1",
+				"key":  "label",
+				"value": map[string]any{
+					"value":    "node",
+					"datatype": "String",
+				},
 			},
 			"op":       "ADD",
 			"isLastOp": i+1 == recordCount,
@@ -565,10 +560,10 @@ func (s *Server) handleNeptuneDataGetPropertygraphStream(w http.ResponseWriter, 
 			"commitNum": commitNum,
 			"opNum":     strconv.Itoa(recordCount),
 		},
-		"lastTrxTimestampInMillis": nowMillis,
-		"format":                   "PG_JSON",
-		"records":                  records,
-		"totalRecords":             len(records),
+		"lastTrxTimestamp": nowMillis,
+		"format":           "PG_JSON",
+		"records":          records,
+		"totalRecords":     len(records),
 	})
 }
 
@@ -641,7 +636,7 @@ func (s *Server) handleNeptuneDataGetSparqlStream(w http.ResponseWriter, r *http
 	records := make([]map[string]any, 0, recordCount)
 	for i := 0; i < recordCount; i++ {
 		records = append(records, map[string]any{
-			"commitTimestampInMillis": nowMillis,
+			"commitTimestamp": nowMillis,
 			"eventId": map[string]string{
 				"commitNum": commitNum,
 				"opNum":     strconv.Itoa(i + 1),
@@ -659,10 +654,10 @@ func (s *Server) handleNeptuneDataGetSparqlStream(w http.ResponseWriter, r *http
 			"commitNum": commitNum,
 			"opNum":     strconv.Itoa(recordCount),
 		},
-		"lastTrxTimestampInMillis": nowMillis,
-		"format":                   "RDF_JSON",
-		"records":                  records,
-		"totalRecords":             len(records),
+		"lastTrxTimestamp": nowMillis,
+		"format":           "NQUADS",
+		"records":          records,
+		"totalRecords":     len(records),
 	})
 }
 
@@ -1056,9 +1051,6 @@ func neptuneDataQueryToListItem(query neptuneDataQuery) map[string]any {
 			"waited":    0,
 			"elapsed":   elapsed,
 			"cancelled": query.Cancelled,
-			"subqueries": map[string]any{
-				"total": 0,
-			},
 		},
 	}
 }

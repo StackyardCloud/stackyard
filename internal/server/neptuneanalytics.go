@@ -592,11 +592,10 @@ func (s *neptuneAnalyticsStore) UpdateGraph(identifier string, req neptuneAnalyt
 	if !ok {
 		return neptuneAnalyticsGraph{}, notFoundNeptuneAnalytics("graph was not found")
 	}
-	if req.PublicConnectivity == nil && req.ProvisionedMemory == nil && req.DeletionProtection == nil {
-		return neptuneAnalyticsGraph{}, validationNeptuneAnalytics("at least one update field is required")
-	}
-
 	graph := s.graphs[graphID]
+	if req.PublicConnectivity == nil && req.ProvisionedMemory == nil && req.DeletionProtection == nil {
+		return graph, nil
+	}
 	if req.ProvisionedMemory != nil {
 		if *req.ProvisionedMemory < 128 {
 			return neptuneAnalyticsGraph{}, validationNeptuneAnalytics("provisionedMemory must be >= 128")
