@@ -232,7 +232,7 @@ func (s *Server) handleElasticBeanstalkQueryRouter(w http.ResponseWriter, r *htt
 			respondElasticBeanstalkErrorForErr(w, err)
 			return true
 		}
-		respondElasticBeanstalkXML(w, action, elasticBeanstalkCreateEnvironmentResult{Environment: toAWSEBEnvironment(env)})
+		respondElasticBeanstalkXML(w, action, elasticBeanstalkCreateEnvironmentResult{EnvironmentDescription: toAWSEBEnvironment(env)})
 		return true
 	case "UpdateEnvironment":
 		env, err := s.eb.UpdateEnvironment(
@@ -247,7 +247,7 @@ func (s *Server) handleElasticBeanstalkQueryRouter(w http.ResponseWriter, r *htt
 			respondElasticBeanstalkErrorForErr(w, err)
 			return true
 		}
-		respondElasticBeanstalkXML(w, action, elasticBeanstalkUpdateEnvironmentResult{Environment: toAWSEBEnvironment(env)})
+		respondElasticBeanstalkXML(w, action, elasticBeanstalkUpdateEnvironmentResult{EnvironmentDescription: toAWSEBEnvironment(env)})
 		return true
 	case "AbortEnvironmentUpdate":
 		env, err := s.eb.AbortEnvironmentUpdate(
@@ -291,7 +291,7 @@ func (s *Server) handleElasticBeanstalkQueryRouter(w http.ResponseWriter, r *htt
 			respondElasticBeanstalkErrorForErr(w, err)
 			return true
 		}
-		respondElasticBeanstalkXML(w, action, elasticBeanstalkTerminateEnvironmentResult{Environment: toAWSEBEnvironment(env)})
+		respondElasticBeanstalkXML(w, action, elasticBeanstalkTerminateEnvironmentResult{EnvironmentDescription: toAWSEBEnvironment(env)})
 		return true
 	case "SwapEnvironmentCNAMEs":
 		err := s.eb.SwapEnvironmentCNAMEs(
@@ -1703,13 +1703,13 @@ type elasticBeanstalkValidateConfigurationSettingsResult struct {
 }
 
 type elasticBeanstalkCreateEnvironmentResult struct {
-	XMLName     xml.Name                          `xml:"CreateEnvironmentResult"`
-	Environment awsebtypes.EnvironmentDescription `xml:"Environment"`
+	XMLName xml.Name `xml:"CreateEnvironmentResult"`
+	awsebtypes.EnvironmentDescription
 }
 
 type elasticBeanstalkUpdateEnvironmentResult struct {
-	XMLName     xml.Name                          `xml:"UpdateEnvironmentResult"`
-	Environment awsebtypes.EnvironmentDescription `xml:"Environment"`
+	XMLName xml.Name `xml:"UpdateEnvironmentResult"`
+	awsebtypes.EnvironmentDescription
 }
 
 type elasticBeanstalkAbortEnvironmentUpdateResult struct {
@@ -1728,8 +1728,8 @@ type elasticBeanstalkRestartAppServerResult struct {
 }
 
 type elasticBeanstalkTerminateEnvironmentResult struct {
-	XMLName     xml.Name                          `xml:"TerminateEnvironmentResult"`
-	Environment awsebtypes.EnvironmentDescription `xml:"Environment"`
+	XMLName xml.Name `xml:"TerminateEnvironmentResult"`
+	awsebtypes.EnvironmentDescription
 }
 
 type elasticBeanstalkSwapEnvironmentCNAMEsResult struct {

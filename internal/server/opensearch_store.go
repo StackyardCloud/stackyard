@@ -88,7 +88,12 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 		return map[string]any{"DomainStatusList": []any{s.domainStatus(domainName)}}
 	case "DescribeDryRunProgress":
 		return map[string]any{
-			"DryRunProgressStatus": map[string]any{},
+			"DryRunProgressStatus": map[string]any{
+				"DryRunId":     "00000000-0000-0000-0000-000000000001",
+				"DryRunStatus": "SUCCEEDED",
+				"CreationDate": "2026-03-13T00:00:00Z",
+				"UpdateDate":   "2026-03-13T00:05:00Z",
+			},
 			"DryRunConfig":         s.domainStatus(domainName),
 			"DryRunResults":        map[string]any{},
 		}
@@ -114,7 +119,6 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 			"DataSourceType": s.dataSourceType(),
 			"Name":           s.resolveDataSourceName(payload, pathParams),
 			"Description":    "stackyard data source",
-			"Status":         "ACTIVE",
 		}
 	case "GetDomainMaintenanceStatus":
 		return map[string]any{"Status": "COMPLETED"}

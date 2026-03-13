@@ -2551,6 +2551,58 @@ S3TABLES_DEFAULT_BUCKET_NAME = "stackyard-s3tables-bucket"
 S3TABLES_DEFAULT_NAMESPACE = "analytics"
 S3TABLES_DEFAULT_TABLE_NAME = "events"
 S3TABLES_DEFAULT_RESOURCE_POLICY = '{"Version":"2012-10-17","Statement":[]}'
+CONTROLTOWER_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "GetEnabledBaseline",
+        "GetEnabledControl",
+    }
+)
+ECS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "CreateCluster",
+        "DeleteAccountSetting",
+        "DeleteAttributes",
+        "ListTasks",
+        "RegisterContainerInstance",
+        "StopServiceDeployment",
+        "SubmitAttachmentStateChanges",
+        "SubmitContainerStateChange",
+        "SubmitTaskStateChange",
+        "TagResource",
+        "UpdateClusterSettings",
+        "UpdateContainerAgent",
+        "UpdateServicePrimaryTaskSet",
+    }
+)
+S3TABLES_FORCE_RAW_FALLBACK_OPERATIONS: set[str] = {
+    "GetTable",
+    "TagResource",
+    "ListTagsForResource",
+    "UntagResource",
+    "PutTableBucketEncryption",
+    "GetTableBucketEncryption",
+    "DeleteTableBucketEncryption",
+    "PutTableBucketMetricsConfiguration",
+    "GetTableBucketMetricsConfiguration",
+    "DeleteTableBucketMetricsConfiguration",
+    "PutTableBucketReplication",
+    "GetTableBucketReplication",
+    "DeleteTableBucketReplication",
+    "PutTableBucketStorageClass",
+    "GetTableBucketStorageClass",
+    "PutTableEncryption",
+    "GetTableEncryption",
+    "DeleteTableEncryption",
+    "PutTableStorageClass",
+    "GetTableStorageClass",
+    "PutTableReplication",
+    "GetTableReplication",
+    "DeleteTableReplication",
+    "GetTableReplicationStatus",
+    "PutTableRecordExpirationConfiguration",
+    "GetTableRecordExpirationConfiguration",
+    "GetTableRecordExpirationJobStatus",
+}
 COGNITO_DEFAULT_IDENTITY_POOL_NAME = "stackyard-cognito-identity-pool"
 COGNITO_DEFAULT_DEVELOPER_PROVIDER_NAME = "login.stackyard"
 COGNITO_DEFAULT_LOGIN_USER = "coverage-user"
@@ -2682,6 +2734,16 @@ SESV2_DEFAULT_TENANT_NAME = "stackyard-sesv2-tenant"
 SESV2_DEFAULT_RESOURCE_ARN = "arn:aws:ses:us-east-1:123456789012:configuration-set/stackyard-sesv2-config"
 SESV2_DEFAULT_REPUTATION_ENTITY_TYPE = "IP_ADDRESS"
 SESV2_DEFAULT_REPUTATION_ENTITY_REFERENCE = "198.51.100.10"
+SESV2_DEFAULT_CUSTOM_VERIFICATION_TEMPLATE_NAME = "stackyard-sesv2-custom-verify"
+SESV2_DEFAULT_DEDICATED_IP_POOL_NAME = "stackyard-sesv2-pool"
+SESV2_DEFAULT_DEDICATED_IP = "198.51.100.10"
+SESV2_DEFAULT_DELIVERABILITY_REPORT_ID = "sesv2-report-000001"
+SESV2_DEFAULT_EXPORT_JOB_ID = "sesv2-export-job-000001"
+SESV2_DEFAULT_IMPORT_JOB_ID = "sesv2-import-job-000001"
+SESV2_DEFAULT_DOMAIN = "example.com"
+SESV2_DEFAULT_CAMPAIGN_ID = "sesv2-campaign-000001"
+SESV2_DEFAULT_MESSAGE_ID = "sesv2-message-000001"
+SESV2_DEFAULT_ARCHIVE_ARN = "arn:aws:ses:us-east-1:123456789012:archive/stackyard-sesv2"
 SNS_DEFAULT_TOPIC_NAME = "stackyard-sns-topic"
 SNS_DEFAULT_PLATFORM_APPLICATION_NAME = "stackyard-sns-app"
 SNS_DEFAULT_PLATFORM = "GCM"
@@ -3020,6 +3082,7 @@ COGNITOUSERPOOLS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "InitiateAuth",
         "ListDevices",
         "ListWebAuthnCredentials",
+        "CreateTerms",
         "ResendConfirmationCode",
         "RespondToAuthChallenge",
         "RevokeToken",
@@ -3027,6 +3090,7 @@ COGNITOUSERPOOLS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "SetUserSettings",
         "SignUp",
         "StartWebAuthnRegistration",
+        "UpdateTerms",
         "UpdateAuthEventFeedback",
         "UpdateDeviceStatus",
         "UpdateUserAttributes",
@@ -3489,7 +3553,32 @@ def singlesignonportal_raw_fallback_route(operation: str) -> tuple[str, str]:
     return ("GET", "/assignment/accounts")
 
 
+_CONTROLTOWER_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _INSPECTORV2_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
+
+
+def controltower_raw_fallback_routes() -> dict[str, tuple[str, str]]:
+    global _CONTROLTOWER_RAW_FALLBACK_ROUTES
+    if _CONTROLTOWER_RAW_FALLBACK_ROUTES is not None:
+        return _CONTROLTOWER_RAW_FALLBACK_ROUTES
+
+    routes: dict[str, tuple[str, str]] = {}
+    cfg = SERVICE_CONFIG.get("controltower", {})
+    ops_file = cfg.get("ops_file")
+    path = Path(ops_file) if isinstance(ops_file, Path) else None
+    if path and path.exists():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for match in re.finditer(
+            r'\{Name:\s*"([^"]+)",\s*Method:\s*"([^"]+)",\s*URI:\s*"([^"]+)"\}',
+            text,
+        ):
+            op = match.group(1).strip()
+            method = match.group(2).strip().upper() or "POST"
+            uri = match.group(3).strip() or "/"
+            routes[op] = (method, uri)
+
+    _CONTROLTOWER_RAW_FALLBACK_ROUTES = routes
+    return routes
 
 
 def inspectorv2_raw_fallback_routes() -> dict[str, tuple[str, str]]:
@@ -3562,6 +3651,38 @@ def paymentcryptographydata_raw_fallback_routes() -> dict[str, tuple[str, str]]:
 
     _PAYMENTCRYPTOGRAPHYDATA_RAW_FALLBACK_ROUTES = routes
     return routes
+
+
+def s3tables_raw_fallback_routes() -> dict[str, tuple[str, str]]:
+    return {
+        "GetTable": ("GET", "/tables/{tableBucketARN}"),
+        "TagResource": ("POST", "/tags/{resourceArn}"),
+        "ListTagsForResource": ("GET", "/tags/{resourceArn}"),
+        "UntagResource": ("DELETE", "/tags/{resourceArn}"),
+        "PutTableBucketEncryption": ("PUT", "/buckets/{tableBucketARN}/encryption"),
+        "GetTableBucketEncryption": ("GET", "/buckets/{tableBucketARN}/encryption"),
+        "DeleteTableBucketEncryption": ("DELETE", "/buckets/{tableBucketARN}/encryption"),
+        "PutTableBucketMetricsConfiguration": ("PUT", "/buckets/{tableBucketARN}/metrics"),
+        "GetTableBucketMetricsConfiguration": ("GET", "/buckets/{tableBucketARN}/metrics"),
+        "DeleteTableBucketMetricsConfiguration": ("DELETE", "/buckets/{tableBucketARN}/metrics"),
+        "PutTableBucketReplication": ("PUT", "/buckets/{tableBucketARN}/replication"),
+        "GetTableBucketReplication": ("GET", "/buckets/{tableBucketARN}/replication"),
+        "DeleteTableBucketReplication": ("DELETE", "/buckets/{tableBucketARN}/replication"),
+        "PutTableBucketStorageClass": ("PUT", "/buckets/{tableBucketARN}/storageclass"),
+        "GetTableBucketStorageClass": ("GET", "/buckets/{tableBucketARN}/storageclass"),
+        "PutTableEncryption": ("PUT", "/tables/{tableArn}/encryption"),
+        "GetTableEncryption": ("GET", "/tables/{tableArn}/encryption"),
+        "DeleteTableEncryption": ("DELETE", "/tables/{tableArn}/encryption"),
+        "PutTableStorageClass": ("PUT", "/tables/{tableArn}/storageclass"),
+        "GetTableStorageClass": ("GET", "/tables/{tableArn}/storageclass"),
+        "PutTableReplication": ("PUT", "/tables/{tableArn}/replication"),
+        "GetTableReplication": ("GET", "/tables/{tableArn}/replication"),
+        "DeleteTableReplication": ("DELETE", "/tables/{tableArn}/replication"),
+        "GetTableReplicationStatus": ("GET", "/tables/{tableArn}/replication-status"),
+        "PutTableRecordExpirationConfiguration": ("PUT", "/tables/{tableArn}/record-expiration"),
+        "GetTableRecordExpirationConfiguration": ("GET", "/tables/{tableArn}/record-expiration"),
+        "GetTableRecordExpirationJobStatus": ("GET", "/tables/{tableArn}/record-expiration-status"),
+    }
 
 
 def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
@@ -3671,6 +3792,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return ("POST", "/")
     if endpoint.service == "sagemaker":
         return ("POST", "/")
+    if endpoint.service == "s3tables":
+        return s3tables_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "simspaceweaver":
         return simspaceweaver_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "supplychain":
@@ -3781,6 +3904,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return ("POST", "/")
     if endpoint.service == "controlcatalog":
         return controlcatalog_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "controltower":
+        return controltower_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "cloudtrail":
         return ("POST", "/")
     if endpoint.service == "oam":
@@ -4010,6 +4135,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
     if endpoint.service == "devopsguru":
         return ("POST", "/")
     if endpoint.service == "ec2":
+        return ("POST", "/")
+    if endpoint.service == "rds":
         return ("POST", "/")
     if endpoint.service == "ecr":
         return ("POST", "/")
@@ -5564,6 +5691,21 @@ def invoke_raw_endpoint(
                 qvalue_str = str(qvalue).strip()
                 if qvalue_str:
                     query_params.append((qkey, qvalue_str))
+    elif endpoint.service == "s3tables":
+        if method in {"GET", "DELETE"}:
+            for qkey in list(payload_for_transport.keys()):
+                qvalue = payload_for_transport.pop(qkey)
+                if qvalue is None:
+                    continue
+                if isinstance(qvalue, list):
+                    for item in qvalue:
+                        item_str = str(item).strip()
+                        if item_str:
+                            query_params.append((qkey, item_str))
+                    continue
+                qvalue_str = str(qvalue).strip()
+                if qvalue_str:
+                    query_params.append((qkey, qvalue_str))
     elif endpoint.service == "dataexchange":
         if method in {"GET", "DELETE"}:
             op_query_keys: dict[str, tuple[str, ...]] = {
@@ -6556,6 +6698,13 @@ def invoke_raw_endpoint(
             extra_headers = {"Content-Type": "application/json"}
         extra_headers = dict(extra_headers)
         extra_headers["x-amz-account-id"] = "123456789012"
+    elif endpoint.service == "s3tables":
+        if method in {"GET", "DELETE"}:
+            body = b""
+            extra_headers = {}
+        else:
+            body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
+            extra_headers = {"Content-Type": "application/json"}
     elif endpoint.service in {
         "sesv2",
         "eks",
@@ -6914,6 +7063,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
             return {}
         return None
     if endpoint.service == "appconfig":
+        return {}
+    if endpoint.service == "s3tables":
         return {}
     if endpoint.service == "s3vectors":
         return {
@@ -13133,6 +13284,7 @@ def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
                 "StartSchemaMerge",
                 "TagResource",
                 "UntagResource",
+                "UpdateGraphqlApi",
                 "UpdateApiCache",
                 "UpdateApiKey",
                 "UpdateDataSource",
@@ -13292,6 +13444,12 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
         return [err for err in errors if err != "$.ChecksumType: unknown field"]
+    if endpoint.service == "cognitouserpools" and endpoint.operation in {"CreateUserPoolDomain", "UpdateUserPoolDomain"}:
+        return [err for err in errors if err != "$.ManagedLoginVersion: unknown field"]
+    if endpoint.service == "controltower" and endpoint.operation == "GetControlOperation":
+        return [err for err in errors if err != "$.controlOperation.operationIdentifier: unknown field"]
+    if endpoint.service == "controltower" and endpoint.operation == "GetLandingZoneOperation":
+        return [err for err in errors if err != "$.operationDetails.operationIdentifier: unknown field"]
     return errors
 
 
@@ -13320,6 +13478,8 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
 
     def _validate(shape, value, path: str) -> None:
         if shape is None:
+            return
+        if bool(getattr(shape, "is_document_type", False)):
             return
         type_name = str(getattr(shape, "type_name", "")).lower()
         label = path or "$"
@@ -14595,6 +14755,24 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "IdentityStoreId": identity_store_id,
                     "GroupId": group_id,
                     "MemberId": {"UserId": user_id},
+                }
+            )
+        elif endpoint.operation == "ListGroupMembershipsForMember":
+            payload.clear()
+            payload.update(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "MemberId": {"UserId": user_id},
+                    "MaxResults": 10,
+                }
+            )
+        elif endpoint.operation == "IsMemberInGroups":
+            payload.clear()
+            payload.update(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "MemberId": {"UserId": user_id},
+                    "GroupIds": [group_id],
                 }
             )
         elif endpoint.operation == "UpdateGroup":
@@ -17553,10 +17731,43 @@ def s3vectors_invoke_raw_operation(
     return status_code, response_text, data
 
 
-def s3vectors_ensure_bucket(endpoint_url: str, region: str, env: dict[str, str]) -> tuple[str, str]:
+def s3vectors_bucket_arn(region: str, bucket_name: str) -> str:
+    safe_region = region.strip() or "us-east-1"
+    return f"arn:aws:s3vectors:{safe_region}:123456789012:bucket/{bucket_name}"
+
+
+def s3vectors_index_arn(region: str, bucket_name: str, index_name: str) -> str:
+    return f"{s3vectors_bucket_arn(region, bucket_name)}/index/{index_name}"
+
+
+def s3vectors_next_unique_suffix(region: str) -> str:
     state = s3vectors_runtime_state(region)
-    bucket_name = str(state.get("bucket_name") or S3VECTORS_DEFAULT_BUCKET_NAME).strip() or S3VECTORS_DEFAULT_BUCKET_NAME
-    bucket_arn = str(state.get("bucket_arn") or f"arn:aws:s3vectors:{region}:123456789012:bucket/{bucket_name}").strip()
+    counter = int(state.get("_create_counter") or 0) + 1
+    state["_create_counter"] = counter
+    return f"{int(time.time() * 1000) % 1000000:06d}-{counter:02d}"
+
+
+def s3vectors_next_create_bucket(region: str) -> tuple[str, str]:
+    bucket_name = f"{S3VECTORS_DEFAULT_BUCKET_NAME}-{s3vectors_next_unique_suffix(region)}"
+    return bucket_name, s3vectors_bucket_arn(region, bucket_name)
+
+
+def s3vectors_next_create_index(region: str, bucket_name: str) -> tuple[str, str]:
+    index_name = f"{S3VECTORS_DEFAULT_INDEX_NAME}-{s3vectors_next_unique_suffix(region)}"
+    return index_name, s3vectors_index_arn(region, bucket_name, index_name)
+
+
+def s3vectors_ensure_bucket(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    *,
+    bucket_name: str | None = None,
+    update_state: bool = True,
+) -> tuple[str, str]:
+    state = s3vectors_runtime_state(region)
+    bucket_name = str(bucket_name or state.get("bucket_name") or S3VECTORS_DEFAULT_BUCKET_NAME).strip() or S3VECTORS_DEFAULT_BUCKET_NAME
+    bucket_arn = s3vectors_bucket_arn(region, bucket_name)
     status_code, _, response = s3vectors_invoke_raw_operation(
         endpoint_url,
         region,
@@ -17568,8 +17779,9 @@ def s3vectors_ensure_bucket(endpoint_url: str, region: str, env: dict[str, str])
         created_arn = response.get("vectorBucketArn")
         if isinstance(created_arn, str) and created_arn.strip():
             bucket_arn = created_arn.strip()
-    state["bucket_name"] = bucket_name
-    state["bucket_arn"] = bucket_arn
+    if update_state:
+        state["bucket_name"] = bucket_name
+        state["bucket_arn"] = bucket_arn
     return bucket_name, bucket_arn
 
 
@@ -17855,6 +18067,180 @@ def s3tables_ensure_table_bucket_maintenance(
         ],
     )
     return bucket_arn
+
+
+def s3tables_invoke_raw_operation(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    operation: str,
+    payload: dict[str, object],
+) -> tuple[int, str]:
+    endpoint = Endpoint(
+        service="s3tables",
+        cli_service="s3tables",
+        operation=operation,
+        cli_operation=pascal_to_kebab(operation),
+        source="runtime",
+    )
+    return invoke_raw_endpoint(endpoint, endpoint_url, region, env, payload)
+
+
+def s3tables_ensure_tags(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "TagResource",
+        {"resourceArn": bucket_arn, "tags": [{"key": "env", "value": "coverage"}]},
+    )
+    return bucket_arn
+
+
+def s3tables_ensure_table_bucket_encryption(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableBucketEncryption",
+        {"tableBucketARN": bucket_arn, "encryption": "SSE-S3"},
+    )
+    return bucket_arn
+
+
+def s3tables_ensure_table_bucket_metrics_configuration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableBucketMetricsConfiguration",
+        {"tableBucketARN": bucket_arn, "metricsConfiguration": "enabled"},
+    )
+    return bucket_arn
+
+
+def s3tables_ensure_table_bucket_replication(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableBucketReplication",
+        {"tableBucketARN": bucket_arn, "replication": "enabled"},
+    )
+    return bucket_arn
+
+
+def s3tables_ensure_table_bucket_storage_class(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableBucketStorageClass",
+        {"tableBucketARN": bucket_arn, "storageClass": "STANDARD"},
+    )
+    return bucket_arn
+
+
+def s3tables_ensure_table_encryption(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+    table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableEncryption",
+        {"tableArn": table_arn, "encryption": "SSE-KMS"},
+    )
+    return table_arn
+
+
+def s3tables_ensure_table_storage_class(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+    table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableStorageClass",
+        {"tableArn": table_arn, "storageClass": "STANDARD_IA"},
+    )
+    return table_arn
+
+
+def s3tables_ensure_table_replication(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+    table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableReplication",
+        {"tableArn": table_arn, "replication": "enabled"},
+    )
+    return table_arn
+
+
+def s3tables_ensure_table_record_expiration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+    table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+    s3tables_invoke_raw_operation(
+        endpoint_url,
+        region,
+        env,
+        "PutTableRecordExpirationConfiguration",
+        {"tableArn": table_arn, "recordExpiration": "30d"},
+    )
+    return table_arn
 
 
 def cognitosync_runtime_state(region: str) -> dict[str, object]:
@@ -23155,6 +23541,15 @@ def sesv2_runtime_state(region: str) -> dict[str, object]:
         "resource_arn": SESV2_DEFAULT_RESOURCE_ARN,
         "reputation_entity_type": SESV2_DEFAULT_REPUTATION_ENTITY_TYPE,
         "reputation_entity_reference": SESV2_DEFAULT_REPUTATION_ENTITY_REFERENCE,
+        "custom_verification_template_name": SESV2_DEFAULT_CUSTOM_VERIFICATION_TEMPLATE_NAME,
+        "dedicated_ip_pool_name": SESV2_DEFAULT_DEDICATED_IP_POOL_NAME,
+        "dedicated_ip": SESV2_DEFAULT_DEDICATED_IP,
+        "deliverability_report_id": SESV2_DEFAULT_DELIVERABILITY_REPORT_ID,
+        "export_job_id": SESV2_DEFAULT_EXPORT_JOB_ID,
+        "import_job_id": SESV2_DEFAULT_IMPORT_JOB_ID,
+        "domain": SESV2_DEFAULT_DOMAIN,
+        "campaign_id": SESV2_DEFAULT_CAMPAIGN_ID,
+        "message_id": SESV2_DEFAULT_MESSAGE_ID,
     }
     for key, value in defaults.items():
         state.setdefault(key, value)
@@ -25562,6 +25957,11 @@ def ecs_parse_task_definition_family(ref: str) -> str:
     return family or ECS_DEFAULT_TASK_DEFINITION_FAMILY
 
 
+def ecs_is_ephemeral_cluster_name(name: str) -> bool:
+    normalized = name.strip()
+    return normalized.startswith("stackyard-ecs-create-cluster-")
+
+
 def ecs_record_runtime_payload(region: str, payload: object) -> None:
     state = ecs_runtime_state(region)
 
@@ -25571,7 +25971,11 @@ def ecs_record_runtime_payload(region: str, payload: object) -> None:
 
     def _walk(node: object) -> None:
         if isinstance(node, dict):
-            _set_str("cluster_name", node.get("clusterName"))
+            cluster_name_value = node.get("clusterName")
+            if isinstance(cluster_name_value, str):
+                normalized_cluster_name = cluster_name_value.strip()
+                if normalized_cluster_name and not ecs_is_ephemeral_cluster_name(normalized_cluster_name):
+                    state["cluster_name"] = normalized_cluster_name
             cluster_arn = node.get("clusterArn")
             if not (isinstance(cluster_arn, str) and cluster_arn.strip()):
                 cluster_candidate = node.get("cluster")
@@ -25579,9 +25983,11 @@ def ecs_record_runtime_payload(region: str, payload: object) -> None:
                     cluster_arn = cluster_candidate
             if isinstance(cluster_arn, str) and cluster_arn.strip():
                 cluster_arn = cluster_arn.strip()
-                state["cluster_arn"] = cluster_arn
-                if ":cluster/" in cluster_arn:
-                    state["cluster_name"] = cluster_arn.rsplit("/", 1)[-1]
+                cluster_name_from_arn = cluster_arn.rsplit("/", 1)[-1] if ":cluster/" in cluster_arn else ""
+                if not ecs_is_ephemeral_cluster_name(cluster_name_from_arn):
+                    state["cluster_arn"] = cluster_arn
+                    if cluster_name_from_arn:
+                        state["cluster_name"] = cluster_name_from_arn
 
             task_definition = node.get("taskDefinitionArn")
             if not (isinstance(task_definition, str) and task_definition.strip()):
@@ -25875,6 +26281,23 @@ def ecs_seed_runtime_state(
         payload={"cluster": cluster_name, "service": service_name},
     )
     state["seeded"] = True
+
+
+def rds_invoke_raw_operation(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    operation: str,
+    payload: dict[str, object],
+) -> tuple[int, str]:
+    endpoint = Endpoint(
+        service="rds",
+        cli_service="rds",
+        operation=operation,
+        cli_operation=pascal_to_kebab(operation),
+        source="raw-seed",
+    )
+    return invoke_raw_endpoint(endpoint, endpoint_url, region, env, payload)
 
 
 def dynamodb_table_arn(region: str, table_name: str) -> str:
@@ -30412,7 +30835,10 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"TagResource", "ListTagsForResource", "UntagResource"}:
-            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            if op in {"ListTagsForResource", "UntagResource"}:
+                bucket_arn = s3tables_ensure_tags(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"resourceArn": bucket_arn}
             if op == "TagResource":
                 payload_values["tags"] = [{"key": "env", "value": "coverage"}]
@@ -30464,7 +30890,10 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"PutTableBucketEncryption", "GetTableBucketEncryption", "DeleteTableBucketEncryption"}:
-            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            if op in {"GetTableBucketEncryption", "DeleteTableBucketEncryption"}:
+                bucket_arn = s3tables_ensure_table_bucket_encryption(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"tableBucketARN": bucket_arn}
             if op == "PutTableBucketEncryption":
                 payload_values["encryption"] = "SSE-S3"
@@ -30472,7 +30901,10 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"PutTableBucketMetricsConfiguration", "GetTableBucketMetricsConfiguration", "DeleteTableBucketMetricsConfiguration"}:
-            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            if op in {"GetTableBucketMetricsConfiguration", "DeleteTableBucketMetricsConfiguration"}:
+                bucket_arn = s3tables_ensure_table_bucket_metrics_configuration(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"tableBucketARN": bucket_arn}
             if op == "PutTableBucketMetricsConfiguration":
                 payload_values["metricsConfiguration"] = "enabled"
@@ -30480,39 +30912,71 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"PutTableBucketStorageClass", "GetTableBucketStorageClass"}:
-            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            if op == "GetTableBucketStorageClass":
+                bucket_arn = s3tables_ensure_table_bucket_storage_class(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"tableBucketARN": bucket_arn}
             if op == "PutTableBucketStorageClass":
                 payload_values["storageClass"] = "STANDARD"
             _replace_payload(payload_values)
             return hydrated
 
-        if op in {"PutTableEncryption", "GetTableEncryption"}:
-            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
-            table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+        if op in {"PutTableEncryption", "GetTableEncryption", "DeleteTableEncryption"}:
+            if op in {"GetTableEncryption", "DeleteTableEncryption"}:
+                table_arn = s3tables_ensure_table_encryption(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+                table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
             state["table_arn"] = table_arn
             _replace_payload({"tableArn": table_arn, **({"encryption": "SSE-KMS"} if op == "PutTableEncryption" else {})})
             return hydrated
 
         if op in {"PutTableStorageClass", "GetTableStorageClass"}:
-            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
-            table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+            if op == "GetTableStorageClass":
+                table_arn = s3tables_ensure_table_storage_class(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+                table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
             state["table_arn"] = table_arn
             _replace_payload({"tableArn": table_arn, **({"storageClass": "STANDARD_IA"} if op == "PutTableStorageClass" else {})})
             return hydrated
 
-        if op == "GetTableRecordExpirationJobStatus":
-            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
-            table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
-            state["table_arn"] = table_arn
-            _replace_payload({"tableArn": table_arn})
+        if op in {"PutTableBucketReplication", "GetTableBucketReplication", "DeleteTableBucketReplication"}:
+            if op in {"GetTableBucketReplication", "DeleteTableBucketReplication"}:
+                bucket_arn = s3tables_ensure_table_bucket_replication(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            payload_values: dict[str, object] = {"tableBucketARN": bucket_arn}
+            if op == "PutTableBucketReplication":
+                payload_values["replication"] = "enabled"
+            _replace_payload(payload_values)
             return hydrated
 
-        if op == "GetTableReplicationStatus":
-            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
-            table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+        if op in {"PutTableReplication", "GetTableReplication", "DeleteTableReplication", "GetTableReplicationStatus"}:
+            if op in {"GetTableReplication", "DeleteTableReplication", "GetTableReplicationStatus"}:
+                table_arn = s3tables_ensure_table_replication(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+                table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
             state["table_arn"] = table_arn
-            _replace_payload({"tableArn": table_arn})
+            payload_values: dict[str, object] = {"tableArn": table_arn}
+            if op == "PutTableReplication":
+                payload_values["replication"] = "enabled"
+            _replace_payload(payload_values)
+            return hydrated
+
+        if op in {"PutTableRecordExpirationConfiguration", "GetTableRecordExpirationConfiguration", "GetTableRecordExpirationJobStatus"}:
+            if op in {"GetTableRecordExpirationConfiguration", "GetTableRecordExpirationJobStatus"}:
+                table_arn = s3tables_ensure_table_record_expiration(aws_bin, endpoint_url, region, env)
+            else:
+                bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+                table_arn = s3tables_table_arn(bucket_arn, namespace, table_name)
+            state["table_arn"] = table_arn
+            payload_values: dict[str, object] = {"tableArn": table_arn}
+            if op == "PutTableRecordExpirationConfiguration":
+                payload_values["recordExpiration"] = "30d"
+            _replace_payload(payload_values)
             return hydrated
 
         if op in {"GetTableMetadataLocation", "UpdateTableMetadataLocation"}:
@@ -30549,6 +31013,147 @@ def hydrate_payload_with_service_state(
         _set_or_add("name", table_name)
         return hydrated
 
+    if endpoint.service == "identitystore":
+        hydrated = copy.deepcopy(payload)
+        if not isinstance(hydrated, dict):
+            return payload
+
+        identity_store_id = "d-1234567890"
+        group_id = "0000000012-00000000-0000-0000-0000-000000000012"
+        user_id = "0000000011-00000000-0000-0000-0000-000000000011"
+        membership_id = "0000000013-00000000-0000-0000-0000-000000000013"
+        op = endpoint.operation
+
+        def _replace_payload(values: dict[str, object]) -> None:
+            hydrated.clear()
+            hydrated.update(values)
+
+        if op == "CreateGroup":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "DisplayName": "stackyard-group",
+                    "Description": "coverage group",
+                }
+            )
+            return hydrated
+
+        if op == "CreateUser":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "UserName": "stackyard.user",
+                    "DisplayName": "Stackyard User",
+                    "Name": {
+                        "GivenName": "Stackyard",
+                        "FamilyName": "User",
+                    },
+                }
+            )
+            return hydrated
+
+        if op in {"CreateGroupMembership", "GetGroupMembershipId"}:
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "GroupId": group_id,
+                    "MemberId": {"UserId": user_id},
+                }
+            )
+            return hydrated
+
+        if op == "GetGroupId":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "AlternateIdentifier": {
+                        "UniqueAttribute": {
+                            "AttributePath": "displayName",
+                            "AttributeValue": "stackyard-group",
+                        }
+                    },
+                }
+            )
+            return hydrated
+
+        if op == "GetUserId":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "AlternateIdentifier": {
+                        "UniqueAttribute": {
+                            "AttributePath": "userName",
+                            "AttributeValue": "stackyard.user",
+                        }
+                    },
+                }
+            )
+            return hydrated
+
+        if op == "ListGroupMembershipsForMember":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "MemberId": {"UserId": user_id},
+                    "MaxResults": 10,
+                }
+            )
+            return hydrated
+
+        if op == "IsMemberInGroups":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "MemberId": {"UserId": user_id},
+                    "GroupIds": [group_id],
+                }
+            )
+            return hydrated
+
+        if op == "UpdateGroup":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "GroupId": group_id,
+                    "Operations": [
+                        {
+                            "AttributePath": "DisplayName",
+                            "AttributeValue": "stackyard-group-updated",
+                        }
+                    ],
+                }
+            )
+            return hydrated
+
+        if op == "UpdateUser":
+            _replace_payload(
+                {
+                    "IdentityStoreId": identity_store_id,
+                    "UserId": user_id,
+                    "Operations": [
+                        {
+                            "AttributePath": "DisplayName",
+                            "AttributeValue": "Stackyard User Updated",
+                        }
+                    ],
+                }
+            )
+            return hydrated
+
+        def _set_or_add(key: str, value: object) -> None:
+            if not set_key_if_present_case_insensitive(hydrated, key, value):
+                hydrated[key] = value
+
+        _set_or_add("IdentityStoreId", identity_store_id)
+        _set_or_add("GroupId", group_id)
+        _set_or_add("UserId", user_id)
+        _set_or_add("MembershipId", membership_id)
+        _set_or_add("MemberId", {"UserId": user_id})
+        _set_or_add("GroupIds", [group_id])
+        _set_or_add("MaxResults", 10)
+        delete_key_if_present_case_insensitive(hydrated, "NextToken")
+        return hydrated
+
     if endpoint.service == "s3vectors":
         hydrated = copy.deepcopy(payload)
         if not isinstance(hydrated, dict):
@@ -30562,11 +31167,14 @@ def hydrate_payload_with_service_state(
             hydrated.update(values)
 
         if op == "CreateVectorBucket":
-            _replace_payload({"vectorBucketName": str(state.get("bucket_name") or S3VECTORS_DEFAULT_BUCKET_NAME)})
+            bucket_name, _ = s3vectors_next_create_bucket(region)
+            _replace_payload({"vectorBucketName": bucket_name})
             return hydrated
 
         if op == "CreateIndex":
-            bucket_name, _, index_name, _ = s3vectors_ensure_index(endpoint_url, region, env)
+            bucket_name, _ = s3vectors_next_create_bucket(region)
+            s3vectors_ensure_bucket(endpoint_url, region, env, bucket_name=bucket_name, update_state=False)
+            index_name, _ = s3vectors_next_create_index(region, bucket_name)
             _replace_payload(
                 {
                     "vectorBucketName": bucket_name,
@@ -31265,9 +31873,8 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"DescribeRiskConfiguration", "SetRiskConfiguration"}:
-            _replace_payload({"UserPoolId": user_pool_id})
+            _replace_payload({"UserPoolId": user_pool_id, "ClientId": client_id})
             if op == "SetRiskConfiguration":
-                hydrated["ClientId"] = client_id
                 hydrated["CompromisedCredentialsRiskConfiguration"] = {
                     "EventFilter": ["SIGN_IN"],
                     "Actions": {"EventAction": "BLOCK"},
@@ -31283,6 +31890,43 @@ def hydrate_payload_with_service_state(
                         "HighAction": {"Notify": True, "EventAction": "BLOCK"},
                     },
                 }
+            else:
+                try:
+                    run_aws_json(
+                        aws_bin,
+                        endpoint_url,
+                        region,
+                        "cognito-idp",
+                        "set-risk-configuration",
+                        env,
+                        [
+                            "--cli-input-json",
+                            json.dumps(
+                                {
+                                    "UserPoolId": user_pool_id,
+                                    "ClientId": client_id,
+                                    "CompromisedCredentialsRiskConfiguration": {
+                                        "EventFilter": ["SIGN_IN"],
+                                        "Actions": {"EventAction": "BLOCK"},
+                                    },
+                                    "AccountTakeoverRiskConfiguration": {
+                                        "NotifyConfiguration": {
+                                            "SourceArn": "arn:aws:ses:us-east-1:123456789012:identity/stackyard@example.com",
+                                            "From": "stackyard@example.com",
+                                        },
+                                        "Actions": {
+                                            "LowAction": {"Notify": False, "EventAction": "NO_ACTION"},
+                                            "MediumAction": {"Notify": False, "EventAction": "MFA_IF_CONFIGURED"},
+                                            "HighAction": {"Notify": True, "EventAction": "BLOCK"},
+                                        },
+                                    },
+                                },
+                                separators=(",", ":"),
+                            ),
+                        ],
+                    )
+                except subprocess.CalledProcessError:
+                    pass
             return hydrated
 
         if op in {"GetLogDeliveryConfiguration", "SetLogDeliveryConfiguration"}:
@@ -33330,6 +33974,7 @@ def hydrate_payload_with_service_state(
         if not isinstance(hydrated, dict):
             return payload
 
+        state = RUNTIME_STATE.setdefault("eventbridge", {})
         op = endpoint.operation
         unique = str(int(time.time() * 1000) % 1000000).zfill(6)
 
@@ -33379,6 +34024,24 @@ def hydrate_payload_with_service_state(
                 "EventBuses": [{"EventBusArn": primary_arn}, {"EventBusArn": secondary_arn}],
                 "RoleArn": "arn:aws:iam::123456789012:role/stackyard-eventbridge-endpoint",
             }
+
+        def _ensure_endpoint(name: str | None = None) -> str:
+            endpoint_name = str(state.get("endpoint_name") or "").strip()
+            if not endpoint_name:
+                endpoint_name = str(name or "").strip()
+            if not endpoint_name:
+                endpoint_name = f"stackyard-endpoint-{unique}"
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "events",
+                "create-endpoint",
+                env,
+                ["--cli-input-json", json.dumps(_endpoint_payload(endpoint_name, "coverage endpoint"), separators=(",", ":"))],
+            )
+            state["endpoint_name"] = endpoint_name
+            return endpoint_name
 
         if op == "EnableRule":
             if event_bus_name != "default":
@@ -33440,21 +34103,29 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "CreateEndpoint":
-            _replace_payload(_endpoint_payload(f"stackyard-endpoint-{unique}", "coverage endpoint"))
+            endpoint_name = f"stackyard-endpoint-{unique}"
+            state["endpoint_name"] = endpoint_name
+            _replace_payload(_endpoint_payload(endpoint_name, "coverage endpoint"))
             return hydrated
 
         if op == "UpdateEndpoint":
-            endpoint_name = f"stackyard-endpoint-{unique}"
-            run_aws_json(
-                aws_bin,
-                endpoint_url,
-                region,
-                "events",
-                "create-endpoint",
-                env,
-                ["--cli-input-json", json.dumps(_endpoint_payload(endpoint_name, "coverage endpoint"), separators=(",", ":"))],
-            )
+            endpoint_name = _ensure_endpoint()
             _replace_payload({"Name": endpoint_name, "Description": "coverage endpoint updated"})
+            return hydrated
+
+        if op == "DescribeEndpoint":
+            endpoint_name = _ensure_endpoint()
+            _replace_payload({"Name": endpoint_name})
+            return hydrated
+
+        if op == "DeleteEndpoint":
+            endpoint_name = _ensure_endpoint()
+            _replace_payload({"Name": endpoint_name})
+            return hydrated
+
+        if op == "ListEndpoints":
+            _ensure_endpoint()
+            _replace_payload({})
             return hydrated
 
         return hydrated
@@ -34690,6 +35361,17 @@ def hydrate_payload_with_service_state(
         suppressed_email = str(state.get("suppressed_email") or SESV2_DEFAULT_SUPPRESSED_EMAIL)
         tenant_name = str(state.get("tenant_name") or SESV2_DEFAULT_TENANT_NAME)
         resource_arn = str(state.get("resource_arn") or SESV2_DEFAULT_RESOURCE_ARN)
+        custom_verification_template_name = str(
+            state.get("custom_verification_template_name") or SESV2_DEFAULT_CUSTOM_VERIFICATION_TEMPLATE_NAME
+        )
+        dedicated_ip_pool_name = str(state.get("dedicated_ip_pool_name") or SESV2_DEFAULT_DEDICATED_IP_POOL_NAME)
+        dedicated_ip = str(state.get("dedicated_ip") or SESV2_DEFAULT_DEDICATED_IP)
+        deliverability_report_id = str(state.get("deliverability_report_id") or SESV2_DEFAULT_DELIVERABILITY_REPORT_ID)
+        export_job_id = str(state.get("export_job_id") or SESV2_DEFAULT_EXPORT_JOB_ID)
+        import_job_id = str(state.get("import_job_id") or SESV2_DEFAULT_IMPORT_JOB_ID)
+        domain = str(state.get("domain") or SESV2_DEFAULT_DOMAIN)
+        campaign_id = str(state.get("campaign_id") or SESV2_DEFAULT_CAMPAIGN_ID)
+        message_id = str(state.get("message_id") or SESV2_DEFAULT_MESSAGE_ID)
         reputation_entity_type = str(state.get("reputation_entity_type") or SESV2_DEFAULT_REPUTATION_ENTITY_TYPE)
         reputation_entity_reference = str(
             state.get("reputation_entity_reference") or SESV2_DEFAULT_REPUTATION_ENTITY_REFERENCE
@@ -34711,8 +35393,91 @@ def hydrate_payload_with_service_state(
         set_key_if_present_case_insensitive(hydrated, "Reason", "BOUNCE")
         set_key_if_present_case_insensitive(hydrated, "TenantName", tenant_name)
         set_key_if_present_case_insensitive(hydrated, "ResourceArn", resource_arn)
+        set_key_if_present_case_insensitive(hydrated, "ReportId", deliverability_report_id)
+        set_key_if_present_case_insensitive(hydrated, "PoolName", dedicated_ip_pool_name)
+        set_key_if_present_case_insensitive(hydrated, "Ip", dedicated_ip)
+        set_key_if_present_case_insensitive(hydrated, "JobId", export_job_id)
+        set_key_if_present_case_insensitive(hydrated, "CampaignId", campaign_id)
+        set_key_if_present_case_insensitive(hydrated, "MessageId", message_id)
         set_key_if_present_case_insensitive(hydrated, "ReputationEntityType", reputation_entity_type)
         set_key_if_present_case_insensitive(hydrated, "ReputationEntityReference", reputation_entity_reference)
+
+        if op == "PutAccountSendingAttributes":
+            _replace_payload({"SendingEnabled": True})
+            return hydrated
+
+        if op == "CreateCustomVerificationEmailTemplate":
+            state["custom_verification_template_name"] = custom_verification_template_name
+            _replace_payload(
+                {
+                    "TemplateName": custom_verification_template_name,
+                    "FromEmailAddress": email_identity,
+                    "TemplateSubject": "stackyard verify",
+                    "TemplateContent": "stackyard verification content",
+                    "SuccessRedirectionURL": "https://example.com/success",
+                    "FailureRedirectionURL": "https://example.com/failure",
+                }
+            )
+            return hydrated
+
+        if op in {"UpdateCustomVerificationEmailTemplate", "GetCustomVerificationEmailTemplate", "DeleteCustomVerificationEmailTemplate"}:
+            if op == "UpdateCustomVerificationEmailTemplate":
+                _replace_payload(
+                    {
+                        "TemplateName": custom_verification_template_name,
+                        "FromEmailAddress": email_identity,
+                        "TemplateSubject": "stackyard verify updated",
+                        "TemplateContent": "stackyard verification content updated",
+                        "SuccessRedirectionURL": "https://example.com/success",
+                        "FailureRedirectionURL": "https://example.com/failure",
+                    }
+                )
+            else:
+                _replace_payload({"TemplateName": custom_verification_template_name})
+            return hydrated
+
+        if op == "CreateDedicatedIpPool":
+            state["dedicated_ip_pool_name"] = dedicated_ip_pool_name
+            _replace_payload({"PoolName": dedicated_ip_pool_name, "ScalingMode": "MANAGED"})
+            return hydrated
+
+        if op == "CreateExportJob":
+            state["export_job_id"] = export_job_id
+            _replace_payload(
+                {
+                    "ExportDataSource": {
+                        "MetricsDataSource": {
+                            "Dimensions": {"ses:from-domain": domain},
+                            "Namespace": "VDM",
+                            "Metrics": ["SEND"],
+                            "StartDate": "2025-01-01T00:00:00Z",
+                            "EndDate": "2025-01-02T00:00:00Z",
+                        }
+                    },
+                    "ExportDestination": {
+                        "DataFormat": "CSV",
+                        "S3Url": "s3://stackyard-bucket/exports/report.csv",
+                    },
+                }
+            )
+            return hydrated
+
+        if op == "CreateImportJob":
+            state["import_job_id"] = import_job_id
+            _replace_payload(
+                {
+                    "ImportDestination": {
+                        "SuppressionListDestination": {
+                            "SuppressionListImportAction": "PUT",
+                        }
+                    },
+                    "ImportDataSource": {
+                        "S3Url": "s3://stackyard-bucket/imports/contacts.csv",
+                        "DataFormat": "CSV",
+                    },
+                }
+            )
+            return hydrated
 
         if op == "CreateContact":
             contact_list_name = sesv2_ensure_contact_list(aws_bin, endpoint_url, region, env)
@@ -34768,6 +35533,7 @@ def hydrate_payload_with_service_state(
 
         if op == "CreateDeliverabilityTestReport":
             sesv2_ensure_email_identity(aws_bin, endpoint_url, region, env)
+            state["deliverability_report_id"] = deliverability_report_id
             _replace_payload(
                 {
                     "ReportName": f"stackyard-report-{unique}",
@@ -34788,7 +35554,7 @@ def hydrate_payload_with_service_state(
             _replace_payload(
                 {
                     "ConfigurationSetName": configuration_set_name,
-                    "Archive": {"ArchiveName": "stackyard-archive", "Retention": {"Period": "THREE_MONTHS"}},
+                    "ArchiveArn": SESV2_DEFAULT_ARCHIVE_ARN,
                 }
             )
             return hydrated
@@ -34822,16 +35588,21 @@ def hydrate_payload_with_service_state(
                     {
                         "ReputationEntityType": rep_type,
                         "ReputationEntityReference": rep_ref,
-                        "CustomerManagedStatus": "ENABLED",
+                        "SendingStatus": "ENABLED",
                     }
                 )
             else:
-                _replace_payload({"ReputationEntityType": rep_type, "ReputationEntityReference": rep_ref, "Policy": "{}"})
+                _replace_payload(
+                    {
+                        "ReputationEntityType": rep_type,
+                        "ReputationEntityReference": rep_ref,
+                        "ReputationEntityPolicy": "arn:aws:ses:us-east-1:123456789012:reputation-policy/default",
+                    }
+                )
             return hydrated
 
         if op == "ListReputationEntities":
-            rep_type = str(state.get("reputation_entity_type") or SESV2_DEFAULT_REPUTATION_ENTITY_TYPE)
-            _replace_payload({"ReputationEntityType": rep_type, "PageSize": 1})
+            _replace_payload({"Filter": {"ReputationEntityType": reputation_entity_type}, "PageSize": 1})
             return hydrated
 
         if op == "ListTenants":
@@ -34844,6 +35615,23 @@ def hydrate_payload_with_service_state(
 
         if op == "PutSuppressedDestination":
             _replace_payload({"EmailAddress": suppressed_email, "Reason": "BOUNCE"})
+            return hydrated
+
+        if op == "PutEmailIdentityConfigurationSetAttributes":
+            configuration_set_name = sesv2_ensure_configuration_set(aws_bin, endpoint_url, region, env)
+            email_identity = sesv2_ensure_email_identity(aws_bin, endpoint_url, region, env)
+            _replace_payload({"EmailIdentity": email_identity, "ConfigurationSetName": configuration_set_name})
+            return hydrated
+
+        if op == "PutEmailIdentityDkimSigningAttributes":
+            email_identity = sesv2_ensure_email_identity(aws_bin, endpoint_url, region, env)
+            _replace_payload(
+                {
+                    "EmailIdentity": email_identity,
+                    "SigningAttributesOrigin": "AWS_SES",
+                    "SigningAttributes": {"NextSigningKeyLength": "RSA_2048_BIT"},
+                }
+            )
             return hydrated
 
         if op == "SendBulkEmail":
@@ -34864,6 +35652,120 @@ def hydrate_payload_with_service_state(
                     "FromEmailAddress": email_identity,
                     "Destination": {"ToAddresses": [recipient_email]},
                     "Content": {"Simple": {"Subject": {"Data": "stackyard subject"}, "Body": {"Text": {"Data": "stackyard body"}}}},
+                }
+            )
+            return hydrated
+
+        if op == "SendCustomVerificationEmail":
+            _replace_payload(
+                {
+                    "EmailAddress": recipient_email,
+                    "TemplateName": custom_verification_template_name,
+                    "ConfigurationSetName": configuration_set_name,
+                }
+            )
+            return hydrated
+
+        if op == "GetBlacklistReports":
+            _replace_payload({"BlacklistItemNames": ["spamhaus"]})
+            return hydrated
+
+        if op == "GetConfigurationSetEventDestinations":
+            configuration_set_name, _ = sesv2_ensure_configuration_set_event_destination(aws_bin, endpoint_url, region, env)
+            _replace_payload({"ConfigurationSetName": configuration_set_name})
+            return hydrated
+
+        if op == "GetDedicatedIp":
+            _replace_payload({"Ip": dedicated_ip})
+            return hydrated
+
+        if op == "GetDedicatedIpPool":
+            _replace_payload({"PoolName": dedicated_ip_pool_name})
+            return hydrated
+
+        if op == "GetDedicatedIps":
+            _replace_payload({"PoolName": dedicated_ip_pool_name, "PageSize": 10})
+            return hydrated
+
+        if op == "GetDeliverabilityTestReport":
+            _replace_payload({"ReportId": deliverability_report_id})
+            return hydrated
+
+        if op == "GetDomainDeliverabilityCampaign":
+            _replace_payload({"CampaignId": campaign_id})
+            return hydrated
+
+        if op == "GetDomainStatisticsReport":
+            _replace_payload(
+                {
+                    "Domain": domain,
+                    "StartDate": "2025-01-01T00:00:00Z",
+                    "EndDate": "2025-01-02T00:00:00Z",
+                }
+            )
+            return hydrated
+
+        if op == "GetExportJob":
+            _replace_payload({"JobId": export_job_id})
+            return hydrated
+
+        if op == "GetImportJob":
+            _replace_payload({"JobId": import_job_id})
+            return hydrated
+
+        if op == "GetMessageInsights":
+            _replace_payload({"MessageId": message_id})
+            return hydrated
+
+        if op == "ListCustomVerificationEmailTemplates":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "ListDedicatedIpPools":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "ListDeliverabilityTestReports":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "ListDomainDeliverabilityCampaigns":
+            _replace_payload(
+                {
+                    "StartDate": "2025-01-01T00:00:00Z",
+                    "EndDate": "2025-01-02T00:00:00Z",
+                    "SubscribedDomain": domain,
+                    "PageSize": 10,
+                    "NextToken": "",
+                }
+            )
+            return hydrated
+
+        if op == "ListExportJobs":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "ListImportJobs":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "ListRecommendations":
+            _replace_payload({"PageSize": 10, "NextToken": ""})
+            return hydrated
+
+        if op == "BatchGetMetricData":
+            _replace_payload(
+                {
+                    "Queries": [
+                        {
+                            "Id": "delivery-rate",
+                            "Namespace": "VDM",
+                            "Metric": "SEND",
+                            "Dimensions": {"ses:from-domain": domain},
+                            "StartDate": "2025-01-01T00:00:00Z",
+                            "EndDate": "2025-01-02T00:00:00Z",
+                        }
+                    ]
                 }
             )
             return hydrated
@@ -37742,7 +38644,18 @@ def hydrate_payload_with_service_state(
                     ],
                 )
             except subprocess.CalledProcessError:
-                pass
+                rds_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="CreateTenantDatabase",
+                    payload={
+                        "DBClusterIdentifier": cluster_id,
+                        "TenantDBName": tenant_name,
+                        "MasterUsername": "stackyard",
+                        "MasterUserPassword": "Passw0rd!123",
+                    },
+                )
             return cluster_id, tenant_name
 
         if op == "CreateDbCluster":
@@ -37854,7 +38767,7 @@ def hydrate_payload_with_service_state(
 
         if op == "DescribeTenantDatabases":
             cluster_id, tenant_name = _ensure_tenant_database()
-            _replace_payload({"DBInstanceIdentifier": cluster_id, "TenantDBName": tenant_name, "MaxRecords": 20, "Marker": ""})
+            _replace_payload({"DBClusterIdentifier": cluster_id, "TenantDBName": tenant_name, "MaxRecords": 20, "Marker": ""})
             return hydrated
 
         return hydrated
@@ -46574,6 +47487,23 @@ def hydrate_payload_with_service_state(
         service_deployment = str(state.get("service_deployment", ""))
         service_revision = str(state.get("service_revision", ""))
 
+        if op == "CreateCluster":
+            _replace_payload({"clusterName": f"stackyard-ecs-create-cluster-{int(time.time() * 1000) % 1000000}"})
+            return hydrated
+
+        if op == "DeleteAccountSetting":
+            _replace_payload({"name": "containerInsights"})
+            return hydrated
+
+        if op == "UpdateClusterSettings":
+            _replace_payload(
+                {
+                    "cluster": cluster_name,
+                    "settings": [{"name": "containerInsights", "value": "enabled"}],
+                }
+            )
+            return hydrated
+
         if op == "CreateService":
             service_name = f"{ECS_DEFAULT_SERVICE_NAME}-{int(time.time() * 1000) % 1000000}"
             state["service_name"] = service_name
@@ -46667,14 +47597,72 @@ def hydrate_payload_with_service_state(
             )
             return hydrated
 
+        if op == "RegisterContainerInstance":
+            _replace_payload(
+                {
+                    "cluster": cluster_name,
+                    "ec2InstanceId": f"i-stackyard-{int(time.time() * 1000) % 1000000}",
+                }
+            )
+            return hydrated
+
         if op == "StartTelemetrySession":
             _replace_payload({"cluster": cluster_name, "containerInstance": container_instance})
             return hydrated
 
-        if op == "SubmitContainerStateChange":
+        if op == "SubmitAttachmentStateChanges":
+            if not container_instance:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RegisterContainerInstance",
+                    payload={"cluster": cluster_name, "ec2InstanceId": f"i-stackyard-{int(time.time() * 1000) % 1000000}"},
+                )
+                container_instance = str(state.get("primary_container_instance", state.get("container_instance", container_instance)))
             _replace_payload(
                 {
                     "cluster": cluster_name,
+                    "containerInstance": container_instance,
+                    "attachments": [
+                        {
+                            "attachmentArn": f"arn:aws:ecs:{region}:123456789012:attachment/{cluster_name}/stackyard",
+                            "status": "ATTACHED",
+                        }
+                    ],
+                }
+            )
+            return hydrated
+
+        if op == "SubmitContainerStateChange":
+            if not container_instance:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RegisterContainerInstance",
+                    payload={"cluster": cluster_name, "ec2InstanceId": f"i-stackyard-{int(time.time() * 1000) % 1000000}"},
+                )
+                container_instance = str(state.get("primary_container_instance", state.get("container_instance", container_instance)))
+            if not task_arn:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RunTask",
+                    payload={
+                        "cluster": cluster_name,
+                        "taskDefinition": task_definition,
+                        "service": service_name,
+                        "count": 1,
+                        "launchType": "EC2",
+                    },
+                )
+                task_arn = str(state.get("primary_task_arn", state.get("task_arn", task_arn)))
+            _replace_payload(
+                {
+                    "cluster": cluster_name,
+                    "containerInstance": container_instance,
                     "task": task_arn,
                     "containerName": ECS_DEFAULT_CONTAINER_NAME,
                     "status": "RUNNING",
@@ -46684,6 +47672,21 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"SubmitTaskStateChange", "SubmitTaskStateChangeByAgent", "SubmitTaskStateChangeByManagedAgents"}:
+            if not task_arn:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RunTask",
+                    payload={
+                        "cluster": cluster_name,
+                        "taskDefinition": task_definition,
+                        "service": service_name,
+                        "count": 1,
+                        "launchType": "EC2",
+                    },
+                )
+                task_arn = str(state.get("primary_task_arn", state.get("task_arn", task_arn)))
             _replace_payload(
                 {
                     "cluster": cluster_name,
@@ -46706,6 +47709,21 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "UpdateServicePrimaryTaskSet":
+            if not task_set:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="CreateTaskSet",
+                    payload={
+                        "cluster": cluster_name,
+                        "service": service_name,
+                        "taskDefinition": task_definition,
+                        "launchType": "EC2",
+                        "scale": {"value": 100.0, "unit": "PERCENT"},
+                    },
+                )
+                task_set = str(state.get("task_set", task_set))
             _replace_payload({"cluster": cluster_name, "service": service_name, "primaryTaskSet": task_set})
             return hydrated
 
@@ -46823,6 +47841,20 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "ListTasks":
+            if not task_arn:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RunTask",
+                    payload={
+                        "cluster": cluster_name,
+                        "taskDefinition": task_definition,
+                        "service": service_name,
+                        "count": 1,
+                        "launchType": "EC2",
+                    },
+                )
             _replace_payload({"cluster": cluster_name, "serviceName": service_name, "desiredStatus": "RUNNING", "maxResults": 10})
             return hydrated
 
@@ -46950,7 +47982,79 @@ def hydrate_payload_with_service_state(
             _replace_payload({"taskDefinition": temp_td})
             return hydrated
 
+        if op == "UpdateContainerAgent":
+            if not container_instance:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RegisterContainerInstance",
+                    payload={"cluster": cluster_name, "ec2InstanceId": f"i-stackyard-{int(time.time() * 1000) % 1000000}"},
+                )
+                container_instance = str(state.get("primary_container_instance", state.get("container_instance", container_instance)))
+            _replace_payload({"cluster": cluster_name, "containerInstance": container_instance})
+            return hydrated
+
+        if op == "DeleteAttributes":
+            if not container_instance:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="RegisterContainerInstance",
+                    payload={"cluster": cluster_name, "ec2InstanceId": f"i-stackyard-{int(time.time() * 1000) % 1000000}"},
+                )
+                container_instance = str(state.get("primary_container_instance", state.get("container_instance", container_instance)))
+            ecs_invoke_raw_operation(
+                endpoint_url=endpoint_url,
+                region=region,
+                env=env,
+                operation="PutAttributes",
+                payload={
+                    "cluster": cluster_name,
+                    "attributes": [
+                        {
+                            "name": "stackyard",
+                            "value": "coverage",
+                            "targetType": "container-instance",
+                            "targetId": container_instance,
+                        }
+                    ],
+                },
+            )
+            _replace_payload(
+                {
+                    "cluster": cluster_name,
+                    "attributes": [
+                        {
+                            "name": "stackyard",
+                            "targetType": "container-instance",
+                            "targetId": container_instance,
+                        }
+                    ],
+                }
+            )
+            return hydrated
+
+        if op == "TagResource":
+            _replace_payload(
+                {
+                    "resourceArn": service_arn or ecs_service_arn(region, cluster_name, service_name),
+                    "tags": [{"key": "env", "value": "dev"}],
+                }
+            )
+            return hydrated
+
         if op == "StopServiceDeployment":
+            if not service_deployment:
+                ecs_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="DescribeServiceDeployments",
+                    payload={"cluster": cluster_name, "service": service_name},
+                )
+                service_deployment = str(state.get("service_deployment", service_deployment))
             _replace_payload(
                 {
                     "cluster": cluster_name,
@@ -47423,8 +48527,6 @@ def hydrate_payload_with_service_state(
             return payload
 
         if op in {
-            "AssociateEnvironmentOperationsRole",
-            "DisassociateEnvironmentOperationsRole",
             "AbortEnvironmentUpdate",
             "RebuildEnvironment",
             "RestartAppServer",
@@ -47456,6 +48558,10 @@ def hydrate_payload_with_service_state(
                     "OperationsRole": ELASTICBEANSTALK_DEFAULT_OPERATIONS_ROLE,
                 }
             )
+            return payload
+
+        if op == "DisassociateEnvironmentOperationsRole":
+            _replace_payload({"EnvironmentName": env_name})
             return payload
 
         if op == "ApplyEnvironmentManagedAction":
@@ -48777,6 +49883,11 @@ def run_endpoint(
     }:
         # These ECS operations currently require request shapes that diverge from the local awscli model.
         input_err = "unavailable_in_cli"
+    if endpoint.service == "ecs" and endpoint.operation in ECS_FORCE_RAW_FALLBACK_OPERATIONS:
+        # These ECS operations currently hit awscli request/response skew in CI:
+        # force the raw JSON path so coverage reflects Stackyard behavior, not
+        # CLI-side validation or empty-output formatting.
+        input_err = "unavailable_in_cli"
     if endpoint.service == "sns" and endpoint.operation == "OptInPhoneNumber":
         # awscli models this request as phoneNumber (lower camel), but SNS Query
         # expects PhoneNumber on the wire. Use raw Query invocation for portability.
@@ -49418,6 +50529,11 @@ def run_endpoint(
         # Use direct REST fallback for deterministic coverage and to avoid
         # awscli model/version skew for newly-added Security Lake operations.
         input_err = "unavailable_in_cli"
+    if endpoint.service == "identitystore":
+        # Force direct JSON fallback for deterministic coverage across awscli
+        # versions; Identity Store's union/document-shaped inputs can fail
+        # CLI-side validation before the request reaches Stackyard.
+        input_err = "unavailable_in_cli"
     if endpoint.service == "wafv2":
         # Force direct JSON-RPC fallback for deterministic local endpoint coverage.
         input_err = "unavailable_in_cli"
@@ -49436,6 +50552,14 @@ def run_endpoint(
     if endpoint.service == "s3vectors":
         # Keep coverage deterministic across awscli/model revisions and use the
         # in-repo JSON routes instead of service-model-specific endpoint shapes.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "controltower" and endpoint.operation in CONTROLTOWER_FORCE_RAW_FALLBACK_OPERATIONS:
+        # Older awscli/botocore builds can crash while formatting the enabled
+        # baseline/control read responses even when Stackyard returns valid JSON.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "s3tables" and endpoint.operation in S3TABLES_FORCE_RAW_FALLBACK_OPERATIONS:
+        # Local awscli s3tables models routinely lag the service surface and reject
+        # valid request shapes before Stackyard ever sees the request.
         input_err = "unavailable_in_cli"
     if input_err == "unavailable_in_cli":
         payload = build_raw_fallback_payload(endpoint)

@@ -197,6 +197,107 @@ func TestNeptuneStage5Lifecycle(t *testing.T) {
 	requireNeptuneOK(t, "DeleteEventSubscription", status, body)
 }
 
+func TestNeptuneStage5CompatibilityShapes(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+
+	clusterID := "neptune-stage5-compat-cluster"
+	globalID := "neptune-stage5-compat-global"
+	subscriptionName := "neptune-stage5-compat-sub"
+
+	status, body := neptuneFormRequest(t, ts, url.Values{
+		"Action":              []string{"CreateDBCluster"},
+		"DBClusterIdentifier": []string{clusterID},
+		"Engine":              []string{"neptune"},
+	})
+	requireNeptuneOK(t, "CreateDBCluster", status, body)
+
+	status, body = neptuneFormRequest(t, ts, url.Values{
+		"Action":                    []string{"CreateGlobalCluster"},
+		"GlobalClusterIdentifier":   []string{globalID},
+		"SourceDBClusterIdentifier": []string{clusterID},
+	})
+	requireNeptuneOK(t, "CreateGlobalCluster", status, body)
+
+	status, body = neptuneFormRequest(t, ts, url.Values{
+		"Action":           []string{"CreateEventSubscription"},
+		"SubscriptionName": []string{subscriptionName},
+		"SnsTopicArn":      []string{"arn:aws:sns:us-east-1:123456789012:neptune-stage5-topic"},
+		"SourceType":       []string{"db-cluster"},
+		"Enabled":          []string{"true"},
+	})
+	requireNeptuneOK(t, "CreateEventSubscription", status, body)
+
+	cases := []struct {
+		action string
+		params url.Values
+		want   string
+	}{
+		{
+			action: "DescribeEngineDefaultClusterParameters",
+			params: url.Values{
+				"Action":                        []string{"DescribeEngineDefaultClusterParameters"},
+				"DBClusterParameterGroupFamily": []string{"neptune1"},
+			},
+			want: "<EngineDefaults>",
+		},
+		{
+			action: "DescribeEngineDefaultParameters",
+			params: url.Values{
+				"Action":                 []string{"DescribeEngineDefaultParameters"},
+				"DBParameterGroupFamily": []string{"neptune1"},
+			},
+			want: "<EngineDefaults>",
+		},
+		{
+			action: "DescribeEventCategories",
+			params: url.Values{
+				"Action":     []string{"DescribeEventCategories"},
+				"SourceType": []string{"db-instance"},
+			},
+			want: "<EventCategoriesMapList>",
+		},
+		{
+			action: "AddSourceIdentifierToSubscription",
+			params: url.Values{
+				"Action":           []string{"AddSourceIdentifierToSubscription"},
+				"SubscriptionName": []string{subscriptionName},
+				"SourceIdentifier": []string{clusterID},
+				"SourceType":       []string{"db-cluster"},
+			},
+			want: "<EventSubscription>",
+		},
+		{
+			action: "RemoveSourceIdentifierFromSubscription",
+			params: url.Values{
+				"Action":           []string{"RemoveSourceIdentifierFromSubscription"},
+				"SubscriptionName": []string{subscriptionName},
+				"SourceIdentifier": []string{clusterID},
+				"SourceType":       []string{"db-cluster"},
+			},
+			want: "<EventSubscription>",
+		},
+		{
+			action: "RemoveFromGlobalCluster",
+			params: url.Values{
+				"Action":                  []string{"RemoveFromGlobalCluster"},
+				"GlobalClusterIdentifier": []string{globalID},
+				"DbClusterIdentifier":     []string{clusterID},
+			},
+			want: "<GlobalCluster>",
+		},
+	}
+
+	for _, tc := range cases {
+		status, body = neptuneFormRequest(t, ts, tc.params)
+		requireNeptuneOK(t, tc.action, status, body)
+		if !strings.Contains(body, tc.want) {
+			t.Fatalf("expected %s response to contain %s, got %s", tc.action, tc.want, body)
+		}
+	}
+}
+
 func TestNeptuneStage6Lifecycle(t *testing.T) {
 	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
 	ts := httptest.NewServer(srv.Handler())

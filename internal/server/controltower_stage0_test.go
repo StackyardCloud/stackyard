@@ -79,3 +79,140 @@ func TestControlTowerAllCatalogActionsDoNotReturnNotImplemented(t *testing.T) {
 		}
 	}
 }
+
+func TestControlTowerStoreGetResponsesMatchModeledShapes(t *testing.T) {
+	store := newControlTowerStore()
+
+	baseline := store.Handle(
+		"GetBaseline",
+		map[string]any{"baselineIdentifier": "arn:aws:controltower:us-east-1::baseline/aws-baseline/default"},
+		nil,
+		nil,
+	)
+	if _, ok := baseline["baseline"]; ok {
+		t.Fatalf("GetBaseline unexpectedly returned nested baseline wrapper: %#v", baseline)
+	}
+	if baseline["arn"] == nil || baseline["name"] == nil {
+		t.Fatalf("GetBaseline missing modeled root fields: %#v", baseline)
+	}
+
+	enabledBaseline := store.Handle(
+		"GetEnabledBaseline",
+		map[string]any{"enabledBaselineIdentifier": "arn:aws:controltower:us-east-1:123456789012:enabledbaseline/ebl-000001"},
+		nil,
+		nil,
+	)
+	if _, ok := enabledBaseline["enabledBaseline"]; ok {
+		t.Fatalf("GetEnabledBaseline unexpectedly returned legacy enabledBaseline wrapper: %#v", enabledBaseline)
+	}
+	enabledBaselineDetails, ok := enabledBaseline["enabledBaselineDetails"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetEnabledBaseline missing enabledBaselineDetails object: %#v", enabledBaseline)
+	}
+	driftSummary, ok := enabledBaselineDetails["driftStatusSummary"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetEnabledBaseline missing driftStatusSummary object: %#v", enabledBaselineDetails)
+	}
+	driftTypes, ok := driftSummary["types"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetEnabledBaseline drift types should be an object, got %#v", driftSummary["types"])
+	}
+	inheritance, ok := driftTypes["inheritance"].(map[string]any)
+	if !ok || inheritance["status"] != "IN_SYNC" {
+		t.Fatalf("GetEnabledBaseline inheritance drift summary mismatch: %#v", driftTypes)
+	}
+
+	enabledControl := store.Handle(
+		"GetEnabledControl",
+		map[string]any{"enabledControlIdentifier": "arn:aws:controltower:us-east-1:123456789012:enabledcontrol/ec-000001"},
+		nil,
+		nil,
+	)
+	if _, ok := enabledControl["enabledControl"]; ok {
+		t.Fatalf("GetEnabledControl unexpectedly returned legacy enabledControl wrapper: %#v", enabledControl)
+	}
+	enabledControlDetails, ok := enabledControl["enabledControlDetails"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetEnabledControl missing enabledControlDetails object: %#v", enabledControl)
+	}
+	controlDriftSummary, ok := enabledControlDetails["driftStatusSummary"].(map[string]any)
+	if !ok || controlDriftSummary["driftStatus"] != "IN_SYNC" {
+		t.Fatalf("GetEnabledControl drift summary mismatch: %#v", enabledControlDetails)
+	}
+	if _, ok := controlDriftSummary["types"]; ok {
+		t.Fatalf("GetEnabledControl drift summary unexpectedly returned legacy types object: %#v", controlDriftSummary)
+	}
+
+	landingZone := store.Handle(
+		"GetLandingZone",
+		map[string]any{"landingZoneIdentifier": "arn:aws:controltower:us-east-1:123456789012:landingzone/lz-000001"},
+		nil,
+		nil,
+	)
+	landingZoneDetails, ok := landingZone["landingZone"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetLandingZone missing landingZone object: %#v", landingZone)
+	}
+	if _, ok := landingZoneDetails["latestDriftStatus"]; ok {
+		t.Fatalf("GetLandingZone unexpectedly returned latestDriftStatus: %#v", landingZoneDetails)
+	}
+	if _, ok := landingZoneDetails["createdAt"]; ok {
+		t.Fatalf("GetLandingZone unexpectedly returned createdAt: %#v", landingZoneDetails)
+	}
+	manifest, ok := landingZoneDetails["manifest"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetLandingZone manifest should remain a document object: %#v", landingZoneDetails["manifest"])
+	}
+	if _, ok := manifest["governedRegions"].([]any); !ok {
+		t.Fatalf("GetLandingZone manifest missing governedRegions: %#v", manifest)
+	}
+}
+
+func TestControlTowerStoreOperationReadsReturnModeledWrappers(t *testing.T) {
+	store := newControlTowerStore()
+
+	updateLandingZone := store.Handle(
+		"UpdateLandingZone",
+		map[string]any{"landingZoneIdentifier": "arn:aws:controltower:us-east-1:123456789012:landingzone/lz-000001"},
+		nil,
+		nil,
+	)
+	landingZoneOpID := ctString(updateLandingZone["operationIdentifier"], "")
+	landingZoneOp := store.Handle(
+		"GetLandingZoneOperation",
+		map[string]any{"operationIdentifier": landingZoneOpID},
+		nil,
+		nil,
+	)
+	if _, ok := landingZoneOp["landingZoneOperation"]; ok {
+		t.Fatalf("GetLandingZoneOperation unexpectedly returned legacy wrapper: %#v", landingZoneOp)
+	}
+	operationDetails, ok := landingZoneOp["operationDetails"].(map[string]any)
+	if !ok || operationDetails["operationIdentifier"] != landingZoneOpID {
+		t.Fatalf("GetLandingZoneOperation details mismatch: %#v", landingZoneOp)
+	}
+
+	enableControl := store.Handle(
+		"EnableControl",
+		map[string]any{
+			"controlIdentifier": ctDefaultControlIdentifier(),
+			"targetIdentifier":  "ou-0000-example",
+		},
+		nil,
+		nil,
+	)
+	controlOpID := ctString(enableControl["operationIdentifier"], "")
+	controlOp := store.Handle(
+		"GetControlOperation",
+		map[string]any{"operationIdentifier": controlOpID},
+		nil,
+		nil,
+	)
+	controlDetails, ok := controlOp["controlOperation"].(map[string]any)
+	if !ok {
+		t.Fatalf("GetControlOperation missing controlOperation object: %#v", controlOp)
+	}
+	if controlDetails["operationIdentifier"] != controlOpID {
+		t.Fatalf("GetControlOperation operationIdentifier mismatch: %#v", controlDetails)
+	}
+}

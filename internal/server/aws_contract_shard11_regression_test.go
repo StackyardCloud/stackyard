@@ -30,6 +30,42 @@ func TestDirectConnectShard11RootShapes(t *testing.T) {
 		t.Fatalf("expected CreatePrivateVirtualInterface to return a root virtual interface shape, got %s", body)
 	}
 
+	resp = directConnectRequest(t, ts, "CreateTransitVirtualInterface", `{}`)
+	assertStatus(t, resp, http.StatusOK)
+	body = string(mustBody(t, resp))
+	var createTransit map[string]any
+	if err := json.Unmarshal([]byte(body), &createTransit); err != nil {
+		t.Fatalf("failed to decode CreateTransitVirtualInterface body: %v", err)
+	}
+	createTransitVIF, _ := createTransit["virtualInterface"].(map[string]any)
+	if len(createTransitVIF) == 0 {
+		t.Fatalf("expected CreateTransitVirtualInterface to wrap the virtual interface shape, got %s", body)
+	}
+	if _, ok := createTransit["virtualInterfaceId"]; ok {
+		t.Fatalf("expected CreateTransitVirtualInterface to omit root virtualInterfaceId, got %s", body)
+	}
+	if got, _ := createTransitVIF["virtualInterfaceType"].(string); got != "transit" {
+		t.Fatalf("expected CreateTransitVirtualInterface to return transit type, got %s", body)
+	}
+
+	resp = directConnectRequest(t, ts, "AllocateTransitVirtualInterface", `{}`)
+	assertStatus(t, resp, http.StatusOK)
+	body = string(mustBody(t, resp))
+	var allocateTransit map[string]any
+	if err := json.Unmarshal([]byte(body), &allocateTransit); err != nil {
+		t.Fatalf("failed to decode AllocateTransitVirtualInterface body: %v", err)
+	}
+	allocateTransitVIF, _ := allocateTransit["virtualInterface"].(map[string]any)
+	if len(allocateTransitVIF) == 0 {
+		t.Fatalf("expected AllocateTransitVirtualInterface to wrap the virtual interface shape, got %s", body)
+	}
+	if _, ok := allocateTransit["virtualInterfaceId"]; ok {
+		t.Fatalf("expected AllocateTransitVirtualInterface to omit root virtualInterfaceId, got %s", body)
+	}
+	if got, _ := allocateTransitVIF["virtualInterfaceType"].(string); got != "transit" {
+		t.Fatalf("expected AllocateTransitVirtualInterface to return transit type, got %s", body)
+	}
+
 	resp = directConnectRequest(t, ts, "DescribeLoa", `{}`)
 	assertStatus(t, resp, http.StatusOK)
 	body = string(mustBody(t, resp))
@@ -163,9 +199,8 @@ func TestNeptuneDataShard11ModeledShapes(t *testing.T) {
 	if !strings.Contains(body, `"lastTrxTimestamp"`) || !strings.Contains(body, `"commitTimestamp"`) {
 		t.Fatalf("expected GetPropertygraphStream to use modeled wire names, got %s", body)
 	}
-	if !strings.Contains(body, `"value":{"datatype":"String","value":"node"}`) &&
-		!strings.Contains(body, `"value":{"value":"node","datatype":"String"}`) {
-		t.Fatalf("expected GetPropertygraphStream to return object-valued propertygraph data, got %s", body)
+	if !strings.Contains(body, `"value":"node"`) {
+		t.Fatalf("expected GetPropertygraphStream to return document-valued propertygraph data, got %s", body)
 	}
 
 	status, body = neptuneDataCall(

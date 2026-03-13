@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"net/http"
@@ -62,14 +63,38 @@ func TestElasticBeanstalkStage0Lifecycle(t *testing.T) {
 	createEnv.Set("SolutionStackName", "64bit Amazon Linux 2 v3.6.3 running Go 1")
 	resp = elasticBeanstalkRequest(t, ts, createEnv)
 	assertStatus(t, resp, http.StatusOK)
+	createEnvBody := mustBody(t, resp)
 	var createEnvResp struct {
 		Result elasticBeanstalkCreateEnvironmentResult `xml:"CreateEnvironmentResult"`
 	}
-	if err := xml.Unmarshal(mustBody(t, resp), &createEnvResp); err != nil {
+	if err := xml.Unmarshal(createEnvBody, &createEnvResp); err != nil {
 		t.Fatalf("unmarshal create env: %v", err)
 	}
-	if createEnvResp.Result.Environment.EnvironmentId == nil || aws.ToString(createEnvResp.Result.Environment.EnvironmentId) == "" {
+	if bytes.Contains(createEnvBody, []byte("<Environment>")) {
+		t.Fatalf("expected CreateEnvironment response to use the modeled flat EnvironmentDescription shape")
+	}
+	if createEnvResp.Result.EnvironmentId == nil || aws.ToString(createEnvResp.Result.EnvironmentId) == "" {
 		t.Fatalf("expected environment id")
+	}
+
+	updateEnv := url.Values{}
+	updateEnv.Set("Action", "UpdateEnvironment")
+	updateEnv.Set("EnvironmentName", "demo-env")
+	updateEnv.Set("Description", "updated")
+	resp = elasticBeanstalkRequest(t, ts, updateEnv)
+	assertStatus(t, resp, http.StatusOK)
+	updateEnvBody := mustBody(t, resp)
+	var updateEnvResp struct {
+		Result elasticBeanstalkUpdateEnvironmentResult `xml:"UpdateEnvironmentResult"`
+	}
+	if err := xml.Unmarshal(updateEnvBody, &updateEnvResp); err != nil {
+		t.Fatalf("unmarshal update env: %v", err)
+	}
+	if bytes.Contains(updateEnvBody, []byte("<Environment>")) {
+		t.Fatalf("expected UpdateEnvironment response to use the modeled flat EnvironmentDescription shape")
+	}
+	if updateEnvResp.Result.EnvironmentName == nil || aws.ToString(updateEnvResp.Result.EnvironmentName) != "demo-env" {
+		t.Fatalf("expected updated environment name in flat response")
 	}
 
 	describeEnvs := url.Values{}
@@ -159,6 +184,19 @@ func TestElasticBeanstalkStage0Lifecycle(t *testing.T) {
 	terminateEnv.Set("EnvironmentName", "demo-env")
 	resp = elasticBeanstalkRequest(t, ts, terminateEnv)
 	assertStatus(t, resp, http.StatusOK)
+	terminateEnvBody := mustBody(t, resp)
+	var terminateEnvResp struct {
+		Result elasticBeanstalkTerminateEnvironmentResult `xml:"TerminateEnvironmentResult"`
+	}
+	if err := xml.Unmarshal(terminateEnvBody, &terminateEnvResp); err != nil {
+		t.Fatalf("unmarshal terminate env: %v", err)
+	}
+	if bytes.Contains(terminateEnvBody, []byte("<Environment>")) {
+		t.Fatalf("expected TerminateEnvironment response to use the modeled flat EnvironmentDescription shape")
+	}
+	if terminateEnvResp.Result.Status == "" {
+		t.Fatalf("expected terminate response to include environment status")
+	}
 
 	deleteTemplate := url.Values{}
 	deleteTemplate.Set("Action", "DeleteConfigurationTemplate")
@@ -279,6 +317,12 @@ func TestElasticBeanstalkStage0SDKClientLifecycle(t *testing.T) {
 		VersionLabel:      aws.String("v1"),
 	}); err != nil {
 		t.Fatalf("create environment: %v", err)
+	}
+	if _, err := client.UpdateEnvironment(ctx, &awseb.UpdateEnvironmentInput{
+		EnvironmentName: aws.String("sdk-env"),
+		Description:     aws.String("updated"),
+	}); err != nil {
+		t.Fatalf("update environment: %v", err)
 	}
 	if _, err := client.DescribeEnvironments(ctx, &awseb.DescribeEnvironmentsInput{ApplicationName: aws.String("sdk-app")}); err != nil {
 		t.Fatalf("describe environments: %v", err)

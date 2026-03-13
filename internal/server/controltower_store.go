@@ -40,15 +40,15 @@ func newControlTowerStore() *controlTowerStore {
 		tags:                  map[string]map[string]string{},
 	}
 
-	now := time.Now().UTC()
 	lzARN := "arn:aws:controltower:us-east-1:123456789012:landingzone/lz-000001"
 	s.landingZones[lzARN] = map[string]any{
-		"arn":               lzARN,
-		"version":           "3.2",
-		"manifest":          map[string]any{"governedRegions": []any{"us-east-1"}},
-		"latestDriftStatus": map[string]any{"status": "IN_SYNC"},
-		"createdAt":         now.Format(time.RFC3339),
-		"updatedAt":         now.Format(time.RFC3339),
+		"arn":                    lzARN,
+		"driftStatus":            map[string]any{"status": "IN_SYNC"},
+		"latestAvailableVersion": "3.2",
+		"manifest":               map[string]any{"governedRegions": []any{"us-east-1"}},
+		"remediationTypes":       []any{"ENABLED"},
+		"status":                 "ACTIVE",
+		"version":                "3.2",
 	}
 
 	baselineARN := "arn:aws:controltower:us-east-1::baseline/aws-baseline/default"
@@ -62,20 +62,22 @@ func newControlTowerStore() *controlTowerStore {
 	s.enabledBaselines[enabledBaselineARN] = map[string]any{
 		"arn":                enabledBaselineARN,
 		"baselineIdentifier": baselineARN,
-		"targetIdentifier":   "ou-0000-example",
-		"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-		"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+		"baselineVersion":    "1.0",
+		"driftStatusSummary": ctEnabledBaselineDriftStatusSummary(),
 		"parameters":         []any{},
+		"statusSummary":      ctEnablementStatusSummary(""),
+		"targetIdentifier":   "ou-0000-example",
 	}
 
 	enabledControlARN := "arn:aws:controltower:us-east-1:123456789012:enabledcontrol/ec-000001"
 	s.enabledControls[enabledControlARN] = map[string]any{
 		"arn":                enabledControlARN,
-		"controlIdentifier":  "AWS-GR_ENCRYPTED_VOLUMES",
-		"targetIdentifier":   "ou-0000-example",
-		"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-		"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+		"controlIdentifier":  ctDefaultControlIdentifier(),
+		"driftStatusSummary": ctEnabledControlDriftStatusSummary(),
 		"parameters":         []any{},
+		"statusSummary":      ctEnablementStatusSummary(""),
+		"targetIdentifier":   "ou-0000-example",
+		"targetRegions":      ctDefaultTargetRegions(),
 	}
 
 	s.tags[lzARN] = map[string]string{"stackyard": "true"}
@@ -121,7 +123,6 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 		if manifest := ctMapAny(payload, "manifest"); len(manifest) > 0 {
 			lz["manifest"] = manifest
 		}
-		lz["updatedAt"] = time.Now().UTC().Format(time.RFC3339)
 		op := s.newLandingZoneOperationLocked("UPDATE")
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "ResetLandingZone":
@@ -130,7 +131,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			lzARN = ctFirstLandingZoneARN(s.landingZones)
 		}
 		lz := s.ensureLandingZoneLocked(lzARN)
-		lz["latestDriftStatus"] = map[string]any{"status": "IN_SYNC"}
+		lz["driftStatus"] = map[string]any{"status": "IN_SYNC"}
 		op := s.newLandingZoneOperationLocked("RESET")
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "GetLandingZone":
@@ -145,10 +146,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			id = ctFirstMapKey(s.landingZoneOperations)
 		}
 		op := s.ensureLandingZoneOperationLocked(id)
-		return map[string]any{
-			"operationDetails":     ctCloneMap(op),
-			"landingZoneOperation": ctCloneMap(op),
-		}
+		return map[string]any{"operationDetails": ctCloneMap(op)}
 	case "ListLandingZones":
 		summaries := make([]any, 0, len(s.landingZones))
 		for _, lz := range ctSortedMapValues(s.landingZones) {
@@ -171,7 +169,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 		if baselineARN == "" {
 			baselineARN = ctFirstMapKey(s.baselines)
 		}
-		return map[string]any{"baseline": ctCloneMap(s.ensureBaselineLocked(baselineARN))}
+		return ctCloneMap(s.ensureBaselineLocked(baselineARN))
 	case "ListBaselines":
 		items := make([]any, 0, len(s.baselines))
 		for _, baseline := range ctSortedMapValues(s.baselines) {
@@ -192,12 +190,13 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 		s.enabledBaselines[enabledARN] = map[string]any{
 			"arn":                enabledARN,
 			"baselineIdentifier": baselineARN,
-			"targetIdentifier":   target,
-			"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-			"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+			"baselineVersion":    "1.0",
+			"driftStatusSummary": ctEnabledBaselineDriftStatusSummary(),
 			"parameters":         ctSliceAny(payload, "parameters"),
+			"targetIdentifier":   target,
 		}
 		op := s.newBaselineOperationLocked("ENABLE", enabledARN)
+		s.enabledBaselines[enabledARN]["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{
 			"arn":                 enabledARN,
 			"operationIdentifier": ctString(op["operationIdentifier"], ""),
@@ -216,8 +215,9 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabledARN = ctFirstMapKey(s.enabledBaselines)
 		}
 		enabled := s.ensureEnabledBaselineLocked(enabledARN)
-		enabled["driftStatusSummary"] = map[string]any{"types": []any{}, "status": "IN_SYNC"}
+		enabled["driftStatusSummary"] = ctEnabledBaselineDriftStatusSummary()
 		op := s.newBaselineOperationLocked("RESET", enabledARN)
+		enabled["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "UpdateEnabledBaseline":
 		enabledARN := ctEnabledBaselineIdentifier(payload, "enabledBaselineIdentifier")
@@ -229,6 +229,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabled["parameters"] = params
 		}
 		op := s.newBaselineOperationLocked("UPDATE", enabledARN)
+		enabled["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "GetEnabledBaseline":
 		enabledARN := ctEnabledBaselineIdentifier(payload, "enabledBaselineIdentifier")
@@ -236,10 +237,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabledARN = ctFirstMapKey(s.enabledBaselines)
 		}
 		enabled := ctCloneMap(s.ensureEnabledBaselineLocked(enabledARN))
-		return map[string]any{
-			"enabledBaselineDetails": enabled,
-			"enabledBaseline":        enabled,
-		}
+		return map[string]any{"enabledBaselineDetails": enabled}
 	case "ListEnabledBaselines":
 		items := make([]any, 0, len(s.enabledBaselines))
 		for _, eb := range ctSortedMapValues(s.enabledBaselines) {
@@ -259,18 +257,19 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 		return map[string]any{"baselineOperation": ctCloneMap(s.ensureBaselineOperationLocked(opID))}
 
 	case "EnableControl":
-		controlIdentifier := ctStringAny(payload, "controlIdentifier", "AWS-GR_ENCRYPTED_VOLUMES")
+		controlIdentifier := ctStringAny(payload, "controlIdentifier", ctDefaultControlIdentifier())
 		target := ctStringAny(payload, "targetIdentifier", "ou-0000-example")
 		enabledARN := ctEnabledControlARN(fmt.Sprintf("ec-%06d", s.nextIDLocked()))
 		s.enabledControls[enabledARN] = map[string]any{
 			"arn":                enabledARN,
 			"controlIdentifier":  controlIdentifier,
-			"targetIdentifier":   target,
-			"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-			"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+			"driftStatusSummary": ctEnabledControlDriftStatusSummary(),
 			"parameters":         ctSliceAny(payload, "parameters"),
+			"targetIdentifier":   target,
+			"targetRegions":      ctDefaultTargetRegions(),
 		}
 		op := s.newControlOperationLocked("ENABLE", enabledARN)
+		s.enabledControls[enabledARN]["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{
 			"arn":                 enabledARN,
 			"operationIdentifier": ctString(op["operationIdentifier"], ""),
@@ -289,8 +288,9 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabledARN = ctFirstMapKey(s.enabledControls)
 		}
 		enabled := s.ensureEnabledControlLocked(enabledARN)
-		enabled["driftStatusSummary"] = map[string]any{"types": []any{}, "status": "IN_SYNC"}
+		enabled["driftStatusSummary"] = ctEnabledControlDriftStatusSummary()
 		op := s.newControlOperationLocked("RESET", enabledARN)
+		enabled["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "UpdateEnabledControl":
 		enabledARN := ctEnabledControlIdentifier(payload, "enabledControlIdentifier")
@@ -302,6 +302,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabled["parameters"] = params
 		}
 		op := s.newControlOperationLocked("UPDATE", enabledARN)
+		enabled["statusSummary"] = ctEnablementStatusSummary(ctString(op["operationIdentifier"], ""))
 		return map[string]any{"operationIdentifier": ctString(op["operationIdentifier"], "")}
 	case "GetEnabledControl":
 		enabledARN := ctEnabledControlIdentifier(payload, "enabledControlIdentifier")
@@ -309,10 +310,7 @@ func (s *controlTowerStore) Handle(action string, payload map[string]any, pathPa
 			enabledARN = ctFirstMapKey(s.enabledControls)
 		}
 		enabled := ctCloneMap(s.ensureEnabledControlLocked(enabledARN))
-		return map[string]any{
-			"enabledControlDetails": enabled,
-			"enabledControl":        enabled,
-		}
+		return map[string]any{"enabledControlDetails": enabled}
 	case "ListEnabledControls":
 		items := make([]any, 0, len(s.enabledControls))
 		for _, ec := range ctSortedMapValues(s.enabledControls) {
@@ -378,16 +376,16 @@ func (s *controlTowerStore) ensureLandingZoneLocked(arn string) map[string]any {
 	if existing := s.landingZones[normalized]; existing != nil {
 		return existing
 	}
-	now := time.Now().UTC()
 	out := map[string]any{
-		"arn":     normalized,
-		"version": "3.2",
+		"arn":                    normalized,
+		"driftStatus":            map[string]any{"status": "IN_SYNC"},
+		"latestAvailableVersion": "3.2",
 		"manifest": map[string]any{
 			"governedRegions": []any{"us-east-1"},
 		},
-		"latestDriftStatus": map[string]any{"status": "IN_SYNC"},
-		"createdAt":         now.Format(time.RFC3339),
-		"updatedAt":         now.Format(time.RFC3339),
+		"remediationTypes": []any{"ENABLED"},
+		"status":           "ACTIVE",
+		"version":          "3.2",
 	}
 	s.landingZones[normalized] = out
 	return out
@@ -421,10 +419,11 @@ func (s *controlTowerStore) ensureEnabledBaselineLocked(arn string) map[string]a
 	out := map[string]any{
 		"arn":                normalized,
 		"baselineIdentifier": ctFirstMapKey(s.baselines),
-		"targetIdentifier":   "ou-0000-example",
-		"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-		"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+		"baselineVersion":    "1.0",
+		"driftStatusSummary": ctEnabledBaselineDriftStatusSummary(),
 		"parameters":         []any{},
+		"statusSummary":      ctEnablementStatusSummary(""),
+		"targetIdentifier":   "ou-0000-example",
 	}
 	s.enabledBaselines[normalized] = out
 	return out
@@ -440,11 +439,12 @@ func (s *controlTowerStore) ensureEnabledControlLocked(arn string) map[string]an
 	}
 	out := map[string]any{
 		"arn":                normalized,
-		"controlIdentifier":  "AWS-GR_ENCRYPTED_VOLUMES",
-		"targetIdentifier":   "ou-0000-example",
-		"statusSummary":      map[string]any{"status": "SUCCEEDED"},
-		"driftStatusSummary": map[string]any{"types": []any{}, "status": "IN_SYNC"},
+		"controlIdentifier":  ctDefaultControlIdentifier(),
+		"driftStatusSummary": ctEnabledControlDriftStatusSummary(),
 		"parameters":         []any{},
+		"statusSummary":      ctEnablementStatusSummary(""),
+		"targetIdentifier":   "ou-0000-example",
+		"targetRegions":      ctDefaultTargetRegions(),
 	}
 	s.enabledControls[normalized] = out
 	return out
@@ -461,7 +461,7 @@ func (s *controlTowerStore) ensureLandingZoneOperationLocked(id string) map[stri
 	now := time.Now().UTC()
 	out := map[string]any{
 		"operationIdentifier": normalized,
-		"operationType":       "UPDATE",
+		"operationType":       "UPDATE_ENABLED_BASELINE",
 		"status":              "SUCCEEDED",
 		"startTime":           now.Format(time.RFC3339),
 		"endTime":             now.Format(time.RFC3339),
@@ -481,7 +481,7 @@ func (s *controlTowerStore) ensureBaselineOperationLocked(id string) map[string]
 	now := time.Now().UTC()
 	out := map[string]any{
 		"operationIdentifier": normalized,
-		"operationType":       "UPDATE",
+		"operationType":       "UPDATE_ENABLED_CONTROL",
 		"status":              "SUCCEEDED",
 		"startTime":           now.Format(time.RFC3339),
 		"endTime":             now.Format(time.RFC3339),
@@ -524,14 +524,13 @@ func (s *controlTowerStore) newLandingZoneOperationLocked(opType string) map[str
 	return op
 }
 
-func (s *controlTowerStore) newBaselineOperationLocked(opType, enabledBaselineARN string) map[string]any {
+func (s *controlTowerStore) newBaselineOperationLocked(opType, _ string) map[string]any {
 	id := fmt.Sprintf("bop-%06d", s.nextIDLocked())
 	now := time.Now().UTC()
 	op := map[string]any{
 		"operationIdentifier": id,
-		"operationType":       strings.ToUpper(strings.TrimSpace(opType)),
+		"operationType":       ctBaselineOperationType(opType),
 		"status":              "SUCCEEDED",
-		"enabledBaselineArn":  strings.TrimSpace(enabledBaselineARN),
 		"startTime":           now.Format(time.RFC3339),
 		"endTime":             now.Format(time.RFC3339),
 	}
@@ -539,14 +538,13 @@ func (s *controlTowerStore) newBaselineOperationLocked(opType, enabledBaselineAR
 	return op
 }
 
-func (s *controlTowerStore) newControlOperationLocked(opType, enabledControlARN string) map[string]any {
+func (s *controlTowerStore) newControlOperationLocked(opType, _ string) map[string]any {
 	id := fmt.Sprintf("cop-%06d", s.nextIDLocked())
 	now := time.Now().UTC()
 	op := map[string]any{
 		"operationIdentifier": id,
-		"operationType":       strings.ToUpper(strings.TrimSpace(opType)),
+		"operationType":       ctControlOperationType(opType),
 		"status":              "SUCCEEDED",
-		"enabledControlArn":   strings.TrimSpace(enabledControlARN),
 		"startTime":           now.Format(time.RFC3339),
 		"endTime":             now.Format(time.RFC3339),
 	}
@@ -567,6 +565,62 @@ func (s *controlTowerStore) nextIDLocked() int64 {
 	id := s.next
 	s.next++
 	return id
+}
+
+func ctDefaultControlIdentifier() string {
+	return "arn:aws:controltower:us-east-1::control/AWS-GR_ENCRYPTED_VOLUMES"
+}
+
+func ctDefaultTargetRegions() []any {
+	return []any{map[string]any{"name": "us-east-1"}}
+}
+
+func ctEnablementStatusSummary(operationID string) map[string]any {
+	out := map[string]any{"status": "SUCCEEDED"}
+	if strings.TrimSpace(operationID) != "" {
+		out["lastOperationIdentifier"] = strings.TrimSpace(operationID)
+	}
+	return out
+}
+
+func ctEnabledBaselineDriftStatusSummary() map[string]any {
+	return map[string]any{
+		"types": map[string]any{
+			"inheritance": map[string]any{"status": "IN_SYNC"},
+		},
+	}
+}
+
+func ctEnabledControlDriftStatusSummary() map[string]any {
+	return map[string]any{
+		"driftStatus": "IN_SYNC",
+	}
+}
+
+func ctBaselineOperationType(opType string) string {
+	switch strings.ToUpper(strings.TrimSpace(opType)) {
+	case "ENABLE":
+		return "ENABLE_BASELINE"
+	case "DISABLE":
+		return "DISABLE_BASELINE"
+	case "RESET":
+		return "RESET_ENABLED_BASELINE"
+	default:
+		return "UPDATE_ENABLED_BASELINE"
+	}
+}
+
+func ctControlOperationType(opType string) string {
+	switch strings.ToUpper(strings.TrimSpace(opType)) {
+	case "ENABLE":
+		return "ENABLE_CONTROL"
+	case "DISABLE":
+		return "DISABLE_CONTROL"
+	case "RESET":
+		return "RESET_ENABLED_CONTROL"
+	default:
+		return "UPDATE_ENABLED_CONTROL"
+	}
 }
 
 func ctLandingZoneIdentifier(payload map[string]any, key string) string {

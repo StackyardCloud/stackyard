@@ -90,10 +90,10 @@ var neptuneQueryHandlers = func() map[string]func(*Server, http.ResponseWriter, 
 	handlers["ModifyEventSubscription"] = (*Server).handleNeptuneModifyEventSubscription
 	handlers["DeleteEventSubscription"] = (*Server).handleNeptuneDeleteEventSubscription
 	handlers["DescribeEventSubscriptions"] = (*Server).handleNeptuneDescribeEventSubscriptions
-	handlers["AddSourceIdentifierToSubscription"] = (*Server).handleNeptuneCompatNoop
-	handlers["RemoveSourceIdentifierFromSubscription"] = (*Server).handleNeptuneCompatNoop
+	handlers["AddSourceIdentifierToSubscription"] = (*Server).handleNeptuneUpdateEventSubscriptionSources
+	handlers["RemoveSourceIdentifierFromSubscription"] = (*Server).handleNeptuneUpdateEventSubscriptionSources
 	handlers["PromoteReadReplicaDBCluster"] = (*Server).handleNeptuneCompatNoop
-	handlers["RemoveFromGlobalCluster"] = (*Server).handleNeptuneCompatNoop
+	handlers["RemoveFromGlobalCluster"] = (*Server).handleNeptuneRemoveFromGlobalCluster
 
 	// Stage 6: tags/roles/pending maintenance and compatibility hardening.
 	handlers["AddTagsToResource"] = (*Server).handleNeptuneAddTagsToResource
@@ -101,6 +101,9 @@ var neptuneQueryHandlers = func() map[string]func(*Server, http.ResponseWriter, 
 	handlers["ApplyPendingMaintenanceAction"] = (*Server).handleNeptuneApplyPendingMaintenanceAction
 	handlers["AddRoleToDBCluster"] = (*Server).handleNeptuneAddRoleToDBCluster
 	handlers["RemoveRoleFromDBCluster"] = (*Server).handleNeptuneRemoveRoleFromDBCluster
+	handlers["DescribeEngineDefaultClusterParameters"] = (*Server).handleNeptuneDescribeEngineDefaults
+	handlers["DescribeEngineDefaultParameters"] = (*Server).handleNeptuneDescribeEngineDefaults
+	handlers["DescribeEventCategories"] = (*Server).handleNeptuneDescribeEventCategories
 
 	return handlers
 }()
@@ -645,6 +648,102 @@ func (s *Server) handleNeptuneCompatNoop(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	respondNeptuneXML(w, action, neptuneDynamicResult{XMLName: xml.Name{Local: action + "Result"}})
+}
+
+func (s *Server) handleNeptuneDescribeEngineDefaults(w http.ResponseWriter, r *http.Request) {
+	action := strings.TrimSpace(r.Form.Get("Action"))
+	if action == "" {
+		respondNeptuneErrorXML(w, http.StatusBadRequest, "MissingParameter", "Action is required")
+		return
+	}
+	family := strings.TrimSpace(firstNonEmpty(r.Form.Get("DBParameterGroupFamily"), r.Form.Get("DBClusterParameterGroupFamily")))
+	if family == "" {
+		family = "neptune1"
+	}
+	respondNeptuneXML(w, action, struct {
+		XMLName        xml.Name             `xml:""`
+		EngineDefaults rdsEngineDefaultsXML `xml:"EngineDefaults"`
+	}{
+		XMLName: xml.Name{Local: action + "Result"},
+		EngineDefaults: rdsEngineDefaultsXML{
+			DBParameterGroupFamily: family,
+			Parameters: []rdsParameterXML{
+				{
+					ParameterName:  "neptune_query_timeout",
+					ParameterValue: "120000",
+					ApplyType:      "dynamic",
+					ApplyMethod:    "immediate",
+					Source:         "engine-default",
+					IsModifiable:   true,
+				},
+			},
+		},
+	})
+}
+
+func (s *Server) handleNeptuneDescribeEventCategories(w http.ResponseWriter, r *http.Request) {
+	sourceType := strings.TrimSpace(r.Form.Get("SourceType"))
+	if sourceType == "" {
+		sourceType = "db-instance"
+	}
+	respondNeptuneXML(w, "DescribeEventCategories", struct {
+		XMLName                xml.Name                   `xml:"DescribeEventCategoriesResult"`
+		EventCategoriesMapList []rdsEventCategoriesMapXML `xml:"EventCategoriesMapList>EventCategoriesMap"`
+	}{
+		EventCategoriesMapList: []rdsEventCategoriesMapXML{
+			{
+				SourceType:      sourceType,
+				EventCategories: []string{"availability", "backup"},
+			},
+		},
+	})
+}
+
+func (s *Server) handleNeptuneUpdateEventSubscriptionSources(w http.ResponseWriter, r *http.Request) {
+	action := strings.TrimSpace(r.Form.Get("Action"))
+	if action == "" {
+		respondNeptuneErrorXML(w, http.StatusBadRequest, "MissingParameter", "Action is required")
+		return
+	}
+	sourceID := strings.TrimSpace(firstNonEmpty(r.Form.Get("SourceIdentifier"), r.Form.Get("SourceId")))
+	respondNeptuneXML(w, action, struct {
+		XMLName           xml.Name                `xml:""`
+		EventSubscription rdsEventSubscriptionXML `xml:"EventSubscription"`
+	}{
+		XMLName: xml.Name{Local: action + "Result"},
+		EventSubscription: rdsEventSubscriptionXML{
+			CustSubscriptionId:       firstNonEmpty(strings.TrimSpace(r.Form.Get("SubscriptionName")), "stackyard-neptune-subscription"),
+			SnsTopicArn:              firstNonEmpty(strings.TrimSpace(r.Form.Get("SnsTopicArn")), "arn:aws:sns:us-east-1:123456789012:stackyard-neptune-topic"),
+			SourceType:               firstNonEmpty(strings.TrimSpace(r.Form.Get("SourceType")), "db-cluster"),
+			SourceIdsList:            []string{sourceID},
+			EventCategoriesList:      []string{"availability"},
+			Enabled:                  true,
+			Status:                   "active",
+			EventSubscriptionArn:     "arn:aws:rds:us-east-1:123456789012:es:stackyard-neptune-subscription",
+			SubscriptionCreationTime: "2026-01-01T00:00:00Z",
+		},
+	})
+}
+
+func (s *Server) handleNeptuneRemoveFromGlobalCluster(w http.ResponseWriter, r *http.Request) {
+	globalClusterIdentifier := firstNonEmpty(strings.TrimSpace(r.Form.Get("GlobalClusterIdentifier")), "stackyard-neptune-global-cluster")
+	dbClusterIdentifier := firstNonEmpty(strings.TrimSpace(r.Form.Get("DbClusterIdentifier")), strings.TrimSpace(r.Form.Get("DBClusterIdentifier")), "stackyard-neptune-cluster")
+	respondNeptuneXML(w, "RemoveFromGlobalCluster", struct {
+		XMLName       xml.Name            `xml:"RemoveFromGlobalClusterResult"`
+		GlobalCluster rdsGlobalClusterXML `xml:"GlobalCluster"`
+	}{
+		GlobalCluster: rdsGlobalClusterXML{
+			GlobalClusterIdentifier: globalClusterIdentifier,
+			GlobalClusterArn:        "arn:aws:rds:us-east-1:123456789012:global-cluster:" + globalClusterIdentifier,
+			Status:                  "available",
+			GlobalClusterMembers: []rdsGlobalClusterMemberXML{
+				{
+					DBClusterArn: "arn:aws:rds:us-east-1:123456789012:cluster:" + dbClusterIdentifier,
+					IsWriter:     false,
+				},
+			},
+		},
+	})
 }
 
 func (s *Server) handleNeptuneCreateDBInstance(w http.ResponseWriter, r *http.Request) {

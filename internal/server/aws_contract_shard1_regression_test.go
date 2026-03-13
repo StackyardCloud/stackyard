@@ -54,6 +54,15 @@ func TestOpenSearchShard1ResponseShapes(t *testing.T) {
 	if err := json.Unmarshal(mustBody(t, resp), &dryRunProgress); err != nil {
 		t.Fatalf("unmarshal describe dry run progress response: %v", err)
 	}
+	dryRunProgressStatus, ok := dryRunProgress["DryRunProgressStatus"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected DryRunProgressStatus object, got %#v", dryRunProgress["DryRunProgressStatus"])
+	}
+	for _, key := range []string{"DryRunId", "DryRunStatus", "CreationDate", "UpdateDate"} {
+		if _, ok := dryRunProgressStatus[key]; !ok {
+			t.Fatalf("expected DryRunProgressStatus.%s in response: %#v", key, dryRunProgressStatus)
+		}
+	}
 	if _, ok := dryRunProgress["DryRunResults"].(map[string]any); !ok {
 		t.Fatalf("expected DryRunResults object, got %#v", dryRunProgress["DryRunResults"])
 	}
@@ -92,6 +101,9 @@ func TestOpenSearchShard1ResponseShapes(t *testing.T) {
 	}
 	if _, ok := dataSourceType["S3GlueDataCatalog"].(map[string]any); !ok {
 		t.Fatalf("expected S3GlueDataCatalog object, got %#v", dataSourceType["S3GlueDataCatalog"])
+	}
+	if _, ok := getDataSource["Status"]; ok {
+		t.Fatalf("expected GetDataSource response to omit legacy Status field: %#v", getDataSource)
 	}
 }
 
