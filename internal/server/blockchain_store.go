@@ -199,16 +199,14 @@ func blockchainTransactionPayload(network, contractAddress, address, transaction
 
 func blockchainTransactionEventPayload(network, contractAddress, address, transactionHash string) map[string]any {
 	return map[string]any{
-		"network":            network,
-		"transactionHash":    transactionHash,
-		"eventType":          "TRANSFER",
-		"from":               "0x2222222222222222222222222222222222222222",
-		"to":                 address,
-		"value":              "10",
-		"contractAddress":    contractAddress,
-		"tokenId":            "1",
-		"blockchainInstant":  map[string]any{"time": time.Now().UTC().Format(time.RFC3339)},
-		"confirmationStatus": "FINAL",
+		"network":         network,
+		"transactionHash": transactionHash,
+		"eventType":       "TRANSFER",
+		"from":            "0x2222222222222222222222222222222222222222",
+		"to":              address,
+		"value":           "10",
+		"contractAddress": contractAddress,
+		"tokenId":         "1",
 	}
 }
 

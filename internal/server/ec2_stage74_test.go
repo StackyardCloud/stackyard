@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	awsec2 "github.com/aws/aws-sdk-go-v2/service/ec2"
-	awsec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 func TestEC2Stage74SDKLifecycle(t *testing.T) {
@@ -37,9 +36,6 @@ func TestEC2Stage74SDKLifecycle(t *testing.T) {
 	if aws.ToBool(getInitialStatusOut.SerialConsoleAccessEnabled) {
 		t.Fatalf("expected serial console access to be disabled initially")
 	}
-	if getInitialStatusOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected initial serial console managed by: %q", getInitialStatusOut.ManagedBy)
-	}
 
 	enableSerialOut, err := client.EnableSerialConsoleAccess(ctx, &awsec2.EnableSerialConsoleAccessInput{})
 	if err != nil {
@@ -55,9 +51,6 @@ func TestEC2Stage74SDKLifecycle(t *testing.T) {
 	}
 	if !aws.ToBool(getEnabledStatusOut.SerialConsoleAccessEnabled) {
 		t.Fatalf("expected serial console access to be enabled after enable")
-	}
-	if getEnabledStatusOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected serial console managed by after enable: %q", getEnabledStatusOut.ManagedBy)
 	}
 
 	disableSerialOut, err := client.DisableSerialConsoleAccess(ctx, &awsec2.DisableSerialConsoleAccessInput{})

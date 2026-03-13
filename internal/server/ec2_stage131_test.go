@@ -107,9 +107,6 @@ func TestEC2Stage131SDKLifecycle(t *testing.T) {
 		t.Fatalf("unexpected purchase capacity block output: %#v", purchaseCapacityBlockOut)
 	}
 	capacityReservationID := aws.ToString(purchaseCapacityBlockOut.CapacityReservation.CapacityReservationId)
-	if len(purchaseCapacityBlockOut.CapacityBlocks) == 0 {
-		t.Fatalf("expected purchased capacity blocks")
-	}
 
 	purchaseCapacityBlockExtensionOut, err := client.PurchaseCapacityBlockExtension(ctx, &awsec2.PurchaseCapacityBlockExtensionInput{
 		CapacityBlockExtensionOfferingId: aws.String("cbext-stage131"),

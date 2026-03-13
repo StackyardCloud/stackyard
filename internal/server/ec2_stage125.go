@@ -300,7 +300,6 @@ func ec2Stage125IpamDiscoveredAccountItemsFrom(in []ec2svc.IpamDiscoveredAccount
 			DiscoveryRegion:             item.DiscoveryRegion,
 			LastAttemptedDiscoveryTime:  ec2TimeString(item.LastAttemptedDiscoveryTime),
 			LastSuccessfulDiscoveryTime: ec2TimeString(item.LastSuccessfulDiscoveryTime),
-			OrganizationalUnitID:        item.OrganizationalUnitID,
 		}
 		if item.FailureReason != nil {
 			entry.FailureReason = &ec2Stage125IpamDiscoveryFailureReasonItem{
@@ -376,7 +375,6 @@ func ec2Stage125IpamDiscoveredResourceCidrItemsFrom(in []ec2svc.IpamDiscoveredRe
 		entry := ec2Stage125IpamDiscoveredResourceCidrItem{
 			AvailabilityZoneID:               item.AvailabilityZoneID,
 			IpamResourceDiscoveryID:          item.IpamResourceDiscoveryID,
-			IpSource:                         item.IpSource,
 			IpUsage:                          item.IpUsage,
 			NetworkInterfaceAttachmentStatus: item.NetworkInterfaceAttachmentStatus,
 			ResourceCidr:                     item.ResourceCidr,
@@ -385,7 +383,6 @@ func ec2Stage125IpamDiscoveredResourceCidrItemsFrom(in []ec2svc.IpamDiscoveredRe
 			ResourceRegion:                   item.ResourceRegion,
 			ResourceType:                     item.ResourceType,
 			SampleTime:                       ec2TimeString(item.SampleTime),
-			SubnetID:                         item.SubnetID,
 			VpcID:                            item.VpcID,
 		}
 		if len(item.ResourceTags) > 0 {
@@ -538,7 +535,6 @@ type ec2Stage125IpamDiscoveredAccountItem struct {
 	FailureReason               *ec2Stage125IpamDiscoveryFailureReasonItem `xml:"failureReason,omitempty"`
 	LastAttemptedDiscoveryTime  string                                     `xml:"lastAttemptedDiscoveryTime,omitempty"`
 	LastSuccessfulDiscoveryTime string                                     `xml:"lastSuccessfulDiscoveryTime,omitempty"`
-	OrganizationalUnitID        string                                     `xml:"organizationalUnitId,omitempty"`
 }
 
 type ec2Stage125IpamDiscoveryFailureReasonItem struct {
@@ -618,7 +614,6 @@ type ec2Stage125IpamDiscoveredResourceCidrSet struct {
 type ec2Stage125IpamDiscoveredResourceCidrItem struct {
 	AvailabilityZoneID               string                         `xml:"availabilityZoneId,omitempty"`
 	IpamResourceDiscoveryID          string                         `xml:"ipamResourceDiscoveryId,omitempty"`
-	IpSource                         string                         `xml:"ipSource,omitempty"`
 	IpUsage                          *float64                       `xml:"ipUsage,omitempty"`
 	NetworkInterfaceAttachmentStatus string                         `xml:"networkInterfaceAttachmentStatus,omitempty"`
 	ResourceCidr                     string                         `xml:"resourceCidr,omitempty"`
@@ -628,7 +623,6 @@ type ec2Stage125IpamDiscoveredResourceCidrItem struct {
 	ResourceTagSet                   *ec2Stage125IpamResourceTagSet `xml:"resourceTagSet,omitempty"`
 	ResourceType                     string                         `xml:"resourceType,omitempty"`
 	SampleTime                       string                         `xml:"sampleTime,omitempty"`
-	SubnetID                         string                         `xml:"subnetId,omitempty"`
 	VpcID                            string                         `xml:"vpcId,omitempty"`
 }
 

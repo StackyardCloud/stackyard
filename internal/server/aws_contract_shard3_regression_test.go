@@ -198,9 +198,27 @@ func TestRoute53Shard3CreateAndListShapes(t *testing.T) {
 	resp = route53Request(t, ts, http.MethodPost, "/2013-04-01/hostedzone", "ListHostedZones", nil, nil)
 	assertStatus(t, resp, http.StatusOK)
 	body = string(mustBody(t, resp))
-	for _, fragment := range []string{"<Marker>", "<IsTruncated>false</IsTruncated>", "<MaxItems>100</MaxItems>"} {
+	for _, fragment := range []string{"<Marker>ZSTACKYARD", "<IsTruncated>false</IsTruncated>", "<MaxItems>100</MaxItems>"} {
 		if !strings.Contains(body, fragment) {
 			t.Fatalf("expected list hosted zones body to include %s, got %q", fragment, body)
+		}
+	}
+
+	resp = route53Request(t, ts, http.MethodPost, "/2013-04-01/healthcheck", "ListHealthChecks", nil, nil)
+	assertStatus(t, resp, http.StatusOK)
+	body = string(mustBody(t, resp))
+	for _, fragment := range []string{"<Marker>hc-stackyard-", "<IsTruncated>false</IsTruncated>", "<MaxItems>100</MaxItems>"} {
+		if !strings.Contains(body, fragment) {
+			t.Fatalf("expected list health checks body to include %s, got %q", fragment, body)
+		}
+	}
+
+	resp = route53Request(t, ts, http.MethodGet, "/2013-04-01/hostedzone/ZSTACKYARD01/rrset", "ListResourceRecordSets", nil, nil)
+	assertStatus(t, resp, http.StatusOK)
+	body = string(mustBody(t, resp))
+	for _, fragment := range []string{"<IsTruncated>false</IsTruncated>", "<MaxItems>100</MaxItems>", "<ResourceRecordSets>"} {
+		if !strings.Contains(body, fragment) {
+			t.Fatalf("expected list resource record sets body to include %s, got %q", fragment, body)
 		}
 	}
 
@@ -304,5 +322,8 @@ func TestSWFShard3DescribeAndPollShapes(t *testing.T) {
 	}
 	if pollDecisionOut.TaskToken == "" || pollDecisionOut.StartedEventID == 0 || len(pollDecisionOut.Events) == 0 {
 		t.Fatalf("expected poll for decision task fields, got %+v", pollDecisionOut)
+	}
+	if _, ok := pollDecisionOut.Events[0]["eventTimestamp"]; !ok {
+		t.Fatalf("expected poll for decision task eventTimestamp, got %+v", pollDecisionOut.Events[0])
 	}
 }

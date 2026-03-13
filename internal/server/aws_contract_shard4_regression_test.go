@@ -52,6 +52,8 @@ func TestBlockchainShard4ListShapesOmitLegacyFields(t *testing.T) {
 		"spentVoutTransactionId",
 		"spentVoutTransactionHash",
 		"spentVoutIndex",
+		"blockchainInstant",
+		"confirmationStatus",
 	} {
 		if _, ok := eventsOut.Events[0][key]; ok {
 			t.Fatalf("expected transaction event to omit legacy field %q", key)
@@ -283,5 +285,21 @@ func TestLambdaShard4DurableExecutionShapes(t *testing.T) {
 	}
 	if stopOut.StopTimestamp == "" {
 		t.Fatalf("expected StopTimestamp in stop durable execution response")
+	}
+
+	resp = lambdaRequest(
+		t,
+		ts,
+		http.MethodPost,
+		"/2025-12-01/durable-execution-callbacks/cb-shard4/succeed",
+		[]byte("c3RhY2t5YXJk"),
+	)
+	assertStatus(t, resp, http.StatusOK)
+	var callbackOut map[string]any
+	if err := json.Unmarshal(mustBody(t, resp), &callbackOut); err != nil {
+		t.Fatalf("unmarshal durable execution callback success response: %v", err)
+	}
+	if len(callbackOut) != 0 {
+		t.Fatalf("expected empty durable execution callback success response, got %+v", callbackOut)
 	}
 }

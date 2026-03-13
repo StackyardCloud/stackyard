@@ -37,6 +37,8 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 	switch action {
 	case "AcceptInboundConnection", "DeleteInboundConnection", "DeleteOutboundConnection", "RejectInboundConnection":
 		return map[string]any{"Connection": s.connectionStatus(pathParams)}
+	case "AddDataSource", "UpdateDataSource":
+		return map[string]any{"Message": "updated"}
 	case "AssociatePackage", "DissociatePackage":
 		return map[string]any{"DomainPackageDetails": s.domainPackageDetails(domainName)}
 	case "AuthorizeVpcEndpointAccess":
@@ -76,9 +78,9 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 		return map[string]any{
 			"DomainState":                 "Active",
 			"ClusterHealth":               "Green",
-			"AvailabilityZoneCount":       1,
-			"ActiveAvailabilityZoneCount": 1,
-			"DataNodeCount":               1,
+			"AvailabilityZoneCount":       "1",
+			"ActiveAvailabilityZoneCount": "1",
+			"DataNodeCount":               "1",
 		}
 	case "DescribeDomainNodes":
 		return map[string]any{"DomainNodesStatusList": []any{}}
@@ -87,13 +89,13 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 	case "DescribeDryRunProgress":
 		return map[string]any{
 			"DryRunProgressStatus": map[string]any{},
-			"DryRunConfig":         map[string]any{},
-			"DryRunResults":        []any{},
+			"DryRunConfig":         s.domainStatus(domainName),
+			"DryRunResults":        map[string]any{},
 		}
 	case "DescribeInboundConnections", "DescribeOutboundConnections":
 		return map[string]any{"Connections": []any{}, "NextToken": ""}
 	case "DescribeInstanceTypeLimits":
-		return map[string]any{"LimitsByRole": []any{}}
+		return map[string]any{"LimitsByRole": map[string]any{"data": map[string]any{}}}
 	case "DescribePackages":
 		return map[string]any{"PackageDetailsList": []any{}, "NextToken": ""}
 	case "DescribeReservedInstanceOfferings":
@@ -109,7 +111,7 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 		return map[string]any{"CompatibleVersions": []any{}}
 	case "GetDataSource":
 		return map[string]any{
-			"DataSourceType": "S3",
+			"DataSourceType": s.dataSourceType(),
 			"Name":           s.resolveDataSourceName(payload, pathParams),
 			"Description":    "stackyard data source",
 			"Status":         "ACTIVE",
@@ -171,7 +173,7 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 	case "StartDomainMaintenance":
 		return map[string]any{"MaintenanceId": "maintenance-1234567890abcdef0"}
 	case "UpdateScheduledAction":
-		return map[string]any{"ScheduledAction": map[string]any{}}
+		return map[string]any{"ScheduledAction": s.scheduledAction(payload)}
 	case "UpgradeDomain":
 		return map[string]any{
 			"UpgradeId":             "upgrade-1234567890abcdef0",
@@ -228,6 +230,34 @@ func (s *openSearchStore) packageDetails(payload map[string]any, pathParams map[
 		"PackageName":        opensearchFirstNonEmpty(opensearchPayloadString(payload, "PackageName"), "stackyard-package"),
 		"PackageDescription": "stackyard package",
 		"PackageStatus":      "AVAILABLE",
+	}
+}
+
+func (s *openSearchStore) dataSourceType() map[string]any {
+	return map[string]any{
+		"S3GlueDataCatalog": map[string]any{
+			"RoleArn": "arn:aws:iam::123456789012:role/stackyard-opensearch-data-source",
+		},
+	}
+}
+
+func (s *openSearchStore) scheduledAction(payload map[string]any) map[string]any {
+	actionID := opensearchFirstNonEmpty(
+		opensearchPayloadString(payload, "ActionID"),
+		opensearchPayloadString(payload, "ActionId"),
+		"scheduled-action-000001",
+	)
+	actionType := opensearchFirstNonEmpty(opensearchPayloadString(payload, "ActionType"), "SERVICE_SOFTWARE_UPDATE")
+	return map[string]any{
+		"Id":            actionID,
+		"Type":          actionType,
+		"Severity":      "HIGH",
+		"ScheduledTime": time.Now().UTC().Add(time.Hour).UnixMilli(),
+		"Description":   "stackyard scheduled action",
+		"ScheduledBy":   "SYSTEM",
+		"Status":        "PENDING_UPDATE",
+		"Mandatory":     false,
+		"Cancellable":   true,
 	}
 }
 

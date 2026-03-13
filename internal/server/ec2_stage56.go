@@ -71,7 +71,6 @@ func ec2VpcEndpointItemFrom(in ec2svc.VpcEndpoint) ec2VpcEndpointItem {
 		RouteTableIDSet:   ec2Stage56StringSet{Items: append([]string(nil), in.RouteTableIDs...)},
 		ServiceName:       in.ServiceName,
 		ServiceNetworkARN: in.ServiceNetworkARN,
-		ServiceRegion:     in.ServiceRegion,
 		State:             in.State,
 		SubnetIDSet:       ec2Stage56StringSet{Items: append([]string(nil), in.SubnetIDs...)},
 		TagSet:            ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
@@ -102,7 +101,6 @@ type ec2VpcEndpointItem struct {
 	RouteTableIDSet   ec2Stage56StringSet `xml:"routeTableIdSet"`
 	ServiceName       string              `xml:"serviceName,omitempty"`
 	ServiceNetworkARN string              `xml:"serviceNetworkArn,omitempty"`
-	ServiceRegion     string              `xml:"serviceRegion,omitempty"`
 	State             string              `xml:"state,omitempty"`
 	SubnetIDSet       ec2Stage56StringSet `xml:"subnetIdSet"`
 	TagSet            ec2TagSet           `xml:"tagSet"`

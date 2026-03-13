@@ -68,7 +68,7 @@ func (s *route53Store) Handle(action string, pathParams map[string]string) route
 		return route53XMLResult(
 			"ListHostedZonesResponse",
 			nil,
-			"<HostedZones>"+route53HostedZoneXML(hostedZoneID)+"</HostedZones><IsTruncated>false</IsTruncated><Marker></Marker><MaxItems>100</MaxItems>",
+			"<HostedZones>"+route53HostedZoneXML(hostedZoneID)+"</HostedZones><IsTruncated>false</IsTruncated><Marker>"+hostedZoneID+"</Marker><MaxItems>100</MaxItems>",
 		)
 	case "ListHostedZonesByName":
 		return route53XMLResult(
@@ -95,7 +95,7 @@ func (s *route53Store) Handle(action string, pathParams map[string]string) route
 		return route53XMLResult(
 			"ListResourceRecordSetsResponse",
 			nil,
-			"<ResourceRecordSets><ResourceRecordSet><Name>stackyard.example.com.</Name><Type>A</Type><TTL>60</TTL><ResourceRecords><ResourceRecord><Value>127.0.0.1</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></ResourceRecordSets><IsTruncated>false</IsTruncated><MaxItems>100</MaxItems>",
+			"<IsTruncated>false</IsTruncated><MaxItems>100</MaxItems><ResourceRecordSets><ResourceRecordSet><Name>stackyard.example.com.</Name><Type>A</Type><TTL>60</TTL><ResourceRecords><ResourceRecord><Value>127.0.0.1</Value></ResourceRecord></ResourceRecords></ResourceRecordSet></ResourceRecordSets>",
 		)
 
 	case "CreateHealthCheck":
@@ -115,7 +115,7 @@ func (s *route53Store) Handle(action string, pathParams map[string]string) route
 		return route53XMLResult(
 			"ListHealthChecksResponse",
 			nil,
-			"<HealthChecks>"+route53HealthCheckXML(healthCheckID)+"</HealthChecks><IsTruncated>false</IsTruncated><Marker></Marker><MaxItems>100</MaxItems>",
+			"<HealthChecks>"+route53HealthCheckXML(healthCheckID)+"</HealthChecks><IsTruncated>false</IsTruncated><Marker>"+healthCheckID+"</Marker><MaxItems>100</MaxItems>",
 		)
 	case "GetHealthCheckStatus":
 		return route53XMLResult("GetHealthCheckStatusResponse", nil, route53HealthCheckObservationsXML(now, "Success: HTTP Status Code 200, OK"))

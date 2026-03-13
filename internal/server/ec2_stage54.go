@@ -43,7 +43,6 @@ func ec2ConnectionNotificationItemFrom(in ec2svc.VpcEndpointConnectionNotificati
 		ConnectionNotificationState: in.ConnectionNotificationState,
 		ConnectionNotificationType:  in.ConnectionNotificationType,
 		ServiceID:                   in.ServiceID,
-		ServiceRegion:               in.ServiceRegion,
 		VpcEndpointID:               in.VpcEndpointID,
 	}
 }
@@ -63,6 +62,5 @@ type ec2ConnectionNotificationItem struct {
 	ConnectionNotificationState string   `xml:"connectionNotificationState,omitempty"`
 	ConnectionNotificationType  string   `xml:"connectionNotificationType,omitempty"`
 	ServiceID                   string   `xml:"serviceId,omitempty"`
-	ServiceRegion               string   `xml:"serviceRegion,omitempty"`
 	VpcEndpointID               string   `xml:"vpcEndpointId,omitempty"`
 }

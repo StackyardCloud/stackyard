@@ -180,7 +180,6 @@ func ec2SecurityGroupRuleItems(in []ec2svc.SecurityGroupRule) []ec2SecurityGroup
 			GroupOwnerID:         rule.GroupOwnerID,
 			IPProtocol:           rule.IPProtocol,
 			IsEgress:             rule.IsEgress,
-			SecurityGroupRuleARN: rule.SecurityGroupRuleARN,
 			SecurityGroupRuleID:  rule.SecurityGroupRuleID,
 			ToPort:               rule.ToPort,
 		})
@@ -229,7 +228,6 @@ type ec2SecurityGroupRuleItem struct {
 	IPProtocol           string `xml:"ipProtocol,omitempty"`
 	IsEgress             bool   `xml:"isEgress"`
 	PrefixListID         string `xml:"prefixListId,omitempty"`
-	SecurityGroupRuleARN string `xml:"securityGroupRuleArn,omitempty"`
 	SecurityGroupRuleID  string `xml:"securityGroupRuleId,omitempty"`
 	ToPort               int32  `xml:"toPort,omitempty"`
 }

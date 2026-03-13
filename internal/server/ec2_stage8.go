@@ -220,7 +220,6 @@ func ec2ImageItems(in []ec2svc.Image) []ec2ImageItem {
 			Name:                     image.Name,
 			Description:              image.Description,
 			DeprecationTime:          ec2TimeString(image.DeprecationTime),
-			DeregistrationProtection: image.DeregistrationProtection,
 			RootDeviceType:           image.RootDeviceType,
 			RootDeviceName:           image.RootDeviceName,
 			VirtualizationType:       image.VirtualizationType,
@@ -280,7 +279,6 @@ type ec2ImageItem struct {
 	Name                     string    `xml:"name,omitempty"`
 	Description              string    `xml:"description,omitempty"`
 	DeprecationTime          string    `xml:"deprecationTime,omitempty"`
-	DeregistrationProtection string    `xml:"deregistrationProtection,omitempty"`
 	RootDeviceType           string    `xml:"rootDeviceType,omitempty"`
 	RootDeviceName           string    `xml:"rootDeviceName,omitempty"`
 	VirtualizationType       string    `xml:"virtualizationType,omitempty"`

@@ -72,7 +72,6 @@ func (s *Server) handleEC2Stage72Action(w http.ResponseWriter, r *http.Request, 
 			XMLName:   xml.Name{Local: "GetSnapshotBlockPublicAccessStateResponse"},
 			Xmlns:     ec2Namespace,
 			RequestID: "stackyard-request",
-			ManagedBy: state.ManagedBy,
 			State:     state.State,
 		})
 		return true
@@ -99,6 +98,5 @@ type ec2GetSnapshotBlockPublicAccessStateResponse struct {
 	XMLName   xml.Name `xml:"GetSnapshotBlockPublicAccessStateResponse"`
 	Xmlns     string   `xml:"xmlns,attr"`
 	RequestID string   `xml:"requestId"`
-	ManagedBy string   `xml:"managedBy,omitempty"`
 	State     string   `xml:"state,omitempty"`
 }

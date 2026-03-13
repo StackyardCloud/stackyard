@@ -281,7 +281,6 @@ func ec2Stage110TrafficMirrorFilterRuleItemFrom(in ec2svc.TrafficMirrorFilterRul
 		RuleNumber:                &in.RuleNumber,
 		SourceCidrBlock:           in.SourceCidrBlock,
 		SourcePortRange:           ec2Stage110TrafficMirrorPortRangeItem{FromPort: in.SourcePortRange.FromPort, ToPort: in.SourcePortRange.ToPort},
-		TagSet:                    ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
 		TrafficDirection:          in.TrafficDirection,
 		TrafficMirrorFilterID:     in.TrafficMirrorFilterID,
 		TrafficMirrorFilterRuleID: in.TrafficMirrorFilterRuleID,
@@ -445,7 +444,6 @@ type ec2Stage110TrafficMirrorFilterRuleItem struct {
 	RuleNumber                *int32                                `xml:"ruleNumber,omitempty"`
 	SourceCidrBlock           string                                `xml:"sourceCidrBlock,omitempty"`
 	SourcePortRange           ec2Stage110TrafficMirrorPortRangeItem `xml:"sourcePortRange"`
-	TagSet                    ec2TagSet                             `xml:"tagSet"`
 	TrafficDirection          string                                `xml:"trafficDirection,omitempty"`
 	TrafficMirrorFilterID     string                                `xml:"trafficMirrorFilterId,omitempty"`
 	TrafficMirrorFilterRuleID string                                `xml:"trafficMirrorFilterRuleId,omitempty"`

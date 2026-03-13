@@ -38,8 +38,37 @@ func TestCloudDirectoryStoreReturnsModeledResponseShapes(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected AttachTypedLink to return TypedLinkSpecifier, got %#v", attachTypedLink)
 	}
-	if _, ok := gotSpecifier["TypedLinkFacet"].(map[string]any); !ok {
+	gotFacet, ok := gotSpecifier["TypedLinkFacet"].(map[string]any)
+	if !ok {
 		t.Fatalf("expected AttachTypedLink to preserve TypedLinkFacet, got %#v", gotSpecifier)
+	}
+	if gotFacet["TypedLinkName"] != "stackyard-typed-link" {
+		t.Fatalf("expected AttachTypedLink to return TypedLinkName, got %#v", gotFacet)
+	}
+
+	attachTypedLinkTopLevel := store.Handle(
+		"AttachTypedLink",
+		map[string]any{
+			"TypedLinkFacet":          typedLinkSpecifier["TypedLinkFacet"],
+			"SourceObjectReference":   typedLinkSpecifier["SourceObjectReference"],
+			"TargetObjectReference":   typedLinkSpecifier["TargetObjectReference"],
+			"IdentityAttributeValues": typedLinkSpecifier["IdentityAttributeValues"],
+		},
+		nil,
+		nil,
+	)
+	topLevelSpecifier, ok := attachTypedLinkTopLevel["TypedLinkSpecifier"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected top-level AttachTypedLink to return TypedLinkSpecifier, got %#v", attachTypedLinkTopLevel)
+	}
+	topLevelFacet, ok := topLevelSpecifier["TypedLinkFacet"].(map[string]any)
+	if !ok || topLevelFacet["TypedLinkName"] != "stackyard-typed-link" {
+		t.Fatalf("expected top-level AttachTypedLink to normalize TypedLinkFacet, got %#v", topLevelSpecifier)
+	}
+
+	listIncoming := store.Handle("ListIncomingTypedLinks", map[string]any{}, nil, nil)
+	if _, ok := listIncoming["LinkSpecifiers"].([]any); !ok {
+		t.Fatalf("expected ListIncomingTypedLinks to return LinkSpecifiers, got %#v", listIncoming)
 	}
 
 	listOutgoing := store.Handle("ListOutgoingTypedLinks", map[string]any{}, nil, nil)

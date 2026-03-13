@@ -3298,6 +3298,9 @@ type redshiftCluster struct {
 	SnapshotScheduleIDs        []string
 	LakehouseConfiguration     string
 	AquaConfigurationStatus    string
+	ResizeTargetNodeType       string
+	ResizeTargetNumberOfNodes  int
+	ResizeStatus               string
 }
 
 type redshiftSnapshot struct {
@@ -3593,6 +3596,7 @@ type redshiftClusterXML struct {
 	IamRoles                   []redshiftIamRoleXML                     `xml:"IamRoles>IamRole,omitempty"`
 	ClusterDbRevision          string                                   `xml:"ClusterDbRevision,omitempty"`
 	ClusterSnapshotCopyStatus  *redshiftClusterSnapshotCopyStatusXML    `xml:"ClusterSnapshotCopyStatus,omitempty"`
+	ResizeInfo                 *redshiftResizeInfoXML                   `xml:"ResizeInfo,omitempty"`
 }
 
 type redshiftClusterSnapshotCopyStatusXML struct {
@@ -7650,7 +7654,10 @@ func (s *Server) handleRedshiftResizeCluster(w http.ResponseWriter, r *http.Requ
 		CreatedAt:       time.Now().UTC(),
 	}
 	s.redshift.resizeStatus[clusterID] = status
-	respondRedshiftResizeResponse(w, http.StatusOK, "ResizeCluster", status)
+	cluster.ResizeTargetNodeType = nodeType
+	cluster.ResizeTargetNumberOfNodes = targetNodes
+	cluster.ResizeStatus = status.Status
+	respondRedshiftClusterResponse(w, http.StatusOK, "ResizeCluster", cluster)
 }
 
 func (s *Server) handleRedshiftDescribeResize(w http.ResponseWriter, r *http.Request) {
@@ -7691,6 +7698,9 @@ func (s *Server) handleRedshiftCancelResize(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	status.Status = "CANCELED"
+	if cluster, ok := s.redshift.clusters[clusterID]; ok {
+		cluster.ResizeStatus = status.Status
+	}
 	respondRedshiftResizeResponse(w, http.StatusOK, "CancelResize", status)
 }
 
@@ -9511,6 +9521,15 @@ func respondRedshiftClusterResponse(w http.ResponseWriter, status int, action st
 			RetentionPeriod:   cluster.SnapshotCopyRetentionDays,
 		}
 	}
+	var resizeInfo *redshiftResizeInfoXML
+	if cluster.ResizeTargetNodeType != "" || cluster.ResizeTargetNumberOfNodes != 0 || cluster.ResizeStatus != "" {
+		resizeInfo = &redshiftResizeInfoXML{
+			ResizeType:          "ClassicResize",
+			Status:              cluster.ResizeStatus,
+			TargetNodeType:      cluster.ResizeTargetNodeType,
+			TargetNumberOfNodes: cluster.ResizeTargetNumberOfNodes,
+		}
+	}
 	resp := redshiftClusterResponse{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
@@ -9532,6 +9551,7 @@ func respondRedshiftClusterResponse(w http.ResponseWriter, status int, action st
 				IamRoles:                   iamRoles,
 				ClusterDbRevision:          cluster.DBRevision,
 				ClusterSnapshotCopyStatus:  snapshotCopyStatus,
+				ResizeInfo:                 resizeInfo,
 			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
@@ -9564,6 +9584,15 @@ func respondRedshiftClustersResponse(w http.ResponseWriter, status int, action s
 				RetentionPeriod:   cluster.SnapshotCopyRetentionDays,
 			}
 		}
+		var resizeInfo *redshiftResizeInfoXML
+		if cluster.ResizeTargetNodeType != "" || cluster.ResizeTargetNumberOfNodes != 0 || cluster.ResizeStatus != "" {
+			resizeInfo = &redshiftResizeInfoXML{
+				ResizeType:          "ClassicResize",
+				Status:              cluster.ResizeStatus,
+				TargetNodeType:      cluster.ResizeTargetNodeType,
+				TargetNumberOfNodes: cluster.ResizeTargetNumberOfNodes,
+			}
+		}
 		items = append(items, redshiftClusterXML{
 			ClusterIdentifier:          cluster.ID,
 			NodeType:                   cluster.NodeType,
@@ -9580,6 +9609,7 @@ func respondRedshiftClustersResponse(w http.ResponseWriter, status int, action s
 			IamRoles:                   iamRoles,
 			ClusterDbRevision:          cluster.DBRevision,
 			ClusterSnapshotCopyStatus:  snapshotCopyStatus,
+			ResizeInfo:                 resizeInfo,
 		})
 	}
 	resp := redshiftClustersResponse{
@@ -9711,24 +9741,28 @@ func respondRedshiftSnapshotScheduleResponse(w http.ResponseWriter, status int, 
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName          xml.Name                    `xml:""`
-			SnapshotSchedule redshiftSnapshotScheduleXML `xml:"SnapshotSchedule"`
+			XMLName                    xml.Name `xml:""`
+			SnapshotScheduleIdentifier string   `xml:"SnapshotScheduleIdentifier"`
+			ScheduleDefinitions        []string `xml:"ScheduleDefinitions>ScheduleDefinition,omitempty"`
+			ScheduleDescription        string   `xml:"ScheduleDescription,omitempty"`
+			AssociatedClusterCount     int      `xml:"AssociatedClusterCount,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName          xml.Name                    `xml:""`
-			SnapshotSchedule redshiftSnapshotScheduleXML `xml:"SnapshotSchedule"`
+			XMLName                    xml.Name `xml:""`
+			SnapshotScheduleIdentifier string   `xml:"SnapshotScheduleIdentifier"`
+			ScheduleDefinitions        []string `xml:"ScheduleDefinitions>ScheduleDefinition,omitempty"`
+			ScheduleDescription        string   `xml:"ScheduleDescription,omitempty"`
+			AssociatedClusterCount     int      `xml:"AssociatedClusterCount,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			SnapshotSchedule: redshiftSnapshotScheduleXML{
-				SnapshotScheduleIdentifier: schedule.ID,
-				ScheduleDefinitions:        append([]string{}, schedule.Definitions...),
-				ScheduleDescription:        schedule.Description,
-				AssociatedClusterCount:     len(schedule.AssociatedClusters),
-			},
+			XMLName:                    xml.Name{Local: action + "Result"},
+			SnapshotScheduleIdentifier: schedule.ID,
+			ScheduleDefinitions:        append([]string{}, schedule.Definitions...),
+			ScheduleDescription:        schedule.Description,
+			AssociatedClusterCount:     len(schedule.AssociatedClusters),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10290,7 +10324,6 @@ func respondRedshiftDataShareResponse(w http.ResponseWriter, status int, action 
 			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
 			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
 			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
-			DataShareType                    string   `xml:"DataShareType,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
@@ -10302,14 +10335,12 @@ func respondRedshiftDataShareResponse(w http.ResponseWriter, status int, action 
 			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
 			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
 			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
-			DataShareType                    string   `xml:"DataShareType,omitempty"`
 		}{
 			XMLName:                          xml.Name{Local: action + "Result"},
 			DataShareArn:                     share.Arn,
 			ProducerArn:                      share.ProducerArn,
 			AllowPubliclyAccessibleConsumers: false,
 			ManagedBy:                        "stackyard",
-			DataShareType:                    "INBOUND",
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -19814,6 +19845,12 @@ type s3BucketAbacConfiguration struct {
 	Status  string   `xml:"Status"`
 }
 
+type s3BucketAbacStatus struct {
+	XMLName xml.Name `xml:"AbacStatus"`
+	Xmlns   string   `xml:"xmlns,attr,omitempty"`
+	Value   string   `xml:",chardata"`
+}
+
 type s3NotificationConfiguration struct {
 	XMLName             xml.Name               `xml:"NotificationConfiguration"`
 	Xmlns               string                 `xml:"xmlns,attr"`
@@ -24744,12 +24781,23 @@ func (s *Server) putBucketAbac(w http.ResponseWriter, r *http.Request, bucket st
 	if !s.requireSigV4(w, r) {
 		return
 	}
-	var cfg s3BucketAbacConfiguration
-	if err := xml.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&cfg); err != nil {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
 		respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
+	var cfg s3BucketAbacConfiguration
+	legacyErr := xml.Unmarshal(body, &cfg)
 	status := strings.TrimSpace(cfg.Status)
+	if status == "" {
+		var modeled s3BucketAbacStatus
+		if err := xml.Unmarshal(body, &modeled); err == nil {
+			status = strings.TrimSpace(modeled.Value)
+		} else if legacyErr != nil {
+			respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+			return
+		}
+	}
 	if status == "" {
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing abac status")
 		return

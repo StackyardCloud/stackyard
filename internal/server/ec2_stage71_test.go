@@ -58,9 +58,6 @@ func TestEC2Stage71SDKLifecycle(t *testing.T) {
 	if aws.ToString(getInitialStateOut.ImageBlockPublicAccessState) != "unblocked" {
 		t.Fatalf("unexpected initial image block public access state: %q", aws.ToString(getInitialStateOut.ImageBlockPublicAccessState))
 	}
-	if getInitialStateOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected initial managed by: %q", getInitialStateOut.ManagedBy)
-	}
 
 	enableBlockOut, err := client.EnableImageBlockPublicAccess(ctx, &awsec2.EnableImageBlockPublicAccessInput{
 		ImageBlockPublicAccessState: awsec2types.ImageBlockPublicAccessEnabledStateBlockNewSharing,
@@ -78,9 +75,6 @@ func TestEC2Stage71SDKLifecycle(t *testing.T) {
 	}
 	if aws.ToString(getEnabledStateOut.ImageBlockPublicAccessState) != "block-new-sharing" {
 		t.Fatalf("unexpected enabled image block public access state: %q", aws.ToString(getEnabledStateOut.ImageBlockPublicAccessState))
-	}
-	if getEnabledStateOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected managed by after enable: %q", getEnabledStateOut.ManagedBy)
 	}
 
 	disableBlockOut, err := client.DisableImageBlockPublicAccess(ctx, &awsec2.DisableImageBlockPublicAccessInput{})

@@ -345,7 +345,6 @@ func ec2Stage122SpotPriceItemsFrom(in []ec2svc.SpotPriceHistoryItem) []ec2Stage1
 	for _, item := range in {
 		out = append(out, ec2Stage122SpotPriceItem{
 			AvailabilityZone:   item.AvailabilityZone,
-			AvailabilityZoneID: item.AvailabilityZoneID,
 			InstanceType:       item.InstanceType,
 			ProductDescription: item.ProductDescription,
 			SpotPrice:          item.SpotPrice,
@@ -488,7 +487,6 @@ type ec2Stage122SpotPriceSet struct {
 
 type ec2Stage122SpotPriceItem struct {
 	AvailabilityZone   string `xml:"availabilityZone,omitempty"`
-	AvailabilityZoneID string `xml:"availabilityZoneId,omitempty"`
 	InstanceType       string `xml:"instanceType,omitempty"`
 	ProductDescription string `xml:"productDescription,omitempty"`
 	SpotPrice          string `xml:"spotPrice,omitempty"`

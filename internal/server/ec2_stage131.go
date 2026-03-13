@@ -93,7 +93,7 @@ func (s *Server) handleEC2Stage131Action(w http.ResponseWriter, r *http.Request,
 		})
 		return true
 	case "PurchaseCapacityBlock":
-		capacityBlocks, capacityReservation, err := s.ec2.PurchaseCapacityBlock(
+		_, capacityReservation, err := s.ec2.PurchaseCapacityBlock(
 			strings.TrimSpace(r.Form.Get("CapacityBlockOfferingId")),
 			strings.TrimSpace(r.Form.Get("InstancePlatform")),
 			parseEC2TagSpecificationsForResource(r.Form, "capacity-block"),
@@ -106,7 +106,6 @@ func (s *Server) handleEC2Stage131Action(w http.ResponseWriter, r *http.Request,
 			XMLName:             xml.Name{Local: "PurchaseCapacityBlockResponse"},
 			Xmlns:               ec2Namespace,
 			RequestID:           "stackyard-request",
-			CapacityBlocks:      ec2Stage131CapacityBlockSet{Items: ec2Stage115CapacityBlockItemsFrom(capacityBlocks)},
 			CapacityReservation: ec2Stage102CapacityReservationItemFrom(capacityReservation),
 		})
 		return true
@@ -399,7 +398,6 @@ type ec2Stage131PurchaseCapacityBlockResponse struct {
 	XMLName             xml.Name                           `xml:"PurchaseCapacityBlockResponse"`
 	Xmlns               string                             `xml:"xmlns,attr"`
 	RequestID           string                             `xml:"requestId"`
-	CapacityBlocks      ec2Stage131CapacityBlockSet        `xml:"capacityBlockSet"`
 	CapacityReservation ec2Stage102CapacityReservationItem `xml:"capacityReservation"`
 }
 

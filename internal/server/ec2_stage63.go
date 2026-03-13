@@ -57,7 +57,6 @@ func ec2VpcEndpointServiceDetailItems(in []ec2svc.VpcEndpointServiceDetail) []ec
 			PrivateDNSName:             detail.PrivateDNSName,
 			ServiceID:                  detail.ServiceID,
 			ServiceName:                detail.ServiceName,
-			ServiceRegion:              detail.ServiceRegion,
 			ServiceType:                ec2ServiceTypeDetailSet{Items: ec2ServiceTypeItems(detail.ServiceTypes)},
 			SupportedIPAddressTypes:    ec2Stage55StringSet{Items: append([]string(nil), detail.SupportedIPAddressTypes...)},
 			VpcEndpointPolicySupported: &detail.VpcEndpointPolicySupported,
@@ -98,7 +97,6 @@ type ec2VpcEndpointServiceDetailItem struct {
 	PrivateDNSName             string                  `xml:"privateDnsName,omitempty"`
 	ServiceID                  string                  `xml:"serviceId,omitempty"`
 	ServiceName                string                  `xml:"serviceName,omitempty"`
-	ServiceRegion              string                  `xml:"serviceRegion,omitempty"`
 	ServiceType                ec2ServiceTypeDetailSet `xml:"serviceType"`
 	SupportedIPAddressTypes    ec2Stage55StringSet     `xml:"supportedIpAddressTypeSet"`
 	VpcEndpointPolicySupported *bool                   `xml:"vpcEndpointPolicySupported,omitempty"`

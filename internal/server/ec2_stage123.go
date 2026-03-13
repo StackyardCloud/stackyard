@@ -246,7 +246,6 @@ func ec2Stage123VolumeStatusItemsFrom(in []ec2svc.VolumeStatus) []ec2Stage123Vol
 		status := item.Status
 		out = append(out, ec2Stage123VolumeStatusItem{
 			AvailabilityZone:   item.AvailabilityZone,
-			AvailabilityZoneID: item.AvailabilityZoneID,
 			VolumeID:           item.VolumeID,
 			VolumeStatus:       &ec2Stage123VolumeStatusInfoItem{Status: status},
 		})
@@ -362,7 +361,6 @@ type ec2Stage123VolumeStatusSet struct {
 
 type ec2Stage123VolumeStatusItem struct {
 	AvailabilityZone   string                           `xml:"availabilityZone,omitempty"`
-	AvailabilityZoneID string                           `xml:"availabilityZoneId,omitempty"`
 	VolumeID           string                           `xml:"volumeId,omitempty"`
 	VolumeStatus       *ec2Stage123VolumeStatusInfoItem `xml:"volumeStatus,omitempty"`
 }

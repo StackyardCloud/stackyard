@@ -174,15 +174,14 @@ func (s *Server) handleEC2Stage7Action(w http.ResponseWriter, r *http.Request, a
 			return true
 		}
 		respondEC2XML(w, ec2DescribeNetworkInterfaceAttributeResponse{
-			XMLName:                  xml.Name{Local: "DescribeNetworkInterfaceAttributeResponse"},
-			Xmlns:                    ec2Namespace,
-			RequestID:                "stackyard-request",
-			NetworkInterfaceID:       attribute.NetworkInterfaceID,
-			AssociatePublicIPAddress: ec2BoolPtr(attribute.AssociatePublicIPAddress),
-			Description:              ec2StringAttributeValue{Value: attribute.Description},
-			GroupSet:                 ec2GroupIdentifierSet{Items: ec2GroupIdentifierItems(attribute.GroupIDs)},
-			SourceDestCheck:          ec2AttributeBooleanValue{Value: attribute.SourceDestCheck},
-			Attachment:               ec2NetworkInterfaceAttributeAttachmentFrom(attribute.Attachment),
+			XMLName:            xml.Name{Local: "DescribeNetworkInterfaceAttributeResponse"},
+			Xmlns:              ec2Namespace,
+			RequestID:          "stackyard-request",
+			NetworkInterfaceID: attribute.NetworkInterfaceID,
+			Description:        ec2StringAttributeValue{Value: attribute.Description},
+			GroupSet:           ec2GroupIdentifierSet{Items: ec2GroupIdentifierItems(attribute.GroupIDs)},
+			SourceDestCheck:    ec2AttributeBooleanValue{Value: attribute.SourceDestCheck},
+			Attachment:         ec2NetworkInterfaceAttributeAttachmentFrom(attribute.Attachment),
 		})
 		return true
 	case "DescribeNetworkInterfacePermissions":
@@ -341,7 +340,6 @@ type ec2DescribeNetworkInterfaceAttributeResponse struct {
 	XMLName                  xml.Name                                    `xml:"DescribeNetworkInterfaceAttributeResponse"`
 	Xmlns                    string                                      `xml:"xmlns,attr"`
 	RequestID                string                                      `xml:"requestId"`
-	AssociatePublicIPAddress *bool                                       `xml:"associatePublicIpAddress,omitempty"`
 	Attachment               *ec2NetworkInterfaceAttributeAttachmentItem `xml:"attachment,omitempty"`
 	Description              ec2StringAttributeValue                     `xml:"description"`
 	GroupSet                 ec2GroupIdentifierSet                       `xml:"groupSet"`

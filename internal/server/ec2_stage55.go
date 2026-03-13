@@ -58,7 +58,6 @@ func ec2ServiceConfigurationItemFrom(cfg ec2svc.VpcEndpointServiceConfiguration)
 		ServiceState:            cfg.ServiceState,
 		ServiceType:             ec2ServiceTypeDetailSet{Items: ec2ServiceTypeItemsFromConfig(cfg)},
 		SupportedIPAddressTypes: ec2Stage55StringSet{Items: append([]string(nil), cfg.SupportedIPAddressTypes...)},
-		SupportedRegions:        ec2SupportedRegionDetailSet{Items: ec2SupportedRegionItemsFromConfig(cfg)},
 	}
 }
 
@@ -106,7 +105,6 @@ type ec2ServiceConfigurationItem struct {
 	ServiceState            string                      `xml:"serviceState,omitempty"`
 	ServiceType             ec2ServiceTypeDetailSet     `xml:"serviceType"`
 	SupportedIPAddressTypes ec2Stage55StringSet         `xml:"supportedIpAddressTypeSet"`
-	SupportedRegions        ec2SupportedRegionDetailSet `xml:"supportedRegionSet"`
 }
 
 type ec2Stage55StringSet struct {

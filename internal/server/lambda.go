@@ -1050,8 +1050,19 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		respondLambdaJSON(w, http.StatusOK, out)
 		return true
 	case "SendDurableExecutionCallbackFailure", "SendDurableExecutionCallbackHeartbeat", "SendDurableExecutionCallbackSuccess":
-		if !decodeBody() {
+		rawBody, err := readBodyBytes(r)
+		if err != nil {
+			respondLambdaError(w, http.StatusBadRequest, "InvalidParameterValueException", "invalid request body")
 			return true
+		}
+		body = map[string]any{}
+		if len(bytes.TrimSpace(rawBody)) > 0 {
+			if err := json.Unmarshal(rawBody, &body); err != nil {
+				body = map[string]any{"RawBody": string(rawBody)}
+			}
+			if body == nil {
+				body = map[string]any{}
+			}
 		}
 		status := strings.TrimPrefix(op.Operation, "SendDurableExecutionCallback")
 		out, err := s.lambda.DurableExecutionCallback(lambdaParam(params, "CallbackId", "callbackId"), status, body)

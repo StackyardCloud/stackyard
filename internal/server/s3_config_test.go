@@ -35,6 +35,12 @@ type s3BucketAbacConfigurationTest struct {
 	Status  string   `xml:"Status"`
 }
 
+type s3BucketAbacStatusTest struct {
+	XMLName xml.Name `xml:"AbacStatus"`
+	Xmlns   string   `xml:"xmlns,attr,omitempty"`
+	Value   string   `xml:",chardata"`
+}
+
 func TestS3BucketConfigEndpoints(t *testing.T) {
 	srv := New(Config{
 		Addr:      ":0",
@@ -140,5 +146,24 @@ func TestS3BucketConfigEndpoints(t *testing.T) {
 	}
 	if abac.Status != "Enabled" {
 		t.Fatalf("expected abac status Enabled, got %q", abac.Status)
+	}
+
+	modeledAbacBody := `<AbacStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">Disabled</AbacStatus>`
+	resp = signedRequest(t, http.MethodPut, ts.URL+"/"+bucket+"?abac", []byte(modeledAbacBody), nil)
+	assertStatus(t, resp, http.StatusOK)
+	var modeledAbac s3BucketAbacStatusTest
+	if err := xml.Unmarshal([]byte(modeledAbacBody), &modeledAbac); err != nil {
+		t.Fatalf("unmarshal modeled abac request: %v", err)
+	}
+	if modeledAbac.Value != "Disabled" {
+		t.Fatalf("expected modeled abac status Disabled, got %q", modeledAbac.Value)
+	}
+	resp = signedRequest(t, http.MethodGet, ts.URL+"/"+bucket+"?abac", nil, nil)
+	assertStatus(t, resp, http.StatusOK)
+	if err := xml.Unmarshal(mustBody(t, resp), &abac); err != nil {
+		t.Fatalf("unmarshal abac config after modeled request: %v", err)
+	}
+	if abac.Status != "Disabled" {
+		t.Fatalf("expected abac status Disabled after modeled request, got %q", abac.Status)
 	}
 }

@@ -341,22 +341,13 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 		return map[string]any{"ObjectIdentifiers": []any{}, "NextToken": ""}
 
 	case "AttachTypedLink":
-		specifierKey := cloudDirectoryFindKeyCaseInsensitive(payload, "TypedLinkSpecifier")
-		if specifierKey != "" {
-			if specifier, ok := payload[specifierKey].(map[string]any); ok {
-				return map[string]any{"TypedLinkSpecifier": cloudDirectoryCloneMap(specifier)}
-			}
-		}
 		return map[string]any{
-			"TypedLinkSpecifier": map[string]any{
-				"TypedLinkFacet": map[string]any{
-					"SchemaArn": schemaARN,
-					"Name":      typedLinkFacetName,
-				},
-				"SourceObjectReference":   map[string]any{"Selector": objectIdentifier},
-				"TargetObjectReference":   map[string]any{"Selector": objectIdentifier},
-				"IdentityAttributeValues": []any{},
-			},
+			"TypedLinkSpecifier": cloudDirectoryBuildTypedLinkSpecifier(
+				payload,
+				schemaARN,
+				typedLinkFacetName,
+				objectIdentifier,
+			),
 		}
 
 	case "DetachTypedLink":
@@ -371,7 +362,10 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "UpdateObjectAttributes":
 		return map[string]any{"ObjectIdentifier": objectIdentifier}
 
-	case "ListIncomingTypedLinks", "ListOutgoingTypedLinks":
+	case "ListIncomingTypedLinks":
+		return map[string]any{"LinkSpecifiers": []any{}, "NextToken": ""}
+
+	case "ListOutgoingTypedLinks":
 		return map[string]any{"TypedLinkSpecifiers": []any{}, "NextToken": ""}
 
 	case "BatchRead":
@@ -579,6 +573,72 @@ func cloudDirectoryCloneMap(in map[string]any) map[string]any {
 	for k, v := range in {
 		out[k] = v
 	}
+	return out
+}
+
+func cloudDirectoryBuildTypedLinkSpecifier(
+	payload map[string]any,
+	schemaARN, typedLinkFacetName, objectIdentifier string,
+) map[string]any {
+	specifierKey := cloudDirectoryFindKeyCaseInsensitive(payload, "TypedLinkSpecifier")
+	if specifierKey != "" {
+		if specifier, ok := payload[specifierKey].(map[string]any); ok {
+			return cloudDirectoryNormalizeTypedLinkSpecifier(specifier, schemaARN, typedLinkFacetName, objectIdentifier)
+		}
+	}
+	return cloudDirectoryNormalizeTypedLinkSpecifier(payload, schemaARN, typedLinkFacetName, objectIdentifier)
+}
+
+func cloudDirectoryNormalizeTypedLinkSpecifier(
+	specifier map[string]any,
+	schemaARN, typedLinkFacetName, objectIdentifier string,
+) map[string]any {
+	out := map[string]any{
+		"TypedLinkFacet": map[string]any{
+			"SchemaArn":     schemaARN,
+			"TypedLinkName": typedLinkFacetName,
+		},
+		"SourceObjectReference":   map[string]any{"Selector": objectIdentifier},
+		"TargetObjectReference":   map[string]any{"Selector": objectIdentifier},
+		"IdentityAttributeValues": []any{},
+	}
+	if specifier == nil {
+		return out
+	}
+
+	if facetKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "TypedLinkFacet"); facetKey != "" {
+		if facet, ok := specifier[facetKey].(map[string]any); ok {
+			typedLinkFacet := map[string]any{
+				"SchemaArn": cloudDirectoryFirstNonEmpty(
+					cloudDirectoryString(facet, "SchemaArn", ""),
+					schemaARN,
+				),
+				"TypedLinkName": cloudDirectoryFirstNonEmpty(
+					cloudDirectoryString(facet, "TypedLinkName", ""),
+					cloudDirectoryString(facet, "Name", ""),
+					typedLinkFacetName,
+				),
+			}
+			out["TypedLinkFacet"] = typedLinkFacet
+		}
+	}
+
+	if sourceKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "SourceObjectReference"); sourceKey != "" {
+		if source, ok := specifier[sourceKey].(map[string]any); ok {
+			out["SourceObjectReference"] = cloudDirectoryCloneMap(source)
+		}
+	}
+	if targetKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "TargetObjectReference"); targetKey != "" {
+		if target, ok := specifier[targetKey].(map[string]any); ok {
+			out["TargetObjectReference"] = cloudDirectoryCloneMap(target)
+		}
+	}
+	if identityKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "IdentityAttributeValues"); identityKey != "" {
+		if values, ok := specifier[identityKey].([]any); ok {
+			out["IdentityAttributeValues"] = append([]any(nil), values...)
+		}
+	}
+
 	return out
 }
 

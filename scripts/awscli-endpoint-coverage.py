@@ -2604,9 +2604,15 @@ LIGHTSAIL_DEFAULT_DISTRIBUTION_BUNDLE_ID = "small_1_0"
 LIGHTSAIL_DEFAULT_BLUEPRINT_ID = "amazon_linux_2"
 LIGHTSAIL_DEFAULT_RELATIONAL_DATABASE_BLUEPRINT_ID = "mysql_8_0"
 LIGHTSAIL_DEFAULT_RELATIONAL_DATABASE_BUNDLE_ID = "micro_2_0"
+ELASTICBEANSTALK_DEFAULT_SOLUTION_STACK = "64bit Amazon Linux 2 v3.6.3 running Go 1"
+ELASTICBEANSTALK_DEFAULT_INFO_TYPE = "tail"
+ELASTICBEANSTALK_DEFAULT_OPERATIONS_ROLE = "arn:aws:iam::123456789012:role/stackyard-eb-ops"
 OPENSEARCH_DEFAULT_DOMAIN_NAME = "stackyard-opensearch-domain"
 OPENSEARCH_DEFAULT_DOMAIN_ARN = "arn:aws:es:us-east-1:123456789012:domain/stackyard-opensearch-domain"
 OPENSEARCH_DEFAULT_PACKAGE_ID = "pkg-1234567890abcdef"
+OPENSEARCH_DEFAULT_DATA_SOURCE_NAME = "stackyard-data-source"
+OPENSEARCH_DEFAULT_DATA_SOURCE_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-opensearch-data-source"
+OPENSEARCH_DEFAULT_SCHEDULED_ACTION_ID = "scheduled-action-000001"
 SIGNER_DEFAULT_PROFILE_NAME = "stackyard-signer-profile"
 SIGNER_DEFAULT_PROFILE_ARN = "arn:aws:signer:us-east-1:123456789012:/signing-profiles/stackyard-signer-profile"
 SIGNER_DEFAULT_PROFILE_VERSION = "0000000001"
@@ -4268,7 +4274,7 @@ def invoke_raw_endpoint(
             elif placeholder == "PackageID":
                 value = OPENSEARCH_DEFAULT_PACKAGE_ID
             elif placeholder == "DataSourceName":
-                value = "stackyard-data-source"
+                value = OPENSEARCH_DEFAULT_DATA_SOURCE_NAME
             elif placeholder == "ConnectionId":
                 value = "cc-000001"
             elif placeholder == "VpcEndpointId":
@@ -12654,6 +12660,41 @@ def generate_cli_input_payload(
         # aws s3api get-object/get-object-torrent require explicit --bucket/--key args and do not
         # reliably support skeleton generation.
         return {"Bucket": S3_DEFAULT_BUCKET_NAME, "Key": S3_DEFAULT_OBJECT_KEY}, None
+    if endpoint.service == "s3" and endpoint.operation == "PutBucketAbac":
+        return {"Bucket": S3_DEFAULT_BUCKET_NAME, "AbacStatus": "Enabled"}, None
+    if endpoint.service == "s3" and endpoint.operation == "UpdateObjectEncryption":
+        return {
+            "Bucket": S3_DEFAULT_BUCKET_NAME,
+            "Key": S3_DEFAULT_OBJECT_KEY,
+            "ObjectEncryption": {
+                "SSEKMS": {
+                    "KMSKeyArn": "arn:aws:kms:us-east-1:123456789012:key/stackyard-coverage",
+                    "BucketKeyEnabled": False,
+                }
+            },
+        }, None
+    if endpoint.service == "s3" and endpoint.operation == "RenameObject":
+        return {
+            "Bucket": S3_DEFAULT_DIRECTORY_BUCKET_NAME,
+            "Key": "coverage-rename-dest.txt",
+            "RenameSource": f"/{S3_DEFAULT_DIRECTORY_BUCKET_NAME}/coverage-rename-source.txt",
+        }, None
+    if endpoint.service == "s3" and endpoint.operation == "UploadPart":
+        return {
+            "Bucket": S3_DEFAULT_BUCKET_NAME,
+            "Key": "coverage-multipart.bin",
+            "UploadId": "upload-000001",
+            "PartNumber": 1,
+            "Body": "c3RhY2t5YXJk",
+        }, None
+    if endpoint.service == "s3" and endpoint.operation == "UploadPartCopy":
+        return {
+            "Bucket": S3_DEFAULT_BUCKET_NAME,
+            "Key": "coverage-multipart.bin",
+            "UploadId": "upload-000001",
+            "PartNumber": 1,
+            "CopySource": f"{S3_DEFAULT_BUCKET_NAME}/coverage-copy-source.txt",
+        }, None
     if endpoint.service == "s3" and endpoint.operation == "SelectObjectContent":
         # aws s3api select-object-content requires explicit stream arguments and does not
         # reliably support skeleton generation.
@@ -13003,6 +13044,7 @@ def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
         ("s3", "GetObjectTorrent"),
         ("s3", "HeadBucket"),
         ("s3", "PutObjectAcl"),
+        ("s3", "PutObjectLockConfiguration"),
         ("s3", "PutObjectLegalHold"),
         ("s3", "PutObjectRetention"),
         ("s3", "PutObjectTagging"),
@@ -13248,6 +13290,8 @@ def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
 def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[str]:
     if endpoint.service == "sqs" and endpoint.operation == "SendMessageBatch":
         return [err for err in errors if err != "$.Failed: missing required field"]
+    if endpoint.service == "s3" and endpoint.operation == "ListParts":
+        return [err for err in errors if err != "$.ChecksumType: unknown field"]
     return errors
 
 
@@ -16134,11 +16178,75 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             set_key_if_present_case_insensitive(payload, "ClientVpnEndpointId", ec2_get_runtime_value("clientvpnendpointid"))
             set_key_if_present_case_insensitive(payload, "TargetVpcSubnetId", "local")
             set_key_if_present_case_insensitive(payload, "DestinationCidrBlock", "10.0.0.0/16")
+        if op == "AllocateIpamPoolCidr":
+            _replace_payload(
+                {
+                    "IpamPoolId": ec2_get_runtime_value("ipampoolid"),
+                    "Cidr": "10.81.0.0/24",
+                    "Description": "stage81",
+                }
+            )
+        if op == "CreateCapacityReservationFleet":
+            _replace_payload(
+                {
+                    "InstanceTypeSpecifications": [
+                        {
+                            "AvailabilityZone": "us-east-1a",
+                            "InstancePlatform": "Linux/UNIX",
+                            "InstanceType": "m5.large",
+                        }
+                    ],
+                    "TotalTargetCapacity": 2,
+                }
+            )
         if op == "CreateCustomerGateway":
-            set_key_if_present_case_insensitive(payload, "Type", "ipsec.1")
-            set_key_if_present_case_insensitive(payload, "PublicIp", "198.51.100.10")
-            set_key_if_present_case_insensitive(payload, "BgpAsn", 65000)
-            delete_key_if_present_case_insensitive(payload, "BgpAsnExtended")
+            _replace_payload(
+                {
+                    "Type": "ipsec.1",
+                    "PublicIp": "198.51.100.10",
+                    "BgpAsn": 65000,
+                }
+            )
+        if op == "CreateFleet":
+            _replace_payload(
+                {
+                    "LaunchTemplateConfigs": [
+                        {
+                            "LaunchTemplateSpecification": {
+                                "LaunchTemplateId": ec2_get_runtime_value("launchtemplateid"),
+                                "Version": "1",
+                            }
+                        }
+                    ],
+                    "TargetCapacitySpecification": {
+                        "DefaultTargetCapacityType": "on-demand",
+                        "TotalTargetCapacity": 1,
+                    },
+                }
+            )
+        if op == "CreateFpgaImage":
+            _replace_payload(
+                {
+                    "InputStorageLocation": {
+                        "Bucket": "stage107-bucket",
+                        "Key": "stage107/input.xclbin",
+                    }
+                }
+            )
+        if op == "CreateInstanceExportTask":
+            _replace_payload(
+                {
+                    "Description": "stage107-export",
+                    "ExportToS3Task": {
+                        "ContainerFormat": "ova",
+                        "DiskImageFormat": "VMDK",
+                        "S3Bucket": "stage107-exports",
+                        "S3Prefix": "exports",
+                    },
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "TargetEnvironment": "vmware",
+                }
+            )
         if op == "CreateIpamScope":
             _replace_payload(
                 {
@@ -16153,7 +16261,34 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             delete_key_if_present_case_insensitive(payload, "SourceIpamPoolId")
             delete_key_if_present_case_insensitive(payload, "SourceResource")
         if op == "CreateMacSystemIntegrityProtectionModificationTask":
-            _replace_payload({"MacHostId": ec2_get_runtime_value("hostid")})
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "MacSystemIntegrityProtectionStatus": "enabled",
+                }
+            )
+        if op == "CreateLaunchTemplate":
+            _replace_payload(
+                {
+                    "LaunchTemplateName": f"stackyard-template-{unique}",
+                    "LaunchTemplateData": {
+                        "ImageId": ec2_get_runtime_value("imageid"),
+                        "InstanceType": "t3.micro",
+                    },
+                }
+            )
+        if op == "CreateLaunchTemplateVersion":
+            _replace_payload(
+                {
+                    "LaunchTemplateId": ec2_get_runtime_value("launchtemplateid"),
+                    "LaunchTemplateName": f"stackyard-template-{unique}",
+                    "LaunchTemplateData": {
+                        "ImageId": ec2_get_runtime_value("imageid"),
+                        "InstanceType": "t3.micro",
+                    },
+                    "VersionDescription": f"stackyard-v{unique}",
+                }
+            )
         if op == "CreateLocalGatewayRoute":
             set_key_if_present_case_insensitive(payload, "LocalGatewayRouteTableId", ec2_get_runtime_value("localgatewayroutetableid"))
             set_key_if_present_case_insensitive(payload, "DestinationCidrBlock", "10.0.0.0/16")
@@ -16166,6 +16301,13 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         if op == "CreateManagedPrefixList":
             set_key_if_present_case_insensitive(payload, "AddressFamily", "ipv4")
             set_key_if_present_case_insensitive(payload, "MaxEntries", 1)
+        if op == "CreateNatGateway":
+            _replace_payload(
+                {
+                    "SubnetId": ec2_get_runtime_value("subnetid"),
+                    "AllocationId": ec2_get_runtime_value("allocationid"),
+                }
+            )
         if op == "CreateNetworkAclEntry":
             rule_number = 1000 + (int(time.time() * 1000) % 20000)
             _replace_payload(
@@ -16178,13 +16320,47 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "CidrBlock": "10.0.0.0/16",
                 }
             )
+        if op == "CreateNetworkInterfacePermission":
+            _replace_payload(
+                {
+                    "NetworkInterfaceId": ec2_get_runtime_value("networkinterfaceid"),
+                    "Permission": "INSTANCE-ATTACH",
+                    "AwsAccountId": "123456789012",
+                }
+            )
+        if op == "CreatePlacementGroup":
+            _replace_payload(
+                {
+                    "GroupName": f"stackyard-placement-group-{unique}",
+                    "Strategy": "partition",
+                    "PartitionCount": 3,
+                    "SpreadLevel": "rack",
+                }
+            )
         if op == "CreateReplaceRootVolumeTask":
             _replace_payload({"InstanceId": ec2_get_runtime_value("instanceid")})
+        if op == "CreateReservedInstancesListing":
+            _replace_payload(
+                {
+                    "ClientToken": f"stackyard-ril-{unique}",
+                    "InstanceCount": 1,
+                    "ReservedInstancesId": "ri-stage109",
+                    "PriceSchedules": [
+                        {
+                            "Price": 10.5,
+                            "Term": 1,
+                            "CurrencyCode": "USD",
+                        }
+                    ],
+                }
+            )
         if op == "CreateTrafficMirrorSession":
             set_key_if_present_case_insensitive(payload, "TrafficMirrorFilterId", ec2_get_runtime_value("trafficmirrorfilterid"))
             set_key_if_present_case_insensitive(payload, "TrafficMirrorTargetId", ec2_get_runtime_value("trafficmirrortargetid"))
             set_key_if_present_case_insensitive(payload, "NetworkInterfaceId", ec2_get_runtime_value("networkinterfaceid"))
             set_key_if_present_case_insensitive(payload, "SessionNumber", 1)
+        if op == "CreateTrafficMirrorTarget":
+            _replace_payload({"NetworkInterfaceId": ec2_get_runtime_value("networkinterfaceid")})
         if op == "CreateTransitGatewayConnect":
             transport_attachment_id = ec2_get_runtime_value("transitgatewayvpcattachmentid")
             if transport_attachment_id == EC2_DEFAULT_KEY_VALUES["transitgatewayvpcattachmentid"]:
@@ -16208,6 +16384,22 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             set_key_if_present_case_insensitive(payload, "PeerTransitGatewayId", "tgw-peer-00000001")
             set_key_if_present_case_insensitive(payload, "PeerAccountId", "123456789012")
             set_key_if_present_case_insensitive(payload, "PeerRegion", "us-east-1")
+        if op == "CreateTransitGatewayPrefixListReference":
+            _replace_payload(
+                {
+                    "TransitGatewayRouteTableId": ec2_get_runtime_value("transitgatewayroutetableid"),
+                    "PrefixListId": "pl-00000036",
+                    "TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewayvpcattachmentid"),
+                }
+            )
+        if op == "CreateTransitGatewayRoute":
+            _replace_payload(
+                {
+                    "TransitGatewayRouteTableId": ec2_get_runtime_value("transitgatewayroutetableid"),
+                    "DestinationCidrBlock": "10.40.0.0/16",
+                    "TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewayvpcattachmentid"),
+                }
+            )
         if op == "CreateTransitGatewayVpcAttachment":
             set_key_if_present_case_insensitive(payload, "TransitGatewayId", ec2_get_primary_transit_gateway_id())
             set_key_if_present_case_insensitive(payload, "VpcId", ec2_get_runtime_value("vpcid"))
@@ -16233,18 +16425,29 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             set_key_if_present_case_insensitive(payload, "VerifiedAccessGroupId", ec2_get_runtime_value("verifiedaccessgroupid"))
             set_key_if_present_case_insensitive(payload, "AttachmentType", "vpc")
             set_key_if_present_case_insensitive(payload, "EndpointType", "network-interface")
+        if op == "CreateVpc":
+            _replace_payload({"CidrBlock": "10.220.0.0/16"})
         if op == "CreateVpcEndpointConnectionNotification":
-            set_key_if_present_case_insensitive(payload, "ServiceId", ec2_get_runtime_value("serviceid"))
-            set_key_if_present_case_insensitive(payload, "VpcEndpointId", ec2_get_runtime_value("vpcendpointid"))
-            set_key_if_present_case_insensitive(payload, "ConnectionNotificationArn", "arn:aws:sns:us-east-1:123456789012:stackyard")
-            set_key_if_present_case_insensitive(payload, "ConnectionEvents", ["Accept"])
-        if op == "CreateVpcEndpointServiceConfiguration":
-            set_key_if_present_case_insensitive(
-                payload,
-                "NetworkLoadBalancerArns",
-                ["arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/net/stackyard/1234567890abcdef"],
+            _replace_payload(
+                {
+                    "ServiceId": ec2_get_runtime_value("serviceid"),
+                    "ConnectionNotificationArn": "arn:aws:sns:us-east-1:123456789012:stage54-topic",
+                    "ConnectionEvents": ["Accept", "Reject"],
+                    "ClientToken": f"stage54-{unique}",
+                }
             )
-            set_key_if_present_case_insensitive(payload, "GatewayLoadBalancerArns", [])
+        if op == "CreateVpcEndpointServiceConfiguration":
+            _replace_payload(
+                {
+                    "AcceptanceRequired": True,
+                    "ClientToken": f"stage55-{unique}",
+                    "NetworkLoadBalancerArns": [
+                        "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/net/stage55/1234567890abcdef"
+                    ],
+                    "PrivateDnsName": "svc.stage55.internal",
+                    "SupportedIpAddressTypes": ["ipv4", "ipv6"],
+                }
+            )
         if op == "CreateVpcPeeringConnection":
             set_key_if_present_case_insensitive(payload, "VpcId", ec2_get_runtime_value("vpcid"))
             set_key_if_present_case_insensitive(payload, "PeerVpcId", ec2_get_runtime_value("peervpcid"))
@@ -16254,32 +16457,34 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             set_key_if_present_case_insensitive(payload, "VpcId", ec2_get_runtime_value("peervpcid"))
             delete_key_if_present_case_insensitive(payload, "SubnetId")
         if op == "CreateVpnConnection":
-            set_key_if_present_case_insensitive(payload, "CustomerGatewayId", ec2_get_runtime_value("customergatewayid"))
-            set_key_if_present_case_insensitive(payload, "Type", "ipsec.1")
-            set_key_if_present_case_insensitive(payload, "VpnGatewayId", ec2_get_runtime_value("vpngatewayid"))
-            delete_key_if_present_case_insensitive(payload, "TransitGatewayId")
-            options_key = find_key_case_insensitive(payload, "Options")
-            if options_key is not None and isinstance(payload.get(options_key), dict):
-                options = payload[options_key]
-                set_key_if_present_case_insensitive(options, "StaticRoutesOnly", False)
-                set_key_if_present_case_insensitive(options, "TunnelOptions", [])
-                set_key_if_present_case_insensitive(options, "EnableAcceleration", False)
-                delete_key_if_present_case_insensitive(options, "TransportTransitGatewayAttachmentId")
-                delete_key_if_present_case_insensitive(options, "OutsideIpAddressType")
-                set_key_if_present_case_insensitive(options, "LocalIpv4NetworkCidr", "0.0.0.0/0")
-                set_key_if_present_case_insensitive(options, "RemoteIpv4NetworkCidr", "0.0.0.0/0")
-                set_key_if_present_case_insensitive(options, "LocalIpv6NetworkCidr", "::/0")
-                set_key_if_present_case_insensitive(options, "RemoteIpv6NetworkCidr", "::/0")
+            _replace_payload(
+                {
+                    "CustomerGatewayId": ec2_get_runtime_value("customergatewayid"),
+                    "Type": "ipsec.1",
+                    "VpnGatewayId": ec2_get_runtime_value("vpngatewayid"),
+                    "Options": {
+                        "StaticRoutesOnly": True,
+                    },
+                }
+            )
         if op == "CreateVpnGateway":
             set_key_if_present_case_insensitive(payload, "Type", "ipsec.1")
             set_key_if_present_case_insensitive(payload, "AmazonSideAsn", 64512)
         if op == "CreateDhcpOptions":
-            dhcp_key = find_key_case_insensitive(payload, "DhcpConfigurations")
-            if dhcp_key is not None and isinstance(payload.get(dhcp_key), list) and payload[dhcp_key]:
-                first = payload[dhcp_key][0]
-                if isinstance(first, dict):
-                    set_key_if_present_case_insensitive(first, "Key", "domain-name-servers")
-                    set_key_if_present_case_insensitive(first, "Values", ["AmazonProvidedDNS"])
+            _replace_payload(
+                {
+                    "DhcpConfigurations": [
+                        {
+                            "Key": "domain-name-servers",
+                            "Values": ["AmazonProvidedDNS"],
+                        },
+                        {
+                            "Key": "domain-name",
+                            "Values": ["example.internal"],
+                        },
+                    ]
+                }
+            )
         if op == "StartNetworkInsightsAnalysis":
             set_key_if_present_case_insensitive(payload, "NetworkInsightsPathId", ec2_get_runtime_value("networkinsightspathid"))
             set_key_if_present_case_insensitive(payload, "AdditionalAccounts", [])
@@ -16293,27 +16498,14 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             delete_key_if_present_case_insensitive(payload, "InstanceType")
             delete_key_if_present_case_insensitive(payload, "OutpostArn")
             delete_key_if_present_case_insensitive(payload, "AssetIds")
-        if op == "CreateLaunchTemplate":
-            ltd_key = find_key_case_insensitive(payload, "LaunchTemplateData")
-            if ltd_key is not None and isinstance(payload.get(ltd_key), dict):
-                ltd = payload[ltd_key]
-                set_key_if_present_case_insensitive(ltd, "ImageId", ec2_get_runtime_value("imageid"))
-                set_key_if_present_case_insensitive(ltd, "InstanceType", "t3.micro")
-                set_key_if_present_case_insensitive(ltd, "BlockDeviceMappings", [])
-        if op == "CreateLaunchTemplateVersion":
-            set_key_if_present_case_insensitive(payload, "LaunchTemplateId", ec2_get_runtime_value("launchtemplateid"))
-            set_key_if_present_case_insensitive(payload, "LaunchTemplateName", ec2_get_runtime_value("launchtemplatename"))
-            set_key_if_present_case_insensitive(payload, "SourceVersion", "1")
-            ltd_key = find_key_case_insensitive(payload, "LaunchTemplateData")
-            if ltd_key is not None and isinstance(payload.get(ltd_key), dict):
-                ltd = payload[ltd_key]
-                set_key_if_present_case_insensitive(ltd, "ImageId", ec2_get_runtime_value("imageid"))
-                set_key_if_present_case_insensitive(ltd, "InstanceType", "t3.micro")
-                set_key_if_present_case_insensitive(ltd, "BlockDeviceMappings", [])
         if op == "CreateRoute":
-            set_key_if_present_case_insensitive(payload, "RouteTableId", ec2_get_runtime_value("routetableid"))
-            set_key_if_present_case_insensitive(payload, "DestinationCidrBlock", "10.0.1.0/24")
-            set_key_if_present_case_insensitive(payload, "GatewayId", ec2_get_runtime_value("internetgatewayid"))
+            _replace_payload(
+                {
+                    "RouteTableId": ec2_get_runtime_value("routetableid"),
+                    "DestinationCidrBlock": "0.0.0.0/0",
+                    "GatewayId": ec2_get_runtime_value("internetgatewayid"),
+                }
+            )
         if op == "CreateSnapshots":
             instance_spec_key = find_key_case_insensitive(payload, "InstanceSpecification")
             if instance_spec_key is not None and isinstance(payload.get(instance_spec_key), dict):
@@ -16322,9 +16514,21 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                 delete_key_if_present_case_insensitive(inst_spec, "ExcludeDataVolumeIds")
             set_key_if_present_case_insensitive(payload, "CopyTagsFromSource", "volume")
             set_key_if_present_case_insensitive(payload, "Description", "stackyard snapshot set")
+        if op == "CreateSubnet":
+            _replace_payload(
+                {
+                    "VpcId": ec2_get_runtime_value("vpcid"),
+                    "CidrBlock": "10.40.1.0/24",
+                    "AvailabilityZone": "us-east-1a",
+                }
+            )
         if op == "CreateTags":
-            if not set_key_if_present_case_insensitive(payload, "Resources", [ec2_get_runtime_value("vpcid")]):
-                set_key_if_present_case_insensitive(payload, "ResourceIds", [ec2_get_runtime_value("vpcid")])
+            _replace_payload(
+                {
+                    "Resources": [ec2_get_runtime_value("vpcid")],
+                    "Tags": [{"Key": "env", "Value": "test"}],
+                }
+            )
         if op == "AssociateAddress":
             _replace_payload(
                 {
@@ -16342,15 +16546,22 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         if op == "AssociateClientVpnTargetNetwork":
             set_key_if_present_case_insensitive(payload, "ClientVpnEndpointId", ec2_get_runtime_value("clientvpnendpointid"))
             set_key_if_present_case_insensitive(payload, "SubnetId", ec2_get_runtime_value("subnetid"))
+        if op == "AssociateRouteTable":
+            _replace_payload(
+                {
+                    "RouteTableId": ec2_get_runtime_value("routetableid"),
+                    "SubnetId": ec2_get_runtime_value("subnetid"),
+                }
+            )
         if op == "AssociateIamInstanceProfile":
-            set_key_if_present_case_insensitive(payload, "InstanceId", ec2_get_runtime_value("instanceid"))
-            iip_key = find_key_case_insensitive(payload, "IamInstanceProfile")
-            if iip_key is not None and isinstance(payload.get(iip_key), dict):
-                iip = payload[iip_key]
-                set_key_if_present_case_insensitive(iip, "Name", "stackyard-profile")
-                arn_key = find_key_case_insensitive(iip, "Arn")
-                if arn_key is not None:
-                    iip[arn_key] = ""
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "IamInstanceProfile": {
+                        "Name": "stackyard-profile",
+                    },
+                }
+            )
         if op == "AssociateInstanceEventWindow":
             set_key_if_present_case_insensitive(payload, "InstanceEventWindowId", ec2_get_runtime_value("instanceeventwindowid"))
             assoc_key = find_key_case_insensitive(payload, "AssociationTarget")
@@ -16393,6 +16604,13 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "CidrBlock": "10.220.0.0/16",
                 }
             )
+        if op == "AssociateSubnetCidrBlock":
+            _replace_payload(
+                {
+                    "SubnetId": ec2_get_runtime_value("subnetid"),
+                    "Ipv6CidrBlock": "2001:db8:1::/64",
+                }
+            )
         if op == "AttachClassicLinkVpc":
             _replace_payload(
                 {
@@ -16418,6 +16636,14 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             )
         if op == "AcceptAddressTransfer":
             _replace_payload({"Address": "203.0.113.10"})
+        if op == "AcceptTransitGatewayMulticastDomainAssociations":
+            _replace_payload(
+                {
+                    "TransitGatewayMulticastDomainId": ec2_get_runtime_value("transitgatewaymulticastdomainid"),
+                    "TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewayvpcattachmentid"),
+                    "SubnetIds": [ec2_get_runtime_value("subnetid")],
+                }
+            )
         if op == "AcceptTransitGatewayPeeringAttachment":
             _replace_payload({"TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewaypeeringattachmentid")})
         if op == "AcceptTransitGatewayVpcAttachment":
@@ -16443,6 +16669,13 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         if op == "DescribeIdentityIdFormat":
             set_key_if_present_case_insensitive(payload, "Resource", "instance")
             set_key_if_present_case_insensitive(payload, "PrincipalArn", "arn:aws:iam::123456789012:user/stackyard")
+        if op == "DescribeAddressesAttribute":
+            _replace_payload(
+                {
+                    "AllocationIds": [ec2_get_runtime_value("allocationid")],
+                    "Attribute": "domain-name",
+                }
+            )
         if op == "DescribeImageAttribute":
             set_key_if_present_case_insensitive(payload, "ImageId", ec2_get_runtime_value("imageid"))
             set_key_if_present_case_insensitive(payload, "Attribute", "description")
@@ -16503,6 +16736,23 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "OfferingId": "offering-1",
                 }
             )
+        if op == "GetAwsNetworkPerformanceData":
+            _replace_payload(
+                {
+                    "StartTime": "2026-01-01T00:00:00Z",
+                    "EndTime": "2026-01-01T00:05:00Z",
+                    "DataQueries": [
+                        {
+                            "Id": "query-1",
+                            "Source": "us-east-1",
+                            "Destination": "us-west-2",
+                            "Metric": "aggregate-latency",
+                            "Period": "five-minutes",
+                            "Statistic": "p50",
+                        }
+                    ],
+                }
+            )
         if op == "GetLaunchTemplateData":
             _replace_payload({"InstanceId": ec2_get_runtime_value("instanceid")})
         if op == "GetInstanceTpmEkPub":
@@ -16546,15 +16796,12 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                 }
             )
         if op == "ProvisionIpamPoolCidr":
-            set_key_if_present_case_insensitive(payload, "IpamPoolId", ec2_get_runtime_value("ipampoolid"))
-            set_key_if_present_case_insensitive(payload, "NetmaskLength", 24)
-            ctx_key = find_key_case_insensitive(payload, "CidrAuthorizationContext")
-            if ctx_key is not None and isinstance(payload.get(ctx_key), dict):
-                ctx = payload[ctx_key]
-                set_key_if_present_case_insensitive(ctx, "Message", "stackyard")
-                set_key_if_present_case_insensitive(ctx, "Signature", "stackyard")
-            delete_key_if_present_case_insensitive(payload, "IpamExternalResourceVerificationTokenId")
-            delete_key_if_present_case_insensitive(payload, "VerificationMethod")
+            _replace_payload(
+                {
+                    "IpamPoolId": ec2_get_runtime_value("ipampoolid"),
+                    "Cidr": "10.131.0.0/24",
+                }
+            )
         if op == "ProvisionPublicIpv4PoolCidr":
             set_key_if_present_case_insensitive(payload, "IpamPoolId", ec2_get_runtime_value("ipampoolid"))
             set_key_if_present_case_insensitive(payload, "PoolId", ec2_get_runtime_value("publicipv4poolid"))
@@ -16583,6 +16830,41 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "Description": "stackyard",
                 }
             )
+        if op == "RegisterInstanceEventNotificationAttributes":
+            _replace_payload(
+                {
+                    "InstanceTagAttribute": {
+                        "InstanceTagKeys": ["env", "team"],
+                    }
+                }
+            )
+        if op == "RunInstances":
+            _replace_payload(
+                {
+                    "ImageId": ec2_get_runtime_value("imageid"),
+                    "InstanceType": "t3.micro",
+                    "MinCount": 1,
+                    "MaxCount": 1,
+                }
+            )
+        if op == "EnableAwsNetworkPerformanceMetricSubscription":
+            _replace_payload(
+                {
+                    "Source": "us-east-1",
+                    "Destination": "us-west-2",
+                    "Metric": "aggregate-latency",
+                    "Statistic": "p50",
+                }
+            )
+        if op == "EnableTransitGatewayRouteTablePropagation":
+            _replace_payload(
+                {
+                    "TransitGatewayRouteTableId": ec2_get_runtime_value("transitgatewayroutetableid"),
+                    "TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewayvpcattachmentid"),
+                }
+            )
+        if op == "EnableVpcClassicLinkDnsSupport":
+            _replace_payload({"VpcId": ec2_get_runtime_value("vpcid")})
         if op == "EnableFastLaunch":
             _replace_payload({"ImageId": ec2_get_runtime_value("imageid")})
         if op == "DisableFastLaunch":
@@ -16627,6 +16909,29 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             )
         if op == "RestoreSnapshotTier":
             _replace_payload({"SnapshotId": ec2_get_runtime_value("snapshotid")})
+        if op == "AuthorizeClientVpnIngress":
+            _replace_payload(
+                {
+                    "ClientVpnEndpointId": ec2_get_runtime_value("clientvpnendpointid"),
+                    "TargetNetworkCidr": "10.240.0.0/16",
+                    "AccessGroupId": "grp-stage21",
+                    "Description": "stage21-rule",
+                }
+            )
+        if op in {"AuthorizeSecurityGroupIngress", "RevokeSecurityGroupIngress"}:
+            _replace_payload(
+                {
+                    "GroupId": ec2_get_runtime_value("groupid"),
+                    "IpPermissions": [
+                        {
+                            "IpProtocol": "tcp",
+                            "FromPort": 80,
+                            "ToPort": 80,
+                            "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                        }
+                    ],
+                }
+            )
         if op in {"ResetInstanceAttribute", "ResetNetworkInterfaceAttribute"}:
             if op == "ResetInstanceAttribute":
                 _replace_payload({"InstanceId": ec2_get_runtime_value("instanceid"), "Attribute": "sourceDestCheck"})
@@ -16659,37 +16964,134 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         if op == "ImportKeyPair":
             set_key_if_present_case_insensitive(payload, "PublicKeyMaterial", "c3RhY2t5YXJk")
         if op == "BundleInstance":
-            storage_key = find_key_case_insensitive(payload, "Storage")
-            if storage_key is not None and isinstance(payload.get(storage_key), dict):
-                storage = payload[storage_key]
-                s3_key = find_key_case_insensitive(storage, "S3")
-                if s3_key is not None and isinstance(storage.get(s3_key), dict):
-                    s3 = storage[s3_key]
-                    set_key_if_present_case_insensitive(s3, "AWSAccessKeyId", "stackyard")
-                    set_key_if_present_case_insensitive(s3, "Bucket", "stackyard")
-                    set_key_if_present_case_insensitive(s3, "Prefix", "stackyard")
-                    set_key_if_present_case_insensitive(s3, "UploadPolicy", "c3RhY2t5YXJk")
-                    set_key_if_present_case_insensitive(s3, "UploadPolicySignature", "c3RhY2t5YXJk")
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "Storage": {
+                        "S3": {
+                            "AWSAccessKeyId": "stackyard",
+                            "Bucket": "stage87-bucket",
+                            "Prefix": "stage87-prefix",
+                            "UploadPolicy": "c3RhZ2U4Ny1wb2xpY3k=",
+                            "UploadPolicySignature": "stage87-signature",
+                        }
+                    },
+                }
+            )
         if op == "ModifyInstanceAttribute":
-            user_data_key = find_key_case_insensitive(payload, "UserData")
-            if user_data_key is not None and isinstance(payload.get(user_data_key), dict):
-                user_data = payload[user_data_key]
-                set_key_if_present_case_insensitive(user_data, "Value", "c3RhY2t5YXJk")
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "Attribute": "instanceType",
+                    "InstanceType": {"Value": "t3.small"},
+                }
+            )
         if op == "ModifyImageAttribute":
-            set_key_if_present_case_insensitive(payload, "ImageId", ec2_get_runtime_value("imageid"))
-            set_key_if_present_case_insensitive(payload, "Attribute", "description")
-            desc_key = find_key_case_insensitive(payload, "Description")
-            if desc_key is not None and isinstance(payload.get(desc_key), dict):
-                set_key_if_present_case_insensitive(payload[desc_key], "Value", "stackyard image")
-            delete_key_if_present_case_insensitive(payload, "LaunchPermission")
-            delete_key_if_present_case_insensitive(payload, "OperationType")
-            delete_key_if_present_case_insensitive(payload, "ProductCodes")
-            delete_key_if_present_case_insensitive(payload, "UserGroups")
-            delete_key_if_present_case_insensitive(payload, "UserIds")
-            delete_key_if_present_case_insensitive(payload, "OrganizationArns")
-            delete_key_if_present_case_insensitive(payload, "OrganizationalUnitArns")
-            delete_key_if_present_case_insensitive(payload, "ImdsSupport")
-            delete_key_if_present_case_insensitive(payload, "Value")
+            _replace_payload(
+                {
+                    "ImageId": ec2_get_runtime_value("imageid"),
+                    "Attribute": "description",
+                    "Description": {"Value": "stackyard image"},
+                }
+            )
+        if op == "ModifyAddressAttribute":
+            _replace_payload(
+                {
+                    "AllocationId": ec2_get_runtime_value("allocationid"),
+                    "DomainName": "mail.example.com",
+                }
+            )
+        if op == "ModifyInstanceMaintenanceOptions":
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "AutoRecovery": "disabled",
+                    "RebootMigration": "disabled",
+                }
+            )
+        if op == "ModifyInstanceMetadataOptions":
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "HttpEndpoint": "enabled",
+                    "HttpProtocolIpv6": "disabled",
+                    "HttpPutResponseHopLimit": 5,
+                    "HttpTokens": "required",
+                    "InstanceMetadataTags": "enabled",
+                }
+            )
+        if op == "ModifyInstancePlacement":
+            _replace_payload(
+                {
+                    "InstanceId": ec2_get_runtime_value("instanceid"),
+                    "Affinity": "default",
+                    "GroupName": "",
+                    "Tenancy": "default",
+                }
+            )
+        if op == "ModifyNetworkInterfaceAttribute":
+            _replace_payload(
+                {
+                    "NetworkInterfaceId": ec2_get_runtime_value("networkinterfaceid"),
+                    "Description": {"Value": "updated interface"},
+                    "SourceDestCheck": {"Value": False},
+                }
+            )
+        if op == "ModifyPublicIpDnsNameOptions":
+            _replace_payload(
+                {
+                    "NetworkInterfaceId": ec2_get_runtime_value("networkinterfaceid"),
+                    "HostnameType": "public-ipv4-dns-name",
+                }
+            )
+        if op == "ModifyReservedInstances":
+            _replace_payload(
+                {
+                    "ReservedInstancesIds": ["ri-stage1300001"],
+                    "TargetConfigurations": [
+                        {
+                            "InstanceCount": 1,
+                            "InstanceType": "m5.large",
+                            "Scope": "Region",
+                        }
+                    ],
+                }
+            )
+        if op == "ModifySubnetAttribute":
+            _replace_payload(
+                {
+                    "SubnetId": ec2_get_runtime_value("subnetid"),
+                    "MapPublicIpOnLaunch": {"Value": False},
+                }
+            )
+        if op == "ModifyVerifiedAccessInstanceLoggingConfiguration":
+            _replace_payload(
+                {
+                    "VerifiedAccessInstanceId": ec2_get_runtime_value("verifiedaccessinstanceid"),
+                    "AccessLogs": {
+                        "IncludeTrustContext": True,
+                        "LogVersion": "ocsf-1.0.0-rc.2",
+                        "CloudWatchLogs": {
+                            "Enabled": True,
+                            "LogGroup": "stage69-log-group",
+                        },
+                    },
+                }
+            )
+        if op == "ModifyVolumeAttribute":
+            _replace_payload(
+                {
+                    "VolumeId": ec2_get_runtime_value("volumeid"),
+                    "AutoEnableIO": {"Value": False},
+                }
+            )
+        if op == "ModifyVpcAttribute":
+            _replace_payload(
+                {
+                    "VpcId": ec2_get_runtime_value("vpcid"),
+                    "EnableDnsSupport": {"Value": False},
+                }
+            )
         if op == "ModifyVpcEndpointConnectionNotification":
             set_key_if_present_case_insensitive(payload, "ConnectionNotificationId", "vpce-nfn-00000000")
             set_key_if_present_case_insensitive(payload, "ConnectionNotificationArn", "arn:aws:sns:us-east-1:123456789012:stackyard")
@@ -20182,7 +20584,7 @@ def ebs_seed_environment(
         "--environment-name",
         environment_name,
         "--solution-stack-name",
-        "stackyard",
+        ELASTICBEANSTALK_DEFAULT_SOLUTION_STACK,
     ]
     if version_label:
         args.extend(["--version-label", version_label])
@@ -24159,6 +24561,18 @@ def s3_put_object_bytes(
     if isinstance(data, dict):
         s3_record_runtime_payload(region, data)
         return True
+    status_code, _ = invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        body=body,
+        extra_headers={"Content-Type": "application/octet-stream"},
+    )
+    if 200 <= status_code < 300:
+        return True
     return False
 
 
@@ -24239,6 +24653,17 @@ def s3_ensure_object_lock_configuration(
             json.dumps({"ObjectLockEnabled": "Enabled"}, separators=(",", ":")),
         ],
     )
+
+
+def s3_ensure_bucket_website(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket_name: str,
+) -> None:
+    bucket = s3_ensure_bucket(aws_bin, endpoint_url, region, env, bucket_name)
+    invoke_s3_put_bucket_website_raw(endpoint_url, region, env, bucket)
 
 
 def s3_ensure_bucket_policy(
@@ -35737,7 +36162,7 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "PutBucketAbac":
-            _replace_payload({"Bucket": bucket_name, "AbacStatus": {"Status": "Enabled"}})
+            _replace_payload({"Bucket": bucket_name, "AbacStatus": "Enabled"})
             return hydrated
 
         if op == "PutBucketAccelerateConfiguration":
@@ -35789,6 +36214,18 @@ def hydrate_payload_with_service_state(
                     "Bucket": bucket_name,
                     "ObjectLockConfiguration": {
                         "ObjectLockEnabled": "Enabled",
+                    },
+                }
+            )
+            return hydrated
+
+        if op == "PutBucketWebsite":
+            _replace_payload(
+                {
+                    "Bucket": bucket_name,
+                    "WebsiteConfiguration": {
+                        "IndexDocument": {"Suffix": "index.html"},
+                        "ErrorDocument": {"Key": "error.html"},
                     },
                 }
             )
@@ -35961,7 +36398,7 @@ def hydrate_payload_with_service_state(
                     "Bucket": bucket_name,
                     "Key": encrypted_key,
                     "ObjectEncryption": {
-                        "SSE-KMS": {
+                        "SSEKMS": {
                             "KMSKeyArn": "arn:aws:kms:us-east-1:123456789012:key/stackyard-coverage",
                             "BucketKeyEnabled": False,
                         }
@@ -35994,6 +36431,11 @@ def hydrate_payload_with_service_state(
 
         if op == "GetBucketPolicy":
             s3_ensure_bucket_policy(aws_bin, endpoint_url, region, env, bucket_name)
+            _replace_payload({"Bucket": bucket_name})
+            return hydrated
+
+        if op == "GetBucketWebsite":
+            s3_ensure_bucket_website(aws_bin, endpoint_url, region, env, bucket_name)
             _replace_payload({"Bucket": bucket_name})
             return hydrated
 
@@ -36431,6 +36873,18 @@ def hydrate_payload_with_service_state(
             )
             return hydrated
 
+        if op == "CreateSnapshotSchedule":
+            snapshot_schedule_identifier = f"{REDSHIFT_DEFAULT_SNAPSHOT_SCHEDULE_ID}-{unique}"
+            state["snapshot_schedule_identifier"] = snapshot_schedule_identifier
+            _replace_payload(
+                {
+                    "SnapshotScheduleIdentifier": snapshot_schedule_identifier,
+                    "ScheduleDefinitions": ["rate(1 day)"],
+                    "ScheduleDescription": "stackyard coverage schedule",
+                }
+            )
+            return hydrated
+
         if op == "CreateTags":
             _replace_payload(
                 {
@@ -36534,9 +36988,24 @@ def hydrate_payload_with_service_state(
             _replace_payload({"SnapshotIdentifier": snapshot_identifier, "AccountWithRestoreAccess": snapshot_restore_account})
             return hydrated
 
+        if op == "AuthorizeClusterSecurityGroupIngress":
+            security_group_name = redshift_ensure_security_group(aws_bin, endpoint_url, region, env)
+            _replace_payload({"ClusterSecurityGroupName": security_group_name, "CIDRIP": "10.0.0.0/24"})
+            return hydrated
+
+        if op == "AuthorizeDataShare":
+            data_share_arn, consumer_identifier = redshift_ensure_data_share(aws_bin, endpoint_url, region, env)
+            _replace_payload({"DataShareArn": data_share_arn, "ConsumerIdentifier": consumer_identifier, "AllowWrites": False})
+            return hydrated
+
         if op == "ModifyAquaConfiguration":
             cluster_identifier = redshift_ensure_cluster(aws_bin, endpoint_url, region, env)
             _replace_payload({"ClusterIdentifier": cluster_identifier, "AquaConfigurationStatus": "enabled"})
+            return hydrated
+
+        if op == "ModifyLakehouseConfiguration":
+            cluster_identifier = redshift_ensure_cluster(aws_bin, endpoint_url, region, env)
+            _replace_payload({"ClusterIdentifier": cluster_identifier, "LakehouseConfiguration": "enabled"})
             return hydrated
 
         if op == "ModifyClusterDbRevision":
@@ -36886,6 +37355,11 @@ def hydrate_payload_with_service_state(
             _replace_payload({"ResourceArn": resource_arn})
             return hydrated
 
+        if op == "GetIdentityCenterAuthToken":
+            idc_application_arn = redshift_ensure_idc_application(aws_bin, endpoint_url, region, env)
+            _replace_payload({"RedshiftIdcApplicationArn": idc_application_arn})
+            return hydrated
+
         if op == "EnableLogging":
             cluster_identifier = redshift_ensure_cluster(aws_bin, endpoint_url, region, env)
             _replace_payload(
@@ -36954,6 +37428,20 @@ def hydrate_payload_with_service_state(
                 env,
             )
             _replace_payload({"SnapshotIdentifier": snapshot_identifier, "AccountWithRestoreAccess": snapshot_restore_account})
+            return hydrated
+
+        if op == "RevokeClusterSecurityGroupIngress":
+            security_group_name = redshift_ensure_security_group(aws_bin, endpoint_url, region, env)
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "redshift",
+                "authorize-cluster-security-group-ingress",
+                env,
+                ["--cluster-security-group-name", security_group_name, "--cidrip", "10.0.0.0/24"],
+            )
+            _replace_payload({"ClusterSecurityGroupName": security_group_name, "CIDRIP": "10.0.0.0/24"})
             return hydrated
 
         if op == "CancelResize":
@@ -37100,6 +37588,11 @@ def hydrate_payload_with_service_state(
         if op == "RejectDataShare":
             data_share_arn, _ = redshift_ensure_data_share(aws_bin, endpoint_url, region, env)
             _replace_payload({"DataShareArn": data_share_arn})
+            return hydrated
+
+        if op == "DeauthorizeDataShare":
+            data_share_arn, consumer_identifier = redshift_ensure_data_share(aws_bin, endpoint_url, region, env)
+            _replace_payload({"DataShareArn": data_share_arn, "ConsumerIdentifier": consumer_identifier})
             return hydrated
 
         if op == "ResizeCluster":
@@ -46729,6 +47222,10 @@ def hydrate_payload_with_service_state(
         default_env = "stackyard-env-seed"
         unique_suffix = str(int(time.time()))
 
+        def _replace_payload(values: dict[str, object]) -> None:
+            payload.clear()
+            payload.update(values)
+
         app_name = ""
         listed_apps = ebs_describe_application_names(aws_bin, endpoint_url, region, env)
         if op == "CreateApplication":
@@ -46840,7 +47337,7 @@ def hydrate_payload_with_service_state(
                 env,
                 app_name,
                 default_env,
-                "",
+                version_label,
                 "",
             )
             if seeded_name:
@@ -46888,7 +47385,8 @@ def hydrate_payload_with_service_state(
                 set_key_if_present_case_insensitive(payload, "VersionLabel", version_label)
 
         if op == "ComposeEnvironments":
-            set_key_if_present_case_insensitive(payload, "VersionLabels", [version_label])
+            _replace_payload({"ApplicationName": app_name, "VersionLabels": [version_label]})
+            return payload
 
         if op in {"CreateConfigurationTemplate", "UpdateConfigurationTemplate", "DeleteConfigurationTemplate", "DescribeConfigurationOptions"}:
             set_key_if_present_case_insensitive(payload, "ApplicationName", app_name)
@@ -46904,25 +47402,25 @@ def hydrate_payload_with_service_state(
             set_key_if_present_case_insensitive(payload, "PlatformArn", "")
             set_key_if_present_case_insensitive(payload, "EnvironmentId", "")
 
-        if op in {"CreateEnvironment", "UpdateEnvironment"}:
-            set_key_if_present_case_insensitive(payload, "ApplicationName", app_name)
-            if op == "CreateEnvironment":
-                set_key_if_present_case_insensitive(payload, "EnvironmentName", env_name or default_env)
-                if template_name:
-                    set_key_if_present_case_insensitive(payload, "TemplateName", template_name)
-                if version_label:
-                    set_key_if_present_case_insensitive(payload, "VersionLabel", version_label)
-            else:
-                set_key_if_present_case_insensitive(payload, "EnvironmentName", env_name)
-                set_key_if_present_case_insensitive(payload, "EnvironmentId", env_id)
-                if version_label:
-                    set_key_if_present_case_insensitive(payload, "VersionLabel", version_label)
-                if template_name:
-                    set_key_if_present_case_insensitive(payload, "TemplateName", template_name)
-            if version_label and op not in {"CreateEnvironment", "UpdateEnvironment"}:
-                set_key_if_present_case_insensitive(payload, "VersionLabel", version_label)
-            if template_name and op not in {"CreateEnvironment", "UpdateEnvironment"}:
-                set_key_if_present_case_insensitive(payload, "TemplateName", template_name)
+        if op == "CreateEnvironment":
+            replacement = {
+                "ApplicationName": app_name,
+                "EnvironmentName": env_name or default_env,
+                "SolutionStackName": ELASTICBEANSTALK_DEFAULT_SOLUTION_STACK,
+            }
+            if version_label:
+                replacement["VersionLabel"] = version_label
+            _replace_payload(replacement)
+            return payload
+
+        if op == "UpdateEnvironment":
+            replacement = {"EnvironmentName": env_name, "Description": "stackyard coverage update"}
+            if env_id:
+                replacement["EnvironmentId"] = env_id
+            if version_label:
+                replacement["VersionLabel"] = version_label
+            _replace_payload(replacement)
+            return payload
 
         if op in {
             "AssociateEnvironmentOperationsRole",
@@ -46939,26 +47437,40 @@ def hydrate_payload_with_service_state(
             "RequestEnvironmentInfo",
             "RetrieveEnvironmentInfo",
         }:
-            set_key_if_present_case_insensitive(payload, "EnvironmentName", env_name)
-            set_key_if_present_case_insensitive(payload, "EnvironmentId", env_id)
+            replacement: dict[str, object] = {"EnvironmentName": env_name}
+            if env_id:
+                replacement["EnvironmentId"] = env_id
+            if op == "DescribeEnvironmentManagedActionHistory":
+                replacement["MaxItems"] = 10
+                replacement["NextToken"] = ""
+            if op in {"RequestEnvironmentInfo", "RetrieveEnvironmentInfo"}:
+                replacement["InfoType"] = ELASTICBEANSTALK_DEFAULT_INFO_TYPE
+            _replace_payload(replacement)
+            if op != "ApplyEnvironmentManagedAction":
+                return payload
 
         if op == "AssociateEnvironmentOperationsRole":
-            set_key_if_present_case_insensitive(
-                payload,
-                "OperationsRole",
-                "arn:aws:iam::123456789012:role/stackyard-eb-ops",
+            _replace_payload(
+                {
+                    "EnvironmentName": env_name,
+                    "OperationsRole": ELASTICBEANSTALK_DEFAULT_OPERATIONS_ROLE,
+                }
             )
+            return payload
 
         if op == "ApplyEnvironmentManagedAction":
-            set_key_if_present_case_insensitive(payload, "EnvironmentName", env_name)
-            set_key_if_present_case_insensitive(payload, "EnvironmentId", env_id)
             action_ids = ebs_describe_managed_action_ids(aws_bin, endpoint_url, region, env, env_name)
+            replacement: dict[str, object] = {"EnvironmentName": env_name}
+            if env_id:
+                replacement["EnvironmentId"] = env_id
             if action_ids:
-                set_key_if_present_case_insensitive(payload, "ActionId", action_ids[0])
+                replacement["ActionId"] = action_ids[0]
+            _replace_payload(replacement)
+            return payload
 
         if op == "DeleteEnvironmentConfiguration":
-            set_key_if_present_case_insensitive(payload, "ApplicationName", app_name)
-            set_key_if_present_case_insensitive(payload, "EnvironmentName", env_name)
+            _replace_payload({"ApplicationName": app_name, "EnvironmentName": env_name})
+            return payload
 
         if op == "SwapEnvironmentCNAMEs":
             set_key_if_present_case_insensitive(payload, "SourceEnvironmentName", env_name)
@@ -46966,13 +47478,91 @@ def hydrate_payload_with_service_state(
             set_key_if_present_case_insensitive(payload, "DestinationEnvironmentName", env_name)
             set_key_if_present_case_insensitive(payload, "DestinationEnvironmentId", env_id)
 
+        if op == "CreatePlatformVersion":
+            _replace_payload(
+                {
+                    "PlatformName": f"stackyard-platform-{unique_suffix}",
+                    "PlatformVersion": "1.0.0",
+                    "PlatformDefinitionBundle": {
+                        "S3Bucket": "stackyard-bundle-bucket",
+                        "S3Key": "platform.zip",
+                    },
+                }
+            )
+            return payload
+
         if op in {"DescribePlatformVersion", "DeletePlatformVersion"} and platform_arn:
-            set_key_if_present_case_insensitive(payload, "PlatformArn", platform_arn)
+            _replace_payload({"PlatformArn": platform_arn})
+            return payload
 
         if op in {"ListPlatformVersions", "ListPlatformBranches", "DescribeEnvironmentManagedActionHistory"}:
             set_key_if_present_case_insensitive(payload, "NextToken", "")
 
+        if op == "UpdateApplicationResourceLifecycle":
+            _replace_payload(
+                {
+                    "ApplicationName": app_name,
+                    "ResourceLifecycleConfig": {
+                        "ServiceRole": ELASTICBEANSTALK_DEFAULT_OPERATIONS_ROLE,
+                        "VersionLifecycleConfig": {
+                            "MaxAgeRule": {
+                                "Enabled": True,
+                                "DeleteSourceFromS3": True,
+                                "MaxAgeInDays": 30,
+                            },
+                            "MaxCountRule": {
+                                "Enabled": True,
+                                "DeleteSourceFromS3": False,
+                                "MaxCount": 25,
+                            },
+                        },
+                    },
+                }
+            )
+            return payload
+
         return payload
+
+    if endpoint.service == "opensearch":
+        hydrated = copy.deepcopy(payload)
+        if not isinstance(hydrated, dict):
+            return payload
+
+        op = endpoint.operation
+
+        def _replace_payload(values: dict[str, object]) -> None:
+            hydrated.clear()
+            hydrated.update(values)
+
+        if op in {"AddDataSource", "UpdateDataSource"}:
+            replacement = {
+                "DomainName": OPENSEARCH_DEFAULT_DOMAIN_NAME,
+                "Name": OPENSEARCH_DEFAULT_DATA_SOURCE_NAME,
+                "DataSourceType": {
+                    "S3GlueDataCatalog": {
+                        "RoleArn": OPENSEARCH_DEFAULT_DATA_SOURCE_ROLE_ARN,
+                    }
+                },
+                "Description": "stackyard data source",
+            }
+            if op == "UpdateDataSource":
+                replacement["Status"] = "ACTIVE"
+            _replace_payload(replacement)
+            return hydrated
+
+        if op == "UpdateScheduledAction":
+            _replace_payload(
+                {
+                    "DomainName": OPENSEARCH_DEFAULT_DOMAIN_NAME,
+                    "ActionID": OPENSEARCH_DEFAULT_SCHEDULED_ACTION_ID,
+                    "ActionType": "SERVICE_SOFTWARE_UPDATE",
+                    "ScheduleAt": "2026-03-13T12:00:00Z",
+                    "DesiredStartTime": 1773403200000,
+                }
+            )
+            return hydrated
+
+        return hydrated
 
     if endpoint.service == "athena":
         op = endpoint.operation
@@ -47796,25 +48386,26 @@ def invoke_s3_create_session_raw(
         return 0, str(err)
 
 
-def invoke_s3_select_object_content_raw(
+def invoke_s3_raw_request(
     endpoint_url: str,
     region: str,
     env: dict[str, str],
+    method: str,
     bucket: str,
-    key: str,
+    key: str = "",
+    query: str = "",
+    body: bytes = b"",
+    extra_headers: dict[str, str] | None = None,
 ) -> tuple[int, str]:
     base = endpoint_url.rstrip("/")
-    url = f"{base}/{urlparse.quote(bucket)}/{urlparse.quote(key)}?select=&select-type=2"
-    body = (
-        "<SelectObjectContentRequest xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
-        "<Expression>SELECT * FROM S3Object</Expression>"
-        "<ExpressionType>SQL</ExpressionType>"
-        "<InputSerialization><CSV><FileHeaderInfo>USE</FileHeaderInfo></CSV></InputSerialization>"
-        "<OutputSerialization><JSON/></OutputSerialization>"
-        "</SelectObjectContentRequest>"
-    ).encode("utf-8")
+    path = f"/{urlparse.quote(bucket)}"
+    if key:
+        path = f"{path}/{urlparse.quote(key, safe='/')}"
+    url = f"{base}{path}"
+    if query:
+        url = f"{url}?{query}"
     headers = sigv4_sign(
-        method="POST",
+        method=method,
         url=url,
         body=body,
         service="s3",
@@ -47822,9 +48413,14 @@ def invoke_s3_select_object_content_raw(
         access_key=env.get("AWS_ACCESS_KEY_ID", ""),
         secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
         session_token=env.get("AWS_SESSION_TOKEN", ""),
-        extra_headers={"Content-Type": "application/xml"},
+        extra_headers=extra_headers or {},
     )
-    req = urlrequest.Request(url=url, method="POST", data=body, headers=headers)
+    req = urlrequest.Request(
+        url=url,
+        method=method,
+        data=body if body or method in {"POST", "PUT", "PATCH"} else None,
+        headers=headers,
+    )
     try:
         with urlrequest.urlopen(req, timeout=20.0) as resp:
             text = resp.read().decode("utf-8", errors="replace")
@@ -47834,6 +48430,171 @@ def invoke_s3_select_object_content_raw(
         return int(err.code), text
     except Exception as err:  # noqa: BLE001
         return 0, str(err)
+
+
+def invoke_s3_put_bucket_abac_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    status: str,
+) -> tuple[int, str]:
+    body = f'<AbacStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">{status}</AbacStatus>'.encode("utf-8")
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        query="abac",
+        body=body,
+        extra_headers={"Content-Type": "application/xml"},
+    )
+
+
+def invoke_s3_put_bucket_website_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+) -> tuple[int, str]:
+    body = (
+        '<WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+        "<IndexDocument><Suffix>index.html</Suffix></IndexDocument>"
+        "<ErrorDocument><Key>error.html</Key></ErrorDocument>"
+        "</WebsiteConfiguration>"
+    ).encode("utf-8")
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        query="website",
+        body=body,
+        extra_headers={"Content-Type": "application/xml"},
+    )
+
+
+def invoke_s3_update_object_encryption_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+) -> tuple[int, str]:
+    body = (
+        '<ObjectEncryption xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+        "<SSE-KMS>"
+        "<KMSKeyArn>arn:aws:kms:us-east-1:123456789012:key/stackyard-coverage</KMSKeyArn>"
+        "<BucketKeyEnabled>false</BucketKeyEnabled>"
+        "</SSE-KMS>"
+        "</ObjectEncryption>"
+    ).encode("utf-8")
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        query="encryption",
+        body=body,
+        extra_headers={"Content-Type": "application/xml"},
+    )
+
+
+def invoke_s3_rename_object_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+    rename_source: str,
+) -> tuple[int, str]:
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        query="renameObject",
+        extra_headers={"x-amz-rename-source": rename_source},
+    )
+
+
+def invoke_s3_upload_part_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+    upload_id: str,
+    part_number: int,
+    body: bytes,
+) -> tuple[int, str]:
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        query=f"partNumber={part_number}&uploadId={urlparse.quote(upload_id)}",
+        body=body,
+        extra_headers={"Content-Type": "application/octet-stream"},
+    )
+
+
+def invoke_s3_upload_part_copy_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+    upload_id: str,
+    part_number: int,
+    copy_source: str,
+) -> tuple[int, str]:
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        query=f"partNumber={part_number}&uploadId={urlparse.quote(upload_id)}",
+        extra_headers={"x-amz-copy-source": copy_source},
+    )
+
+
+def invoke_s3_select_object_content_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+) -> tuple[int, str]:
+    body = (
+        "<SelectObjectContentRequest xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
+        "<Expression>SELECT * FROM S3Object</Expression>"
+        "<ExpressionType>SQL</ExpressionType>"
+        "<InputSerialization><CSV><FileHeaderInfo>USE</FileHeaderInfo></CSV></InputSerialization>"
+        "<OutputSerialization><JSON/></OutputSerialization>"
+        "</SelectObjectContentRequest>"
+    ).encode("utf-8")
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="POST",
+        bucket=bucket,
+        key=key,
+        query="select=&select-type=2",
+        body=body,
+        extra_headers={"Content-Type": "application/xml"},
+    )
 
 
 def run_endpoint(
@@ -48926,14 +49687,8 @@ def run_endpoint(
         endpoint.cli_service,
         endpoint.cli_operation,
     ]
-    if endpoint.service == "s3" and endpoint.operation == "CreateSession":
-        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_DIRECTORY_BUCKET_NAME)).strip()
-        status_code, response_text = invoke_s3_create_session_raw(
-            endpoint_url=endpoint_url,
-            region=region,
-            env=env,
-            bucket=bucket,
-        )
+
+    def finish_s3_raw(status_code: int, response_text: str) -> Result:
         duration_ms = int((time.time() - started) * 1000)
         if 200 <= status_code < 300:
             not_impl = extract_not_implemented_marker(response_text)
@@ -48964,6 +49719,97 @@ def run_endpoint(
             command=f"raw:{endpoint.service}.{endpoint.operation}",
         )
 
+    if endpoint.service == "s3" and endpoint.operation == "PutBucketAbac":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        status = str(payload_value_case_insensitive(payload, "AbacStatus", "Enabled")).strip() or "Enabled"
+        status_code, response_text = invoke_s3_put_bucket_abac_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            status=status,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "UpdateObjectEncryption":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_OBJECT_KEY)).strip()
+        status_code, response_text = invoke_s3_update_object_encryption_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "RenameObject":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_DIRECTORY_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", "coverage-rename-dest.txt")).strip()
+        rename_source = str(payload_value_case_insensitive(payload, "RenameSource", "")).strip()
+        status_code, response_text = invoke_s3_rename_object_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+            rename_source=rename_source,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "UploadPart":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_OBJECT_KEY)).strip()
+        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
+        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
+        try:
+            part_number = int(part_number_raw)
+        except (TypeError, ValueError):
+            part_number = 1
+        status_code, response_text = invoke_s3_upload_part_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+            upload_id=upload_id,
+            part_number=part_number,
+            body=s3_decode_body(payload_value_case_insensitive(payload, "Body", "c3RhY2t5YXJk")),
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "UploadPartCopy":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_OBJECT_KEY)).strip()
+        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
+        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
+        try:
+            part_number = int(part_number_raw)
+        except (TypeError, ValueError):
+            part_number = 1
+        copy_source = str(payload_value_case_insensitive(payload, "CopySource", "")).strip()
+        status_code, response_text = invoke_s3_upload_part_copy_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+            upload_id=upload_id,
+            part_number=part_number,
+            copy_source=copy_source,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "CreateSession":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_DIRECTORY_BUCKET_NAME)).strip()
+        status_code, response_text = invoke_s3_create_session_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+        )
+        return finish_s3_raw(status_code, response_text)
+
     if endpoint.service == "s3" and endpoint.operation == "SelectObjectContent":
         bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
         key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_CSV_OBJECT_KEY)).strip()
@@ -48974,35 +49820,7 @@ def run_endpoint(
             bucket=bucket,
             key=key,
         )
-        duration_ms = int((time.time() - started) * 1000)
-        if 200 <= status_code < 300:
-            not_impl = extract_not_implemented_marker(response_text)
-            if not_impl:
-                return Result(
-                    endpoint=endpoint,
-                    status="not_implemented",
-                    returncode=1,
-                    duration_ms=duration_ms,
-                    detail=not_impl,
-                    command=f"raw:{endpoint.service}.{endpoint.operation}",
-                )
-            return Result(
-                endpoint=endpoint,
-                status="success",
-                returncode=0,
-                duration_ms=duration_ms,
-                detail="ok(raw_fallback)",
-                command=f"raw:{endpoint.service}.{endpoint.operation}",
-            )
-        status, detail = classify_raw_http_failure(status_code, response_text)
-        return Result(
-            endpoint=endpoint,
-            status=status,
-            returncode=1,
-            duration_ms=duration_ms,
-            detail=detail,
-            command=f"raw:{endpoint.service}.{endpoint.operation}",
-        )
+        return finish_s3_raw(status_code, response_text)
 
     if endpoint.service == "s3" and endpoint.operation == "WriteGetObjectResponse":
         request_route = str(payload_value_case_insensitive(payload, "RequestRoute", "stackyard-route")).strip()
@@ -49016,35 +49834,7 @@ def run_endpoint(
             request_token=request_token,
             body_payload=body_payload,
         )
-        duration_ms = int((time.time() - started) * 1000)
-        if 200 <= status_code < 300:
-            not_impl = extract_not_implemented_marker(response_text)
-            if not_impl:
-                return Result(
-                    endpoint=endpoint,
-                    status="not_implemented",
-                    returncode=1,
-                    duration_ms=duration_ms,
-                    detail=not_impl,
-                    command=f"raw:{endpoint.service}.{endpoint.operation}",
-                )
-            return Result(
-                endpoint=endpoint,
-                status="success",
-                returncode=0,
-                duration_ms=duration_ms,
-                detail="ok(raw_fallback)",
-                command=f"raw:{endpoint.service}.{endpoint.operation}",
-            )
-        status, detail = classify_raw_http_failure(status_code, response_text)
-        return Result(
-            endpoint=endpoint,
-            status=status,
-            returncode=1,
-            duration_ms=duration_ms,
-            detail=detail,
-            command=f"raw:{endpoint.service}.{endpoint.operation}",
-        )
+        return finish_s3_raw(status_code, response_text)
 
     cp: subprocess.CompletedProcess[str] | None = None
     text = ""

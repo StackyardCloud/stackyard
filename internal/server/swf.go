@@ -585,11 +585,13 @@ func (s *Server) handleSWFJSONRouter(w http.ResponseWriter, r *http.Request) boo
 		_ = json.Unmarshal(body, &input)
 		execution := s.swfPollExecution(input.Domain)
 		workflowType := s.swfPollWorkflowType(input.Domain)
+		eventTimestamp := s.swfPollExecutionStartTimestamp(input.Domain)
 		respondSWFJSON(w, http.StatusOK, map[string]any{
 			"events": []any{
 				map[string]any{
-					"eventId":   int64(1),
-					"eventType": "WorkflowExecutionStarted",
+					"eventId":        int64(1),
+					"eventTimestamp": eventTimestamp,
+					"eventType":      "WorkflowExecutionStarted",
 					"workflowExecutionStartedEventAttributes": map[string]any{
 						"childPolicy":                  "TERMINATE",
 						"executionStartToCloseTimeout": "3600",
@@ -780,6 +782,17 @@ func (s *Server) swfPollExecution(domain string) swfExecution {
 	}
 	exec := executions[0]
 	return swfExecution{WorkflowId: exec.WorkflowID, RunId: exec.RunID}
+}
+
+func (s *Server) swfPollExecutionStartTimestamp(domain string) float64 {
+	executions := s.swf.ListWorkflowExecutions(domain, swf.StatusOpen)
+	if len(executions) == 0 {
+		executions = s.swf.ListWorkflowExecutions(domain, "")
+	}
+	if len(executions) == 0 || executions[0].StartTime.IsZero() {
+		return swfSyntheticCreationDate(strings.TrimSpace(domain), "poll")
+	}
+	return float64(executions[0].StartTime.Unix())
 }
 
 func (s *Server) swfPollActivityType(domain string) swfActivityType {

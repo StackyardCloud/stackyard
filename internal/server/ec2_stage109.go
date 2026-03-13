@@ -369,15 +369,11 @@ func parseEC2Stage109PriceSchedules(values url.Values) ([]ec2svc.ReservedInstanc
 
 func ec2Stage109LocalGatewayVirtualInterfaceGroupItemFrom(in ec2svc.LocalGatewayVirtualInterfaceGroup) ec2Stage109LocalGatewayVirtualInterfaceGroupItem {
 	return ec2Stage109LocalGatewayVirtualInterfaceGroupItem{
-		ConfigurationState:                   in.ConfigurationState,
-		LocalBgpASN:                          in.LocalBgpASN,
-		LocalBgpASNExtended:                  in.LocalBgpASNExtended,
-		LocalGatewayID:                       in.LocalGatewayID,
-		LocalGatewayVirtualInterfaceGroupARN: in.LocalGatewayVirtualInterfaceGroupARN,
-		LocalGatewayVirtualInterfaceGroupID:  in.LocalGatewayVirtualInterfaceGroupID,
-		LocalGatewayVirtualInterfaceIDSet:    ec2StringSet{Items: in.LocalGatewayVirtualInterfaceIDs},
-		OwnerID:                              in.OwnerID,
-		TagSet:                               ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
+		LocalGatewayID:                      in.LocalGatewayID,
+		LocalGatewayVirtualInterfaceGroupID: in.LocalGatewayVirtualInterfaceGroupID,
+		LocalGatewayVirtualInterfaceIDSet:   ec2StringSet{Items: in.LocalGatewayVirtualInterfaceIDs},
+		OwnerID:                             in.OwnerID,
+		TagSet:                              ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
 	}
 }
 
@@ -514,15 +510,11 @@ type ec2Stage109CreateSnapshotsResponse struct {
 }
 
 type ec2Stage109LocalGatewayVirtualInterfaceGroupItem struct {
-	ConfigurationState                   string       `xml:"configurationState,omitempty"`
-	LocalBgpASN                          *int32       `xml:"localBgpAsn,omitempty"`
-	LocalBgpASNExtended                  *int64       `xml:"localBgpAsnExtended,omitempty"`
-	LocalGatewayID                       string       `xml:"localGatewayId,omitempty"`
-	LocalGatewayVirtualInterfaceGroupARN string       `xml:"localGatewayVirtualInterfaceGroupArn,omitempty"`
-	LocalGatewayVirtualInterfaceGroupID  string       `xml:"localGatewayVirtualInterfaceGroupId,omitempty"`
-	LocalGatewayVirtualInterfaceIDSet    ec2StringSet `xml:"localGatewayVirtualInterfaceIdSet"`
-	OwnerID                              string       `xml:"ownerId,omitempty"`
-	TagSet                               ec2TagSet    `xml:"tagSet"`
+	LocalGatewayID                      string       `xml:"localGatewayId,omitempty"`
+	LocalGatewayVirtualInterfaceGroupID string       `xml:"localGatewayVirtualInterfaceGroupId,omitempty"`
+	LocalGatewayVirtualInterfaceIDSet   ec2StringSet `xml:"localGatewayVirtualInterfaceIdSet"`
+	OwnerID                             string       `xml:"ownerId,omitempty"`
+	TagSet                              ec2TagSet    `xml:"tagSet"`
 }
 
 type ec2Stage109ManagedPrefixListItem struct {
