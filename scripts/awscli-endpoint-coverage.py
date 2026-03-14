@@ -39,8 +39,10 @@ from urllib import request as urlrequest
 
 try:
     import botocore.session as botocore_session
+    from botocore.serialize import create_serializer as botocore_create_serializer
 except Exception:  # noqa: BLE001
     botocore_session = None
+    botocore_create_serializer = None
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -2170,6 +2172,68 @@ EC2_STATEFUL_TOLERATED_PREFIXES: tuple[str, ...] = (
     "Reset",
 )
 
+EC2_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "AcceptTransitGatewayMulticastDomainAssociations",
+        "AllocateIpamPoolCidr",
+        "AssociateIamInstanceProfile",
+        "AssociateRouteTable",
+        "AssociateSubnetCidrBlock",
+        "AuthorizeClientVpnIngress",
+        "AuthorizeSecurityGroupIngress",
+        "BundleInstance",
+        "CreateCapacityReservationFleet",
+        "CreateCustomerGateway",
+        "CreateDhcpOptions",
+        "CreateFleet",
+        "CreateFpgaImage",
+        "CreateInstanceExportTask",
+        "CreateLaunchTemplate",
+        "CreateLaunchTemplateVersion",
+        "CreateNatGateway",
+        "CreateNetworkInterfacePermission",
+        "CreatePlacementGroup",
+        "CreateReservedInstancesListing",
+        "CreateRoute",
+        "CreateSubnet",
+        "CreateTags",
+        "CreateTrafficMirrorTarget",
+        "CreateTransitGatewayPrefixListReference",
+        "CreateTransitGatewayRoute",
+        "CreateVpc",
+        "CreateVpcEndpointConnectionNotification",
+        "CreateVpcEndpointServiceConfiguration",
+        "CreateVpnConnection",
+        "DescribeAddressesAttribute",
+        "EnableAwsNetworkPerformanceMetricSubscription",
+        "EnableTransitGatewayRouteTablePropagation",
+        "EnableVpcClassicLinkDnsSupport",
+        "GetActiveVpnTunnelStatus",
+        "GetAwsNetworkPerformanceData",
+        "GetInstanceTpmEkPub",
+        "GetLaunchTemplateData",
+        "GetVpnConnectionDeviceSampleConfiguration",
+        "ModifyAddressAttribute",
+        "ModifyImageAttribute",
+        "ModifyInstanceAttribute",
+        "ModifyInstanceMaintenanceOptions",
+        "ModifyInstanceMetadataOptions",
+        "ModifyInstancePlacement",
+        "ModifyNetworkInterfaceAttribute",
+        "ModifyPublicIpDnsNameOptions",
+        "ModifyReservedInstances",
+        "ModifySubnetAttribute",
+        "ModifyVerifiedAccessInstanceLoggingConfiguration",
+        "ModifyVolumeAttribute",
+        "ModifyVpcAttribute",
+        "ProvisionIpamPoolCidr",
+        "ResetNetworkInterfaceAttribute",
+        "RegisterInstanceEventNotificationAttributes",
+        "RevokeSecurityGroupIngress",
+        "RunInstances",
+    }
+)
+
 COGNITOUSERPOOLS_STATEFUL_TOLERATED_SERVICE_ERRORS: frozenset[str] = frozenset(
     {
         "AccessDenied",
@@ -2250,6 +2314,12 @@ EKS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "StartInsightsRefresh": ("POST", "/clusters/{clusterName}/insights-refresh"),
     "DescribeInsightsRefresh": ("GET", "/clusters/{clusterName}/insights-refresh"),
 }
+EKS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "CreateCapability",
+        "UpdateCapability",
+    }
+)
 DSQL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "PutClusterPolicy": ("POST", "/cluster/{identifier}/policy"),
     "GetClusterPolicy": ("GET", "/cluster/{identifier}/policy"),
@@ -2603,6 +2673,14 @@ S3TABLES_FORCE_RAW_FALLBACK_OPERATIONS: set[str] = {
     "GetTableRecordExpirationConfiguration",
     "GetTableRecordExpirationJobStatus",
 }
+ROUTE53_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "ListHealthChecks",
+        "ListHostedZones",
+        "ListResourceRecordSets",
+        "UpdateHostedZoneFeatures",
+    }
+)
 COGNITO_DEFAULT_IDENTITY_POOL_NAME = "stackyard-cognito-identity-pool"
 COGNITO_DEFAULT_DEVELOPER_PROVIDER_NAME = "login.stackyard"
 COGNITO_DEFAULT_LOGIN_USER = "coverage-user"
@@ -3655,7 +3733,7 @@ def paymentcryptographydata_raw_fallback_routes() -> dict[str, tuple[str, str]]:
 
 def s3tables_raw_fallback_routes() -> dict[str, tuple[str, str]]:
     return {
-        "GetTable": ("GET", "/tables/{tableBucketARN}"),
+        "GetTable": ("GET", "/tables/{tableBucketARN}/{namespace}/{name}"),
         "TagResource": ("POST", "/tags/{resourceArn}"),
         "ListTagsForResource": ("GET", "/tags/{resourceArn}"),
         "UntagResource": ("DELETE", "/tags/{resourceArn}"),
@@ -5768,31 +5846,35 @@ def invoke_raw_endpoint(
     body: bytes
     extra_headers: dict[str, str]
     if endpoint.service == "ec2":
-        params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2016-11-15")]
+        serialized = serialize_ec2_query_payload(endpoint, payload)
+        if serialized is not None:
+            body, extra_headers = serialized
+        else:
+            params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2016-11-15")]
 
-        def _flatten(prefix: str, value) -> None:
-            if isinstance(value, dict):
-                for child_key, child_value in value.items():
-                    child_prefix = f"{prefix}.{child_key}" if prefix else str(child_key)
-                    _flatten(child_prefix, child_value)
-                return
-            if isinstance(value, list):
-                for idx, item in enumerate(value, start=1):
-                    child_prefix = f"{prefix}.{idx}"
-                    _flatten(child_prefix, item)
-                return
-            if value is None:
-                return
-            if isinstance(value, bool):
-                params.append((prefix, "true" if value else "false"))
-                return
-            params.append((prefix, str(value)))
+            def _flatten(prefix: str, value) -> None:
+                if isinstance(value, dict):
+                    for child_key, child_value in value.items():
+                        child_prefix = f"{prefix}.{child_key}" if prefix else str(child_key)
+                        _flatten(child_prefix, child_value)
+                    return
+                if isinstance(value, list):
+                    for idx, item in enumerate(value, start=1):
+                        child_prefix = f"{prefix}.{idx}"
+                        _flatten(child_prefix, item)
+                    return
+                if value is None:
+                    return
+                if isinstance(value, bool):
+                    params.append((prefix, "true" if value else "false"))
+                    return
+                params.append((prefix, str(value)))
 
-        if isinstance(payload, dict):
-            for key, value in payload.items():
-                _flatten(str(key), value)
-        body = urlparse.urlencode(params, doseq=True).encode("utf-8")
-        extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+            if isinstance(payload, dict):
+                for key, value in payload.items():
+                    _flatten(str(key), value)
+            body = urlparse.urlencode(params, doseq=True).encode("utf-8")
+            extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
     elif endpoint.service == "sns":
         params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2010-03-31")]
 
@@ -13005,6 +13087,45 @@ def get_operation_model(endpoint: Endpoint):
 
     _BOTOCORE_MODEL_CACHE[cache_key] = model
     return model
+
+
+def serialize_ec2_query_payload(endpoint: Endpoint, payload) -> tuple[bytes, dict[str, str]] | None:
+    if botocore_create_serializer is None:
+        return None
+    op_model = get_operation_model(endpoint)
+    if op_model is None:
+        return None
+    service_model = getattr(op_model, "service_model", None)
+    metadata = getattr(service_model, "metadata", {}) or {}
+    protocol = str(metadata.get("protocol", "")).strip().lower()
+    if protocol != "ec2":
+        return None
+    try:
+        try:
+            serializer = botocore_create_serializer(protocol, include_validation=False)
+        except TypeError:
+            serializer = botocore_create_serializer(protocol)
+        request = serializer.serialize_to_request(payload if isinstance(payload, dict) else {}, op_model)
+    except Exception:  # noqa: BLE001
+        return None
+
+    raw_body = request.get("body", b"")
+    if isinstance(raw_body, bytes):
+        body = raw_body
+    elif isinstance(raw_body, str):
+        body = raw_body.encode("utf-8")
+    elif isinstance(raw_body, dict):
+        body = urlparse.urlencode(raw_body, doseq=True).encode("utf-8")
+    else:
+        return None
+
+    headers: dict[str, str] = {}
+    for key, value in (request.get("headers") or {}).items():
+        if value is None:
+            continue
+        headers[str(key)] = str(value)
+    headers.setdefault("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+    return body, headers
 
 
 def placeholder_like(value) -> bool:
@@ -49856,15 +49977,10 @@ def run_endpoint(
         )
 
     input_payload, input_err = generate_cli_input_payload(aws_bin, endpoint, env, input_mode=input_mode)
-    if endpoint.service == "ec2" and endpoint.operation in {
-        "GetVpnConnectionDeviceSampleConfiguration",
-        "GetActiveVpnTunnelStatus",
-        "GetLaunchTemplateData",
-        "GetInstanceTpmEkPub",
-        "ResetNetworkInterfaceAttribute",
-    }:
-        # These operations are more reliable through direct Query API invocation:
-        # CLI model quirks can cause non-portable parameter serialization.
+    if endpoint.service == "ec2" and endpoint.operation in EC2_FORCE_RAW_FALLBACK_OPERATIONS:
+        # These EC2 operations are more reliable through direct Query API invocation:
+        # CLI model quirks can cause non-portable parameter serialization or local
+        # frontend failures before Stackyard sees the request.
         input_err = "unavailable_in_cli"
     if endpoint.service == "ecs" and endpoint.operation == "ExecuteCommand":
         # The awscli ExecuteCommand path requires the local Session Manager plugin binary.
@@ -49887,6 +50003,10 @@ def run_endpoint(
         # These ECS operations currently hit awscli request/response skew in CI:
         # force the raw JSON path so coverage reflects Stackyard behavior, not
         # CLI-side validation or empty-output formatting.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "eks" and endpoint.operation in EKS_FORCE_RAW_FALLBACK_OPERATIONS:
+        # The awscli frontend currently rejects these capability write shapes
+        # before the request reaches Stackyard. Use the existing raw REST path.
         input_err = "unavailable_in_cli"
     if endpoint.service == "sns" and endpoint.operation == "OptInPhoneNumber":
         # awscli models this request as phoneNumber (lower camel), but SNS Query
@@ -50082,8 +50202,10 @@ def run_endpoint(
     if endpoint.service == "cloudformation":
         # Force direct Query fallback for deterministic local endpoint coverage.
         input_err = "unavailable_in_cli"
-    if endpoint.service == "route53" and endpoint.operation == "UpdateHostedZoneFeatures":
-        # This operation isn't available in all awscli builds; force signed REST fallback.
+    if endpoint.service == "route53" and endpoint.operation in ROUTE53_FORCE_RAW_FALLBACK_OPERATIONS:
+        # Some awscli/botocore builds omit UpdateHostedZoneFeatures entirely, and the
+        # Route53 CLI XML parsing path can drop required pagination members from these
+        # list responses. Use signed REST fallback so coverage reflects Stackyard output.
         input_err = "unavailable_in_cli"
     if endpoint.service == "cloudfront":
         # Force direct REST fallback for deterministic local endpoint coverage.
@@ -50562,7 +50684,10 @@ def run_endpoint(
         # valid request shapes before Stackyard ever sees the request.
         input_err = "unavailable_in_cli"
     if input_err == "unavailable_in_cli":
-        payload = build_raw_fallback_payload(endpoint)
+        if endpoint.service == "ec2" and endpoint.operation in EC2_FORCE_RAW_FALLBACK_OPERATIONS and input_payload is not None:
+            payload = copy.deepcopy(input_payload)
+        else:
+            payload = build_raw_fallback_payload(endpoint)
         if payload is None:
             duration_ms = int((time.time() - started) * 1000)
             return Result(
