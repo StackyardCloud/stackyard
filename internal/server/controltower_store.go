@@ -46,7 +46,6 @@ func newControlTowerStore() *controlTowerStore {
 		"driftStatus":            map[string]any{"status": "IN_SYNC"},
 		"latestAvailableVersion": "3.2",
 		"manifest":               map[string]any{"governedRegions": []any{"us-east-1"}},
-		"remediationTypes":       []any{"ENABLED"},
 		"status":                 "ACTIVE",
 		"version":                "3.2",
 	}
@@ -383,9 +382,8 @@ func (s *controlTowerStore) ensureLandingZoneLocked(arn string) map[string]any {
 		"manifest": map[string]any{
 			"governedRegions": []any{"us-east-1"},
 		},
-		"remediationTypes": []any{"ENABLED"},
-		"status":           "ACTIVE",
-		"version":          "3.2",
+		"status":  "ACTIVE",
+		"version": "3.2",
 	}
 	s.landingZones[normalized] = out
 	return out

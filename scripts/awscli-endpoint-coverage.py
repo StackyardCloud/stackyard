@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import xml.etree.ElementTree as xml_etree
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -2198,6 +2199,8 @@ EC2_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "CreateSubnet",
         "CreateTags",
         "CreateTrafficMirrorTarget",
+        "CreateTransitGatewayConnect",
+        "CreateTransitGatewayConnectPeer",
         "CreateTransitGatewayPrefixListReference",
         "CreateTransitGatewayRoute",
         "CreateVpc",
@@ -2210,6 +2213,7 @@ EC2_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "EnableVpcClassicLinkDnsSupport",
         "GetActiveVpnTunnelStatus",
         "GetAwsNetworkPerformanceData",
+        "GetIpamDiscoveredAccounts",
         "GetInstanceTpmEkPub",
         "GetLaunchTemplateData",
         "GetVpnConnectionDeviceSampleConfiguration",
@@ -2318,6 +2322,20 @@ EKS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
     {
         "CreateCapability",
         "UpdateCapability",
+    }
+)
+
+REDSHIFT_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "CreateSnapshotSchedule",
+        "ModifyLakehouseConfiguration",
+        "GetIdentityCenterAuthToken",
+    }
+)
+
+RDS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "DescribeTenantDatabases",
     }
 )
 DSQL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
@@ -3149,6 +3167,7 @@ COGNITOUSERPOOLS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "DeleteIdentityProvider",
         "DeleteWebAuthnCredential",
         "DescribeIdentityProvider",
+        "DescribeTerms",
         "ForgotPassword",
         "ForgetDevice",
         "GetDevice",
@@ -3176,6 +3195,22 @@ COGNITOUSERPOOLS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "UpdateUserPoolClient",
         "VerifySoftwareToken",
         "VerifyUserAttribute",
+    }
+)
+FSX_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        # This API is documented by FSx but not modeled consistently across local
+        # awscli builds yet; use the direct JSON path to keep coverage deterministic.
+        "CreateAndAttachS3AccessPoint",
+    }
+)
+SINGLESIGNON_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        # These IAM Identity Center operations carry union/document-shaped members
+        # that can fail awscli-side validation before Stackyard sees the request.
+        "CreateTrustedTokenIssuer",
+        "PutApplicationAuthenticationMethod",
+        "PutApplicationGrant",
     }
 )
 
@@ -3878,6 +3913,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return supplychain_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "tnb":
         return tnb_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "redshift":
+        return ("POST", "/")
     if endpoint.service == "redshiftserverless":
         return ("POST", "/")
     if endpoint.service == "kinesisvideostreams":
@@ -5957,6 +5994,58 @@ def invoke_raw_endpoint(
                 _flatten(str(key), value)
         body = urlparse.urlencode(params, doseq=True).encode("utf-8")
         extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+    elif endpoint.service == "redshift":
+        params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2012-12-01")]
+
+        def _flatten(prefix: str, value) -> None:
+            if isinstance(value, dict):
+                for child_key, child_value in value.items():
+                    child_prefix = f"{prefix}.{child_key}" if prefix else str(child_key)
+                    _flatten(child_prefix, child_value)
+                return
+            if isinstance(value, list):
+                for idx, item in enumerate(value, start=1):
+                    child_prefix = f"{prefix}.member.{idx}"
+                    _flatten(child_prefix, item)
+                return
+            if value is None:
+                return
+            if isinstance(value, bool):
+                params.append((prefix, "true" if value else "false"))
+                return
+            params.append((prefix, str(value)))
+
+        if isinstance(payload, dict):
+            for key, value in payload.items():
+                _flatten(str(key), value)
+        body = urlparse.urlencode(params, doseq=True).encode("utf-8")
+        extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+    elif endpoint.service == "rds":
+        params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2014-10-31")]
+
+        def _flatten(prefix: str, value) -> None:
+            if isinstance(value, dict):
+                for child_key, child_value in value.items():
+                    child_prefix = f"{prefix}.{child_key}" if prefix else str(child_key)
+                    _flatten(child_prefix, child_value)
+                return
+            if isinstance(value, list):
+                for idx, item in enumerate(value, start=1):
+                    child_prefix = f"{prefix}.member.{idx}"
+                    _flatten(child_prefix, item)
+                return
+            if value is None:
+                return
+            if isinstance(value, bool):
+                params.append((prefix, "true" if value else "false"))
+                return
+            params.append((prefix, str(value)))
+
+        if isinstance(payload, dict):
+            for key, value in payload.items():
+                _flatten(str(key), value)
+        body = urlparse.urlencode(params, doseq=True).encode("utf-8")
+        extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
     elif endpoint.service == "elasticache":
         params: list[tuple[str, str]] = [("Action", endpoint.operation), ("Version", "2015-02-02")]
 
@@ -7144,6 +7233,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
         if endpoint.operation == "RevokeCertificate":
             return {}
         return None
+    if endpoint.service == "rds":
+        return {}
     if endpoint.service == "appconfig":
         return {}
     if endpoint.service == "s3tables":
@@ -9492,6 +9583,11 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
 
     if endpoint.service == "dsql":
         # Some DSQL actions are not yet available in older awscli models; invoke REST endpoints directly.
+        return {}
+
+    if endpoint.service == "redshift":
+        # Some Redshift operations hit awscli query-model validation in certain local versions
+        # even though Stackyard accepts the serialized Query API request shape.
         return {}
 
     if endpoint.service == "lambda":
@@ -13861,6 +13957,77 @@ def ec2_record_runtime_payload(payload) -> None:
     _walk(payload)
 
 
+def ec2_xml_tag_name(tag: str) -> str:
+    clean = str(tag).strip()
+    if "}" in clean:
+        clean = clean.rsplit("}", 1)[-1]
+    if ":" in clean:
+        clean = clean.rsplit(":", 1)[-1]
+    if not clean:
+        return clean
+    return clean[:1].upper() + clean[1:]
+
+
+def ec2_parse_xml_payload(response_text: str) -> dict[str, object] | None:
+    text = str(response_text).strip()
+    if not text or "<" not in text:
+        return None
+    try:
+        root = xml_etree.fromstring(text)
+    except xml_etree.ParseError:
+        return None
+
+    def _convert(element):
+        children = list(element)
+        if not children:
+            return (element.text or "").strip()
+
+        child_tags = [ec2_xml_tag_name(child.tag) for child in children]
+        if child_tags and all(tag in {"Item", "Member"} for tag in child_tags):
+            return [_convert(child) for child in children]
+
+        out: dict[str, object] = {}
+        for child in children:
+            child_name = ec2_xml_tag_name(child.tag)
+            child_value = _convert(child)
+            if child_name in out:
+                existing = out[child_name]
+                if isinstance(existing, list):
+                    existing.append(child_value)
+                else:
+                    out[child_name] = [existing, child_value]
+            else:
+                out[child_name] = child_value
+        return out
+
+    converted = _convert(root)
+    if isinstance(converted, dict):
+        return converted
+    return {ec2_xml_tag_name(root.tag): converted}
+
+
+def ec2_record_runtime_xml(response_text: str) -> dict[str, object] | None:
+    parsed = ec2_parse_xml_payload(response_text)
+    if isinstance(parsed, dict):
+        ec2_record_runtime_payload(parsed)
+        for response_key, runtime_key in (
+            ("TransitGatewayConnect", "transitgatewayconnectid"),
+            ("TransitGatewayPeeringAttachment", "transitgatewaypeeringattachmentid"),
+            ("TransitGatewayVpcAttachment", "transitgatewayvpcattachmentid"),
+        ):
+            value = parsed.get(response_key)
+            if not isinstance(value, dict):
+                continue
+            attachment_id = value.get("TransitGatewayAttachmentId")
+            if isinstance(attachment_id, str) and attachment_id.strip():
+                ec2_add_runtime_value(runtime_key, attachment_id)
+    for token in re.findall(r"\b[a-z][a-z0-9-]{5,}\b", response_text):
+        guessed = ec2_guess_runtime_key_from_id(token)
+        if guessed:
+            ec2_add_runtime_value(guessed, token)
+    return parsed
+
+
 def ec2_reset_runtime_state() -> None:
     state = RUNTIME_STATE.setdefault("ec2", {})
     state["seeded"] = False
@@ -14116,10 +14283,40 @@ def ec2_seed_runtime_state(
         ec2_add_runtime_value(key, value)
 
     def _capture(operation: str, args: Sequence[str] | None = None) -> dict | None:
+        endpoint = Endpoint(
+            service="ec2",
+            cli_service="ec2",
+            operation=kebab_to_pascal(operation),
+            cli_operation=operation,
+            source="seed",
+        )
+
+        def _raw_capture() -> dict | None:
+            input_payload, _ = generate_cli_input_payload(aws_bin, endpoint, env)
+            if isinstance(input_payload, dict):
+                payload = copy.deepcopy(input_payload)
+            else:
+                payload = build_raw_fallback_payload(endpoint)
+            if not isinstance(payload, dict):
+                return None
+            payload = apply_service_payload_tweaks(endpoint, payload)
+            payload = ec2_hydrate_payload(payload)
+            if not isinstance(payload, dict):
+                return None
+            status_code, response_text = invoke_raw_endpoint(endpoint, endpoint_url, region, env, payload)
+            if not (200 <= status_code < 300):
+                return None
+            parsed = ec2_record_runtime_xml(response_text)
+            return parsed if isinstance(parsed, dict) else {}
+
+        if endpoint.operation in EC2_FORCE_RAW_FALLBACK_OPERATIONS:
+            return _raw_capture()
+
         data = run_aws_json(aws_bin, endpoint_url, region, "ec2", operation, env, args)
         if isinstance(data, dict):
             ec2_record_runtime_payload(data)
-        return data
+            return data
+        return _raw_capture()
 
     # Pull currently available IDs first.
     _capture("describe-vpcs")
@@ -15013,6 +15210,7 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         admin_account = "123456789012"
         policy_arn = "arn:aws:fms:us-east-1:123456789012:policy/policy-00000001"
         resource_set_id = "rs-00000001"
+        third_party_firewall = "PALO_ALTO_NETWORKS_CLOUD_NGFW"
         set_key_if_present_case_insensitive(payload, "AdminAccount", admin_account)
         set_key_if_present_case_insensitive(payload, "MemberAccount", admin_account)
         set_key_if_present_case_insensitive(payload, "ResourceAccount", admin_account)
@@ -15020,6 +15218,8 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         set_key_if_present_case_insensitive(payload, "PolicyId", "policy-00000001")
         set_key_if_present_case_insensitive(payload, "ResourceSetId", resource_set_id)
         set_key_if_present_case_insensitive(payload, "Identifier", resource_set_id)
+        set_key_if_present_case_insensitive(payload, "ResourceSetIdentifier", resource_set_id)
+        set_key_if_present_case_insensitive(payload, "ThirdPartyFirewall", third_party_firewall)
 
         if endpoint.operation == "PutAdminAccount":
             payload.clear()
@@ -15061,6 +15261,21 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         elif endpoint.operation == "UntagResource":
             payload.clear()
             payload.update({"ResourceArn": policy_arn, "TagKeys": ["env"]})
+        elif endpoint.operation in {"BatchAssociateResource", "BatchDisassociateResource"}:
+            payload.clear()
+            payload.update(
+                {
+                    "ResourceSetIdentifier": resource_set_id,
+                    "Items": ["arn:aws:ec2:us-east-1:123456789012:instance/i-00000000000000001"],
+                }
+            )
+        elif endpoint.operation in {
+            "AssociateThirdPartyFirewall",
+            "DisassociateThirdPartyFirewall",
+            "GetThirdPartyFirewallAssociationStatus",
+        }:
+            payload.clear()
+            payload.update({"ThirdPartyFirewall": third_party_firewall})
 
     if endpoint.service == "clouddirectory":
         def _normalize_binary_value(node):
@@ -15298,6 +15513,28 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
                     "FileCacheTypeVersion": "2.12",
                     "StorageCapacity": 1200,
                     "SubnetIds": ["subnet-12345678"],
+                }
+            )
+        elif op == "CreateAndAttachS3AccessPoint":
+            payload.clear()
+            payload.update(
+                {
+                    "Name": "stackyard-s3-access-point",
+                    "Type": "OPENZFS",
+                    "OpenZFSConfiguration": {
+                        "VolumeId": volume_id,
+                        "FileSystemIdentity": {
+                            "PosixUser": {
+                                "Uid": 0,
+                                "Gid": 0,
+                            }
+                        },
+                    },
+                    "S3AccessPoint": {
+                        "VpcConfiguration": {
+                            "VpcId": "vpc-12345678",
+                        }
+                    },
                 }
             )
         elif op == "CreateFileSystemFromBackup":
@@ -23685,7 +23922,7 @@ def sesv2_ensure_email_identity(
 ) -> str:
     state = sesv2_runtime_state(region)
     identity = str(state.get("email_identity") or SESV2_DEFAULT_EMAIL_IDENTITY)
-    run_aws_json(
+    data = run_aws_json(
         aws_bin,
         endpoint_url,
         region,
@@ -23694,6 +23931,15 @@ def sesv2_ensure_email_identity(
         env,
         ["--email-identity", identity],
     )
+    if data is None:
+        endpoint = Endpoint(
+            service="sesv2",
+            cli_service="sesv2",
+            operation="CreateEmailIdentity",
+            cli_operation="create-email-identity",
+            source="runtime",
+        )
+        invoke_raw_endpoint(endpoint, endpoint_url, region, env, {"EmailIdentity": identity})
     return identity
 
 
@@ -34938,6 +35184,18 @@ def hydrate_payload_with_service_state(
                 }
             )
             return hydrated
+        if op == "CreateDomainEntry":
+            _replace_payload(
+                {
+                    "DomainName": domain_name,
+                    "DomainEntry": {
+                        "Name": f"www-{unique}",
+                        "Target": "198.51.100.10",
+                        "Type": "A",
+                    },
+                }
+            )
+            return hydrated
         if op == "CreateInstanceSnapshot":
             _replace_payload({"InstanceName": instance_name, "InstanceSnapshotName": f"{instance_snapshot_name}-{unique}"})
             return hydrated
@@ -35158,6 +35416,18 @@ def hydrate_payload_with_service_state(
             return hydrated
         if op == "GetCloudFormationStackRecords":
             _replace_payload({"PageToken": ""})
+            return hydrated
+        if op == "GetDistributionLatestCacheReset":
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "lightsail",
+                "reset-distribution-cache",
+                env,
+                ["--distribution-name", distribution_name],
+            )
+            _replace_payload({"DistributionName": distribution_name})
             return hydrated
         if op == "GetDomain":
             domains_data = run_aws_json(aws_bin, endpoint_url, region, "lightsail", "get-domains", env)
@@ -35420,6 +35690,14 @@ def hydrate_payload_with_service_state(
         if op == "CloseInstancePublicPorts":
             _replace_payload({"InstanceName": instance_name, "PortInfo": {"FromPort": 80, "ToPort": 80, "Protocol": "tcp"}})
             return hydrated
+        if op == "PutInstancePublicPorts":
+            _replace_payload(
+                {
+                    "InstanceName": instance_name,
+                    "PortInfos": [{"FromPort": 80, "ToPort": 80, "Protocol": "tcp", "Cidrs": ["0.0.0.0/0"]}],
+                }
+            )
+            return hydrated
         if op == "CopySnapshot":
             _replace_payload(
                 {
@@ -35454,6 +35732,9 @@ def hydrate_payload_with_service_state(
             return hydrated
         if op == "SendContactMethodVerification":
             _replace_payload({"Protocol": "Email"})
+            return hydrated
+        if op == "TagResource":
+            _replace_payload({"ResourceName": instance_name, "Tags": [{"Key": "env", "Value": "coverage"}]})
             return hydrated
 
         return hydrated
@@ -35568,9 +35849,9 @@ def hydrate_payload_with_service_state(
                 {
                     "ExportDataSource": {
                         "MetricsDataSource": {
-                            "Dimensions": {"ses:from-domain": domain},
+                            "Dimensions": {"EMAIL_IDENTITY": [email_identity]},
                             "Namespace": "VDM",
-                            "Metrics": ["SEND"],
+                            "Metrics": [{"Name": "SEND", "Aggregation": "VOLUME"}],
                             "StartDate": "2025-01-01T00:00:00Z",
                             "EndDate": "2025-01-02T00:00:00Z",
                         }
@@ -49324,6 +49605,55 @@ def run_s3_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_s3_manual_arg_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    bucket = str(payload_value_case_insensitive(payload, "Bucket", "")).strip()
+    key = str(payload_value_case_insensitive(payload, "Key", "")).strip()
+    upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
+    part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
+    try:
+        part_number = int(part_number_raw)
+    except (TypeError, ValueError):
+        part_number = 1
+
+    cmd = list(base_cmd)
+    if bucket:
+        cmd.extend(["--bucket", bucket])
+    if key:
+        cmd.extend(["--key", key])
+    if upload_id:
+        cmd.extend(["--upload-id", upload_id])
+    cmd.extend(["--part-number", str(part_number)])
+
+    if endpoint.operation == "UploadPart":
+        body = s3_decode_body(payload_value_case_insensitive(payload, "Body", "c3RhY2t5YXJk"))
+        with tempfile.NamedTemporaryFile(prefix="stackyard-s3-upload-part-", suffix=".bin", delete=False) as tmp:
+            tmp.write(body)
+            body_path = tmp.name
+        try:
+            cmd.extend(["--body", body_path])
+            cp = run_subprocess(cmd, env)
+        finally:
+            try:
+                os.unlink(body_path)
+            except OSError:
+                pass
+        return cp, cmd, ""
+
+    if endpoint.operation == "UploadPartCopy":
+        copy_source = str(payload_value_case_insensitive(payload, "CopySource", "")).strip()
+        if copy_source:
+            cmd.extend(["--copy-source", copy_source])
+        cp = run_subprocess(cmd, env)
+        return cp, cmd, ""
+
+    raise ValueError(f"unsupported s3 manual arg operation: {endpoint.operation}")
+
+
 def run_neptunedata_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -49673,7 +50003,7 @@ def invoke_s3_put_bucket_abac_raw(
         env=env,
         method="PUT",
         bucket=bucket,
-        query="abac",
+        query="abac=",
         body=body,
         extra_headers={"Content-Type": "application/xml"},
     )
@@ -49725,7 +50055,7 @@ def invoke_s3_update_object_encryption_raw(
         method="PUT",
         bucket=bucket,
         key=key,
-        query="encryption",
+        query="encryption=",
         body=body,
         extra_headers={"Content-Type": "application/xml"},
     )
@@ -49746,7 +50076,7 @@ def invoke_s3_rename_object_raw(
         method="PUT",
         bucket=bucket,
         key=key,
-        query="renameObject",
+        query="renameObject=",
         extra_headers={"x-amz-rename-source": rename_source},
     )
 
@@ -49982,6 +50312,10 @@ def run_endpoint(
         # CLI model quirks can cause non-portable parameter serialization or local
         # frontend failures before Stackyard sees the request.
         input_err = "unavailable_in_cli"
+    if endpoint.service == "fsx" and endpoint.operation in FSX_FORCE_RAW_FALLBACK_OPERATIONS:
+        # Keep coverage stable for FSx operations that are documented ahead of the
+        # local awscli model rollout.
+        input_err = "unavailable_in_cli"
     if endpoint.service == "ecs" and endpoint.operation == "ExecuteCommand":
         # The awscli ExecuteCommand path requires the local Session Manager plugin binary.
         # Use direct ECS JSON fallback to keep coverage host-independent.
@@ -50007,6 +50341,14 @@ def run_endpoint(
     if endpoint.service == "eks" and endpoint.operation in EKS_FORCE_RAW_FALLBACK_OPERATIONS:
         # The awscli frontend currently rejects these capability write shapes
         # before the request reaches Stackyard. Use the existing raw REST path.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "redshift" and endpoint.operation in REDSHIFT_FORCE_RAW_FALLBACK_OPERATIONS:
+        # These Redshift operations can fail awscli query-model validation across versions
+        # before Stackyard sees the request. Use direct Query fallback for stable coverage.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "rds" and endpoint.operation in RDS_FORCE_RAW_FALLBACK_OPERATIONS:
+        # awscli can reject newer RDS tenant-database request shapes in local model
+        # validation before Stackyard receives the Query request. Force raw Query fallback.
         input_err = "unavailable_in_cli"
     if endpoint.service == "sns" and endpoint.operation == "OptInPhoneNumber":
         # awscli models this request as phoneNumber (lower camel), but SNS Query
@@ -50052,6 +50394,10 @@ def run_endpoint(
     if endpoint.service == "cognitouserpools" and endpoint.operation in COGNITOUSERPOOLS_FORCE_RAW_FALLBACK_OPERATIONS:
         # These operations commonly hit awscli model/member validation mismatches across
         # versions. Use direct JSON-RPC fallback to keep endpoint coverage stable.
+        input_err = "unavailable_in_cli"
+    if endpoint.service == "singlesignon" and endpoint.operation in SINGLESIGNON_FORCE_RAW_FALLBACK_OPERATIONS:
+        # IAM Identity Center uses union/document-shaped members here; awscli can
+        # reject otherwise valid payloads before the request reaches Stackyard.
         input_err = "unavailable_in_cli"
     if endpoint.service == "guardduty":
         # Force direct REST fallback for deterministic local endpoint coverage.
@@ -50736,19 +51082,7 @@ def run_endpoint(
                     if isinstance(job_id, str) and job_id.strip():
                         RUNTIME_STATE.setdefault("batch", {})["service_job_id"] = job_id
             if endpoint.service == "ec2":
-                # Raw Query responses are XML; extract IDs heuristically so follow-up calls
-                # can reuse freshly-created resources.
-                allowlist = {
-                    "routeserverid",
-                    "routeserverendpointid",
-                    "routeserverpeerid",
-                    "localgatewayvirtualinterfacegroupid",
-                    "localgatewayvirtualinterfaceid",
-                }
-                for token in re.findall(r"\b[a-z][a-z0-9-]{5,}\b", response_text):
-                    guessed = ec2_guess_runtime_key_from_id(token)
-                    if guessed in allowlist:
-                        ec2_add_runtime_value(guessed, token)
+                ec2_record_runtime_xml(response_text)
             if endpoint.service == "ecr":
                 try:
                     data = json.loads(response_text) if response_text.strip() else {}
@@ -51006,49 +51340,6 @@ def run_endpoint(
         )
         return finish_s3_raw(status_code, response_text)
 
-    if endpoint.service == "s3" and endpoint.operation == "UploadPart":
-        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
-        key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_OBJECT_KEY)).strip()
-        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
-        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
-        try:
-            part_number = int(part_number_raw)
-        except (TypeError, ValueError):
-            part_number = 1
-        status_code, response_text = invoke_s3_upload_part_raw(
-            endpoint_url=endpoint_url,
-            region=region,
-            env=env,
-            bucket=bucket,
-            key=key,
-            upload_id=upload_id,
-            part_number=part_number,
-            body=s3_decode_body(payload_value_case_insensitive(payload, "Body", "c3RhY2t5YXJk")),
-        )
-        return finish_s3_raw(status_code, response_text)
-
-    if endpoint.service == "s3" and endpoint.operation == "UploadPartCopy":
-        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
-        key = str(payload_value_case_insensitive(payload, "Key", S3_DEFAULT_OBJECT_KEY)).strip()
-        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
-        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
-        try:
-            part_number = int(part_number_raw)
-        except (TypeError, ValueError):
-            part_number = 1
-        copy_source = str(payload_value_case_insensitive(payload, "CopySource", "")).strip()
-        status_code, response_text = invoke_s3_upload_part_copy_raw(
-            endpoint_url=endpoint_url,
-            region=region,
-            env=env,
-            bucket=bucket,
-            key=key,
-            upload_id=upload_id,
-            part_number=part_number,
-            copy_source=copy_source,
-        )
-        return finish_s3_raw(status_code, response_text)
-
     if endpoint.service == "s3" and endpoint.operation == "CreateSession":
         bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_DIRECTORY_BUCKET_NAME)).strip()
         status_code, response_text = invoke_s3_create_session_raw(
@@ -51088,12 +51379,16 @@ def run_endpoint(
     cp: subprocess.CompletedProcess[str] | None = None
     text = ""
     cmd: list[str] = []
+    s3_manual_arg_ops = {"UploadPart", "UploadPartCopy"}
     s3_outfile_ops = {"GetObject", "GetObjectTorrent"}
     neptunedata_outfile_ops = {"ExecuteGremlinExplainQuery", "ExecuteGremlinProfileQuery", "ExecuteOpenCypherExplainQuery"}
     neptuneanalytics_outfile_ops = {"ExecuteQuery"}
     appsync_outfile_ops = {"GetIntrospectionSchema"}
     ebs_outfile_ops = {"GetSnapshotBlock"}
-    if endpoint.service == "s3" and endpoint.operation in s3_outfile_ops:
+    if endpoint.service == "s3" and endpoint.operation in s3_manual_arg_ops:
+        cp, cmd, extra_output_text = run_s3_manual_arg_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "s3" and endpoint.operation in s3_outfile_ops:
         cp, cmd, extra_output_text = run_s3_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "neptunedata" and endpoint.operation in neptunedata_outfile_ops:

@@ -1102,10 +1102,13 @@ func (s *Server) handleLightsailJSONRouter(w http.ResponseWriter, r *http.Reques
 			respondLightsailErrorForErr(w, err)
 			return true
 		}
-		out := map[string]any{}
-		if found {
-			out["createTime"] = lightsailTimestamp(reset.CreateTime)
-			out["status"] = reset.Status
+		out := map[string]any{
+			"createTime": lightsailTimestamp(reset.CreateTime),
+			"status":     reset.Status,
+		}
+		if !found {
+			out["createTime"] = float64(0)
+			out["status"] = "NotStarted"
 		}
 		respondLightsailJSON(w, http.StatusOK, out)
 		return true
@@ -3742,27 +3745,26 @@ func lightsailDomainEntryPayload(in lightsail.DomainEntry) map[string]any {
 
 func lightsailDistributionPayload(in lightsail.Distribution) map[string]any {
 	return map[string]any{
-		"ableToUpdateBundle":              in.AbleToUpdateBundle,
-		"alternativeDomainNames":          append([]string(nil), in.AlternativeDomainNames...),
-		"arn":                             in.ARN,
-		"bundleId":                        in.BundleID,
-		"cacheBehaviorSettings":           lightsailDistributionCacheSettingsPayload(in.CacheBehaviorSettings),
-		"cacheBehaviors":                  lightsailDistributionCacheBehaviorsPayload(in.CacheBehaviors),
-		"certificateName":                 in.CertificateName,
-		"createdAt":                       lightsailTimestamp(in.CreatedAt),
-		"defaultCacheBehavior":            lightsailDistributionCacheBehaviorPayload(in.DefaultCacheBehavior),
-		"domainName":                      in.DomainName,
-		"ipAddressType":                   in.IPAddressType,
-		"isEnabled":                       in.IsEnabled,
-		"location":                        lightsailLocationPayload(in.AvailabilityZone, in.Region),
-		"name":                            in.Name,
-		"origin":                          lightsailDistributionOriginPayload(in.Origin),
-		"originPublicDNS":                 in.OriginPublicDNS,
-		"resourceType":                    firstNonEmpty(in.ResourceType, "Distribution"),
-		"status":                          in.Status,
-		"supportCode":                     in.SupportCode,
-		"tags":                            lightsailMapToTags(in.Tags),
-		"viewerMinimumTlsProtocolVersion": in.ViewerMinimumTLSProtocolVersion,
+		"ableToUpdateBundle":     in.AbleToUpdateBundle,
+		"alternativeDomainNames": append([]string(nil), in.AlternativeDomainNames...),
+		"arn":                    in.ARN,
+		"bundleId":               in.BundleID,
+		"cacheBehaviorSettings":  lightsailDistributionCacheSettingsPayload(in.CacheBehaviorSettings),
+		"cacheBehaviors":         lightsailDistributionCacheBehaviorsPayload(in.CacheBehaviors),
+		"certificateName":        in.CertificateName,
+		"createdAt":              lightsailTimestamp(in.CreatedAt),
+		"defaultCacheBehavior":   lightsailDistributionCacheBehaviorPayload(in.DefaultCacheBehavior),
+		"domainName":             in.DomainName,
+		"ipAddressType":          in.IPAddressType,
+		"isEnabled":              in.IsEnabled,
+		"location":               lightsailLocationPayload(in.AvailabilityZone, in.Region),
+		"name":                   in.Name,
+		"origin":                 lightsailDistributionOriginPayload(in.Origin),
+		"originPublicDNS":        in.OriginPublicDNS,
+		"resourceType":           firstNonEmpty(in.ResourceType, "Distribution"),
+		"status":                 in.Status,
+		"supportCode":            in.SupportCode,
+		"tags":                   lightsailMapToTags(in.Tags),
 	}
 }
 
@@ -3774,11 +3776,10 @@ func lightsailDistributionCacheBehaviorPayload(in lightsail.DistributionCacheBeh
 
 func lightsailDistributionOriginPayload(in lightsail.DistributionOrigin) map[string]any {
 	return map[string]any{
-		"name":            in.Name,
-		"protocolPolicy":  in.ProtocolPolicy,
-		"regionName":      in.RegionName,
-		"resourceType":    in.ResourceType,
-		"responseTimeout": in.ResponseTimeout,
+		"name":           in.Name,
+		"protocolPolicy": in.ProtocolPolicy,
+		"regionName":     in.RegionName,
+		"resourceType":   in.ResourceType,
 	}
 }
 

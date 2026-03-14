@@ -29,57 +29,61 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 	defer s.mu.Unlock()
 
 	now := time.Now().UTC().Format(time.RFC3339)
+	fileSystemID := fsxPayloadString(payload, "FileSystemId", "fs-00000000000000000")
+	backupID := fsxPayloadString(payload, "BackupId", "backup-00000000000000000")
+	fileCacheID := fsxPayloadString(payload, "FileCacheId", "fc-00000000000000000")
+	snapshotID := fsxPayloadString(payload, "SnapshotId", "snapshot-00000000000000000")
+	volumeID := fsxPayloadString(payload, "VolumeId", "fsvol-00000000000000000")
+	svmID := fsxPayloadString(payload, "StorageVirtualMachineId", "svm-00000000000000000")
+	associationID := fsxPayloadString(payload, "AssociationId", "dra-00000000000000000")
+	taskID := fsxPayloadString(payload, "TaskId", "drt-00000000000000000")
 
 	switch action {
+	case "AssociateFileSystemAliases":
+		return map[string]any{"Aliases": fsxAliasesFromPayload(payload, "CREATING")}
 	case "DescribeFileSystems":
 		return map[string]any{
 			"FileSystems": []any{
-				map[string]any{
-					"FileSystemId":    "fs-00000000000000000",
-					"FileSystemType":  "LUSTRE",
-					"Lifecycle":       "AVAILABLE",
-					"StorageCapacity": 1200,
-					"CreationTime":    now,
-					"ResourceARN":     fsxFileSystemARN("fs-00000000000000000"),
-				},
+				fsxDefaultFileSystem("fs-00000000000000000", now, "AVAILABLE"),
 			},
 		}
 	case "DescribeBackups":
 		return map[string]any{
 			"Backups": []any{
-				map[string]any{
-					"BackupId":     "backup-00000000000000000",
-					"Lifecycle":    "AVAILABLE",
-					"Type":         "USER_INITIATED",
-					"CreationTime": now,
-					"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:backup/backup-00000000000000000",
-					"FileSystem":   map[string]any{"FileSystemId": "fs-00000000000000000"},
-				},
+				fsxDefaultBackup("backup-00000000000000000", "fs-00000000000000000", now, "AVAILABLE"),
 			},
+		}
+	case "DescribeDataRepositoryAssociations":
+		return map[string]any{
+			"Associations": []any{
+				fsxDefaultDataRepositoryAssociation(associationID, fileSystemID, fileCacheID, now, "AVAILABLE"),
+			},
+		}
+	case "DescribeFileSystemAliases":
+		return map[string]any{"Aliases": fsxAliasesFromPayload(payload, "AVAILABLE")}
+	case "DescribeSharedVpcConfiguration":
+		return map[string]any{
+			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBool(
+				payload,
+				"EnableFsxRouteTableUpdatesFromParticipantAccounts",
+				true,
+			),
 		}
 	case "DescribeVolumes":
 		return map[string]any{
 			"Volumes": []any{
-				map[string]any{
-					"VolumeId":     "fsvol-00000000000000000",
-					"Lifecycle":    "AVAILABLE",
-					"CreationTime": now,
-					"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:volume/fsvol-00000000000000000",
-					"FileSystemId": "fs-00000000000000000",
-				},
+				fsxDefaultVolume("fsvol-00000000000000000", "fs-00000000000000000", now, "AVAILABLE"),
 			},
 		}
 	case "DescribeStorageVirtualMachines":
 		return map[string]any{
 			"StorageVirtualMachines": []any{
-				map[string]any{
-					"StorageVirtualMachineId": "svm-00000000000000000",
-					"Lifecycle":               "CREATED",
-					"Name":                    "stackyard-svm",
-					"ResourceARN":             "arn:aws:fsx:us-east-1:123456789012:storage-virtual-machine/svm-00000000000000000",
-					"FileSystemId":            "fs-00000000000000000",
-				},
+				fsxDefaultStorageVirtualMachine("svm-00000000000000000", "fs-00000000000000000", now, "CREATED"),
 			},
+		}
+	case "CreateAndAttachS3AccessPoint":
+		return map[string]any{
+			"S3AccessPointAttachment": fsxDefaultS3AccessPointAttachment(payload, volumeID, now),
 		}
 	case "CreateFileSystem", "CreateFileSystemFromBackup":
 		fileSystemID := fmt.Sprintf("fs-%017d", s.nextID)
@@ -100,57 +104,39 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 		backupID := fmt.Sprintf("backup-%017d", s.nextID)
 		s.nextID++
 		return map[string]any{
-			"Backup": map[string]any{
-				"BackupId":     backupID,
-				"Type":         "USER_INITIATED",
-				"Lifecycle":    "CREATING",
-				"CreationTime": now,
-				"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:backup/" + backupID,
-			},
+			"Backup": fsxDefaultBackup(backupID, fileSystemID, now, "CREATING"),
+		}
+	case "CreateDataRepositoryAssociation":
+		return map[string]any{
+			"Association": fsxDefaultDataRepositoryAssociation(associationID, fileSystemID, fileCacheID, now, "CREATING"),
+		}
+	case "CreateDataRepositoryTask":
+		return map[string]any{
+			"DataRepositoryTask": fsxDefaultDataRepositoryTask(taskID, fileSystemID, fileCacheID, now, "EXECUTING"),
 		}
 	case "CreateSnapshot":
 		snapshotID := fmt.Sprintf("snapshot-%017d", s.nextID)
 		s.nextID++
 		return map[string]any{
-			"Snapshot": map[string]any{
-				"SnapshotId":   snapshotID,
-				"Lifecycle":    "PENDING",
-				"CreationTime": now,
-				"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:snapshot/" + snapshotID,
-			},
+			"Snapshot": fsxDefaultSnapshot(snapshotID, volumeID, now, "PENDING"),
 		}
 	case "CreateStorageVirtualMachine":
 		id := fmt.Sprintf("svm-%017d", s.nextID)
 		s.nextID++
 		return map[string]any{
-			"StorageVirtualMachine": map[string]any{
-				"StorageVirtualMachineId": id,
-				"Lifecycle":               "CREATED",
-				"Name":                    fsxPayloadString(payload, "Name", "stackyard-svm"),
-				"ResourceARN":             "arn:aws:fsx:us-east-1:123456789012:storage-virtual-machine/" + id,
-			},
+			"StorageVirtualMachine": fsxDefaultStorageVirtualMachine(id, fileSystemID, now, "CREATED"),
 		}
 	case "CreateVolume", "CreateVolumeFromBackup":
 		id := fmt.Sprintf("fsvol-%017d", s.nextID)
 		s.nextID++
 		return map[string]any{
-			"Volume": map[string]any{
-				"VolumeId":     id,
-				"Lifecycle":    "CREATING",
-				"CreationTime": now,
-				"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:volume/" + id,
-			},
+			"Volume": fsxDefaultVolume(id, fileSystemID, now, "CREATING"),
 		}
 	case "CreateFileCache":
 		id := fmt.Sprintf("fc-%017d", s.nextID)
 		s.nextID++
 		return map[string]any{
-			"FileCache": map[string]any{
-				"FileCacheId":     id,
-				"Lifecycle":       "CREATING",
-				"StorageCapacity": fsxPayloadNumber(payload, "StorageCapacity", 1200),
-				"ResourceARN":     "arn:aws:fsx:us-east-1:123456789012:file-cache/" + id,
-			},
+			"FileCache": fsxDefaultFileCache(id, now, "CREATING"),
 		}
 	case "ListTagsForResource":
 		arn := fsxPayloadString(payload, "ResourceARN", fsxPayloadString(payload, "ResourceArn", fsxFileSystemARN("fs-00000000000000000")))
@@ -170,6 +156,70 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 			delete(s.tags[arn], key)
 		}
 		return map[string]any{}
+	case "StartMisconfiguredStateRecovery":
+		return map[string]any{"FileSystem": fsxDefaultFileSystem(fileSystemID, now, "UPDATING")}
+	case "RestoreVolumeFromSnapshot":
+		return map[string]any{
+			"VolumeId":              volumeID,
+			"Lifecycle":             "CREATING",
+			"AdministrativeActions": []any{},
+		}
+	case "UpdateDataRepositoryAssociation":
+		return map[string]any{
+			"Association": fsxDefaultDataRepositoryAssociation(associationID, fileSystemID, fileCacheID, now, "UPDATING"),
+		}
+	case "UpdateFileCache":
+		return map[string]any{"FileCache": fsxDefaultFileCache(fileCacheID, now, "UPDATING")}
+	case "UpdateFileSystem":
+		return map[string]any{"FileSystem": fsxDefaultFileSystem(fileSystemID, now, "UPDATING")}
+	case "UpdateSharedVpcConfiguration":
+		return map[string]any{
+			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBool(
+				payload,
+				"EnableFsxRouteTableUpdatesFromParticipantAccounts",
+				true,
+			),
+		}
+	case "UpdateSnapshot":
+		return map[string]any{"Snapshot": fsxDefaultSnapshot(snapshotID, volumeID, now, "AVAILABLE")}
+	case "UpdateStorageVirtualMachine":
+		return map[string]any{
+			"StorageVirtualMachine": fsxDefaultStorageVirtualMachine(svmID, fileSystemID, now, "CREATED"),
+		}
+	case "UpdateVolume":
+		return map[string]any{"Volume": fsxDefaultVolume(volumeID, fileSystemID, now, "UPDATING")}
+	case "DisassociateFileSystemAliases":
+		return map[string]any{"Aliases": fsxAliasesFromPayload(payload, "DELETING")}
+	case "CancelDataRepositoryTask":
+		return map[string]any{"TaskId": taskID, "Lifecycle": "CANCELING"}
+	case "DeleteBackup":
+		return map[string]any{"BackupId": backupID, "Lifecycle": "DELETED"}
+	case "DeleteDataRepositoryAssociation":
+		return map[string]any{
+			"AssociationId":          associationID,
+			"Lifecycle":              "DELETING",
+			"DeleteDataInFileSystem": fsxPayloadBool(payload, "DeleteDataInFileSystem", false),
+		}
+	case "DeleteFileCache":
+		return map[string]any{"FileCacheId": fileCacheID, "Lifecycle": "DELETING"}
+	case "DeleteFileSystem":
+		return map[string]any{"FileSystemId": fileSystemID, "Lifecycle": "DELETING"}
+	case "DeleteSnapshot":
+		return map[string]any{"SnapshotId": snapshotID, "Lifecycle": "DELETING"}
+	case "DeleteStorageVirtualMachine":
+		return map[string]any{"StorageVirtualMachineId": svmID, "Lifecycle": "DELETING"}
+	case "DeleteVolume":
+		return map[string]any{"VolumeId": volumeID, "Lifecycle": "DELETING"}
+	case "ReleaseFileSystemNfsV3Locks":
+		return map[string]any{"FileSystem": fsxDefaultFileSystem(fileSystemID, now, "AVAILABLE")}
+	case "CopyBackup":
+		return map[string]any{"Backup": fsxDefaultBackup(backupID, fileSystemID, now, "COPYING")}
+	case "CopySnapshotAndUpdateVolume":
+		return map[string]any{
+			"VolumeId":              volumeID,
+			"Lifecycle":             "UPDATING",
+			"AdministrativeActions": []any{},
+		}
 	}
 
 	if strings.HasPrefix(action, "Describe") {
@@ -249,6 +299,22 @@ func fsxPayloadNumber(payload map[string]any, key string, fallback int64) int64 
 	return fallback
 }
 
+func fsxPayloadBool(payload map[string]any, key string, fallback bool) bool {
+	if payload == nil {
+		return fallback
+	}
+	for k, v := range payload {
+		if !strings.EqualFold(strings.TrimSpace(k), strings.TrimSpace(key)) {
+			continue
+		}
+		b, ok := v.(bool)
+		if ok {
+			return b
+		}
+	}
+	return fallback
+}
+
 func fsxPayloadStringSlice(payload map[string]any, key string) []string {
 	if payload == nil {
 		return nil
@@ -270,6 +336,137 @@ func fsxPayloadStringSlice(payload map[string]any, key string) []string {
 		return out
 	}
 	return nil
+}
+
+func fsxDefaultFileSystem(id, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"FileSystemId":    id,
+		"FileSystemType":  "LUSTRE",
+		"Lifecycle":       lifecycle,
+		"StorageCapacity": 1200,
+		"CreationTime":    now,
+		"ResourceARN":     fsxFileSystemARN(id),
+	}
+}
+
+func fsxDefaultBackup(id, fileSystemID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"BackupId":     id,
+		"Type":         "USER_INITIATED",
+		"Lifecycle":    lifecycle,
+		"CreationTime": now,
+		"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:backup/" + id,
+		"FileSystem":   fsxDefaultFileSystem(fileSystemID, now, "AVAILABLE"),
+	}
+}
+
+func fsxDefaultDataRepositoryAssociation(id, fileSystemID, fileCacheID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"AssociationId":      id,
+		"ResourceARN":        "arn:aws:fsx:us-east-1:123456789012:data-repository-association/" + id,
+		"FileSystemId":       fileSystemID,
+		"FileCacheId":        fileCacheID,
+		"Lifecycle":          lifecycle,
+		"FileSystemPath":     "/ns1/",
+		"DataRepositoryPath": "s3://stackyard-bucket/fsx/",
+		"CreationTime":       now,
+	}
+}
+
+func fsxDefaultDataRepositoryTask(id, fileSystemID, fileCacheID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"TaskId":       id,
+		"Lifecycle":    lifecycle,
+		"Type":         "EXPORT_TO_REPOSITORY",
+		"CreationTime": now,
+		"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:data-repository-task/" + id,
+		"FileSystemId": fileSystemID,
+		"FileCacheId":  fileCacheID,
+		"Paths":        []any{"/"},
+	}
+}
+
+func fsxDefaultFileCache(id, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"FileCacheId":     id,
+		"Lifecycle":       lifecycle,
+		"CreationTime":    now,
+		"StorageCapacity": 1200,
+		"FileCacheType":   "LUSTRE",
+		"ResourceARN":     "arn:aws:fsx:us-east-1:123456789012:file-cache/" + id,
+	}
+}
+
+func fsxDefaultSnapshot(id, volumeID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"SnapshotId":   id,
+		"Name":         "stackyard-snapshot",
+		"VolumeId":     volumeID,
+		"Lifecycle":    lifecycle,
+		"CreationTime": now,
+		"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:snapshot/" + id,
+	}
+}
+
+func fsxDefaultStorageVirtualMachine(id, fileSystemID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"StorageVirtualMachineId": id,
+		"Lifecycle":               lifecycle,
+		"Name":                    "stackyard-svm",
+		"CreationTime":            now,
+		"ResourceARN":             "arn:aws:fsx:us-east-1:123456789012:storage-virtual-machine/" + id,
+		"FileSystemId":            fileSystemID,
+	}
+}
+
+func fsxDefaultVolume(id, fileSystemID, now, lifecycle string) map[string]any {
+	return map[string]any{
+		"VolumeId":     id,
+		"Lifecycle":    lifecycle,
+		"CreationTime": now,
+		"ResourceARN":  "arn:aws:fsx:us-east-1:123456789012:volume/" + id,
+		"FileSystemId": fileSystemID,
+		"Name":         "stackyard-volume",
+		"VolumeType":   "ONTAP",
+	}
+}
+
+func fsxAliasesFromPayload(payload map[string]any, lifecycle string) []any {
+	names := fsxPayloadStringSlice(payload, "Aliases")
+	if len(names) == 0 {
+		names = []string{"files.example.com"}
+	}
+	aliases := make([]any, 0, len(names))
+	for _, name := range names {
+		aliases = append(aliases, map[string]any{"Name": name, "Lifecycle": lifecycle})
+	}
+	return aliases
+}
+
+func fsxDefaultS3AccessPointAttachment(payload map[string]any, volumeID, now string) map[string]any {
+	name := fsxPayloadString(payload, "Name", "stackyard-s3-access-point")
+	s3AccessPoint := map[string]any{
+		"Name": name,
+		"VpcConfiguration": map[string]any{
+			"VpcId": "vpc-12345678",
+		},
+	}
+	return map[string]any{
+		"Name":          name,
+		"Type":          "OPENZFS",
+		"Lifecycle":     "CREATING",
+		"CreationTime":  now,
+		"S3AccessPoint": s3AccessPoint,
+		"OpenZFSConfiguration": map[string]any{
+			"VolumeId": volumeID,
+			"FileSystemIdentity": map[string]any{
+				"PosixUser": map[string]any{
+					"Uid": 0,
+					"Gid": 0,
+				},
+			},
+		},
+	}
 }
 
 func fsxTagsFromAny(raw any) map[string]string {

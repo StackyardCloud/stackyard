@@ -106,24 +106,23 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 	case "StartApplication":
 		application.Status = "RUNNING"
 		application.UpdatedAt = now
-		op := s.addOperationLocked(application.Name, "StartApplication", "SUCCEEDED")
-		return map[string]any{"OperationId": flinkPayloadString(op, "OperationId", "")}
+		s.addOperationLocked(application.Name, "StartApplication", "SUCCEEDED")
+		return map[string]any{}
 
 	case "StopApplication":
 		application.Status = "READY"
 		application.UpdatedAt = now
-		op := s.addOperationLocked(application.Name, "StopApplication", "SUCCEEDED")
-		return map[string]any{"OperationId": flinkPayloadString(op, "OperationId", "")}
+		s.addOperationLocked(application.Name, "StopApplication", "SUCCEEDED")
+		return map[string]any{}
 
 	case "RollbackApplication":
 		if application.VersionID > 1 {
 			application.VersionID--
 		}
 		application.UpdatedAt = now
-		op := s.addOperationLocked(application.Name, "RollbackApplication", "SUCCEEDED")
+		s.addOperationLocked(application.Name, "RollbackApplication", "SUCCEEDED")
 		return map[string]any{
 			"ApplicationDetail": s.applicationDetailPayload(application),
-			"OperationId":       flinkPayloadString(op, "OperationId", ""),
 		}
 
 	case "UpdateApplication",
@@ -141,8 +140,8 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 		"UpdateApplicationMaintenanceConfiguration":
 		application.VersionID++
 		application.UpdatedAt = now
-		op := s.addOperationLocked(application.Name, action, "SUCCEEDED")
-		return s.applicationMutationPayload(action, application, op)
+		s.addOperationLocked(application.Name, action, "SUCCEEDED")
+		return s.applicationMutationPayload(action, application)
 
 	case "DescribeApplicationVersion":
 		version := flinkPayloadInt64(payload, "ApplicationVersionId", application.VersionID)
@@ -414,14 +413,12 @@ func (s *flinkStore) applicationDetailPayload(app *flinkApplication) map[string]
 	}
 }
 
-func (s *flinkStore) applicationMutationPayload(action string, app *flinkApplication, op map[string]any) map[string]any {
+func (s *flinkStore) applicationMutationPayload(action string, app *flinkApplication) map[string]any {
 	versionID := app.VersionID
-	operationID := flinkPayloadString(op, "OperationId", "")
 	switch action {
 	case "UpdateApplication":
 		return map[string]any{
 			"ApplicationDetail": s.applicationDetailPayload(app),
-			"OperationId":       operationID,
 		}
 	case "UpdateApplicationMaintenanceConfiguration":
 		return map[string]any{
@@ -441,7 +438,6 @@ func (s *flinkStore) applicationMutationPayload(action string, app *flinkApplica
 					"LogStreamARN":              "arn:aws:logs:us-east-1:123456789012:log-group:/aws/kinesisanalytics/" + app.Name + ":log-stream:stackyard",
 				},
 			},
-			"OperationId": operationID,
 		}
 	case "AddApplicationInput":
 		return map[string]any{
@@ -518,13 +514,11 @@ func (s *flinkStore) applicationMutationPayload(action string, app *flinkApplica
 				"SubnetIds":          []any{"subnet-12345678"},
 				"SecurityGroupIds":   []any{"sg-12345678"},
 			},
-			"OperationId": operationID,
 		}
 	case "DeleteApplicationVpcConfiguration":
 		return map[string]any{
 			"ApplicationARN":       app.ARN,
 			"ApplicationVersionId": versionID,
-			"OperationId":          operationID,
 		}
 	default:
 		return map[string]any{}
@@ -540,7 +534,6 @@ func (s *flinkStore) snapshotDetailsPayload(app *flinkApplication, snapshot *fli
 		"SnapshotStatus":            snapshot.Status,
 		"ApplicationVersionId":      app.VersionID,
 		"SnapshotCreationTimestamp": snapshot.CreatedAt.Format(time.RFC3339),
-		"RuntimeEnvironment":        app.RuntimeEnvironment,
 	}
 }
 

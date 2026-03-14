@@ -74,8 +74,8 @@ func TestSESV2Stage1EventDestinationAndIdentityShapes(t *testing.T) {
 	if !ok || len(dkimTokens) == 0 {
 		t.Fatalf("expected DkimTokens, got %#v", dkimBody["DkimTokens"])
 	}
-	if got, _ := dkimBody["SigningHostedZone"].(string); got == "" {
-		t.Fatalf("expected SigningHostedZone, got %#v", dkimBody["SigningHostedZone"])
+	if _, ok := dkimBody["SigningHostedZone"]; ok {
+		t.Fatalf("expected SigningHostedZone to be omitted, got %#v", dkimBody["SigningHostedZone"])
 	}
 }
 
@@ -180,7 +180,7 @@ func TestSESV2Stage1JobTemplateAndDedicatedIPShapes(t *testing.T) {
 	defer ts.Close()
 
 	resp := sesv2Request(t, ts, http.MethodPost, "/v2/email/export-jobs", []byte(`{
-		"ExportDataSource":{"MetricsDataSource":{"Dimensions":{"ses:from-domain":"example.com"},"Namespace":"VDM","Metrics":["SEND"],"StartDate":"2025-01-01T00:00:00Z","EndDate":"2025-01-02T00:00:00Z"}},
+		"ExportDataSource":{"MetricsDataSource":{"Dimensions":{"EMAIL_IDENTITY":["sender@example.com"]},"Namespace":"VDM","Metrics":[{"Name":"SEND","Aggregation":"VOLUME"}],"StartDate":"2025-01-01T00:00:00Z","EndDate":"2025-01-02T00:00:00Z"}},
 		"ExportDestination":{"DataFormat":"CSV","S3Url":"s3://stackyard-bucket/exports/report.csv"}
 	}`))
 	assertStatus(t, resp, http.StatusOK)
@@ -199,6 +199,24 @@ func TestSESV2Stage1JobTemplateAndDedicatedIPShapes(t *testing.T) {
 	exportDestination, _ := exportJobBody["ExportDestination"].(map[string]any)
 	if got, _ := exportDestination["DataFormat"].(string); got != "CSV" {
 		t.Fatalf("expected export destination DataFormat CSV, got %#v", exportDestination["DataFormat"])
+	}
+	exportDataSource, _ := exportJobBody["ExportDataSource"].(map[string]any)
+	metricsDataSource, _ := exportDataSource["MetricsDataSource"].(map[string]any)
+	dimensions, _ := metricsDataSource["Dimensions"].(map[string]any)
+	emailIdentityDimensions, _ := dimensions["EMAIL_IDENTITY"].([]any)
+	if len(emailIdentityDimensions) != 1 || emailIdentityDimensions[0] != "sender@example.com" {
+		t.Fatalf("expected EMAIL_IDENTITY dimension [sender@example.com], got %#v", dimensions["EMAIL_IDENTITY"])
+	}
+	metrics, _ := metricsDataSource["Metrics"].([]any)
+	if len(metrics) != 1 {
+		t.Fatalf("expected one metric entry, got %#v", metricsDataSource["Metrics"])
+	}
+	metric, _ := metrics[0].(map[string]any)
+	if got, _ := metric["Name"].(string); got != "SEND" {
+		t.Fatalf("expected export metric SEND, got %#v", metric["Name"])
+	}
+	if got, _ := metric["Aggregation"].(string); got != "VOLUME" {
+		t.Fatalf("expected export metric aggregation VOLUME, got %#v", metric["Aggregation"])
 	}
 
 	resp = sesv2Request(t, ts, http.MethodPost, "/v2/email/list-export-jobs", []byte(`{}`))
@@ -242,6 +260,9 @@ func TestSESV2Stage1JobTemplateAndDedicatedIPShapes(t *testing.T) {
 	customTemplateBody := decodeSESV2Body(t, resp)
 	if got, _ := customTemplateBody["TemplateName"].(string); got != "stackyard-sesv2-custom-verify" {
 		t.Fatalf("expected custom template name, got %#v", customTemplateBody["TemplateName"])
+	}
+	if _, ok := customTemplateBody["Tags"]; ok {
+		t.Fatalf("expected GetCustomVerificationEmailTemplate to omit Tags, got %#v", customTemplateBody["Tags"])
 	}
 
 	resp = sesv2Request(t, ts, http.MethodGet, "/v2/email/custom-verification-email-templates", nil)

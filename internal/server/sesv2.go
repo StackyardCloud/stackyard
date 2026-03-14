@@ -246,17 +246,9 @@ func (s *Server) handleSESV2JSONRouter(w http.ResponseWriter, r *http.Request) b
 			return true
 		}
 		identity, _ := s.sesv2.GetEmailIdentity(params["EmailIdentity"])
-		hostedZone := identity.MailFromDomain
-		if hostedZone == "" {
-			hostedZone = identity.EmailIdentity
-			if at := strings.LastIndex(hostedZone, "@"); at >= 0 && at+1 < len(hostedZone) {
-				hostedZone = hostedZone[at+1:]
-			}
-		}
 		respondSESV2JSON(w, http.StatusOK, map[string]any{
-			"DkimStatus":        identity.DkimStatus,
-			"DkimTokens":        identity.DkimTokens,
-			"SigningHostedZone": hostedZone,
+			"DkimStatus": identity.DkimStatus,
+			"DkimTokens": identity.DkimTokens,
 		})
 		return true
 	case "PutEmailIdentityMailFromAttributes":
@@ -1117,11 +1109,14 @@ func sesv2DefaultExportJob(jobID string) map[string]any {
 		},
 		"ExportDataSource": map[string]any{
 			"MetricsDataSource": map[string]any{
-				"Dimensions": map[string]any{"ses:from-domain": "example.com"},
+				"Dimensions": map[string]any{"EMAIL_IDENTITY": []string{"sender@example.com"}},
 				"Namespace":  "VDM",
-				"Metrics":    []string{"SEND"},
-				"StartDate":  sesv2Timestamp(time.Now().UTC().Add(-24 * time.Hour)),
-				"EndDate":    sesv2PlaceholderTimestamp(),
+				"Metrics": []map[string]any{{
+					"Name":        "SEND",
+					"Aggregation": "VOLUME",
+				}},
+				"StartDate": sesv2Timestamp(time.Now().UTC().Add(-24 * time.Hour)),
+				"EndDate":   sesv2PlaceholderTimestamp(),
 			},
 		},
 		"CreatedTimestamp":   sesv2Timestamp(time.Now().UTC().Add(-5 * time.Minute)),
@@ -1182,7 +1177,6 @@ func sesv2DefaultCustomVerificationTemplate(name string) map[string]any {
 		"FromEmailAddress":      "sender@example.com",
 		"TemplateSubject":       "stackyard verify",
 		"TemplateContent":       "stackyard verification content",
-		"Tags":                  []map[string]any{{"Key": "env", "Value": "coverage"}},
 		"SuccessRedirectionURL": "https://example.com/success",
 		"FailureRedirectionURL": "https://example.com/failure",
 	}

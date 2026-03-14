@@ -547,7 +547,7 @@ func (s *codeBuildStore) Handle(action string, payload map[string]any) map[strin
 		if arn != "" {
 			delete(s.sourceCreds, arn)
 		}
-		return map[string]any{}
+		return map[string]any{"arn": arn}
 
 	case "DeleteWebhook":
 		projectName := codeBuildDefaultString(payload, "projectName", "")
@@ -603,9 +603,9 @@ func (s *codeBuildStore) Handle(action string, payload map[string]any) map[strin
 	case "GetReportGroupTrend":
 		return map[string]any{
 			"stats": map[string]any{
-				"average": 1.0,
-				"max":     1.0,
-				"min":     1.0,
+				"average": "1.0",
+				"max":     "1.0",
+				"min":     "1.0",
 			},
 			"rawData": []any{},
 		}
@@ -777,7 +777,6 @@ func (s *codeBuildStore) Handle(action string, payload map[string]any) map[strin
 				"arn":                cred.Arn,
 				"serverType":         cred.ServerType,
 				"authType":           cred.AuthType,
-				"resource":           cred.Resource,
 				"shouldOverwrite":    true,
 				"lastModifiedSecret": cred.LastUpdated,
 			})
@@ -1253,7 +1252,6 @@ func (s *codeBuildStore) projectPayload(project *codeBuildProject) map[string]an
 		"encryptionKey":            "",
 		"fileSystemLocations":      []any{},
 		"concurrentBuildLimit":     1,
-		"autoRetryLimit":           0,
 		"vpcConfig":                nil,
 		"cache":                    nil,
 		"buildBatchConfig":         nil,
@@ -1358,11 +1356,9 @@ func (s *codeBuildStore) fleetPayload(fleet *codeBuildFleet) map[string]any {
 		"baseCapacity":                 fleet.BaseCapacity,
 		"environmentType":              "LINUX_CONTAINER",
 		"computeType":                  "BUILD_GENERAL1_SMALL",
-		"overflowBehavior":             "ON_DEMAND",
 		"vpcConfig":                    nil,
 		"proxyConfiguration":           nil,
 		"scalingConfiguration":         map[string]any{"maxCapacity": fleet.BaseCapacity},
-		"computeConfiguration":         map[string]any{},
 		"targetTrackingScalingConfigs": []any{},
 	}
 }
@@ -1398,9 +1394,7 @@ func (s *codeBuildStore) webhookPayload(webhook *codeBuildWebhook) map[string]an
 		"branchFilter":       ".*",
 		"buildType":          "BUILD",
 		"lastModifiedSecret": webhook.LastUpdated,
-		"manualCreation":     false,
 		"scopeConfiguration": nil,
-		"status":             "ACTIVE",
 	}
 }
 

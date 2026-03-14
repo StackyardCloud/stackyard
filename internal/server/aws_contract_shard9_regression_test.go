@@ -284,8 +284,8 @@ func TestFlinkShard9MutationAndSnapshotShapes(t *testing.T) {
 	resp = flinkRequest(t, ts, "StartApplication", `{"ApplicationName":"stage9-flink"}`)
 	assertStatus(t, resp, http.StatusOK)
 	startBody := decodeShard9JSONBody(t, resp)
-	if got, _ := startBody["OperationId"].(string); strings.TrimSpace(got) == "" {
-		t.Fatalf("expected OperationId in StartApplication response, got %#v", startBody["OperationId"])
+	if _, ok := startBody["OperationId"]; ok {
+		t.Fatalf("expected StartApplication to omit OperationId, got %#v", startBody["OperationId"])
 	}
 
 	resp = flinkRequest(t, ts, "UpdateApplication", `{"ApplicationName":"stage9-flink"}`)
@@ -295,8 +295,8 @@ func TestFlinkShard9MutationAndSnapshotShapes(t *testing.T) {
 	if got, _ := updateDetail["ApplicationARN"].(string); strings.TrimSpace(got) == "" {
 		t.Fatalf("expected ApplicationARN in UpdateApplication response, got %#v", updateDetail["ApplicationARN"])
 	}
-	if got, _ := updateBody["OperationId"].(string); strings.TrimSpace(got) == "" {
-		t.Fatalf("expected OperationId in UpdateApplication response, got %#v", updateBody["OperationId"])
+	if _, ok := updateBody["OperationId"]; ok {
+		t.Fatalf("expected UpdateApplication to omit OperationId, got %#v", updateBody["OperationId"])
 	}
 
 	resp = flinkRequest(t, ts, "UpdateApplicationMaintenanceConfiguration", `{"ApplicationName":"stage9-flink"}`)
@@ -316,6 +316,9 @@ func TestFlinkShard9MutationAndSnapshotShapes(t *testing.T) {
 	if got, _ := snapshotDetails["ApplicationVersionId"].(json.Number); got.String() == "" {
 		t.Fatalf("expected ApplicationVersionId in DescribeApplicationSnapshot response, got %#v", snapshotDetails["ApplicationVersionId"])
 	}
+	if _, ok := snapshotDetails["RuntimeEnvironment"]; ok {
+		t.Fatalf("expected DescribeApplicationSnapshot to omit RuntimeEnvironment, got %#v", snapshotDetails["RuntimeEnvironment"])
+	}
 
 	resp = flinkRequest(t, ts, "ListApplicationSnapshots", `{"ApplicationName":"stage9-flink"}`)
 	assertStatus(t, resp, http.StatusOK)
@@ -327,6 +330,9 @@ func TestFlinkShard9MutationAndSnapshotShapes(t *testing.T) {
 	listedSnapshot, _ := snapshots[0].(map[string]any)
 	if got, _ := listedSnapshot["ApplicationVersionId"].(json.Number); got.String() == "" {
 		t.Fatalf("expected ApplicationVersionId in ListApplicationSnapshots response, got %#v", listedSnapshot["ApplicationVersionId"])
+	}
+	if _, ok := listedSnapshot["RuntimeEnvironment"]; ok {
+		t.Fatalf("expected ListApplicationSnapshots to omit RuntimeEnvironment, got %#v", listedSnapshot["RuntimeEnvironment"])
 	}
 
 	resp = flinkRequest(t, ts, "DescribeApplicationVersion", `{"ApplicationName":"stage9-flink"}`)

@@ -159,6 +159,9 @@ func TestControlTowerStoreGetResponsesMatchModeledShapes(t *testing.T) {
 	if _, ok := landingZoneDetails["createdAt"]; ok {
 		t.Fatalf("GetLandingZone unexpectedly returned createdAt: %#v", landingZoneDetails)
 	}
+	if _, ok := landingZoneDetails["remediationTypes"]; ok {
+		t.Fatalf("GetLandingZone unexpectedly returned remediationTypes: %#v", landingZoneDetails)
+	}
 	manifest, ok := landingZoneDetails["manifest"].(map[string]any)
 	if !ok {
 		t.Fatalf("GetLandingZone manifest should remain a document object: %#v", landingZoneDetails["manifest"])
