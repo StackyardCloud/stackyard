@@ -2214,6 +2214,7 @@ EC2_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
         "GetActiveVpnTunnelStatus",
         "GetAwsNetworkPerformanceData",
         "GetIpamDiscoveredAccounts",
+        "GetIpamDiscoveredPublicAddresses",
         "GetInstanceTpmEkPub",
         "GetLaunchTemplateData",
         "GetVpnConnectionDeviceSampleConfiguration",
@@ -2299,6 +2300,7 @@ SESV2_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "ListTenantResources": ("POST", "/v2/email/tenants/resources/list"),
     "ListTenants": ("POST", "/v2/email/tenants/list"),
     "PutConfigurationSetArchivingOptions": ("PUT", "/v2/email/configuration-sets/{ConfigurationSetName}/archiving-options"),
+    "PutEmailIdentityDkimSigningAttributes": ("PUT", "/v1/email/identities/{EmailIdentity}/dkim/signing"),
     "UpdateReputationEntityCustomerManagedStatus": (
         "PUT",
         "/v2/email/reputation/entities/{ReputationEntityType}/{ReputationEntityReference}/customer-managed-status",
@@ -2308,6 +2310,11 @@ SESV2_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
         "/v2/email/reputation/entities/{ReputationEntityType}/{ReputationEntityReference}/policy",
     ),
 }
+SESV2_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "PutEmailIdentityDkimSigningAttributes",
+    }
+)
 EKS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "CreateCapability": ("POST", "/clusters/{clusterName}/capabilities"),
     "DescribeCapability": ("GET", "/clusters/{clusterName}/capabilities/{capabilityName}"),
@@ -16901,20 +16908,24 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             transport_attachment_id = ec2_get_runtime_value("transitgatewayvpcattachmentid")
             if transport_attachment_id == EC2_DEFAULT_KEY_VALUES["transitgatewayvpcattachmentid"]:
                 transport_attachment_id = ec2_get_runtime_value("transitgatewayattachmentid")
-            set_key_if_present_case_insensitive(
-                payload, "TransportTransitGatewayAttachmentId", transport_attachment_id
+            _replace_payload(
+                {
+                    "TransportTransitGatewayAttachmentId": transport_attachment_id,
+                }
             )
         if op == "CreateTransitGatewayConnectPeer":
             connect_attachment_id = ec2_get_runtime_value("transitgatewayconnectid")
             if connect_attachment_id == EC2_DEFAULT_KEY_VALUES["transitgatewayconnectid"]:
                 connect_attachment_id = ec2_get_runtime_value("transitgatewayvpcattachmentid")
-            set_key_if_present_case_insensitive(payload, "TransitGatewayAttachmentId", connect_attachment_id)
-            set_key_if_present_case_insensitive(payload, "PeerAddress", "198.51.100.20")
-            set_key_if_present_case_insensitive(payload, "TransitGatewayAddress", "169.254.100.1")
-            set_key_if_present_case_insensitive(payload, "InsideCidrBlocks", ["169.254.10.0/29"])
-            bgp_key = find_key_case_insensitive(payload, "BgpOptions")
-            if bgp_key is not None and isinstance(payload.get(bgp_key), dict):
-                set_key_if_present_case_insensitive(payload[bgp_key], "PeerAsn", 65000)
+            _replace_payload(
+                {
+                    "TransitGatewayAttachmentId": connect_attachment_id,
+                    "PeerAddress": "198.51.100.20",
+                    "TransitGatewayAddress": "169.254.100.1",
+                    "InsideCidrBlocks": ["169.254.10.0/29"],
+                    "BgpOptions": {"PeerAsn": 65000},
+                }
+            )
         if op == "CreateTransitGatewayPeeringAttachment":
             set_key_if_present_case_insensitive(payload, "TransitGatewayId", ec2_get_primary_transit_gateway_id())
             set_key_if_present_case_insensitive(payload, "PeerTransitGatewayId", "tgw-peer-00000001")
@@ -17234,8 +17245,12 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
         if op == "DescribeVpcEndpointServicePermissions":
             set_key_if_present_case_insensitive(payload, "ServiceId", ec2_get_runtime_value("serviceid"))
         if op == "GetIpamDiscoveredAccounts":
-            set_key_if_present_case_insensitive(payload, "IpamResourceDiscoveryId", ec2_get_runtime_value("ipamresourcediscoveryid"))
-            set_key_if_present_case_insensitive(payload, "DiscoveryRegion", "us-east-1")
+            _replace_payload(
+                {
+                    "IpamResourceDiscoveryId": ec2_get_runtime_value("ipamresourcediscoveryid"),
+                    "DiscoveryRegion": "us-east-1",
+                }
+            )
         if op in {"GetIpamDiscoveredPublicAddresses", "GetIpamDiscoveredResourceCidrs"}:
             if op == "GetIpamDiscoveredPublicAddresses":
                 _replace_payload(
@@ -38920,7 +38935,7 @@ def hydrate_payload_with_service_state(
         db_parameter_group_name = str(region_state.get("db_parameter_group_name") or f"stackyard-db-param-group-{unique}").strip()
         global_cluster_identifier = str(region_state.get("global_cluster_identifier") or f"stackyard-global-cluster-{unique}").strip()
         cluster_endpoint_identifier = str(region_state.get("db_cluster_endpoint_identifier") or f"stackyard-endpoint-{unique}").strip()
-        tenant_db_name = str(region_state.get("tenant_db_name") or f"stackyardtenant{unique}").strip()
+        tenant_db_name = str(region_state.get("tenant_db_name") or f"stackyard-tenant-{unique}").strip()
 
         def _replace_payload(values: dict[str, object]) -> None:
             hydrated.clear()
@@ -39026,26 +39041,25 @@ def hydrate_payload_with_service_state(
             cluster_id = _ensure_db_cluster()
             tenant_name = str(region_state.get("tenant_db_name") or tenant_db_name).strip() or tenant_db_name
             region_state["tenant_db_name"] = tenant_name
-            try:
-                run_aws_json(
-                    aws_bin,
-                    endpoint_url,
-                    region,
-                    "rds",
-                    "create-tenant-database",
-                    env,
-                    [
-                        "--db-cluster-identifier",
-                        cluster_id,
-                        "--tenant-db-name",
-                        tenant_name,
-                        "--master-username",
-                        "stackyard",
-                        "--master-user-password",
-                        "Passw0rd!123",
-                    ],
-                )
-            except subprocess.CalledProcessError:
+            created = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "create-tenant-database",
+                env,
+                [
+                    "--db-cluster-identifier",
+                    cluster_id,
+                    "--tenant-db-name",
+                    tenant_name,
+                    "--master-username",
+                    "stackyard",
+                    "--master-user-password",
+                    "Passw0rd!123",
+                ],
+            )
+            if created is None:
                 rds_invoke_raw_operation(
                     endpoint_url=endpoint_url,
                     region=region,
@@ -39059,6 +39073,44 @@ def hydrate_payload_with_service_state(
                     },
                 )
             return cluster_id, tenant_name
+
+        def _next_tenant_database_name(current: str) -> str:
+            current = current.strip() or tenant_db_name
+            if current.endswith("-updated"):
+                return current
+            return f"{current}-updated"
+
+        if op == "CreateTenantDatabase":
+            cluster_id = _ensure_db_cluster()
+            tenant_name = str(region_state.get("tenant_db_name") or tenant_db_name).strip() or tenant_db_name
+            region_state["tenant_db_name"] = tenant_name
+            _replace_payload(
+                {
+                    "DBClusterIdentifier": cluster_id,
+                    "TenantDBName": tenant_name,
+                    "MasterUsername": "stackyard",
+                    "MasterUserPassword": "Passw0rd!123",
+                }
+            )
+            return hydrated
+
+        if op == "ModifyTenantDatabase":
+            cluster_id, tenant_name = _ensure_tenant_database()
+            next_tenant_name = _next_tenant_database_name(tenant_name)
+            region_state["tenant_db_name"] = next_tenant_name
+            _replace_payload(
+                {
+                    "DBClusterIdentifier": cluster_id,
+                    "TenantDBName": tenant_name,
+                    "NewTenantDBName": next_tenant_name,
+                }
+            )
+            return hydrated
+
+        if op == "DeleteTenantDatabase":
+            cluster_id, tenant_name = _ensure_tenant_database()
+            _replace_payload({"DBClusterIdentifier": cluster_id, "TenantDBName": tenant_name})
+            return hydrated
 
         if op == "CreateDbCluster":
             _replace_payload(
@@ -51029,9 +51081,17 @@ def run_endpoint(
         # Local awscli s3tables models routinely lag the service surface and reject
         # valid request shapes before Stackyard ever sees the request.
         input_err = "unavailable_in_cli"
+    if endpoint.service == "sesv2" and endpoint.operation in SESV2_FORCE_RAW_FALLBACK_OPERATIONS:
+        # This SESv2 DKIM-signing write hits awscli/model skew in CI. Use the
+        # direct REST path so coverage exercises Stackyard state, not client-side
+        # URI-label translation.
+        input_err = "unavailable_in_cli"
     if input_err == "unavailable_in_cli":
-        if endpoint.service == "ec2" and endpoint.operation in EC2_FORCE_RAW_FALLBACK_OPERATIONS and input_payload is not None:
-            payload = copy.deepcopy(input_payload)
+        if endpoint.service == "ec2" and endpoint.operation in EC2_FORCE_RAW_FALLBACK_OPERATIONS:
+            # Keep the EC2 raw Query path independent from awscli skeletons so
+            # botocore shape drift cannot leak malformed member names into the
+            # requests we send to Stackyard.
+            payload = apply_service_payload_tweaks(endpoint, build_raw_fallback_payload(endpoint) or {})
         else:
             payload = build_raw_fallback_payload(endpoint)
         if payload is None:

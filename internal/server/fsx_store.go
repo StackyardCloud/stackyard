@@ -63,7 +63,7 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 		return map[string]any{"Aliases": fsxAliasesFromPayload(payload, "AVAILABLE")}
 	case "DescribeSharedVpcConfiguration":
 		return map[string]any{
-			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBool(
+			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBoolString(
 				payload,
 				"EnableFsxRouteTableUpdatesFromParticipantAccounts",
 				true,
@@ -174,7 +174,7 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 		return map[string]any{"FileSystem": fsxDefaultFileSystem(fileSystemID, now, "UPDATING")}
 	case "UpdateSharedVpcConfiguration":
 		return map[string]any{
-			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBool(
+			"EnableFsxRouteTableUpdatesFromParticipantAccounts": fsxPayloadBoolString(
 				payload,
 				"EnableFsxRouteTableUpdatesFromParticipantAccounts",
 				true,
@@ -313,6 +313,27 @@ func fsxPayloadBool(payload map[string]any, key string, fallback bool) bool {
 		}
 	}
 	return fallback
+}
+
+func fsxPayloadBoolString(payload map[string]any, key string, fallback bool) string {
+	if payload == nil {
+		return fmt.Sprintf("%t", fallback)
+	}
+	for k, v := range payload {
+		if !strings.EqualFold(strings.TrimSpace(k), strings.TrimSpace(key)) {
+			continue
+		}
+		switch value := v.(type) {
+		case bool:
+			return fmt.Sprintf("%t", value)
+		case string:
+			clean := strings.TrimSpace(value)
+			if clean != "" {
+				return clean
+			}
+		}
+	}
+	return fmt.Sprintf("%t", fallback)
 }
 
 func fsxPayloadStringSlice(payload map[string]any, key string) []string {

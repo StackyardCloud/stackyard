@@ -140,8 +140,22 @@ func TestFSxStage1DescribeAndAliasResponseShapes(t *testing.T) {
 	if err := json.Unmarshal(mustBody(t, resp), &sharedVpcOut); err != nil {
 		t.Fatalf("unmarshal describe shared vpc configuration response: %v", err)
 	}
-	if _, ok := sharedVpcOut["EnableFsxRouteTableUpdatesFromParticipantAccounts"]; !ok {
+	participantUpdates, ok := sharedVpcOut["EnableFsxRouteTableUpdatesFromParticipantAccounts"]
+	if !ok {
 		t.Fatalf("expected DescribeSharedVpcConfiguration to return EnableFsxRouteTableUpdatesFromParticipantAccounts")
+	}
+	if participantUpdates != "true" {
+		t.Fatalf("expected DescribeSharedVpcConfiguration to return modeled string enum, got %#v", participantUpdates)
+	}
+
+	resp = fsxRequest(t, ts, "UpdateSharedVpcConfiguration", `{"EnableFsxRouteTableUpdatesFromParticipantAccounts":false}`)
+	assertStatus(t, resp, http.StatusOK)
+	var updateSharedVpcOut map[string]any
+	if err := json.Unmarshal(mustBody(t, resp), &updateSharedVpcOut); err != nil {
+		t.Fatalf("unmarshal update shared vpc configuration response: %v", err)
+	}
+	if updateSharedVpcOut["EnableFsxRouteTableUpdatesFromParticipantAccounts"] != "false" {
+		t.Fatalf("expected UpdateSharedVpcConfiguration to return modeled string enum, got %#v", updateSharedVpcOut["EnableFsxRouteTableUpdatesFromParticipantAccounts"])
 	}
 
 	resp = fsxRequest(t, ts, "CreateAndAttachS3AccessPoint", `{"Name":"stackyard-s3-access-point","Type":"OPENZFS","OpenZFSConfiguration":{"VolumeId":"fsvol-0123456789abcdef0"}}`)
