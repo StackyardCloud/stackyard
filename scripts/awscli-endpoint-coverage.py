@@ -3527,6 +3527,11 @@ class Result:
 
 _OPENSSL_BIN: str | None = None
 
+AWSCLI_COMMAND_TIMEOUT_SEC = 300.0
+AWSCLI_DISCOVERY_TIMEOUT_SEC = 30.0
+AWSCLI_SKELETON_TIMEOUT_SEC = 60.0
+AWSCLI_VERSION_TIMEOUT_SEC = 10.0
+
 
 def openssl_bin() -> str:
     global _OPENSSL_BIN
@@ -12786,14 +12791,33 @@ def iotevents_raw_fallback_routes() -> dict[str, tuple[str, str]]:
     return routes
 
 
-def run_subprocess(cmd: Sequence[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env,
-    )
+def run_subprocess(
+    cmd: Sequence[str],
+    env: dict[str, str],
+    timeout_sec: float = AWSCLI_COMMAND_TIMEOUT_SEC,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            timeout=timeout_sec,
+        )
+    except subprocess.TimeoutExpired as err:
+        stderr_parts = []
+        if err.stderr:
+            stderr_parts.append(str(err.stderr).strip())
+        stderr_parts.append(
+            f"timed out after {timeout_sec:g}s while running: {' '.join(shlex.quote(str(part)) for part in cmd)}"
+        )
+        return subprocess.CompletedProcess(
+            args=list(cmd),
+            returncode=124,
+            stdout=(str(err.stdout) if err.stdout else ""),
+            stderr="\n".join(part for part in stderr_parts if part).strip(),
+        )
 
 
 _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE: dict[str, bool] = {}
@@ -12804,7 +12828,7 @@ def aws_cli_supports_no_cli_pager(aws_bin: str, env: dict[str, str]) -> bool:
     if cached is not None:
         return cached
 
-    cp = run_subprocess([aws_bin, "--version"], env)
+    cp = run_subprocess([aws_bin, "--version"], env, timeout_sec=AWSCLI_VERSION_TIMEOUT_SEC)
     version_text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     match = re.search(r"aws-cli/(\d+)\.", version_text)
     if match is not None:
@@ -12923,7 +12947,11 @@ def ensure_stackyard_up(
 
 
 def discover_cli_operations(aws_bin: str, cli_service: str, env: dict[str, str]) -> list[str]:
-    cp = run_subprocess([*aws_cli_base_cmd(aws_bin, env), cli_service, "help"], env)
+    cp = run_subprocess(
+        [*aws_cli_base_cmd(aws_bin, env), cli_service, "help"],
+        env,
+        timeout_sec=AWSCLI_DISCOVERY_TIMEOUT_SEC,
+    )
     if cp.returncode != 0:
         raise RuntimeError((cp.stderr or cp.stdout).strip() or f"failed to inspect service '{cli_service}'")
 
@@ -13103,7 +13131,7 @@ def generate_cli_input_payload(
         "--generate-cli-skeleton",
         "input",
     ]
-    cp = run_subprocess(cmd, env)
+    cp = run_subprocess(cmd, env, timeout_sec=AWSCLI_SKELETON_TIMEOUT_SEC)
     combined = f"{cp.stdout}\n{cp.stderr}".strip()
     if cp.returncode != 0:
         text = combined
@@ -49559,6 +49587,8 @@ def classify_failure(text: str) -> tuple[str, str]:
         or "the operation was canceled" in lowered
     ):
         return "transport_error", "connection"
+    if "timed out after " in lowered and "while running: aws" in lowered:
+        return "transport_error", "timeout"
     if is_cli_operation_unavailable_error(content):
         return "unavailable_in_cli", "invalid choice"
     if "parameter validation failed" in lowered:
