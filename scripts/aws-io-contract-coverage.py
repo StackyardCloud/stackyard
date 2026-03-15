@@ -261,16 +261,14 @@ def strip_passthrough_report_json(args: list[str]) -> list[str]:
     return out
 
 
-def parse_fail_on(raw: str) -> tuple[str, bool]:
+def parse_fail_on(raw: str) -> str:
     ordered: list[str] = []
     seen: set[str] = set()
-    strict_stateful = False
     for item in raw.split(","):
         token = item.strip().lower()
         if not token or token == "none":
             continue
         if token in {"any", "strict"}:
-            strict_stateful = True
             for status in STRICT_FAIL_ON.split(","):
                 status = status.strip()
                 if status and status not in seen:
@@ -280,7 +278,7 @@ def parse_fail_on(raw: str) -> tuple[str, bool]:
         if token in KNOWN_STATUS_TOKENS and token not in seen:
             seen.add(token)
             ordered.append(token)
-    return ",".join(ordered), strict_stateful
+    return ",".join(ordered)
 
 
 def run_with_json_output(command: list[str], report_path: Path) -> int:
@@ -370,9 +368,8 @@ def main() -> int:
         return require_status
 
     command = build_base_command(args, service_override=",".join(selected_services))
-    fail_on_csv, strict_from_mode = parse_fail_on(args.fail_on)
-    command.extend(["--fail-on", fail_on_csv])
-    if strict_from_mode or args.strict_ec2_stateful_errors:
+    command.extend(["--fail-on", parse_fail_on(args.fail_on)])
+    if args.strict_ec2_stateful_errors:
         command.append("--strict-ec2-stateful-errors")
 
     if args.dry_run:
