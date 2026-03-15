@@ -17837,7 +17837,10 @@ def s3control_call(
     # Some S3 Control operations require account-id host-prefix addressing while
     # others fail when host-prefix aliasing is used against localhost. Try both.
     tried: set[str] = set()
-    endpoints = [endpoint_url, s3control_cli_endpoint_url(endpoint_url)]
+    if kebab_to_pascal(operation) in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS:
+        endpoints = [endpoint_url]
+    else:
+        endpoints = [endpoint_url, s3control_cli_endpoint_url(endpoint_url)]
     for current_endpoint in endpoints:
         if current_endpoint in tried:
             continue
