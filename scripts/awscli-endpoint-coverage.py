@@ -25616,60 +25616,86 @@ def s3_ensure_multipart_upload(
     state = s3_runtime_state(region)
     bucket = s3_ensure_bucket(aws_bin, endpoint_url, region, env, bucket_name)
     object_key = key.strip() or str(state["multipart_key"])
-    created = run_aws_json(
-        aws_bin,
-        endpoint_url,
-        region,
-        "s3api",
-        "create-multipart-upload",
-        env,
-        ["--bucket", bucket, "--key", object_key],
-    )
     upload_id = ""
-    if isinstance(created, dict):
-        s3_record_runtime_payload(region, created)
-        value = created.get("UploadId")
-        if isinstance(value, str) and value.strip():
-            upload_id = value.strip()
+    status_code, response_text = invoke_s3_create_multipart_upload_raw(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        bucket=bucket,
+        key=object_key,
+    )
+    if 200 <= status_code < 300:
+        match = re.search(r"<UploadId>([^<]+)</UploadId>", response_text)
+        if match:
+            upload_id = match.group(1).strip()
+    if not upload_id:
+        created = run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "s3api",
+            "create-multipart-upload",
+            env,
+            ["--bucket", bucket, "--key", object_key],
+        )
+        if isinstance(created, dict):
+            s3_record_runtime_payload(region, created)
+            value = created.get("UploadId")
+            if isinstance(value, str) and value.strip():
+                upload_id = value.strip()
     if not upload_id:
         upload_id = str(state.get("multipart_upload_id") or "")
 
     etag = ""
     if upload_id:
-        with tempfile.NamedTemporaryFile(prefix="stackyard-s3-part-", suffix=".bin", delete=False) as tmp:
-            tmp.write(part_body if part_body is not None else b"stackyard multipart part\n")
-            part_path = tmp.name
-        try:
-            uploaded = run_aws_json(
-                aws_bin,
-                endpoint_url,
-                region,
-                "s3api",
-                "upload-part",
-                env,
-                [
-                    "--bucket",
-                    bucket,
-                    "--key",
-                    object_key,
-                    "--upload-id",
-                    upload_id,
-                    "--part-number",
-                    "1",
-                    "--body",
-                    part_path,
-                ],
-            )
-        finally:
+        seed_body = part_body if part_body is not None else b"stackyard multipart part\n"
+        status_code, _, response_headers = invoke_s3_upload_part_raw_detailed(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=object_key,
+            upload_id=upload_id,
+            part_number=1,
+            body=seed_body,
+        )
+        if 200 <= status_code < 300:
+            etag = str(response_headers.get("ETag") or response_headers.get("Etag") or "").strip().strip('"')
+        if not etag:
+            with tempfile.NamedTemporaryFile(prefix="stackyard-s3-part-", suffix=".bin", delete=False) as tmp:
+                tmp.write(seed_body)
+                part_path = tmp.name
             try:
-                os.unlink(part_path)
-            except OSError:
-                pass
-        if isinstance(uploaded, dict):
-            s3_record_runtime_payload(region, uploaded)
-            etag_value = uploaded.get("ETag")
-            if isinstance(etag_value, str) and etag_value.strip():
-                etag = etag_value.strip().strip('"')
+                uploaded = run_aws_json(
+                    aws_bin,
+                    endpoint_url,
+                    region,
+                    "s3api",
+                    "upload-part",
+                    env,
+                    [
+                        "--bucket",
+                        bucket,
+                        "--key",
+                        object_key,
+                        "--upload-id",
+                        upload_id,
+                        "--part-number",
+                        "1",
+                        "--body",
+                        part_path,
+                    ],
+                )
+            finally:
+                try:
+                    os.unlink(part_path)
+                except OSError:
+                    pass
+            if isinstance(uploaded, dict):
+                s3_record_runtime_payload(region, uploaded)
+                etag_value = uploaded.get("ETag")
+                if isinstance(etag_value, str) and etag_value.strip():
+                    etag = etag_value.strip().strip('"')
     if not etag:
         etag = str(state.get("multipart_part_etag") or "")
     state["multipart_key"] = object_key
@@ -43805,6 +43831,49 @@ def hydrate_payload_with_service_state(
                     }
                 )
 
+            if op == "ModifyInstanceAttribute":
+                instance_id = ""
+                instance_data = run_aws_json(
+                    aws_bin,
+                    endpoint_url,
+                    region,
+                    "ec2",
+                    "run-instances",
+                    env,
+                    [
+                        "--image-id",
+                        ec2_get_runtime_value("imageid"),
+                        "--instance-type",
+                        "t3.micro",
+                        "--count",
+                        "1",
+                        "--subnet-id",
+                        ec2_get_runtime_value("subnetid"),
+                        "--security-group-ids",
+                        ec2_get_runtime_value("groupid"),
+                    ],
+                )
+                if isinstance(instance_data, dict):
+                    ec2_record_runtime_payload(instance_data)
+                    instances = instance_data.get("Instances")
+                    if isinstance(instances, list) and instances:
+                        first = instances[0]
+                        if isinstance(first, dict):
+                            value = first.get("InstanceId")
+                            if isinstance(value, str) and value.strip():
+                                instance_id = value
+                if not instance_id:
+                    instance_id = ec2_get_runtime_value("instanceid")
+
+                hydrated.clear()
+                hydrated.update(
+                    {
+                        "InstanceId": instance_id,
+                        "Attribute": "sourceDestCheck",
+                        "SourceDestCheck": {"Value": False},
+                    }
+                )
+
             if op == "ModifyInstanceCapacityReservationAttributes":
                 hydrated.clear()
                 hydrated.update(
@@ -50154,7 +50223,7 @@ def invoke_s3_create_session_raw(
         return 0, str(err)
 
 
-def invoke_s3_raw_request(
+def invoke_s3_raw_request_detailed(
     endpoint_url: str,
     region: str,
     env: dict[str, str],
@@ -50164,7 +50233,7 @@ def invoke_s3_raw_request(
     query: str = "",
     body: bytes = b"",
     extra_headers: dict[str, str] | None = None,
-) -> tuple[int, str]:
+) -> tuple[int, str, dict[str, str]]:
     base = endpoint_url.rstrip("/")
     path = f"/{urlparse.quote(bucket)}"
     if key:
@@ -50192,12 +50261,55 @@ def invoke_s3_raw_request(
     try:
         with urlrequest.urlopen(req, timeout=20.0) as resp:
             text = resp.read().decode("utf-8", errors="replace")
-            return int(resp.status), text
+            return int(resp.status), text, {str(k): str(v) for k, v in resp.headers.items()}
     except urlerror.HTTPError as err:
         text = err.read().decode("utf-8", errors="replace")
-        return int(err.code), text
+        return int(err.code), text, {str(k): str(v) for k, v in err.headers.items()}
     except Exception as err:  # noqa: BLE001
-        return 0, str(err)
+        return 0, str(err), {}
+
+
+def invoke_s3_raw_request(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    method: str,
+    bucket: str,
+    key: str = "",
+    query: str = "",
+    body: bytes = b"",
+    extra_headers: dict[str, str] | None = None,
+) -> tuple[int, str]:
+    status_code, response_text, _ = invoke_s3_raw_request_detailed(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method=method,
+        bucket=bucket,
+        key=key,
+        query=query,
+        body=body,
+        extra_headers=extra_headers,
+    )
+    return status_code, response_text
+
+
+def invoke_s3_create_multipart_upload_raw(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+) -> tuple[int, str]:
+    return invoke_s3_raw_request(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="POST",
+        bucket=bucket,
+        key=key,
+        query="uploads=",
+    )
 
 
 def invoke_s3_put_bucket_abac_raw(
@@ -50302,7 +50414,31 @@ def invoke_s3_upload_part_raw(
     part_number: int,
     body: bytes,
 ) -> tuple[int, str]:
-    return invoke_s3_raw_request(
+    status_code, response_text, _ = invoke_s3_raw_request_detailed(
+        endpoint_url=endpoint_url,
+        region=region,
+        env=env,
+        method="PUT",
+        bucket=bucket,
+        key=key,
+        query=f"partNumber={part_number}&uploadId={urlparse.quote(upload_id)}",
+        body=body,
+        extra_headers={"Content-Type": "application/octet-stream"},
+    )
+    return status_code, response_text
+
+
+def invoke_s3_upload_part_raw_detailed(
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    bucket: str,
+    key: str,
+    upload_id: str,
+    part_number: int,
+    body: bytes,
+) -> tuple[int, str, dict[str, str]]:
+    return invoke_s3_raw_request_detailed(
         endpoint_url=endpoint_url,
         region=region,
         env=env,
