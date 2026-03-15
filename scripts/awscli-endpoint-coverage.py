@@ -2641,7 +2641,33 @@ DYNAMODB_DEFAULT_PARTITION_VALUE = "seed-1"
 COGNITO_DEFAULT_ACCOUNT_ID = "123456789012"
 S3CONTROL_COVERAGE_ACCOUNT_ID = "000000000127"
 S3CONTROL_LOCAL_ENDPOINT_ALIAS_HOST = "0.0.1"
-S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS: set[str] = set()
+S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS: frozenset[str] = frozenset(
+    {
+        # The Access Grants APIs are reliable against the base localhost endpoint and can
+        # spend minutes retrying when forced through the alias-first S3 Control path in CI.
+        "AssociateAccessGrantsIdentityCenter",
+        "CreateAccessGrant",
+        "CreateAccessGrantsInstance",
+        "CreateAccessGrantsLocation",
+        "DeleteAccessGrant",
+        "DeleteAccessGrantsInstance",
+        "DeleteAccessGrantsInstanceResourcePolicy",
+        "DeleteAccessGrantsLocation",
+        "DissociateAccessGrantsIdentityCenter",
+        "GetAccessGrant",
+        "GetAccessGrantsInstance",
+        "GetAccessGrantsInstanceForPrefix",
+        "GetAccessGrantsInstanceResourcePolicy",
+        "GetAccessGrantsLocation",
+        "GetDataAccess",
+        "ListAccessGrants",
+        "ListAccessGrantsInstances",
+        "ListAccessGrantsLocations",
+        "ListCallerAccessGrants",
+        "PutAccessGrantsInstanceResourcePolicy",
+        "UpdateAccessGrantsLocation",
+    }
+)
 S3CONTROL_DEFAULT_POLICY = '{"Version":"2012-10-17","Statement":[]}'
 S3CONTROL_DEFAULT_IAM_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-s3control"
 S3CONTROL_DEFAULT_IDENTITY_CENTER_ARN = "arn:aws:sso:::instance/ssoins-stackyard"
