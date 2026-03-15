@@ -2342,6 +2342,9 @@ REDSHIFT_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
 
 RDS_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
     {
+        "CreateTenantDatabase",
+        "ModifyTenantDatabase",
+        "DeleteTenantDatabase",
         "DescribeTenantDatabases",
     }
 )
@@ -16824,11 +16827,10 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             _replace_payload(
                 {
                     "LaunchTemplateId": ec2_get_runtime_value("launchtemplateid"),
-                    "LaunchTemplateName": f"stackyard-template-{unique}",
                     "LaunchTemplateData": {
-                        "ImageId": ec2_get_runtime_value("imageid"),
-                        "InstanceType": "t3.micro",
+                        "InstanceType": "t3.small",
                     },
+                    "SourceVersion": "$Latest",
                     "VersionDescription": f"stackyard-v{unique}",
                 }
             )
@@ -16943,8 +16945,8 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             _replace_payload(
                 {
                     "TransitGatewayRouteTableId": ec2_get_runtime_value("transitgatewayroutetableid"),
-                    "DestinationCidrBlock": "10.40.0.0/16",
-                    "TransitGatewayAttachmentId": ec2_get_runtime_value("transitgatewayvpcattachmentid"),
+                    "DestinationCidrBlock": "10.240.0.0/16",
+                    "Blackhole": True,
                 }
             )
         if op == "CreateTransitGatewayVpcAttachment":
@@ -17533,8 +17535,7 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             _replace_payload(
                 {
                     "InstanceId": ec2_get_runtime_value("instanceid"),
-                    "Attribute": "instanceType",
-                    "InstanceType": {"Value": "t3.small"},
+                    "SourceDestCheck": {"Value": False},
                 }
             )
         if op == "ModifyImageAttribute":
@@ -38935,6 +38936,7 @@ def hydrate_payload_with_service_state(
         db_parameter_group_name = str(region_state.get("db_parameter_group_name") or f"stackyard-db-param-group-{unique}").strip()
         global_cluster_identifier = str(region_state.get("global_cluster_identifier") or f"stackyard-global-cluster-{unique}").strip()
         cluster_endpoint_identifier = str(region_state.get("db_cluster_endpoint_identifier") or f"stackyard-endpoint-{unique}").strip()
+        db_proxy_name = str(region_state.get("db_proxy_name") or f"stackyard-db-proxy-{unique}").strip()
         tenant_db_name = str(region_state.get("tenant_db_name") or f"stackyard-tenant-{unique}").strip()
 
         def _replace_payload(values: dict[str, object]) -> None:
@@ -39037,6 +39039,42 @@ def hydrate_payload_with_service_state(
                 pass
             return cluster_id, endpoint_id
 
+        def _ensure_db_proxy() -> str:
+            proxy_name = str(region_state.get("db_proxy_name") or db_proxy_name).strip() or db_proxy_name
+            region_state["db_proxy_name"] = proxy_name
+            created = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "create-db-proxy",
+                env,
+                [
+                    "--db-proxy-name",
+                    proxy_name,
+                    "--engine-family",
+                    "MYSQL",
+                    "--role-arn",
+                    "arn:aws:iam::123456789012:role/stackyard-rds",
+                    "--vpc-subnet-ids",
+                    "subnet-12345678",
+                ],
+            )
+            if created is None:
+                rds_invoke_raw_operation(
+                    endpoint_url=endpoint_url,
+                    region=region,
+                    env=env,
+                    operation="CreateDBProxy",
+                    payload={
+                        "DBProxyName": proxy_name,
+                        "EngineFamily": "MYSQL",
+                        "RoleArn": "arn:aws:iam::123456789012:role/stackyard-rds",
+                        "VpcSubnetIds": ["subnet-12345678"],
+                    },
+                )
+            return proxy_name
+
         def _ensure_tenant_database() -> tuple[str, str]:
             cluster_id = _ensure_db_cluster()
             tenant_name = str(region_state.get("tenant_db_name") or tenant_db_name).strip() or tenant_db_name
@@ -39110,6 +39148,19 @@ def hydrate_payload_with_service_state(
         if op == "DeleteTenantDatabase":
             cluster_id, tenant_name = _ensure_tenant_database()
             _replace_payload({"DBClusterIdentifier": cluster_id, "TenantDBName": tenant_name})
+            return hydrated
+
+        if op == "RebootDbCluster":
+            _replace_payload({"DBClusterIdentifier": _ensure_db_cluster()})
+            return hydrated
+
+        if op == "RegisterDbProxyTargets":
+            _replace_payload(
+                {
+                    "DBProxyName": _ensure_db_proxy(),
+                    "DBClusterIdentifiers": [_ensure_db_cluster()],
+                }
+            )
             return hydrated
 
         if op == "CreateDbCluster":
@@ -40185,6 +40236,114 @@ def hydrate_payload_with_service_state(
                         "Description": "stackyard coverage network interface",
                     }
                 )
+
+            if op == "CreateLaunchTemplateVersion":
+                launch_template_id = ec2_get_runtime_value("launchtemplateid")
+                if launch_template_id == EC2_DEFAULT_KEY_VALUES["launchtemplateid"]:
+                    template_name = f"stackyard-lt-version-{int(time.time() * 1000)}"
+                    create_template_data = run_aws_json(
+                        aws_bin,
+                        endpoint_url,
+                        region,
+                        "ec2",
+                        "create-launch-template",
+                        env,
+                        [
+                            "--launch-template-name",
+                            template_name,
+                            "--launch-template-data",
+                            json.dumps({"ImageId": ec2_get_runtime_value("imageid"), "InstanceType": "t3.micro"}),
+                        ],
+                    )
+                    if isinstance(create_template_data, dict):
+                        ec2_record_runtime_payload(create_template_data)
+                        template = create_template_data.get("LaunchTemplate")
+                        if isinstance(template, dict):
+                            value = template.get("LaunchTemplateId")
+                            if isinstance(value, str) and value.strip():
+                                launch_template_id = value
+
+                hydrated.clear()
+                hydrated.update(
+                    {
+                        "LaunchTemplateId": launch_template_id,
+                        "LaunchTemplateData": {"InstanceType": "t3.small"},
+                        "SourceVersion": "$Latest",
+                        "VersionDescription": f"stackyard-version-{int(time.time() * 1000)}",
+                    }
+                )
+
+            if op == "CreateTransitGatewayRoute":
+                transit_gateway_id = ec2_get_primary_transit_gateway_id()
+                if transit_gateway_id == EC2_DEFAULT_KEY_VALUES["transitgatewayid"]:
+                    transit_gateway_data = run_aws_json(
+                        aws_bin,
+                        endpoint_url,
+                        region,
+                        "ec2",
+                        "create-transit-gateway",
+                        env,
+                        ["--description", "stackyard-create-transit-gateway-route"],
+                    )
+                    if isinstance(transit_gateway_data, dict):
+                        ec2_record_runtime_payload(transit_gateway_data)
+                        transit_gateway_id = ec2_get_primary_transit_gateway_id()
+
+                route_table_id = ""
+                route_table_data = run_aws_json(
+                    aws_bin,
+                    endpoint_url,
+                    region,
+                    "ec2",
+                    "create-transit-gateway-route-table",
+                    env,
+                    ["--transit-gateway-id", transit_gateway_id],
+                )
+                if isinstance(route_table_data, dict):
+                    ec2_record_runtime_payload(route_table_data)
+                    route_table = route_table_data.get("TransitGatewayRouteTable")
+                    if isinstance(route_table, dict):
+                        value = route_table.get("TransitGatewayRouteTableId")
+                        if isinstance(value, str) and value.strip():
+                            route_table_id = value
+                if not route_table_id:
+                    route_table_id = ec2_get_runtime_value("transitgatewayroutetableid")
+
+                destination_cidr = f"10.{210 + (int(time.time() * 1000) % 20)}.0.0/16"
+                hydrated.clear()
+                hydrated.update(
+                    {
+                        "TransitGatewayRouteTableId": route_table_id,
+                        "DestinationCidrBlock": destination_cidr,
+                        "Blackhole": True,
+                    }
+                )
+
+            if op == "AssociateRouteTable":
+                subnet_id = ec2_get_runtime_value("subnetid")
+                vpc_id = ec2_get_runtime_value("vpcid")
+                route_table_id = ""
+                route_table_data = run_aws_json(
+                    aws_bin,
+                    endpoint_url,
+                    region,
+                    "ec2",
+                    "create-route-table",
+                    env,
+                    ["--vpc-id", vpc_id],
+                )
+                if isinstance(route_table_data, dict):
+                    ec2_record_runtime_payload(route_table_data)
+                    route_table = route_table_data.get("RouteTable")
+                    if isinstance(route_table, dict):
+                        value = route_table.get("RouteTableId")
+                        if isinstance(value, str) and value.strip():
+                            route_table_id = value
+                if not route_table_id:
+                    route_table_id = ec2_get_runtime_value("routetableid")
+
+                hydrated.clear()
+                hydrated.update({"RouteTableId": route_table_id, "SubnetId": subnet_id})
 
             if op == "CreateVpcPeeringConnection":
                 vpc_a_id = ""
@@ -51419,6 +51578,50 @@ def run_endpoint(
             env=env,
             bucket=bucket,
             key=key,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "UploadPart":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", "coverage-multipart.bin")).strip()
+        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
+        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
+        try:
+            part_number = int(part_number_raw)
+        except (TypeError, ValueError):
+            part_number = 1
+        body = s3_decode_body(payload_value_case_insensitive(payload, "Body", "c3RhY2t5YXJk"))
+        status_code, response_text = invoke_s3_upload_part_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+            upload_id=upload_id,
+            part_number=part_number,
+            body=body,
+        )
+        return finish_s3_raw(status_code, response_text)
+
+    if endpoint.service == "s3" and endpoint.operation == "UploadPartCopy":
+        bucket = str(payload_value_case_insensitive(payload, "Bucket", S3_DEFAULT_BUCKET_NAME)).strip()
+        key = str(payload_value_case_insensitive(payload, "Key", "coverage-multipart.bin")).strip()
+        upload_id = str(payload_value_case_insensitive(payload, "UploadId", "")).strip()
+        part_number_raw = payload_value_case_insensitive(payload, "PartNumber", 1)
+        try:
+            part_number = int(part_number_raw)
+        except (TypeError, ValueError):
+            part_number = 1
+        copy_source = str(payload_value_case_insensitive(payload, "CopySource", "")).strip()
+        status_code, response_text = invoke_s3_upload_part_copy_raw(
+            endpoint_url=endpoint_url,
+            region=region,
+            env=env,
+            bucket=bucket,
+            key=key,
+            upload_id=upload_id,
+            part_number=part_number,
+            copy_source=copy_source,
         )
         return finish_s3_raw(status_code, response_text)
 
