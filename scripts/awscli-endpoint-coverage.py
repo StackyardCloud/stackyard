@@ -30696,12 +30696,10 @@ def hydrate_payload_with_service_state(
         set_key_if_present_case_insensitive(hydrated, "AccountId", account_id)
 
         if op == "CreateAccessGrantsInstance":
-            s3control_call(aws_bin, endpoint_url, region, env, "delete-access-grants-instance", {"AccountId": account_id})
             _replace_payload({"AccountId": account_id, "IdentityCenterArn": identity_center_arn})
             return hydrated
 
         if op in {"GetAccessGrantsInstance", "GetAccessGrantsInstanceForPrefix", "DeleteAccessGrantsInstance"}:
-            s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"AccountId": account_id}
             if op == "GetAccessGrantsInstanceForPrefix":
                 payload_values["S3Prefix"] = location_scope
@@ -30709,7 +30707,6 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"AssociateAccessGrantsIdentityCenter", "DissociateAccessGrantsIdentityCenter"}:
-            s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {"AccountId": account_id}
             if op == "AssociateAccessGrantsIdentityCenter":
                 payload_values["IdentityCenterArn"] = identity_center_arn
@@ -30717,17 +30714,10 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"ListAccessGrantsInstances", "ListAccessGrantsLocations", "ListAccessGrants", "ListCallerAccessGrants"}:
-            if op == "ListAccessGrantsLocations":
-                s3control_ensure_access_grants_location(aws_bin, endpoint_url, region, env)
-            elif op in {"ListAccessGrants", "ListCallerAccessGrants"}:
-                s3control_ensure_access_grant(aws_bin, endpoint_url, region, env)
-            elif op == "ListAccessGrantsInstances":
-                s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
             _replace_payload({"AccountId": account_id, "MaxResults": max_results})
             return hydrated
 
         if op == "CreateAccessGrantsLocation":
-            s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
             _replace_payload(
                 {
                     "AccountId": account_id,
@@ -30739,7 +30729,6 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"UpdateAccessGrantsLocation", "GetAccessGrantsLocation", "DeleteAccessGrantsLocation"}:
-            s3control_ensure_access_grants_location(aws_bin, endpoint_url, region, env)
             payload_values: dict[str, object] = {
                 "AccountId": account_id,
                 "AccessGrantsLocationId": location_id,
@@ -30750,7 +30739,6 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "CreateAccessGrant":
-            s3control_ensure_access_grants_location(aws_bin, endpoint_url, region, env)
             _replace_payload(
                 {
                     "AccountId": account_id,
@@ -30768,7 +30756,6 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op in {"GetAccessGrant", "DeleteAccessGrant"}:
-            s3control_ensure_access_grant(aws_bin, endpoint_url, region, env)
             _replace_payload({"AccountId": account_id, "AccessGrantId": grant_id})
             return hydrated
 
@@ -30777,16 +30764,6 @@ def hydrate_payload_with_service_state(
             "GetAccessGrantsInstanceResourcePolicy",
             "DeleteAccessGrantsInstanceResourcePolicy",
         }:
-            s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
-            if op in {"GetAccessGrantsInstanceResourcePolicy", "DeleteAccessGrantsInstanceResourcePolicy"}:
-                s3control_call(
-                    aws_bin,
-                    endpoint_url,
-                    region,
-                    env,
-                    "put-access-grants-instance-resource-policy",
-                    {"AccountId": account_id, "Policy": policy},
-                )
             payload_values = {"AccountId": account_id}
             if op == "PutAccessGrantsInstanceResourcePolicy":
                 payload_values["Policy"] = policy
@@ -30794,7 +30771,6 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "GetDataAccess":
-            s3control_ensure_access_grants_instance(aws_bin, endpoint_url, region, env)
             _replace_payload(
                 {
                     "AccountId": account_id,
@@ -52342,6 +52318,39 @@ def endpoint_dependency_rank(endpoint: Endpoint) -> int:
         if endpoint.operation == "DeletePermission":
             return 1
         if endpoint.operation == "DeleteCertificateAuthority":
+            return 2
+    if endpoint.service == "s3control":
+        op = endpoint.operation
+        if op == "CreateAccessGrantsInstance":
+            return -4
+        if op == "AssociateAccessGrantsIdentityCenter":
+            return -3
+        if op == "PutAccessGrantsInstanceResourcePolicy":
+            return -2
+        if op == "CreateAccessGrantsLocation":
+            return -1
+        if op == "CreateAccessGrant":
+            return 0
+        if op in {
+            "GetAccessGrantsInstance",
+            "GetAccessGrantsInstanceForPrefix",
+            "GetAccessGrantsInstanceResourcePolicy",
+            "GetAccessGrantsLocation",
+            "GetAccessGrant",
+            "GetDataAccess",
+            "ListAccessGrantsInstances",
+            "ListAccessGrantsLocations",
+            "ListAccessGrants",
+            "ListCallerAccessGrants",
+        }:
+            return 1
+        if op in {
+            "DeleteAccessGrant",
+            "DeleteAccessGrantsLocation",
+            "DeleteAccessGrantsInstanceResourcePolicy",
+            "DissociateAccessGrantsIdentityCenter",
+            "DeleteAccessGrantsInstance",
+        }:
             return 2
     return 0
 
