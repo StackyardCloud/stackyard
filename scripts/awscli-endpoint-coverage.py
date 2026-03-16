@@ -2663,7 +2663,11 @@ S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS: frozenset[str] = frozenset(
         "ListAccessGrants",
         "ListAccessGrantsInstances",
         "ListAccessGrantsLocations",
+        "ListAccessPointsForDirectoryBuckets",
         "ListCallerAccessGrants",
+        "DeleteAccessPointScope",
+        "GetAccessPointScope",
+        "PutAccessPointScope",
         "PutAccessGrantsInstanceResourcePolicy",
         "UpdateAccessGrantsLocation",
     }
@@ -52346,12 +52350,16 @@ def endpoint_dependency_rank(endpoint: Endpoint) -> int:
             return 1
         if op in {
             "DeleteAccessGrant",
+        }:
+            return 2
+        if op in {
             "DeleteAccessGrantsLocation",
             "DeleteAccessGrantsInstanceResourcePolicy",
             "DissociateAccessGrantsIdentityCenter",
-            "DeleteAccessGrantsInstance",
         }:
-            return 2
+            return 3
+        if op == "DeleteAccessGrantsInstance":
+            return 4
     return 0
 
 

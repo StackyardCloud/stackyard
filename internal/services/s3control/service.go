@@ -12,6 +12,7 @@ var (
 	ErrAccessPointAlreadyExists           = errors.New("access point already exists")
 	ErrAccessPointPolicyNotFound          = errors.New("access point policy not found")
 	ErrAccessPointPublicAccessBlockAbsent = errors.New("access point public access block not found")
+	ErrAccessPointScopeNotFound           = errors.New("access point scope not found")
 	ErrAccountPublicAccessBlockAbsent     = errors.New("account public access block not found")
 	ErrMultiRegionAccessPointNotFound     = errors.New("multi-region access point not found")
 	ErrMultiRegionAccessPointExists       = errors.New("multi-region access point already exists")
@@ -171,14 +172,15 @@ type AccessGrant struct {
 }
 
 type OutpostsBucket struct {
-	Name           string
-	OutpostID      string
-	Arn            string
-	CreatedAt      time.Time
-	Tags           map[string]string
-	LifecycleXML   string
-	Policy         string
-	ReplicationXML string
+	Name             string
+	OutpostID        string
+	Arn              string
+	CreatedAt        time.Time
+	Tags             map[string]string
+	LifecycleXML     string
+	Policy           string
+	ReplicationXML   string
+	VersioningStatus string
 }
 
 type AccessPointTag struct {
@@ -450,6 +452,59 @@ func (s *Service) DeleteAccessPointPolicy(accountID, name string) error {
 		return ErrAccessPointPolicyNotFound
 	}
 	ap.Policy = ""
+	return nil
+}
+
+func (s *Service) SetAccessPointScope(accountID, name string, scope *AccessPointScope) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	account, ok := s.accounts[accountID]
+	if !ok {
+		return ErrAccessPointNotFound
+	}
+	ap, ok := account.AccessPoints[name]
+	if !ok {
+		return ErrAccessPointNotFound
+	}
+	ap.Scope = scope
+	return nil
+}
+
+func (s *Service) GetAccessPointScope(accountID, name string) (*AccessPointScope, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	account, ok := s.accounts[accountID]
+	if !ok {
+		return nil, ErrAccessPointNotFound
+	}
+	ap, ok := account.AccessPoints[name]
+	if !ok {
+		return nil, ErrAccessPointNotFound
+	}
+	if ap.Scope == nil {
+		return nil, ErrAccessPointScopeNotFound
+	}
+	scope := *ap.Scope
+	scope.Permissions = append([]string(nil), ap.Scope.Permissions...)
+	scope.Prefixes = append([]string(nil), ap.Scope.Prefixes...)
+	return &scope, nil
+}
+
+func (s *Service) DeleteAccessPointScope(accountID, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	account, ok := s.accounts[accountID]
+	if !ok {
+		return ErrAccessPointNotFound
+	}
+	ap, ok := account.AccessPoints[name]
+	if !ok {
+		return ErrAccessPointNotFound
+	}
+	if ap.Scope == nil {
+		return ErrAccessPointScopeNotFound
+	}
+	ap.Scope = nil
 	return nil
 }
 
@@ -1518,6 +1573,17 @@ func (s *Service) PutOutpostsBucketReplication(accountID, name, xmlBody string) 
 		return ErrOutpostsBucketNotFound
 	}
 	bucket.ReplicationXML = xmlBody
+	return nil
+}
+
+func (s *Service) SetOutpostsBucketVersioning(accountID, name, status string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, bucket := s.resolveOutpostsBucketLocked(accountID, name)
+	if bucket == nil {
+		return ErrOutpostsBucketNotFound
+	}
+	bucket.VersioningStatus = status
 	return nil
 }
 

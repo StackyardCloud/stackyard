@@ -120,6 +120,37 @@ func TestS3ControlAccessPointsStage1(t *testing.T) {
 		t.Fatalf("expected public access block configuration")
 	}
 
+	scopeBody := `<?xml version="1.0" encoding="UTF-8"?>` +
+		`<Scope xmlns="http://awss3control.amazonaws.com/doc/2018-08-20/">` +
+		`<Permissions><Permission>GetObject</Permission></Permissions>` +
+		`<Prefixes><Prefix>docs/</Prefix></Prefixes>` +
+		`</Scope>`
+	resp = signedRequestWithService(t, http.MethodPut, ts.URL+"/v20180820/accesspoint/ap-one/scope", []byte(scopeBody), headers, "s3-control")
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = signedRequestWithService(t, http.MethodGet, ts.URL+"/v20180820/accesspoint/ap-one/scope", nil, headers, "s3-control")
+	assertStatus(t, resp, http.StatusOK)
+	var scopeResp s3ControlGetAccessPointScopeResult
+	if err := xml.Unmarshal(mustBody(t, resp), &scopeResp); err != nil {
+		t.Fatalf("parse get access point scope response: %v", err)
+	}
+	if len(scopeResp.Scope.Permissions) != 1 || scopeResp.Scope.Permissions[0] != "GetObject" {
+		t.Fatalf("unexpected scope permissions: %+v", scopeResp.Scope.Permissions)
+	}
+	if len(scopeResp.Scope.Prefixes) != 1 || scopeResp.Scope.Prefixes[0] != "docs/" {
+		t.Fatalf("unexpected scope prefixes: %+v", scopeResp.Scope.Prefixes)
+	}
+
+	resp = signedRequestWithService(t, http.MethodGet, ts.URL+"/v20180820/accesspointfordirectory?directoryBucket=ap-bucket", nil, headers, "s3-control")
+	assertStatus(t, resp, http.StatusOK)
+	var listDirectoryResp s3ControlListAccessPointsForDirectoryBucketsResult
+	if err := xml.Unmarshal(mustBody(t, resp), &listDirectoryResp); err != nil {
+		t.Fatalf("parse list access points for directory buckets response: %v", err)
+	}
+	if len(listDirectoryResp.AccessPointList) != 2 {
+		t.Fatalf("expected 2 directory bucket access points, got %d", len(listDirectoryResp.AccessPointList))
+	}
+
 	resp = signedRequestWithService(t, http.MethodGet, ts.URL+"/v20180820/accesspoint?bucket=ap-bucket&maxResults=1", nil, headers, "s3-control")
 	assertStatus(t, resp, http.StatusOK)
 	var listResp s3ControlAccessPointListResult
@@ -178,6 +209,15 @@ func TestS3ControlAccessPointsStage1(t *testing.T) {
 
 	resp = signedRequestWithService(t, http.MethodDelete, ts.URL+"/v20180820/accesspoint/ap-one/policy", nil, headers, "s3-control")
 	assertStatus(t, resp, http.StatusOK)
+
+	resp = signedRequestWithService(t, http.MethodDelete, ts.URL+"/v20180820/accesspoint/ap-one/scope", nil, headers, "s3-control")
+	assertStatus(t, resp, http.StatusOK)
+
+	resp = signedRequestWithService(t, http.MethodGet, ts.URL+"/v20180820/accesspoint/ap-one/scope", nil, headers, "s3-control")
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing scope, got %d", resp.StatusCode)
+	}
+	assertS3ErrorCode(t, resp, "NoSuchAccessPointScope")
 
 	resp = signedRequestWithService(t, http.MethodGet, ts.URL+"/v20180820/accesspoint/ap-one/policy", nil, headers, "s3-control")
 	if resp.StatusCode != http.StatusNotFound {

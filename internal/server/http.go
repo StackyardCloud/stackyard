@@ -12934,6 +12934,13 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handleS3ControlListAccessPoints(w, r, accountID)
 		return
+	case path == "/accesspointfordirectory" || path == "/accesspointfordirectory/":
+		if r.Method != http.MethodGet {
+			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+			return
+		}
+		s.handleS3ControlListAccessPointsForDirectoryBuckets(w, r, accountID)
+		return
 	case path == "/configuration/publicAccessBlock" || path == "/configuration/publicAccessBlock/":
 		switch r.Method {
 		case http.MethodPut:
@@ -13493,6 +13500,70 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
 			return
 		}
+	case strings.HasPrefix(path, "/accesspoint/"):
+		rest := strings.TrimPrefix(path, "/accesspoint/")
+		name, tail, _ := strings.Cut(rest, "/")
+		if name == "" {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
+			return
+		}
+		switch tail {
+		case "":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlCreateAccessPoint(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPoint(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPoint(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "scope":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlPutAccessPointScope(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPointScope(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPointScope(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "policy":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlPutAccessPointPolicy(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPointPolicy(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPointPolicy(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "policyStatus":
+			if r.Method != http.MethodGet {
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+			s.handleS3ControlGetAccessPointPolicyStatus(w, r, accountID, name)
+			return
+		default:
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
+			return
+		}
 	case path == "/bucket" || path == "/bucket/":
 		if r.Method != http.MethodGet {
 			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
@@ -13618,55 +13689,6 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		default:
 			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-			return
-		}
-	case strings.HasPrefix(path, "/accesspoint/"):
-		rest := strings.TrimPrefix(path, "/accesspoint/")
-		name, tail, _ := strings.Cut(rest, "/")
-		if name == "" {
-			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
-			return
-		}
-		switch tail {
-		case "":
-			switch r.Method {
-			case http.MethodPut:
-				s.handleS3ControlCreateAccessPoint(w, r, accountID, name)
-				return
-			case http.MethodGet:
-				s.handleS3ControlGetAccessPoint(w, r, accountID, name)
-				return
-			case http.MethodDelete:
-				s.handleS3ControlDeleteAccessPoint(w, r, accountID, name)
-				return
-			default:
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-		case "policy":
-			switch r.Method {
-			case http.MethodPut:
-				s.handleS3ControlPutAccessPointPolicy(w, r, accountID, name)
-				return
-			case http.MethodGet:
-				s.handleS3ControlGetAccessPointPolicy(w, r, accountID, name)
-				return
-			case http.MethodDelete:
-				s.handleS3ControlDeleteAccessPointPolicy(w, r, accountID, name)
-				return
-			default:
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-		case "policyStatus":
-			if r.Method != http.MethodGet {
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-			s.handleS3ControlGetAccessPointPolicyStatus(w, r, accountID, name)
-			return
-		default:
-			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
 			return
 		}
 	}
@@ -15570,7 +15592,6 @@ func (s *Server) handleS3ControlListAccessPoints(w http.ResponseWriter, r *http.
 			Bucket:          ap.Bucket,
 			BucketAccountID: ap.BucketAccount,
 			DataSourceID:    ap.DataSourceID,
-			DataSourceType:  ap.DataSourceType,
 			Name:            ap.Name,
 			NetworkOrigin:   ap.NetworkOrigin,
 		}
@@ -15586,6 +15607,131 @@ func (s *Server) handleS3ControlListAccessPoints(w http.ResponseWriter, r *http.
 		resp.NextToken = filtered[end-1].Name
 	}
 	respondS3XML(w, http.StatusOK, resp)
+}
+
+func (s *Server) handleS3ControlListAccessPointsForDirectoryBuckets(w http.ResponseWriter, r *http.Request, accountID string) {
+	query := r.URL.Query()
+	directoryBucket := strings.TrimSpace(query.Get("directoryBucket"))
+	maxResults := parseQueryInt(query.Get("maxResults"), 1000)
+	nextToken := strings.TrimSpace(query.Get("nextToken"))
+
+	accessPoints := s.s3control.ListAccessPoints(accountID)
+	filtered := make([]*s3control.AccessPoint, 0, len(accessPoints))
+	for _, ap := range accessPoints {
+		if directoryBucket != "" && ap.Bucket != directoryBucket {
+			continue
+		}
+		filtered = append(filtered, ap)
+	}
+	start := 0
+	if nextToken != "" {
+		found := false
+		for i, ap := range filtered {
+			if ap.Name == nextToken {
+				start = i + 1
+				found = true
+				break
+			}
+		}
+		if !found && len(filtered) > 0 {
+			respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "invalid nextToken")
+			return
+		}
+	}
+	end := start + maxResults
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	out := make([]s3ControlAccessPointInfo, 0, max(0, end-start))
+	for _, ap := range filtered[start:end] {
+		entry := s3ControlAccessPointInfo{
+			AccessPointArn:  ap.AccessPointArn,
+			Alias:           ap.Alias,
+			Bucket:          ap.Bucket,
+			BucketAccountID: ap.BucketAccount,
+			DataSourceID:    ap.DataSourceID,
+			Name:            ap.Name,
+			NetworkOrigin:   ap.NetworkOrigin,
+		}
+		if ap.VpcID != "" {
+			entry.VpcConfiguration = &s3ControlVpcConfiguration{VpcID: ap.VpcID}
+		}
+		out = append(out, entry)
+	}
+	resp := s3ControlListAccessPointsForDirectoryBucketsResult{
+		AccessPointList: out,
+	}
+	if maxResults > 0 && end < len(filtered) {
+		resp.NextToken = filtered[end-1].Name
+	}
+	respondS3XML(w, http.StatusOK, resp)
+}
+
+func (s *Server) handleS3ControlPutAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	body, err := readBodyBytes(r)
+	if err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "unable to read request body")
+		return
+	}
+	allowed := map[string]map[string]bool{
+		"Scope": {
+			"Permissions": true,
+			"Prefixes":    true,
+		},
+		"Scope/Permissions": {
+			"Permission": true,
+		},
+		"Scope/Prefixes": {
+			"Prefix": true,
+		},
+	}
+	if err := validateS3ControlXML(body, "Scope", s3ControlNamespace, allowed, nil); err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	var scope s3ControlAccessPointScope
+	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&scope); err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	if err := s.s3control.SetAccessPointScope(accountID, name, &s3control.AccessPointScope{
+		Permissions: append([]string(nil), scope.Permissions...),
+		Prefixes:    append([]string(nil), scope.Prefixes...),
+	}); err != nil {
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleS3ControlGetAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	scope, err := s.s3control.GetAccessPointScope(accountID, name)
+	if err != nil {
+		if errors.Is(err, s3control.ErrAccessPointScopeNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPointScope", "access point scope not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetAccessPointScopeResult{
+		Scope: s3ControlAccessPointScope{
+			Permissions: append([]string(nil), scope.Permissions...),
+			Prefixes:    append([]string(nil), scope.Prefixes...),
+		},
+	})
+}
+
+func (s *Server) handleS3ControlDeleteAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	if err := s.s3control.DeleteAccessPointScope(accountID, name); err != nil {
+		if errors.Is(err, s3control.ErrAccessPointScopeNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPointScope", "access point scope not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleS3ControlPutAccessPointPolicy(w http.ResponseWriter, r *http.Request, accountID, name string) {
@@ -16125,23 +16271,17 @@ func (s *Server) handleS3ControlDescribeMultiRegionAccessPointOperation(w http.R
 	switch op.Operation {
 	case "CreateMultiRegionAccessPoint":
 		if op.RequestParams.CreateRequest != nil {
-			params.CreateMultiRegionAccessPointRequest = &s3ControlCreateMultiRegionAccessPointRequest{
-				Xmlns: s3ControlNamespace,
-				Details: s3ControlMultiRegionAccessPointInput{
-					Name: op.RequestParams.CreateRequest.Name,
-					Regions: s3ControlMultiRegionAccessPointRegions{
-						Regions: s.mrapRegionsXML(op.RequestParams.CreateRequest.Regions),
-					},
+			params.CreateMultiRegionAccessPointRequest = &s3ControlMultiRegionAccessPointInput{
+				Name: op.RequestParams.CreateRequest.Name,
+				Regions: s3ControlMultiRegionAccessPointRegions{
+					Regions: s.mrapRegionsXML(op.RequestParams.CreateRequest.Regions),
 				},
 			}
 		}
 	case "PutMultiRegionAccessPointPolicy":
-		params.PutMultiRegionAccessPointPolicyRequest = &s3ControlPutMultiRegionAccessPointPolicyRequest{
-			Xmlns: s3ControlNamespace,
-			Details: s3ControlPutMultiRegionAccessPointPolicyInput{
-				Name:   op.RequestParams.PutPolicyName,
-				Policy: op.RequestParams.PutPolicyBody,
-			},
+		params.PutMultiRegionAccessPointPolicyRequest = &s3ControlPutMultiRegionAccessPointPolicyInput{
+			Name:   op.RequestParams.PutPolicyName,
+			Policy: op.RequestParams.PutPolicyBody,
 		}
 	}
 	if params.CreateMultiRegionAccessPointRequest != nil || params.PutMultiRegionAccessPointPolicyRequest != nil {
@@ -16330,7 +16470,19 @@ func (s *Server) handleS3ControlGetAccessPointConfigurationForObjectLambda(w htt
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetAccessPointConfigurationForObjectLambdaResult{
-		Configuration: s3ControlObjectLambdaConfiguration{SupportingAccessPoint: ap.AccessPointArn},
+		Configuration: s3ControlObjectLambdaConfiguration{
+			SupportingAccessPoint: ap.AccessPointArn,
+			TransformationConfigurations: []s3ControlObjectLambdaTransformationConfiguration{
+				{
+					Actions: []string{"GetObject"},
+					ContentTransformation: s3ControlObjectLambdaContentTransformation{
+						AwsLambda: &s3ControlAwsLambdaTransformation{
+							FunctionArn: "arn:aws:lambda:us-east-1:123456789012:function:stackyard-s3-object-lambda",
+						},
+					},
+				},
+			},
+		},
 	})
 }
 
@@ -16427,6 +16579,31 @@ func (s *Server) mrapReport(mrap *s3control.MultiRegionAccessPoint) s3ControlMul
 		}
 	}
 	return report
+}
+
+func storageLensARN(accountID, configID string) string {
+	return "arn:aws:s3:us-east-1:" + accountID + ":storage-lens/" + configID
+}
+
+func storageLensGroupARN(accountID, name string) string {
+	return "arn:aws:s3:us-east-1:" + accountID + ":storage-lens-group/" + name
+}
+
+func defaultS3ControlStorageLensConfiguration(accountID, configID string) s3ControlStorageLensConfiguration {
+	return s3ControlStorageLensConfiguration{
+		ID:             configID,
+		AccountLevel:   s3ControlStorageLensAccountLevel{BucketLevel: s3ControlStorageLensBucketLevel{ActivityMetrics: s3ControlStorageLensMetricFlag{IsEnabled: true}}},
+		IsEnabled:      true,
+		StorageLensArn: storageLensARN(accountID, configID),
+	}
+}
+
+func defaultS3ControlStorageLensGroup(accountID, name string) s3ControlStorageLensGroup {
+	return s3ControlStorageLensGroup{
+		Name:                name,
+		Filter:              s3ControlStorageLensGroupFilter{MatchAnyPrefix: []string{"stackyard/"}},
+		StorageLensGroupArn: storageLensGroupARN(accountID, name),
+	}
 }
 
 func (s *Server) mrapRegionsXML(regions []s3control.MultiRegionAccessPointRegion) []s3ControlMultiRegionRegion {
@@ -16546,9 +16723,17 @@ func (s *Server) handleS3ControlDescribeJob(w http.ResponseWriter, r *http.Reque
 			Priority:             job.Priority,
 			RoleArn:              job.RoleArn,
 			CreationTime:         job.CreationTime.Format(time.RFC3339),
-			Manifest:             s3ControlJobPayload{InnerXML: job.ManifestXML},
-			Operation:            s3ControlJobPayload{InnerXML: job.OperationXML},
-			Report:               s3ControlJobPayload{InnerXML: job.ReportXML},
+			Manifest: s3ControlJobManifest{
+				Spec: s3ControlJobManifestSpec{
+					Format: "S3BatchOperations_CSV_20180820",
+				},
+				Location: s3ControlJobManifestLocation{
+					ObjectArn: "arn:aws:s3:::stackyard-manifests/job.csv",
+					ETag:      "\"stackyard-etag\"",
+				},
+			},
+			Operation: s3ControlJobPayload{InnerXML: job.OperationXML},
+			Report:    s3ControlJobPayload{InnerXML: job.ReportXML},
 		},
 	})
 }
@@ -16632,11 +16817,15 @@ func (s *Server) handleS3ControlUpdateJobPriority(w http.ResponseWriter, r *http
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlUpdateJobPriorityResult{
+		JobId:    jobID,
+		Priority: priority,
+	})
 }
 
 func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
 	status := strings.TrimSpace(r.URL.Query().Get("requestedJobStatus"))
+	statusUpdateReason := strings.TrimSpace(r.URL.Query().Get("statusUpdateReason"))
 	if status == "" {
 		body, err := readBodyBytes(r)
 		if err != nil {
@@ -16658,6 +16847,7 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		var req struct {
 			RequestedJobStatus string `xml:"RequestedJobStatus"`
 			Status             string `xml:"Status"`
+			StatusUpdateReason string `xml:"StatusUpdateReason"`
 		}
 		if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
 			respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
@@ -16668,6 +16858,9 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		} else {
 			status = strings.TrimSpace(req.Status)
 		}
+		if statusUpdateReason == "" {
+			statusUpdateReason = strings.TrimSpace(req.StatusUpdateReason)
+		}
 	}
 	if status == "" {
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "invalid status")
@@ -16677,7 +16870,11 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlUpdateJobStatusResult{
+		JobId:              jobID,
+		Status:             status,
+		StatusUpdateReason: statusUpdateReason,
+	})
 }
 
 func (s *Server) handleS3ControlPutJobTagging(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
@@ -16712,11 +16909,11 @@ func (s *Server) handleS3ControlGetJobTagging(w http.ResponseWriter, r *http.Req
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	out := s3ControlTagging{}
+	out := s3ControlTagListTag{}
 	for k, v := range tags {
 		out.Tags = append(out.Tags, s3ControlTag{Key: k, Value: v})
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetJobTaggingResult{Tagging: out})
+	respondS3XML(w, http.StatusOK, s3ControlGetJobTaggingResult{Tags: out})
 }
 
 func (s *Server) handleS3ControlDeleteJobTagging(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
@@ -16744,16 +16941,11 @@ func (s *Server) handleS3ControlPutStorageLensConfiguration(w http.ResponseWrite
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
-	var req s3ControlPutStorageLensConfigurationRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+	if strings.TrimSpace(extractXMLPathValue(body, "StorageLensConfiguration/Id")) == "" {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing configuration id")
 		return
 	}
-	if strings.TrimSpace(req.Config.InnerXML) == "" {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing configuration")
-		return
-	}
-	_ = s.s3control.PutStorageLensConfiguration(accountID, configID, req.Config.InnerXML)
+	_ = s.s3control.PutStorageLensConfiguration(accountID, configID, string(body))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -16764,7 +16956,7 @@ func (s *Server) handleS3ControlGetStorageLensConfiguration(w http.ResponseWrite
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensConfigurationResult{
-		Config: s3ControlStorageLensConfiguration{InnerXML: cfg.ConfigXML},
+		Config: defaultS3ControlStorageLensConfiguration(accountID, cfg.ID),
 	})
 }
 
@@ -16811,11 +17003,10 @@ func (s *Server) handleS3ControlListStorageLensConfigurations(w http.ResponseWri
 	items := make([]s3ControlStorageLensConfigurationListItem, 0, max(0, end-start))
 	for _, cfg := range configs[start:end] {
 		items = append(items, s3ControlStorageLensConfigurationListItem{
-			ID:          cfg.ID,
-			HomeRegion:  "us-east-1",
-			Status:      "ACTIVE",
-			Enabled:     true,
-			HomeAccount: accountID,
+			ID:             cfg.ID,
+			StorageLensArn: storageLensARN(accountID, cfg.ID),
+			HomeRegion:     "us-east-1",
+			Enabled:        true,
 		})
 	}
 	resp := s3ControlListStorageLensConfigurationsResult{
@@ -16859,11 +17050,11 @@ func (s *Server) handleS3ControlGetStorageLensConfigurationTagging(w http.Respon
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchConfiguration", "configuration not found")
 		return
 	}
-	out := s3ControlTagging{}
+	out := s3ControlTagListTag{}
 	for k, v := range tags {
 		out.Tags = append(out.Tags, s3ControlTag{Key: k, Value: v})
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensTaggingResult{Tagging: out})
+	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensTaggingResult{Tags: out})
 }
 
 func (s *Server) handleS3ControlDeleteStorageLensConfigurationTagging(w http.ResponseWriter, r *http.Request, accountID, configID string) {
@@ -16897,12 +17088,7 @@ func (s *Server) handleS3ControlCreateStorageLensGroup(w http.ResponseWriter, r 
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing group name")
 		return
 	}
-	var req s3ControlCreateStorageLensGroupRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	_ = s.s3control.CreateStorageLensGroup(accountID, name, req.Group.InnerXML)
+	_ = s.s3control.CreateStorageLensGroup(accountID, name, string(body))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -16913,7 +17099,7 @@ func (s *Server) handleS3ControlGetStorageLensGroup(w http.ResponseWriter, r *ht
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensGroupResult{
-		Group: s3ControlStorageLensGroup{InnerXML: group.GroupXML},
+		Group: defaultS3ControlStorageLensGroup(accountID, group.Name),
 	})
 }
 
@@ -16930,12 +17116,7 @@ func (s *Server) handleS3ControlUpdateStorageLensGroup(w http.ResponseWriter, r 
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
-	var req s3ControlUpdateStorageLensGroupRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	if err := s.s3control.CreateStorageLensGroup(accountID, name, req.Group.InnerXML); err != nil {
+	if err := s.s3control.CreateStorageLensGroup(accountID, name, string(body)); err != nil {
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchStorageLensGroup", "group not found")
 		return
 	}
@@ -16955,8 +17136,9 @@ func (s *Server) handleS3ControlListStorageLensGroups(w http.ResponseWriter, r *
 	out := make([]s3ControlStorageLensGroupSummary, 0, len(list))
 	for _, group := range list {
 		out = append(out, s3ControlStorageLensGroupSummary{
-			Name:      group.Name,
-			CreatedAt: group.CreatedAt.Format(time.RFC3339),
+			Name:                group.Name,
+			StorageLensGroupArn: storageLensGroupARN(accountID, group.Name),
+			HomeRegion:          "us-east-1",
 		})
 	}
 	respondS3XML(w, http.StatusOK, s3ControlListStorageLensGroupsResult{
@@ -17027,13 +17209,11 @@ func (s *Server) handleS3ControlCreateAccessGrantsInstance(w http.ResponseWriter
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlAccessGrantsInstanceResult{
-		XMLName:                      xml.Name{Local: "CreateAccessGrantsInstanceResult"},
-		AccessGrantsInstanceArn:      instance.Arn,
-		AccessGrantsInstanceId:       instance.ID,
-		IdentityCenterArn:            instance.IdentityCenterArn,
-		IdentityCenterInstanceArn:    instance.IdentityCenterInstanceArn,
-		IdentityCenterApplicationArn: instance.IdentityCenterApplicationArn,
-		CreatedAt:                    instance.CreatedAt.Format(time.RFC3339),
+		XMLName:                 xml.Name{Local: "CreateAccessGrantsInstanceResult"},
+		AccessGrantsInstanceArn: instance.Arn,
+		AccessGrantsInstanceId:  instance.ID,
+		IdentityCenterArn:       instance.IdentityCenterArn,
+		CreatedAt:               instance.CreatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -17044,13 +17224,11 @@ func (s *Server) handleS3ControlGetAccessGrantsInstance(w http.ResponseWriter, r
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlAccessGrantsInstanceResult{
-		XMLName:                      xml.Name{Local: "GetAccessGrantsInstanceResult"},
-		AccessGrantsInstanceArn:      instance.Arn,
-		AccessGrantsInstanceId:       instance.ID,
-		IdentityCenterArn:            instance.IdentityCenterArn,
-		IdentityCenterInstanceArn:    instance.IdentityCenterInstanceArn,
-		IdentityCenterApplicationArn: instance.IdentityCenterApplicationArn,
-		CreatedAt:                    instance.CreatedAt.Format(time.RFC3339),
+		XMLName:                 xml.Name{Local: "GetAccessGrantsInstanceResult"},
+		AccessGrantsInstanceArn: instance.Arn,
+		AccessGrantsInstanceId:  instance.ID,
+		IdentityCenterArn:       instance.IdentityCenterArn,
+		CreatedAt:               instance.CreatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -17088,12 +17266,10 @@ func (s *Server) handleS3ControlListAccessGrantsInstances(w http.ResponseWriter,
 	out := make([]s3ControlAccessGrantsInstanceSummary, 0, max(0, end-start))
 	for _, item := range list[start:end] {
 		out = append(out, s3ControlAccessGrantsInstanceSummary{
-			AccessGrantsInstanceArn:      item.Arn,
-			AccessGrantsInstanceId:       item.ID,
-			IdentityCenterArn:            item.IdentityCenterArn,
-			IdentityCenterInstanceArn:    item.IdentityCenterInstanceArn,
-			IdentityCenterApplicationArn: item.IdentityCenterApplicationArn,
-			CreatedAt:                    item.CreatedAt.Format(time.RFC3339),
+			AccessGrantsInstanceArn: item.Arn,
+			AccessGrantsInstanceId:  item.ID,
+			IdentityCenterArn:       item.IdentityCenterArn,
+			CreatedAt:               item.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	resp := s3ControlListAccessGrantsInstancesResult{
@@ -17140,7 +17316,11 @@ func (s *Server) handleS3ControlPutAccessGrantsInstanceResourcePolicy(w http.Res
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessGrantsInstance", "access grants instance not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlPutAccessGrantsInstanceResourcePolicyResult{
+		Policy:       strings.TrimSpace(req.Policy),
+		Organization: strings.TrimSpace(req.Organization),
+		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 func (s *Server) handleS3ControlGetAccessGrantsInstanceResourcePolicy(w http.ResponseWriter, r *http.Request, accountID string) {
@@ -17946,7 +18126,16 @@ func (s *Server) handleS3ControlGetBucketLifecycleConfiguration(w http.ResponseW
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketLifecycleConfigurationResult{})
+	xmlBody, err := s.s3control.GetOutpostsBucketLifecycle(accountID, bucket)
+	if err != nil {
+		if errors.Is(err, s3control.ErrOutpostsBucketLifecycleNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchLifecycleConfiguration", "lifecycle configuration not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketLifecycleConfigurationResult{InnerXML: xmlBody})
 }
 
 func (s *Server) handleS3ControlDeleteBucketLifecycleConfiguration(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
@@ -17979,7 +18168,18 @@ func (s *Server) handleS3ControlGetBucketReplication(w http.ResponseWriter, r *h
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketReplicationResult{})
+	xmlBody, err := s.s3control.GetOutpostsBucketReplication(accountID, bucket)
+	if err != nil {
+		if errors.Is(err, s3control.ErrOutpostsBucketReplicationNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "ReplicationConfigurationNotFoundError", "replication configuration not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketReplicationResult{
+		ReplicationConfiguration: s3ControlReplicationConfiguration{InnerXML: xmlBody},
+	})
 }
 
 func (s *Server) handleS3ControlDeleteBucketReplication(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
@@ -17999,15 +18199,27 @@ func (s *Server) handleS3ControlPutBucketVersioning(w http.ResponseWriter, r *ht
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
+	body, err := readBodyBytes(r)
+	if err == nil {
+		status := strings.TrimSpace(extractXMLPathValue(body, "Status"))
+		if status != "" {
+			_ = s.s3control.SetOutpostsBucketVersioning(accountID, bucket, status)
+		}
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleS3ControlGetBucketVersioning(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
-	if _, err := s.s3control.GetOutpostsBucket(accountID, bucket); err != nil {
+	info, err := s.s3control.GetOutpostsBucket(accountID, bucket)
+	if err != nil {
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketVersioningResult{})
+	status := info.VersioningStatus
+	if status == "" {
+		status = "Enabled"
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketVersioningResult{Status: status})
 }
 
 func (s *Server) handleS3ControlTagResource(w http.ResponseWriter, r *http.Request, accountID, resourceArn string) {
@@ -18322,27 +18534,13 @@ func (s *Server) handleS3ControlPutAccountPublicAccessBlock(w http.ResponseWrite
 			"RestrictPublicBuckets": true,
 		},
 	}
-	required := []string{
-		"PublicAccessBlockConfiguration/BlockPublicAcls",
-		"PublicAccessBlockConfiguration/IgnorePublicAcls",
-		"PublicAccessBlockConfiguration/BlockPublicPolicy",
-		"PublicAccessBlockConfiguration/RestrictPublicBuckets",
-	}
-	if err := validateS3ControlXML(body, "PublicAccessBlockConfiguration", s3ControlNamespace, allowed, required); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	if err := validateS3ControlElementOrder(body, "PublicAccessBlockConfiguration", []string{
-		"BlockPublicAcls",
-		"IgnorePublicAcls",
-		"BlockPublicPolicy",
-		"RestrictPublicBuckets",
-	}); err != nil {
+	if err := validateS3ControlXML(body, "PublicAccessBlockConfiguration", s3ControlNamespace, allowed, nil); err != nil {
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
 	for _, field := range []string{"BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"} {
-		if !validateBoolText(extractXMLPathValue(body, field)) {
+		value := extractXMLPathValue(body, field)
+		if strings.TrimSpace(value) != "" && !validateBoolText(value) {
 			respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 			return
 		}
@@ -20284,16 +20482,26 @@ type s3ControlAccessPointListResult struct {
 	NextToken       string                     `xml:"NextToken,omitempty"`
 }
 
+type s3ControlListAccessPointsForDirectoryBucketsResult struct {
+	XMLName         xml.Name                   `xml:"ListAccessPointsForDirectoryBucketsResult"`
+	AccessPointList []s3ControlAccessPointInfo `xml:"AccessPointList>AccessPoint"`
+	NextToken       string                     `xml:"NextToken,omitempty"`
+}
+
 type s3ControlAccessPointInfo struct {
 	AccessPointArn   string                     `xml:"AccessPointArn,omitempty"`
 	Alias            string                     `xml:"Alias,omitempty"`
 	Bucket           string                     `xml:"Bucket"`
 	BucketAccountID  string                     `xml:"BucketAccountId,omitempty"`
 	DataSourceID     string                     `xml:"DataSourceId,omitempty"`
-	DataSourceType   string                     `xml:"DataSourceType,omitempty"`
 	Name             string                     `xml:"Name"`
 	NetworkOrigin    string                     `xml:"NetworkOrigin"`
 	VpcConfiguration *s3ControlVpcConfiguration `xml:"VpcConfiguration,omitempty"`
+}
+
+type s3ControlGetAccessPointScopeResult struct {
+	XMLName xml.Name                  `xml:"GetAccessPointScopeResult"`
+	Scope   s3ControlAccessPointScope `xml:"Scope"`
 }
 
 type s3ControlPutAccessPointPolicyRequest struct {
@@ -20445,8 +20653,8 @@ type s3ControlAsyncOperation struct {
 }
 
 type s3ControlAsyncRequestParameters struct {
-	CreateMultiRegionAccessPointRequest    *s3ControlCreateMultiRegionAccessPointRequest    `xml:"CreateMultiRegionAccessPointRequest,omitempty"`
-	PutMultiRegionAccessPointPolicyRequest *s3ControlPutMultiRegionAccessPointPolicyRequest `xml:"PutMultiRegionAccessPointPolicyRequest,omitempty"`
+	CreateMultiRegionAccessPointRequest    *s3ControlMultiRegionAccessPointInput          `xml:"CreateMultiRegionAccessPointRequest,omitempty"`
+	PutMultiRegionAccessPointPolicyRequest *s3ControlPutMultiRegionAccessPointPolicyInput `xml:"PutMultiRegionAccessPointPolicyRequest,omitempty"`
 }
 
 type s3ControlAsyncResponseDetails struct {
@@ -20480,15 +20688,29 @@ type s3ControlDescribeJobResult struct {
 }
 
 type s3ControlJobDescriptor struct {
-	JobId                string              `xml:"JobId"`
-	Status               string              `xml:"Status"`
-	ConfirmationRequired bool                `xml:"ConfirmationRequired"`
-	Priority             int                 `xml:"Priority"`
-	RoleArn              string              `xml:"RoleArn"`
-	CreationTime         string              `xml:"CreationTime"`
-	Manifest             s3ControlJobPayload `xml:"Manifest"`
-	Operation            s3ControlJobPayload `xml:"Operation"`
-	Report               s3ControlJobPayload `xml:"Report"`
+	JobId                string               `xml:"JobId"`
+	Status               string               `xml:"Status"`
+	ConfirmationRequired bool                 `xml:"ConfirmationRequired"`
+	Priority             int                  `xml:"Priority"`
+	RoleArn              string               `xml:"RoleArn"`
+	CreationTime         string               `xml:"CreationTime"`
+	Manifest             s3ControlJobManifest `xml:"Manifest"`
+	Operation            s3ControlJobPayload  `xml:"Operation"`
+	Report               s3ControlJobPayload  `xml:"Report"`
+}
+
+type s3ControlJobManifest struct {
+	Spec     s3ControlJobManifestSpec     `xml:"Spec"`
+	Location s3ControlJobManifestLocation `xml:"Location"`
+}
+
+type s3ControlJobManifestSpec struct {
+	Format string `xml:"Format"`
+}
+
+type s3ControlJobManifestLocation struct {
+	ObjectArn string `xml:"ObjectArn"`
+	ETag      string `xml:"ETag"`
 }
 
 type s3ControlListJobsResult struct {
@@ -20510,10 +20732,23 @@ type s3ControlUpdateJobPriorityRequest struct {
 	Priority int      `xml:"Priority"`
 }
 
+type s3ControlUpdateJobPriorityResult struct {
+	XMLName  xml.Name `xml:"UpdateJobPriorityResult"`
+	JobId    string   `xml:"JobId"`
+	Priority int      `xml:"Priority"`
+}
+
 type s3ControlUpdateJobStatusRequest struct {
 	XMLName xml.Name `xml:"UpdateJobStatusRequest"`
 	Xmlns   string   `xml:"xmlns,attr"`
 	Status  string   `xml:"Status"`
+}
+
+type s3ControlUpdateJobStatusResult struct {
+	XMLName            xml.Name `xml:"UpdateJobStatusResult"`
+	JobId              string   `xml:"JobId,omitempty"`
+	Status             string   `xml:"Status,omitempty"`
+	StatusUpdateReason string   `xml:"StatusUpdateReason,omitempty"`
 }
 
 type s3ControlPutJobTaggingRequest struct {
@@ -20523,8 +20758,8 @@ type s3ControlPutJobTaggingRequest struct {
 }
 
 type s3ControlGetJobTaggingResult struct {
-	XMLName xml.Name         `xml:"GetJobTaggingResult"`
-	Tagging s3ControlTagging `xml:"Tagging"`
+	XMLName xml.Name            `xml:"GetJobTaggingResult"`
+	Tags    s3ControlTagListTag `xml:"Tags"`
 }
 
 type s3ControlPutStorageLensConfigurationRequest struct {
@@ -20534,7 +20769,22 @@ type s3ControlPutStorageLensConfigurationRequest struct {
 }
 
 type s3ControlStorageLensConfiguration struct {
-	InnerXML string `xml:",innerxml"`
+	ID             string                           `xml:"Id"`
+	AccountLevel   s3ControlStorageLensAccountLevel `xml:"AccountLevel"`
+	IsEnabled      bool                             `xml:"IsEnabled"`
+	StorageLensArn string                           `xml:"StorageLensArn,omitempty"`
+}
+
+type s3ControlStorageLensAccountLevel struct {
+	BucketLevel s3ControlStorageLensBucketLevel `xml:"BucketLevel"`
+}
+
+type s3ControlStorageLensBucketLevel struct {
+	ActivityMetrics s3ControlStorageLensMetricFlag `xml:"ActivityMetrics"`
+}
+
+type s3ControlStorageLensMetricFlag struct {
+	IsEnabled bool `xml:"IsEnabled"`
 }
 
 type s3ControlGetStorageLensConfigurationResult struct {
@@ -20543,17 +20793,16 @@ type s3ControlGetStorageLensConfigurationResult struct {
 }
 
 type s3ControlListStorageLensConfigurationsResult struct {
-	XMLName        xml.Name                                    `xml:"ListStorageLensConfigurationsResult"`
+	XMLName        xml.Name                                    `xml:"ListStorageLensConfigurationResult"`
 	Configurations []s3ControlStorageLensConfigurationListItem `xml:"StorageLensConfigurationList>StorageLensConfiguration"`
 	NextToken      string                                      `xml:"NextToken,omitempty"`
 }
 
 type s3ControlStorageLensConfigurationListItem struct {
-	ID          string `xml:"Id"`
-	HomeRegion  string `xml:"HomeRegion"`
-	Status      string `xml:"Status"`
-	Enabled     bool   `xml:"Enabled"`
-	HomeAccount string `xml:"HomeAccountId"`
+	ID             string `xml:"Id"`
+	StorageLensArn string `xml:"StorageLensArn"`
+	HomeRegion     string `xml:"HomeRegion"`
+	Enabled        bool   `xml:"IsEnabled"`
 }
 
 type s3ControlPutStorageLensTaggingRequest struct {
@@ -20563,8 +20812,8 @@ type s3ControlPutStorageLensTaggingRequest struct {
 }
 
 type s3ControlGetStorageLensTaggingResult struct {
-	XMLName xml.Name         `xml:"GetStorageLensConfigurationTaggingResult"`
-	Tagging s3ControlTagging `xml:"Tagging"`
+	XMLName xml.Name            `xml:"GetStorageLensConfigurationTaggingResult"`
+	Tags    s3ControlTagListTag `xml:"Tags"`
 }
 
 type s3ControlCreateStorageLensGroupRequest struct {
@@ -20586,7 +20835,7 @@ type s3ControlGetStorageLensGroupResult struct {
 
 type s3ControlListStorageLensGroupsResult struct {
 	XMLName   xml.Name                           `xml:"ListStorageLensGroupsResult"`
-	Groups    []s3ControlStorageLensGroupSummary `xml:"StorageLensGroups>StorageLensGroup"`
+	Groups    []s3ControlStorageLensGroupSummary `xml:"StorageLensGroupList>StorageLensGroup"`
 	NextToken string                             `xml:"NextToken,omitempty"`
 }
 
@@ -20641,7 +20890,21 @@ type s3ControlGetAccessPointForObjectLambdaResult struct {
 }
 
 type s3ControlObjectLambdaConfiguration struct {
-	SupportingAccessPoint string `xml:"SupportingAccessPoint,omitempty"`
+	SupportingAccessPoint        string                                             `xml:"SupportingAccessPoint,omitempty"`
+	TransformationConfigurations []s3ControlObjectLambdaTransformationConfiguration `xml:"TransformationConfigurations>TransformationConfiguration"`
+}
+
+type s3ControlObjectLambdaTransformationConfiguration struct {
+	Actions               []string                                   `xml:"Actions>Action"`
+	ContentTransformation s3ControlObjectLambdaContentTransformation `xml:"ContentTransformation"`
+}
+
+type s3ControlObjectLambdaContentTransformation struct {
+	AwsLambda *s3ControlAwsLambdaTransformation `xml:"AwsLambda,omitempty"`
+}
+
+type s3ControlAwsLambdaTransformation struct {
+	FunctionArn string `xml:"FunctionArn"`
 }
 
 type s3ControlGetAccessPointConfigurationForObjectLambdaResult struct {
@@ -20702,6 +20965,10 @@ type s3ControlTaggingList struct {
 	Members []s3ControlTag `xml:"member"`
 }
 
+type s3ControlTagListTag struct {
+	Tags []s3ControlTag `xml:"Tag"`
+}
+
 type s3ControlGetBucketTaggingResult struct {
 	XMLName xml.Name             `xml:"GetBucketTaggingResult"`
 	TagSet  s3ControlTaggingList `xml:"TagSet"`
@@ -20714,11 +20981,13 @@ type s3ControlGetBucketVersioningResult struct {
 }
 
 type s3ControlGetBucketLifecycleConfigurationResult struct {
-	XMLName xml.Name `xml:"GetBucketLifecycleConfigurationResult"`
+	XMLName  xml.Name `xml:"GetBucketLifecycleConfigurationResult"`
+	InnerXML string   `xml:",innerxml"`
 }
 
 type s3ControlGetBucketReplicationResult struct {
-	XMLName xml.Name `xml:"GetBucketReplicationResult"`
+	XMLName                  xml.Name                          `xml:"GetBucketReplicationResult"`
+	ReplicationConfiguration s3ControlReplicationConfiguration `xml:"ReplicationConfiguration"`
 }
 
 type s3ControlEmptyResult struct {
@@ -20731,12 +21000,19 @@ type s3ControlListTagsForResourceResult struct {
 }
 
 type s3ControlStorageLensGroup struct {
-	InnerXML string `xml:",innerxml"`
+	Name                string                          `xml:"Name"`
+	Filter              s3ControlStorageLensGroupFilter `xml:"Filter"`
+	StorageLensGroupArn string                          `xml:"StorageLensGroupArn,omitempty"`
 }
 
 type s3ControlStorageLensGroupSummary struct {
-	Name      string `xml:"Name"`
-	CreatedAt string `xml:"CreatedAt"`
+	Name                string `xml:"Name"`
+	StorageLensGroupArn string `xml:"StorageLensGroupArn"`
+	HomeRegion          string `xml:"HomeRegion"`
+}
+
+type s3ControlStorageLensGroupFilter struct {
+	MatchAnyPrefix []string `xml:"MatchAnyPrefix>Prefix,omitempty"`
 }
 
 type s3ControlCreateAccessGrantsInstanceRequest struct {
@@ -20746,22 +21022,18 @@ type s3ControlCreateAccessGrantsInstanceRequest struct {
 }
 
 type s3ControlAccessGrantsInstanceResult struct {
-	XMLName                      xml.Name `xml:""`
-	AccessGrantsInstanceArn      string   `xml:"AccessGrantsInstanceArn,omitempty"`
-	AccessGrantsInstanceId       string   `xml:"AccessGrantsInstanceId,omitempty"`
-	IdentityCenterArn            string   `xml:"IdentityCenterArn,omitempty"`
-	IdentityCenterInstanceArn    string   `xml:"IdentityCenterInstanceArn,omitempty"`
-	IdentityCenterApplicationArn string   `xml:"IdentityCenterApplicationArn,omitempty"`
-	CreatedAt                    string   `xml:"CreatedAt,omitempty"`
+	XMLName                 xml.Name `xml:""`
+	AccessGrantsInstanceArn string   `xml:"AccessGrantsInstanceArn,omitempty"`
+	AccessGrantsInstanceId  string   `xml:"AccessGrantsInstanceId,omitempty"`
+	IdentityCenterArn       string   `xml:"IdentityCenterArn,omitempty"`
+	CreatedAt               string   `xml:"CreatedAt,omitempty"`
 }
 
 type s3ControlAccessGrantsInstanceSummary struct {
-	AccessGrantsInstanceArn      string `xml:"AccessGrantsInstanceArn,omitempty"`
-	AccessGrantsInstanceId       string `xml:"AccessGrantsInstanceId,omitempty"`
-	IdentityCenterArn            string `xml:"IdentityCenterArn,omitempty"`
-	IdentityCenterInstanceArn    string `xml:"IdentityCenterInstanceArn,omitempty"`
-	IdentityCenterApplicationArn string `xml:"IdentityCenterApplicationArn,omitempty"`
-	CreatedAt                    string `xml:"CreatedAt,omitempty"`
+	AccessGrantsInstanceArn string `xml:"AccessGrantsInstanceArn,omitempty"`
+	AccessGrantsInstanceId  string `xml:"AccessGrantsInstanceId,omitempty"`
+	IdentityCenterArn       string `xml:"IdentityCenterArn,omitempty"`
+	CreatedAt               string `xml:"CreatedAt,omitempty"`
 }
 
 type s3ControlListAccessGrantsInstancesResult struct {
@@ -20778,6 +21050,13 @@ type s3ControlPutAccessGrantsInstanceResourcePolicyRequest struct {
 
 type s3ControlGetAccessGrantsInstanceResourcePolicyResult struct {
 	XMLName      xml.Name `xml:"GetAccessGrantsInstanceResourcePolicyResult"`
+	Policy       string   `xml:"Policy"`
+	Organization string   `xml:"Organization,omitempty"`
+	CreatedAt    string   `xml:"CreatedAt,omitempty"`
+}
+
+type s3ControlPutAccessGrantsInstanceResourcePolicyResult struct {
+	XMLName      xml.Name `xml:"PutAccessGrantsInstanceResourcePolicyResult"`
 	Policy       string   `xml:"Policy"`
 	Organization string   `xml:"Organization,omitempty"`
 	CreatedAt    string   `xml:"CreatedAt,omitempty"`
