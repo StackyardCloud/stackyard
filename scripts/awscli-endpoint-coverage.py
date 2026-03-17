@@ -2643,33 +2643,11 @@ S3CONTROL_COVERAGE_ACCOUNT_ID = "000000000127"
 S3CONTROL_LOCAL_ENDPOINT_ALIAS_HOST = "0.0.1"
 S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS: frozenset[str] = frozenset(
     {
-        # The Access Grants APIs are reliable against the base localhost endpoint and can
-        # spend minutes retrying when forced through the alias-first S3 Control path in CI.
-        "AssociateAccessGrantsIdentityCenter",
-        "CreateAccessGrant",
-        "CreateAccessGrantsInstance",
-        "CreateAccessGrantsLocation",
-        "DeleteAccessGrant",
-        "DeleteAccessGrantsInstance",
-        "DeleteAccessGrantsInstanceResourcePolicy",
-        "DeleteAccessGrantsLocation",
-        "DissociateAccessGrantsIdentityCenter",
-        "GetAccessGrant",
-        "GetAccessGrantsInstance",
-        "GetAccessGrantsInstanceForPrefix",
-        "GetAccessGrantsInstanceResourcePolicy",
-        "GetAccessGrantsLocation",
-        "GetDataAccess",
-        "ListAccessGrants",
-        "ListAccessGrantsInstances",
-        "ListAccessGrantsLocations",
         "ListAccessPointsForDirectoryBuckets",
         "ListCallerAccessGrants",
         "DeleteAccessPointScope",
         "GetAccessPointScope",
         "PutAccessPointScope",
-        "PutAccessGrantsInstanceResourcePolicy",
-        "UpdateAccessGrantsLocation",
     }
 )
 S3CONTROL_DEFAULT_POLICY = '{"Version":"2012-10-17","Statement":[]}'
@@ -12870,6 +12848,13 @@ def s3control_cli_endpoint_url(endpoint_url: str) -> str:
     return urlparse.urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
 
 
+def s3control_should_use_endpoint_alias(endpoint_url: str, operation: str) -> bool:
+    # A small subset of local S3 Control routes is more reliable without the account-id
+    # host-prefix alias. Most operations still need the alias so the AWS CLI rewrites the
+    # host to an address that resolves locally (for example 000000000127.0.0.1).
+    return kebab_to_pascal(operation) not in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS
+
+
 def run_compose_up(compose_file: str, service: str, rebuild: bool, env: dict[str, str]) -> tuple[bool, str]:
     up_args = ["up", "-d"]
     if rebuild:
@@ -17869,10 +17854,10 @@ def s3control_call(
     # Some S3 Control operations require account-id host-prefix addressing while
     # others fail when host-prefix aliasing is used against localhost. Try both.
     tried: set[str] = set()
-    if kebab_to_pascal(operation) in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS:
-        endpoints = [endpoint_url]
-    else:
+    if s3control_should_use_endpoint_alias(endpoint_url, operation):
         endpoints = [endpoint_url, s3control_cli_endpoint_url(endpoint_url)]
+    else:
+        endpoints = [endpoint_url]
     for current_endpoint in endpoints:
         if current_endpoint in tried:
             continue
@@ -51651,7 +51636,7 @@ def run_endpoint(
         env=env,
     )
     cli_endpoint_url = endpoint_url
-    if endpoint.service == "s3control" and endpoint.operation not in S3CONTROL_NO_ENDPOINT_ALIAS_OPERATIONS:
+    if endpoint.service == "s3control" and s3control_should_use_endpoint_alias(endpoint_url, endpoint.cli_operation):
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
     base_cmd = [
         *aws_cli_base_cmd(aws_bin, env),
