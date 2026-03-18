@@ -3513,6 +3513,7 @@ AWSCLI_COMMAND_TIMEOUT_SEC = 300.0
 AWSCLI_DISCOVERY_TIMEOUT_SEC = 30.0
 AWSCLI_SKELETON_TIMEOUT_SEC = 60.0
 AWSCLI_VERSION_TIMEOUT_SEC = 10.0
+AWSCLI_PROGRESS_HEARTBEAT_SEC = 30.0
 
 
 def openssl_bin() -> str:
@@ -12777,29 +12778,51 @@ def run_subprocess(
     cmd: Sequence[str],
     env: dict[str, str],
     timeout_sec: float = AWSCLI_COMMAND_TIMEOUT_SEC,
+    progress_label: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    try:
-        return subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env,
-            timeout=timeout_sec,
-        )
-    except subprocess.TimeoutExpired as err:
-        stderr_parts = []
-        if err.stderr:
-            stderr_parts.append(str(err.stderr).strip())
-        stderr_parts.append(
-            f"timed out after {timeout_sec:g}s while running: {' '.join(shlex.quote(str(part)) for part in cmd)}"
-        )
-        return subprocess.CompletedProcess(
-            args=list(cmd),
-            returncode=124,
-            stdout=(str(err.stdout) if err.stdout else ""),
-            stderr="\n".join(part for part in stderr_parts if part).strip(),
-        )
+    started = time.time()
+    rendered_cmd = " ".join(shlex.quote(str(part)) for part in cmd)
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
+    next_heartbeat_at = started + AWSCLI_PROGRESS_HEARTBEAT_SEC
+    while True:
+        remaining = timeout_sec - (time.time() - started)
+        if remaining <= 0:
+            proc.kill()
+            stdout_text, stderr_text = proc.communicate()
+            stderr_parts = []
+            if stderr_text:
+                stderr_parts.append(stderr_text.strip())
+            stderr_parts.append(f"timed out after {timeout_sec:g}s while running: {rendered_cmd}")
+            return subprocess.CompletedProcess(
+                args=list(cmd),
+                returncode=124,
+                stdout=stdout_text or "",
+                stderr="\n".join(part for part in stderr_parts if part).strip(),
+            )
+        try:
+            stdout_text, stderr_text = proc.communicate(timeout=min(1.0, remaining))
+            return subprocess.CompletedProcess(
+                args=list(cmd),
+                returncode=proc.returncode,
+                stdout=stdout_text,
+                stderr=stderr_text,
+            )
+        except subprocess.TimeoutExpired:
+            progress_enabled = env.get("STACKYARD_AWSCLI_PROGRESS", "1").strip().lower() not in {"", "0", "false", "no"}
+            if progress_label and progress_enabled and time.time() >= next_heartbeat_at:
+                elapsed_sec = time.time() - started
+                print(
+                    f"progress {progress_label}: elapsed={elapsed_sec:.1f}s cmd={rendered_cmd}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                next_heartbeat_at = time.time() + AWSCLI_PROGRESS_HEARTBEAT_SEC
 
 
 _AWSCLI_SUPPORTS_NO_CLI_PAGER_CACHE: dict[str, bool] = {}
@@ -12940,6 +12963,7 @@ def discover_cli_operations(aws_bin: str, cli_service: str, env: dict[str, str])
         [*aws_cli_base_cmd(aws_bin, env), cli_service, "help"],
         env,
         timeout_sec=AWSCLI_DISCOVERY_TIMEOUT_SEC,
+        progress_label=f"discover {cli_service} help",
     )
     if cp.returncode != 0:
         raise RuntimeError((cp.stderr or cp.stdout).strip() or f"failed to inspect service '{cli_service}'")
@@ -13120,7 +13144,12 @@ def generate_cli_input_payload(
         "--generate-cli-skeleton",
         "input",
     ]
-    cp = run_subprocess(cmd, env, timeout_sec=AWSCLI_SKELETON_TIMEOUT_SEC)
+    cp = run_subprocess(
+        cmd,
+        env,
+        timeout_sec=AWSCLI_SKELETON_TIMEOUT_SEC,
+        progress_label=f"{endpoint.canonical_id} skeleton",
+    )
     combined = f"{cp.stdout}\n{cp.stderr}".strip()
     if cp.returncode != 0:
         text = combined
@@ -17734,7 +17763,7 @@ def run_aws_json(
     ]
     if extra_args:
         cmd.extend(extra_args)
-    cp = run_subprocess(cmd, env)
+    cp = run_subprocess(cmd, env, progress_label=f"helper {cli_service}.{operation}")
     if cp.returncode != 0:
         return None
     not_impl = extract_not_implemented_marker("\n".join(part for part in [cp.stdout, cp.stderr] if part))
@@ -49940,7 +49969,7 @@ def run_s3_manual_arg_operation(
             body_path = tmp.name
         try:
             cmd.extend(["--body", body_path])
-            cp = run_subprocess(cmd, env)
+            cp = run_subprocess(cmd, env, progress_label=f"{endpoint.canonical_id} cli")
         finally:
             try:
                 os.unlink(body_path)
@@ -51840,7 +51869,7 @@ def run_endpoint(
                 with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-", suffix=".out", delete=False) as tmp:
                     out_path = tmp.name
                 retry_cmd = [*cmd, out_path]
-                retry = run_subprocess(retry_cmd, env)
+                retry = run_subprocess(retry_cmd, env, progress_label=f"{endpoint.canonical_id} cli(outfile)")
                 retry_text = "\n".join(part for part in [retry.stdout.strip(), retry.stderr.strip()] if part).strip()
                 cp = retry
                 text = retry_text
@@ -51879,7 +51908,7 @@ def run_endpoint(
             ]
             retry_input_json = json.dumps(payload, separators=(",", ":"))
             retry_cmd = [*retry_base_cmd, "--cli-input-json", retry_input_json]
-            retry_cp = run_subprocess(retry_cmd, env)
+            retry_cp = run_subprocess(retry_cmd, env, progress_label=f"{endpoint.canonical_id} cli(retry)")
             retry_text = "\n".join(part for part in [retry_cp.stdout.strip(), retry_cp.stderr.strip()] if part).strip()
             cp = retry_cp
             text = retry_text
@@ -52849,6 +52878,7 @@ def main() -> int:
     env["AWS_REGION"] = args.region
     env["AWS_DEFAULT_REGION"] = args.region
     env["AWS_S3_FORCE_PATH_STYLE"] = "true"
+    env["STACKYARD_AWSCLI_PROGRESS"] = "0" if args.quiet else "1"
     if args.session_token:
         env["AWS_SESSION_TOKEN"] = args.session_token
 
@@ -52911,6 +52941,8 @@ def main() -> int:
         results: list[Result] = []
         started = time.time()
         for idx, endpoint in enumerate(endpoints, start=1):
+            if not args.quiet:
+                print(f"[{idx:04d}/{len(endpoints):04d}] running          {endpoint.canonical_id}", flush=True)
             result = run_endpoint(
                 aws_bin=args.aws_bin,
                 endpoint=endpoint,
