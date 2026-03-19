@@ -22,261 +22,389 @@ jobs:
       matrix:
         include:
           - provider: aws
-            suite: contracts-1-of-32
+            suite: contracts-1-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=0
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=0
           - provider: aws
-            suite: contracts-2-of-32
+            suite: contracts-2-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=1
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=1
           - provider: aws
-            suite: contracts-3-of-32
+            suite: contracts-3-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=2
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=2
           - provider: aws
-            suite: contracts-4-of-32
+            suite: contracts-4-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=3
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=3
           - provider: aws
-            suite: contracts-5-of-32
+            suite: contracts-5-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=4
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=4
           - provider: aws
-            suite: contracts-6-of-32
+            suite: contracts-6-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=5
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=5
           - provider: aws
-            suite: contracts-7-of-32
+            suite: contracts-7-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=6
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=6
           - provider: aws
-            suite: contracts-8-of-32
+            suite: contracts-8-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=7
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=7
           - provider: aws
-            suite: contracts-9-of-32
+            suite: contracts-9-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=8
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=8
           - provider: aws
-            suite: contracts-10-of-32
+            suite: contracts-10-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=9
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=9
           - provider: aws
-            suite: contracts-11-of-32
+            suite: contracts-11-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=10
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=10
           - provider: aws
-            suite: contracts-12-of-32
+            suite: contracts-12-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=11
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=11
           - provider: aws
-            suite: contracts-13-of-32
+            suite: contracts-13-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=12
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=12
           - provider: aws
-            suite: contracts-14-of-32
+            suite: contracts-14-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=13
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=13
           - provider: aws
-            suite: contracts-15-of-32
+            suite: contracts-15-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=14
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=14
           - provider: aws
-            suite: contracts-16-of-32
+            suite: contracts-16-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=15
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=15
           - provider: aws
-            suite: contracts-17-of-32
+            suite: contracts-17-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=16
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=16
           - provider: aws
-            suite: contracts-18-of-32
+            suite: contracts-18-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=17
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=17
           - provider: aws
-            suite: contracts-19-of-32
+            suite: contracts-19-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=18
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=18
           - provider: aws
-            suite: contracts-20-of-32
+            suite: contracts-20-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=19
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=19
           - provider: aws
-            suite: contracts-21-of-32
+            suite: contracts-21-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=20
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=20
           - provider: aws
-            suite: contracts-22-of-32
+            suite: contracts-22-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=21
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=21
           - provider: aws
-            suite: contracts-23-of-32
+            suite: contracts-23-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=22
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=22
           - provider: aws
-            suite: contracts-24-of-32
+            suite: contracts-24-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=23
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=23
           - provider: aws
-            suite: contracts-25-of-32
+            suite: contracts-25-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=24
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=24
           - provider: aws
-            suite: contracts-26-of-32
+            suite: contracts-26-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=25
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=25
           - provider: aws
-            suite: contracts-27-of-32
+            suite: contracts-27-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=26
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=26
           - provider: aws
-            suite: contracts-28-of-32
+            suite: contracts-28-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=27
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=27
           - provider: aws
-            suite: contracts-29-of-32
+            suite: contracts-29-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=28
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=28
           - provider: aws
-            suite: contracts-30-of-32
+            suite: contracts-30-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=29
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=29
           - provider: aws
-            suite: contracts-31-of-32
+            suite: contracts-31-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=30
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=30
           - provider: aws
-            suite: contracts-32-of-32
+            suite: contracts-32-of-48
             target: aws-provider-contracts-nightly-contracts
-            make_vars: AWS_CONTRACT_SHARD_COUNT=32 AWS_CONTRACT_SHARD_INDEX=31
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=31
           - provider: aws
-            suite: io-1-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=0
+            suite: contracts-33-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=32
           - provider: aws
-            suite: io-2-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=1
+            suite: contracts-34-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=33
           - provider: aws
-            suite: io-3-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=2
+            suite: contracts-35-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=34
           - provider: aws
-            suite: io-4-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=3
+            suite: contracts-36-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=35
           - provider: aws
-            suite: io-5-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=4
+            suite: contracts-37-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=36
           - provider: aws
-            suite: io-6-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=5
+            suite: contracts-38-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=37
           - provider: aws
-            suite: io-7-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=6
+            suite: contracts-39-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=38
           - provider: aws
-            suite: io-8-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=7
+            suite: contracts-40-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=39
           - provider: aws
-            suite: io-9-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=8
+            suite: contracts-41-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=40
           - provider: aws
-            suite: io-10-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=9
+            suite: contracts-42-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=41
           - provider: aws
-            suite: io-11-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=10
+            suite: contracts-43-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=42
           - provider: aws
-            suite: io-12-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=11
+            suite: contracts-44-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=43
           - provider: aws
-            suite: io-13-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=12
+            suite: contracts-45-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=44
           - provider: aws
-            suite: io-14-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=13
+            suite: contracts-46-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=45
           - provider: aws
-            suite: io-15-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=14
+            suite: contracts-47-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=46
           - provider: aws
-            suite: io-16-of-32
-            target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=15
+            suite: contracts-48-of-48
+            target: aws-provider-contracts-nightly-contracts
+            make_vars: AWS_CONTRACT_SHARD_COUNT=48 AWS_CONTRACT_SHARD_INDEX=47
           - provider: aws
-            suite: io-17-of-32
+            suite: io-1-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=16
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=0
           - provider: aws
-            suite: io-18-of-32
+            suite: io-2-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=17
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=1
           - provider: aws
-            suite: io-19-of-32
+            suite: io-3-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=18
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=2
           - provider: aws
-            suite: io-20-of-32
+            suite: io-4-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=19
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=3
           - provider: aws
-            suite: io-21-of-32
+            suite: io-5-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=20
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=4
           - provider: aws
-            suite: io-22-of-32
+            suite: io-6-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=21
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=5
           - provider: aws
-            suite: io-23-of-32
+            suite: io-7-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=22
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=6
           - provider: aws
-            suite: io-24-of-32
+            suite: io-8-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=23
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=7
           - provider: aws
-            suite: io-25-of-32
+            suite: io-9-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=24
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=8
           - provider: aws
-            suite: io-26-of-32
+            suite: io-10-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=25
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=9
           - provider: aws
-            suite: io-27-of-32
+            suite: io-11-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=26
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=10
           - provider: aws
-            suite: io-28-of-32
+            suite: io-12-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=27
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=11
           - provider: aws
-            suite: io-29-of-32
+            suite: io-13-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=28
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=12
           - provider: aws
-            suite: io-30-of-32
+            suite: io-14-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=29
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=13
           - provider: aws
-            suite: io-31-of-32
+            suite: io-15-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=30
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=14
           - provider: aws
-            suite: io-32-of-32
+            suite: io-16-of-48
             target: aws-provider-contracts-nightly-io
-            make_vars: AWS_IO_SHARD_COUNT=32 AWS_IO_SHARD_INDEX=31
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=15
+          - provider: aws
+            suite: io-17-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=16
+          - provider: aws
+            suite: io-18-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=17
+          - provider: aws
+            suite: io-19-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=18
+          - provider: aws
+            suite: io-20-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=19
+          - provider: aws
+            suite: io-21-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=20
+          - provider: aws
+            suite: io-22-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=21
+          - provider: aws
+            suite: io-23-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=22
+          - provider: aws
+            suite: io-24-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=23
+          - provider: aws
+            suite: io-25-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=24
+          - provider: aws
+            suite: io-26-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=25
+          - provider: aws
+            suite: io-27-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=26
+          - provider: aws
+            suite: io-28-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=27
+          - provider: aws
+            suite: io-29-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=28
+          - provider: aws
+            suite: io-30-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=29
+          - provider: aws
+            suite: io-31-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=30
+          - provider: aws
+            suite: io-32-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=31
+          - provider: aws
+            suite: io-33-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=32
+          - provider: aws
+            suite: io-34-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=33
+          - provider: aws
+            suite: io-35-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=34
+          - provider: aws
+            suite: io-36-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=35
+          - provider: aws
+            suite: io-37-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=36
+          - provider: aws
+            suite: io-38-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=37
+          - provider: aws
+            suite: io-39-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=38
+          - provider: aws
+            suite: io-40-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=39
+          - provider: aws
+            suite: io-41-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=40
+          - provider: aws
+            suite: io-42-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=41
+          - provider: aws
+            suite: io-43-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=42
+          - provider: aws
+            suite: io-44-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=43
+          - provider: aws
+            suite: io-45-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=44
+          - provider: aws
+            suite: io-46-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=45
+          - provider: aws
+            suite: io-47-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=46
+          - provider: aws
+            suite: io-48-of-48
+            target: aws-provider-contracts-nightly-io
+            make_vars: AWS_IO_SHARD_COUNT=48 AWS_IO_SHARD_INDEX=47
           - provider: aws
             suite: docs
             target: aws-provider-contracts-nightly-docs
