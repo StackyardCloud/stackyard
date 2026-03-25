@@ -12782,6 +12782,19 @@ def run_subprocess(
 ) -> subprocess.CompletedProcess[str]:
     started = time.time()
     rendered_cmd = " ".join(shlex.quote(str(part)) for part in cmd)
+    progress_enabled = env.get("STACKYARD_AWSCLI_PROGRESS", "1").strip().lower() not in {"", "0", "false", "no"}
+    log_subprocess_start = bool(
+        progress_label
+        and progress_enabled
+        and (
+            progress_label.startswith("helper ")
+            or progress_label.endswith(" skeleton")
+            or "(retry)" in progress_label
+            or "(outfile)" in progress_label
+        )
+    )
+    if log_subprocess_start:
+        print(f"starting {progress_label}: cmd={rendered_cmd}", file=sys.stderr, flush=True)
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -12814,7 +12827,6 @@ def run_subprocess(
                 stderr=stderr_text,
             )
         except subprocess.TimeoutExpired:
-            progress_enabled = env.get("STACKYARD_AWSCLI_PROGRESS", "1").strip().lower() not in {"", "0", "false", "no"}
             if progress_label and progress_enabled and time.time() >= next_heartbeat_at:
                 elapsed_sec = time.time() - started
                 print(
