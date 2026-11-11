@@ -838,14 +838,21 @@ type stepFunctionsASLDefinition struct {
 }
 
 type stepFunctionsASLStateDef struct {
-	Type    string                        `json:"Type"`
-	Next    string                        `json:"Next"`
-	End     bool                          `json:"End"`
-	Result  any                           `json:"Result"`
-	Default string                        `json:"Default"`
-	Choices []stepFunctionsASLChoiceState `json:"Choices"`
-	Error   string                        `json:"Error"`
-	Cause   string                        `json:"Cause"`
+	Type       string                        `json:"Type"`
+	Next       string                        `json:"Next"`
+	End        bool                          `json:"End"`
+	Result     any                           `json:"Result"`
+	Default    string                        `json:"Default"`
+	Choices    []stepFunctionsASLChoiceState `json:"Choices"`
+	Error      string                        `json:"Error"`
+	Cause      string                        `json:"Cause"`
+	InputPath  string                        `json:"InputPath"`
+	OutputPath string                        `json:"OutputPath"`
+	ResultPath string                        `json:"ResultPath"`
+	Parameters map[string]any                `json:"Parameters"`
+	ItemsPath  string                        `json:"ItemsPath"`
+	Iterator   *stepFunctionsASLDefinition   `json:"Iterator"`
+	Branches   []stepFunctionsASLDefinition  `json:"Branches"`
 }
 
 type stepFunctionsASLChoiceState struct {
@@ -905,79 +912,81 @@ func executeASL(definitionJSON, inputJSON, roleARN, ts string) (status, output, 
 		return "FAILED", "", failureError, failureCause, builder.events
 	}
 
-	current := parseJSONAny(inputJSON, map[string]any{})
+	outputValue, failureError, failureCause := runASLDefinition(definition, parseJSONAny(inputJSON, map[string]any{}), builder)
+	if strings.TrimSpace(failureError) != "" {
+		builder.add("ExecutionFailed", map[string]any{
+			"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+		})
+		return "FAILED", "", failureError, failureCause, builder.events
+	}
+
+	output = toJSONString(outputValue, "{}")
+	builder.add("ExecutionSucceeded", map[string]any{
+		"executionSucceededEventDetails": map[string]any{"output": output},
+	})
+	return "SUCCEEDED", output, "", "", builder.events
+}
+
+func runASLDefinition(definition stepFunctionsASLDefinition, input any, builder *stepFunctionsHistoryBuilder) (output any, failureError, failureCause string) {
+	current := stepFunctionsCloneAny(input)
 	stateName := definition.StartAt
 	for steps := 0; steps < 256; steps++ {
 		state, ok := definition.States[stateName]
 		if !ok {
-			failureError, failureCause = "States.Runtime", "state not found: "+stateName
-			builder.add("ExecutionFailed", map[string]any{
-				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
-			})
-			return "FAILED", "", failureError, failureCause, builder.events
+			return nil, "States.Runtime", "state not found: " + stateName
+		}
+
+		stateInput, err := stepFunctionsApplyInputAndParameters(current, state)
+		if err != nil {
+			return nil, "States.Runtime", err.Error()
 		}
 
 		switch state.Type {
 		case "Pass":
-			builder.add("PassStateEntered", map[string]any{
-				"stateEnteredEventDetails": map[string]any{
-					"name":  stateName,
-					"input": toJSONString(current, "{}"),
-				},
-			})
+			stepFunctionsAddStateEnteredEvent(builder, "PassStateEntered", stateName, stateInput)
+			stateResult := stateInput
 			if state.Result != nil {
-				current = stepFunctionsCloneAny(state.Result)
+				stateResult = stepFunctionsCloneAny(state.Result)
 			}
-			builder.add("PassStateExited", map[string]any{
-				"stateExitedEventDetails": map[string]any{
-					"name":   stateName,
-					"output": toJSONString(current, "{}"),
-				},
-			})
+			stateOutput, err := stepFunctionsComposeStateOutput(stateInput, stateResult, state.ResultPath, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			stepFunctionsAddStateExitedEvent(builder, "PassStateExited", stateName, stateOutput)
 			if state.End {
-				output = toJSONString(current, "{}")
-				builder.add("ExecutionSucceeded", map[string]any{
-					"executionSucceededEventDetails": map[string]any{"output": output},
-				})
-				return "SUCCEEDED", output, "", "", builder.events
+				return stateOutput, "", ""
 			}
+			if strings.TrimSpace(state.Next) == "" {
+				return nil, "States.Runtime", "missing Next for state: " + stateName
+			}
+			current = stateOutput
 			stateName = state.Next
 
 		case "Task":
-			builder.add("TaskStateEntered", map[string]any{
-				"stateEnteredEventDetails": map[string]any{
-					"name":  stateName,
-					"input": toJSONString(current, "{}"),
-				},
-			})
+			stepFunctionsAddStateEnteredEvent(builder, "TaskStateEntered", stateName, stateInput)
+			stateResult := stateInput
 			if state.Result != nil {
-				current = stepFunctionsCloneAny(state.Result)
+				stateResult = stepFunctionsCloneAny(state.Result)
 			}
-			builder.add("TaskStateExited", map[string]any{
-				"stateExitedEventDetails": map[string]any{
-					"name":   stateName,
-					"output": toJSONString(current, "{}"),
-				},
-			})
+			stateOutput, err := stepFunctionsComposeStateOutput(stateInput, stateResult, state.ResultPath, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			stepFunctionsAddStateExitedEvent(builder, "TaskStateExited", stateName, stateOutput)
 			if state.End {
-				output = toJSONString(current, "{}")
-				builder.add("ExecutionSucceeded", map[string]any{
-					"executionSucceededEventDetails": map[string]any{"output": output},
-				})
-				return "SUCCEEDED", output, "", "", builder.events
+				return stateOutput, "", ""
 			}
+			if strings.TrimSpace(state.Next) == "" {
+				return nil, "States.Runtime", "missing Next for state: " + stateName
+			}
+			current = stateOutput
 			stateName = state.Next
 
 		case "Choice":
-			builder.add("ChoiceStateEntered", map[string]any{
-				"stateEnteredEventDetails": map[string]any{
-					"name":  stateName,
-					"input": toJSONString(current, "{}"),
-				},
-			})
+			stepFunctionsAddStateEnteredEvent(builder, "ChoiceStateEntered", stateName, stateInput)
 			next := ""
 			for _, choice := range state.Choices {
-				if matchesChoice(choice, current) {
+				if matchesChoice(choice, stateInput) {
 					next = choice.Next
 					break
 				}
@@ -986,71 +995,285 @@ func executeASL(definitionJSON, inputJSON, roleARN, ts string) (status, output, 
 				next = state.Default
 			}
 			if strings.TrimSpace(next) == "" {
-				failureError, failureCause = "States.NoChoiceMatched", "no choice matched and no default"
-				builder.add("ExecutionFailed", map[string]any{
-					"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
-				})
-				return "FAILED", "", failureError, failureCause, builder.events
+				return nil, "States.NoChoiceMatched", "no choice matched and no default"
 			}
-			builder.add("ChoiceStateExited", map[string]any{
-				"stateExitedEventDetails": map[string]any{
-					"name":   stateName,
-					"output": toJSONString(current, "{}"),
-				},
-			})
+			stateOutput, err := stepFunctionsApplyOutputPath(stateInput, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			stepFunctionsAddStateExitedEvent(builder, "ChoiceStateExited", stateName, stateOutput)
+			current = stateOutput
 			stateName = next
 
 		case "Wait":
-			builder.add("WaitStateEntered", map[string]any{
-				"stateEnteredEventDetails": map[string]any{
-					"name":  stateName,
-					"input": toJSONString(current, "{}"),
-				},
-			})
-			builder.add("WaitStateExited", map[string]any{
-				"stateExitedEventDetails": map[string]any{
-					"name":   stateName,
-					"output": toJSONString(current, "{}"),
-				},
-			})
-			if state.End {
-				output = toJSONString(current, "{}")
-				builder.add("ExecutionSucceeded", map[string]any{
-					"executionSucceededEventDetails": map[string]any{"output": output},
-				})
-				return "SUCCEEDED", output, "", "", builder.events
+			stepFunctionsAddStateEnteredEvent(builder, "WaitStateEntered", stateName, stateInput)
+			stateOutput, err := stepFunctionsApplyOutputPath(stateInput, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
 			}
+			stepFunctionsAddStateExitedEvent(builder, "WaitStateExited", stateName, stateOutput)
+			if state.End {
+				return stateOutput, "", ""
+			}
+			if strings.TrimSpace(state.Next) == "" {
+				return nil, "States.Runtime", "missing Next for state: " + stateName
+			}
+			current = stateOutput
+			stateName = state.Next
+
+		case "Map":
+			stepFunctionsAddStateEnteredEvent(builder, "MapStateEntered", stateName, stateInput)
+			itemsPath := defaultIfEmpty(state.ItemsPath, "$")
+			rawItems, ok := readJSONPathValue(stateInput, itemsPath)
+			if !ok {
+				return nil, "States.Runtime", "map itemsPath not found: " + itemsPath
+			}
+			items, ok := rawItems.([]any)
+			if !ok {
+				return nil, "States.Runtime", "map itemsPath must resolve to array"
+			}
+			if state.Iterator == nil || strings.TrimSpace(state.Iterator.StartAt) == "" || len(state.Iterator.States) == 0 {
+				return nil, "States.Runtime", "map iterator is required"
+			}
+			results := make([]any, 0, len(items))
+			for _, item := range items {
+				itemOutput, itemErr, itemCause := runASLDefinition(*state.Iterator, stepFunctionsCloneAny(item), nil)
+				if strings.TrimSpace(itemErr) != "" {
+					return nil, itemErr, itemCause
+				}
+				results = append(results, stepFunctionsCloneAny(itemOutput))
+			}
+			stateOutput, err := stepFunctionsComposeStateOutput(stateInput, results, state.ResultPath, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			stepFunctionsAddStateExitedEvent(builder, "MapStateExited", stateName, stateOutput)
+			if state.End {
+				return stateOutput, "", ""
+			}
+			if strings.TrimSpace(state.Next) == "" {
+				return nil, "States.Runtime", "missing Next for state: " + stateName
+			}
+			current = stateOutput
+			stateName = state.Next
+
+		case "Parallel":
+			stepFunctionsAddStateEnteredEvent(builder, "ParallelStateEntered", stateName, stateInput)
+			if len(state.Branches) == 0 {
+				return nil, "States.Runtime", "parallel branches are required"
+			}
+			results := make([]any, 0, len(state.Branches))
+			for _, branch := range state.Branches {
+				if strings.TrimSpace(branch.StartAt) == "" || len(branch.States) == 0 {
+					return nil, "States.Runtime", "parallel branch definition is invalid"
+				}
+				branchOutput, branchErr, branchCause := runASLDefinition(branch, stepFunctionsCloneAny(stateInput), nil)
+				if strings.TrimSpace(branchErr) != "" {
+					return nil, branchErr, branchCause
+				}
+				results = append(results, stepFunctionsCloneAny(branchOutput))
+			}
+			stateOutput, err := stepFunctionsComposeStateOutput(stateInput, results, state.ResultPath, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			stepFunctionsAddStateExitedEvent(builder, "ParallelStateExited", stateName, stateOutput)
+			if state.End {
+				return stateOutput, "", ""
+			}
+			if strings.TrimSpace(state.Next) == "" {
+				return nil, "States.Runtime", "missing Next for state: " + stateName
+			}
+			current = stateOutput
 			stateName = state.Next
 
 		case "Succeed":
-			output = toJSONString(current, "{}")
-			builder.add("ExecutionSucceeded", map[string]any{
-				"executionSucceededEventDetails": map[string]any{"output": output},
-			})
-			return "SUCCEEDED", output, "", "", builder.events
+			stateOutput, err := stepFunctionsApplyOutputPath(stateInput, state.OutputPath)
+			if err != nil {
+				return nil, "States.Runtime", err.Error()
+			}
+			return stateOutput, "", ""
 
 		case "Fail":
-			failureError = defaultIfEmpty(state.Error, "States.Failed")
-			failureCause = defaultIfEmpty(state.Cause, "execution failed")
-			builder.add("ExecutionFailed", map[string]any{
-				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
-			})
-			return "FAILED", "", failureError, failureCause, builder.events
+			return nil, defaultIfEmpty(state.Error, "States.Failed"), defaultIfEmpty(state.Cause, "execution failed")
 
 		default:
-			failureError, failureCause = "States.Runtime", "unsupported state type: "+state.Type
-			builder.add("ExecutionFailed", map[string]any{
-				"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
-			})
-			return "FAILED", "", failureError, failureCause, builder.events
+			return nil, "States.Runtime", "unsupported state type: " + state.Type
 		}
 	}
 
-	failureError, failureCause = "States.Timeout", "state machine exceeded max transitions"
-	builder.add("ExecutionFailed", map[string]any{
-		"executionFailedEventDetails": map[string]any{"error": failureError, "cause": failureCause},
+	return nil, "States.Timeout", "state machine exceeded max transitions"
+}
+
+func stepFunctionsAddStateEnteredEvent(builder *stepFunctionsHistoryBuilder, eventType, stateName string, input any) {
+	if builder == nil {
+		return
+	}
+	builder.add(eventType, map[string]any{
+		"stateEnteredEventDetails": map[string]any{
+			"name":  stateName,
+			"input": toJSONString(input, "{}"),
+		},
 	})
-	return "FAILED", "", failureError, failureCause, builder.events
+}
+
+func stepFunctionsAddStateExitedEvent(builder *stepFunctionsHistoryBuilder, eventType, stateName string, output any) {
+	if builder == nil {
+		return
+	}
+	builder.add(eventType, map[string]any{
+		"stateExitedEventDetails": map[string]any{
+			"name":   stateName,
+			"output": toJSONString(output, "{}"),
+		},
+	})
+}
+
+func stepFunctionsApplyInputAndParameters(current any, state stepFunctionsASLStateDef) (any, error) {
+	stateInput, err := stepFunctionsApplyInputPath(current, state.InputPath)
+	if err != nil {
+		return nil, err
+	}
+	if len(state.Parameters) == 0 {
+		return stateInput, nil
+	}
+	return stepFunctionsResolveParameters(state.Parameters, stateInput)
+}
+
+func stepFunctionsApplyInputPath(input any, inputPath string) (any, error) {
+	path := strings.TrimSpace(inputPath)
+	if path == "" || path == "$" {
+		return stepFunctionsCloneAny(input), nil
+	}
+	value, ok := readJSONPathValue(input, path)
+	if !ok {
+		return nil, fmt.Errorf("input path not found: %s", path)
+	}
+	return stepFunctionsCloneAny(value), nil
+}
+
+func stepFunctionsApplyOutputPath(output any, outputPath string) (any, error) {
+	path := strings.TrimSpace(outputPath)
+	if path == "" || path == "$" {
+		return stepFunctionsCloneAny(output), nil
+	}
+	value, ok := readJSONPathValue(output, path)
+	if !ok {
+		return nil, fmt.Errorf("output path not found: %s", path)
+	}
+	return stepFunctionsCloneAny(value), nil
+}
+
+func stepFunctionsComposeStateOutput(stateInput, stateResult any, resultPath, outputPath string) (any, error) {
+	merged, err := stepFunctionsApplyResultPath(stateInput, stateResult, resultPath)
+	if err != nil {
+		return nil, err
+	}
+	return stepFunctionsApplyOutputPath(merged, outputPath)
+}
+
+func stepFunctionsApplyResultPath(stateInput, stateResult any, resultPath string) (any, error) {
+	path := strings.TrimSpace(resultPath)
+	if path == "" || path == "$" {
+		return stepFunctionsCloneAny(stateResult), nil
+	}
+	if strings.EqualFold(path, "null") {
+		return stepFunctionsCloneAny(stateInput), nil
+	}
+	clonedInput := stepFunctionsCloneAny(stateInput)
+	root, ok := clonedInput.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("result path requires object input: %s", path)
+	}
+	if err := stepFunctionsSetJSONPathValue(root, path, stepFunctionsCloneAny(stateResult)); err != nil {
+		return nil, err
+	}
+	return root, nil
+}
+
+func stepFunctionsSetJSONPathValue(root map[string]any, path string, value any) error {
+	path = strings.TrimSpace(path)
+	if !strings.HasPrefix(path, "$.") {
+		return fmt.Errorf("unsupported result path: %s", path)
+	}
+	parts := strings.Split(path[2:], ".")
+	if len(parts) == 0 {
+		return fmt.Errorf("invalid result path: %s", path)
+	}
+	current := root
+	for idx, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			return fmt.Errorf("invalid result path: %s", path)
+		}
+		if idx == len(parts)-1 {
+			current[part] = value
+			return nil
+		}
+		next, ok := current[part]
+		if !ok {
+			child := map[string]any{}
+			current[part] = child
+			current = child
+			continue
+		}
+		child, ok := next.(map[string]any)
+		if !ok {
+			return fmt.Errorf("result path traverses non-object field %q in %s", part, path)
+		}
+		current = child
+	}
+	return nil
+}
+
+func stepFunctionsResolveParameters(template map[string]any, stateInput any) (map[string]any, error) {
+	resolved, err := stepFunctionsResolveParameterNode(template, stateInput)
+	if err != nil {
+		return nil, err
+	}
+	out, ok := resolved.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("parameters must resolve to object")
+	}
+	return out, nil
+}
+
+func stepFunctionsResolveParameterNode(node any, stateInput any) (any, error) {
+	switch t := node.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for key, value := range t {
+			if strings.HasSuffix(key, ".$") {
+				expr, ok := value.(string)
+				if !ok {
+					return nil, fmt.Errorf("parameter expression for %q must be string", key)
+				}
+				resolved, ok := readJSONPathValue(stateInput, expr)
+				if !ok {
+					return nil, fmt.Errorf("parameter path not found for %q: %s", key, expr)
+				}
+				out[strings.TrimSuffix(key, ".$")] = stepFunctionsCloneAny(resolved)
+				continue
+			}
+			resolved, err := stepFunctionsResolveParameterNode(value, stateInput)
+			if err != nil {
+				return nil, err
+			}
+			out[key] = resolved
+		}
+		return out, nil
+	case []any:
+		out := make([]any, 0, len(t))
+		for _, item := range t {
+			resolved, err := stepFunctionsResolveParameterNode(item, stateInput)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, resolved)
+		}
+		return out, nil
+	default:
+		return stepFunctionsCloneAny(t), nil
+	}
 }
 
 type stepFunctionsHistoryBuilder struct {
