@@ -1548,6 +1548,12 @@ def discover_service_files() -> dict[str, list[Path]]:
         if service in {"auth", "router"}:
             continue
         out.setdefault(service, []).append(path)
+    # Services registered with the shared ARM handler keep their validation and
+    # response logic in azure_resource_manager.go, so count it as their source.
+    shared = SERVER_DIR / "azure_resource_manager.go"
+    for paths in out.values():
+        if any("registerAzureARMResourceType(" in read_text(p) for p in paths):
+            paths.append(shared)
     return out
 
 

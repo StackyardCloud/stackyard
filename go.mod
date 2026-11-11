@@ -186,6 +186,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.31.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/swf v1.31.0
+	github.com/google/uuid v1.6.0
 	github.com/openai/openai-go/v3 v3.2.0
 	golang.org/x/net v0.49.0
 	google.golang.org/api v0.265.0
@@ -202,7 +203,6 @@ require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devcenter/armdevcenter/v2 v2.0.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.1 // indirect
@@ -222,7 +222,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.11 // indirect
 	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect

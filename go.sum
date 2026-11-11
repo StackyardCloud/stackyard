@@ -387,8 +387,6 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/avs/armavs/v2 v2.2.0 h1:Fb
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/avs/armavs/v2 v2.2.0/go.mod h1:WWJUmsNNDR9EIL9pPC//rT03jnScvufyCbAh3mhuXJA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice v1.0.0 h1:figxyQZXzZQIcP3njhC68bYUiTw45J8/SsHaLW8Ax0M=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice v1.0.0/go.mod h1:TmlMW4W5OvXOmOyKNnor8nlMMiO1ctIyzmHme/VHsrA=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devcenter/armdevcenter/v2 v2.0.0 h1:ZyNNTwcZNtq9NxwlHx6vfoRVVZoiDn4fZ3P4s9wNqfA=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devcenter/armdevcenter/v2 v2.0.0/go.mod h1:U0tmATOa3nY2+Y7840anG+a7qCJa5Ya69jJ4ywB08wQ=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal v1.1.2 h1:mLY+pNLjCUeKhgnAJWAKhEUQM+RJQo2H1fuGSw1Ky1E=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal v1.1.2/go.mod h1:FbdwsQ2EzwvXxOPcMFYO8ogEc9uMMIj3YkmCdXdAFmk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/internal/v3 v3.1.0 h1:2qsIIvxVT+uE6yrNldntJKlLRgxGbZ85kgtz5SNBhMw=
