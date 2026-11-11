@@ -29,8 +29,43 @@ func (s *Server) handleAzureAPIManagementResourceManagerRouter(w http.ResponseWr
 		return false
 	}
 
+	if r.Method == http.MethodHead && azureAPIManagementIsCheckEntityExists(segments) {
+		w.WriteHeader(http.StatusNoContent)
+		return true
+	}
+
 	respondAzureImplemented(w, path)
 	return true
+}
+
+// azureAPIManagementCheckEntityExistsRoutes are the service-relative routes whose
+// HEAD (CheckEntityExists) answers 204; every other APIM HEAD answers 200.
+// Source: armapimanagement v1.1.1 accepted status codes.
+var azureAPIManagementCheckEntityExistsRoutes = [][2]string{
+	{"groups", "users"},
+	{"notifications", "recipientEmails"},
+	{"notifications", "recipientUsers"},
+	{"products", "apis"},
+	{"products", "groups"},
+}
+
+func azureAPIManagementIsCheckEntityExists(segments []string) bool {
+	for idx := 0; idx+1 < len(segments); idx++ {
+		if !strings.EqualFold(segments[idx], "Microsoft.ApiManagement") || !strings.EqualFold(segments[idx+1], "service") {
+			continue
+		}
+		tail := segments[idx+2:]
+		if len(tail) != 5 { // {serviceName}/{parent}/{id}/{child}/{id}
+			return false
+		}
+		for _, route := range azureAPIManagementCheckEntityExistsRoutes {
+			if strings.EqualFold(tail[1], route[0]) && strings.EqualFold(tail[3], route[1]) {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }
 
 func azureIsAPIManagementResourceManagerPath(segments []string) bool {

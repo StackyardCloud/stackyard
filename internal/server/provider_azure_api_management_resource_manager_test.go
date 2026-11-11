@@ -118,11 +118,7 @@ func TestAzureAPIManagementResourceManagerRoutesReturnFoundationSuccess(t *testi
 			path:   "/azure/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-apim/providers/Microsoft.ApiManagement/service/apim-a/workspaces/ws-a/namedValues/kv-endpoint?api-version=2024-05-01",
 			body:   []byte(`{"properties":{"displayName":"KeyVaultEndpoint","value":"https://example.vault.azure.net/"}}`),
 		},
-		{
-			name:   "notification recipient email head",
-			method: http.MethodHead,
-			path:   "/azure/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-apim/providers/Microsoft.ApiManagement/service/apim-a/notifications/NewCommentNotificationMessage/recipientEmails/dev-example-com?api-version=2024-05-01",
-		},
+		// CheckEntityExists HEADs (204) are covered by TestAzureAPIManagementResourceManagerHeadStatusMatchesSDK.
 	}
 
 	for _, tt := range tests {
@@ -217,5 +213,33 @@ func TestAzureAPIManagementResourceManagerUnknownNestedRouteReturnsFoundationSuc
 	payload := providerContractJSONMap(t, resp)
 	if payload["status"] != "ok" || payload["provider"] != providerAzure || payload["path"] != path {
 		t.Fatalf("unexpected payload for unknown nested route: %#v", payload)
+	}
+}
+
+// CheckEntityExists operations return 204, unlike GetEntityTag HEADs which return 200;
+// the Azure SDK rejects any other status (armapimanagement v1.1.1).
+func TestAzureAPIManagementResourceManagerHeadStatusMatchesSDK(t *testing.T) {
+	t.Parallel()
+	ts := newAzureResourcesTestServer(t)
+	headers := azureResourcesTestHeaders()
+	service := "/azure/subscriptions/" + azureResourcesTestSubscription + "/resourceGroups/rg-apim/providers/Microsoft.ApiManagement/service/apim-a"
+
+	tests := []struct {
+		tail string
+		want int
+	}{
+		{tail: "/groups/g1/users/u1", want: http.StatusNoContent},
+		{tail: "/notifications/NewCommentNotificationMessage/recipientEmails/dev-example-com", want: http.StatusNoContent},
+		{tail: "/notifications/NewCommentNotificationMessage/recipientUsers/u1", want: http.StatusNoContent},
+		{tail: "/products/p1/apis/a1", want: http.StatusNoContent},
+		{tail: "/products/p1/groups/g1", want: http.StatusNoContent},
+		{tail: "/apis/a1", want: http.StatusOK},
+		{tail: "/workspaces/w1/products/p1", want: http.StatusOK},
+	}
+	for _, tt := range tests {
+		t.Run(tt.tail, func(t *testing.T) {
+			resp := providerContractRequest(t, ts, http.MethodHead, service+tt.tail+"?api-version=2024-05-01", nil, headers)
+			azureResourcesExpectStatus(t, resp, tt.want)
+		})
 	}
 }
