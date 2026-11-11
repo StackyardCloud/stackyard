@@ -511,6 +511,8 @@ type Server struct {
 	azureArcSCVMMGuestAgents                            map[string]*azureArcSCVMMGuestAgent
 	azureArcSCVMMHybridIdentityMetadata                 map[string]*azureArcSCVMMHybridIdentityMetadata
 	azureSiteManagerSites                               map[string]*azureSiteManagerSite
+	azureResourceGroups                                 map[string]*azureResourceGroup
+	azureARMResources                                   map[string]*azureARMResource
 	azureAutomationAccounts                             map[string]*azureAutomationAccount
 	azureAutomationAssets                               map[string]*azureAutomationAsset
 	azureAutomationJobs                                 map[string]*azureAutomationJob
@@ -1045,6 +1047,8 @@ func New(cfg Config) *Server {
 		azureArcSCVMMGuestAgents:                            map[string]*azureArcSCVMMGuestAgent{},
 		azureArcSCVMMHybridIdentityMetadata:                 map[string]*azureArcSCVMMHybridIdentityMetadata{},
 		azureSiteManagerSites:                               map[string]*azureSiteManagerSite{},
+		azureResourceGroups:                                 map[string]*azureResourceGroup{},
+		azureARMResources:                                   map[string]*azureARMResource{},
 		azureAutomationAccounts:                             map[string]*azureAutomationAccount{},
 		azureAutomationAssets:                               map[string]*azureAutomationAsset{},
 		azureAutomationJobs:                                 map[string]*azureAutomationJob{},
@@ -2174,6 +2178,14 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !s.validateProviderRequestAuth(w, r, providerAzure) {
+			return
+		}
+		// Resource groups and the shared ARM handler match narrow, exact routes,
+		// so they run first; anything they don't own falls through.
+		if s.handleAzureResourcesRouter(w, r) {
+			return
+		}
+		if s.handleAzureARMRouter(w, r) {
 			return
 		}
 		if s.handleAzureBotFrameworkRouter(w, r) {

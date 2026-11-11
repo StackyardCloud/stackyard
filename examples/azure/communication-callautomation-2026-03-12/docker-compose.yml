@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   communication-callautomation-2026-03-12:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/communication-callautomation-2026-03-12/Dockerfile
     depends_on:
       - stackyard

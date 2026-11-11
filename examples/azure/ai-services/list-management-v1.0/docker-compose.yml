@@ -11,7 +11,7 @@ services:
   ai-services-data-plane-list-management-v1-0:
     build:
       context: ../../../..
-      dockerfile: examples/azure/ai-services/data-plane-list-management-v1.0/Dockerfile
+      dockerfile: examples/azure/ai-services/list-management-v1.0/Dockerfile
     depends_on:
       - stackyard
     environment:

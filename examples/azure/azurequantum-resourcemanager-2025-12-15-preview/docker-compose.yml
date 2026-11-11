@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   azurequantum-resourcemanager-2025-12-15-preview:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/azurequantum-resourcemanager-2025-12-15-preview/Dockerfile
     depends_on:
       - stackyard

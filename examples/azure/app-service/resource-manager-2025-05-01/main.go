@@ -100,7 +100,7 @@ func main() {
 		{
 			name: "CreateAppServicePlan",
 			run: func() error {
-				_, err := plansClient.BeginCreateOrUpdate(ctx, resourceGroup, planName, armappservice.AppServicePlan{
+				_, err := plansClient.BeginCreateOrUpdate(ctx, resourceGroup, planName, armappservice.Plan{
 					Location: to.Ptr(location),
 					SKU: &armappservice.SKUDescription{
 						Name:     to.Ptr("F1"),
@@ -171,9 +171,11 @@ func main() {
 		{
 			name: "UpdateWebAppConfiguration",
 			run: func() error {
-				_, err := webAppsClient.UpdateConfiguration(ctx, resourceGroup, siteName, armappservice.SiteConfig{
-					AlwaysOn:      to.Ptr(true),
-					HTTP20Enabled: to.Ptr(true),
+				_, err := webAppsClient.UpdateConfiguration(ctx, resourceGroup, siteName, armappservice.SiteConfigResource{
+					Properties: &armappservice.SiteConfig{
+						AlwaysOn:      to.Ptr(true),
+						Http20Enabled: to.Ptr(true),
+					},
 				}, nil)
 				return err
 			},

@@ -27,8 +27,8 @@ func TestRedshiftStage5DataShares(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("expected 200 authorize, got %d: %s", status, string(body))
 	}
-	if !bytes.Contains(body, []byte("<DataShareName>share-1</DataShareName>")) {
-		t.Fatalf("missing data share name: %s", string(body))
+	if !bytes.Contains(body, []byte(":datashare:share-1</DataShareArn>")) {
+		t.Fatalf("missing data share ARN: %s", string(body))
 	}
 
 	associate := url.Values{
@@ -49,7 +49,7 @@ func TestRedshiftStage5DataShares(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("expected 200 describe consumer, got %d: %s", status, string(body))
 	}
-	if !bytes.Contains(body, []byte("<DataShareName>share-1</DataShareName>")) {
+	if !bytes.Contains(body, []byte(":datashare:share-1</DataShareArn>")) {
 		t.Fatalf("missing share in consumer view: %s", string(body))
 	}
 
@@ -60,7 +60,7 @@ func TestRedshiftStage5DataShares(t *testing.T) {
 	if status != http.StatusOK {
 		t.Fatalf("expected 200 describe producer, got %d: %s", status, string(body))
 	}
-	if !bytes.Contains(body, []byte("<DataShareName>share-1</DataShareName>")) {
+	if !bytes.Contains(body, []byte(":datashare:share-1</DataShareArn>")) {
 		t.Fatalf("missing share in producer view: %s", string(body))
 	}
 
