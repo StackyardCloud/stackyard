@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -11,7 +11,7 @@ services:
 
   appflow:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/aws/appflow/Dockerfile
     depends_on:
       - stackyard

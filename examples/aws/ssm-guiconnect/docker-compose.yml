@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -11,7 +11,7 @@ services:
 
   ssm-guiconnect:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/aws/ssm-guiconnect/Dockerfile
     depends_on:
       - stackyard

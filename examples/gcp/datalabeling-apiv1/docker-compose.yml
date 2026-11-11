@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -13,7 +13,7 @@ services:
 
   datalabeling-apiv1:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/datalabeling-apiv1/Dockerfile
     depends_on:
       - stackyard

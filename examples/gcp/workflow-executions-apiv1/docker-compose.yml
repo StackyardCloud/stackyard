@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   workflow-executions-apiv1:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/workflow-executions-apiv1/Dockerfile
     depends_on:
       - stackyard

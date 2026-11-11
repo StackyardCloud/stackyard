@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -13,7 +13,7 @@ services:
 
   lifesciences-apiv2beta:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/lifesciences-apiv2beta/Dockerfile
     depends_on:
       - stackyard
