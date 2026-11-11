@@ -1,0 +1,32 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  dellstorage:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/dellstorage-2025-03-21/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DELLSTORAGE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DELLSTORAGE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-dellstorage
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_DELLSTORAGE_FILESYSTEM_NAME=dell-fs-example
+      - STACKYARD_AZURE_DELLSTORAGE_DELEGATED_SUBNET_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dellstorage/providers/Microsoft.Network/virtualNetworks/dell-vnet/subnets/dell-delegated-subnet
+      - STACKYARD_AZURE_DELLSTORAGE_DELEGATED_SUBNET_CIDR=10.42.0.0/24
+      - STACKYARD_AZURE_DELLSTORAGE_USER_EMAIL=ops@example.com
+      - STACKYARD_AZURE_DELLSTORAGE_REFERENCE_NUMBER=DELL-REF-0001
+      - STACKYARD_AZURE_DELLSTORAGE_MARKETPLACE_PLAN_ID=plan-standard
+      - STACKYARD_AZURE_DELLSTORAGE_MARKETPLACE_OFFER_ID=offer-dell-filesystem
+      - STACKYARD_AZURE_DELLSTORAGE_MARKETPLACE_PLAN_NAME=dell-storage-plan
+

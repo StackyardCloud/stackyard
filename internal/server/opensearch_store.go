@@ -94,8 +94,8 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 				"CreationDate": "2026-03-13T00:00:00Z",
 				"UpdateDate":   "2026-03-13T00:05:00Z",
 			},
-			"DryRunConfig":         s.domainStatus(domainName),
-			"DryRunResults":        map[string]any{},
+			"DryRunConfig":  s.domainStatus(domainName),
+			"DryRunResults": map[string]any{},
 		}
 	case "DescribeInboundConnections", "DescribeOutboundConnections":
 		return map[string]any{"Connections": []any{}, "NextToken": ""}

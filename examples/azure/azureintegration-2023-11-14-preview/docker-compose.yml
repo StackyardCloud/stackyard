@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azureintegration-2023-11-14-preview:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/azureintegration-2023-11-14-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_INTEGRATION_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_INTEGRATION_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-integration
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_INTEGRATION_SPACE_NAME=space-a
+      - STACKYARD_AZURE_INTEGRATION_APPLICATION_NAME=app-a
+      - STACKYARD_AZURE_INTEGRATION_RESOURCE_NAME=resource-a
+      - STACKYARD_AZURE_INTEGRATION_PROCESS_NAME=process-a

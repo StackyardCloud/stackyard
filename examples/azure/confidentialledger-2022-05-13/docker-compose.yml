@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  confidentialledger-2022-05-13:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/confidentialledger-2022-05-13/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_CONFIDENTIAL_LEDGER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_CONFIDENTIAL_LEDGER_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-confidentialledger
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_CONFIDENTIAL_LEDGER_NAME=ledger-a

@@ -1,0 +1,30 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  datadog:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/datadog-2025-06-11/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATADOG_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATADOG_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-datadog
+      - STACKYARD_AZURE_LOCATION=westus
+      - STACKYARD_AZURE_DATADOG_MONITOR_NAME=datadog-monitor-example
+      - STACKYARD_AZURE_DATADOG_AGREEMENT_NAME=default
+      - STACKYARD_AZURE_DATADOG_MONITORED_SUBSCRIPTION_CONFIGURATION=default
+      - STACKYARD_AZURE_DATADOG_TAG_RULE_SET_NAME=default
+      - STACKYARD_AZURE_DATADOG_SSO_CONFIGURATION_NAME=default
+      - STACKYARD_AZURE_DATADOG_ORG_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_DATADOG_PLAN_NAME=free_Monthly

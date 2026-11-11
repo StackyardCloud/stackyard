@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  defenderforeasm-dataplane:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/defenderforeasm-dataplanepreview-2024-10-01-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEFENDERFOREASM_DATA_PLANE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEFENDERFOREASM_DATA_PLANE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_DEFENDERFOREASM_ASSET_ID=aG9zdCQkY29udG9zby5jb20
+      - STACKYARD_AZURE_DEFENDERFOREASM_CVE_ID=CVE-2023-12345
+      - STACKYARD_AZURE_DEFENDERFOREASM_DATA_CONNECTION_NAME=ThisisaDataConnection
+      - STACKYARD_AZURE_DEFENDERFOREASM_DISCO_GROUP_NAME=ThisisaDiscoGroup
+      - STACKYARD_AZURE_DEFENDERFOREASM_DISCO_TEMPLATE_ID=12345
+      - STACKYARD_AZURE_DEFENDERFOREASM_POLICY_NAME=ThisisaPolicy
+      - STACKYARD_AZURE_DEFENDERFOREASM_SAVED_FILTER_NAME=ThisisaSavedFilter
+      - STACKYARD_AZURE_DEFENDERFOREASM_TASK_ID=ThisisaTaskId

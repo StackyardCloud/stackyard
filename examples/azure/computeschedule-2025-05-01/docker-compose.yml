@@ -1,0 +1,7 @@
+services:
+  compute-schedule-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/computeschedule-2025-05-01/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

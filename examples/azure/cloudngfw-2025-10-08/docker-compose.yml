@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  cloudngfw-2025-10-08:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/cloudngfw-2025-10-08/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_CLOUDNGFW_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_CLOUDNGFW_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-ngfw
+      - STACKYARD_AZURE_CLOUDNGFW_FIREWALL=fw-a
+      - STACKYARD_AZURE_CLOUDNGFW_LOCAL_RULESTACK=local-a
+      - STACKYARD_AZURE_CLOUDNGFW_GLOBAL_RULESTACK=global-a

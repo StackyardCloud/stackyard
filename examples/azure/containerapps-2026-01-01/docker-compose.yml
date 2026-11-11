@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  containerapps-2026-01-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/containerapps-2026-01-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_CONTAINER_APPS_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_CONTAINER_APPS_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-containerapps
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_CONTAINER_APPS_ENVIRONMENT=env-a
+      - STACKYARD_AZURE_CONTAINER_APP_NAME=app-a
+      - STACKYARD_AZURE_CONTAINER_APPS_JOB_NAME=job-a

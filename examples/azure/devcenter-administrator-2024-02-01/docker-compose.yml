@@ -1,0 +1,39 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  devcenter-administrator:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/devcenter-administrator-2024-02-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEVCENTER_ADMINISTRATOR_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEVCENTER_ADMINISTRATOR_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-devcenter
+      - STACKYARD_AZURE_LOCATION=centralus
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_DEV_CENTER_NAME=devcenter-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_PROJECT_NAME=project-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_NETWORK_CONNECTION_NAME=network-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_ATTACHED_NETWORK_NAME=attached-network-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_CATALOG_NAME=catalog-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_PROJECT_CATALOG_NAME=project-catalog-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_DEVBOX_DEFINITION_NAME=devbox-definition-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_ENVIRONMENT_TYPE_NAME=envtype-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_PROJECT_ENVIRONMENT_TYPE_NAME=project-envtype-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_ENVIRONMENT_DEFINITION_NAME=environment-definition-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_GALLERY_NAME=gallery-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_IMAGE_NAME=image-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_IMAGE_VERSION_NAME=1.0.0
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_POOL_NAME=pool-example
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_SCHEDULE_NAME=weekday-shutdown
+      - STACKYARD_AZURE_DEVCENTER_ADMIN_OPERATION_ID=3fa1a29d-e807-488d-81d1-f1c5456a08cd

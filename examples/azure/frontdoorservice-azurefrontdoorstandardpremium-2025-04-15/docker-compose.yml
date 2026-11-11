@@ -1,0 +1,33 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  frontdoorservice-azurefrontdoorstandardpremium-2025-04-15:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/frontdoorservice-azurefrontdoorstandardpremium-2025-04-15/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_FRONTDOORSERVICE_AZUREFRONTDOORSTANDARDPREMIUM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_FRONTDOORSERVICE_AZUREFRONTDOORSTANDARDPREMIUM_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-frontdoor
+      - STACKYARD_AZURE_LOCATION=global
+      - STACKYARD_AZURE_FRONTDOOR_PROFILE_NAME=profile1
+      - STACKYARD_AZURE_FRONTDOOR_ENDPOINT_NAME=endpoint1
+      - STACKYARD_AZURE_FRONTDOOR_ORIGIN_GROUP_NAME=origingroup1
+      - STACKYARD_AZURE_FRONTDOOR_ORIGIN_NAME=origin1
+      - STACKYARD_AZURE_FRONTDOOR_ROUTE_NAME=route1
+      - STACKYARD_AZURE_FRONTDOOR_RULE_SET_NAME=ruleset1
+      - STACKYARD_AZURE_FRONTDOOR_RULE_NAME=rule1
+      - STACKYARD_AZURE_FRONTDOOR_CUSTOM_DOMAIN_NAME=domain1
+      - STACKYARD_AZURE_FRONTDOOR_SECRET_NAME=secret1
+      - STACKYARD_AZURE_FRONTDOOR_SECURITY_POLICY_NAME=securitypolicy1

@@ -563,18 +563,18 @@ type ec2Stage114CapacityBlockOfferingSet struct {
 }
 
 type ec2Stage114CapacityBlockOfferingItem struct {
-	AvailabilityZone             *string `xml:"availabilityZone,omitempty"`
-	CapacityBlockDurationHours   *int32  `xml:"capacityBlockDurationHours,omitempty"`
-	CapacityBlockOfferingID      *string `xml:"capacityBlockOfferingId,omitempty"`
-	CurrencyCode                 *string `xml:"currencyCode,omitempty"`
-	EndDate                      string  `xml:"endDate,omitempty"`
-	InstanceCount                *int32  `xml:"instanceCount,omitempty"`
-	InstanceType                 *string `xml:"instanceType,omitempty"`
-	StartDate                    string  `xml:"startDate,omitempty"`
-	Tenancy                      *string `xml:"tenancy,omitempty"`
-	UltraserverCount             *int32  `xml:"ultraserverCount,omitempty"`
-	UltraserverType              *string `xml:"ultraserverType,omitempty"`
-	UpfrontFee                   *string `xml:"upfrontFee,omitempty"`
+	AvailabilityZone           *string `xml:"availabilityZone,omitempty"`
+	CapacityBlockDurationHours *int32  `xml:"capacityBlockDurationHours,omitempty"`
+	CapacityBlockOfferingID    *string `xml:"capacityBlockOfferingId,omitempty"`
+	CurrencyCode               *string `xml:"currencyCode,omitempty"`
+	EndDate                    string  `xml:"endDate,omitempty"`
+	InstanceCount              *int32  `xml:"instanceCount,omitempty"`
+	InstanceType               *string `xml:"instanceType,omitempty"`
+	StartDate                  string  `xml:"startDate,omitempty"`
+	Tenancy                    *string `xml:"tenancy,omitempty"`
+	UltraserverCount           *int32  `xml:"ultraserverCount,omitempty"`
+	UltraserverType            *string `xml:"ultraserverType,omitempty"`
+	UpfrontFee                 *string `xml:"upfrontFee,omitempty"`
 }
 
 type ec2Stage114DescribeCapacityBlockStatusResponse struct {

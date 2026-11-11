@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  communication-jobrouter-2023-11-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/communication-jobrouter-2023-11-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_COMMUNICATION_JOBROUTER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_COMMUNICATION_JOBROUTER_SUBSCRIPTION_KEY=stackyard-local-subscription-key

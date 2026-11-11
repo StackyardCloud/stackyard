@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  edgehardwarecenter:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/edgehardwarecenter-2024-02-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_EDGEHARDWARECENTER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_EDGEHARDWARECENTER_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-edgehardwarecenter
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_EDGEHARDWARECENTER_ADDRESS_NAME=TestAddressName2
+      - STACKYARD_AZURE_EDGEHARDWARECENTER_ORDER_ITEM_NAME=TestOrderItemName2
+      - STACKYARD_AZURE_EDGEHARDWARECENTER_ORDER_NAME=TestOrderName2
+

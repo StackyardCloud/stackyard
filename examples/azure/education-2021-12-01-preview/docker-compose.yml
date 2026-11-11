@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  education:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/education-2021-12-01-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_EDUCATION_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_EDUCATION_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_EDUCATION_BILLING_ACCOUNT_NAME=123456
+      - STACKYARD_AZURE_EDUCATION_BILLING_PROFILE_NAME=bp-0001
+      - STACKYARD_AZURE_EDUCATION_INVOICE_SECTION_NAME=is-0001
+      - STACKYARD_AZURE_EDUCATION_JOIN_REQUEST_NAME=joinrequest1
+      - STACKYARD_AZURE_EDUCATION_STUDENT_ALIAS=student1
+      - STACKYARD_AZURE_EDUCATION_STUDENT_LAB_NAME=studentlab1
+      - STACKYARD_AZURE_EDUCATION_REDEEM_CODE=exampleRedeemCode
+

@@ -798,23 +798,23 @@ type ec2ClientVpnEndpointSet struct {
 }
 
 type ec2ClientVpnEndpointItem struct {
-	ClientCidrBlock            string                         `xml:"clientCidrBlock,omitempty"`
-	ClientVpnEndpointID        string                         `xml:"clientVpnEndpointId,omitempty"`
-	Description                string                         `xml:"description,omitempty"`
-	DnsName                    string                         `xml:"dnsName,omitempty"`
-	DnsServers                 ec2ValueStringSet              `xml:"dnsServer"`
-	SecurityGroupIDs           ec2ValueStringSet              `xml:"securityGroupIdSet"`
-	SelfServicePortalURL       string                         `xml:"selfServicePortalUrl,omitempty"`
-	ServerCertificateARN       string                         `xml:"serverCertificateArn,omitempty"`
-	SessionTimeoutHours        int32                          `xml:"sessionTimeoutHours"`
-	SplitTunnel                bool                           `xml:"splitTunnel"`
-	Status                     ec2ClientVpnEndpointStatusItem `xml:"status"`
-	TagSet                     ec2TagSet                      `xml:"tagSet"`
-	TransportProtocol          string                         `xml:"transportProtocol,omitempty"`
-	VpcID                      string                         `xml:"vpcId,omitempty"`
-	VpnPort                    int32                          `xml:"vpnPort"`
-	CreationTime               string                         `xml:"creationTime,omitempty"`
-	DeletionTime               string                         `xml:"deletionTime,omitempty"`
+	ClientCidrBlock      string                         `xml:"clientCidrBlock,omitempty"`
+	ClientVpnEndpointID  string                         `xml:"clientVpnEndpointId,omitempty"`
+	Description          string                         `xml:"description,omitempty"`
+	DnsName              string                         `xml:"dnsName,omitempty"`
+	DnsServers           ec2ValueStringSet              `xml:"dnsServer"`
+	SecurityGroupIDs     ec2ValueStringSet              `xml:"securityGroupIdSet"`
+	SelfServicePortalURL string                         `xml:"selfServicePortalUrl,omitempty"`
+	ServerCertificateARN string                         `xml:"serverCertificateArn,omitempty"`
+	SessionTimeoutHours  int32                          `xml:"sessionTimeoutHours"`
+	SplitTunnel          bool                           `xml:"splitTunnel"`
+	Status               ec2ClientVpnEndpointStatusItem `xml:"status"`
+	TagSet               ec2TagSet                      `xml:"tagSet"`
+	TransportProtocol    string                         `xml:"transportProtocol,omitempty"`
+	VpcID                string                         `xml:"vpcId,omitempty"`
+	VpnPort              int32                          `xml:"vpnPort"`
+	CreationTime         string                         `xml:"creationTime,omitempty"`
+	DeletionTime         string                         `xml:"deletionTime,omitempty"`
 }
 
 type ec2ClientVpnRouteSet struct {

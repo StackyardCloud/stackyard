@@ -1,0 +1,32 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  databricks:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/databricks-2026-01-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATABRICKS_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATABRICKS_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-databricks
+      - STACKYARD_AZURE_LOCATION=eastus2
+      - STACKYARD_AZURE_DATABRICKS_WORKSPACE_NAME=databricks-workspace-example
+      - STACKYARD_AZURE_DATABRICKS_ACCESS_CONNECTOR_NAME=databricks-access-connector-example
+      - STACKYARD_AZURE_DATABRICKS_VNET_PEERING_NAME=databricks-vnet-peering-example
+      - STACKYARD_AZURE_DATABRICKS_PRIVATE_ENDPOINT_CONNECTION_NAME=databricks-workspace-example.23456789-1111-1111-1111-111111111111
+      - STACKYARD_AZURE_DATABRICKS_PRIVATE_LINK_RESOURCE_NAME=databricks_ui_api
+      - STACKYARD_AZURE_DATABRICKS_MANAGED_RESOURCE_GROUP_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databricks-managed
+      - STACKYARD_AZURE_DATABRICKS_ACCESS_CONNECTOR_RESOURCE_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databricks/providers/Microsoft.Databricks/accessConnectors/databricks-access-connector-example
+      - STACKYARD_AZURE_DATABRICKS_REMOTE_VNET_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databricks/providers/Microsoft.Network/virtualNetworks/databricks-remote-vnet
+      - STACKYARD_AZURE_DATABRICKS_PRIVATE_ENDPOINT_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databricks/providers/Microsoft.Network/privateEndpoints/databricks-private-endpoint

@@ -95,16 +95,16 @@ type ec2CreateVpcEndpointServiceConfigurationResponse struct {
 }
 
 type ec2ServiceConfigurationItem struct {
-	AcceptanceRequired      *bool                       `xml:"acceptanceRequired,omitempty"`
-	GatewayLoadBalancerARNs ec2Stage55StringSet         `xml:"gatewayLoadBalancerArnSet"`
-	NetworkLoadBalancerARNs ec2Stage55StringSet         `xml:"networkLoadBalancerArnSet"`
-	PayerResponsibility     string                      `xml:"payerResponsibility,omitempty"`
-	PrivateDNSName          string                      `xml:"privateDnsName,omitempty"`
-	ServiceID               string                      `xml:"serviceId,omitempty"`
-	ServiceName             string                      `xml:"serviceName,omitempty"`
-	ServiceState            string                      `xml:"serviceState,omitempty"`
-	ServiceType             ec2ServiceTypeDetailSet     `xml:"serviceType"`
-	SupportedIPAddressTypes ec2Stage55StringSet         `xml:"supportedIpAddressTypeSet"`
+	AcceptanceRequired      *bool                   `xml:"acceptanceRequired,omitempty"`
+	GatewayLoadBalancerARNs ec2Stage55StringSet     `xml:"gatewayLoadBalancerArnSet"`
+	NetworkLoadBalancerARNs ec2Stage55StringSet     `xml:"networkLoadBalancerArnSet"`
+	PayerResponsibility     string                  `xml:"payerResponsibility,omitempty"`
+	PrivateDNSName          string                  `xml:"privateDnsName,omitempty"`
+	ServiceID               string                  `xml:"serviceId,omitempty"`
+	ServiceName             string                  `xml:"serviceName,omitempty"`
+	ServiceState            string                  `xml:"serviceState,omitempty"`
+	ServiceType             ec2ServiceTypeDetailSet `xml:"serviceType"`
+	SupportedIPAddressTypes ec2Stage55StringSet     `xml:"supportedIpAddressTypeSet"`
 }
 
 type ec2Stage55StringSet struct {

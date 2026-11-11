@@ -70,288 +70,481 @@ import (
 )
 
 type Server struct {
-	httpServer                           *http.Server
-	http2Server                          *http.Server
-	acm                                  *acm.Service
-	apigateway                           *apiGatewayStore
-	apigatewayv2                         *apiGatewayV2Store
-	appconfig                            *appConfigStore
-	amplify                              *amplifyStore
-	amplifyadminui                       *amplifyAdminUIStore
-	amplifyuibuilder                     *amplifyUIBuilderStore
-	novaact                              *novaActStore
-	appflow                              *appFlowStore
-	datapipeline                         *dataPipelineStore
-	b2bi                                 *b2biStore
-	awscostmanagement                    *awsCostManagementStore
-	billingconductor                     *billingConductorStore
-	appfabric                            *appFabricStore
-	artifact                             *artifactStore
-	discovery                            *discoveryStore
-	apprunner                            *appRunnerStore
-	blockchain                           *blockchainStore
-	braket                               *braketStore
-	chime                                *chimeStore
-	connect                              *connectStore
-	cleanrooms                           *cleanRoomsStore
-	cleanroomsml                         *cleanRoomsMLStore
-	dlm                                  *dlmStore
-	datazone                             *datazoneStore
-	dataexchange                         *dataExchangeStore
-	devicefarm                           *deviceFarmStore
-	diagnostictools                      *diagnosticToolsStore
-	fis                                  *fisStore
-	finspace                             *finspaceStore
-	finspacemanagement                   *finspaceManagementStore
-	gameliftstreams                      *gameliftStreamsStore
-	elasticache                          *elastiCacheStore
-	emr                                  *emrStore
-	emrcontainers                        *emrContainersStore
-	emrserverless                        *emrServerlessStore
-	msk                                  *mskStore
-	mskv1                                *mskv1Store
-	mskconnect                           *mskConnectStore
-	mq                                   *mqStore
-	mwaa                                 *mwaaStore
-	mwaaserverless                       *mwaaServerlessStore
-	firehose                             *firehoseStore
-	flink                                *flinkStore
-	kinesis                              *kinesisStore
-	kendra                               *kendraStore
-	pcs                                  *pcsStore
-	odb                                  *odbStore
-	imagebuilder                         *imageBuilderStore
-	entityresolution                     *entityResolutionStore
-	elementalinference                   *elementalInferenceStore
-	rekognition                          *rekognitionStore
-	transcribe                           *transcribeStore
-	xray                                 *xrayStore
-	wellarchitected                      *wellArchitectedStore
-	wickr                                *wickrStore
-	translate                            *translateStore
-	workmail                             *workmailStore
-	workspaces                           *workspacesStore
-	workspacesappstream2                 *workspacesAppStream2Store
-	workspacesthinclient                 *workspacesThinClientStore
-	workspacesweb                        *workspacesWebStore
-	sagemaker                            *sagemakerStore
-	simspaceweaver                       *simSpaceWeaverStore
-	savingsplans                         *savingsPlansStore
-	tnb                                  *tnbStore
-	redshiftserverless                   *redshiftServerlessStore
-	smsvoicev2                           *smsVoiceV2Store
-	socialmessaging                      *socialMessagingStore
-	supplychain                          *supplyChainStore
-	kinesisvideostreams                  *kinesisVideoStreamsStore
-	lexv2                                *lexV2Store
-	pinpoint                             *pinpointStore
-	quicksight                           *quickSightStore
-	location                             *locationStore
-	codecatalyst                         *codeCatalystStore
-	bedrockagentcorecontrol              *bedrockAgentCoreControlStore
-	bedrockagentcoredata                 *bedrockAgentCoreDataStore
-	appsync                              *appSyncStore
-	appmesh                              *appMeshStore
-	vpclattice                           *vpcLatticeStore
-	globalaccelerator                    *globalAcceleratorStore
-	rtbfabric                            *rtbFabricStore
-	arczonalshift                        *arcZonalShiftStore
-	arcregionswitch                      *arcRegionSwitchStore
-	recoveryreadiness                    *recoveryReadinessStore
-	recoverycluster                      *recoveryClusterStore
-	routingcontrol                       *routingControlStore
-	cloudformation                       *cloudFormationStore
-	cloudfront                           *cloudFrontStore
-	route53                              *route53Store
-	directconnect                        *directConnectStore
-	cloudmap                             *cloudMapStore
-	config                               *configStore
-	cloudwatch                           *cloudWatchStore
-	clouddirectory                       *cloudDirectoryStore
-	ec2autoscaling                       *ec2AutoScalingStore
-	elasticloadbalancing                 *elasticLoadBalancingStore
-	elasticloadbalancingv2               *elasticLoadBalancingV2Store
-	autoscalingplans                     *autoScalingPlansStore
-	cloudwatchlogs                       *cloudWatchLogsStore
-	grafana                              *grafanaStore
-	prometheus                           *prometheusStore
-	mpa                                  *mpaStore
-	proton                               *protonStore
-	resiliencehub                        *resilienceHubStore
-	recyclebin                           *recycleBinStore
-	resourcegroups                       *resourceGroupsStore
-	resourcegroupstaggingapi             *resourceGroupsTaggingAPIStore
-	resourceexplorer2                    *resourceExplorer2Store
-	oam                                  *oamStore
-	applicationsignals                   *applicationSignalsStore
-	networkfirewall                      *networkFirewallStore
-	networkflowmonitor                   *networkFlowMonitorStore
-	networkmonitor                       *networkMonitorStore
-	internetmonitor                      *internetMonitorStore
-	transfer                             *transferStore
-	ebs                                  *ebsStore
-	fsx                                  *fsxStore
-	snowball                             *snowballStore
-	storagegateway                       *storageGatewayStore
-	stepfunctions                        *stepFunctionsStore
-	opensearch                           *openSearchStore
-	accessanalyzer                       *accessAnalyzerStore
-	auditmanager                         *auditManagerStore
-	rolesanywhere                        *rolesAnywhereStore
-	sts                                  *stsStore
-	singlesignon                         *singleSignOnStore
-	singlesignonportal                   *singleSignOnPortalStore
-	singlesignonoidc                     *singleSignOnOIDCStore
-	identitystore                        *identityStoreStore
-	iam                                  *iamStore
-	guardduty                            *guardDutyStore
-	macie                                *macieStore
-	securityhub                          *securityHubStore
-	securityir                           *securityIRStore
-	securitylake                         *securityLakeStore
-	wafv2                                *wafv2Store
-	shieldadvanced                       *shieldAdvancedStore
-	paymentcryptography                  *paymentCryptographyStore
-	paymentcryptographydata              *paymentCryptographyDataStore
-	inspectorv2                          *inspectorV2Store
-	cloudwatchapplicationinsights        *cloudWatchApplicationInsightsStore
-	cloudwatchinvestigations             *cloudWatchInvestigationsStore
-	cloudwatchsynthetics                 *cloudWatchSyntheticsStore
-	cloudwatchrum                        *cloudWatchRUMStore
-	cloudwatchobservabilityadmin         *cloudWatchObservabilityAdminStore
-	s3                                   *s3.Service
-	s3control                            *s3control.Service
-	s3outposts                           *s3outposts.Service
-	s3tables                             *s3tables.Service
-	s3vectors                            *s3vectors.Service
-	sqs                                  *sqs.Service
-	sns                                  *sns.Service
-	ses                                  *ses.Service
-	sesv2                                *sesv2.Service
-	lightsail                            *lightsail.Service
-	lambda                               *lambda.Service
-	eventbridge                          *eventbridge.Service
-	keyspaces                            *keyspaces.Service
-	memorydb                             *memorydb.Service
-	timestream                           *timestreaminfluxdb.Service
-	cloudcontrolapi                      *cloudControlAPIStore
-	controlcatalog                       *controlCatalogStore
-	controltower                         *controlTowerStore
-	cloudtrail                           *cloudTrailStore
-	codeartifact                         *codeArtifactStore
-	codebuild                            *codeBuildStore
-	detective                            *detectiveStore
-	fms                                  *fmsStore
-	directoryservice                     *directoryServiceStore
-	directoryservicedata                 *directoryServiceDataStore
-	dms                                  *dmsStore
-	drs                                  *drsStore
-	ivs                                  *ivsStore
-	ivschat                              *ivsChatStore
-	ivschatmessaging                     *ivsChatMessagingStore
-	ivsmultitrack                        *ivsMultitrackStore
-	ivsrealtime                          *ivsRealtimeStore
-	mediapackage                         *mediaPackageStore
-	mediaconnect                         *mediaConnectStore
-	groundstation                        *groundStationStore
-	mediatailor                          *mediaTailorStore
-	deadline                             *deadlineStore
-	evs                                  *evsStore
-	m2                                   *m2Store
-	mgn                                  *mgnStore
-	migrationhuborchestrator             *migrationHubOrchestratorStore
-	migrationhubstrategy                 *migrationHubStrategyStore
-	migrationhubrefactorspaces           *migrationHubRefactorSpacesStore
-	qbusiness                            *qBusinessStore
-	qdeveloper                           *qDeveloperStore
-	codeguru                             *codeGuruStore
-	codeguruprofiler                     *codeGuruProfilerStore
-	bedrock                              *bedrockStore
-	devopsguru                           *devOpsGuruStore
-	comprehend                           *comprehendStore
-	comprehendmedical                    *comprehendMedicalStore
-	computeoptimizer                     *computeOptimizerStore
-	ram                                  *ramStore
-	servicequotas                        *serviceQuotasStore
-	support                              *supportStore
-	marketplace                          *marketplaceStore
-	partnercentralselling                *partnerCentralSellingStore
-	supportapp                           *supportAppStore
-	trustedadvisor                       *trustedAdvisorStore
-	usernotifications                    *userNotificationsStore
-	notificationscontacts                *notificationsContactsStore
-	quicksetup                           *quickSetupStore
-	incidentmanager                      *incidentManagerStore
-	ssmsap                               *ssmSAPStore
-	systemsmanager                       *systemsManagerStore
-	ssmguiconnect                        *ssmGUIConnectStore
-	organizations                        *organizationsStore
-	licensemanager                       *licenseManagerStore
-	licensemanagerlinuxsubscriptions     *licenseManagerLinuxSubscriptionsStore
-	licensemanagerusersubscriptions      *licenseManagerUserSubscriptionsStore
-	health                               *healthStore
-	healthlake                           *healthLakeStore
-	healthimaging                        *healthImagingStore
-	codedeploy                           *codeDeployStore
-	codepipeline                         *codePipelineStore
-	augmentedai                          *augmentedAIStore
-	omics                                *omicsStore
-	iot                                  *iotStore
-	iotmi                                *iotMIStore
-	launchwizard                         *launchWizardStore
-	managedservicescm                    *managedServicesCMStore
-	lakeformation                        *lakeFormationStore
-	iotfleetwise                         *iotFleetWiseStore
-	iotevents                            *iotEventsStore
-	iotwireless                          *iotWirelessStore
-	iotgreengrass                        *iotGreengrassStore
-	iotsitewise                          *iotSiteWiseStore
-	iottwinmaker                         *iotTwinMakerStore
-	cognitoidentity                      *cognitoIdentityStore
-	cognitouserpools                     *cognitoUserPoolsStore
-	cognitosync                          *cognitoSyncStore
-	neptuneanalytics                     *neptuneAnalyticsStore
-	neptunedata                          *neptuneDataStore
-	kms                                  *kms.Service
-	signer                               *signer.Service
-	athena                               *athena.Service
-	swf                                  *swf.Service
-	privateca                            *privateca.Service
-	secretsmgr                           *secretsmanager.Service
-	eb                                   *elasticbeanstalk.Service
-	batch                                *batch.Service
-	cloudhsm                             *cloudhsm.Service
-	dynamodb                             *dynamodb.Service
-	dsql                                 *dsql.Service
-	ecs                                  *ecs.Service
-	ecr                                  *ecr.Service
-	eks                                  *eks.Service
-	ec2                                  *ec2.Service
-	rds                                  *rds.Service
-	redshiftMu                           sync.Mutex
-	redshift                             *redshiftStore
-	enabledProviders                     []string
-	enabledProviderSet                   map[string]struct{}
-	providerStorageMu                    sync.Mutex
-	gcpStorageBuckets                    map[string]*providerBucket
-	gcpStorageHMACKeys                   map[string]map[string]*gcpStorageHMACKey
-	gcpStorageNextGeneration             int64
-	gcpStorageNextHMACKeyID              int64
-	azureStorageAccounts                 map[string]map[string]*providerBucket
-	azureQueues                          map[string]map[string][]azureQueueMessage
-	azureQueueNextID                     int64
-	azureKeyVaults                       map[string]map[string][]azureSecretVersion
-	azureBotConversations                map[string]*azureBotConversation
-	azureBotNextConversationID           int64
-	azureContentModeratorImageLists      map[int64]*azureContentModeratorImageList
-	azureContentModeratorNextImageListID int64
-	ociStorageNamespaces                 map[string]map[string]*providerBucket
-	awsAuthValidator                     awsRequestAuthValidator
-	providerAuthValidators               map[string]providerRequestAuthValidator
-	accessKey                            string
-	secretKey                            string
-	logLevel                             string
-	state                                *statePersistence
+	httpServer                                          *http.Server
+	http2Server                                         *http.Server
+	acm                                                 *acm.Service
+	apigateway                                          *apiGatewayStore
+	apigatewayv2                                        *apiGatewayV2Store
+	appconfig                                           *appConfigStore
+	amplify                                             *amplifyStore
+	amplifyadminui                                      *amplifyAdminUIStore
+	amplifyuibuilder                                    *amplifyUIBuilderStore
+	novaact                                             *novaActStore
+	appflow                                             *appFlowStore
+	datapipeline                                        *dataPipelineStore
+	b2bi                                                *b2biStore
+	awscostmanagement                                   *awsCostManagementStore
+	billingconductor                                    *billingConductorStore
+	appfabric                                           *appFabricStore
+	artifact                                            *artifactStore
+	discovery                                           *discoveryStore
+	apprunner                                           *appRunnerStore
+	blockchain                                          *blockchainStore
+	braket                                              *braketStore
+	chime                                               *chimeStore
+	connect                                             *connectStore
+	cleanrooms                                          *cleanRoomsStore
+	cleanroomsml                                        *cleanRoomsMLStore
+	dlm                                                 *dlmStore
+	datazone                                            *datazoneStore
+	dataexchange                                        *dataExchangeStore
+	devicefarm                                          *deviceFarmStore
+	diagnostictools                                     *diagnosticToolsStore
+	fis                                                 *fisStore
+	finspace                                            *finspaceStore
+	finspacemanagement                                  *finspaceManagementStore
+	gameliftstreams                                     *gameliftStreamsStore
+	elasticache                                         *elastiCacheStore
+	emr                                                 *emrStore
+	emrcontainers                                       *emrContainersStore
+	emrserverless                                       *emrServerlessStore
+	msk                                                 *mskStore
+	mskv1                                               *mskv1Store
+	mskconnect                                          *mskConnectStore
+	mq                                                  *mqStore
+	mwaa                                                *mwaaStore
+	mwaaserverless                                      *mwaaServerlessStore
+	firehose                                            *firehoseStore
+	flink                                               *flinkStore
+	kinesis                                             *kinesisStore
+	kendra                                              *kendraStore
+	pcs                                                 *pcsStore
+	odb                                                 *odbStore
+	imagebuilder                                        *imageBuilderStore
+	entityresolution                                    *entityResolutionStore
+	elementalinference                                  *elementalInferenceStore
+	rekognition                                         *rekognitionStore
+	transcribe                                          *transcribeStore
+	xray                                                *xrayStore
+	wellarchitected                                     *wellArchitectedStore
+	wickr                                               *wickrStore
+	translate                                           *translateStore
+	workmail                                            *workmailStore
+	workspaces                                          *workspacesStore
+	workspacesappstream2                                *workspacesAppStream2Store
+	workspacesthinclient                                *workspacesThinClientStore
+	workspacesweb                                       *workspacesWebStore
+	sagemaker                                           *sagemakerStore
+	simspaceweaver                                      *simSpaceWeaverStore
+	savingsplans                                        *savingsPlansStore
+	tnb                                                 *tnbStore
+	redshiftserverless                                  *redshiftServerlessStore
+	smsvoicev2                                          *smsVoiceV2Store
+	socialmessaging                                     *socialMessagingStore
+	supplychain                                         *supplyChainStore
+	kinesisvideostreams                                 *kinesisVideoStreamsStore
+	lexv2                                               *lexV2Store
+	pinpoint                                            *pinpointStore
+	quicksight                                          *quickSightStore
+	location                                            *locationStore
+	codecatalyst                                        *codeCatalystStore
+	bedrockagentcorecontrol                             *bedrockAgentCoreControlStore
+	bedrockagentcoredata                                *bedrockAgentCoreDataStore
+	appsync                                             *appSyncStore
+	appmesh                                             *appMeshStore
+	vpclattice                                          *vpcLatticeStore
+	globalaccelerator                                   *globalAcceleratorStore
+	rtbfabric                                           *rtbFabricStore
+	arczonalshift                                       *arcZonalShiftStore
+	arcregionswitch                                     *arcRegionSwitchStore
+	recoveryreadiness                                   *recoveryReadinessStore
+	recoverycluster                                     *recoveryClusterStore
+	routingcontrol                                      *routingControlStore
+	cloudformation                                      *cloudFormationStore
+	cloudfront                                          *cloudFrontStore
+	route53                                             *route53Store
+	directconnect                                       *directConnectStore
+	cloudmap                                            *cloudMapStore
+	config                                              *configStore
+	cloudwatch                                          *cloudWatchStore
+	clouddirectory                                      *cloudDirectoryStore
+	ec2autoscaling                                      *ec2AutoScalingStore
+	elasticloadbalancing                                *elasticLoadBalancingStore
+	elasticloadbalancingv2                              *elasticLoadBalancingV2Store
+	autoscalingplans                                    *autoScalingPlansStore
+	cloudwatchlogs                                      *cloudWatchLogsStore
+	grafana                                             *grafanaStore
+	prometheus                                          *prometheusStore
+	mpa                                                 *mpaStore
+	proton                                              *protonStore
+	resiliencehub                                       *resilienceHubStore
+	recyclebin                                          *recycleBinStore
+	resourcegroups                                      *resourceGroupsStore
+	resourcegroupstaggingapi                            *resourceGroupsTaggingAPIStore
+	resourceexplorer2                                   *resourceExplorer2Store
+	oam                                                 *oamStore
+	applicationsignals                                  *applicationSignalsStore
+	networkfirewall                                     *networkFirewallStore
+	networkflowmonitor                                  *networkFlowMonitorStore
+	networkmonitor                                      *networkMonitorStore
+	internetmonitor                                     *internetMonitorStore
+	transfer                                            *transferStore
+	ebs                                                 *ebsStore
+	fsx                                                 *fsxStore
+	snowball                                            *snowballStore
+	storagegateway                                      *storageGatewayStore
+	stepfunctions                                       *stepFunctionsStore
+	opensearch                                          *openSearchStore
+	accessanalyzer                                      *accessAnalyzerStore
+	auditmanager                                        *auditManagerStore
+	rolesanywhere                                       *rolesAnywhereStore
+	sts                                                 *stsStore
+	singlesignon                                        *singleSignOnStore
+	singlesignonportal                                  *singleSignOnPortalStore
+	singlesignonoidc                                    *singleSignOnOIDCStore
+	identitystore                                       *identityStoreStore
+	iam                                                 *iamStore
+	guardduty                                           *guardDutyStore
+	macie                                               *macieStore
+	securityhub                                         *securityHubStore
+	securityir                                          *securityIRStore
+	securitylake                                        *securityLakeStore
+	wafv2                                               *wafv2Store
+	shieldadvanced                                      *shieldAdvancedStore
+	paymentcryptography                                 *paymentCryptographyStore
+	paymentcryptographydata                             *paymentCryptographyDataStore
+	inspectorv2                                         *inspectorV2Store
+	cloudwatchapplicationinsights                       *cloudWatchApplicationInsightsStore
+	cloudwatchinvestigations                            *cloudWatchInvestigationsStore
+	cloudwatchsynthetics                                *cloudWatchSyntheticsStore
+	cloudwatchrum                                       *cloudWatchRUMStore
+	cloudwatchobservabilityadmin                        *cloudWatchObservabilityAdminStore
+	s3                                                  *s3.Service
+	s3control                                           *s3control.Service
+	s3outposts                                          *s3outposts.Service
+	s3tables                                            *s3tables.Service
+	s3vectors                                           *s3vectors.Service
+	sqs                                                 *sqs.Service
+	sns                                                 *sns.Service
+	ses                                                 *ses.Service
+	sesv2                                               *sesv2.Service
+	lightsail                                           *lightsail.Service
+	lambda                                              *lambda.Service
+	eventbridge                                         *eventbridge.Service
+	keyspaces                                           *keyspaces.Service
+	memorydb                                            *memorydb.Service
+	timestream                                          *timestreaminfluxdb.Service
+	cloudcontrolapi                                     *cloudControlAPIStore
+	controlcatalog                                      *controlCatalogStore
+	controltower                                        *controlTowerStore
+	cloudtrail                                          *cloudTrailStore
+	codeartifact                                        *codeArtifactStore
+	codebuild                                           *codeBuildStore
+	detective                                           *detectiveStore
+	fms                                                 *fmsStore
+	directoryservice                                    *directoryServiceStore
+	directoryservicedata                                *directoryServiceDataStore
+	dms                                                 *dmsStore
+	drs                                                 *drsStore
+	ivs                                                 *ivsStore
+	ivschat                                             *ivsChatStore
+	ivschatmessaging                                    *ivsChatMessagingStore
+	ivsmultitrack                                       *ivsMultitrackStore
+	ivsrealtime                                         *ivsRealtimeStore
+	mediapackage                                        *mediaPackageStore
+	mediaconnect                                        *mediaConnectStore
+	groundstation                                       *groundStationStore
+	mediatailor                                         *mediaTailorStore
+	deadline                                            *deadlineStore
+	evs                                                 *evsStore
+	m2                                                  *m2Store
+	mgn                                                 *mgnStore
+	migrationhuborchestrator                            *migrationHubOrchestratorStore
+	migrationhubstrategy                                *migrationHubStrategyStore
+	migrationhubrefactorspaces                          *migrationHubRefactorSpacesStore
+	qbusiness                                           *qBusinessStore
+	qdeveloper                                          *qDeveloperStore
+	codeguru                                            *codeGuruStore
+	codeguruprofiler                                    *codeGuruProfilerStore
+	bedrock                                             *bedrockStore
+	devopsguru                                          *devOpsGuruStore
+	comprehend                                          *comprehendStore
+	comprehendmedical                                   *comprehendMedicalStore
+	computeoptimizer                                    *computeOptimizerStore
+	ram                                                 *ramStore
+	servicequotas                                       *serviceQuotasStore
+	support                                             *supportStore
+	marketplace                                         *marketplaceStore
+	partnercentralselling                               *partnerCentralSellingStore
+	supportapp                                          *supportAppStore
+	trustedadvisor                                      *trustedAdvisorStore
+	usernotifications                                   *userNotificationsStore
+	notificationscontacts                               *notificationsContactsStore
+	quicksetup                                          *quickSetupStore
+	incidentmanager                                     *incidentManagerStore
+	ssmsap                                              *ssmSAPStore
+	systemsmanager                                      *systemsManagerStore
+	ssmguiconnect                                       *ssmGUIConnectStore
+	organizations                                       *organizationsStore
+	licensemanager                                      *licenseManagerStore
+	licensemanagerlinuxsubscriptions                    *licenseManagerLinuxSubscriptionsStore
+	licensemanagerusersubscriptions                     *licenseManagerUserSubscriptionsStore
+	health                                              *healthStore
+	healthlake                                          *healthLakeStore
+	healthimaging                                       *healthImagingStore
+	codedeploy                                          *codeDeployStore
+	codepipeline                                        *codePipelineStore
+	augmentedai                                         *augmentedAIStore
+	omics                                               *omicsStore
+	iot                                                 *iotStore
+	iotmi                                               *iotMIStore
+	launchwizard                                        *launchWizardStore
+	managedservicescm                                   *managedServicesCMStore
+	lakeformation                                       *lakeFormationStore
+	iotfleetwise                                        *iotFleetWiseStore
+	iotevents                                           *iotEventsStore
+	iotwireless                                         *iotWirelessStore
+	iotgreengrass                                       *iotGreengrassStore
+	iotsitewise                                         *iotSiteWiseStore
+	iottwinmaker                                        *iotTwinMakerStore
+	cognitoidentity                                     *cognitoIdentityStore
+	cognitouserpools                                    *cognitoUserPoolsStore
+	cognitosync                                         *cognitoSyncStore
+	neptuneanalytics                                    *neptuneAnalyticsStore
+	neptunedata                                         *neptuneDataStore
+	kms                                                 *kms.Service
+	signer                                              *signer.Service
+	athena                                              *athena.Service
+	swf                                                 *swf.Service
+	privateca                                           *privateca.Service
+	secretsmgr                                          *secretsmanager.Service
+	eb                                                  *elasticbeanstalk.Service
+	batch                                               *batch.Service
+	cloudhsm                                            *cloudhsm.Service
+	dynamodb                                            *dynamodb.Service
+	dsql                                                *dsql.Service
+	ecs                                                 *ecs.Service
+	ecr                                                 *ecr.Service
+	eks                                                 *eks.Service
+	ec2                                                 *ec2.Service
+	rds                                                 *rds.Service
+	redshiftMu                                          sync.Mutex
+	redshift                                            *redshiftStore
+	enabledProviders                                    []string
+	enabledProviderSet                                  map[string]struct{}
+	providerStorageMu                                   sync.Mutex
+	gcpStorageBuckets                                   map[string]*providerBucket
+	gcpStorageHMACKeys                                  map[string]map[string]*gcpStorageHMACKey
+	gcpStorageNextGeneration                            int64
+	gcpStorageNextHMACKeyID                             int64
+	azureStorageAccounts                                map[string]map[string]*providerBucket
+	azureQueues                                         map[string]map[string][]azureQueueMessage
+	azureQueueNextID                                    int64
+	azureKeyVaults                                      map[string]map[string][]azureSecretVersion
+	azureAttestationPolicies                            map[string]string
+	azureAttestationPolicyCertificates                  []string
+	azureDataCatalogDataAssets                          map[string]*azureDataCatalogDataAsset
+	azureDataCatalogCustomDataSourceProtocols           map[string]*azureDataCatalogCustomDataSourceProtocol
+	azureActiveDirectoryB2CTenants                      map[string]*azureActiveDirectoryB2CTenant
+	azureActiveDirectoryGuestUsages                     map[string]*azureActiveDirectoryGuestUsage
+	azureDataManagerForAgriFarmBeats                    map[string]*azureDataManagerForAgriFarmBeat
+	azureDataManagerForAgriOperationResults             map[string]*azureDataManagerForAgriOperationResult
+	azureDataManagerForAgriDataConnectors               map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriExtensions                   map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriPrivateEndpointConnections   map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriSolutions                    map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriDataPlaneEntities            map[string]*azureDataManagerForAgriDataPlaneEntity
+	azureDataManagerForAgriDataPlaneFiles               map[string]*azureDataManagerForAgriDataPlaneFile
+	azureDataManagerForAgriDataPlaneDatasetGrants       map[string]*azureDataManagerForAgriDataPlaneGrant
+	azureDataManagerForAgriDataPlaneJobs                map[string]*azureDataManagerForAgriDataPlaneJob
+	azureContainerInstancesResources                    map[string]*azureContainerInstancesResource
+	azureContainerInstancesProfileResources             map[string]*azureContainerInstancesProfileResource
+	azureContainerInstancesServiceAssociationLinks      map[string]*azureContainerInstancesServiceAssociationLink
+	azureContainerAppsResources                         map[string]*azureContainerAppsResource
+	azureContainerAppsChildResources                    map[string]*azureContainerAppsChildResource
+	azureContainerAppsDataPlaneSessions                 map[string]*azureContainerAppsDataPlaneSession
+	azureContainerAppsDataPlaneExecutions               map[string]*azureContainerAppsDataPlaneExecution
+	azureContainerAppsDataPlaneFiles                    map[string]*azureContainerAppsDataPlaneFile
+	azureLoadTestingDataPlaneTests                      map[string]*azureLoadTestingDataPlaneTest
+	azureLoadTestingDataPlaneRuns                       map[string]*azureLoadTestingDataPlaneRun
+	azureLoadTestingDataPlaneFiles                      map[string]*azureLoadTestingDataPlaneFile
+	azureCommunicationAdvancedMessagingMessages         map[string]*azureCommunicationAdvancedMessagingMessage
+	azureCommunicationAdvancedMessagingTemplates        map[string]*azureCommunicationAdvancedMessagingTemplate
+	azureCommunicationAdvancedMessagingStreams          map[string]*azureCommunicationAdvancedMessagingStream
+	azureConsumptionBudgets                             map[string]*azureConsumptionBudget
+	azureCommunicationCallAutomationCalls               map[string]*azureCommunicationCallAutomationCall
+	azureCommunicationCallAutomationRecordings          map[string]*azureCommunicationCallAutomationRecording
+	azureCommunicationChatThreads                       map[string]*azureCommunicationChatThread
+	azureCommunicationChatParticipants                  map[string]*azureCommunicationChatParticipant
+	azureCommunicationChatMessages                      map[string]*azureCommunicationChatMessage
+	azureCommunicationChatReadReceipts                  []*azureCommunicationChatReadReceipt
+	azureCommunicationEmailOperations                   map[string]*azureCommunicationEmailOperation
+	azureCommunicationIdentityIdentities                map[string]*azureCommunicationIdentityIdentity
+	azureCommunicationIdentityAssignments               map[string]*azureCommunicationIdentityAssignment
+	azureCommunicationServices                          map[string]*azureCommunicationServiceResource
+	azureCommunicationEmailServices                     map[string]*azureCommunicationEmailServiceResource
+	azureCommunicationDomains                           map[string]*azureCommunicationDomainResource
+	azureCommunicationNestedResources                   map[string]*azureCommunicationNestedResource
+	azureConfluentOrganizations                         map[string]*azureConfluentOrganization
+	azureConfluentMarketplaceAgreements                 map[string]*azureConfluentMarketplaceAgreement
+	azureConfluentResources                             map[string]*azureConfluentChildResource
+	azureConfluentInvitations                           map[string]*azureConfluentInvitation
+	azureConfluentRoleBindings                          map[string]*azureConfluentRoleBinding
+	azureCommunicationSipRoutingConfiguration           *azureCommunicationSipRoutingConfiguration
+	azureCommunicationNetworkTraversalConfigurations    map[string]*azureCommunicationNetworkTraversalConfiguration
+	azureCommunicationRooms                             map[string]*azureCommunicationRoom
+	azureCommunicationRoomParticipants                  map[string]*azureCommunicationRoomParticipant
+	azureCommunicationPhoneNumbersReservations          map[string]*azureCommunicationPhoneNumbersReservation
+	azureCommunicationPhoneNumbersSearchResults         map[string]*azureCommunicationPhoneNumbersSearchResult
+	azureCommunicationPhoneNumbersOperations            map[string]*azureCommunicationPhoneNumbersOperation
+	azureCommunicationPhoneNumbersNumbers               map[string]*azureCommunicationPhoneNumbersRecord
+	azureCommunicationJobRouterClassificationPolicies   map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterDistributionPolicies     map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterExceptionPolicies        map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterQueues                   map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterJobs                     map[string]*azureCommunicationJobRouterJob
+	azureCommunicationJobRouterWorkers                  map[string]*azureCommunicationJobRouterWorker
+	azureCommunicationJobRouterOffers                   map[string]*azureCommunicationJobRouterOffer
+	azureCommunicationJobRouterAssignments              map[string]*azureCommunicationJobRouterAssignment
+	azurePlaywrightDataPlaneWorkspaces                  map[string]*azurePlaywrightDataPlaneWorkspace
+	azurePlaywrightDataPlaneAccessTokens                map[string]*azurePlaywrightDataPlaneAccessToken
+	azurePlaywrightDataPlaneTestRuns                    map[string]*azurePlaywrightDataPlaneTestRun
+	azureWebPubSubDataPlaneConnections                  map[string]*azureWebPubSubDataPlaneConnection
+	azureWebPubSubDataPlaneUsers                        map[string]*azureWebPubSubDataPlaneUser
+	azureResourceGraphQueries                           map[string]*azureResourceGraphQuery
+	azureQuantumWorkspaces                              map[string]*azureQuantumWorkspace
+	azureQuantumDataPlaneJobs                           map[string]*azureQuantumDataPlaneJob
+	azureQuantumDataPlaneSessions                       map[string]*azureQuantumDataPlaneSession
+	azureSphereCatalogs                                 map[string]*azureSphereCatalog
+	azureSphereProducts                                 map[string]*azureSphereProduct
+	azureSphereDeviceGroups                             map[string]*azureSphereDeviceGroup
+	azureSphereDevices                                  map[string]*azureSphereDevice
+	azureSphereDeployments                              map[string]*azureSphereDeployment
+	azureSphereImages                                   map[string]*azureSphereImage
+	azureStackAdminSettings                             map[string]*azureStackAdminSettings
+	azureStackAdminServices                             map[string]*azureStackAdminService
+	azureStackAdminAccounts                             map[string]*azureStackAdminStorageAccount
+	azureStackAdminAcquisitions                         map[string]*azureStackAdminAcquisition
+	azureStackAdminAsyncOperations                      map[string]*azureStackAdminAsyncOperation
+	azureCloudNGFWFirewalls                             map[string]*azureCloudNGFWFirewall
+	azureCloudNGFWLocalRulestacks                       map[string]*azureCloudNGFWLocalRulestack
+	azureCloudNGFWGlobalRulestacks                      map[string]*azureCloudNGFWGlobalRulestack
+	azureCloudNGFWLocalChildren                         map[string]*azureCloudNGFWChildResource
+	azureCloudNGFWGlobalChildren                        map[string]*azureCloudNGFWGlobalChildResource
+	azureChaosStudioTargets                             map[string]*azureChaosStudioTarget
+	azureChaosStudioCapabilities                        map[string]*azureChaosStudioCapability
+	azureChaosStudioExperiments                         map[string]*azureChaosStudioExperiment
+	azureChaosStudioExecutions                          map[string]*azureChaosStudioExecution
+	azureChaosStudioOperationStatuses                   map[string]*azureChaosStudioOperationStatus
+	azureStackHCIClusters                               map[string]*azureStackHCICluster
+	azureStackHCIArcSettings                            map[string]*azureStackHCIArcSetting
+	azureStackHCIExtensions                             map[string]*azureStackHCIExtension
+	azureStackHCIDeploymentSettings                     map[string]*azureStackHCIDeploymentSetting
+	azureStackHCIUpdates                                map[string]*azureStackHCIUpdate
+	azureStackHCIUpdateSummaries                        map[string]*azureStackHCIUpdateSummary
+	azureStackHCIUpdateRuns                             map[string]*azureStackHCIUpdateRun
+	azureStackHCIEdgeDevices                            map[string]*azureStackHCIEdgeDevice
+	azureCDNProfiles                                    map[string]*azureCDNProfile
+	azureCDNEndpoints                                   map[string]*azureCDNEndpoint
+	azureCDNChildren                                    map[string]*azureCDNChildResource
+	azureWebPubSubAccounts                              map[string]*azureWebPubSubAccount
+	azureWebPubSubChildren                              map[string]*azureWebPubSubChildResource
+	azureBillingAccounts                                map[string]*azureBillingAccount
+	azureBillingResources                               map[string]*azureBillingResource
+	azureBillingProperties                              map[string]*azureBillingProperty
+	azureVideoIndexerAccounts                           map[string]*azureVideoIndexerAccount
+	azureVideoIndexerPrivateEndpointConnections         map[string]*azureVideoIndexerPrivateEndpointConnection
+	azureMigrateAssessmentProjects                      map[string]*azureMigrateAssessmentProject
+	azureMigrateAssessmentGroups                        map[string]*azureMigrateAssessmentGroup
+	azureMigrateAssessmentMachines                      map[string]*azureMigrateAssessmentMachine
+	azureMigrateAssessments                             map[string]*azureMigrateAssessment
+	azureMigrateAssessmentCollectors                    map[string]*azureMigrateAssessmentCollector
+	azureMigrateAssessmentPrivateEndpointConnections    map[string]*azureMigrateAssessmentPrivateEndpointConnection
+	azureMigrateDiscoverySites                          map[string]*azureMigrateDiscoverySite
+	azureMigrateDiscoveryMachines                       map[string]*azureMigrateDiscoveryMachine
+	azureMigrateDiscoveryRunAsAccounts                  map[string]*azureMigrateDiscoveryRunAsAccount
+	azureMigrateDiscoveryInventoryItems                 map[string]*azureMigrateDiscoveryInventoryItem
+	azureMigrateProjects                                map[string]*azureMigrateProject
+	azureConfidentialLedgers                            map[string]*azureConfidentialLedgerResource
+	azureIntegrationSpaces                              map[string]*azureIntegrationSpace
+	azureIntegrationApplications                        map[string]*azureIntegrationApplication
+	azureIntegrationApplicationResources                map[string]*azureIntegrationApplicationResource
+	azureIntegrationBusinessProcesses                   map[string]*azureIntegrationBusinessProcess
+	azureIntegrationBusinessProcessVersions             map[string]*azureIntegrationBusinessProcessVersion
+	azureIntegrationInfrastructureResources             map[string]*azureIntegrationInfrastructureResource
+	azureIntegrationArtifacts                           map[string]*azureIntegrationArtifact
+	azureSpringServices                                 map[string]*azureSpringService
+	azureSpringApps                                     map[string]*azureSpringApp
+	azureSpringDeployments                              map[string]*azureSpringDeployment
+	azureSpringChildren                                 map[string]*azureSpringChildResource
+	azureSpringBuildServices                            map[string]*azureSpringBuildService
+	azureSpringBuilds                                   map[string]*azureSpringBuild
+	azureNetAppResources                                map[string]*azureNetAppResource
+	azureComputeResources                               map[string]*azureComputeResource
+	azureComputeLimitFeatures                           map[string]*azureComputeLimitFeatureResource
+	azureComputeLimitGuestSubscriptions                 map[string]*azureComputeLimitGuestSubscriptionResource
+	azureComputeLimitSharedLimits                       map[string]*azureComputeLimitSharedLimitResource
+	azureComputeScheduleOperations                      map[string]*azureComputeScheduleOperation
+	azureComputeFleets                                  map[string]*azureComputeFleetResource
+	azureBatchManagementAccounts                        map[string]*azureBatchManagementAccount
+	azureBatchManagementResources                       map[string]*azureBatchManagementChildResource
+	azureBlueprintDefinitions                           map[string]*azureBlueprintDefinition
+	azureBlueprintArtifacts                             map[string]*azureBlueprintArtifact
+	azureBlueprintVersions                              map[string]*azureBlueprintVersion
+	azureBlueprintPublishedArtifacts                    map[string]*azureBlueprintPublishedArtifact
+	azureBlueprintAssignments                           map[string]*azureBlueprintAssignment
+	azureBlueprintAssignmentOperations                  map[string]*azureBlueprintAssignmentOperation
+	azurePlaywrightWorkspaces                           map[string]*azurePlaywrightWorkspace
+	azureLoadTests                                      map[string]*azureLoadTestingResource
+	azureLoadTestingChildResources                      map[string]*azureLoadTestingChildResource
+	azureKustoClusters                                  map[string]*azureKustoCluster
+	azureKustoResources                                 map[string]*azureKustoResource
+	azureKustoOperationResults                          map[string]*azureKustoOperationResult
+	azureArcVMwareResources                             map[string]*azureArcVMwareResource
+	azureArcVMwareInventoryItems                        map[string]*azureArcVMwareInventoryItem
+	azureArcVMwareVirtualMachineInstances               map[string]*azureArcVMwareVirtualMachineInstance
+	azureArcVMwareGuestAgents                           map[string]*azureArcVMwareGuestAgent
+	azureArcVMwareHybridIdentityMetadata                map[string]*azureArcVMwareHybridIdentityMetadata
+	azureArcSCVMMResources                              map[string]*azureArcSCVMMResource
+	azureArcSCVMMInventoryItems                         map[string]*azureArcSCVMMInventoryItem
+	azureArcSCVMMVirtualMachineInstances                map[string]*azureArcSCVMMVirtualMachineInstance
+	azureArcSCVMMGuestAgents                            map[string]*azureArcSCVMMGuestAgent
+	azureArcSCVMMHybridIdentityMetadata                 map[string]*azureArcSCVMMHybridIdentityMetadata
+	azureSiteManagerSites                               map[string]*azureSiteManagerSite
+	azureAutomationAccounts                             map[string]*azureAutomationAccount
+	azureAutomationAssets                               map[string]*azureAutomationAsset
+	azureAutomationJobs                                 map[string]*azureAutomationJob
+	azureAutomationSyncJobs                             map[string]*azureAutomationSyncJob
+	azureAVSPrivateClouds                               map[string]*azureAVSPrivateCloud
+	azureAVSAuthorizations                              map[string]*azureAVSAuthorization
+	azureAVSGlobalReachConnections                      map[string]*azureAVSGlobalReachConnection
+	azureAVSLicenses                                    map[string]*azureAVSLicense
+	azureAVSAddons                                      map[string]*azureAVSAddon
+	azureAVSScriptExecutions                            map[string]*azureAVSScriptExecution
+	azureAVSIscsiPaths                                  map[string]*azureAVSIscsiPath
+	azureAVSClusters                                    map[string]*azureAVSCluster
+	azureAVSDatastores                                  map[string]*azureAVSDatastore
+	azureAVSPlacementPolicies                           map[string]*azureAVSPlacementPolicy
+	azureAVSDNSZones                                    map[string]*azureAVSWorkloadNetworkDNSZone
+	azureAVSVMGroups                                    map[string]*azureAVSWorkloadNetworkVMGroup
+	azureApplicationGateways                            map[string]*azureApplicationGatewayResource
+	azureApplicationGatewayContainersTrafficControllers map[string]*azureApplicationGatewayContainersTrafficController
+	azureApplicationGatewayContainersFrontends          map[string]*azureApplicationGatewayContainersFrontend
+	azureApplicationGatewayContainersAssociations       map[string]*azureApplicationGatewayContainersAssociation
+	azureApplicationGatewayContainersSecurityPolicies   map[string]*azureApplicationGatewayContainersSecurityPolicy
+	azureAuthorizationRoleAssignments                   map[string]*azureAuthorizationRoleAssignment
+	azureAuthorizationRoleDefinitions                   map[string]*azureAuthorizationRoleDefinition
+	azureBotConversations                               map[string]*azureBotConversation
+	azureBotNextConversationID                          int64
+	azureContentModeratorImageLists                     map[int64]*azureContentModeratorImageList
+	azureContentModeratorNextImageListID                int64
+	ociStorageNamespaces                                map[string]map[string]*providerBucket
+	awsAuthValidator                                    awsRequestAuthValidator
+	providerAuthValidators                              map[string]providerRequestAuthValidator
+	accessKey                                           string
+	secretKey                                           string
+	logLevel                                            string
+	state                                               *statePersistence
 }
 
 type accessLogContextKey string
@@ -566,124 +759,324 @@ func New(cfg Config) *Server {
 			ExecutionMode: cfg.LambdaExecutionMode,
 			WorkDir:       cfg.LambdaWorkDir,
 		}),
-		eventbridge:                          eventbridge.NewService(),
-		keyspaces:                            keyspaces.NewService(),
-		memorydb:                             memorydb.NewService(),
-		timestream:                           timestreaminfluxdb.NewService(),
-		cloudcontrolapi:                      newCloudControlAPIStore(),
-		controlcatalog:                       newControlCatalogStore(),
-		controltower:                         newControlTowerStore(),
-		cloudtrail:                           newCloudTrailStore(),
-		codeartifact:                         newCodeArtifactStore(),
-		codebuild:                            newCodeBuildStore(),
-		detective:                            newDetectiveStore(),
-		fms:                                  newFMSStore(),
-		directoryservice:                     newDirectoryServiceStore(),
-		directoryservicedata:                 newDirectoryServiceDataStore(),
-		dms:                                  newDMSStore(),
-		drs:                                  newDRSStore(),
-		ivs:                                  newIVSStore(),
-		ivschat:                              newIVSChatStore(),
-		ivschatmessaging:                     newIVSChatMessagingStore(),
-		ivsmultitrack:                        newIVSMultitrackStore(),
-		ivsrealtime:                          newIVSRealtimeStore(),
-		mediapackage:                         newMediaPackageStore(),
-		mediaconnect:                         newMediaConnectStore(),
-		groundstation:                        newGroundStationStore(),
-		mediatailor:                          newMediaTailorStore(),
-		deadline:                             newDeadlineStore(),
-		evs:                                  newEVSStore(),
-		m2:                                   newM2Store(),
-		mgn:                                  newMGNStore(),
-		migrationhuborchestrator:             newMigrationHubOrchestratorStore(),
-		migrationhubstrategy:                 newMigrationHubStrategyStore(),
-		migrationhubrefactorspaces:           newMigrationHubRefactorSpacesStore(),
-		qbusiness:                            newQBusinessStore(),
-		qdeveloper:                           newQDeveloperStore(),
-		codeguru:                             newCodeGuruStore(),
-		codeguruprofiler:                     newCodeGuruProfilerStore(),
-		bedrock:                              newBedrockStore(),
-		devopsguru:                           newDevOpsGuruStore(),
-		comprehend:                           newComprehendStore(),
-		comprehendmedical:                    newComprehendMedicalStore(),
-		computeoptimizer:                     newComputeOptimizerStore(),
-		ram:                                  newRAMStore(),
-		servicequotas:                        newServiceQuotasStore(),
-		support:                              newSupportStore(),
-		marketplace:                          newMarketplaceStore(),
-		partnercentralselling:                newPartnerCentralSellingStore(),
-		supportapp:                           newSupportAppStore(),
-		trustedadvisor:                       newTrustedAdvisorStore(),
-		usernotifications:                    newUserNotificationsStore(),
-		notificationscontacts:                newNotificationsContactsStore(),
-		quicksetup:                           newQuickSetupStore(),
-		incidentmanager:                      newIncidentManagerStore(),
-		ssmsap:                               newSSMSAPStore(),
-		systemsmanager:                       newSystemsManagerStore(),
-		ssmguiconnect:                        newSSMGUIConnectStore(),
-		organizations:                        newOrganizationsStore(),
-		licensemanager:                       newLicenseManagerStore(),
-		licensemanagerlinuxsubscriptions:     newLicenseManagerLinuxSubscriptionsStore(),
-		licensemanagerusersubscriptions:      newLicenseManagerUserSubscriptionsStore(),
-		health:                               newHealthStore(),
-		healthlake:                           newHealthLakeStore(),
-		healthimaging:                        newHealthImagingStore(),
-		codedeploy:                           newCodeDeployStore(),
-		codepipeline:                         newCodePipelineStore(),
-		augmentedai:                          newAugmentedAIStore(),
-		omics:                                newOmicsStore(),
-		iot:                                  newIoTStore(),
-		iotmi:                                newIoTMIStore(),
-		launchwizard:                         newLaunchWizardStore(),
-		managedservicescm:                    newManagedServicesCMStore(),
-		lakeformation:                        newLakeFormationStore(),
-		iotfleetwise:                         newIoTFleetWiseStore(),
-		iotevents:                            newIoTEventsStore(),
-		iotwireless:                          newIoTWirelessStore(),
-		iotgreengrass:                        newIoTGreengrassStore(),
-		iotsitewise:                          newIoTSiteWiseStore(),
-		iottwinmaker:                         newIoTTwinMakerStore(),
-		cognitoidentity:                      newCognitoIdentityStore(),
-		cognitouserpools:                     newCognitoUserPoolsStore(),
-		cognitosync:                          newCognitoSyncStore(),
-		neptuneanalytics:                     newNeptuneAnalyticsStore(),
-		neptunedata:                          newNeptuneDataStore(),
-		kms:                                  kms.NewService(),
-		signer:                               signer.NewService(),
-		eb:                                   elasticbeanstalk.NewService(),
-		athena:                               athena.NewService(),
-		swf:                                  swf.NewService(),
-		privateca:                            privateca.NewService(),
-		secretsmgr:                           secretsmanager.NewService(),
-		batch:                                batch.NewService(),
-		cloudhsm:                             cloudhsm.NewService(),
-		dynamodb:                             dynamodb.NewService(),
-		dsql:                                 dsql.NewService(),
-		ecs:                                  ecs.NewService(),
-		ecr:                                  ecr.NewService(),
-		eks:                                  eks.NewService(),
-		ec2:                                  ec2.NewService(),
-		rds:                                  rds.NewService(),
-		redshift:                             newRedshiftStore(),
-		enabledProviders:                     enabledProviders,
-		enabledProviderSet:                   toProviderSet(enabledProviders),
-		gcpStorageBuckets:                    map[string]*providerBucket{},
-		gcpStorageHMACKeys:                   map[string]map[string]*gcpStorageHMACKey{},
-		gcpStorageNextGeneration:             1000,
-		gcpStorageNextHMACKeyID:              0,
-		azureStorageAccounts:                 map[string]map[string]*providerBucket{},
-		azureQueues:                          map[string]map[string][]azureQueueMessage{},
-		azureQueueNextID:                     0,
-		azureKeyVaults:                       map[string]map[string][]azureSecretVersion{},
-		azureBotConversations:                map[string]*azureBotConversation{},
-		azureBotNextConversationID:           0,
-		azureContentModeratorImageLists:      map[int64]*azureContentModeratorImageList{},
-		azureContentModeratorNextImageListID: 0,
-		ociStorageNamespaces:                 map[string]map[string]*providerBucket{},
-		accessKey:                            cfg.AccessKey,
-		secretKey:                            cfg.SecretKey,
-		logLevel:                             strings.ToLower(cfg.LogLevel),
-		state:                                newStatePersistence(cfg),
+		eventbridge:                        eventbridge.NewService(),
+		keyspaces:                          keyspaces.NewService(),
+		memorydb:                           memorydb.NewService(),
+		timestream:                         timestreaminfluxdb.NewService(),
+		cloudcontrolapi:                    newCloudControlAPIStore(),
+		controlcatalog:                     newControlCatalogStore(),
+		controltower:                       newControlTowerStore(),
+		cloudtrail:                         newCloudTrailStore(),
+		codeartifact:                       newCodeArtifactStore(),
+		codebuild:                          newCodeBuildStore(),
+		detective:                          newDetectiveStore(),
+		fms:                                newFMSStore(),
+		directoryservice:                   newDirectoryServiceStore(),
+		directoryservicedata:               newDirectoryServiceDataStore(),
+		dms:                                newDMSStore(),
+		drs:                                newDRSStore(),
+		ivs:                                newIVSStore(),
+		ivschat:                            newIVSChatStore(),
+		ivschatmessaging:                   newIVSChatMessagingStore(),
+		ivsmultitrack:                      newIVSMultitrackStore(),
+		ivsrealtime:                        newIVSRealtimeStore(),
+		mediapackage:                       newMediaPackageStore(),
+		mediaconnect:                       newMediaConnectStore(),
+		groundstation:                      newGroundStationStore(),
+		mediatailor:                        newMediaTailorStore(),
+		deadline:                           newDeadlineStore(),
+		evs:                                newEVSStore(),
+		m2:                                 newM2Store(),
+		mgn:                                newMGNStore(),
+		migrationhuborchestrator:           newMigrationHubOrchestratorStore(),
+		migrationhubstrategy:               newMigrationHubStrategyStore(),
+		migrationhubrefactorspaces:         newMigrationHubRefactorSpacesStore(),
+		qbusiness:                          newQBusinessStore(),
+		qdeveloper:                         newQDeveloperStore(),
+		codeguru:                           newCodeGuruStore(),
+		codeguruprofiler:                   newCodeGuruProfilerStore(),
+		bedrock:                            newBedrockStore(),
+		devopsguru:                         newDevOpsGuruStore(),
+		comprehend:                         newComprehendStore(),
+		comprehendmedical:                  newComprehendMedicalStore(),
+		computeoptimizer:                   newComputeOptimizerStore(),
+		ram:                                newRAMStore(),
+		servicequotas:                      newServiceQuotasStore(),
+		support:                            newSupportStore(),
+		marketplace:                        newMarketplaceStore(),
+		partnercentralselling:              newPartnerCentralSellingStore(),
+		supportapp:                         newSupportAppStore(),
+		trustedadvisor:                     newTrustedAdvisorStore(),
+		usernotifications:                  newUserNotificationsStore(),
+		notificationscontacts:              newNotificationsContactsStore(),
+		quicksetup:                         newQuickSetupStore(),
+		incidentmanager:                    newIncidentManagerStore(),
+		ssmsap:                             newSSMSAPStore(),
+		systemsmanager:                     newSystemsManagerStore(),
+		ssmguiconnect:                      newSSMGUIConnectStore(),
+		organizations:                      newOrganizationsStore(),
+		licensemanager:                     newLicenseManagerStore(),
+		licensemanagerlinuxsubscriptions:   newLicenseManagerLinuxSubscriptionsStore(),
+		licensemanagerusersubscriptions:    newLicenseManagerUserSubscriptionsStore(),
+		health:                             newHealthStore(),
+		healthlake:                         newHealthLakeStore(),
+		healthimaging:                      newHealthImagingStore(),
+		codedeploy:                         newCodeDeployStore(),
+		codepipeline:                       newCodePipelineStore(),
+		augmentedai:                        newAugmentedAIStore(),
+		omics:                              newOmicsStore(),
+		iot:                                newIoTStore(),
+		iotmi:                              newIoTMIStore(),
+		launchwizard:                       newLaunchWizardStore(),
+		managedservicescm:                  newManagedServicesCMStore(),
+		lakeformation:                      newLakeFormationStore(),
+		iotfleetwise:                       newIoTFleetWiseStore(),
+		iotevents:                          newIoTEventsStore(),
+		iotwireless:                        newIoTWirelessStore(),
+		iotgreengrass:                      newIoTGreengrassStore(),
+		iotsitewise:                        newIoTSiteWiseStore(),
+		iottwinmaker:                       newIoTTwinMakerStore(),
+		cognitoidentity:                    newCognitoIdentityStore(),
+		cognitouserpools:                   newCognitoUserPoolsStore(),
+		cognitosync:                        newCognitoSyncStore(),
+		neptuneanalytics:                   newNeptuneAnalyticsStore(),
+		neptunedata:                        newNeptuneDataStore(),
+		kms:                                kms.NewService(),
+		signer:                             signer.NewService(),
+		eb:                                 elasticbeanstalk.NewService(),
+		athena:                             athena.NewService(),
+		swf:                                swf.NewService(),
+		privateca:                          privateca.NewService(),
+		secretsmgr:                         secretsmanager.NewService(),
+		batch:                              batch.NewService(),
+		cloudhsm:                           cloudhsm.NewService(),
+		dynamodb:                           dynamodb.NewService(),
+		dsql:                               dsql.NewService(),
+		ecs:                                ecs.NewService(),
+		ecr:                                ecr.NewService(),
+		eks:                                eks.NewService(),
+		ec2:                                ec2.NewService(),
+		rds:                                rds.NewService(),
+		redshift:                           newRedshiftStore(),
+		enabledProviders:                   enabledProviders,
+		enabledProviderSet:                 toProviderSet(enabledProviders),
+		gcpStorageBuckets:                  map[string]*providerBucket{},
+		gcpStorageHMACKeys:                 map[string]map[string]*gcpStorageHMACKey{},
+		gcpStorageNextGeneration:           1000,
+		gcpStorageNextHMACKeyID:            0,
+		azureStorageAccounts:               map[string]map[string]*providerBucket{},
+		azureQueues:                        map[string]map[string][]azureQueueMessage{},
+		azureQueueNextID:                   0,
+		azureKeyVaults:                     map[string]map[string][]azureSecretVersion{},
+		azureAttestationPolicies:           map[string]string{},
+		azureAttestationPolicyCertificates: append([]string(nil), azureAttestationDefaultPolicyCertificates...),
+		azureDataCatalogDataAssets:         map[string]*azureDataCatalogDataAsset{},
+		azureDataCatalogCustomDataSourceProtocols:         map[string]*azureDataCatalogCustomDataSourceProtocol{},
+		azureActiveDirectoryB2CTenants:                    map[string]*azureActiveDirectoryB2CTenant{},
+		azureActiveDirectoryGuestUsages:                   map[string]*azureActiveDirectoryGuestUsage{},
+		azureDataManagerForAgriFarmBeats:                  map[string]*azureDataManagerForAgriFarmBeat{},
+		azureDataManagerForAgriOperationResults:           map[string]*azureDataManagerForAgriOperationResult{},
+		azureDataManagerForAgriDataConnectors:             map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriExtensions:                 map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriPrivateEndpointConnections: map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriSolutions:                  map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriDataPlaneEntities:          map[string]*azureDataManagerForAgriDataPlaneEntity{},
+		azureDataManagerForAgriDataPlaneFiles:             map[string]*azureDataManagerForAgriDataPlaneFile{},
+		azureDataManagerForAgriDataPlaneDatasetGrants:     map[string]*azureDataManagerForAgriDataPlaneGrant{},
+		azureDataManagerForAgriDataPlaneJobs:              map[string]*azureDataManagerForAgriDataPlaneJob{},
+		azureContainerInstancesResources:                  map[string]*azureContainerInstancesResource{},
+		azureContainerInstancesProfileResources:           map[string]*azureContainerInstancesProfileResource{},
+		azureContainerInstancesServiceAssociationLinks:    map[string]*azureContainerInstancesServiceAssociationLink{},
+		azureContainerAppsResources:                       map[string]*azureContainerAppsResource{},
+		azureContainerAppsChildResources:                  map[string]*azureContainerAppsChildResource{},
+		azureContainerAppsDataPlaneSessions:               map[string]*azureContainerAppsDataPlaneSession{},
+		azureContainerAppsDataPlaneExecutions:             map[string]*azureContainerAppsDataPlaneExecution{},
+		azureContainerAppsDataPlaneFiles:                  map[string]*azureContainerAppsDataPlaneFile{},
+		azureLoadTestingDataPlaneTests:                    map[string]*azureLoadTestingDataPlaneTest{},
+		azureLoadTestingDataPlaneRuns:                     map[string]*azureLoadTestingDataPlaneRun{},
+		azureLoadTestingDataPlaneFiles:                    map[string]*azureLoadTestingDataPlaneFile{},
+		azureCommunicationAdvancedMessagingMessages:       map[string]*azureCommunicationAdvancedMessagingMessage{},
+		azureCommunicationAdvancedMessagingTemplates:      map[string]*azureCommunicationAdvancedMessagingTemplate{},
+		azureCommunicationAdvancedMessagingStreams: map[string]*azureCommunicationAdvancedMessagingStream{
+			"stream-a": {
+				ID:          "stream-a",
+				ContentType: "application/octet-stream",
+				Content:     []byte("stackyard-advanced-messaging-stream-a"),
+				CreatedAt:   time.Now().UTC(),
+				UpdatedAt:   time.Now().UTC(),
+			},
+		},
+		azureConsumptionBudgets:                             map[string]*azureConsumptionBudget{},
+		azureCommunicationCallAutomationCalls:               map[string]*azureCommunicationCallAutomationCall{},
+		azureCommunicationCallAutomationRecordings:          map[string]*azureCommunicationCallAutomationRecording{},
+		azureCommunicationChatThreads:                       map[string]*azureCommunicationChatThread{},
+		azureCommunicationChatParticipants:                  map[string]*azureCommunicationChatParticipant{},
+		azureCommunicationChatMessages:                      map[string]*azureCommunicationChatMessage{},
+		azureCommunicationChatReadReceipts:                  []*azureCommunicationChatReadReceipt{},
+		azureCommunicationEmailOperations:                   map[string]*azureCommunicationEmailOperation{},
+		azureCommunicationIdentityIdentities:                map[string]*azureCommunicationIdentityIdentity{},
+		azureCommunicationIdentityAssignments:               map[string]*azureCommunicationIdentityAssignment{},
+		azureCommunicationServices:                          map[string]*azureCommunicationServiceResource{},
+		azureCommunicationEmailServices:                     map[string]*azureCommunicationEmailServiceResource{},
+		azureCommunicationDomains:                           map[string]*azureCommunicationDomainResource{},
+		azureCommunicationNestedResources:                   map[string]*azureCommunicationNestedResource{},
+		azureConfluentOrganizations:                         map[string]*azureConfluentOrganization{},
+		azureConfluentMarketplaceAgreements:                 map[string]*azureConfluentMarketplaceAgreement{},
+		azureConfluentResources:                             map[string]*azureConfluentChildResource{},
+		azureConfluentInvitations:                           map[string]*azureConfluentInvitation{},
+		azureConfluentRoleBindings:                          map[string]*azureConfluentRoleBinding{},
+		azureCommunicationNetworkTraversalConfigurations:    map[string]*azureCommunicationNetworkTraversalConfiguration{},
+		azureCommunicationRooms:                             map[string]*azureCommunicationRoom{},
+		azureCommunicationRoomParticipants:                  map[string]*azureCommunicationRoomParticipant{},
+		azureCommunicationPhoneNumbersReservations:          map[string]*azureCommunicationPhoneNumbersReservation{},
+		azureCommunicationPhoneNumbersSearchResults:         map[string]*azureCommunicationPhoneNumbersSearchResult{},
+		azureCommunicationPhoneNumbersOperations:            map[string]*azureCommunicationPhoneNumbersOperation{},
+		azureCommunicationPhoneNumbersNumbers:               map[string]*azureCommunicationPhoneNumbersRecord{},
+		azureCommunicationJobRouterClassificationPolicies:   map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterDistributionPolicies:     map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterExceptionPolicies:        map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterQueues:                   map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterJobs:                     map[string]*azureCommunicationJobRouterJob{},
+		azureCommunicationJobRouterWorkers:                  map[string]*azureCommunicationJobRouterWorker{},
+		azureCommunicationJobRouterOffers:                   map[string]*azureCommunicationJobRouterOffer{},
+		azureCommunicationJobRouterAssignments:              map[string]*azureCommunicationJobRouterAssignment{},
+		azurePlaywrightDataPlaneWorkspaces:                  map[string]*azurePlaywrightDataPlaneWorkspace{},
+		azurePlaywrightDataPlaneAccessTokens:                map[string]*azurePlaywrightDataPlaneAccessToken{},
+		azurePlaywrightDataPlaneTestRuns:                    map[string]*azurePlaywrightDataPlaneTestRun{},
+		azureWebPubSubDataPlaneConnections:                  map[string]*azureWebPubSubDataPlaneConnection{},
+		azureWebPubSubDataPlaneUsers:                        map[string]*azureWebPubSubDataPlaneUser{},
+		azureResourceGraphQueries:                           map[string]*azureResourceGraphQuery{},
+		azureQuantumWorkspaces:                              map[string]*azureQuantumWorkspace{},
+		azureQuantumDataPlaneJobs:                           map[string]*azureQuantumDataPlaneJob{},
+		azureQuantumDataPlaneSessions:                       map[string]*azureQuantumDataPlaneSession{},
+		azureSphereCatalogs:                                 map[string]*azureSphereCatalog{},
+		azureSphereProducts:                                 map[string]*azureSphereProduct{},
+		azureSphereDeviceGroups:                             map[string]*azureSphereDeviceGroup{},
+		azureSphereDevices:                                  map[string]*azureSphereDevice{},
+		azureSphereDeployments:                              map[string]*azureSphereDeployment{},
+		azureSphereImages:                                   map[string]*azureSphereImage{},
+		azureStackAdminSettings:                             map[string]*azureStackAdminSettings{},
+		azureStackAdminServices:                             map[string]*azureStackAdminService{},
+		azureStackAdminAccounts:                             map[string]*azureStackAdminStorageAccount{},
+		azureStackAdminAcquisitions:                         map[string]*azureStackAdminAcquisition{},
+		azureStackAdminAsyncOperations:                      map[string]*azureStackAdminAsyncOperation{},
+		azureCloudNGFWFirewalls:                             map[string]*azureCloudNGFWFirewall{},
+		azureCloudNGFWLocalRulestacks:                       map[string]*azureCloudNGFWLocalRulestack{},
+		azureCloudNGFWGlobalRulestacks:                      map[string]*azureCloudNGFWGlobalRulestack{},
+		azureCloudNGFWLocalChildren:                         map[string]*azureCloudNGFWChildResource{},
+		azureCloudNGFWGlobalChildren:                        map[string]*azureCloudNGFWGlobalChildResource{},
+		azureChaosStudioTargets:                             map[string]*azureChaosStudioTarget{},
+		azureChaosStudioCapabilities:                        map[string]*azureChaosStudioCapability{},
+		azureChaosStudioExperiments:                         map[string]*azureChaosStudioExperiment{},
+		azureChaosStudioExecutions:                          map[string]*azureChaosStudioExecution{},
+		azureChaosStudioOperationStatuses:                   map[string]*azureChaosStudioOperationStatus{},
+		azureStackHCIClusters:                               map[string]*azureStackHCICluster{},
+		azureStackHCIArcSettings:                            map[string]*azureStackHCIArcSetting{},
+		azureStackHCIExtensions:                             map[string]*azureStackHCIExtension{},
+		azureStackHCIDeploymentSettings:                     map[string]*azureStackHCIDeploymentSetting{},
+		azureStackHCIUpdates:                                map[string]*azureStackHCIUpdate{},
+		azureStackHCIUpdateSummaries:                        map[string]*azureStackHCIUpdateSummary{},
+		azureStackHCIUpdateRuns:                             map[string]*azureStackHCIUpdateRun{},
+		azureStackHCIEdgeDevices:                            map[string]*azureStackHCIEdgeDevice{},
+		azureCDNProfiles:                                    map[string]*azureCDNProfile{},
+		azureCDNEndpoints:                                   map[string]*azureCDNEndpoint{},
+		azureCDNChildren:                                    map[string]*azureCDNChildResource{},
+		azureWebPubSubAccounts:                              map[string]*azureWebPubSubAccount{},
+		azureWebPubSubChildren:                              map[string]*azureWebPubSubChildResource{},
+		azureBillingAccounts:                                map[string]*azureBillingAccount{},
+		azureBillingResources:                               map[string]*azureBillingResource{},
+		azureBillingProperties:                              map[string]*azureBillingProperty{},
+		azureVideoIndexerAccounts:                           map[string]*azureVideoIndexerAccount{},
+		azureVideoIndexerPrivateEndpointConnections:         map[string]*azureVideoIndexerPrivateEndpointConnection{},
+		azureMigrateAssessmentProjects:                      map[string]*azureMigrateAssessmentProject{},
+		azureMigrateAssessmentGroups:                        map[string]*azureMigrateAssessmentGroup{},
+		azureMigrateAssessmentMachines:                      map[string]*azureMigrateAssessmentMachine{},
+		azureMigrateAssessments:                             map[string]*azureMigrateAssessment{},
+		azureMigrateAssessmentCollectors:                    map[string]*azureMigrateAssessmentCollector{},
+		azureMigrateAssessmentPrivateEndpointConnections:    map[string]*azureMigrateAssessmentPrivateEndpointConnection{},
+		azureMigrateDiscoverySites:                          map[string]*azureMigrateDiscoverySite{},
+		azureMigrateDiscoveryMachines:                       map[string]*azureMigrateDiscoveryMachine{},
+		azureMigrateDiscoveryRunAsAccounts:                  map[string]*azureMigrateDiscoveryRunAsAccount{},
+		azureMigrateDiscoveryInventoryItems:                 map[string]*azureMigrateDiscoveryInventoryItem{},
+		azureMigrateProjects:                                map[string]*azureMigrateProject{},
+		azureConfidentialLedgers:                            map[string]*azureConfidentialLedgerResource{},
+		azureIntegrationSpaces:                              map[string]*azureIntegrationSpace{},
+		azureIntegrationApplications:                        map[string]*azureIntegrationApplication{},
+		azureIntegrationApplicationResources:                map[string]*azureIntegrationApplicationResource{},
+		azureIntegrationBusinessProcesses:                   map[string]*azureIntegrationBusinessProcess{},
+		azureIntegrationBusinessProcessVersions:             map[string]*azureIntegrationBusinessProcessVersion{},
+		azureIntegrationInfrastructureResources:             map[string]*azureIntegrationInfrastructureResource{},
+		azureIntegrationArtifacts:                           map[string]*azureIntegrationArtifact{},
+		azureSpringServices:                                 map[string]*azureSpringService{},
+		azureSpringApps:                                     map[string]*azureSpringApp{},
+		azureSpringDeployments:                              map[string]*azureSpringDeployment{},
+		azureSpringChildren:                                 map[string]*azureSpringChildResource{},
+		azureSpringBuildServices:                            map[string]*azureSpringBuildService{},
+		azureSpringBuilds:                                   map[string]*azureSpringBuild{},
+		azureNetAppResources:                                map[string]*azureNetAppResource{},
+		azureComputeResources:                               map[string]*azureComputeResource{},
+		azureComputeLimitFeatures:                           map[string]*azureComputeLimitFeatureResource{},
+		azureComputeLimitGuestSubscriptions:                 map[string]*azureComputeLimitGuestSubscriptionResource{},
+		azureComputeLimitSharedLimits:                       map[string]*azureComputeLimitSharedLimitResource{},
+		azureComputeScheduleOperations:                      map[string]*azureComputeScheduleOperation{},
+		azureComputeFleets:                                  map[string]*azureComputeFleetResource{},
+		azureBatchManagementAccounts:                        map[string]*azureBatchManagementAccount{},
+		azureBatchManagementResources:                       map[string]*azureBatchManagementChildResource{},
+		azureBlueprintDefinitions:                           map[string]*azureBlueprintDefinition{},
+		azureBlueprintArtifacts:                             map[string]*azureBlueprintArtifact{},
+		azureBlueprintVersions:                              map[string]*azureBlueprintVersion{},
+		azureBlueprintPublishedArtifacts:                    map[string]*azureBlueprintPublishedArtifact{},
+		azureBlueprintAssignments:                           map[string]*azureBlueprintAssignment{},
+		azureBlueprintAssignmentOperations:                  map[string]*azureBlueprintAssignmentOperation{},
+		azurePlaywrightWorkspaces:                           map[string]*azurePlaywrightWorkspace{},
+		azureLoadTests:                                      map[string]*azureLoadTestingResource{},
+		azureLoadTestingChildResources:                      map[string]*azureLoadTestingChildResource{},
+		azureKustoClusters:                                  map[string]*azureKustoCluster{},
+		azureKustoResources:                                 map[string]*azureKustoResource{},
+		azureKustoOperationResults:                          map[string]*azureKustoOperationResult{},
+		azureArcVMwareResources:                             map[string]*azureArcVMwareResource{},
+		azureArcVMwareInventoryItems:                        map[string]*azureArcVMwareInventoryItem{},
+		azureArcVMwareVirtualMachineInstances:               map[string]*azureArcVMwareVirtualMachineInstance{},
+		azureArcVMwareGuestAgents:                           map[string]*azureArcVMwareGuestAgent{},
+		azureArcVMwareHybridIdentityMetadata:                map[string]*azureArcVMwareHybridIdentityMetadata{},
+		azureArcSCVMMResources:                              map[string]*azureArcSCVMMResource{},
+		azureArcSCVMMInventoryItems:                         map[string]*azureArcSCVMMInventoryItem{},
+		azureArcSCVMMVirtualMachineInstances:                map[string]*azureArcSCVMMVirtualMachineInstance{},
+		azureArcSCVMMGuestAgents:                            map[string]*azureArcSCVMMGuestAgent{},
+		azureArcSCVMMHybridIdentityMetadata:                 map[string]*azureArcSCVMMHybridIdentityMetadata{},
+		azureSiteManagerSites:                               map[string]*azureSiteManagerSite{},
+		azureAutomationAccounts:                             map[string]*azureAutomationAccount{},
+		azureAutomationAssets:                               map[string]*azureAutomationAsset{},
+		azureAutomationJobs:                                 map[string]*azureAutomationJob{},
+		azureAutomationSyncJobs:                             map[string]*azureAutomationSyncJob{},
+		azureAVSPrivateClouds:                               map[string]*azureAVSPrivateCloud{},
+		azureAVSAuthorizations:                              map[string]*azureAVSAuthorization{},
+		azureAVSGlobalReachConnections:                      map[string]*azureAVSGlobalReachConnection{},
+		azureAVSLicenses:                                    map[string]*azureAVSLicense{},
+		azureAVSAddons:                                      map[string]*azureAVSAddon{},
+		azureAVSScriptExecutions:                            map[string]*azureAVSScriptExecution{},
+		azureAVSIscsiPaths:                                  map[string]*azureAVSIscsiPath{},
+		azureAVSClusters:                                    map[string]*azureAVSCluster{},
+		azureAVSDatastores:                                  map[string]*azureAVSDatastore{},
+		azureAVSPlacementPolicies:                           map[string]*azureAVSPlacementPolicy{},
+		azureAVSDNSZones:                                    map[string]*azureAVSWorkloadNetworkDNSZone{},
+		azureAVSVMGroups:                                    map[string]*azureAVSWorkloadNetworkVMGroup{},
+		azureApplicationGateways:                            map[string]*azureApplicationGatewayResource{},
+		azureApplicationGatewayContainersTrafficControllers: map[string]*azureApplicationGatewayContainersTrafficController{},
+		azureApplicationGatewayContainersFrontends:          map[string]*azureApplicationGatewayContainersFrontend{},
+		azureApplicationGatewayContainersAssociations:       map[string]*azureApplicationGatewayContainersAssociation{},
+		azureApplicationGatewayContainersSecurityPolicies:   map[string]*azureApplicationGatewayContainersSecurityPolicy{},
+		azureAuthorizationRoleAssignments:                   map[string]*azureAuthorizationRoleAssignment{},
+		azureAuthorizationRoleDefinitions:                   map[string]*azureAuthorizationRoleDefinition{},
+		azureBotConversations:                               map[string]*azureBotConversation{},
+		azureBotNextConversationID:                          0,
+		azureContentModeratorImageLists:                     map[int64]*azureContentModeratorImageList{},
+		azureContentModeratorNextImageListID:                0,
+		ociStorageNamespaces:                                map[string]map[string]*providerBucket{},
+		accessKey:                                           cfg.AccessKey,
+		secretKey:                                           cfg.SecretKey,
+		logLevel:                                            strings.ToLower(cfg.LogLevel),
+		state:                                               newStatePersistence(cfg),
 	}
 	s.awsAuthValidator = &awsSigV4AuthAdapter{server: s}
 	s.providerAuthValidators = newProviderAuthValidators(cfg)
@@ -1807,6 +2200,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureOpenAIRouter(w, r) {
 			return
 		}
+		if s.handleAzureFleet20250301Router(w, r) {
+			return
+		}
 		if s.handleAzureAKSRouter(w, r) {
 			return
 		}
@@ -1829,6 +2225,333 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureAppComplianceRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationGatewayRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationGatewayContainersRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationInsightsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAttestationRouter(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceFrontDoor20190501Router(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceWebApplicationFirewall20251101Router(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceAzureFrontDoorStandardPremium20250415Router(w, r) {
+			return
+		}
+		if s.handleAzureEdgeActions20251201PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureCDNRouter(w, r) {
+			return
+		}
+		if s.handleAzureCarbonRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataManagerForAgriRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataManagerForAgriDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateAssessmentRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateDiscoveryRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateProjectsRouter(w, r) {
+			return
+		}
+		if s.handleAzureConfidentialLedgerRouter(w, r) {
+			return
+		}
+		if s.handleAzureIntegrationEnvironmentRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpringAppsRouter(w, r) {
+			return
+		}
+		if s.handleAzureNetAppRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerInstancesRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerAppsRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerAppsDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationRouter(w, r) {
+			return
+		}
+		if s.handleAzureConsumptionRouter(w, r) {
+			return
+		}
+		if s.handleAzureConfluentRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationAdvancedMessagingRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationCallAutomationRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationChatRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationEmailRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationIdentityRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationSipRoutingRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationNetworkTraversalRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationRoomsRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationPhoneNumbersRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationJobRouterRouter(w, r) {
+			return
+		}
+		if s.handleAzureLoadTestingDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureDeviceUpdateDataPlane20221001Router(w, r) {
+			return
+		}
+		if s.handleAzureDeviceUpdateResourceManager20230701Router(w, r) {
+			return
+		}
+		if s.handleAzureDeviceRegistry20260401Router(w, r) {
+			return
+		}
+		if s.handleAzureDiscovery20260601Router(w, r) {
+			return
+		}
+		if s.handleAzureDNS20180501Router(w, r) {
+			return
+		}
+		if s.handleAzureDNSPrivateDNS20180901Router(w, r) {
+			return
+		}
+		if s.handleAzureDNSDNSResolver20250501Router(w, r) {
+			return
+		}
+		if s.handleAzurePlaywrightDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureWebPubSubDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureResourceGraphRouter(w, r) {
+			return
+		}
+		if s.handleAzureGraphServices20230413Router(w, r) {
+			return
+		}
+		if s.handleAzureGuestConfiguration20240405Router(w, r) {
+			return
+		}
+		if s.handleAzureQuantumRouter(w, r) {
+			return
+		}
+		if s.handleAzureQuantumDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureSphereRouter(w, r) {
+			return
+		}
+		if s.handleAzureStackAdminRouter(w, r) {
+			return
+		}
+		if s.handleAzureCloudNGFWRouter(w, r) {
+			return
+		}
+		if s.handleAzureChaosStudioRouter(w, r) {
+			return
+		}
+		if s.handleAzureStackHCIRouter(w, r) {
+			return
+		}
+		if s.handleAzureWebPubSubRouter(w, r) {
+			return
+		}
+		if s.handleAzureVideoIndexerRouter(w, r) {
+			return
+		}
+		if s.handleAzureBillingRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeLimitRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeScheduleRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeRecommenderRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeFleetRouter(w, r) {
+			return
+		}
+		if s.handleAzureBatchManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureBlueprintsRouter(w, r) {
+			return
+		}
+		if s.handleAzurePlaywrightRouter(w, r) {
+			return
+		}
+		if s.handleAzureLoadTestingRouter(w, r) {
+			return
+		}
+		if s.handleAzureKustoRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataCatalogDataAssetRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataCatalogCustomDataSourceRouter(w, r) {
+			return
+		}
+		if s.handleAzureDatabricks20260101Router(w, r) {
+			return
+		}
+		if s.handleAzureDellStorage20250321Router(w, r) {
+			return
+		}
+		if s.handleAzureDevCenterAdministrator20240201Router(w, r) {
+			return
+		}
+		if s.handleAzureDevCenterDeveloper20250201Router(w, r) {
+			return
+		}
+		if s.handleAzureDesktopVirtualization20251010Router(w, r) {
+			return
+		}
+		if s.handleAzureDatadog20250611Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForEasmControlPlanePreview20230401Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForEasmDataPlanePreview20241001Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForCloud20250601Router(w, r) {
+			return
+		}
+		if s.handleAzureDatabaseWatcher20250102Router(w, r) {
+			return
+		}
+		if s.handleAzureDataMigration20220330PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataProtection20260301Router(w, r) {
+			return
+		}
+		if s.handleAzureDataReplication20260501Router(w, r) {
+			return
+		}
+		if s.handleAzureDataShare20210801Router(w, r) {
+			return
+		}
+		if s.handleAzureDurableTask20260201Router(w, r) {
+			return
+		}
+		if s.handleAzureDynatrace20210901Router(w, r) {
+			return
+		}
+		if s.handleAzureElastic20200701Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridDataPlane20180101Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridNamespace20240601Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridControlPlane20250215Router(w, r) {
+			return
+		}
+		if s.handleAzureEventHub20260101Router(w, r) {
+			return
+		}
+		if s.handleAzureExpressRoute20250501Router(w, r) {
+			return
+		}
+		if s.handleAzureExtendedLocation20210815Router(w, r) {
+			return
+		}
+		if s.handleAzureMicrosoftFabric20231101Router(w, r) {
+			return
+		}
+		if s.handleAzureFirewall20250501Router(w, r) {
+			return
+		}
+		if s.handleAzureElasticSan20250901Router(w, r) {
+			return
+		}
+		if s.handleAzureEdgeHardwareCenter20240201Router(w, r) {
+			return
+		}
+		if s.handleAzureEducation20211201PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureDtl20180915Router(w, r) {
+			return
+		}
+		if s.handleAzureDataLakeAnalytics20161101Router(w, r) {
+			return
+		}
+		if s.handleAzureDataLakeStore20161101Router(w, r) {
+			return
+		}
+		if s.handleAzureActiveDirectoryRouter(w, r) {
+			return
+		}
+		if s.handleAzureArcVMwareRouter(w, r) {
+			return
+		}
+		if s.handleAzureArcSCVMMRouter(w, r) {
+			return
+		}
+		if s.handleAzureSiteManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAVSRouter(w, r) {
+			return
+		}
+		if s.handleAzureAutomationRouter(w, r) {
+			return
+		}
+		if s.handleAzureAuthorizationRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppServiceRouter(w, r) {
 			return
 		}
 		if s.handleAzureAIFoundryModelInferenceRouter(w, r) {

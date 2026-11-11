@@ -1,0 +1,43 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  dns-dnsresolver:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/dns-dnsresolver-2025-05-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-dnsresolver
+      - STACKYARD_AZURE_LOCATION=westus2
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_NAME=dnsresolver01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_INBOUND_ENDPOINT_NAME=inbound01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_OUTBOUND_ENDPOINT_NAME=outbound01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_FORWARDING_RULESET_NAME=ruleset01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_FORWARDING_RULE_NAME=rule01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_RULESET_VNET_LINK_NAME=rulesetvnetlink01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_DOMAIN_LIST_NAME=domainlist01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_POLICY_NAME=policy01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_POLICY_VNET_LINK_NAME=policyvnetlink01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_SECURITY_RULE_NAME=securityrule01
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_VIRTUAL_NETWORK_NAME=vnet-dnsresolver
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_VIRTUAL_NETWORK_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dnsresolver/providers/Microsoft.Network/virtualNetworks/vnet-dnsresolver
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_INBOUND_SUBNET_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dnsresolver/providers/Microsoft.Network/virtualNetworks/vnet-dnsresolver/subnets/inbound
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_OUTBOUND_SUBNET_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dnsresolver/providers/Microsoft.Network/virtualNetworks/vnet-dnsresolver/subnets/outbound
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_RULESET_VIRTUAL_NETWORK_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dnsresolver/providers/Microsoft.Network/virtualNetworks/vnet-dnsresolver
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_POLICY_VIRTUAL_NETWORK_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-dnsresolver/providers/Microsoft.Network/virtualNetworks/vnet-dnsresolver
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_BULK_STORAGE_URL=https://examplestorage.blob.core.windows.net/dnsresolver/domain-list.txt
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_TARGET_DNS_SERVER_IP=10.0.0.10
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_TARGET_DNS_SERVER_PORT=53
+      - STACKYARD_AZURE_DNS_DNSRESOLVER_FORWARDING_DOMAIN_NAME=contoso.com.

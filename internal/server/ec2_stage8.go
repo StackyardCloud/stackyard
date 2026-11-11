@@ -210,21 +210,21 @@ func ec2ImageItems(in []ec2svc.Image) []ec2ImageItem {
 		}
 		sort.Slice(tags, func(i, j int) bool { return tags[i].Key < tags[j].Key })
 		out = append(out, ec2ImageItem{
-			ImageID:                  image.ID,
-			ImageLocation:            image.ImageLocation,
-			ImageState:               image.State,
-			ImageOwnerID:             image.OwnerID,
-			IsPublic:                 false,
-			Architecture:             image.Architecture,
-			ImageType:                image.ImageType,
-			Name:                     image.Name,
-			Description:              image.Description,
-			DeprecationTime:          ec2TimeString(image.DeprecationTime),
-			RootDeviceType:           image.RootDeviceType,
-			RootDeviceName:           image.RootDeviceName,
-			VirtualizationType:       image.VirtualizationType,
-			CreationDate:             image.CreationDate.Format(timeRFC3339UTC),
-			TagSet:                   ec2TagSet{Items: tags},
+			ImageID:            image.ID,
+			ImageLocation:      image.ImageLocation,
+			ImageState:         image.State,
+			ImageOwnerID:       image.OwnerID,
+			IsPublic:           false,
+			Architecture:       image.Architecture,
+			ImageType:          image.ImageType,
+			Name:               image.Name,
+			Description:        image.Description,
+			DeprecationTime:    ec2TimeString(image.DeprecationTime),
+			RootDeviceType:     image.RootDeviceType,
+			RootDeviceName:     image.RootDeviceName,
+			VirtualizationType: image.VirtualizationType,
+			CreationDate:       image.CreationDate.Format(timeRFC3339UTC),
+			TagSet:             ec2TagSet{Items: tags},
 		})
 	}
 	return out
@@ -269,21 +269,21 @@ type ec2ImageSet struct {
 }
 
 type ec2ImageItem struct {
-	ImageID                  string    `xml:"imageId"`
-	ImageLocation            string    `xml:"imageLocation,omitempty"`
-	ImageState               string    `xml:"imageState,omitempty"`
-	ImageOwnerID             string    `xml:"imageOwnerId,omitempty"`
-	IsPublic                 bool      `xml:"isPublic"`
-	Architecture             string    `xml:"architecture,omitempty"`
-	ImageType                string    `xml:"imageType,omitempty"`
-	Name                     string    `xml:"name,omitempty"`
-	Description              string    `xml:"description,omitempty"`
-	DeprecationTime          string    `xml:"deprecationTime,omitempty"`
-	RootDeviceType           string    `xml:"rootDeviceType,omitempty"`
-	RootDeviceName           string    `xml:"rootDeviceName,omitempty"`
-	VirtualizationType       string    `xml:"virtualizationType,omitempty"`
-	CreationDate             string    `xml:"creationDate,omitempty"`
-	TagSet                   ec2TagSet `xml:"tagSet"`
+	ImageID            string    `xml:"imageId"`
+	ImageLocation      string    `xml:"imageLocation,omitempty"`
+	ImageState         string    `xml:"imageState,omitempty"`
+	ImageOwnerID       string    `xml:"imageOwnerId,omitempty"`
+	IsPublic           bool      `xml:"isPublic"`
+	Architecture       string    `xml:"architecture,omitempty"`
+	ImageType          string    `xml:"imageType,omitempty"`
+	Name               string    `xml:"name,omitempty"`
+	Description        string    `xml:"description,omitempty"`
+	DeprecationTime    string    `xml:"deprecationTime,omitempty"`
+	RootDeviceType     string    `xml:"rootDeviceType,omitempty"`
+	RootDeviceName     string    `xml:"rootDeviceName,omitempty"`
+	VirtualizationType string    `xml:"virtualizationType,omitempty"`
+	CreationDate       string    `xml:"creationDate,omitempty"`
+	TagSet             ec2TagSet `xml:"tagSet"`
 }
 
 type ec2DescribeImageAttributeResponse struct {

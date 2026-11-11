@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azurerekusto-2025-02-14:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/azurerekusto-2025-02-14/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_KUSTO_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_KUSTO_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-kusto
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_KUSTO_CLUSTER=cluster-a
+      - STACKYARD_AZURE_KUSTO_DATABASE=db-a

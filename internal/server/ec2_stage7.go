@@ -337,14 +337,14 @@ type ec2CreateNetworkInterfacePermissionResponse struct {
 }
 
 type ec2DescribeNetworkInterfaceAttributeResponse struct {
-	XMLName                  xml.Name                                    `xml:"DescribeNetworkInterfaceAttributeResponse"`
-	Xmlns                    string                                      `xml:"xmlns,attr"`
-	RequestID                string                                      `xml:"requestId"`
-	Attachment               *ec2NetworkInterfaceAttributeAttachmentItem `xml:"attachment,omitempty"`
-	Description              ec2StringAttributeValue                     `xml:"description"`
-	GroupSet                 ec2GroupIdentifierSet                       `xml:"groupSet"`
-	NetworkInterfaceID       string                                      `xml:"networkInterfaceId"`
-	SourceDestCheck          ec2AttributeBooleanValue                    `xml:"sourceDestCheck"`
+	XMLName            xml.Name                                    `xml:"DescribeNetworkInterfaceAttributeResponse"`
+	Xmlns              string                                      `xml:"xmlns,attr"`
+	RequestID          string                                      `xml:"requestId"`
+	Attachment         *ec2NetworkInterfaceAttributeAttachmentItem `xml:"attachment,omitempty"`
+	Description        ec2StringAttributeValue                     `xml:"description"`
+	GroupSet           ec2GroupIdentifierSet                       `xml:"groupSet"`
+	NetworkInterfaceID string                                      `xml:"networkInterfaceId"`
+	SourceDestCheck    ec2AttributeBooleanValue                    `xml:"sourceDestCheck"`
 }
 
 type ec2DescribeNetworkInterfacePermissionsResponse struct {

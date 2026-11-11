@@ -1,0 +1,7 @@
+services:
+  consumption-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/consumption-2024-08-01/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

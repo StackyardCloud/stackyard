@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  webpubsub-dataplane-2024-12-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/webpubsub-dataplane-2024-12-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_WEBPUBSUB_DATA_PLANE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_WEBPUBSUB_DATA_PLANE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_WEBPUBSUB_DATA_PLANE_HUB=chat
+      - STACKYARD_AZURE_WEBPUBSUB_DATA_PLANE_CONNECTION_ID=conn-a
+      - STACKYARD_AZURE_WEBPUBSUB_DATA_PLANE_USER_ID=user-a

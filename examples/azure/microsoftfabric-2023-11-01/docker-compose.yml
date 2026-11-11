@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  microsoftfabric:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/microsoftfabric-2023-11-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_MICROSOFTFABRIC_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_MICROSOFTFABRIC_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-microsoftfabric
+      - STACKYARD_AZURE_LOCATION=westcentralus
+      - STACKYARD_AZURE_MICROSOFTFABRIC_CAPACITY_NAME=fabriccapacity01

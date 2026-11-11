@@ -1,0 +1,7 @@
+services:
+  compute-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/compute-2025-04-01/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

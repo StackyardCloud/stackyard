@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  dns-privatedns:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/dns-privatedns-2018-09-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-private-dns
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_ZONE_NAME=example.private
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_RECORD_TYPE=A
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_RELATIVE_RECORD_SET_NAME=www
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_VIRTUAL_NETWORK_LINK_NAME=vnet-link-1
+      - STACKYARD_AZURE_DNS_PRIVATEDNS_VIRTUAL_NETWORK_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-private-dns/providers/Microsoft.Network/virtualNetworks/vnet-private-dns
