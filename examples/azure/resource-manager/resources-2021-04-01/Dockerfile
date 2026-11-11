@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/resources-2021-04-01 ./examples/azure/resources-2021-04-01
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/resources-2021-04-01 ./examples/azure/resource-manager/resources-2021-04-01
 
 FROM gcr.io/distroless/base-debian12
 
