@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   arc-scvmm-2025-03-13:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/arc-scvmm-2025-03-13/Dockerfile
     depends_on:
       - stackyard

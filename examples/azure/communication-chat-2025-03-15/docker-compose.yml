@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   communication-chat-2025-03-15:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/communication-chat-2025-03-15/Dockerfile
     depends_on:
       - stackyard

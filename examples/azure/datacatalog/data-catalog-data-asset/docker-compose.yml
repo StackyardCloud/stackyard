@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../../..
+      context: ../../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   data-catalog-data-asset:
     build:
-      context: ../../../../..
+      context: ../../../..
       dockerfile: examples/azure/datacatalog/data-catalog-data-asset/Dockerfile
     depends_on:
       - stackyard

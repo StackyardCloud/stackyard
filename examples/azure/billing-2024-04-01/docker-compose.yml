@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   billing-2024-04-01:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/billing-2024-04-01/Dockerfile
     depends_on:
       - stackyard

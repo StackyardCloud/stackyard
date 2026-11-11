@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   confidentialledger-2022-05-13:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/azure/confidentialledger-2022-05-13/Dockerfile
     depends_on:
       - stackyard
