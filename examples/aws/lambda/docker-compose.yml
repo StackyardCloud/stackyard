@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -12,7 +12,7 @@ services:
 
   lambda:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/aws/lambda/Dockerfile
     depends_on:
       - stackyard

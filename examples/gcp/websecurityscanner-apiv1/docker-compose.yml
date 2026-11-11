@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   websecurityscanner-apiv1:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/websecurityscanner-apiv1/Dockerfile
     depends_on:
       - stackyard

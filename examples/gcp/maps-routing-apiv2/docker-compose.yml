@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -13,7 +13,7 @@ services:
 
   maps-routing-apiv2:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/maps-routing-apiv2/Dockerfile
     depends_on:
       - stackyard

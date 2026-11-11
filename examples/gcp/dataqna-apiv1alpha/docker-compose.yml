@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     container_name: stackyard
     ports:
@@ -13,7 +13,7 @@ services:
 
   dataqna-apiv1alpha:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/dataqna-apiv1alpha/Dockerfile
     depends_on:
       - stackyard
