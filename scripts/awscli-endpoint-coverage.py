@@ -12818,7 +12818,7 @@ def run_subprocess(
         )
     )
     if log_subprocess_start:
-        print(f"starting {progress_label}: cmd={rendered_cmd}", file=sys.stderr, flush=True)
+        print(f"starting {progress_label} ({len(cmd)} args)", file=sys.stderr, flush=True)
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -12854,7 +12854,7 @@ def run_subprocess(
             if progress_label and progress_enabled and time.time() >= next_heartbeat_at:
                 elapsed_sec = time.time() - started
                 print(
-                    f"progress {progress_label}: elapsed={elapsed_sec:.1f}s cmd={rendered_cmd}",
+                    f"progress {progress_label}: elapsed={elapsed_sec:.1f}s",
                     file=sys.stderr,
                     flush=True,
                 )
