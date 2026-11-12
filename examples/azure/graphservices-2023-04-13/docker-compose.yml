@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  graphservices-2023-04-13:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/graphservices-2023-04-13/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_GRAPHSERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_GRAPHSERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-graphservices
+      - STACKYARD_AZURE_LOCATION=global
+      - STACKYARD_AZURE_GRAPHSERVICES_RESOURCE_NAME=graphaccount1
+      - STACKYARD_AZURE_GRAPHSERVICES_APP_ID=11111111-aaaa-1111-bbbb-111111111111

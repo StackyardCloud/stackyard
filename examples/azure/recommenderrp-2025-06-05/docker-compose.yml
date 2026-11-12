@@ -1,0 +1,7 @@
+services:
+  compute-recommender-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/recommenderrp-2025-06-05/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

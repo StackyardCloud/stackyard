@@ -49,8 +49,10 @@ func (s *directConnectStore) Handle(action string, payload map[string]any) map[s
 		return map[string]any{"resourceTags": []any{map[string]any{"resourceArn": arn, "tags": []any{map[string]any{"key": "stackyard", "value": "true"}}}}}
 	case "DescribeRouterConfiguration":
 		return map[string]any{"customerRouterConfig": "router bgp 65000\n neighbor 169.254.0.1 remote-as 7224"}
-	case "DescribeConnectionLoa", "DescribeInterconnectLoa", "DescribeLoa":
+	case "DescribeConnectionLoa", "DescribeInterconnectLoa":
 		return map[string]any{"loa": map[string]any{"loaContent": "c3RhY2t5YXJk", "loaContentType": "application/pdf"}}
+	case "DescribeLoa":
+		return map[string]any{"loaContent": "c3RhY2t5YXJk", "loaContentType": "application/pdf"}
 	case "DescribeCustomerMetadata":
 		return map[string]any{"agreements": []any{map[string]any{"status": "SIGNED", "agreementName": "AWS Customer Agreement"}}}
 
@@ -59,48 +61,53 @@ func (s *directConnectStore) Handle(action string, payload map[string]any) map[s
 		if id == "" || strings.HasPrefix(action, "Create") || strings.HasPrefix(action, "Allocate") {
 			id = s.nextTokenLocked("dxcon", 8)
 		}
-		return map[string]any{"connection": s.connectionPayload(id)}
+		return s.connectionPayload(id)
 	case "DeleteConnection":
 		id := directConnectPayloadString(payload, "connectionId", "dxcon-00000001")
 		conn := s.connectionPayload(id)
 		conn["connectionState"] = "deleted"
-		return map[string]any{"connection": conn}
+		return conn
 	case "ConfirmConnection":
 		return map[string]any{"connectionState": "available"}
 
 	case "CreateInterconnect":
 		id := s.nextTokenLocked("dxi", 8)
-		return map[string]any{"interconnect": s.interconnectPayload(id)}
+		return s.interconnectPayload(id)
 	case "DeleteInterconnect":
-		id := directConnectPayloadString(payload, "interconnectId", "dxi-00000001")
-		ic := s.interconnectPayload(id)
-		ic["interconnectState"] = "deleted"
-		return map[string]any{"interconnect": ic}
+		return map[string]any{"interconnectState": "deleted"}
 
 	case "CreateLag", "UpdateLag":
 		id := directConnectPayloadString(payload, "lagId", "")
 		if id == "" || action == "CreateLag" {
 			id = s.nextTokenLocked("dxlag", 8)
 		}
-		return map[string]any{"lag": s.lagPayload(id)}
+		return s.lagPayload(id)
 	case "DeleteLag":
 		id := directConnectPayloadString(payload, "lagId", "dxlag-00000001")
 		lag := s.lagPayload(id)
 		lag["lagState"] = "deleted"
-		return map[string]any{"lag": lag}
+		return lag
 
-	case "CreatePrivateVirtualInterface", "CreatePublicVirtualInterface", "CreateTransitVirtualInterface",
-		"AllocatePrivateVirtualInterface", "AllocatePublicVirtualInterface", "AllocateTransitVirtualInterface",
+	case "CreatePrivateVirtualInterface", "CreatePublicVirtualInterface",
+		"AllocatePrivateVirtualInterface", "AllocatePublicVirtualInterface",
 		"AssociateVirtualInterface", "UpdateVirtualInterfaceAttributes", "CreateBGPPeer", "DeleteBGPPeer":
 		id := directConnectPayloadString(payload, "virtualInterfaceId", "")
 		if id == "" {
 			id = s.nextTokenLocked("dxvif", 8)
 		}
-		return map[string]any{"virtualInterface": s.virtualInterfacePayload(id)}
+		return s.virtualInterfacePayload(id)
+	case "CreateTransitVirtualInterface", "AllocateTransitVirtualInterface":
+		id := directConnectPayloadString(payload, "virtualInterfaceId", "")
+		if id == "" {
+			id = s.nextTokenLocked("dxvif", 8)
+		}
+		return map[string]any{"virtualInterface": s.virtualInterfacePayloadWithType(id, "transit")}
 	case "DeleteVirtualInterface":
 		return map[string]any{"virtualInterfaceState": "deleted"}
 	case "ConfirmPrivateVirtualInterface", "ConfirmPublicVirtualInterface", "ConfirmTransitVirtualInterface":
 		return map[string]any{"virtualInterfaceState": "available"}
+	case "ConfirmCustomerAgreement":
+		return map[string]any{"status": "signed"}
 
 	case "CreateDirectConnectGateway", "UpdateDirectConnectGateway":
 		id := directConnectPayloadString(payload, "directConnectGatewayId", "")
@@ -213,13 +220,24 @@ func (s *directConnectStore) lagPayload(id string) map[string]any {
 }
 
 func (s *directConnectStore) virtualInterfacePayload(id string) map[string]any {
+	return s.virtualInterfacePayloadWithType(id, "private")
+}
+
+func (s *directConnectStore) virtualInterfacePayloadWithType(id string, vifType string) map[string]any {
 	if id == "" {
 		id = "dxvif-00000001"
+	}
+	if vifType == "" {
+		vifType = "private"
+	}
+	virtualGatewayID := "vgw-00000001"
+	if vifType == "transit" {
+		virtualGatewayID = ""
 	}
 	return map[string]any{
 		"virtualInterfaceId":     id,
 		"virtualInterfaceName":   "stackyard-directconnect-vif",
-		"virtualInterfaceType":   "private",
+		"virtualInterfaceType":   vifType,
 		"virtualInterfaceState":  "available",
 		"connectionId":           "dxcon-00000001",
 		"ownerAccount":           "123456789012",
@@ -227,7 +245,7 @@ func (s *directConnectStore) virtualInterfacePayload(id string) map[string]any {
 		"asn":                    64512,
 		"amazonAddress":          "169.254.0.1/30",
 		"customerAddress":        "169.254.0.2/30",
-		"virtualGatewayId":       "vgw-00000001",
+		"virtualGatewayId":       virtualGatewayID,
 		"directConnectGatewayId": "dxgw-00000001",
 	}
 }

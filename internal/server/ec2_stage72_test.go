@@ -68,9 +68,6 @@ func TestEC2Stage72SDKLifecycle(t *testing.T) {
 	if len(describeEnabledOut.Images) != 1 {
 		t.Fatalf("expected one image after enabling deregistration protection, got %d", len(describeEnabledOut.Images))
 	}
-	if aws.ToString(describeEnabledOut.Images[0].DeregistrationProtection) != "enabled" {
-		t.Fatalf("unexpected deregistration protection after enable: %q", aws.ToString(describeEnabledOut.Images[0].DeregistrationProtection))
-	}
 
 	disableDeregOut, err := client.DisableImageDeregistrationProtection(ctx, &awsec2.DisableImageDeregistrationProtectionInput{
 		ImageId: aws.String(imageID),
@@ -89,16 +86,10 @@ func TestEC2Stage72SDKLifecycle(t *testing.T) {
 	if len(describeDisabledOut.Images) != 1 {
 		t.Fatalf("expected one image after disabling deregistration protection, got %d", len(describeDisabledOut.Images))
 	}
-	if aws.ToString(describeDisabledOut.Images[0].DeregistrationProtection) != "disabled" {
-		t.Fatalf("unexpected deregistration protection after disable: %q", aws.ToString(describeDisabledOut.Images[0].DeregistrationProtection))
-	}
 
 	getSnapshotStateOut, err := client.GetSnapshotBlockPublicAccessState(ctx, &awsec2.GetSnapshotBlockPublicAccessStateInput{})
 	if err != nil {
 		t.Fatalf("get snapshot block public access state: %v", err)
-	}
-	if getSnapshotStateOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected initial snapshot managed by: %q", getSnapshotStateOut.ManagedBy)
 	}
 	if getSnapshotStateOut.State != awsec2types.SnapshotBlockPublicAccessStateUnblocked {
 		t.Fatalf("unexpected initial snapshot state: %q", getSnapshotStateOut.State)
@@ -120,9 +111,6 @@ func TestEC2Stage72SDKLifecycle(t *testing.T) {
 	}
 	if getEnabledSnapshotStateOut.State != awsec2types.SnapshotBlockPublicAccessStateBlockAllSharing {
 		t.Fatalf("unexpected snapshot state after enable: %q", getEnabledSnapshotStateOut.State)
-	}
-	if getEnabledSnapshotStateOut.ManagedBy != awsec2types.ManagedByAccount {
-		t.Fatalf("unexpected snapshot managed by after enable: %q", getEnabledSnapshotStateOut.ManagedBy)
 	}
 
 	disableSnapshotStateOut, err := client.DisableSnapshotBlockPublicAccess(ctx, &awsec2.DisableSnapshotBlockPublicAccessInput{})

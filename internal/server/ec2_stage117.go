@@ -411,7 +411,6 @@ func ec2Stage117InstanceConnectEndpointItemsFrom(in []ec2svc.InstanceConnectEndp
 			FipsDNSName:                item.FipsDNSName,
 			InstanceConnectEndpointARN: item.InstanceConnectEndpointARN,
 			InstanceConnectEndpointID:  endpointID,
-			IPAddressType:              item.IPAddressType,
 			NetworkInterfaceIDSet:      ec2StringSet{Items: []string{ec2Stage117EndpointNetworkInterfaceID(endpointID)}},
 			OwnerID:                    item.OwnerID,
 			PreserveClientIP:           &item.PreserveClientIP,
@@ -689,7 +688,6 @@ type ec2Stage117InstanceConnectEndpointItem struct {
 	FipsDNSName                string       `xml:"fipsDnsName,omitempty"`
 	InstanceConnectEndpointARN string       `xml:"instanceConnectEndpointArn,omitempty"`
 	InstanceConnectEndpointID  string       `xml:"instanceConnectEndpointId,omitempty"`
-	IPAddressType              string       `xml:"ipAddressType,omitempty"`
 	NetworkInterfaceIDSet      ec2StringSet `xml:"networkInterfaceIdSet"`
 	OwnerID                    string       `xml:"ownerId,omitempty"`
 	PreserveClientIP           *bool        `xml:"preserveClientIp,omitempty"`

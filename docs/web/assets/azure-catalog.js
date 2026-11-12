@@ -15,16 +15,16 @@ window.AZURE_SERVICE_CATALOG = {
     },
     security: {
       label: "Security",
-      description: "Secrets, key management, and AI Services data-plane moderation services."
+      description: "Secrets, key management, and Azure AI Services data-plane/health insight workflows."
     }
   },
   summary: {
-    providerServices: 10,
-    servicesListed: 10,
-    examplesAvailable: 10,
-    plansAvailable: 8,
-    contractStrictAllThree: 8,
-    ioStrictAllFour: 8
+    providerServices: 12,
+    servicesListed: 12,
+    examplesAvailable: 12,
+    plansAvailable: 10,
+    contractStrictAllThree: 10,
+    ioStrictAllFour: 10
   },
   services: [
     {
@@ -142,6 +142,25 @@ window.AZURE_SERVICE_CATALOG = {
       }
     },
     {
+      id: "analysis-services-2017-08-01",
+      name: "Azure Analysis Services",
+      category: "integration",
+      summary: "Analysis Services management-plane operations for server lifecycle, SKU discovery, and gateway actions.",
+      docsHref: "../../../analysis-services-2017-08-01-plan.md",
+      exampleHref: "../../../../examples/azure/analysis-services-2017-08-01/docker-compose.yml",
+      canonicalService: "analysis_services",
+      capabilities: {
+        contractScore: 3,
+        ioScore: 4,
+        requestValidation: true,
+        typedFixtures: true,
+        negativeTests: true,
+        ioValidationImpl: true,
+        ioValidationTests: true,
+        ioShapeTests: true
+      }
+    },
+    {
       id: "keyvault-secrets",
       name: "Key Vault Secrets",
       category: "security",
@@ -206,6 +225,25 @@ window.AZURE_SERVICE_CATALOG = {
       docsHref: "../../../ai-services-data-plane-list-management-v1.0-plan.md",
       exampleHref: "../../../../examples/azure/ai-services/data-plane-list-management-v1.0/docker-compose.yml",
       canonicalService: "data_plane_list_management",
+      capabilities: {
+        contractScore: 3,
+        ioScore: 4,
+        requestValidation: true,
+        typedFixtures: true,
+        negativeTests: true,
+        ioValidationImpl: true,
+        ioValidationTests: true,
+        ioShapeTests: true
+      }
+    },
+    {
+      id: "health-insights-2024-10-01",
+      name: "Azure Health Insights",
+      category: "security",
+      summary: "Radiology Insights job creation and retrieval workflows aligned to rest-healthinsights-2024-10-01.",
+      docsHref: "../../../health-insights-2024-10-01-plan.md",
+      exampleHref: "../../../../examples/azure/ai-services/health-insights-2024-10-01/docker-compose.yml",
+      canonicalService: "health_insights",
       capabilities: {
         contractScore: 3,
         ioScore: 4,

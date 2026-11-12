@@ -1,0 +1,34 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  guestconfiguration-2024-04-05:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/guestconfiguration-2024-04-05/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_GUESTCONFIGURATION_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_GUESTCONFIGURATION_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-guestconfiguration
+      - STACKYARD_AZURE_LOCATION=westcentralus
+      - STACKYARD_AZURE_GUESTCONFIGURATION_VM_NAME=myVMName
+      - STACKYARD_AZURE_GUESTCONFIGURATION_VMSS_NAME=myVMSSName
+      - STACKYARD_AZURE_GUESTCONFIGURATION_CONNECTED_VM_NAME=myConnectedVMName
+      - STACKYARD_AZURE_GUESTCONFIGURATION_HCRP_MACHINE_NAME=myArcMachine
+      - STACKYARD_AZURE_GUESTCONFIGURATION_ASSIGNMENT_NAME=NotInstalledApplicationForWindows
+      - STACKYARD_AZURE_GUESTCONFIGURATION_REPORT_ID=7367cbb8-ae99-47d0-a33b-a283564d2cb1
+      - STACKYARD_AZURE_GUESTCONFIGURATION_VERSION=1.0.0.3
+      - STACKYARD_AZURE_GUESTCONFIGURATION_CONTENT_URI=https://thisisfake/package
+      - STACKYARD_AZURE_GUESTCONFIGURATION_CONTENT_HASH=123contenthash
+      - STACKYARD_AZURE_GUESTCONFIGURATION_PARAMETER_NAME=[InstalledApplication]NotInstalledApplicationResource1;Name
+      - STACKYARD_AZURE_GUESTCONFIGURATION_PARAMETER_VALUE=NotePad,sql

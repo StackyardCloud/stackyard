@@ -89,6 +89,9 @@ func TestNeptuneAnalyticsStage3ImportExportLifecycle(t *testing.T) {
 	}
 	startImport := neptuneAnalyticsDecodeJSONMap(t, body)
 	importTaskID := neptuneAnalyticsRequireStringField(t, startImport, "taskId")
+	if _, ok := startImport["parquetType"]; ok {
+		t.Fatalf("did not expect parquetType in StartImportTask response: %s", body)
+	}
 
 	status, body = neptuneAnalyticsCall(t, ts, http.MethodGet, "/importtasks/"+importTaskID, nil)
 	if status != http.StatusOK {
@@ -176,6 +179,9 @@ func TestNeptuneAnalyticsStage3ImportExportLifecycle(t *testing.T) {
 	createGraphUsingImportTask := neptuneAnalyticsDecodeJSONMap(t, body)
 	_ = neptuneAnalyticsRequireStringField(t, createGraphUsingImportTask, "graphId")
 	_ = neptuneAnalyticsRequireStringField(t, createGraphUsingImportTask, "taskId")
+	if _, ok := createGraphUsingImportTask["parquetType"]; ok {
+		t.Fatalf("did not expect parquetType in CreateGraphUsingImportTask response: %s", body)
+	}
 }
 
 func TestNeptuneAnalyticsStage4QueryAndSummary(t *testing.T) {

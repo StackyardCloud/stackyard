@@ -1,0 +1,7 @@
+services:
+  compute-limit-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/computelimit-2026-04-30/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

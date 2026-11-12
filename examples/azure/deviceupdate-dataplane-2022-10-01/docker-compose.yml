@@ -1,0 +1,32 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  deviceupdate-dataplane:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/deviceupdate-dataplane-2022-10-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEVICEUPDATE_DATAPLANE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEVICEUPDATE_DATAPLANE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_DEVICEUPDATE_INSTANCE_ID=blue
+      - STACKYARD_AZURE_DEVICEUPDATE_PROVIDER=microsoft
+      - STACKYARD_AZURE_DEVICEUPDATE_NAME=adu
+      - STACKYARD_AZURE_DEVICEUPDATE_VERSION=1.2.3.4
+      - STACKYARD_AZURE_DEVICEUPDATE_FILE_ID=file1.bin
+      - STACKYARD_AZURE_DEVICEUPDATE_GROUP_ID=group-a
+      - STACKYARD_AZURE_DEVICEUPDATE_DEPLOYMENT_ID=deployment-a
+      - STACKYARD_AZURE_DEVICEUPDATE_DEVICE_CLASS_ID=device-class-a
+      - STACKYARD_AZURE_DEVICEUPDATE_DEVICE_ID=device-a
+      - STACKYARD_AZURE_DEVICEUPDATE_MODULE_ID=module-a
+      - STACKYARD_AZURE_DEVICEUPDATE_OPERATION_ID=op-a
+      - STACKYARD_AZURE_DEVICEUPDATE_HEALTH_FILTER=state eq 'unhealthy'

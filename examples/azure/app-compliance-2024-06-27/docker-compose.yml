@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  app-compliance-2024-06-27:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/app-compliance-2024-06-27/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_APPCOMPLIANCE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_APPCOMPLIANCE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_APPCOMPLIANCE_REPORT=report-a
+      - STACKYARD_AZURE_APPCOMPLIANCE_EVIDENCE=evidence-a
+      - STACKYARD_AZURE_APPCOMPLIANCE_SCOPING_CONFIGURATION=scoping-a
+      - STACKYARD_AZURE_APPCOMPLIANCE_SNAPSHOT=snapshot-a
+      - STACKYARD_AZURE_APPCOMPLIANCE_WEBHOOK=webhook-a

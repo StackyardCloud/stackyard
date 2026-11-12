@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  frontdoorservice-frontdoor-2019-05-01:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/frontdoorservice-frontdoor-2019-05-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_FRONTDOORSERVICE_FRONTDOOR_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_FRONTDOORSERVICE_FRONTDOOR_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-frontdoor-classic
+      - STACKYARD_AZURE_LOCATION=westus
+      - STACKYARD_AZURE_FRONTDOOR_CLASSIC_NAME=frontdoor1
+      - STACKYARD_AZURE_FRONTDOOR_CLASSIC_FRONTEND_ENDPOINT_NAME=frontendEndpoint1
+      - STACKYARD_AZURE_FRONTDOOR_CLASSIC_CUSTOM_HOST=www.example.com
+      - STACKYARD_AZURE_FRONTDOOR_CLASSIC_ORIGIN_ADDRESS=origin.example.com

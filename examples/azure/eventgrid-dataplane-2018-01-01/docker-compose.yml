@@ -1,0 +1,22 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  eventgrid-dataplane:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/eventgrid-dataplane-2018-01-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_EVENTGRID_DATAPLANE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_EVENTGRID_DATAPLANE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_EVENTGRID_TOPIC_HOSTNAME=mytopic.westcentralus-1.eventgrid.azure.net
+      - STACKYARD_AZURE_EVENTGRID_CHANNEL_NAME=channel-a

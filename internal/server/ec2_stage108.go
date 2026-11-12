@@ -428,20 +428,14 @@ func ec2Stage108LocalGatewayRouteTableVpcAssociationItemFrom(in ec2svc.LocalGate
 
 func ec2Stage108LocalGatewayVirtualInterfaceItemFrom(in ec2svc.LocalGatewayVirtualInterface) ec2Stage108LocalGatewayVirtualInterfaceItem {
 	return ec2Stage108LocalGatewayVirtualInterfaceItem{
-		ConfigurationState:                  in.ConfigurationState,
-		LocalAddress:                        in.LocalAddress,
-		LocalBgpASN:                         in.LocalBgpASN,
-		LocalGatewayID:                      in.LocalGatewayID,
-		LocalGatewayVirtualInterfaceARN:     in.LocalGatewayVirtualInterfaceARN,
-		LocalGatewayVirtualInterfaceGroupID: in.LocalGatewayVirtualInterfaceGroupID,
-		LocalGatewayVirtualInterfaceID:      in.LocalGatewayVirtualInterfaceID,
-		OutpostLagID:                        in.OutpostLagID,
-		OwnerID:                             in.OwnerID,
-		PeerAddress:                         in.PeerAddress,
-		PeerBgpASN:                          in.PeerBgpASN,
-		PeerBgpASNExtended:                  in.PeerBgpASNExtended,
-		TagSet:                              ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
-		VLAN:                                in.VLAN,
+		LocalAddress:                   in.LocalAddress,
+		LocalGatewayID:                 in.LocalGatewayID,
+		LocalGatewayVirtualInterfaceID: in.LocalGatewayVirtualInterfaceID,
+		OwnerID:                        in.OwnerID,
+		PeerAddress:                    in.PeerAddress,
+		PeerBgpASN:                     in.PeerBgpASN,
+		TagSet:                         ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
+		VLAN:                           in.VLAN,
 	}
 }
 
@@ -641,18 +635,12 @@ type ec2Stage108CreateLocalGatewayVirtualInterfaceResponse struct {
 }
 
 type ec2Stage108LocalGatewayVirtualInterfaceItem struct {
-	ConfigurationState                  string    `xml:"configurationState,omitempty"`
-	LocalAddress                        string    `xml:"localAddress,omitempty"`
-	LocalBgpASN                         *int32    `xml:"localBgpAsn,omitempty"`
-	LocalGatewayID                      string    `xml:"localGatewayId,omitempty"`
-	LocalGatewayVirtualInterfaceARN     string    `xml:"localGatewayVirtualInterfaceArn,omitempty"`
-	LocalGatewayVirtualInterfaceGroupID string    `xml:"localGatewayVirtualInterfaceGroupId,omitempty"`
-	LocalGatewayVirtualInterfaceID      string    `xml:"localGatewayVirtualInterfaceId,omitempty"`
-	OutpostLagID                        string    `xml:"outpostLagId,omitempty"`
-	OwnerID                             string    `xml:"ownerId,omitempty"`
-	PeerAddress                         string    `xml:"peerAddress,omitempty"`
-	PeerBgpASN                          *int32    `xml:"peerBgpAsn,omitempty"`
-	PeerBgpASNExtended                  *int64    `xml:"peerBgpAsnExtended,omitempty"`
-	TagSet                              ec2TagSet `xml:"tagSet"`
-	VLAN                                *int32    `xml:"vlan,omitempty"`
+	LocalAddress                   string    `xml:"localAddress,omitempty"`
+	LocalGatewayID                 string    `xml:"localGatewayId,omitempty"`
+	LocalGatewayVirtualInterfaceID string    `xml:"localGatewayVirtualInterfaceId,omitempty"`
+	OwnerID                        string    `xml:"ownerId,omitempty"`
+	PeerAddress                    string    `xml:"peerAddress,omitempty"`
+	PeerBgpASN                     *int32    `xml:"peerBgpAsn,omitempty"`
+	TagSet                         ec2TagSet `xml:"tagSet"`
+	VLAN                           *int32    `xml:"vlan,omitempty"`
 }

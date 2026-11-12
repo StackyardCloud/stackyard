@@ -9,17 +9,18 @@ import (
 )
 
 type fmsStore struct {
-	mu                 sync.Mutex
-	nextID             int64
-	adminAccount       string
-	notification       map[string]any
-	policies           map[string]map[string]any
-	appsLists          map[string]map[string]any
-	protocolsLists     map[string]map[string]any
-	resourceSets       map[string]map[string]any
-	resourceSetMembers map[string][]any
-	tags               map[string]map[string]string
-	thirdPartyStatus   string
+	mu                          sync.Mutex
+	nextID                      int64
+	adminAccount                string
+	notification                map[string]any
+	policies                    map[string]map[string]any
+	appsLists                   map[string]map[string]any
+	protocolsLists              map[string]map[string]any
+	resourceSets                map[string]map[string]any
+	resourceSetMembers          map[string][]any
+	tags                        map[string]map[string]string
+	thirdPartyStatus            string
+	thirdPartyMarketplaceStatus string
 }
 
 func newFMSStore() *fmsStore {
@@ -38,12 +39,13 @@ func newFMSStore() *fmsStore {
 		},
 		policies: map[string]map[string]any{
 			policyID: {
-				"PolicyId":           policyID,
-				"PolicyName":         "stackyard-default-policy",
-				"PolicyDescription":  "seed policy",
-				"PolicyUpdateToken":  "seed-token",
-				"RemediationEnabled": true,
-				"ResourceType":       "AWS::EC2::Instance",
+				"PolicyId":            policyID,
+				"PolicyName":          "stackyard-default-policy",
+				"PolicyDescription":   "seed policy",
+				"PolicyUpdateToken":   "seed-token",
+				"ExcludeResourceTags": false,
+				"RemediationEnabled":  true,
+				"ResourceType":        "AWS::EC2::Instance",
 				"SecurityServicePolicyData": map[string]any{
 					"Type":               "WAF",
 					"ManagedServiceData": "{}",
@@ -94,8 +96,9 @@ func newFMSStore() *fmsStore {
 				},
 			},
 		},
-		tags:             map[string]map[string]string{},
-		thirdPartyStatus: "NOT_ASSOCIATED",
+		tags:                        map[string]map[string]string{},
+		thirdPartyStatus:            "NOT_EXIST",
+		thirdPartyMarketplaceStatus: "NO_SUBSCRIPTION",
 	}
 
 	s.tags[fmsPolicyARN(policyID)] = map[string]string{"seed": "true"}
@@ -186,6 +189,9 @@ func (s *fmsStore) Handle(action string, payload map[string]any) map[string]any 
 		}
 		policy["PolicyId"] = policyID
 		policy["PolicyUpdateToken"] = fmt.Sprintf("token-%08d", s.nextID)
+		if _, ok := policy["ExcludeResourceTags"]; !ok {
+			policy["ExcludeResourceTags"] = false
+		}
 		policy["PolicyStatus"] = fmsString(policy, "PolicyStatus", "ACTIVE")
 		s.policies[policyID] = fmsCloneMap(policy)
 		return map[string]any{
@@ -235,9 +241,14 @@ func (s *fmsStore) Handle(action string, payload map[string]any) map[string]any 
 					"PolicyName":    fmsString(s.findPolicyLocked(policyID), "PolicyName", "stackyard-policy"),
 					"MemberAccount": "111122223333",
 					"EvaluationResults": []any{
-						map[string]any{"ComplianceStatus": true, "ViolatorCount": 0},
+						map[string]any{
+							"ComplianceStatus":        "COMPLIANT",
+							"EvaluationLimitExceeded": false,
+							"ViolatorCount":           0,
+						},
 					},
 					"IssueInfoMap": map[string]any{},
+					"LastUpdated":  time.Now().UTC().Unix(),
 				},
 			},
 			"NextToken": "",
@@ -261,15 +272,23 @@ func (s *fmsStore) Handle(action string, payload map[string]any) map[string]any 
 	case "GetViolationDetails":
 		return map[string]any{
 			"ViolationDetail": map[string]any{
-				"PolicyId":      fmsString(payload, "PolicyId", "policy-00000001"),
-				"MemberAccount": fmsString(payload, "MemberAccount", "111122223333"),
-				"ResourceId":    fmsString(payload, "ResourceId", "arn:aws:ec2:us-east-1:123456789012:instance/i-00000000000000001"),
-				"ResourceType":  fmsString(payload, "ResourceType", "AWS::EC2::Instance"),
+				"PolicyId":            fmsString(payload, "PolicyId", "policy-00000001"),
+				"MemberAccount":       fmsString(payload, "MemberAccount", "111122223333"),
+				"ResourceDescription": "seed instance",
+				"ResourceId":          fmsString(payload, "ResourceId", "arn:aws:ec2:us-east-1:123456789012:instance/i-00000000000000001"),
+				"ResourceTags":        []any{map[string]any{"Key": "env", "Value": "coverage"}},
+				"ResourceType":        fmsString(payload, "ResourceType", "AWS::EC2::Instance"),
+				"ResourceViolations":  []any{},
 			},
 		}
 
 	case "GetProtectionStatus":
-		return map[string]any{"AdminAccountId": fmsDefaultAdmin(s.adminAccount), "Data": []any{}, "NextToken": ""}
+		return map[string]any{
+			"AdminAccountId": fmsDefaultAdmin(s.adminAccount),
+			"Data":           `{"ProtectionStatus":[]}`,
+			"NextToken":      "",
+			"ServiceType":    "SHIELD_ADVANCED",
+		}
 
 	case "PutAppsList":
 		data := fmsMap(payload, "AppsList")
@@ -422,7 +441,60 @@ func (s *fmsStore) Handle(action string, payload map[string]any) map[string]any 
 		return map[string]any{"Items": items, "NextToken": ""}
 
 	case "BatchAssociateResource", "BatchDisassociateResource":
-		return map[string]any{"FailedItems": []any{}}
+		id := fmsString(payload, "ResourceSetIdentifier", "")
+		if id == "" {
+			id = fmsString(payload, "Identifier", "")
+		}
+		if id == "" {
+			id = fmsString(payload, "ResourceSetId", "")
+		}
+		if id == "" {
+			id = "rs-00000001"
+		}
+		items := fmsStringSlice(payload, "Items")
+		if action == "BatchAssociateResource" {
+			current := s.resourceSetMembers[id]
+			seen := map[string]struct{}{}
+			for _, item := range current {
+				if m, ok := item.(map[string]any); ok {
+					uri := fmsString(m, "URI", "")
+					if uri != "" {
+						seen[uri] = struct{}{}
+					}
+				}
+			}
+			for _, uri := range items {
+				if _, ok := seen[uri]; ok {
+					continue
+				}
+				current = append(current, map[string]any{
+					"URI":                 uri,
+					"AccountId":           "123456789012",
+					"Region":              "us-east-1",
+					"ResourceType":        "AWS::EC2::Instance",
+					"ResourceDescription": "associated resource",
+				})
+			}
+			s.resourceSetMembers[id] = current
+		} else if len(items) > 0 {
+			filtered := make([]any, 0, len(s.resourceSetMembers[id]))
+			remove := make(map[string]struct{}, len(items))
+			for _, uri := range items {
+				remove[uri] = struct{}{}
+			}
+			for _, item := range s.resourceSetMembers[id] {
+				m, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if _, drop := remove[fmsString(m, "URI", "")]; drop {
+					continue
+				}
+				filtered = append(filtered, item)
+			}
+			s.resourceSetMembers[id] = filtered
+		}
+		return map[string]any{"FailedItems": []any{}, "ResourceSetIdentifier": id}
 
 	case "ListDiscoveredResources":
 		return map[string]any{
@@ -455,15 +527,20 @@ func (s *fmsStore) Handle(action string, payload map[string]any) map[string]any 
 		return map[string]any{"MemberAccounts": []any{"111122223333"}, "NextToken": ""}
 
 	case "AssociateThirdPartyFirewall":
-		s.thirdPartyStatus = "ASSOCIATED"
-		return map[string]any{}
+		s.thirdPartyStatus = "ONBOARD_COMPLETE"
+		s.thirdPartyMarketplaceStatus = "COMPLETE"
+		return map[string]any{"ThirdPartyFirewallStatus": s.thirdPartyStatus}
 
 	case "DisassociateThirdPartyFirewall":
-		s.thirdPartyStatus = "NOT_ASSOCIATED"
-		return map[string]any{}
+		s.thirdPartyStatus = "OFFBOARD_COMPLETE"
+		s.thirdPartyMarketplaceStatus = "NO_SUBSCRIPTION"
+		return map[string]any{"ThirdPartyFirewallStatus": s.thirdPartyStatus}
 
 	case "GetThirdPartyFirewallAssociationStatus":
-		return map[string]any{"ThirdPartyFirewallAssociationStatus": s.thirdPartyStatus}
+		return map[string]any{
+			"MarketplaceOnboardingStatus": s.thirdPartyMarketplaceStatus,
+			"ThirdPartyFirewallStatus":    s.thirdPartyStatus,
+		}
 
 	case "ListThirdPartyFirewallFirewallPolicies":
 		return map[string]any{

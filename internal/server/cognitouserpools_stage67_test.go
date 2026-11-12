@@ -112,15 +112,28 @@ func TestCognitoUserPoolsStage6IdentityProviderRiskLogAndAuthEventFlows(t *testi
 		},
 	})
 	assertStatus(t, setLogDeliveryResp, http.StatusOK)
+	setLogDeliveryBody := decodeCognitoUserPoolsBody(t, setLogDeliveryResp)
+	setLogDeliveryConfig, ok := setLogDeliveryBody["LogDeliveryConfiguration"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected LogDeliveryConfiguration wrapper, got %#v", setLogDeliveryBody["LogDeliveryConfiguration"])
+	}
+	setLogConfigurations, ok := setLogDeliveryConfig["LogConfigurations"].([]any)
+	if !ok || len(setLogConfigurations) == 0 {
+		t.Fatalf("expected wrapped LogConfigurations in response, got %#v", setLogDeliveryConfig["LogConfigurations"])
+	}
 
 	getLogDeliveryResp := cognitoUserPoolsRequestPayload(t, ts, "GetLogDeliveryConfiguration", map[string]any{
 		"UserPoolId": userPoolID,
 	})
 	assertStatus(t, getLogDeliveryResp, http.StatusOK)
 	getLogDeliveryBody := decodeCognitoUserPoolsBody(t, getLogDeliveryResp)
-	logConfigurations, ok := getLogDeliveryBody["LogConfigurations"].([]any)
+	logDeliveryConfig, ok := getLogDeliveryBody["LogDeliveryConfiguration"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected LogDeliveryConfiguration wrapper, got %#v", getLogDeliveryBody["LogDeliveryConfiguration"])
+	}
+	logConfigurations, ok := logDeliveryConfig["LogConfigurations"].([]any)
 	if !ok || len(logConfigurations) == 0 {
-		t.Fatalf("expected LogConfigurations in response, got %#v", getLogDeliveryBody["LogConfigurations"])
+		t.Fatalf("expected wrapped LogConfigurations in response, got %#v", logDeliveryConfig["LogConfigurations"])
 	}
 
 	listAuthEventsResp := cognitoUserPoolsRequestPayload(t, ts, "AdminListUserAuthEvents", map[string]any{
@@ -319,9 +332,13 @@ func TestCognitoUserPoolsStage7CompatibilityHardening(t *testing.T) {
 	})
 	assertStatus(t, getLogResp, http.StatusOK)
 	getLogBody := decodeCognitoUserPoolsBody(t, getLogResp)
-	logConfigs, _ := getLogBody["LogConfigurations"].([]any)
+	getLogConfig, ok := getLogBody["LogDeliveryConfiguration"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected LogDeliveryConfiguration wrapper, got %#v", getLogBody["LogDeliveryConfiguration"])
+	}
+	logConfigs, _ := getLogConfig["LogConfigurations"].([]any)
 	if len(logConfigs) != 1 {
-		t.Fatalf("expected exactly one log configuration after idempotent update, got %#v", getLogBody["LogConfigurations"])
+		t.Fatalf("expected exactly one wrapped log configuration after idempotent update, got %#v", getLogConfig["LogConfigurations"])
 	}
 	logConfig, _ := logConfigs[0].(map[string]any)
 	if got, _ := logConfig["LogLevel"].(string); got != "INFO" {

@@ -398,7 +398,6 @@ func ec2Stage121ReservedInstancesOfferingItemsFrom(in []ec2svc.ReservedInstances
 	for _, item := range in {
 		out = append(out, ec2Stage121ReservedInstancesOfferingItem{
 			AvailabilityZone:            item.AvailabilityZone,
-			AvailabilityZoneID:          item.AvailabilityZoneID,
 			CurrencyCode:                item.CurrencyCode,
 			Duration:                    item.Duration,
 			FixedPrice:                  item.FixedPrice,
@@ -604,7 +603,6 @@ type ec2Stage121ReservedInstancesOfferingSet struct {
 
 type ec2Stage121ReservedInstancesOfferingItem struct {
 	AvailabilityZone            string                        `xml:"availabilityZone,omitempty"`
-	AvailabilityZoneID          string                        `xml:"availabilityZoneId,omitempty"`
 	CurrencyCode                string                        `xml:"currencyCode,omitempty"`
 	Duration                    *int64                        `xml:"duration,omitempty"`
 	FixedPrice                  *float32                      `xml:"fixedPrice,omitempty"`

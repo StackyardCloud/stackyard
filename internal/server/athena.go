@@ -818,6 +818,7 @@ func (s *Server) handleAthenaJSONRouter(w http.ResponseWriter, r *http.Request) 
 			rows = append(rows, map[string]any{"Data": data})
 		}
 		respondAthenaJSON(w, http.StatusOK, map[string]any{
+			"UpdateCount": 0,
 			"ResultSet": map[string]any{
 				"ResultSetMetadata": map[string]any{"ColumnInfo": columnInfo},
 				"Rows":              rows,
@@ -1184,7 +1185,7 @@ func (s *Server) handleAthenaJSONRouter(w http.ResponseWriter, r *http.Request) 
 		respondAthenaJSON(w, http.StatusOK, map[string]any{
 			"NotebookUrl":             "http://localhost:4566/athena/notebook",
 			"AuthToken":               "stackyard-token",
-			"AuthTokenExpirationTime": athenaTimestamp(time.Now().UTC().Add(15 * time.Minute)),
+			"AuthTokenExpirationTime": time.Now().UTC().Add(15 * time.Minute).Unix(),
 		})
 		return true
 	case "StartCalculationExecution":
@@ -1354,7 +1355,7 @@ func (s *Server) handleAthenaJSONRouter(w http.ResponseWriter, r *http.Request) 
 			"SessionId":     sess.ID,
 			"Description":   sess.Description,
 			"WorkGroup":     sess.WorkGroup,
-			"EngineVersion": map[string]any{"SelectedEngineVersion": sess.EngineVersion, "EffectiveEngineVersion": sess.EngineVersion},
+			"EngineVersion": sess.EngineVersion,
 			"Status": map[string]any{
 				"StartDateTime":        athenaTimestamp(sess.CreatedAt),
 				"LastModifiedDateTime": athenaTimestamp(sess.UpdatedAt),
@@ -1432,6 +1433,41 @@ func (s *Server) handleAthenaJSONRouter(w http.ResponseWriter, r *http.Request) 
 		}
 		respondAthenaJSON(w, http.StatusOK, map[string]any{"State": sess.State})
 		return true
+	case "GetSessionEndpoint":
+		var input struct {
+			SessionId string `json:"SessionId"`
+		}
+		if err := json.Unmarshal(body, &input); err != nil {
+			respondAthenaJSONError(w, http.StatusBadRequest, "InvalidRequestException", "invalid JSON")
+			return true
+		}
+		sess, err := s.athena.GetSession(input.SessionId)
+		if err != nil {
+			respondAthenaJSONError(w, http.StatusBadRequest, "InvalidRequestException", err.Error())
+			return true
+		}
+		respondAthenaJSON(w, http.StatusOK, map[string]any{
+			"AuthToken":               "stackyard-session-token",
+			"AuthTokenExpirationTime": time.Now().UTC().Add(15 * time.Minute).Unix(),
+			"EndpointUrl":             "http://localhost:4566/athena/session/" + sess.ID,
+		})
+		return true
+	case "GetResourceDashboard":
+		var input struct {
+			ResourceARN string `json:"ResourceARN"`
+		}
+		if err := json.Unmarshal(body, &input); err != nil {
+			respondAthenaJSONError(w, http.StatusBadRequest, "InvalidRequestException", "invalid JSON")
+			return true
+		}
+		if strings.TrimSpace(input.ResourceARN) == "" {
+			respondAthenaJSONError(w, http.StatusBadRequest, "InvalidRequestException", "ResourceARN is required")
+			return true
+		}
+		respondAthenaJSON(w, http.StatusOK, map[string]any{
+			"Url": "http://localhost:4566/athena/dashboard",
+		})
+		return true
 	case "ListExecutors":
 		var input struct {
 			SessionId           string `json:"SessionId"`
@@ -1444,7 +1480,7 @@ func (s *Server) handleAthenaJSONRouter(w http.ResponseWriter, r *http.Request) 
 			out = append(out, map[string]any{
 				"ExecutorId":    id,
 				"ExecutorType":  "COORDINATOR",
-				"StartDateTime": athenaTimestamp(time.Now().UTC()),
+				"StartDateTime": time.Now().UTC().Unix(),
 				"ExecutorState": "IDLE",
 				"ExecutorSize":  1,
 			})

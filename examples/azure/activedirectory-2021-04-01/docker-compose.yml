@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  activedirectory-2021-04-01:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/activedirectory-2021-04-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_ACTIVEDIRECTORY_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_ACTIVEDIRECTORY_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-b2c
+      - STACKYARD_AZURE_REGION=United States
+      - STACKYARD_AZURE_ACTIVEDIRECTORY_B2C_TENANT=tenant-a.onmicrosoft.com
+      - STACKYARD_AZURE_ACTIVEDIRECTORY_GUEST_USAGE=guest-usage-a

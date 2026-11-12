@@ -32,7 +32,6 @@ func (s *Server) handleEC2Stage74Action(w http.ResponseWriter, r *http.Request, 
 			XMLName:                    xml.Name{Local: "GetSerialConsoleAccessStatusResponse"},
 			Xmlns:                      ec2Namespace,
 			RequestID:                  "stackyard-request",
-			ManagedBy:                  out.ManagedBy,
 			SerialConsoleAccessEnabled: out.SerialConsoleAccessEnabled,
 		})
 		return true
@@ -78,7 +77,6 @@ type ec2GetSerialConsoleAccessStatusResponse struct {
 	XMLName                    xml.Name
 	Xmlns                      string `xml:"xmlns,attr"`
 	RequestID                  string `xml:"requestId"`
-	ManagedBy                  string `xml:"managedBy,omitempty"`
 	SerialConsoleAccessEnabled bool   `xml:"serialConsoleAccessEnabled"`
 }
 

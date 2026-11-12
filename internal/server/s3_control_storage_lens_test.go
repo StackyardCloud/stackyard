@@ -60,8 +60,8 @@ func TestS3ControlStorageLensStage6(t *testing.T) {
 	if err := xml.Unmarshal(mustBody(t, resp), &tagResp); err != nil {
 		t.Fatalf("parse get tagging response: %v", err)
 	}
-	if len(tagResp.Tagging.Tags) != 1 {
-		t.Fatalf("expected 1 tag, got %d", len(tagResp.Tagging.Tags))
+	if len(tagResp.Tags.Tags) != 1 {
+		t.Fatalf("expected 1 tag, got %d", len(tagResp.Tags.Tags))
 	}
 
 	resp = signedRequestWithService(t, http.MethodDelete, ts.URL+"/v20180820/storagelens/cfg-1/tagging", nil, headers, "s3-control")

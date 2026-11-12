@@ -173,16 +173,15 @@ func ec2SecurityGroupRuleItems(in []ec2svc.SecurityGroupRule) []ec2SecurityGroup
 	out := make([]ec2SecurityGroupRuleItem, 0, len(in))
 	for _, rule := range in {
 		out = append(out, ec2SecurityGroupRuleItem{
-			CidrIPv4:             rule.CidrIPv4,
-			Description:          rule.Description,
-			FromPort:             rule.FromPort,
-			GroupID:              rule.GroupID,
-			GroupOwnerID:         rule.GroupOwnerID,
-			IPProtocol:           rule.IPProtocol,
-			IsEgress:             rule.IsEgress,
-			SecurityGroupRuleARN: rule.SecurityGroupRuleARN,
-			SecurityGroupRuleID:  rule.SecurityGroupRuleID,
-			ToPort:               rule.ToPort,
+			CidrIPv4:            rule.CidrIPv4,
+			Description:         rule.Description,
+			FromPort:            rule.FromPort,
+			GroupID:             rule.GroupID,
+			GroupOwnerID:        rule.GroupOwnerID,
+			IPProtocol:          rule.IPProtocol,
+			IsEgress:            rule.IsEgress,
+			SecurityGroupRuleID: rule.SecurityGroupRuleID,
+			ToPort:              rule.ToPort,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].SecurityGroupRuleID < out[j].SecurityGroupRuleID })
@@ -220,16 +219,15 @@ type ec2SecurityGroupRuleSet struct {
 }
 
 type ec2SecurityGroupRuleItem struct {
-	CidrIPv4             string `xml:"cidrIpv4,omitempty"`
-	CidrIPv6             string `xml:"cidrIpv6,omitempty"`
-	Description          string `xml:"description,omitempty"`
-	FromPort             int32  `xml:"fromPort,omitempty"`
-	GroupID              string `xml:"groupId,omitempty"`
-	GroupOwnerID         string `xml:"groupOwnerId,omitempty"`
-	IPProtocol           string `xml:"ipProtocol,omitempty"`
-	IsEgress             bool   `xml:"isEgress"`
-	PrefixListID         string `xml:"prefixListId,omitempty"`
-	SecurityGroupRuleARN string `xml:"securityGroupRuleArn,omitempty"`
-	SecurityGroupRuleID  string `xml:"securityGroupRuleId,omitempty"`
-	ToPort               int32  `xml:"toPort,omitempty"`
+	CidrIPv4            string `xml:"cidrIpv4,omitempty"`
+	CidrIPv6            string `xml:"cidrIpv6,omitempty"`
+	Description         string `xml:"description,omitempty"`
+	FromPort            int32  `xml:"fromPort,omitempty"`
+	GroupID             string `xml:"groupId,omitempty"`
+	GroupOwnerID        string `xml:"groupOwnerId,omitempty"`
+	IPProtocol          string `xml:"ipProtocol,omitempty"`
+	IsEgress            bool   `xml:"isEgress"`
+	PrefixListID        string `xml:"prefixListId,omitempty"`
+	SecurityGroupRuleID string `xml:"securityGroupRuleId,omitempty"`
+	ToPort              int32  `xml:"toPort,omitempty"`
 }

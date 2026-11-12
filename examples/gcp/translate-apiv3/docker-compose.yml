@@ -1,7 +1,7 @@
 services:
   stackyard:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: Dockerfile
     environment:
       - STACKYARD_LOG_LEVEL=debug
@@ -10,7 +10,7 @@ services:
 
   translate-apiv3:
     build:
-      context: ../../../..
+      context: ../../..
       dockerfile: examples/gcp/translate-apiv3/Dockerfile
     depends_on:
       - stackyard

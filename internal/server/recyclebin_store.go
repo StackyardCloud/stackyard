@@ -84,7 +84,7 @@ func (s *recycleBinStore) Handle(action string, payload map[string]any, pathPara
 		} else if _, exists := s.tagIndex[arn]; !exists {
 			s.tagIndex[arn] = map[string]string{}
 		}
-		return recycleBinCloneMap(rule)
+		return recycleBinRuleResponse(rule)
 
 	case "DeleteRule":
 		rule := s.ensureRuleLocked(identifier)
@@ -95,7 +95,7 @@ func (s *recycleBinStore) Handle(action string, payload map[string]any, pathPara
 		return map[string]any{}
 
 	case "GetRule":
-		return recycleBinCloneMap(s.ensureRuleLocked(identifier))
+		return recycleBinRuleResponse(s.ensureRuleLocked(identifier))
 
 	case "ListRules":
 		items := make([]any, 0, len(s.rules))
@@ -108,12 +108,11 @@ func (s *recycleBinStore) Handle(action string, payload map[string]any, pathPara
 					recycleBinPayloadString(rule, "ResourceType"),
 					"EBS_SNAPSHOT",
 				),
-				"RetentionPeriod":     recycleBinCloneAny(rule["RetentionPeriod"]),
-				"Status":              recycleBinPayloadString(rule, "Status"),
-				"LockState":           recycleBinPayloadString(rule, "LockState"),
-				"LockEndTime":         recycleBinCloneAny(rule["LockEndTime"]),
-				"RuleArn":             recycleBinPayloadString(rule, "RuleArn"),
-				"ExcludeResourceTags": recycleBinCloneAny(rule["ExcludeResourceTags"]),
+				"RetentionPeriod": recycleBinCloneAny(rule["RetentionPeriod"]),
+				"Status":          recycleBinPayloadString(rule, "Status"),
+				"LockState":       recycleBinPayloadString(rule, "LockState"),
+				"LockEndTime":     recycleBinCloneAny(rule["LockEndTime"]),
+				"RuleArn":         recycleBinPayloadString(rule, "RuleArn"),
 			})
 		}
 		return map[string]any{"Rules": items, "NextToken": ""}
@@ -125,13 +124,13 @@ func (s *recycleBinStore) Handle(action string, payload map[string]any, pathPara
 		}
 		rule["LockState"] = "locked"
 		rule["LockEndTime"] = time.Now().UTC().Add(24 * time.Hour).Format(time.RFC3339)
-		return recycleBinCloneMap(rule)
+		return recycleBinRuleResponse(rule)
 
 	case "UnlockRule":
 		rule := s.ensureRuleLocked(identifier)
 		rule["LockState"] = "unlocked"
 		rule["LockEndTime"] = time.Now().UTC().Add(10 * time.Minute).Format(time.RFC3339)
-		return recycleBinCloneMap(rule)
+		return recycleBinRuleResponse(rule)
 
 	case "UpdateRule":
 		rule := s.ensureRuleLocked(identifier)
@@ -141,16 +140,15 @@ func (s *recycleBinStore) Handle(action string, payload map[string]any, pathPara
 			}
 		}
 		return map[string]any{
-			"Identifier":          recycleBinPayloadString(rule, "Identifier"),
-			"RetentionPeriod":     recycleBinCloneAny(rule["RetentionPeriod"]),
-			"Description":         recycleBinPayloadString(rule, "Description"),
-			"ResourceType":        recycleBinPayloadString(rule, "ResourceType"),
-			"ResourceTags":        recycleBinCloneAny(rule["ResourceTags"]),
-			"Status":              recycleBinPayloadString(rule, "Status"),
-			"LockState":           recycleBinPayloadString(rule, "LockState"),
-			"LockEndTime":         recycleBinCloneAny(rule["LockEndTime"]),
-			"RuleArn":             recycleBinPayloadString(rule, "RuleArn"),
-			"ExcludeResourceTags": recycleBinCloneAny(rule["ExcludeResourceTags"]),
+			"Identifier":      recycleBinPayloadString(rule, "Identifier"),
+			"RetentionPeriod": recycleBinCloneAny(rule["RetentionPeriod"]),
+			"Description":     recycleBinPayloadString(rule, "Description"),
+			"ResourceType":    recycleBinPayloadString(rule, "ResourceType"),
+			"ResourceTags":    recycleBinCloneAny(rule["ResourceTags"]),
+			"Status":          recycleBinPayloadString(rule, "Status"),
+			"LockState":       recycleBinPayloadString(rule, "LockState"),
+			"LockEndTime":     recycleBinCloneAny(rule["LockEndTime"]),
+			"RuleArn":         recycleBinPayloadString(rule, "RuleArn"),
 		}
 
 	case "TagResource":
@@ -241,6 +239,12 @@ func (s *recycleBinStore) newRuleFromPayloadLocked(identifier string, payload ma
 		"RuleArn":   recycleBinRuleARN(identifier),
 	}
 	return rule
+}
+
+func recycleBinRuleResponse(rule map[string]any) map[string]any {
+	cloned := recycleBinCloneMap(rule)
+	delete(cloned, "ExcludeResourceTags")
+	return cloned
 }
 
 func (s *recycleBinStore) resolveARNLocked(resourceARN, identifier string) string {

@@ -1,0 +1,37 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  datareplication:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/datareplication-2026-05-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATAREPLICATION_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATAREPLICATION_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-datareplication
+      - STACKYARD_AZURE_LOCATION=westus2
+      - STACKYARD_AZURE_DATAREPLICATION_VAULT_NAME=dr-vault-example
+      - STACKYARD_AZURE_DATAREPLICATION_FABRIC_NAME=dr-fabric-example
+      - STACKYARD_AZURE_DATAREPLICATION_FABRIC_AGENT_NAME=dr-agent-example
+      - STACKYARD_AZURE_DATAREPLICATION_POLICY_NAME=dr-policy-example
+      - STACKYARD_AZURE_DATAREPLICATION_EXTENSION_NAME=dr-extension-example
+      - STACKYARD_AZURE_DATAREPLICATION_PROTECTED_ITEM_NAME=dr-protected-item-example
+      - STACKYARD_AZURE_DATAREPLICATION_JOB_NAME=dr-job-example
+      - STACKYARD_AZURE_DATAREPLICATION_EVENT_NAME=dr-event-example
+      - STACKYARD_AZURE_DATAREPLICATION_RECOVERY_POINT_NAME=dr-rp-example
+      - STACKYARD_AZURE_DATAREPLICATION_EMAIL_CONFIGURATION_NAME=dr-alerts
+      - STACKYARD_AZURE_DATAREPLICATION_PRIVATE_ENDPOINT_CONNECTION_PROXY_NAME=dr-pec-proxy
+      - STACKYARD_AZURE_DATAREPLICATION_PRIVATE_ENDPOINT_CONNECTION_NAME=dr-pec
+      - STACKYARD_AZURE_DATAREPLICATION_DEPLOYMENT_ID=dr-deployment-01
+      - STACKYARD_AZURE_DATAREPLICATION_OPERATION_ID=dr-op-01

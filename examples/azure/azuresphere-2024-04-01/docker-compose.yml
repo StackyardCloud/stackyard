@@ -1,0 +1,28 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azuresphere-2024-04-01:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/azuresphere-2024-04-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_SPHERE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_SPHERE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-sphere
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_SPHERE_CATALOG=catalog-a
+      - STACKYARD_AZURE_SPHERE_PRODUCT=product-a
+      - STACKYARD_AZURE_SPHERE_DEVICE_GROUP=group-a
+      - STACKYARD_AZURE_SPHERE_DEPLOYMENT=deployment-a
+      - STACKYARD_AZURE_SPHERE_IMAGE=image-a

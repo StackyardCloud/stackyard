@@ -1,0 +1,37 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  frontdoorservice-webapplicationfirewall-2025-11-01:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/frontdoorservice-webapplicationfirewall-2025-11-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_FRONTDOORSERVICE_WEBAPPLICATIONFIREWALL_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_FRONTDOORSERVICE_WEBAPPLICATIONFIREWALL_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-frontdoor-waf
+      - STACKYARD_AZURE_LOCATION=westus
+      - STACKYARD_AZURE_FRONTDOOR_WAF_FRONTDOOR_NAME=frontdoorwaf1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_FRONTEND_ENDPOINT_NAME=frontendEndpoint1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_CUSTOM_HOST=www.example.com
+      - STACKYARD_AZURE_FRONTDOOR_WAF_ORIGIN_ADDRESS=origin.example.com
+      - STACKYARD_AZURE_FRONTDOOR_WAF_RULES_ENGINE_NAME=rulesEngine1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_POLICY_NAME=policy1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_EXPERIMENT_PROFILE_NAME=profile1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_EXPERIMENT_NAME=experiment1
+      - STACKYARD_AZURE_FRONTDOOR_WAF_EXPERIMENT_ENDPOINT_A=endpoint-a.example.net
+      - STACKYARD_AZURE_FRONTDOOR_WAF_EXPERIMENT_ENDPOINT_B=endpoint-b.example.net
+      - STACKYARD_AZURE_FRONTDOOR_WAF_REPORT_AGGREGATION_INTERVAL=Hourly
+      - STACKYARD_AZURE_FRONTDOOR_WAF_REPORT_TIMESERIES_TYPE=MeasurementCounts
+      - STACKYARD_AZURE_FRONTDOOR_WAF_REPORT_START_UTC=2025-01-01T00:00:00Z
+      - STACKYARD_AZURE_FRONTDOOR_WAF_REPORT_END_UTC=2025-01-01T01:00:00Z

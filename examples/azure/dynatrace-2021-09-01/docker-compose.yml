@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  dynatrace:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/dynatrace-2021-09-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DYNATRACE_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DYNATRACE_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-dynatrace
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_DYNATRACE_MONITOR_NAME=myMonitor
+      - STACKYARD_AZURE_DYNATRACE_RULE_SET_NAME=default
+      - STACKYARD_AZURE_DYNATRACE_SSO_CONFIGURATION_NAME=default
+      - STACKYARD_AZURE_DYNATRACE_USER_PRINCIPAL=alice@microsoft.com
+      - STACKYARD_AZURE_TENANT_ID=00000000-0000-0000-0000-000000000000
+      - "STACKYARD_AZURE_DYNATRACE_REGION=East US"

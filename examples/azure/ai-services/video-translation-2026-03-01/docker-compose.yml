@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  video-translation-2026-03-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/video-translation-2026-03-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_VIDEO_TRANSLATION_ID=translation-a
+      - STACKYARD_AZURE_VIDEO_TRANSLATION_ITERATION_ID=iteration-a
+      - STACKYARD_AZURE_VIDEO_TRANSLATION_OPERATION_ID=operation-a

@@ -531,23 +531,22 @@ func ec2ClientVpnEndpointItemFrom(in ec2svc.ClientVpnEndpoint) ec2ClientVpnEndpo
 	sort.Slice(tags, func(i, j int) bool { return tags[i].Key < tags[j].Key })
 
 	item := ec2ClientVpnEndpointItem{
-		ClientCidrBlock:            in.ClientCidrBlock,
-		ClientVpnEndpointID:        in.ID,
-		Description:                in.Description,
-		DisconnectOnSessionTimeout: in.DisconnectOnSessionTimeout,
-		DnsName:                    in.DnsName,
-		DnsServers:                 ec2ValueStringSet{Items: append([]string(nil), in.DnsServers...)},
-		SecurityGroupIDs:           ec2ValueStringSet{Items: append([]string(nil), in.SecurityGroupIDs...)},
-		SelfServicePortalURL:       in.SelfServicePortalURL,
-		ServerCertificateARN:       in.ServerCertificateARN,
-		SessionTimeoutHours:        in.SessionTimeoutHours,
-		SplitTunnel:                in.SplitTunnel,
-		Status:                     ec2ClientVpnEndpointStatusItemFrom(in.Status),
-		TagSet:                     ec2TagSet{Items: tags},
-		TransportProtocol:          in.TransportProtocol,
-		VpcID:                      in.VpcID,
-		VpnPort:                    in.VpnPort,
-		CreationTime:               in.CreationTime.UTC().Format(timeRFC3339UTC),
+		ClientCidrBlock:      in.ClientCidrBlock,
+		ClientVpnEndpointID:  in.ID,
+		Description:          in.Description,
+		DnsName:              in.DnsName,
+		DnsServers:           ec2ValueStringSet{Items: append([]string(nil), in.DnsServers...)},
+		SecurityGroupIDs:     ec2ValueStringSet{Items: append([]string(nil), in.SecurityGroupIDs...)},
+		SelfServicePortalURL: in.SelfServicePortalURL,
+		ServerCertificateARN: in.ServerCertificateARN,
+		SessionTimeoutHours:  in.SessionTimeoutHours,
+		SplitTunnel:          in.SplitTunnel,
+		Status:               ec2ClientVpnEndpointStatusItemFrom(in.Status),
+		TagSet:               ec2TagSet{Items: tags},
+		TransportProtocol:    in.TransportProtocol,
+		VpcID:                in.VpcID,
+		VpnPort:              in.VpnPort,
+		CreationTime:         in.CreationTime.UTC().Format(timeRFC3339UTC),
 	}
 	if in.DeletionTime != nil {
 		item.DeletionTime = in.DeletionTime.UTC().Format(timeRFC3339UTC)
@@ -799,24 +798,23 @@ type ec2ClientVpnEndpointSet struct {
 }
 
 type ec2ClientVpnEndpointItem struct {
-	ClientCidrBlock            string                         `xml:"clientCidrBlock,omitempty"`
-	ClientVpnEndpointID        string                         `xml:"clientVpnEndpointId,omitempty"`
-	Description                string                         `xml:"description,omitempty"`
-	DisconnectOnSessionTimeout bool                           `xml:"disconnectOnSessionTimeout"`
-	DnsName                    string                         `xml:"dnsName,omitempty"`
-	DnsServers                 ec2ValueStringSet              `xml:"dnsServer"`
-	SecurityGroupIDs           ec2ValueStringSet              `xml:"securityGroupIdSet"`
-	SelfServicePortalURL       string                         `xml:"selfServicePortalUrl,omitempty"`
-	ServerCertificateARN       string                         `xml:"serverCertificateArn,omitempty"`
-	SessionTimeoutHours        int32                          `xml:"sessionTimeoutHours"`
-	SplitTunnel                bool                           `xml:"splitTunnel"`
-	Status                     ec2ClientVpnEndpointStatusItem `xml:"status"`
-	TagSet                     ec2TagSet                      `xml:"tagSet"`
-	TransportProtocol          string                         `xml:"transportProtocol,omitempty"`
-	VpcID                      string                         `xml:"vpcId,omitempty"`
-	VpnPort                    int32                          `xml:"vpnPort"`
-	CreationTime               string                         `xml:"creationTime,omitempty"`
-	DeletionTime               string                         `xml:"deletionTime,omitempty"`
+	ClientCidrBlock      string                         `xml:"clientCidrBlock,omitempty"`
+	ClientVpnEndpointID  string                         `xml:"clientVpnEndpointId,omitempty"`
+	Description          string                         `xml:"description,omitempty"`
+	DnsName              string                         `xml:"dnsName,omitempty"`
+	DnsServers           ec2ValueStringSet              `xml:"dnsServer"`
+	SecurityGroupIDs     ec2ValueStringSet              `xml:"securityGroupIdSet"`
+	SelfServicePortalURL string                         `xml:"selfServicePortalUrl,omitempty"`
+	ServerCertificateARN string                         `xml:"serverCertificateArn,omitempty"`
+	SessionTimeoutHours  int32                          `xml:"sessionTimeoutHours"`
+	SplitTunnel          bool                           `xml:"splitTunnel"`
+	Status               ec2ClientVpnEndpointStatusItem `xml:"status"`
+	TagSet               ec2TagSet                      `xml:"tagSet"`
+	TransportProtocol    string                         `xml:"transportProtocol,omitempty"`
+	VpcID                string                         `xml:"vpcId,omitempty"`
+	VpnPort              int32                          `xml:"vpnPort"`
+	CreationTime         string                         `xml:"creationTime,omitempty"`
+	DeletionTime         string                         `xml:"deletionTime,omitempty"`
 }
 
 type ec2ClientVpnRouteSet struct {

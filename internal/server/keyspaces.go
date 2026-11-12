@@ -70,17 +70,6 @@ func (s *Server) handleKeyspacesJSONRouter(w http.ResponseWriter, r *http.Reques
 			"replicationStrategy": keyspace.ReplicationStrategy,
 			"replicationRegions":  keyspace.ReplicationRegions,
 		}
-		if len(keyspace.ReplicationGroupStatuses) > 0 {
-			statuses := make([]map[string]any, 0, len(keyspace.ReplicationGroupStatuses))
-			for _, st := range keyspace.ReplicationGroupStatuses {
-				statuses = append(statuses, map[string]any{
-					"region":                    st.Region,
-					"keyspaceStatus":            st.KeyspaceStatus,
-					"tablesReplicationProgress": st.TablesReplicationProgress,
-				})
-			}
-			response["replicationGroupStatuses"] = statuses
-		}
 		respondKeyspacesJSON(w, http.StatusOK, response)
 		return true
 

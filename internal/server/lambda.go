@@ -685,7 +685,7 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		if !decodeBody() {
 			return true
 		}
-		cfg, err := s.lambda.PutFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), body)
+		cfg, err := s.lambda.PutFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), qualifier, body)
 		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true
@@ -693,7 +693,7 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		respondLambdaJSON(w, http.StatusOK, cfg)
 		return true
 	case "GetFunctionScalingConfig":
-		cfg, err := s.lambda.GetFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"))
+		cfg, err := s.lambda.GetFunctionScalingConfig(lambdaParam(params, "FunctionName", "functionName"), qualifier)
 		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true
@@ -1050,8 +1050,19 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 		respondLambdaJSON(w, http.StatusOK, out)
 		return true
 	case "SendDurableExecutionCallbackFailure", "SendDurableExecutionCallbackHeartbeat", "SendDurableExecutionCallbackSuccess":
-		if !decodeBody() {
+		rawBody, err := readBodyBytes(r)
+		if err != nil {
+			respondLambdaError(w, http.StatusBadRequest, "InvalidParameterValueException", "invalid request body")
 			return true
+		}
+		body = map[string]any{}
+		if len(bytes.TrimSpace(rawBody)) > 0 {
+			if err := json.Unmarshal(rawBody, &body); err != nil {
+				body = map[string]any{"RawBody": string(rawBody)}
+			}
+			if body == nil {
+				body = map[string]any{}
+			}
 		}
 		status := strings.TrimPrefix(op.Operation, "SendDurableExecutionCallback")
 		out, err := s.lambda.DurableExecutionCallback(lambdaParam(params, "CallbackId", "callbackId"), status, body)

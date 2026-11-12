@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  elastic:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/elastic-2020-07-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_ELASTIC_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_ELASTIC_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-elastic
+      - STACKYARD_AZURE_LOCATION=westus2
+      - STACKYARD_AZURE_ELASTIC_MONITOR_NAME=myMonitor
+      - STACKYARD_AZURE_ELASTIC_RULE_SET_NAME=default
+      - STACKYARD_AZURE_ELASTIC_VM_NAME=elastic-vm-01

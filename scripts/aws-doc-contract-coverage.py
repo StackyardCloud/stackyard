@@ -16,6 +16,8 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from aws_service_shards import aws_doc_service_weights, select_shard, validate_shard_args
+
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
@@ -286,6 +288,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--report-json", default="", help="Optional path to write JSON output payload.")
     parser.add_argument("--list-services", action="store_true", help="List discovered services and exit.")
+    parser.add_argument(
+        "--shard-count",
+        type=int,
+        default=1,
+        help="Split the selected services into N balanced shards.",
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+        help="Zero-based shard index when --shard-count is greater than 1.",
+    )
     return parser.parse_args()
 
 
@@ -294,26 +308,16 @@ def main() -> int:
     if args.json:
         args.format = "json"
 
+    try:
+        validate_shard_args(args.shard_count, args.shard_index)
+    except ValueError as err:
+        print(f"aws-doc-contract-coverage: {err}", file=sys.stderr)
+        return 2
+
     selector = normalize_selector(args.service)
     required = canonical_service(args.require_service) if args.require_service else ""
 
     discovered = discover_services()
-    if args.list_services:
-        payload = {
-            "provider": "aws",
-            "mode": "doc_contract",
-            "services": discovered,
-            "count": len(discovered),
-        }
-        if args.format == "json":
-            print(json.dumps(payload, indent=2, sort_keys=True))
-            write_report_json(args.report_json, payload)
-        else:
-            for service in discovered:
-                print(service)
-            print(f"total: {len(discovered)}")
-        return 0
-
     selected = [service for service in discovered if fnmatch.fnmatch(service, selector)]
     if required and required not in discovered:
         print(f"aws-doc-contract-coverage: required service {required!r} not discovered", file=sys.stderr)
@@ -321,6 +325,30 @@ def main() -> int:
     if required and required not in selected:
         print(f"aws-doc-contract-coverage: required service {required!r} not matched by selector", file=sys.stderr)
         return 2
+    if args.shard_count > 1:
+        selected = select_shard(selected, aws_doc_service_weights(selected), args.shard_count, args.shard_index)
+    if required and required not in selected:
+        print(f"aws-doc-contract-coverage: required service {required!r} not matched by shard", file=sys.stderr)
+        return 2
+
+    if args.list_services:
+        payload = {
+            "provider": "aws",
+            "mode": "doc_contract",
+            "service_selector": selector,
+            "services": selected,
+            "count": len(selected),
+            "shard_count": args.shard_count,
+            "shard_index": args.shard_index,
+        }
+        if args.format == "json":
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            write_report_json(args.report_json, payload)
+        else:
+            for service in selected:
+                print(service)
+            print(f"total: {len(selected)}")
+        return 0
 
     rows = [analyze_service(service) for service in selected]
     summary = summarize(rows)
@@ -329,6 +357,8 @@ def main() -> int:
         "mode": "doc_contract",
         "service_selector": selector,
         "required_service": required,
+        "shard_count": args.shard_count,
+        "shard_index": args.shard_index,
         "summary": summary,
         "services": [asdict(row) | {"strict_all": row.strict_all} for row in rows],
     }

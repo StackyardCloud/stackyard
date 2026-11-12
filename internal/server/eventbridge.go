@@ -158,7 +158,6 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			out = append(out, eventBridgeBusEntry{
 				Name:            bus.Name,
 				Arn:             bus.ARN,
-				Description:     bus.Description,
 				EventSourceName: bus.EventSourceName,
 				Policy:          bus.Policy,
 			})
@@ -1059,11 +1058,16 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ValidationException", "invalid JSON")
 			return true
 		}
+		conn, err := s.eventbridge.DescribeConnection(input.Name)
+		if err != nil {
+			respondEventBridgeJSONError(w, http.StatusBadRequest, "ResourceNotFoundException", err.Error())
+			return true
+		}
 		if err := s.eventbridge.DeleteConnection(input.Name); err != nil {
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ResourceNotFoundException", err.Error())
 			return true
 		}
-		respondEventBridgeJSON(w, http.StatusOK, map[string]any{})
+		respondEventBridgeJSON(w, http.StatusOK, eventBridgeConnectionMutationPayload(conn))
 		return true
 	case "DeauthorizeConnection":
 		var input struct {
@@ -1077,7 +1081,12 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ResourceNotFoundException", err.Error())
 			return true
 		}
-		respondEventBridgeJSON(w, http.StatusOK, map[string]any{})
+		conn, err := s.eventbridge.DescribeConnection(input.Name)
+		if err != nil {
+			respondEventBridgeJSONError(w, http.StatusBadRequest, "ResourceNotFoundException", err.Error())
+			return true
+		}
+		respondEventBridgeJSON(w, http.StatusOK, eventBridgeConnectionMutationPayload(conn))
 		return true
 	case "ListConnections":
 		conns := s.eventbridge.ListConnections()
@@ -1216,7 +1225,7 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ValidationException", err.Error())
 			return true
 		}
-		respondEventBridgeJSON(w, http.StatusOK, map[string]string{"EndpointArn": ep.ARN})
+		respondEventBridgeJSON(w, http.StatusOK, eventBridgeEndpointMutationPayload(ep, false))
 		return true
 	case "DescribeEndpoint":
 		var input struct {
@@ -1252,7 +1261,7 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ResourceNotFoundException", err.Error())
 			return true
 		}
-		respondEventBridgeJSON(w, http.StatusOK, map[string]string{"EndpointArn": ep.ARN})
+		respondEventBridgeJSON(w, http.StatusOK, eventBridgeEndpointMutationPayload(ep, true))
 		return true
 	case "DeleteEndpoint":
 		var input struct {
@@ -1421,4 +1430,67 @@ func eventBridgeDeadLetterConfigOrNil(arn string) *eventBridgeDeadLetterConfig {
 		return nil
 	}
 	return &eventBridgeDeadLetterConfig{Arn: arn}
+}
+
+func eventBridgeConnectionMutationPayload(conn eventbridge.Connection) map[string]any {
+	lastModified := conn.CreatedAt
+	if !conn.LastAuthorizedAt.IsZero() {
+		lastModified = conn.LastAuthorizedAt
+	}
+	if lastModified.IsZero() {
+		lastModified = time.Now().UTC()
+	}
+	lastAuthorized := conn.LastAuthorizedAt
+	if lastAuthorized.IsZero() {
+		lastAuthorized = lastModified
+	}
+	return map[string]any{
+		"ConnectionArn":      conn.ARN,
+		"ConnectionState":    conn.State,
+		"CreationTime":       conn.CreatedAt,
+		"LastModifiedTime":   lastModified,
+		"LastAuthorizedTime": lastAuthorized,
+	}
+}
+
+func eventBridgeEndpointMutationPayload(ep eventbridge.Endpoint, includeUpdateFields bool) map[string]any {
+	eventBuses := make([]map[string]any, 0, len(ep.EventBuses))
+	for _, arn := range ep.EventBuses {
+		arn = strings.TrimSpace(arn)
+		if arn == "" {
+			continue
+		}
+		eventBuses = append(eventBuses, map[string]any{"EventBusArn": arn})
+	}
+	if len(eventBuses) == 0 {
+		eventBuses = append(eventBuses, map[string]any{"EventBusArn": "arn:aws:events:us-east-1:123456789012:event-bus/default"})
+	}
+	for len(eventBuses) < 2 {
+		eventBuses = append(eventBuses, eventBuses[len(eventBuses)-1])
+	}
+	out := map[string]any{
+		"Name": ep.Name,
+		"Arn":  ep.ARN,
+		"RoutingConfig": map[string]any{
+			"FailoverConfig": map[string]any{
+				"Primary": map[string]any{
+					"HealthCheck": "arn:aws:route53:::healthcheck/stackyard",
+				},
+				"Secondary": map[string]any{
+					"Route": eventbridge.DefaultRegion,
+				},
+			},
+		},
+		"ReplicationConfig": map[string]any{
+			"State": "DISABLED",
+		},
+		"EventBuses": eventBuses,
+		"RoleArn":    "arn:aws:iam::123456789012:role/stackyard-eventbridge-endpoint",
+		"State":      ep.State,
+	}
+	if includeUpdateFields {
+		out["EndpointId"] = ep.Name
+		out["EndpointUrl"] = "https://" + ep.Name + ".events.amazonaws.com"
+	}
+	return out
 }

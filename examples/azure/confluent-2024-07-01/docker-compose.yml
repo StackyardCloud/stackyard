@@ -1,0 +1,7 @@
+services:
+  confluent-example:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/confluent-2024-07-01/Dockerfile
+    environment:
+      STACKYARD_ENDPOINT: http://host.docker.internal:4566

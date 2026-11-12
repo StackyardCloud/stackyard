@@ -1,0 +1,34 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  resource-manager-2024-05-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/api-management/resource-manager-2024-05-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_APIM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_APIM_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-apim
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_APIM_SERVICE=apim-a
+      - STACKYARD_AZURE_APIM_API=echo-api
+      - STACKYARD_AZURE_APIM_OPERATION=get-echo
+      - STACKYARD_AZURE_APIM_PRODUCT=starter
+      - STACKYARD_AZURE_APIM_USER=user-1
+      - STACKYARD_AZURE_APIM_NAMED_VALUE=kv-endpoint
+      - STACKYARD_AZURE_APIM_GATEWAY=gw-a
+      - STACKYARD_AZURE_APIM_WORKSPACE=ws-a
+      - STACKYARD_AZURE_APIM_WORKSPACE_SUBSCRIPTION=sub-a
+      - STACKYARD_AZURE_APIM_NOTIFICATION=NewCommentNotificationMessage
+      - STACKYARD_AZURE_APIM_RECIPIENT=dev-example-com

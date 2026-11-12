@@ -453,7 +453,7 @@ func (s *mgnStore) Handle(action string, payload map[string]any) map[string]any 
 			"s3Key":    mgnString(payload, "s3Key"),
 		}
 		s.exports[exportID] = item
-		return mgnCloneMap(item)
+		return map[string]any{"exportTask": mgnCloneMap(item)}
 
 	case "StartImport":
 		importID := fmt.Sprintf("import-%08d", s.nextImportID)
@@ -471,7 +471,7 @@ func (s *mgnStore) Handle(action string, payload map[string]any) map[string]any 
 			"s3Key":    key,
 		}
 		s.imports[importID] = item
-		return mgnCloneMap(item)
+		return map[string]any{"importTask": mgnCloneMap(item)}
 
 	case "PutSourceServerAction":
 		sourceServerID := mgnFirstNonEmpty(mgnString(payload, "sourceServerID"), s.firstSourceServerIDLocked())

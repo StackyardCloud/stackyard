@@ -70,288 +70,483 @@ import (
 )
 
 type Server struct {
-	httpServer                           *http.Server
-	http2Server                          *http.Server
-	acm                                  *acm.Service
-	apigateway                           *apiGatewayStore
-	apigatewayv2                         *apiGatewayV2Store
-	appconfig                            *appConfigStore
-	amplify                              *amplifyStore
-	amplifyadminui                       *amplifyAdminUIStore
-	amplifyuibuilder                     *amplifyUIBuilderStore
-	novaact                              *novaActStore
-	appflow                              *appFlowStore
-	datapipeline                         *dataPipelineStore
-	b2bi                                 *b2biStore
-	awscostmanagement                    *awsCostManagementStore
-	billingconductor                     *billingConductorStore
-	appfabric                            *appFabricStore
-	artifact                             *artifactStore
-	discovery                            *discoveryStore
-	apprunner                            *appRunnerStore
-	blockchain                           *blockchainStore
-	braket                               *braketStore
-	chime                                *chimeStore
-	connect                              *connectStore
-	cleanrooms                           *cleanRoomsStore
-	cleanroomsml                         *cleanRoomsMLStore
-	dlm                                  *dlmStore
-	datazone                             *datazoneStore
-	dataexchange                         *dataExchangeStore
-	devicefarm                           *deviceFarmStore
-	diagnostictools                      *diagnosticToolsStore
-	fis                                  *fisStore
-	finspace                             *finspaceStore
-	finspacemanagement                   *finspaceManagementStore
-	gameliftstreams                      *gameliftStreamsStore
-	elasticache                          *elastiCacheStore
-	emr                                  *emrStore
-	emrcontainers                        *emrContainersStore
-	emrserverless                        *emrServerlessStore
-	msk                                  *mskStore
-	mskv1                                *mskv1Store
-	mskconnect                           *mskConnectStore
-	mq                                   *mqStore
-	mwaa                                 *mwaaStore
-	mwaaserverless                       *mwaaServerlessStore
-	firehose                             *firehoseStore
-	flink                                *flinkStore
-	kinesis                              *kinesisStore
-	kendra                               *kendraStore
-	pcs                                  *pcsStore
-	odb                                  *odbStore
-	imagebuilder                         *imageBuilderStore
-	entityresolution                     *entityResolutionStore
-	elementalinference                   *elementalInferenceStore
-	rekognition                          *rekognitionStore
-	transcribe                           *transcribeStore
-	xray                                 *xrayStore
-	wellarchitected                      *wellArchitectedStore
-	wickr                                *wickrStore
-	translate                            *translateStore
-	workmail                             *workmailStore
-	workspaces                           *workspacesStore
-	workspacesappstream2                 *workspacesAppStream2Store
-	workspacesthinclient                 *workspacesThinClientStore
-	workspacesweb                        *workspacesWebStore
-	sagemaker                            *sagemakerStore
-	simspaceweaver                       *simSpaceWeaverStore
-	savingsplans                         *savingsPlansStore
-	tnb                                  *tnbStore
-	redshiftserverless                   *redshiftServerlessStore
-	smsvoicev2                           *smsVoiceV2Store
-	socialmessaging                      *socialMessagingStore
-	supplychain                          *supplyChainStore
-	kinesisvideostreams                  *kinesisVideoStreamsStore
-	lexv2                                *lexV2Store
-	pinpoint                             *pinpointStore
-	quicksight                           *quickSightStore
-	location                             *locationStore
-	codecatalyst                         *codeCatalystStore
-	bedrockagentcorecontrol              *bedrockAgentCoreControlStore
-	bedrockagentcoredata                 *bedrockAgentCoreDataStore
-	appsync                              *appSyncStore
-	appmesh                              *appMeshStore
-	vpclattice                           *vpcLatticeStore
-	globalaccelerator                    *globalAcceleratorStore
-	rtbfabric                            *rtbFabricStore
-	arczonalshift                        *arcZonalShiftStore
-	arcregionswitch                      *arcRegionSwitchStore
-	recoveryreadiness                    *recoveryReadinessStore
-	recoverycluster                      *recoveryClusterStore
-	routingcontrol                       *routingControlStore
-	cloudformation                       *cloudFormationStore
-	cloudfront                           *cloudFrontStore
-	route53                              *route53Store
-	directconnect                        *directConnectStore
-	cloudmap                             *cloudMapStore
-	config                               *configStore
-	cloudwatch                           *cloudWatchStore
-	clouddirectory                       *cloudDirectoryStore
-	ec2autoscaling                       *ec2AutoScalingStore
-	elasticloadbalancing                 *elasticLoadBalancingStore
-	elasticloadbalancingv2               *elasticLoadBalancingV2Store
-	autoscalingplans                     *autoScalingPlansStore
-	cloudwatchlogs                       *cloudWatchLogsStore
-	grafana                              *grafanaStore
-	prometheus                           *prometheusStore
-	mpa                                  *mpaStore
-	proton                               *protonStore
-	resiliencehub                        *resilienceHubStore
-	recyclebin                           *recycleBinStore
-	resourcegroups                       *resourceGroupsStore
-	resourcegroupstaggingapi             *resourceGroupsTaggingAPIStore
-	resourceexplorer2                    *resourceExplorer2Store
-	oam                                  *oamStore
-	applicationsignals                   *applicationSignalsStore
-	networkfirewall                      *networkFirewallStore
-	networkflowmonitor                   *networkFlowMonitorStore
-	networkmonitor                       *networkMonitorStore
-	internetmonitor                      *internetMonitorStore
-	transfer                             *transferStore
-	ebs                                  *ebsStore
-	fsx                                  *fsxStore
-	snowball                             *snowballStore
-	storagegateway                       *storageGatewayStore
-	stepfunctions                        *stepFunctionsStore
-	opensearch                           *openSearchStore
-	accessanalyzer                       *accessAnalyzerStore
-	auditmanager                         *auditManagerStore
-	rolesanywhere                        *rolesAnywhereStore
-	sts                                  *stsStore
-	singlesignon                         *singleSignOnStore
-	singlesignonportal                   *singleSignOnPortalStore
-	singlesignonoidc                     *singleSignOnOIDCStore
-	identitystore                        *identityStoreStore
-	iam                                  *iamStore
-	guardduty                            *guardDutyStore
-	macie                                *macieStore
-	securityhub                          *securityHubStore
-	securityir                           *securityIRStore
-	securitylake                         *securityLakeStore
-	wafv2                                *wafv2Store
-	shieldadvanced                       *shieldAdvancedStore
-	paymentcryptography                  *paymentCryptographyStore
-	paymentcryptographydata              *paymentCryptographyDataStore
-	inspectorv2                          *inspectorV2Store
-	cloudwatchapplicationinsights        *cloudWatchApplicationInsightsStore
-	cloudwatchinvestigations             *cloudWatchInvestigationsStore
-	cloudwatchsynthetics                 *cloudWatchSyntheticsStore
-	cloudwatchrum                        *cloudWatchRUMStore
-	cloudwatchobservabilityadmin         *cloudWatchObservabilityAdminStore
-	s3                                   *s3.Service
-	s3control                            *s3control.Service
-	s3outposts                           *s3outposts.Service
-	s3tables                             *s3tables.Service
-	s3vectors                            *s3vectors.Service
-	sqs                                  *sqs.Service
-	sns                                  *sns.Service
-	ses                                  *ses.Service
-	sesv2                                *sesv2.Service
-	lightsail                            *lightsail.Service
-	lambda                               *lambda.Service
-	eventbridge                          *eventbridge.Service
-	keyspaces                            *keyspaces.Service
-	memorydb                             *memorydb.Service
-	timestream                           *timestreaminfluxdb.Service
-	cloudcontrolapi                      *cloudControlAPIStore
-	controlcatalog                       *controlCatalogStore
-	controltower                         *controlTowerStore
-	cloudtrail                           *cloudTrailStore
-	codeartifact                         *codeArtifactStore
-	codebuild                            *codeBuildStore
-	detective                            *detectiveStore
-	fms                                  *fmsStore
-	directoryservice                     *directoryServiceStore
-	directoryservicedata                 *directoryServiceDataStore
-	dms                                  *dmsStore
-	drs                                  *drsStore
-	ivs                                  *ivsStore
-	ivschat                              *ivsChatStore
-	ivschatmessaging                     *ivsChatMessagingStore
-	ivsmultitrack                        *ivsMultitrackStore
-	ivsrealtime                          *ivsRealtimeStore
-	mediapackage                         *mediaPackageStore
-	mediaconnect                         *mediaConnectStore
-	groundstation                        *groundStationStore
-	mediatailor                          *mediaTailorStore
-	deadline                             *deadlineStore
-	evs                                  *evsStore
-	m2                                   *m2Store
-	mgn                                  *mgnStore
-	migrationhuborchestrator             *migrationHubOrchestratorStore
-	migrationhubstrategy                 *migrationHubStrategyStore
-	migrationhubrefactorspaces           *migrationHubRefactorSpacesStore
-	qbusiness                            *qBusinessStore
-	qdeveloper                           *qDeveloperStore
-	codeguru                             *codeGuruStore
-	codeguruprofiler                     *codeGuruProfilerStore
-	bedrock                              *bedrockStore
-	devopsguru                           *devOpsGuruStore
-	comprehend                           *comprehendStore
-	comprehendmedical                    *comprehendMedicalStore
-	computeoptimizer                     *computeOptimizerStore
-	ram                                  *ramStore
-	servicequotas                        *serviceQuotasStore
-	support                              *supportStore
-	marketplace                          *marketplaceStore
-	partnercentralselling                *partnerCentralSellingStore
-	supportapp                           *supportAppStore
-	trustedadvisor                       *trustedAdvisorStore
-	usernotifications                    *userNotificationsStore
-	notificationscontacts                *notificationsContactsStore
-	quicksetup                           *quickSetupStore
-	incidentmanager                      *incidentManagerStore
-	ssmsap                               *ssmSAPStore
-	systemsmanager                       *systemsManagerStore
-	ssmguiconnect                        *ssmGUIConnectStore
-	organizations                        *organizationsStore
-	licensemanager                       *licenseManagerStore
-	licensemanagerlinuxsubscriptions     *licenseManagerLinuxSubscriptionsStore
-	licensemanagerusersubscriptions      *licenseManagerUserSubscriptionsStore
-	health                               *healthStore
-	healthlake                           *healthLakeStore
-	healthimaging                        *healthImagingStore
-	codedeploy                           *codeDeployStore
-	codepipeline                         *codePipelineStore
-	augmentedai                          *augmentedAIStore
-	omics                                *omicsStore
-	iot                                  *iotStore
-	iotmi                                *iotMIStore
-	launchwizard                         *launchWizardStore
-	managedservicescm                    *managedServicesCMStore
-	lakeformation                        *lakeFormationStore
-	iotfleetwise                         *iotFleetWiseStore
-	iotevents                            *iotEventsStore
-	iotwireless                          *iotWirelessStore
-	iotgreengrass                        *iotGreengrassStore
-	iotsitewise                          *iotSiteWiseStore
-	iottwinmaker                         *iotTwinMakerStore
-	cognitoidentity                      *cognitoIdentityStore
-	cognitouserpools                     *cognitoUserPoolsStore
-	cognitosync                          *cognitoSyncStore
-	neptuneanalytics                     *neptuneAnalyticsStore
-	neptunedata                          *neptuneDataStore
-	kms                                  *kms.Service
-	signer                               *signer.Service
-	athena                               *athena.Service
-	swf                                  *swf.Service
-	privateca                            *privateca.Service
-	secretsmgr                           *secretsmanager.Service
-	eb                                   *elasticbeanstalk.Service
-	batch                                *batch.Service
-	cloudhsm                             *cloudhsm.Service
-	dynamodb                             *dynamodb.Service
-	dsql                                 *dsql.Service
-	ecs                                  *ecs.Service
-	ecr                                  *ecr.Service
-	eks                                  *eks.Service
-	ec2                                  *ec2.Service
-	rds                                  *rds.Service
-	redshiftMu                           sync.Mutex
-	redshift                             *redshiftStore
-	enabledProviders                     []string
-	enabledProviderSet                   map[string]struct{}
-	providerStorageMu                    sync.Mutex
-	gcpStorageBuckets                    map[string]*providerBucket
-	gcpStorageHMACKeys                   map[string]map[string]*gcpStorageHMACKey
-	gcpStorageNextGeneration             int64
-	gcpStorageNextHMACKeyID              int64
-	azureStorageAccounts                 map[string]map[string]*providerBucket
-	azureQueues                          map[string]map[string][]azureQueueMessage
-	azureQueueNextID                     int64
-	azureKeyVaults                       map[string]map[string][]azureSecretVersion
-	azureBotConversations                map[string]*azureBotConversation
-	azureBotNextConversationID           int64
-	azureContentModeratorImageLists      map[int64]*azureContentModeratorImageList
-	azureContentModeratorNextImageListID int64
-	ociStorageNamespaces                 map[string]map[string]*providerBucket
-	awsAuthValidator                     awsRequestAuthValidator
-	providerAuthValidators               map[string]providerRequestAuthValidator
-	accessKey                            string
-	secretKey                            string
-	logLevel                             string
-	state                                *statePersistence
+	httpServer                                          *http.Server
+	http2Server                                         *http.Server
+	acm                                                 *acm.Service
+	apigateway                                          *apiGatewayStore
+	apigatewayv2                                        *apiGatewayV2Store
+	appconfig                                           *appConfigStore
+	amplify                                             *amplifyStore
+	amplifyadminui                                      *amplifyAdminUIStore
+	amplifyuibuilder                                    *amplifyUIBuilderStore
+	novaact                                             *novaActStore
+	appflow                                             *appFlowStore
+	datapipeline                                        *dataPipelineStore
+	b2bi                                                *b2biStore
+	awscostmanagement                                   *awsCostManagementStore
+	billingconductor                                    *billingConductorStore
+	appfabric                                           *appFabricStore
+	artifact                                            *artifactStore
+	discovery                                           *discoveryStore
+	apprunner                                           *appRunnerStore
+	blockchain                                          *blockchainStore
+	braket                                              *braketStore
+	chime                                               *chimeStore
+	connect                                             *connectStore
+	cleanrooms                                          *cleanRoomsStore
+	cleanroomsml                                        *cleanRoomsMLStore
+	dlm                                                 *dlmStore
+	datazone                                            *datazoneStore
+	dataexchange                                        *dataExchangeStore
+	devicefarm                                          *deviceFarmStore
+	diagnostictools                                     *diagnosticToolsStore
+	fis                                                 *fisStore
+	finspace                                            *finspaceStore
+	finspacemanagement                                  *finspaceManagementStore
+	gameliftstreams                                     *gameliftStreamsStore
+	elasticache                                         *elastiCacheStore
+	emr                                                 *emrStore
+	emrcontainers                                       *emrContainersStore
+	emrserverless                                       *emrServerlessStore
+	msk                                                 *mskStore
+	mskv1                                               *mskv1Store
+	mskconnect                                          *mskConnectStore
+	mq                                                  *mqStore
+	mwaa                                                *mwaaStore
+	mwaaserverless                                      *mwaaServerlessStore
+	firehose                                            *firehoseStore
+	flink                                               *flinkStore
+	kinesis                                             *kinesisStore
+	kendra                                              *kendraStore
+	pcs                                                 *pcsStore
+	odb                                                 *odbStore
+	imagebuilder                                        *imageBuilderStore
+	entityresolution                                    *entityResolutionStore
+	elementalinference                                  *elementalInferenceStore
+	rekognition                                         *rekognitionStore
+	transcribe                                          *transcribeStore
+	xray                                                *xrayStore
+	wellarchitected                                     *wellArchitectedStore
+	wickr                                               *wickrStore
+	translate                                           *translateStore
+	workmail                                            *workmailStore
+	workspaces                                          *workspacesStore
+	workspacesappstream2                                *workspacesAppStream2Store
+	workspacesthinclient                                *workspacesThinClientStore
+	workspacesweb                                       *workspacesWebStore
+	sagemaker                                           *sagemakerStore
+	simspaceweaver                                      *simSpaceWeaverStore
+	savingsplans                                        *savingsPlansStore
+	tnb                                                 *tnbStore
+	redshiftserverless                                  *redshiftServerlessStore
+	smsvoicev2                                          *smsVoiceV2Store
+	socialmessaging                                     *socialMessagingStore
+	supplychain                                         *supplyChainStore
+	kinesisvideostreams                                 *kinesisVideoStreamsStore
+	lexv2                                               *lexV2Store
+	pinpoint                                            *pinpointStore
+	quicksight                                          *quickSightStore
+	location                                            *locationStore
+	codecatalyst                                        *codeCatalystStore
+	bedrockagentcorecontrol                             *bedrockAgentCoreControlStore
+	bedrockagentcoredata                                *bedrockAgentCoreDataStore
+	appsync                                             *appSyncStore
+	appmesh                                             *appMeshStore
+	vpclattice                                          *vpcLatticeStore
+	globalaccelerator                                   *globalAcceleratorStore
+	rtbfabric                                           *rtbFabricStore
+	arczonalshift                                       *arcZonalShiftStore
+	arcregionswitch                                     *arcRegionSwitchStore
+	recoveryreadiness                                   *recoveryReadinessStore
+	recoverycluster                                     *recoveryClusterStore
+	routingcontrol                                      *routingControlStore
+	cloudformation                                      *cloudFormationStore
+	cloudfront                                          *cloudFrontStore
+	route53                                             *route53Store
+	directconnect                                       *directConnectStore
+	cloudmap                                            *cloudMapStore
+	config                                              *configStore
+	cloudwatch                                          *cloudWatchStore
+	clouddirectory                                      *cloudDirectoryStore
+	ec2autoscaling                                      *ec2AutoScalingStore
+	elasticloadbalancing                                *elasticLoadBalancingStore
+	elasticloadbalancingv2                              *elasticLoadBalancingV2Store
+	autoscalingplans                                    *autoScalingPlansStore
+	cloudwatchlogs                                      *cloudWatchLogsStore
+	grafana                                             *grafanaStore
+	prometheus                                          *prometheusStore
+	mpa                                                 *mpaStore
+	proton                                              *protonStore
+	resiliencehub                                       *resilienceHubStore
+	recyclebin                                          *recycleBinStore
+	resourcegroups                                      *resourceGroupsStore
+	resourcegroupstaggingapi                            *resourceGroupsTaggingAPIStore
+	resourceexplorer2                                   *resourceExplorer2Store
+	oam                                                 *oamStore
+	applicationsignals                                  *applicationSignalsStore
+	networkfirewall                                     *networkFirewallStore
+	networkflowmonitor                                  *networkFlowMonitorStore
+	networkmonitor                                      *networkMonitorStore
+	internetmonitor                                     *internetMonitorStore
+	transfer                                            *transferStore
+	ebs                                                 *ebsStore
+	fsx                                                 *fsxStore
+	snowball                                            *snowballStore
+	storagegateway                                      *storageGatewayStore
+	stepfunctions                                       *stepFunctionsStore
+	opensearch                                          *openSearchStore
+	accessanalyzer                                      *accessAnalyzerStore
+	auditmanager                                        *auditManagerStore
+	rolesanywhere                                       *rolesAnywhereStore
+	sts                                                 *stsStore
+	singlesignon                                        *singleSignOnStore
+	singlesignonportal                                  *singleSignOnPortalStore
+	singlesignonoidc                                    *singleSignOnOIDCStore
+	identitystore                                       *identityStoreStore
+	iam                                                 *iamStore
+	guardduty                                           *guardDutyStore
+	macie                                               *macieStore
+	securityhub                                         *securityHubStore
+	securityir                                          *securityIRStore
+	securitylake                                        *securityLakeStore
+	wafv2                                               *wafv2Store
+	shieldadvanced                                      *shieldAdvancedStore
+	paymentcryptography                                 *paymentCryptographyStore
+	paymentcryptographydata                             *paymentCryptographyDataStore
+	inspectorv2                                         *inspectorV2Store
+	cloudwatchapplicationinsights                       *cloudWatchApplicationInsightsStore
+	cloudwatchinvestigations                            *cloudWatchInvestigationsStore
+	cloudwatchsynthetics                                *cloudWatchSyntheticsStore
+	cloudwatchrum                                       *cloudWatchRUMStore
+	cloudwatchobservabilityadmin                        *cloudWatchObservabilityAdminStore
+	s3                                                  *s3.Service
+	s3control                                           *s3control.Service
+	s3outposts                                          *s3outposts.Service
+	s3tables                                            *s3tables.Service
+	s3vectors                                           *s3vectors.Service
+	sqs                                                 *sqs.Service
+	sns                                                 *sns.Service
+	ses                                                 *ses.Service
+	sesv2                                               *sesv2.Service
+	lightsail                                           *lightsail.Service
+	lambda                                              *lambda.Service
+	eventbridge                                         *eventbridge.Service
+	keyspaces                                           *keyspaces.Service
+	memorydb                                            *memorydb.Service
+	timestream                                          *timestreaminfluxdb.Service
+	cloudcontrolapi                                     *cloudControlAPIStore
+	controlcatalog                                      *controlCatalogStore
+	controltower                                        *controlTowerStore
+	cloudtrail                                          *cloudTrailStore
+	codeartifact                                        *codeArtifactStore
+	codebuild                                           *codeBuildStore
+	detective                                           *detectiveStore
+	fms                                                 *fmsStore
+	directoryservice                                    *directoryServiceStore
+	directoryservicedata                                *directoryServiceDataStore
+	dms                                                 *dmsStore
+	drs                                                 *drsStore
+	ivs                                                 *ivsStore
+	ivschat                                             *ivsChatStore
+	ivschatmessaging                                    *ivsChatMessagingStore
+	ivsmultitrack                                       *ivsMultitrackStore
+	ivsrealtime                                         *ivsRealtimeStore
+	mediapackage                                        *mediaPackageStore
+	mediaconnect                                        *mediaConnectStore
+	groundstation                                       *groundStationStore
+	mediatailor                                         *mediaTailorStore
+	deadline                                            *deadlineStore
+	evs                                                 *evsStore
+	m2                                                  *m2Store
+	mgn                                                 *mgnStore
+	migrationhuborchestrator                            *migrationHubOrchestratorStore
+	migrationhubstrategy                                *migrationHubStrategyStore
+	migrationhubrefactorspaces                          *migrationHubRefactorSpacesStore
+	qbusiness                                           *qBusinessStore
+	qdeveloper                                          *qDeveloperStore
+	codeguru                                            *codeGuruStore
+	codeguruprofiler                                    *codeGuruProfilerStore
+	bedrock                                             *bedrockStore
+	devopsguru                                          *devOpsGuruStore
+	comprehend                                          *comprehendStore
+	comprehendmedical                                   *comprehendMedicalStore
+	computeoptimizer                                    *computeOptimizerStore
+	ram                                                 *ramStore
+	servicequotas                                       *serviceQuotasStore
+	support                                             *supportStore
+	marketplace                                         *marketplaceStore
+	partnercentralselling                               *partnerCentralSellingStore
+	supportapp                                          *supportAppStore
+	trustedadvisor                                      *trustedAdvisorStore
+	usernotifications                                   *userNotificationsStore
+	notificationscontacts                               *notificationsContactsStore
+	quicksetup                                          *quickSetupStore
+	incidentmanager                                     *incidentManagerStore
+	ssmsap                                              *ssmSAPStore
+	systemsmanager                                      *systemsManagerStore
+	ssmguiconnect                                       *ssmGUIConnectStore
+	organizations                                       *organizationsStore
+	licensemanager                                      *licenseManagerStore
+	licensemanagerlinuxsubscriptions                    *licenseManagerLinuxSubscriptionsStore
+	licensemanagerusersubscriptions                     *licenseManagerUserSubscriptionsStore
+	health                                              *healthStore
+	healthlake                                          *healthLakeStore
+	healthimaging                                       *healthImagingStore
+	codedeploy                                          *codeDeployStore
+	codepipeline                                        *codePipelineStore
+	augmentedai                                         *augmentedAIStore
+	omics                                               *omicsStore
+	iot                                                 *iotStore
+	iotmi                                               *iotMIStore
+	launchwizard                                        *launchWizardStore
+	managedservicescm                                   *managedServicesCMStore
+	lakeformation                                       *lakeFormationStore
+	iotfleetwise                                        *iotFleetWiseStore
+	iotevents                                           *iotEventsStore
+	iotwireless                                         *iotWirelessStore
+	iotgreengrass                                       *iotGreengrassStore
+	iotsitewise                                         *iotSiteWiseStore
+	iottwinmaker                                        *iotTwinMakerStore
+	cognitoidentity                                     *cognitoIdentityStore
+	cognitouserpools                                    *cognitoUserPoolsStore
+	cognitosync                                         *cognitoSyncStore
+	neptuneanalytics                                    *neptuneAnalyticsStore
+	neptunedata                                         *neptuneDataStore
+	kms                                                 *kms.Service
+	signer                                              *signer.Service
+	athena                                              *athena.Service
+	swf                                                 *swf.Service
+	privateca                                           *privateca.Service
+	secretsmgr                                          *secretsmanager.Service
+	eb                                                  *elasticbeanstalk.Service
+	batch                                               *batch.Service
+	cloudhsm                                            *cloudhsm.Service
+	dynamodb                                            *dynamodb.Service
+	dsql                                                *dsql.Service
+	ecs                                                 *ecs.Service
+	ecr                                                 *ecr.Service
+	eks                                                 *eks.Service
+	ec2                                                 *ec2.Service
+	rds                                                 *rds.Service
+	redshiftMu                                          sync.Mutex
+	redshift                                            *redshiftStore
+	enabledProviders                                    []string
+	enabledProviderSet                                  map[string]struct{}
+	providerStorageMu                                   sync.Mutex
+	gcpStorageBuckets                                   map[string]*providerBucket
+	gcpStorageHMACKeys                                  map[string]map[string]*gcpStorageHMACKey
+	gcpStorageNextGeneration                            int64
+	gcpStorageNextHMACKeyID                             int64
+	azureStorageAccounts                                map[string]map[string]*providerBucket
+	azureQueues                                         map[string]map[string][]azureQueueMessage
+	azureQueueNextID                                    int64
+	azureKeyVaults                                      map[string]map[string][]azureSecretVersion
+	azureAttestationPolicies                            map[string]string
+	azureAttestationPolicyCertificates                  []string
+	azureDataCatalogDataAssets                          map[string]*azureDataCatalogDataAsset
+	azureDataCatalogCustomDataSourceProtocols           map[string]*azureDataCatalogCustomDataSourceProtocol
+	azureActiveDirectoryB2CTenants                      map[string]*azureActiveDirectoryB2CTenant
+	azureActiveDirectoryGuestUsages                     map[string]*azureActiveDirectoryGuestUsage
+	azureDataManagerForAgriFarmBeats                    map[string]*azureDataManagerForAgriFarmBeat
+	azureDataManagerForAgriOperationResults             map[string]*azureDataManagerForAgriOperationResult
+	azureDataManagerForAgriDataConnectors               map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriExtensions                   map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriPrivateEndpointConnections   map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriSolutions                    map[string]*azureDataManagerForAgriChildResource
+	azureDataManagerForAgriDataPlaneEntities            map[string]*azureDataManagerForAgriDataPlaneEntity
+	azureDataManagerForAgriDataPlaneFiles               map[string]*azureDataManagerForAgriDataPlaneFile
+	azureDataManagerForAgriDataPlaneDatasetGrants       map[string]*azureDataManagerForAgriDataPlaneGrant
+	azureDataManagerForAgriDataPlaneJobs                map[string]*azureDataManagerForAgriDataPlaneJob
+	azureContainerInstancesResources                    map[string]*azureContainerInstancesResource
+	azureContainerInstancesProfileResources             map[string]*azureContainerInstancesProfileResource
+	azureContainerInstancesServiceAssociationLinks      map[string]*azureContainerInstancesServiceAssociationLink
+	azureContainerAppsResources                         map[string]*azureContainerAppsResource
+	azureContainerAppsChildResources                    map[string]*azureContainerAppsChildResource
+	azureContainerAppsDataPlaneSessions                 map[string]*azureContainerAppsDataPlaneSession
+	azureContainerAppsDataPlaneExecutions               map[string]*azureContainerAppsDataPlaneExecution
+	azureContainerAppsDataPlaneFiles                    map[string]*azureContainerAppsDataPlaneFile
+	azureLoadTestingDataPlaneTests                      map[string]*azureLoadTestingDataPlaneTest
+	azureLoadTestingDataPlaneRuns                       map[string]*azureLoadTestingDataPlaneRun
+	azureLoadTestingDataPlaneFiles                      map[string]*azureLoadTestingDataPlaneFile
+	azureCommunicationAdvancedMessagingMessages         map[string]*azureCommunicationAdvancedMessagingMessage
+	azureCommunicationAdvancedMessagingTemplates        map[string]*azureCommunicationAdvancedMessagingTemplate
+	azureCommunicationAdvancedMessagingStreams          map[string]*azureCommunicationAdvancedMessagingStream
+	azureConsumptionBudgets                             map[string]*azureConsumptionBudget
+	azureCommunicationCallAutomationCalls               map[string]*azureCommunicationCallAutomationCall
+	azureCommunicationCallAutomationRecordings          map[string]*azureCommunicationCallAutomationRecording
+	azureCommunicationChatThreads                       map[string]*azureCommunicationChatThread
+	azureCommunicationChatParticipants                  map[string]*azureCommunicationChatParticipant
+	azureCommunicationChatMessages                      map[string]*azureCommunicationChatMessage
+	azureCommunicationChatReadReceipts                  []*azureCommunicationChatReadReceipt
+	azureCommunicationEmailOperations                   map[string]*azureCommunicationEmailOperation
+	azureCommunicationIdentityIdentities                map[string]*azureCommunicationIdentityIdentity
+	azureCommunicationIdentityAssignments               map[string]*azureCommunicationIdentityAssignment
+	azureCommunicationServices                          map[string]*azureCommunicationServiceResource
+	azureCommunicationEmailServices                     map[string]*azureCommunicationEmailServiceResource
+	azureCommunicationDomains                           map[string]*azureCommunicationDomainResource
+	azureCommunicationNestedResources                   map[string]*azureCommunicationNestedResource
+	azureConfluentOrganizations                         map[string]*azureConfluentOrganization
+	azureConfluentMarketplaceAgreements                 map[string]*azureConfluentMarketplaceAgreement
+	azureConfluentResources                             map[string]*azureConfluentChildResource
+	azureConfluentInvitations                           map[string]*azureConfluentInvitation
+	azureConfluentRoleBindings                          map[string]*azureConfluentRoleBinding
+	azureCommunicationSipRoutingConfiguration           *azureCommunicationSipRoutingConfiguration
+	azureCommunicationNetworkTraversalConfigurations    map[string]*azureCommunicationNetworkTraversalConfiguration
+	azureCommunicationRooms                             map[string]*azureCommunicationRoom
+	azureCommunicationRoomParticipants                  map[string]*azureCommunicationRoomParticipant
+	azureCommunicationPhoneNumbersReservations          map[string]*azureCommunicationPhoneNumbersReservation
+	azureCommunicationPhoneNumbersSearchResults         map[string]*azureCommunicationPhoneNumbersSearchResult
+	azureCommunicationPhoneNumbersOperations            map[string]*azureCommunicationPhoneNumbersOperation
+	azureCommunicationPhoneNumbersNumbers               map[string]*azureCommunicationPhoneNumbersRecord
+	azureCommunicationJobRouterClassificationPolicies   map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterDistributionPolicies     map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterExceptionPolicies        map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterQueues                   map[string]*azureCommunicationJobRouterResource
+	azureCommunicationJobRouterJobs                     map[string]*azureCommunicationJobRouterJob
+	azureCommunicationJobRouterWorkers                  map[string]*azureCommunicationJobRouterWorker
+	azureCommunicationJobRouterOffers                   map[string]*azureCommunicationJobRouterOffer
+	azureCommunicationJobRouterAssignments              map[string]*azureCommunicationJobRouterAssignment
+	azurePlaywrightDataPlaneWorkspaces                  map[string]*azurePlaywrightDataPlaneWorkspace
+	azurePlaywrightDataPlaneAccessTokens                map[string]*azurePlaywrightDataPlaneAccessToken
+	azurePlaywrightDataPlaneTestRuns                    map[string]*azurePlaywrightDataPlaneTestRun
+	azureWebPubSubDataPlaneConnections                  map[string]*azureWebPubSubDataPlaneConnection
+	azureWebPubSubDataPlaneUsers                        map[string]*azureWebPubSubDataPlaneUser
+	azureResourceGraphQueries                           map[string]*azureResourceGraphQuery
+	azureQuantumWorkspaces                              map[string]*azureQuantumWorkspace
+	azureQuantumDataPlaneJobs                           map[string]*azureQuantumDataPlaneJob
+	azureQuantumDataPlaneSessions                       map[string]*azureQuantumDataPlaneSession
+	azureSphereCatalogs                                 map[string]*azureSphereCatalog
+	azureSphereProducts                                 map[string]*azureSphereProduct
+	azureSphereDeviceGroups                             map[string]*azureSphereDeviceGroup
+	azureSphereDevices                                  map[string]*azureSphereDevice
+	azureSphereDeployments                              map[string]*azureSphereDeployment
+	azureSphereImages                                   map[string]*azureSphereImage
+	azureStackAdminSettings                             map[string]*azureStackAdminSettings
+	azureStackAdminServices                             map[string]*azureStackAdminService
+	azureStackAdminAccounts                             map[string]*azureStackAdminStorageAccount
+	azureStackAdminAcquisitions                         map[string]*azureStackAdminAcquisition
+	azureStackAdminAsyncOperations                      map[string]*azureStackAdminAsyncOperation
+	azureCloudNGFWFirewalls                             map[string]*azureCloudNGFWFirewall
+	azureCloudNGFWLocalRulestacks                       map[string]*azureCloudNGFWLocalRulestack
+	azureCloudNGFWGlobalRulestacks                      map[string]*azureCloudNGFWGlobalRulestack
+	azureCloudNGFWLocalChildren                         map[string]*azureCloudNGFWChildResource
+	azureCloudNGFWGlobalChildren                        map[string]*azureCloudNGFWGlobalChildResource
+	azureChaosStudioTargets                             map[string]*azureChaosStudioTarget
+	azureChaosStudioCapabilities                        map[string]*azureChaosStudioCapability
+	azureChaosStudioExperiments                         map[string]*azureChaosStudioExperiment
+	azureChaosStudioExecutions                          map[string]*azureChaosStudioExecution
+	azureChaosStudioOperationStatuses                   map[string]*azureChaosStudioOperationStatus
+	azureStackHCIClusters                               map[string]*azureStackHCICluster
+	azureStackHCIArcSettings                            map[string]*azureStackHCIArcSetting
+	azureStackHCIExtensions                             map[string]*azureStackHCIExtension
+	azureStackHCIDeploymentSettings                     map[string]*azureStackHCIDeploymentSetting
+	azureStackHCIUpdates                                map[string]*azureStackHCIUpdate
+	azureStackHCIUpdateSummaries                        map[string]*azureStackHCIUpdateSummary
+	azureStackHCIUpdateRuns                             map[string]*azureStackHCIUpdateRun
+	azureStackHCIEdgeDevices                            map[string]*azureStackHCIEdgeDevice
+	azureCDNProfiles                                    map[string]*azureCDNProfile
+	azureCDNEndpoints                                   map[string]*azureCDNEndpoint
+	azureCDNChildren                                    map[string]*azureCDNChildResource
+	azureWebPubSubAccounts                              map[string]*azureWebPubSubAccount
+	azureWebPubSubChildren                              map[string]*azureWebPubSubChildResource
+	azureBillingAccounts                                map[string]*azureBillingAccount
+	azureBillingResources                               map[string]*azureBillingResource
+	azureBillingProperties                              map[string]*azureBillingProperty
+	azureVideoIndexerAccounts                           map[string]*azureVideoIndexerAccount
+	azureVideoIndexerPrivateEndpointConnections         map[string]*azureVideoIndexerPrivateEndpointConnection
+	azureMigrateAssessmentProjects                      map[string]*azureMigrateAssessmentProject
+	azureMigrateAssessmentGroups                        map[string]*azureMigrateAssessmentGroup
+	azureMigrateAssessmentMachines                      map[string]*azureMigrateAssessmentMachine
+	azureMigrateAssessments                             map[string]*azureMigrateAssessment
+	azureMigrateAssessmentCollectors                    map[string]*azureMigrateAssessmentCollector
+	azureMigrateAssessmentPrivateEndpointConnections    map[string]*azureMigrateAssessmentPrivateEndpointConnection
+	azureMigrateDiscoverySites                          map[string]*azureMigrateDiscoverySite
+	azureMigrateDiscoveryMachines                       map[string]*azureMigrateDiscoveryMachine
+	azureMigrateDiscoveryRunAsAccounts                  map[string]*azureMigrateDiscoveryRunAsAccount
+	azureMigrateDiscoveryInventoryItems                 map[string]*azureMigrateDiscoveryInventoryItem
+	azureMigrateProjects                                map[string]*azureMigrateProject
+	azureConfidentialLedgers                            map[string]*azureConfidentialLedgerResource
+	azureIntegrationSpaces                              map[string]*azureIntegrationSpace
+	azureIntegrationApplications                        map[string]*azureIntegrationApplication
+	azureIntegrationApplicationResources                map[string]*azureIntegrationApplicationResource
+	azureIntegrationBusinessProcesses                   map[string]*azureIntegrationBusinessProcess
+	azureIntegrationBusinessProcessVersions             map[string]*azureIntegrationBusinessProcessVersion
+	azureIntegrationInfrastructureResources             map[string]*azureIntegrationInfrastructureResource
+	azureIntegrationArtifacts                           map[string]*azureIntegrationArtifact
+	azureSpringServices                                 map[string]*azureSpringService
+	azureSpringApps                                     map[string]*azureSpringApp
+	azureSpringDeployments                              map[string]*azureSpringDeployment
+	azureSpringChildren                                 map[string]*azureSpringChildResource
+	azureSpringBuildServices                            map[string]*azureSpringBuildService
+	azureSpringBuilds                                   map[string]*azureSpringBuild
+	azureNetAppResources                                map[string]*azureNetAppResource
+	azureComputeResources                               map[string]*azureComputeResource
+	azureComputeLimitFeatures                           map[string]*azureComputeLimitFeatureResource
+	azureComputeLimitGuestSubscriptions                 map[string]*azureComputeLimitGuestSubscriptionResource
+	azureComputeLimitSharedLimits                       map[string]*azureComputeLimitSharedLimitResource
+	azureComputeScheduleOperations                      map[string]*azureComputeScheduleOperation
+	azureComputeFleets                                  map[string]*azureComputeFleetResource
+	azureBatchManagementAccounts                        map[string]*azureBatchManagementAccount
+	azureBatchManagementResources                       map[string]*azureBatchManagementChildResource
+	azureBlueprintDefinitions                           map[string]*azureBlueprintDefinition
+	azureBlueprintArtifacts                             map[string]*azureBlueprintArtifact
+	azureBlueprintVersions                              map[string]*azureBlueprintVersion
+	azureBlueprintPublishedArtifacts                    map[string]*azureBlueprintPublishedArtifact
+	azureBlueprintAssignments                           map[string]*azureBlueprintAssignment
+	azureBlueprintAssignmentOperations                  map[string]*azureBlueprintAssignmentOperation
+	azurePlaywrightWorkspaces                           map[string]*azurePlaywrightWorkspace
+	azureLoadTests                                      map[string]*azureLoadTestingResource
+	azureLoadTestingChildResources                      map[string]*azureLoadTestingChildResource
+	azureKustoClusters                                  map[string]*azureKustoCluster
+	azureKustoResources                                 map[string]*azureKustoResource
+	azureKustoOperationResults                          map[string]*azureKustoOperationResult
+	azureArcVMwareResources                             map[string]*azureArcVMwareResource
+	azureArcVMwareInventoryItems                        map[string]*azureArcVMwareInventoryItem
+	azureArcVMwareVirtualMachineInstances               map[string]*azureArcVMwareVirtualMachineInstance
+	azureArcVMwareGuestAgents                           map[string]*azureArcVMwareGuestAgent
+	azureArcVMwareHybridIdentityMetadata                map[string]*azureArcVMwareHybridIdentityMetadata
+	azureArcSCVMMResources                              map[string]*azureArcSCVMMResource
+	azureArcSCVMMInventoryItems                         map[string]*azureArcSCVMMInventoryItem
+	azureArcSCVMMVirtualMachineInstances                map[string]*azureArcSCVMMVirtualMachineInstance
+	azureArcSCVMMGuestAgents                            map[string]*azureArcSCVMMGuestAgent
+	azureArcSCVMMHybridIdentityMetadata                 map[string]*azureArcSCVMMHybridIdentityMetadata
+	azureSiteManagerSites                               map[string]*azureSiteManagerSite
+	azureResourceGroups                                 map[string]*azureResourceGroup
+	azureARMResources                                   map[string]*azureARMResource
+	azureAutomationAccounts                             map[string]*azureAutomationAccount
+	azureAutomationAssets                               map[string]*azureAutomationAsset
+	azureAutomationJobs                                 map[string]*azureAutomationJob
+	azureAutomationSyncJobs                             map[string]*azureAutomationSyncJob
+	azureAVSPrivateClouds                               map[string]*azureAVSPrivateCloud
+	azureAVSAuthorizations                              map[string]*azureAVSAuthorization
+	azureAVSGlobalReachConnections                      map[string]*azureAVSGlobalReachConnection
+	azureAVSLicenses                                    map[string]*azureAVSLicense
+	azureAVSAddons                                      map[string]*azureAVSAddon
+	azureAVSScriptExecutions                            map[string]*azureAVSScriptExecution
+	azureAVSIscsiPaths                                  map[string]*azureAVSIscsiPath
+	azureAVSClusters                                    map[string]*azureAVSCluster
+	azureAVSDatastores                                  map[string]*azureAVSDatastore
+	azureAVSPlacementPolicies                           map[string]*azureAVSPlacementPolicy
+	azureAVSDNSZones                                    map[string]*azureAVSWorkloadNetworkDNSZone
+	azureAVSVMGroups                                    map[string]*azureAVSWorkloadNetworkVMGroup
+	azureApplicationGateways                            map[string]*azureApplicationGatewayResource
+	azureApplicationGatewayContainersTrafficControllers map[string]*azureApplicationGatewayContainersTrafficController
+	azureApplicationGatewayContainersFrontends          map[string]*azureApplicationGatewayContainersFrontend
+	azureApplicationGatewayContainersAssociations       map[string]*azureApplicationGatewayContainersAssociation
+	azureApplicationGatewayContainersSecurityPolicies   map[string]*azureApplicationGatewayContainersSecurityPolicy
+	azureAuthorizationRoleAssignments                   map[string]*azureAuthorizationRoleAssignment
+	azureAuthorizationRoleDefinitions                   map[string]*azureAuthorizationRoleDefinition
+	azureBotConversations                               map[string]*azureBotConversation
+	azureBotNextConversationID                          int64
+	azureContentModeratorImageLists                     map[int64]*azureContentModeratorImageList
+	azureContentModeratorNextImageListID                int64
+	ociStorageNamespaces                                map[string]map[string]*providerBucket
+	awsAuthValidator                                    awsRequestAuthValidator
+	providerAuthValidators                              map[string]providerRequestAuthValidator
+	accessKey                                           string
+	secretKey                                           string
+	logLevel                                            string
+	state                                               *statePersistence
 }
 
 type accessLogContextKey string
@@ -566,124 +761,326 @@ func New(cfg Config) *Server {
 			ExecutionMode: cfg.LambdaExecutionMode,
 			WorkDir:       cfg.LambdaWorkDir,
 		}),
-		eventbridge:                          eventbridge.NewService(),
-		keyspaces:                            keyspaces.NewService(),
-		memorydb:                             memorydb.NewService(),
-		timestream:                           timestreaminfluxdb.NewService(),
-		cloudcontrolapi:                      newCloudControlAPIStore(),
-		controlcatalog:                       newControlCatalogStore(),
-		controltower:                         newControlTowerStore(),
-		cloudtrail:                           newCloudTrailStore(),
-		codeartifact:                         newCodeArtifactStore(),
-		codebuild:                            newCodeBuildStore(),
-		detective:                            newDetectiveStore(),
-		fms:                                  newFMSStore(),
-		directoryservice:                     newDirectoryServiceStore(),
-		directoryservicedata:                 newDirectoryServiceDataStore(),
-		dms:                                  newDMSStore(),
-		drs:                                  newDRSStore(),
-		ivs:                                  newIVSStore(),
-		ivschat:                              newIVSChatStore(),
-		ivschatmessaging:                     newIVSChatMessagingStore(),
-		ivsmultitrack:                        newIVSMultitrackStore(),
-		ivsrealtime:                          newIVSRealtimeStore(),
-		mediapackage:                         newMediaPackageStore(),
-		mediaconnect:                         newMediaConnectStore(),
-		groundstation:                        newGroundStationStore(),
-		mediatailor:                          newMediaTailorStore(),
-		deadline:                             newDeadlineStore(),
-		evs:                                  newEVSStore(),
-		m2:                                   newM2Store(),
-		mgn:                                  newMGNStore(),
-		migrationhuborchestrator:             newMigrationHubOrchestratorStore(),
-		migrationhubstrategy:                 newMigrationHubStrategyStore(),
-		migrationhubrefactorspaces:           newMigrationHubRefactorSpacesStore(),
-		qbusiness:                            newQBusinessStore(),
-		qdeveloper:                           newQDeveloperStore(),
-		codeguru:                             newCodeGuruStore(),
-		codeguruprofiler:                     newCodeGuruProfilerStore(),
-		bedrock:                              newBedrockStore(),
-		devopsguru:                           newDevOpsGuruStore(),
-		comprehend:                           newComprehendStore(),
-		comprehendmedical:                    newComprehendMedicalStore(),
-		computeoptimizer:                     newComputeOptimizerStore(),
-		ram:                                  newRAMStore(),
-		servicequotas:                        newServiceQuotasStore(),
-		support:                              newSupportStore(),
-		marketplace:                          newMarketplaceStore(),
-		partnercentralselling:                newPartnerCentralSellingStore(),
-		supportapp:                           newSupportAppStore(),
-		trustedadvisor:                       newTrustedAdvisorStore(),
-		usernotifications:                    newUserNotificationsStore(),
-		notificationscontacts:                newNotificationsContactsStore(),
-		quicksetup:                           newQuickSetupStore(),
-		incidentmanager:                      newIncidentManagerStore(),
-		ssmsap:                               newSSMSAPStore(),
-		systemsmanager:                       newSystemsManagerStore(),
-		ssmguiconnect:                        newSSMGUIConnectStore(),
-		organizations:                        newOrganizationsStore(),
-		licensemanager:                       newLicenseManagerStore(),
-		licensemanagerlinuxsubscriptions:     newLicenseManagerLinuxSubscriptionsStore(),
-		licensemanagerusersubscriptions:      newLicenseManagerUserSubscriptionsStore(),
-		health:                               newHealthStore(),
-		healthlake:                           newHealthLakeStore(),
-		healthimaging:                        newHealthImagingStore(),
-		codedeploy:                           newCodeDeployStore(),
-		codepipeline:                         newCodePipelineStore(),
-		augmentedai:                          newAugmentedAIStore(),
-		omics:                                newOmicsStore(),
-		iot:                                  newIoTStore(),
-		iotmi:                                newIoTMIStore(),
-		launchwizard:                         newLaunchWizardStore(),
-		managedservicescm:                    newManagedServicesCMStore(),
-		lakeformation:                        newLakeFormationStore(),
-		iotfleetwise:                         newIoTFleetWiseStore(),
-		iotevents:                            newIoTEventsStore(),
-		iotwireless:                          newIoTWirelessStore(),
-		iotgreengrass:                        newIoTGreengrassStore(),
-		iotsitewise:                          newIoTSiteWiseStore(),
-		iottwinmaker:                         newIoTTwinMakerStore(),
-		cognitoidentity:                      newCognitoIdentityStore(),
-		cognitouserpools:                     newCognitoUserPoolsStore(),
-		cognitosync:                          newCognitoSyncStore(),
-		neptuneanalytics:                     newNeptuneAnalyticsStore(),
-		neptunedata:                          newNeptuneDataStore(),
-		kms:                                  kms.NewService(),
-		signer:                               signer.NewService(),
-		eb:                                   elasticbeanstalk.NewService(),
-		athena:                               athena.NewService(),
-		swf:                                  swf.NewService(),
-		privateca:                            privateca.NewService(),
-		secretsmgr:                           secretsmanager.NewService(),
-		batch:                                batch.NewService(),
-		cloudhsm:                             cloudhsm.NewService(),
-		dynamodb:                             dynamodb.NewService(),
-		dsql:                                 dsql.NewService(),
-		ecs:                                  ecs.NewService(),
-		ecr:                                  ecr.NewService(),
-		eks:                                  eks.NewService(),
-		ec2:                                  ec2.NewService(),
-		rds:                                  rds.NewService(),
-		redshift:                             newRedshiftStore(),
-		enabledProviders:                     enabledProviders,
-		enabledProviderSet:                   toProviderSet(enabledProviders),
-		gcpStorageBuckets:                    map[string]*providerBucket{},
-		gcpStorageHMACKeys:                   map[string]map[string]*gcpStorageHMACKey{},
-		gcpStorageNextGeneration:             1000,
-		gcpStorageNextHMACKeyID:              0,
-		azureStorageAccounts:                 map[string]map[string]*providerBucket{},
-		azureQueues:                          map[string]map[string][]azureQueueMessage{},
-		azureQueueNextID:                     0,
-		azureKeyVaults:                       map[string]map[string][]azureSecretVersion{},
-		azureBotConversations:                map[string]*azureBotConversation{},
-		azureBotNextConversationID:           0,
-		azureContentModeratorImageLists:      map[int64]*azureContentModeratorImageList{},
-		azureContentModeratorNextImageListID: 0,
-		ociStorageNamespaces:                 map[string]map[string]*providerBucket{},
-		accessKey:                            cfg.AccessKey,
-		secretKey:                            cfg.SecretKey,
-		logLevel:                             strings.ToLower(cfg.LogLevel),
-		state:                                newStatePersistence(cfg),
+		eventbridge:                        eventbridge.NewService(),
+		keyspaces:                          keyspaces.NewService(),
+		memorydb:                           memorydb.NewService(),
+		timestream:                         timestreaminfluxdb.NewService(),
+		cloudcontrolapi:                    newCloudControlAPIStore(),
+		controlcatalog:                     newControlCatalogStore(),
+		controltower:                       newControlTowerStore(),
+		cloudtrail:                         newCloudTrailStore(),
+		codeartifact:                       newCodeArtifactStore(),
+		codebuild:                          newCodeBuildStore(),
+		detective:                          newDetectiveStore(),
+		fms:                                newFMSStore(),
+		directoryservice:                   newDirectoryServiceStore(),
+		directoryservicedata:               newDirectoryServiceDataStore(),
+		dms:                                newDMSStore(),
+		drs:                                newDRSStore(),
+		ivs:                                newIVSStore(),
+		ivschat:                            newIVSChatStore(),
+		ivschatmessaging:                   newIVSChatMessagingStore(),
+		ivsmultitrack:                      newIVSMultitrackStore(),
+		ivsrealtime:                        newIVSRealtimeStore(),
+		mediapackage:                       newMediaPackageStore(),
+		mediaconnect:                       newMediaConnectStore(),
+		groundstation:                      newGroundStationStore(),
+		mediatailor:                        newMediaTailorStore(),
+		deadline:                           newDeadlineStore(),
+		evs:                                newEVSStore(),
+		m2:                                 newM2Store(),
+		mgn:                                newMGNStore(),
+		migrationhuborchestrator:           newMigrationHubOrchestratorStore(),
+		migrationhubstrategy:               newMigrationHubStrategyStore(),
+		migrationhubrefactorspaces:         newMigrationHubRefactorSpacesStore(),
+		qbusiness:                          newQBusinessStore(),
+		qdeveloper:                         newQDeveloperStore(),
+		codeguru:                           newCodeGuruStore(),
+		codeguruprofiler:                   newCodeGuruProfilerStore(),
+		bedrock:                            newBedrockStore(),
+		devopsguru:                         newDevOpsGuruStore(),
+		comprehend:                         newComprehendStore(),
+		comprehendmedical:                  newComprehendMedicalStore(),
+		computeoptimizer:                   newComputeOptimizerStore(),
+		ram:                                newRAMStore(),
+		servicequotas:                      newServiceQuotasStore(),
+		support:                            newSupportStore(),
+		marketplace:                        newMarketplaceStore(),
+		partnercentralselling:              newPartnerCentralSellingStore(),
+		supportapp:                         newSupportAppStore(),
+		trustedadvisor:                     newTrustedAdvisorStore(),
+		usernotifications:                  newUserNotificationsStore(),
+		notificationscontacts:              newNotificationsContactsStore(),
+		quicksetup:                         newQuickSetupStore(),
+		incidentmanager:                    newIncidentManagerStore(),
+		ssmsap:                             newSSMSAPStore(),
+		systemsmanager:                     newSystemsManagerStore(),
+		ssmguiconnect:                      newSSMGUIConnectStore(),
+		organizations:                      newOrganizationsStore(),
+		licensemanager:                     newLicenseManagerStore(),
+		licensemanagerlinuxsubscriptions:   newLicenseManagerLinuxSubscriptionsStore(),
+		licensemanagerusersubscriptions:    newLicenseManagerUserSubscriptionsStore(),
+		health:                             newHealthStore(),
+		healthlake:                         newHealthLakeStore(),
+		healthimaging:                      newHealthImagingStore(),
+		codedeploy:                         newCodeDeployStore(),
+		codepipeline:                       newCodePipelineStore(),
+		augmentedai:                        newAugmentedAIStore(),
+		omics:                              newOmicsStore(),
+		iot:                                newIoTStore(),
+		iotmi:                              newIoTMIStore(),
+		launchwizard:                       newLaunchWizardStore(),
+		managedservicescm:                  newManagedServicesCMStore(),
+		lakeformation:                      newLakeFormationStore(),
+		iotfleetwise:                       newIoTFleetWiseStore(),
+		iotevents:                          newIoTEventsStore(),
+		iotwireless:                        newIoTWirelessStore(),
+		iotgreengrass:                      newIoTGreengrassStore(),
+		iotsitewise:                        newIoTSiteWiseStore(),
+		iottwinmaker:                       newIoTTwinMakerStore(),
+		cognitoidentity:                    newCognitoIdentityStore(),
+		cognitouserpools:                   newCognitoUserPoolsStore(),
+		cognitosync:                        newCognitoSyncStore(),
+		neptuneanalytics:                   newNeptuneAnalyticsStore(),
+		neptunedata:                        newNeptuneDataStore(),
+		kms:                                kms.NewService(),
+		signer:                             signer.NewService(),
+		eb:                                 elasticbeanstalk.NewService(),
+		athena:                             athena.NewService(),
+		swf:                                swf.NewService(),
+		privateca:                          privateca.NewService(),
+		secretsmgr:                         secretsmanager.NewService(),
+		batch:                              batch.NewService(),
+		cloudhsm:                           cloudhsm.NewService(),
+		dynamodb:                           dynamodb.NewService(),
+		dsql:                               dsql.NewService(),
+		ecs:                                ecs.NewService(),
+		ecr:                                ecr.NewService(),
+		eks:                                eks.NewService(),
+		ec2:                                ec2.NewService(),
+		rds:                                rds.NewService(),
+		redshift:                           newRedshiftStore(),
+		enabledProviders:                   enabledProviders,
+		enabledProviderSet:                 toProviderSet(enabledProviders),
+		gcpStorageBuckets:                  map[string]*providerBucket{},
+		gcpStorageHMACKeys:                 map[string]map[string]*gcpStorageHMACKey{},
+		gcpStorageNextGeneration:           1000,
+		gcpStorageNextHMACKeyID:            0,
+		azureStorageAccounts:               map[string]map[string]*providerBucket{},
+		azureQueues:                        map[string]map[string][]azureQueueMessage{},
+		azureQueueNextID:                   0,
+		azureKeyVaults:                     map[string]map[string][]azureSecretVersion{},
+		azureAttestationPolicies:           map[string]string{},
+		azureAttestationPolicyCertificates: append([]string(nil), azureAttestationDefaultPolicyCertificates...),
+		azureDataCatalogDataAssets:         map[string]*azureDataCatalogDataAsset{},
+		azureDataCatalogCustomDataSourceProtocols:         map[string]*azureDataCatalogCustomDataSourceProtocol{},
+		azureActiveDirectoryB2CTenants:                    map[string]*azureActiveDirectoryB2CTenant{},
+		azureActiveDirectoryGuestUsages:                   map[string]*azureActiveDirectoryGuestUsage{},
+		azureDataManagerForAgriFarmBeats:                  map[string]*azureDataManagerForAgriFarmBeat{},
+		azureDataManagerForAgriOperationResults:           map[string]*azureDataManagerForAgriOperationResult{},
+		azureDataManagerForAgriDataConnectors:             map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriExtensions:                 map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriPrivateEndpointConnections: map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriSolutions:                  map[string]*azureDataManagerForAgriChildResource{},
+		azureDataManagerForAgriDataPlaneEntities:          map[string]*azureDataManagerForAgriDataPlaneEntity{},
+		azureDataManagerForAgriDataPlaneFiles:             map[string]*azureDataManagerForAgriDataPlaneFile{},
+		azureDataManagerForAgriDataPlaneDatasetGrants:     map[string]*azureDataManagerForAgriDataPlaneGrant{},
+		azureDataManagerForAgriDataPlaneJobs:              map[string]*azureDataManagerForAgriDataPlaneJob{},
+		azureContainerInstancesResources:                  map[string]*azureContainerInstancesResource{},
+		azureContainerInstancesProfileResources:           map[string]*azureContainerInstancesProfileResource{},
+		azureContainerInstancesServiceAssociationLinks:    map[string]*azureContainerInstancesServiceAssociationLink{},
+		azureContainerAppsResources:                       map[string]*azureContainerAppsResource{},
+		azureContainerAppsChildResources:                  map[string]*azureContainerAppsChildResource{},
+		azureContainerAppsDataPlaneSessions:               map[string]*azureContainerAppsDataPlaneSession{},
+		azureContainerAppsDataPlaneExecutions:             map[string]*azureContainerAppsDataPlaneExecution{},
+		azureContainerAppsDataPlaneFiles:                  map[string]*azureContainerAppsDataPlaneFile{},
+		azureLoadTestingDataPlaneTests:                    map[string]*azureLoadTestingDataPlaneTest{},
+		azureLoadTestingDataPlaneRuns:                     map[string]*azureLoadTestingDataPlaneRun{},
+		azureLoadTestingDataPlaneFiles:                    map[string]*azureLoadTestingDataPlaneFile{},
+		azureCommunicationAdvancedMessagingMessages:       map[string]*azureCommunicationAdvancedMessagingMessage{},
+		azureCommunicationAdvancedMessagingTemplates:      map[string]*azureCommunicationAdvancedMessagingTemplate{},
+		azureCommunicationAdvancedMessagingStreams: map[string]*azureCommunicationAdvancedMessagingStream{
+			"stream-a": {
+				ID:          "stream-a",
+				ContentType: "application/octet-stream",
+				Content:     []byte("stackyard-advanced-messaging-stream-a"),
+				CreatedAt:   time.Now().UTC(),
+				UpdatedAt:   time.Now().UTC(),
+			},
+		},
+		azureConsumptionBudgets:                             map[string]*azureConsumptionBudget{},
+		azureCommunicationCallAutomationCalls:               map[string]*azureCommunicationCallAutomationCall{},
+		azureCommunicationCallAutomationRecordings:          map[string]*azureCommunicationCallAutomationRecording{},
+		azureCommunicationChatThreads:                       map[string]*azureCommunicationChatThread{},
+		azureCommunicationChatParticipants:                  map[string]*azureCommunicationChatParticipant{},
+		azureCommunicationChatMessages:                      map[string]*azureCommunicationChatMessage{},
+		azureCommunicationChatReadReceipts:                  []*azureCommunicationChatReadReceipt{},
+		azureCommunicationEmailOperations:                   map[string]*azureCommunicationEmailOperation{},
+		azureCommunicationIdentityIdentities:                map[string]*azureCommunicationIdentityIdentity{},
+		azureCommunicationIdentityAssignments:               map[string]*azureCommunicationIdentityAssignment{},
+		azureCommunicationServices:                          map[string]*azureCommunicationServiceResource{},
+		azureCommunicationEmailServices:                     map[string]*azureCommunicationEmailServiceResource{},
+		azureCommunicationDomains:                           map[string]*azureCommunicationDomainResource{},
+		azureCommunicationNestedResources:                   map[string]*azureCommunicationNestedResource{},
+		azureConfluentOrganizations:                         map[string]*azureConfluentOrganization{},
+		azureConfluentMarketplaceAgreements:                 map[string]*azureConfluentMarketplaceAgreement{},
+		azureConfluentResources:                             map[string]*azureConfluentChildResource{},
+		azureConfluentInvitations:                           map[string]*azureConfluentInvitation{},
+		azureConfluentRoleBindings:                          map[string]*azureConfluentRoleBinding{},
+		azureCommunicationNetworkTraversalConfigurations:    map[string]*azureCommunicationNetworkTraversalConfiguration{},
+		azureCommunicationRooms:                             map[string]*azureCommunicationRoom{},
+		azureCommunicationRoomParticipants:                  map[string]*azureCommunicationRoomParticipant{},
+		azureCommunicationPhoneNumbersReservations:          map[string]*azureCommunicationPhoneNumbersReservation{},
+		azureCommunicationPhoneNumbersSearchResults:         map[string]*azureCommunicationPhoneNumbersSearchResult{},
+		azureCommunicationPhoneNumbersOperations:            map[string]*azureCommunicationPhoneNumbersOperation{},
+		azureCommunicationPhoneNumbersNumbers:               map[string]*azureCommunicationPhoneNumbersRecord{},
+		azureCommunicationJobRouterClassificationPolicies:   map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterDistributionPolicies:     map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterExceptionPolicies:        map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterQueues:                   map[string]*azureCommunicationJobRouterResource{},
+		azureCommunicationJobRouterJobs:                     map[string]*azureCommunicationJobRouterJob{},
+		azureCommunicationJobRouterWorkers:                  map[string]*azureCommunicationJobRouterWorker{},
+		azureCommunicationJobRouterOffers:                   map[string]*azureCommunicationJobRouterOffer{},
+		azureCommunicationJobRouterAssignments:              map[string]*azureCommunicationJobRouterAssignment{},
+		azurePlaywrightDataPlaneWorkspaces:                  map[string]*azurePlaywrightDataPlaneWorkspace{},
+		azurePlaywrightDataPlaneAccessTokens:                map[string]*azurePlaywrightDataPlaneAccessToken{},
+		azurePlaywrightDataPlaneTestRuns:                    map[string]*azurePlaywrightDataPlaneTestRun{},
+		azureWebPubSubDataPlaneConnections:                  map[string]*azureWebPubSubDataPlaneConnection{},
+		azureWebPubSubDataPlaneUsers:                        map[string]*azureWebPubSubDataPlaneUser{},
+		azureResourceGraphQueries:                           map[string]*azureResourceGraphQuery{},
+		azureQuantumWorkspaces:                              map[string]*azureQuantumWorkspace{},
+		azureQuantumDataPlaneJobs:                           map[string]*azureQuantumDataPlaneJob{},
+		azureQuantumDataPlaneSessions:                       map[string]*azureQuantumDataPlaneSession{},
+		azureSphereCatalogs:                                 map[string]*azureSphereCatalog{},
+		azureSphereProducts:                                 map[string]*azureSphereProduct{},
+		azureSphereDeviceGroups:                             map[string]*azureSphereDeviceGroup{},
+		azureSphereDevices:                                  map[string]*azureSphereDevice{},
+		azureSphereDeployments:                              map[string]*azureSphereDeployment{},
+		azureSphereImages:                                   map[string]*azureSphereImage{},
+		azureStackAdminSettings:                             map[string]*azureStackAdminSettings{},
+		azureStackAdminServices:                             map[string]*azureStackAdminService{},
+		azureStackAdminAccounts:                             map[string]*azureStackAdminStorageAccount{},
+		azureStackAdminAcquisitions:                         map[string]*azureStackAdminAcquisition{},
+		azureStackAdminAsyncOperations:                      map[string]*azureStackAdminAsyncOperation{},
+		azureCloudNGFWFirewalls:                             map[string]*azureCloudNGFWFirewall{},
+		azureCloudNGFWLocalRulestacks:                       map[string]*azureCloudNGFWLocalRulestack{},
+		azureCloudNGFWGlobalRulestacks:                      map[string]*azureCloudNGFWGlobalRulestack{},
+		azureCloudNGFWLocalChildren:                         map[string]*azureCloudNGFWChildResource{},
+		azureCloudNGFWGlobalChildren:                        map[string]*azureCloudNGFWGlobalChildResource{},
+		azureChaosStudioTargets:                             map[string]*azureChaosStudioTarget{},
+		azureChaosStudioCapabilities:                        map[string]*azureChaosStudioCapability{},
+		azureChaosStudioExperiments:                         map[string]*azureChaosStudioExperiment{},
+		azureChaosStudioExecutions:                          map[string]*azureChaosStudioExecution{},
+		azureChaosStudioOperationStatuses:                   map[string]*azureChaosStudioOperationStatus{},
+		azureStackHCIClusters:                               map[string]*azureStackHCICluster{},
+		azureStackHCIArcSettings:                            map[string]*azureStackHCIArcSetting{},
+		azureStackHCIExtensions:                             map[string]*azureStackHCIExtension{},
+		azureStackHCIDeploymentSettings:                     map[string]*azureStackHCIDeploymentSetting{},
+		azureStackHCIUpdates:                                map[string]*azureStackHCIUpdate{},
+		azureStackHCIUpdateSummaries:                        map[string]*azureStackHCIUpdateSummary{},
+		azureStackHCIUpdateRuns:                             map[string]*azureStackHCIUpdateRun{},
+		azureStackHCIEdgeDevices:                            map[string]*azureStackHCIEdgeDevice{},
+		azureCDNProfiles:                                    map[string]*azureCDNProfile{},
+		azureCDNEndpoints:                                   map[string]*azureCDNEndpoint{},
+		azureCDNChildren:                                    map[string]*azureCDNChildResource{},
+		azureWebPubSubAccounts:                              map[string]*azureWebPubSubAccount{},
+		azureWebPubSubChildren:                              map[string]*azureWebPubSubChildResource{},
+		azureBillingAccounts:                                map[string]*azureBillingAccount{},
+		azureBillingResources:                               map[string]*azureBillingResource{},
+		azureBillingProperties:                              map[string]*azureBillingProperty{},
+		azureVideoIndexerAccounts:                           map[string]*azureVideoIndexerAccount{},
+		azureVideoIndexerPrivateEndpointConnections:         map[string]*azureVideoIndexerPrivateEndpointConnection{},
+		azureMigrateAssessmentProjects:                      map[string]*azureMigrateAssessmentProject{},
+		azureMigrateAssessmentGroups:                        map[string]*azureMigrateAssessmentGroup{},
+		azureMigrateAssessmentMachines:                      map[string]*azureMigrateAssessmentMachine{},
+		azureMigrateAssessments:                             map[string]*azureMigrateAssessment{},
+		azureMigrateAssessmentCollectors:                    map[string]*azureMigrateAssessmentCollector{},
+		azureMigrateAssessmentPrivateEndpointConnections:    map[string]*azureMigrateAssessmentPrivateEndpointConnection{},
+		azureMigrateDiscoverySites:                          map[string]*azureMigrateDiscoverySite{},
+		azureMigrateDiscoveryMachines:                       map[string]*azureMigrateDiscoveryMachine{},
+		azureMigrateDiscoveryRunAsAccounts:                  map[string]*azureMigrateDiscoveryRunAsAccount{},
+		azureMigrateDiscoveryInventoryItems:                 map[string]*azureMigrateDiscoveryInventoryItem{},
+		azureMigrateProjects:                                map[string]*azureMigrateProject{},
+		azureConfidentialLedgers:                            map[string]*azureConfidentialLedgerResource{},
+		azureIntegrationSpaces:                              map[string]*azureIntegrationSpace{},
+		azureIntegrationApplications:                        map[string]*azureIntegrationApplication{},
+		azureIntegrationApplicationResources:                map[string]*azureIntegrationApplicationResource{},
+		azureIntegrationBusinessProcesses:                   map[string]*azureIntegrationBusinessProcess{},
+		azureIntegrationBusinessProcessVersions:             map[string]*azureIntegrationBusinessProcessVersion{},
+		azureIntegrationInfrastructureResources:             map[string]*azureIntegrationInfrastructureResource{},
+		azureIntegrationArtifacts:                           map[string]*azureIntegrationArtifact{},
+		azureSpringServices:                                 map[string]*azureSpringService{},
+		azureSpringApps:                                     map[string]*azureSpringApp{},
+		azureSpringDeployments:                              map[string]*azureSpringDeployment{},
+		azureSpringChildren:                                 map[string]*azureSpringChildResource{},
+		azureSpringBuildServices:                            map[string]*azureSpringBuildService{},
+		azureSpringBuilds:                                   map[string]*azureSpringBuild{},
+		azureNetAppResources:                                map[string]*azureNetAppResource{},
+		azureComputeResources:                               map[string]*azureComputeResource{},
+		azureComputeLimitFeatures:                           map[string]*azureComputeLimitFeatureResource{},
+		azureComputeLimitGuestSubscriptions:                 map[string]*azureComputeLimitGuestSubscriptionResource{},
+		azureComputeLimitSharedLimits:                       map[string]*azureComputeLimitSharedLimitResource{},
+		azureComputeScheduleOperations:                      map[string]*azureComputeScheduleOperation{},
+		azureComputeFleets:                                  map[string]*azureComputeFleetResource{},
+		azureBatchManagementAccounts:                        map[string]*azureBatchManagementAccount{},
+		azureBatchManagementResources:                       map[string]*azureBatchManagementChildResource{},
+		azureBlueprintDefinitions:                           map[string]*azureBlueprintDefinition{},
+		azureBlueprintArtifacts:                             map[string]*azureBlueprintArtifact{},
+		azureBlueprintVersions:                              map[string]*azureBlueprintVersion{},
+		azureBlueprintPublishedArtifacts:                    map[string]*azureBlueprintPublishedArtifact{},
+		azureBlueprintAssignments:                           map[string]*azureBlueprintAssignment{},
+		azureBlueprintAssignmentOperations:                  map[string]*azureBlueprintAssignmentOperation{},
+		azurePlaywrightWorkspaces:                           map[string]*azurePlaywrightWorkspace{},
+		azureLoadTests:                                      map[string]*azureLoadTestingResource{},
+		azureLoadTestingChildResources:                      map[string]*azureLoadTestingChildResource{},
+		azureKustoClusters:                                  map[string]*azureKustoCluster{},
+		azureKustoResources:                                 map[string]*azureKustoResource{},
+		azureKustoOperationResults:                          map[string]*azureKustoOperationResult{},
+		azureArcVMwareResources:                             map[string]*azureArcVMwareResource{},
+		azureArcVMwareInventoryItems:                        map[string]*azureArcVMwareInventoryItem{},
+		azureArcVMwareVirtualMachineInstances:               map[string]*azureArcVMwareVirtualMachineInstance{},
+		azureArcVMwareGuestAgents:                           map[string]*azureArcVMwareGuestAgent{},
+		azureArcVMwareHybridIdentityMetadata:                map[string]*azureArcVMwareHybridIdentityMetadata{},
+		azureArcSCVMMResources:                              map[string]*azureArcSCVMMResource{},
+		azureArcSCVMMInventoryItems:                         map[string]*azureArcSCVMMInventoryItem{},
+		azureArcSCVMMVirtualMachineInstances:                map[string]*azureArcSCVMMVirtualMachineInstance{},
+		azureArcSCVMMGuestAgents:                            map[string]*azureArcSCVMMGuestAgent{},
+		azureArcSCVMMHybridIdentityMetadata:                 map[string]*azureArcSCVMMHybridIdentityMetadata{},
+		azureSiteManagerSites:                               map[string]*azureSiteManagerSite{},
+		azureResourceGroups:                                 map[string]*azureResourceGroup{},
+		azureARMResources:                                   map[string]*azureARMResource{},
+		azureAutomationAccounts:                             map[string]*azureAutomationAccount{},
+		azureAutomationAssets:                               map[string]*azureAutomationAsset{},
+		azureAutomationJobs:                                 map[string]*azureAutomationJob{},
+		azureAutomationSyncJobs:                             map[string]*azureAutomationSyncJob{},
+		azureAVSPrivateClouds:                               map[string]*azureAVSPrivateCloud{},
+		azureAVSAuthorizations:                              map[string]*azureAVSAuthorization{},
+		azureAVSGlobalReachConnections:                      map[string]*azureAVSGlobalReachConnection{},
+		azureAVSLicenses:                                    map[string]*azureAVSLicense{},
+		azureAVSAddons:                                      map[string]*azureAVSAddon{},
+		azureAVSScriptExecutions:                            map[string]*azureAVSScriptExecution{},
+		azureAVSIscsiPaths:                                  map[string]*azureAVSIscsiPath{},
+		azureAVSClusters:                                    map[string]*azureAVSCluster{},
+		azureAVSDatastores:                                  map[string]*azureAVSDatastore{},
+		azureAVSPlacementPolicies:                           map[string]*azureAVSPlacementPolicy{},
+		azureAVSDNSZones:                                    map[string]*azureAVSWorkloadNetworkDNSZone{},
+		azureAVSVMGroups:                                    map[string]*azureAVSWorkloadNetworkVMGroup{},
+		azureApplicationGateways:                            map[string]*azureApplicationGatewayResource{},
+		azureApplicationGatewayContainersTrafficControllers: map[string]*azureApplicationGatewayContainersTrafficController{},
+		azureApplicationGatewayContainersFrontends:          map[string]*azureApplicationGatewayContainersFrontend{},
+		azureApplicationGatewayContainersAssociations:       map[string]*azureApplicationGatewayContainersAssociation{},
+		azureApplicationGatewayContainersSecurityPolicies:   map[string]*azureApplicationGatewayContainersSecurityPolicy{},
+		azureAuthorizationRoleAssignments:                   map[string]*azureAuthorizationRoleAssignment{},
+		azureAuthorizationRoleDefinitions:                   map[string]*azureAuthorizationRoleDefinition{},
+		azureBotConversations:                               map[string]*azureBotConversation{},
+		azureBotNextConversationID:                          0,
+		azureContentModeratorImageLists:                     map[int64]*azureContentModeratorImageList{},
+		azureContentModeratorNextImageListID:                0,
+		ociStorageNamespaces:                                map[string]map[string]*providerBucket{},
+		accessKey:                                           cfg.AccessKey,
+		secretKey:                                           cfg.SecretKey,
+		logLevel:                                            strings.ToLower(cfg.LogLevel),
+		state:                                               newStatePersistence(cfg),
 	}
 	s.awsAuthValidator = &awsSigV4AuthAdapter{server: s}
 	s.providerAuthValidators = newProviderAuthValidators(cfg)
@@ -1783,7 +2180,420 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if !s.validateProviderRequestAuth(w, r, providerAzure) {
 			return
 		}
+		// Resource groups and the shared ARM handler match narrow, exact routes,
+		// so they run first; anything they don't own falls through.
+		if s.handleAzureResourcesRouter(w, r) {
+			return
+		}
+		if s.handleAzureARMRouter(w, r) {
+			return
+		}
 		if s.handleAzureBotFrameworkRouter(w, r) {
+			return
+		}
+		if s.handleAzureTextToSpeechRouter(w, r) {
+			return
+		}
+		if s.handleAzureBatchAvatarRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputerVisionRouter(w, r) {
+			return
+		}
+		if s.handleAzureCustomVisionRouter(w, r) {
+			return
+		}
+		if s.handleAzureFaceRouter(w, r) {
+			return
+		}
+		if s.handleAzureCustomVoiceRouter(w, r) {
+			return
+		}
+		if s.handleAzureOpenAIRouter(w, r) {
+			return
+		}
+		if s.handleAzureFleet20250301Router(w, r) {
+			return
+		}
+		if s.handleAzureAKSRouter(w, r) {
+			return
+		}
+		if s.handleAzureAnalysisServicesRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPICenterDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPICenterResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAPIManagementResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppConfigurationResourceManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppConfigurationDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppComplianceRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationGatewayRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationGatewayContainersRouter(w, r) {
+			return
+		}
+		if s.handleAzureApplicationInsightsRouter(w, r) {
+			return
+		}
+		if s.handleAzureAttestationRouter(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceFrontDoor20190501Router(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceWebApplicationFirewall20251101Router(w, r) {
+			return
+		}
+		if s.handleAzureFrontDoorServiceAzureFrontDoorStandardPremium20250415Router(w, r) {
+			return
+		}
+		if s.handleAzureEdgeActions20251201PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureCDNRouter(w, r) {
+			return
+		}
+		if s.handleAzureCarbonRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataManagerForAgriRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataManagerForAgriDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateAssessmentRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateDiscoveryRouter(w, r) {
+			return
+		}
+		if s.handleAzureMigrateProjectsRouter(w, r) {
+			return
+		}
+		if s.handleAzureConfidentialLedgerRouter(w, r) {
+			return
+		}
+		if s.handleAzureIntegrationEnvironmentRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpringAppsRouter(w, r) {
+			return
+		}
+		if s.handleAzureNetAppRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerInstancesRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerAppsRouter(w, r) {
+			return
+		}
+		if s.handleAzureContainerAppsDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationRouter(w, r) {
+			return
+		}
+		if s.handleAzureConsumptionRouter(w, r) {
+			return
+		}
+		if s.handleAzureConfluentRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationAdvancedMessagingRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationCallAutomationRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationChatRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationEmailRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationIdentityRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationSipRoutingRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationNetworkTraversalRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationRoomsRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationPhoneNumbersRouter(w, r) {
+			return
+		}
+		if s.handleAzureCommunicationJobRouterRouter(w, r) {
+			return
+		}
+		if s.handleAzureLoadTestingDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureDeviceUpdateDataPlane20221001Router(w, r) {
+			return
+		}
+		if s.handleAzureDeviceUpdateResourceManager20230701Router(w, r) {
+			return
+		}
+		if s.handleAzureDeviceRegistry20260401Router(w, r) {
+			return
+		}
+		if s.handleAzureDiscovery20260601Router(w, r) {
+			return
+		}
+		if s.handleAzureDNS20180501Router(w, r) {
+			return
+		}
+		if s.handleAzureDNSPrivateDNS20180901Router(w, r) {
+			return
+		}
+		if s.handleAzureDNSDNSResolver20250501Router(w, r) {
+			return
+		}
+		if s.handleAzurePlaywrightDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureWebPubSubDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureResourceGraphRouter(w, r) {
+			return
+		}
+		if s.handleAzureGraphServices20230413Router(w, r) {
+			return
+		}
+		if s.handleAzureGuestConfiguration20240405Router(w, r) {
+			return
+		}
+		if s.handleAzureQuantumRouter(w, r) {
+			return
+		}
+		if s.handleAzureQuantumDataPlaneRouter(w, r) {
+			return
+		}
+		if s.handleAzureSphereRouter(w, r) {
+			return
+		}
+		if s.handleAzureStackAdminRouter(w, r) {
+			return
+		}
+		if s.handleAzureCloudNGFWRouter(w, r) {
+			return
+		}
+		if s.handleAzureChaosStudioRouter(w, r) {
+			return
+		}
+		if s.handleAzureStackHCIRouter(w, r) {
+			return
+		}
+		if s.handleAzureWebPubSubRouter(w, r) {
+			return
+		}
+		if s.handleAzureVideoIndexerRouter(w, r) {
+			return
+		}
+		if s.handleAzureBillingRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeLimitRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeScheduleRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeRecommenderRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeRouter(w, r) {
+			return
+		}
+		if s.handleAzureComputeFleetRouter(w, r) {
+			return
+		}
+		if s.handleAzureBatchManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureBlueprintsRouter(w, r) {
+			return
+		}
+		if s.handleAzurePlaywrightRouter(w, r) {
+			return
+		}
+		if s.handleAzureLoadTestingRouter(w, r) {
+			return
+		}
+		if s.handleAzureKustoRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataCatalogDataAssetRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataCatalogCustomDataSourceRouter(w, r) {
+			return
+		}
+		if s.handleAzureDatabricks20260101Router(w, r) {
+			return
+		}
+		if s.handleAzureDellStorage20250321Router(w, r) {
+			return
+		}
+		if s.handleAzureDevCenterAdministrator20240201Router(w, r) {
+			return
+		}
+		if s.handleAzureDevCenterDeveloper20250201Router(w, r) {
+			return
+		}
+		if s.handleAzureDesktopVirtualization20251010Router(w, r) {
+			return
+		}
+		if s.handleAzureDatadog20250611Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForEasmControlPlanePreview20230401Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForEasmDataPlanePreview20241001Router(w, r) {
+			return
+		}
+		if s.handleAzureDefenderForCloud20250601Router(w, r) {
+			return
+		}
+		if s.handleAzureDatabaseWatcher20250102Router(w, r) {
+			return
+		}
+		if s.handleAzureDataMigration20220330PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureDataProtection20260301Router(w, r) {
+			return
+		}
+		if s.handleAzureDataReplication20260501Router(w, r) {
+			return
+		}
+		if s.handleAzureDataShare20210801Router(w, r) {
+			return
+		}
+		if s.handleAzureDurableTask20260201Router(w, r) {
+			return
+		}
+		if s.handleAzureDynatrace20210901Router(w, r) {
+			return
+		}
+		if s.handleAzureElastic20200701Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridDataPlane20180101Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridNamespace20240601Router(w, r) {
+			return
+		}
+		if s.handleAzureEventGridControlPlane20250215Router(w, r) {
+			return
+		}
+		if s.handleAzureEventHub20260101Router(w, r) {
+			return
+		}
+		if s.handleAzureExpressRoute20250501Router(w, r) {
+			return
+		}
+		if s.handleAzureExtendedLocation20210815Router(w, r) {
+			return
+		}
+		if s.handleAzureMicrosoftFabric20231101Router(w, r) {
+			return
+		}
+		if s.handleAzureFirewall20250501Router(w, r) {
+			return
+		}
+		if s.handleAzureElasticSan20250901Router(w, r) {
+			return
+		}
+		if s.handleAzureEdgeHardwareCenter20240201Router(w, r) {
+			return
+		}
+		if s.handleAzureEducation20211201PreviewRouter(w, r) {
+			return
+		}
+		if s.handleAzureDtl20180915Router(w, r) {
+			return
+		}
+		if s.handleAzureDataLakeAnalytics20161101Router(w, r) {
+			return
+		}
+		if s.handleAzureDataLakeStore20161101Router(w, r) {
+			return
+		}
+		if s.handleAzureActiveDirectoryRouter(w, r) {
+			return
+		}
+		if s.handleAzureArcVMwareRouter(w, r) {
+			return
+		}
+		if s.handleAzureArcSCVMMRouter(w, r) {
+			return
+		}
+		if s.handleAzureSiteManagerRouter(w, r) {
+			return
+		}
+		if s.handleAzureAVSRouter(w, r) {
+			return
+		}
+		if s.handleAzureAutomationRouter(w, r) {
+			return
+		}
+		if s.handleAzureAuthorizationRouter(w, r) {
+			return
+		}
+		if s.handleAzureAppServiceRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIFoundryModelInferenceRouter(w, r) {
+			return
+		}
+		if s.handleAzureAIFoundryAccountManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureAccountManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureLuisRouter(w, r) {
+			return
+		}
+		if s.handleAzurePersonalizerRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpeakerRecognitionRouter(w, r) {
+			return
+		}
+		if s.handleAzureTranslatorRouter(w, r) {
+			return
+		}
+		if s.handleAzureVideoTranslationRouter(w, r) {
+			return
+		}
+		if s.handleAzureSpeechToTextRouter(w, r) {
+			return
+		}
+		if s.handleAzureHealthInsightsRouter(w, r) {
 			return
 		}
 		if s.handleAzureSearchManagementResourceManagerAdminKeysRouter(w, r) {
@@ -1858,6 +2668,12 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureAIServicesDocumentClassifiersRouter(w, r) {
 			return
 		}
+		if s.handleAzureContentUnderstandingRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentSafetyRouter(w, r) {
+			return
+		}
 		if s.handleAzureContentModeratorImageModerationRouter(w, r) {
 			return
 		}
@@ -1865,6 +2681,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureContentModeratorListManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureContentModeratorRouter(w, r) {
 			return
 		}
 		if s.handleAzureKeyVaultRouter(w, r) {
@@ -3214,6 +4033,9 @@ type redshiftCluster struct {
 	SnapshotScheduleIDs        []string
 	LakehouseConfiguration     string
 	AquaConfigurationStatus    string
+	ResizeTargetNodeType       string
+	ResizeTargetNumberOfNodes  int
+	ResizeStatus               string
 }
 
 type redshiftSnapshot struct {
@@ -3509,6 +4331,7 @@ type redshiftClusterXML struct {
 	IamRoles                   []redshiftIamRoleXML                     `xml:"IamRoles>IamRole,omitempty"`
 	ClusterDbRevision          string                                   `xml:"ClusterDbRevision,omitempty"`
 	ClusterSnapshotCopyStatus  *redshiftClusterSnapshotCopyStatusXML    `xml:"ClusterSnapshotCopyStatus,omitempty"`
+	ResizeInfo                 *redshiftResizeInfoXML                   `xml:"ResizeInfo,omitempty"`
 }
 
 type redshiftClusterSnapshotCopyStatusXML struct {
@@ -3707,7 +4530,7 @@ type redshiftParameterGroupResponse struct {
 
 type redshiftParameterGroupsResult struct {
 	XMLName         xml.Name                    `xml:""`
-	ParameterGroups []redshiftParameterGroupXML `xml:"ClusterParameterGroups>ClusterParameterGroup"`
+	ParameterGroups []redshiftParameterGroupXML `xml:"ParameterGroups>ClusterParameterGroup"`
 }
 
 type redshiftParameterGroupsResponse struct {
@@ -3930,7 +4753,7 @@ type redshiftEndpointAccessResponse struct {
 
 type redshiftEndpointAccessesResult struct {
 	XMLName        xml.Name                    `xml:""`
-	EndpointAccess []redshiftEndpointAccessXML `xml:"EndpointAccesses>EndpointAccess"`
+	EndpointAccess []redshiftEndpointAccessXML `xml:"EndpointAccessList>EndpointAccess"`
 }
 
 type redshiftEndpointAccessesResponse struct {
@@ -3968,10 +4791,14 @@ type redshiftPolicyXML struct {
 	Value string `xml:",innerxml"`
 }
 
-type redshiftResourcePolicyResult struct {
-	XMLName     xml.Name          `xml:""`
+type redshiftResourcePolicyXML struct {
 	ResourceArn string            `xml:"ResourceArn,omitempty"`
 	Policy      redshiftPolicyXML `xml:"Policy"`
+}
+
+type redshiftResourcePolicyResult struct {
+	XMLName        xml.Name                  `xml:""`
+	ResourcePolicy redshiftResourcePolicyXML `xml:"ResourcePolicy"`
 }
 
 type redshiftResourcePolicyResponse struct {
@@ -4087,7 +4914,7 @@ type redshiftEventSubscriptionResponse struct {
 
 type redshiftEventSubscriptionsResult struct {
 	XMLName            xml.Name                       `xml:""`
-	EventSubscriptions []redshiftEventSubscriptionXML `xml:"EventSubscriptions>EventSubscription"`
+	EventSubscriptions []redshiftEventSubscriptionXML `xml:"EventSubscriptionsList>EventSubscription"`
 }
 
 type redshiftEventSubscriptionsResponse struct {
@@ -5071,23 +5898,28 @@ func (s *Server) handleRedshiftAcceptReservedNodeExchange(w http.ResponseWriter,
 		XMLName xml.Name `xml:"AcceptReservedNodeExchangeResponse"`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName        xml.Name                              `xml:"AcceptReservedNodeExchangeResult"`
-			ExchangeStatus redshiftReservedNodeExchangeStatusXML `xml:"ExchangeStatus"`
+			XMLName               xml.Name                `xml:"AcceptReservedNodeExchangeResult"`
+			ExchangedReservedNode redshiftReservedNodeXML `xml:"ExchangedReservedNode"`
 		} `xml:"AcceptReservedNodeExchangeResult"`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLNS: redshiftNamespace,
 		Result: struct {
-			XMLName        xml.Name                              `xml:"AcceptReservedNodeExchangeResult"`
-			ExchangeStatus redshiftReservedNodeExchangeStatusXML `xml:"ExchangeStatus"`
+			XMLName               xml.Name                `xml:"AcceptReservedNodeExchangeResult"`
+			ExchangedReservedNode redshiftReservedNodeXML `xml:"ExchangedReservedNode"`
 		}{
 			XMLName: xml.Name{Local: "AcceptReservedNodeExchangeResult"},
-			ExchangeStatus: redshiftReservedNodeExchangeStatusXML{
-				ReservedNodeExchangeRequestId: exchange.RequestID,
-				Status:                        exchange.Status,
-				ReservedNodeId:                exchange.ReservedNodeID,
-				SourceReservedNodeOfferingId:  exchange.SourceOfferingID,
-				TargetReservedNodeOfferingId:  exchange.TargetOfferingID,
+			ExchangedReservedNode: redshiftReservedNodeXML{
+				ReservedNodeId:         exchange.ReservedNodeID,
+				ReservedNodeOfferingId: exchange.TargetOfferingID,
+				NodeType:               "dc2.large",
+				State:                  "exchanging",
+				StartTime:              exchange.CreatedAt.Format(time.RFC3339),
+				Duration:               31536000,
+				FixedPrice:             0,
+				UsagePrice:             0,
+				CurrencyCode:           "USD",
+				NodeCount:              1,
 			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
@@ -5297,22 +6129,29 @@ func (s *Server) handleRedshiftDescribeStorage(w http.ResponseWriter, r *http.Re
 			})
 		}
 	}
+	var total float64
+	for _, item := range items {
+		total += float64(item.TotalStorageCapacityInMegaBytes)
+	}
 	respondRedshiftXML(w, http.StatusOK, struct {
 		XMLName xml.Name `xml:"DescribeStorageResponse"`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName  xml.Name  `xml:"DescribeStorageResult"`
-			Storages []storage `xml:"Storages>Storage"`
+			XMLName                            xml.Name `xml:"DescribeStorageResult"`
+			TotalBackupSizeInMegaBytes         float64  `xml:"TotalBackupSizeInMegaBytes,omitempty"`
+			TotalProvisionedStorageInMegaBytes float64  `xml:"TotalProvisionedStorageInMegaBytes,omitempty"`
 		} `xml:"DescribeStorageResult"`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLNS: redshiftNamespace,
 		Result: struct {
-			XMLName  xml.Name  `xml:"DescribeStorageResult"`
-			Storages []storage `xml:"Storages>Storage"`
+			XMLName                            xml.Name `xml:"DescribeStorageResult"`
+			TotalBackupSizeInMegaBytes         float64  `xml:"TotalBackupSizeInMegaBytes,omitempty"`
+			TotalProvisionedStorageInMegaBytes float64  `xml:"TotalProvisionedStorageInMegaBytes,omitempty"`
 		}{
-			XMLName:  xml.Name{Local: "DescribeStorageResult"},
-			Storages: items,
+			XMLName:                            xml.Name{Local: "DescribeStorageResult"},
+			TotalBackupSizeInMegaBytes:         total / 2,
+			TotalProvisionedStorageInMegaBytes: total,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -5511,7 +6350,7 @@ func (s *Server) handleRedshiftBatchDeleteClusterSnapshots(w http.ResponseWriter
 	for _, snapshot := range snapshots {
 		delete(s.redshift.snapshots, snapshot.ID)
 	}
-	respondRedshiftSnapshotsResponse(w, http.StatusOK, "BatchDeleteClusterSnapshots", snapshots)
+	respondRedshiftBatchClusterSnapshotsResponse(w, http.StatusOK, "BatchDeleteClusterSnapshots", snapshots)
 }
 
 func (s *Server) handleRedshiftBatchModifyClusterSnapshots(w http.ResponseWriter, r *http.Request) {
@@ -5549,7 +6388,7 @@ func (s *Server) handleRedshiftBatchModifyClusterSnapshots(w http.ResponseWriter
 		}
 		snapshots = append(snapshots, snapshot)
 	}
-	respondRedshiftSnapshotsResponse(w, http.StatusOK, "BatchModifyClusterSnapshots", snapshots)
+	respondRedshiftBatchClusterSnapshotsResponse(w, http.StatusOK, "BatchModifyClusterSnapshots", snapshots)
 }
 
 func (s *Server) handleRedshiftModifyClusterSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -6576,33 +7415,7 @@ func (s *Server) handleRedshiftCreateUsageLimit(w http.ResponseWriter, r *http.R
 		CreatedAt:         time.Now().UTC(),
 	}
 	s.redshift.usageLimits[limitID] = limit
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"CreateUsageLimitResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName    xml.Name              `xml:"CreateUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		} `xml:"CreateUsageLimitResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName    xml.Name              `xml:"CreateUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		}{
-			XMLName: xml.Name{Local: "CreateUsageLimitResult"},
-			UsageLimit: redshiftUsageLimitXML{
-				UsageLimitId:      limit.ID,
-				ClusterIdentifier: limit.ClusterIdentifier,
-				FeatureType:       limit.FeatureType,
-				LimitType:         limit.LimitType,
-				Amount:            limit.Amount,
-				Period:            limit.Period,
-				BreachAction:      limit.BreachAction,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftUsageLimitResponse(w, http.StatusOK, "CreateUsageLimit", limit)
 }
 
 func (s *Server) handleRedshiftDescribeUsageLimits(w http.ResponseWriter, r *http.Request) {
@@ -6711,33 +7524,7 @@ func (s *Server) handleRedshiftModifyUsageLimit(w http.ResponseWriter, r *http.R
 	if breachAction != "" {
 		limit.BreachAction = breachAction
 	}
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"ModifyUsageLimitResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName    xml.Name              `xml:"ModifyUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		} `xml:"ModifyUsageLimitResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName    xml.Name              `xml:"ModifyUsageLimitResult"`
-			UsageLimit redshiftUsageLimitXML `xml:"UsageLimit"`
-		}{
-			XMLName: xml.Name{Local: "ModifyUsageLimitResult"},
-			UsageLimit: redshiftUsageLimitXML{
-				UsageLimitId:      limit.ID,
-				ClusterIdentifier: limit.ClusterIdentifier,
-				FeatureType:       limit.FeatureType,
-				LimitType:         limit.LimitType,
-				Amount:            limit.Amount,
-				Period:            limit.Period,
-				BreachAction:      limit.BreachAction,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftUsageLimitResponse(w, http.StatusOK, "ModifyUsageLimit", limit)
 }
 
 func (s *Server) handleRedshiftDeleteUsageLimit(w http.ResponseWriter, r *http.Request) {
@@ -6802,28 +7589,7 @@ func (s *Server) handleRedshiftCreateAuthenticationProfile(w http.ResponseWriter
 		CreatedAt: time.Now().UTC(),
 	}
 	s.redshift.authProfiles[name] = profile
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"CreateAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"CreateAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"CreateAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"CreateAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "CreateAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "CreateAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftDescribeAuthenticationProfiles(w http.ResponseWriter, r *http.Request) {
@@ -6899,28 +7665,7 @@ func (s *Server) handleRedshiftModifyAuthenticationProfile(w http.ResponseWriter
 		return
 	}
 	profile.Content = content
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"ModifyAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"ModifyAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"ModifyAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"ModifyAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "ModifyAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "ModifyAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftDeleteAuthenticationProfile(w http.ResponseWriter, r *http.Request) {
@@ -6937,28 +7682,7 @@ func (s *Server) handleRedshiftDeleteAuthenticationProfile(w http.ResponseWriter
 		return
 	}
 	delete(s.redshift.authProfiles, name)
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"DeleteAuthenticationProfileResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName               xml.Name                         `xml:"DeleteAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		} `xml:"DeleteAuthenticationProfileResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName               xml.Name                         `xml:"DeleteAuthenticationProfileResult"`
-			AuthenticationProfile redshiftAuthenticationProfileXML `xml:"AuthenticationProfile"`
-		}{
-			XMLName: xml.Name{Local: "DeleteAuthenticationProfileResult"},
-			AuthenticationProfile: redshiftAuthenticationProfileXML{
-				AuthenticationProfileName:    profile.Name,
-				AuthenticationProfileContent: profile.Content,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftAuthenticationProfileResponse(w, http.StatusOK, "DeleteAuthenticationProfile", profile)
 }
 
 func (s *Server) handleRedshiftCreateRedshiftIdcApplication(w http.ResponseWriter, r *http.Request) {
@@ -7445,7 +8169,7 @@ func (s *Server) handleRedshiftModifyClusterParameterGroup(w http.ResponseWriter
 		}
 		group.Parameters[param.ParameterName] = param.ParameterValue
 	}
-	respondRedshiftParameterGroupResponse(w, http.StatusOK, "ModifyClusterParameterGroup", group)
+	respondRedshiftParameterGroupStatusResponse(w, http.StatusOK, "ModifyClusterParameterGroup", group)
 }
 
 func (s *Server) handleRedshiftResetClusterParameterGroup(w http.ResponseWriter, r *http.Request) {
@@ -7469,7 +8193,7 @@ func (s *Server) handleRedshiftResetClusterParameterGroup(w http.ResponseWriter,
 			delete(group.Parameters, param.ParameterName)
 		}
 	}
-	respondRedshiftParameterGroupResponse(w, http.StatusOK, "ResetClusterParameterGroup", group)
+	respondRedshiftParameterGroupStatusResponse(w, http.StatusOK, "ResetClusterParameterGroup", group)
 }
 
 func (s *Server) handleRedshiftDeleteClusterParameterGroup(w http.ResponseWriter, r *http.Request) {
@@ -7665,7 +8389,10 @@ func (s *Server) handleRedshiftResizeCluster(w http.ResponseWriter, r *http.Requ
 		CreatedAt:       time.Now().UTC(),
 	}
 	s.redshift.resizeStatus[clusterID] = status
-	respondRedshiftResizeResponse(w, http.StatusOK, "ResizeCluster", status)
+	cluster.ResizeTargetNodeType = nodeType
+	cluster.ResizeTargetNumberOfNodes = targetNodes
+	cluster.ResizeStatus = status.Status
+	respondRedshiftClusterResponse(w, http.StatusOK, "ResizeCluster", cluster)
 }
 
 func (s *Server) handleRedshiftDescribeResize(w http.ResponseWriter, r *http.Request) {
@@ -7706,6 +8433,9 @@ func (s *Server) handleRedshiftCancelResize(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	status.Status = "CANCELED"
+	if cluster, ok := s.redshift.clusters[clusterID]; ok {
+		cluster.ResizeStatus = status.Status
+	}
 	respondRedshiftResizeResponse(w, http.StatusOK, "CancelResize", status)
 }
 
@@ -8429,7 +9159,7 @@ func (s *Server) handleRedshiftCreateCustomDomainAssociation(w http.ResponseWrit
 		CreatedAt:         time.Now().UTC(),
 	}
 	s.redshift.customDomains[domainName] = item
-	respondRedshiftCustomDomainAssociationResponse(w, http.StatusOK, "CreateCustomDomainAssociation", item)
+	respondRedshiftCustomDomainAssociationFlatResponse(w, http.StatusOK, "CreateCustomDomainAssociation", item)
 }
 
 func (s *Server) handleRedshiftDescribeCustomDomainAssociations(w http.ResponseWriter, r *http.Request) {
@@ -8475,7 +9205,7 @@ func (s *Server) handleRedshiftModifyCustomDomainAssociation(w http.ResponseWrit
 		item.CertificateArn = certificateARN
 	}
 	item.Status = "associated"
-	respondRedshiftCustomDomainAssociationResponse(w, http.StatusOK, "ModifyCustomDomainAssociation", item)
+	respondRedshiftCustomDomainAssociationFlatResponse(w, http.StatusOK, "ModifyCustomDomainAssociation", item)
 }
 
 func (s *Server) handleRedshiftDeleteCustomDomainAssociation(w http.ResponseWriter, r *http.Request) {
@@ -8618,7 +9348,7 @@ func (s *Server) handleRedshiftDescribeInboundIntegrations(w http.ResponseWriter
 			items = append(items, integration)
 		}
 	}
-	respondRedshiftIntegrationsResponse(w, http.StatusOK, "DescribeInboundIntegrations", items)
+	respondRedshiftInboundIntegrationsResponse(w, http.StatusOK, "DescribeInboundIntegrations", items)
 }
 
 func (s *Server) handleRedshiftGetClusterCredentials(w http.ResponseWriter, r *http.Request) {
@@ -8891,9 +9621,11 @@ func (s *Server) handleRedshiftPutResourcePolicy(w http.ResponseWriter, r *http.
 		XMLName: xml.Name{Local: "PutResourcePolicyResponse"},
 		XMLNS:   redshiftNamespace,
 		Result: redshiftResourcePolicyResult{
-			XMLName:     xml.Name{Local: "PutResourcePolicyResult"},
-			ResourceArn: resourceArn,
-			Policy:      redshiftPolicyXML{Value: policy},
+			XMLName: xml.Name{Local: "PutResourcePolicyResult"},
+			ResourcePolicy: redshiftResourcePolicyXML{
+				ResourceArn: resourceArn,
+				Policy:      redshiftPolicyXML{Value: policy},
+			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -8920,9 +9652,11 @@ func (s *Server) handleRedshiftGetResourcePolicy(w http.ResponseWriter, r *http.
 		XMLName: xml.Name{Local: "GetResourcePolicyResponse"},
 		XMLNS:   redshiftNamespace,
 		Result: redshiftResourcePolicyResult{
-			XMLName:     xml.Name{Local: "GetResourcePolicyResult"},
-			ResourceArn: resourceArn,
-			Policy:      redshiftPolicyXML{Value: policy},
+			XMLName: xml.Name{Local: "GetResourcePolicyResult"},
+			ResourcePolicy: redshiftResourcePolicyXML{
+				ResourceArn: resourceArn,
+				Policy:      redshiftPolicyXML{Value: policy},
+			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	})
@@ -9522,6 +10256,15 @@ func respondRedshiftClusterResponse(w http.ResponseWriter, status int, action st
 			RetentionPeriod:   cluster.SnapshotCopyRetentionDays,
 		}
 	}
+	var resizeInfo *redshiftResizeInfoXML
+	if cluster.ResizeTargetNodeType != "" || cluster.ResizeTargetNumberOfNodes != 0 || cluster.ResizeStatus != "" {
+		resizeInfo = &redshiftResizeInfoXML{
+			ResizeType:          "ClassicResize",
+			Status:              cluster.ResizeStatus,
+			TargetNodeType:      cluster.ResizeTargetNodeType,
+			TargetNumberOfNodes: cluster.ResizeTargetNumberOfNodes,
+		}
+	}
 	resp := redshiftClusterResponse{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
@@ -9543,6 +10286,7 @@ func respondRedshiftClusterResponse(w http.ResponseWriter, status int, action st
 				IamRoles:                   iamRoles,
 				ClusterDbRevision:          cluster.DBRevision,
 				ClusterSnapshotCopyStatus:  snapshotCopyStatus,
+				ResizeInfo:                 resizeInfo,
 			},
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
@@ -9575,6 +10319,15 @@ func respondRedshiftClustersResponse(w http.ResponseWriter, status int, action s
 				RetentionPeriod:   cluster.SnapshotCopyRetentionDays,
 			}
 		}
+		var resizeInfo *redshiftResizeInfoXML
+		if cluster.ResizeTargetNodeType != "" || cluster.ResizeTargetNumberOfNodes != 0 || cluster.ResizeStatus != "" {
+			resizeInfo = &redshiftResizeInfoXML{
+				ResizeType:          "ClassicResize",
+				Status:              cluster.ResizeStatus,
+				TargetNodeType:      cluster.ResizeTargetNodeType,
+				TargetNumberOfNodes: cluster.ResizeTargetNumberOfNodes,
+			}
+		}
 		items = append(items, redshiftClusterXML{
 			ClusterIdentifier:          cluster.ID,
 			NodeType:                   cluster.NodeType,
@@ -9591,6 +10344,7 @@ func respondRedshiftClustersResponse(w http.ResponseWriter, status int, action s
 			IamRoles:                   iamRoles,
 			ClusterDbRevision:          cluster.DBRevision,
 			ClusterSnapshotCopyStatus:  snapshotCopyStatus,
+			ResizeInfo:                 resizeInfo,
 		})
 	}
 	resp := redshiftClustersResponse{
@@ -9722,24 +10476,28 @@ func respondRedshiftSnapshotScheduleResponse(w http.ResponseWriter, status int, 
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName          xml.Name                    `xml:""`
-			SnapshotSchedule redshiftSnapshotScheduleXML `xml:"SnapshotSchedule"`
+			XMLName                    xml.Name `xml:""`
+			SnapshotScheduleIdentifier string   `xml:"SnapshotScheduleIdentifier"`
+			ScheduleDefinitions        []string `xml:"ScheduleDefinitions>ScheduleDefinition,omitempty"`
+			ScheduleDescription        string   `xml:"ScheduleDescription,omitempty"`
+			AssociatedClusterCount     int      `xml:"AssociatedClusterCount,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName          xml.Name                    `xml:""`
-			SnapshotSchedule redshiftSnapshotScheduleXML `xml:"SnapshotSchedule"`
+			XMLName                    xml.Name `xml:""`
+			SnapshotScheduleIdentifier string   `xml:"SnapshotScheduleIdentifier"`
+			ScheduleDefinitions        []string `xml:"ScheduleDefinitions>ScheduleDefinition,omitempty"`
+			ScheduleDescription        string   `xml:"ScheduleDescription,omitempty"`
+			AssociatedClusterCount     int      `xml:"AssociatedClusterCount,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			SnapshotSchedule: redshiftSnapshotScheduleXML{
-				SnapshotScheduleIdentifier: schedule.ID,
-				ScheduleDefinitions:        append([]string{}, schedule.Definitions...),
-				ScheduleDescription:        schedule.Description,
-				AssociatedClusterCount:     len(schedule.AssociatedClusters),
-			},
+			XMLName:                    xml.Name{Local: action + "Result"},
+			SnapshotScheduleIdentifier: schedule.ID,
+			ScheduleDefinitions:        append([]string{}, schedule.Definitions...),
+			ScheduleDescription:        schedule.Description,
+			AssociatedClusterCount:     len(schedule.AssociatedClusters),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -9969,18 +10727,41 @@ func respondRedshiftEndpointAccessResponse(w http.ResponseWriter, status int, ac
 	for _, group := range endpoint.VpcSecurityGroupId {
 		vpcGroups = append(vpcGroups, redshiftVpcSecurityGroupXML{VpcSecurityGroupId: group})
 	}
-	resp := redshiftEndpointAccessResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName            xml.Name                      `xml:""`
+			ClusterIdentifier  string                        `xml:"ClusterIdentifier,omitempty"`
+			ResourceOwner      string                        `xml:"ResourceOwner,omitempty"`
+			SubnetGroupName    string                        `xml:"SubnetGroupName,omitempty"`
+			EndpointStatus     string                        `xml:"EndpointStatus,omitempty"`
+			EndpointName       string                        `xml:"EndpointName,omitempty"`
+			EndpointCreateTime time.Time                     `xml:"EndpointCreateTime,omitempty"`
+			VpcSecurityGroups  []redshiftVpcSecurityGroupXML `xml:"VpcSecurityGroups>VpcSecurityGroup,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftEndpointAccessResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			EndpointAccess: redshiftEndpointAccessXML{
-				EndpointName:      endpoint.Name,
-				ClusterIdentifier: endpoint.ClusterIdentifier,
-				SubnetGroupName:   endpoint.SubnetGroupName,
-				EndpointStatus:    endpoint.Status,
-				VpcSecurityGroups: vpcGroups,
-			},
+		Result: struct {
+			XMLName            xml.Name                      `xml:""`
+			ClusterIdentifier  string                        `xml:"ClusterIdentifier,omitempty"`
+			ResourceOwner      string                        `xml:"ResourceOwner,omitempty"`
+			SubnetGroupName    string                        `xml:"SubnetGroupName,omitempty"`
+			EndpointStatus     string                        `xml:"EndpointStatus,omitempty"`
+			EndpointName       string                        `xml:"EndpointName,omitempty"`
+			EndpointCreateTime time.Time                     `xml:"EndpointCreateTime,omitempty"`
+			VpcSecurityGroups  []redshiftVpcSecurityGroupXML `xml:"VpcSecurityGroups>VpcSecurityGroup,omitempty"`
+		}{
+			XMLName:            xml.Name{Local: action + "Result"},
+			ClusterIdentifier:  endpoint.ClusterIdentifier,
+			ResourceOwner:      "123456789012",
+			SubnetGroupName:    endpoint.SubnetGroupName,
+			EndpointStatus:     endpoint.Status,
+			EndpointName:       endpoint.Name,
+			EndpointCreateTime: endpoint.CreatedAt,
+			VpcSecurityGroups:  vpcGroups,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10019,23 +10800,42 @@ func respondRedshiftEndpointAuthorizationResponse(w http.ResponseWriter, status 
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName               xml.Name                         `xml:""`
-			EndpointAuthorization redshiftEndpointAuthorizationXML `xml:"EndpointAuthorization"`
+			XMLName           xml.Name  `xml:""`
+			Grantor           string    `xml:"Grantor,omitempty"`
+			Grantee           string    `xml:"Grantee,omitempty"`
+			ClusterIdentifier string    `xml:"ClusterIdentifier,omitempty"`
+			AuthorizeTime     time.Time `xml:"AuthorizeTime,omitempty"`
+			ClusterStatus     string    `xml:"ClusterStatus,omitempty"`
+			Status            string    `xml:"Status,omitempty"`
+			AllowedAllVPCs    bool      `xml:"AllowedAllVPCs,omitempty"`
+			AllowedVPCs       []string  `xml:"AllowedVPCs>VpcIdentifier,omitempty"`
+			EndpointCount     int       `xml:"EndpointCount,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName               xml.Name                         `xml:""`
-			EndpointAuthorization redshiftEndpointAuthorizationXML `xml:"EndpointAuthorization"`
+			XMLName           xml.Name  `xml:""`
+			Grantor           string    `xml:"Grantor,omitempty"`
+			Grantee           string    `xml:"Grantee,omitempty"`
+			ClusterIdentifier string    `xml:"ClusterIdentifier,omitempty"`
+			AuthorizeTime     time.Time `xml:"AuthorizeTime,omitempty"`
+			ClusterStatus     string    `xml:"ClusterStatus,omitempty"`
+			Status            string    `xml:"Status,omitempty"`
+			AllowedAllVPCs    bool      `xml:"AllowedAllVPCs,omitempty"`
+			AllowedVPCs       []string  `xml:"AllowedVPCs>VpcIdentifier,omitempty"`
+			EndpointCount     int       `xml:"EndpointCount,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			EndpointAuthorization: redshiftEndpointAuthorizationXML{
-				ClusterIdentifier: authz.ClusterIdentifier,
-				Account:           authz.Account,
-				VpcIds:            authz.VpcIds,
-			},
+			XMLName:           xml.Name{Local: action + "Result"},
+			Grantor:           "123456789012",
+			Grantee:           authz.Account,
+			ClusterIdentifier: authz.ClusterIdentifier,
+			AuthorizeTime:     authz.CreatedAt,
+			ClusterStatus:     "available",
+			Status:            "authorized",
+			AllowedVPCs:       authz.VpcIds,
+			EndpointCount:     len(authz.VpcIds),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10091,6 +10891,130 @@ func respondRedshiftParameterGroupResponse(w http.ResponseWriter, status int, ac
 	respondRedshiftXML(w, status, resp)
 }
 
+func respondRedshiftParameterGroupStatusResponse(w http.ResponseWriter, status int, action string, group *redshiftParameterGroup) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName              xml.Name `xml:""`
+			ParameterGroupName   string   `xml:"ParameterGroupName,omitempty"`
+			ParameterGroupStatus string   `xml:"ParameterGroupStatus,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName              xml.Name `xml:""`
+			ParameterGroupName   string   `xml:"ParameterGroupName,omitempty"`
+			ParameterGroupStatus string   `xml:"ParameterGroupStatus,omitempty"`
+		}{
+			XMLName:              xml.Name{Local: action + "Result"},
+			ParameterGroupName:   group.Name,
+			ParameterGroupStatus: "in-sync",
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftUsageLimitResponse(w http.ResponseWriter, status int, action string, limit *redshiftUsageLimit) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName           xml.Name `xml:""`
+			UsageLimitId      string   `xml:"UsageLimitId,omitempty"`
+			ClusterIdentifier string   `xml:"ClusterIdentifier,omitempty"`
+			FeatureType       string   `xml:"FeatureType,omitempty"`
+			LimitType         string   `xml:"LimitType,omitempty"`
+			Amount            int64    `xml:"Amount,omitempty"`
+			Period            string   `xml:"Period,omitempty"`
+			BreachAction      string   `xml:"BreachAction,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName           xml.Name `xml:""`
+			UsageLimitId      string   `xml:"UsageLimitId,omitempty"`
+			ClusterIdentifier string   `xml:"ClusterIdentifier,omitempty"`
+			FeatureType       string   `xml:"FeatureType,omitempty"`
+			LimitType         string   `xml:"LimitType,omitempty"`
+			Amount            int64    `xml:"Amount,omitempty"`
+			Period            string   `xml:"Period,omitempty"`
+			BreachAction      string   `xml:"BreachAction,omitempty"`
+		}{
+			XMLName:           xml.Name{Local: action + "Result"},
+			UsageLimitId:      limit.ID,
+			ClusterIdentifier: limit.ClusterIdentifier,
+			FeatureType:       limit.FeatureType,
+			LimitType:         limit.LimitType,
+			Amount:            limit.Amount,
+			Period:            limit.Period,
+			BreachAction:      limit.BreachAction,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftAuthenticationProfileResponse(w http.ResponseWriter, status int, action string, profile *redshiftAuthenticationProfile) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                      xml.Name `xml:""`
+			AuthenticationProfileName    string   `xml:"AuthenticationProfileName,omitempty"`
+			AuthenticationProfileContent string   `xml:"AuthenticationProfileContent,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                      xml.Name `xml:""`
+			AuthenticationProfileName    string   `xml:"AuthenticationProfileName,omitempty"`
+			AuthenticationProfileContent string   `xml:"AuthenticationProfileContent,omitempty"`
+		}{
+			XMLName:                      xml.Name{Local: action + "Result"},
+			AuthenticationProfileName:    profile.Name,
+			AuthenticationProfileContent: profile.Content,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftBatchClusterSnapshotsResponse(w http.ResponseWriter, status int, action string, snapshots []*redshiftSnapshot) {
+	resources := make([]string, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		resources = append(resources, snapshot.ID)
+	}
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName   xml.Name `xml:""`
+			Resources []string `xml:"Resources>String,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName   xml.Name `xml:""`
+			Resources []string `xml:"Resources>String,omitempty"`
+		}{
+			XMLName:   xml.Name{Local: action + "Result"},
+			Resources: resources,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
 func respondRedshiftParameterGroupsResponse(w http.ResponseWriter, status int, action string, groups []*redshiftParameterGroup) {
 	items := make([]redshiftParameterGroupXML, 0, len(groups))
 	for _, group := range groups {
@@ -10126,17 +11050,32 @@ func respondRedshiftParametersResponse(w http.ResponseWriter, status int, action
 }
 
 func respondRedshiftDataShareResponse(w http.ResponseWriter, status int, action string, share *redshiftDataShare) {
-	resp := redshiftDataShareResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                          xml.Name `xml:""`
+			DataShareArn                     string   `xml:"DataShareArn,omitempty"`
+			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
+			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
+			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftDataShareResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			DataShare: redshiftDataShareXML{
-				DataShareArn:  share.Arn,
-				DataShareName: share.Name,
-				ProducerArn:   share.ProducerArn,
-				Status:        share.Status,
-			},
+		Result: struct {
+			XMLName                          xml.Name `xml:""`
+			DataShareArn                     string   `xml:"DataShareArn,omitempty"`
+			ProducerArn                      string   `xml:"ProducerArn,omitempty"`
+			AllowPubliclyAccessibleConsumers bool     `xml:"AllowPubliclyAccessibleConsumers,omitempty"`
+			ManagedBy                        string   `xml:"ManagedBy,omitempty"`
+		}{
+			XMLName:                          xml.Name{Local: action + "Result"},
+			DataShareArn:                     share.Arn,
+			ProducerArn:                      share.ProducerArn,
+			AllowPubliclyAccessibleConsumers: false,
+			ManagedBy:                        "stackyard",
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10170,25 +11109,22 @@ func respondRedshiftPartnerResponse(w http.ResponseWriter, status int, action st
 		XMLName xml.Name `xml:""`
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
-			XMLName       xml.Name                      `xml:""`
-			PartnerDetail redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfo"`
+			XMLName      xml.Name `xml:""`
+			DatabaseName string   `xml:"DatabaseName,omitempty"`
+			PartnerName  string   `xml:"PartnerName,omitempty"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: struct {
-			XMLName       xml.Name                      `xml:""`
-			PartnerDetail redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfo"`
+			XMLName      xml.Name `xml:""`
+			DatabaseName string   `xml:"DatabaseName,omitempty"`
+			PartnerName  string   `xml:"PartnerName,omitempty"`
 		}{
-			XMLName: xml.Name{Local: action + "Result"},
-			PartnerDetail: redshiftPartnerIntegrationXML{
-				AccountID:         item.AccountID,
-				ClusterIdentifier: item.ClusterIdentifier,
-				DatabaseName:      item.DatabaseName,
-				PartnerName:       item.PartnerName,
-				Status:            item.Status,
-			},
+			XMLName:      xml.Name{Local: action + "Result"},
+			DatabaseName: item.DatabaseName,
+			PartnerName:  item.PartnerName,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10211,7 +11147,7 @@ func respondRedshiftPartnersResponse(w http.ResponseWriter, status int, action s
 		XMLNS   string   `xml:"xmlns,attr"`
 		Result  struct {
 			XMLName  xml.Name                        `xml:""`
-			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfos>PartnerIntegrationInfo"`
+			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfoList>PartnerIntegrationInfo"`
 		} `xml:""`
 		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
 	}{
@@ -10219,10 +11155,43 @@ func respondRedshiftPartnersResponse(w http.ResponseWriter, status int, action s
 		XMLNS:   redshiftNamespace,
 		Result: struct {
 			XMLName  xml.Name                        `xml:""`
-			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfos>PartnerIntegrationInfo"`
+			Partners []redshiftPartnerIntegrationXML `xml:"PartnerIntegrationInfoList>PartnerIntegrationInfo"`
 		}{
 			XMLName:  xml.Name{Local: action + "Result"},
 			Partners: out,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftCustomDomainAssociationFlatResponse(w http.ResponseWriter, status int, action string, item *redshiftCustomDomainAssociation) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                    xml.Name `xml:""`
+			CustomDomainName           string   `xml:"CustomDomainName,omitempty"`
+			CustomDomainCertificateArn string   `xml:"CustomDomainCertificateArn,omitempty"`
+			ClusterIdentifier          string   `xml:"ClusterIdentifier,omitempty"`
+			CustomDomainCertExpiryTime string   `xml:"CustomDomainCertExpiryTime,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                    xml.Name `xml:""`
+			CustomDomainName           string   `xml:"CustomDomainName,omitempty"`
+			CustomDomainCertificateArn string   `xml:"CustomDomainCertificateArn,omitempty"`
+			ClusterIdentifier          string   `xml:"ClusterIdentifier,omitempty"`
+			CustomDomainCertExpiryTime string   `xml:"CustomDomainCertExpiryTime,omitempty"`
+		}{
+			XMLName:                    xml.Name{Local: action + "Result"},
+			CustomDomainName:           item.CustomDomainName,
+			CustomDomainCertificateArn: item.CertificateArn,
+			ClusterIdentifier:          item.ClusterIdentifier,
+			CustomDomainCertExpiryTime: item.CreatedAt.Add(365 * 24 * time.Hour).Format(time.RFC3339),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10337,21 +11306,81 @@ func respondRedshiftIntegrationsResponse(w http.ResponseWriter, status int, acti
 	respondRedshiftXML(w, status, resp)
 }
 
-func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, action string, scheduled *redshiftScheduledAction) {
-	resp := redshiftScheduledActionResponse{
+func respondRedshiftInboundIntegrationsResponse(w http.ResponseWriter, status int, action string, integrations []*redshiftIntegration) {
+	type inboundIntegrationXML struct {
+		XMLName        xml.Name `xml:"InboundIntegration"`
+		IntegrationArn string   `xml:"IntegrationArn,omitempty"`
+		SourceArn      string   `xml:"SourceArn,omitempty"`
+		TargetArn      string   `xml:"TargetArn,omitempty"`
+		Status         string   `xml:"Status,omitempty"`
+		CreateTime     string   `xml:"CreateTime,omitempty"`
+	}
+	items := make([]inboundIntegrationXML, 0, len(integrations))
+	for _, integration := range integrations {
+		items = append(items, inboundIntegrationXML{
+			IntegrationArn: integration.Arn,
+			SourceArn:      integration.SourceArn,
+			TargetArn:      integration.TargetArn,
+			Status:         integration.Status,
+			CreateTime:     integration.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName             xml.Name                `xml:""`
+			InboundIntegrations []inboundIntegrationXML `xml:"InboundIntegrations>InboundIntegration"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftScheduledActionResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			ScheduledAction: redshiftScheduledActionXML{
-				ScheduledActionName: scheduled.Name,
-				TargetAction:        scheduled.TargetAction,
-				Schedule:            scheduled.Schedule,
-				State:               scheduled.State,
-				RoleArn:             scheduled.IamRole,
-				Description:         scheduled.Description,
-				CreationDate:        scheduled.CreatedAt.Format(time.RFC3339),
-			},
+		Result: struct {
+			XMLName             xml.Name                `xml:""`
+			InboundIntegrations []inboundIntegrationXML `xml:"InboundIntegrations>InboundIntegration"`
+		}{
+			XMLName:             xml.Name{Local: action + "Result"},
+			InboundIntegrations: items,
+		},
+		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
+	}
+	respondRedshiftXML(w, status, resp)
+}
+
+func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, action string, scheduled *redshiftScheduledAction) {
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName                    xml.Name  `xml:""`
+			ScheduledActionName        string    `xml:"ScheduledActionName,omitempty"`
+			Schedule                   string    `xml:"Schedule,omitempty"`
+			IamRole                    string    `xml:"IamRole,omitempty"`
+			ScheduledActionDescription string    `xml:"ScheduledActionDescription,omitempty"`
+			State                      string    `xml:"State,omitempty"`
+			StartTime                  time.Time `xml:"StartTime,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
+		XMLName: xml.Name{Local: action + "Response"},
+		XMLNS:   redshiftNamespace,
+		Result: struct {
+			XMLName                    xml.Name  `xml:""`
+			ScheduledActionName        string    `xml:"ScheduledActionName,omitempty"`
+			Schedule                   string    `xml:"Schedule,omitempty"`
+			IamRole                    string    `xml:"IamRole,omitempty"`
+			ScheduledActionDescription string    `xml:"ScheduledActionDescription,omitempty"`
+			State                      string    `xml:"State,omitempty"`
+			StartTime                  time.Time `xml:"StartTime,omitempty"`
+		}{
+			XMLName:                    xml.Name{Local: action + "Result"},
+			ScheduledActionName:        scheduled.Name,
+			Schedule:                   scheduled.Schedule,
+			IamRole:                    scheduled.IamRole,
+			ScheduledActionDescription: scheduled.Description,
+			State:                      scheduled.State,
+			StartTime:                  scheduled.CreatedAt,
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -10359,17 +11388,35 @@ func respondRedshiftScheduledActionResponse(w http.ResponseWriter, status int, a
 }
 
 func respondRedshiftResizeResponse(w http.ResponseWriter, status int, action string, resize *redshiftResizeStatus) {
-	resp := redshiftResizeResponse{
+	resp := struct {
+		XMLName xml.Name `xml:""`
+		XMLNS   string   `xml:"xmlns,attr"`
+		Result  struct {
+			XMLName             xml.Name `xml:""`
+			TargetNodeType      string   `xml:"TargetNodeType,omitempty"`
+			TargetNumberOfNodes int      `xml:"TargetNumberOfNodes,omitempty"`
+			Status              string   `xml:"Status,omitempty"`
+			ResizeType          string   `xml:"ResizeType,omitempty"`
+			Message             string   `xml:"Message,omitempty"`
+		} `xml:""`
+		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
+	}{
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
-		Result: redshiftResizeResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			ResizeInfo: redshiftResizeInfoXML{
-				ResizeType:          "ClassicResize",
-				Status:              resize.Status,
-				TargetNodeType:      resize.TargetNodeType,
-				TargetNumberOfNodes: resize.TargetNodeCount,
-			},
+		Result: struct {
+			XMLName             xml.Name `xml:""`
+			TargetNodeType      string   `xml:"TargetNodeType,omitempty"`
+			TargetNumberOfNodes int      `xml:"TargetNumberOfNodes,omitempty"`
+			Status              string   `xml:"Status,omitempty"`
+			ResizeType          string   `xml:"ResizeType,omitempty"`
+			Message             string   `xml:"Message,omitempty"`
+		}{
+			XMLName:             xml.Name{Local: action + "Result"},
+			TargetNodeType:      resize.TargetNodeType,
+			TargetNumberOfNodes: resize.TargetNodeCount,
+			Status:              resize.Status,
+			ResizeType:          "ClassicResize",
+			Message:             "stackyard resize in progress",
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -12622,6 +13669,13 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 		}
 		s.handleS3ControlListAccessPoints(w, r, accountID)
 		return
+	case path == "/accesspointfordirectory" || path == "/accesspointfordirectory/":
+		if r.Method != http.MethodGet {
+			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+			return
+		}
+		s.handleS3ControlListAccessPointsForDirectoryBuckets(w, r, accountID)
+		return
 	case path == "/configuration/publicAccessBlock" || path == "/configuration/publicAccessBlock/":
 		switch r.Method {
 		case http.MethodPut:
@@ -13181,6 +14235,70 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
 			return
 		}
+	case strings.HasPrefix(path, "/accesspoint/"):
+		rest := strings.TrimPrefix(path, "/accesspoint/")
+		name, tail, _ := strings.Cut(rest, "/")
+		if name == "" {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
+			return
+		}
+		switch tail {
+		case "":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlCreateAccessPoint(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPoint(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPoint(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "scope":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlPutAccessPointScope(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPointScope(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPointScope(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "policy":
+			switch r.Method {
+			case http.MethodPut:
+				s.handleS3ControlPutAccessPointPolicy(w, r, accountID, name)
+				return
+			case http.MethodGet:
+				s.handleS3ControlGetAccessPointPolicy(w, r, accountID, name)
+				return
+			case http.MethodDelete:
+				s.handleS3ControlDeleteAccessPointPolicy(w, r, accountID, name)
+				return
+			default:
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+		case "policyStatus":
+			if r.Method != http.MethodGet {
+				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
+				return
+			}
+			s.handleS3ControlGetAccessPointPolicyStatus(w, r, accountID, name)
+			return
+		default:
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
+			return
+		}
 	case path == "/bucket" || path == "/bucket/":
 		if r.Method != http.MethodGet {
 			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
@@ -13306,55 +14424,6 @@ func (s *Server) handleS3ControlRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		default:
 			respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-			return
-		}
-	case strings.HasPrefix(path, "/accesspoint/"):
-		rest := strings.TrimPrefix(path, "/accesspoint/")
-		name, tail, _ := strings.Cut(rest, "/")
-		if name == "" {
-			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
-			return
-		}
-		switch tail {
-		case "":
-			switch r.Method {
-			case http.MethodPut:
-				s.handleS3ControlCreateAccessPoint(w, r, accountID, name)
-				return
-			case http.MethodGet:
-				s.handleS3ControlGetAccessPoint(w, r, accountID, name)
-				return
-			case http.MethodDelete:
-				s.handleS3ControlDeleteAccessPoint(w, r, accountID, name)
-				return
-			default:
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-		case "policy":
-			switch r.Method {
-			case http.MethodPut:
-				s.handleS3ControlPutAccessPointPolicy(w, r, accountID, name)
-				return
-			case http.MethodGet:
-				s.handleS3ControlGetAccessPointPolicy(w, r, accountID, name)
-				return
-			case http.MethodDelete:
-				s.handleS3ControlDeleteAccessPointPolicy(w, r, accountID, name)
-				return
-			default:
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-		case "policyStatus":
-			if r.Method != http.MethodGet {
-				respondS3ControlErrorXML(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "unsupported method")
-				return
-			}
-			s.handleS3ControlGetAccessPointPolicyStatus(w, r, accountID, name)
-			return
-		default:
-			respondS3ControlErrorXML(w, http.StatusNotFound, "NotFound", "unknown s3-control endpoint")
 			return
 		}
 	}
@@ -15258,7 +16327,6 @@ func (s *Server) handleS3ControlListAccessPoints(w http.ResponseWriter, r *http.
 			Bucket:          ap.Bucket,
 			BucketAccountID: ap.BucketAccount,
 			DataSourceID:    ap.DataSourceID,
-			DataSourceType:  ap.DataSourceType,
 			Name:            ap.Name,
 			NetworkOrigin:   ap.NetworkOrigin,
 		}
@@ -15274,6 +16342,131 @@ func (s *Server) handleS3ControlListAccessPoints(w http.ResponseWriter, r *http.
 		resp.NextToken = filtered[end-1].Name
 	}
 	respondS3XML(w, http.StatusOK, resp)
+}
+
+func (s *Server) handleS3ControlListAccessPointsForDirectoryBuckets(w http.ResponseWriter, r *http.Request, accountID string) {
+	query := r.URL.Query()
+	directoryBucket := strings.TrimSpace(query.Get("directoryBucket"))
+	maxResults := parseQueryInt(query.Get("maxResults"), 1000)
+	nextToken := strings.TrimSpace(query.Get("nextToken"))
+
+	accessPoints := s.s3control.ListAccessPoints(accountID)
+	filtered := make([]*s3control.AccessPoint, 0, len(accessPoints))
+	for _, ap := range accessPoints {
+		if directoryBucket != "" && ap.Bucket != directoryBucket {
+			continue
+		}
+		filtered = append(filtered, ap)
+	}
+	start := 0
+	if nextToken != "" {
+		found := false
+		for i, ap := range filtered {
+			if ap.Name == nextToken {
+				start = i + 1
+				found = true
+				break
+			}
+		}
+		if !found && len(filtered) > 0 {
+			respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "invalid nextToken")
+			return
+		}
+	}
+	end := start + maxResults
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	out := make([]s3ControlAccessPointInfo, 0, max(0, end-start))
+	for _, ap := range filtered[start:end] {
+		entry := s3ControlAccessPointInfo{
+			AccessPointArn:  ap.AccessPointArn,
+			Alias:           ap.Alias,
+			Bucket:          ap.Bucket,
+			BucketAccountID: ap.BucketAccount,
+			DataSourceID:    ap.DataSourceID,
+			Name:            ap.Name,
+			NetworkOrigin:   ap.NetworkOrigin,
+		}
+		if ap.VpcID != "" {
+			entry.VpcConfiguration = &s3ControlVpcConfiguration{VpcID: ap.VpcID}
+		}
+		out = append(out, entry)
+	}
+	resp := s3ControlListAccessPointsForDirectoryBucketsResult{
+		AccessPointList: out,
+	}
+	if maxResults > 0 && end < len(filtered) {
+		resp.NextToken = filtered[end-1].Name
+	}
+	respondS3XML(w, http.StatusOK, resp)
+}
+
+func (s *Server) handleS3ControlPutAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	body, err := readBodyBytes(r)
+	if err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "unable to read request body")
+		return
+	}
+	allowed := map[string]map[string]bool{
+		"Scope": {
+			"Permissions": true,
+			"Prefixes":    true,
+		},
+		"Scope/Permissions": {
+			"Permission": true,
+		},
+		"Scope/Prefixes": {
+			"Prefix": true,
+		},
+	}
+	if err := validateS3ControlXML(body, "Scope", s3ControlNamespace, allowed, nil); err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	var scope s3ControlAccessPointScope
+	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&scope); err != nil {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	if err := s.s3control.SetAccessPointScope(accountID, name, &s3control.AccessPointScope{
+		Permissions: append([]string(nil), scope.Permissions...),
+		Prefixes:    append([]string(nil), scope.Prefixes...),
+	}); err != nil {
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleS3ControlGetAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	scope, err := s.s3control.GetAccessPointScope(accountID, name)
+	if err != nil {
+		if errors.Is(err, s3control.ErrAccessPointScopeNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPointScope", "access point scope not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetAccessPointScopeResult{
+		Scope: s3ControlAccessPointScope{
+			Permissions: append([]string(nil), scope.Permissions...),
+			Prefixes:    append([]string(nil), scope.Prefixes...),
+		},
+	})
+}
+
+func (s *Server) handleS3ControlDeleteAccessPointScope(w http.ResponseWriter, r *http.Request, accountID, name string) {
+	if err := s.s3control.DeleteAccessPointScope(accountID, name); err != nil {
+		if errors.Is(err, s3control.ErrAccessPointScopeNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPointScope", "access point scope not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessPoint", "access point not found")
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleS3ControlPutAccessPointPolicy(w http.ResponseWriter, r *http.Request, accountID, name string) {
@@ -15813,23 +17006,17 @@ func (s *Server) handleS3ControlDescribeMultiRegionAccessPointOperation(w http.R
 	switch op.Operation {
 	case "CreateMultiRegionAccessPoint":
 		if op.RequestParams.CreateRequest != nil {
-			params.CreateMultiRegionAccessPointRequest = &s3ControlCreateMultiRegionAccessPointRequest{
-				Xmlns: s3ControlNamespace,
-				Details: s3ControlMultiRegionAccessPointInput{
-					Name: op.RequestParams.CreateRequest.Name,
-					Regions: s3ControlMultiRegionAccessPointRegions{
-						Regions: s.mrapRegionsXML(op.RequestParams.CreateRequest.Regions),
-					},
+			params.CreateMultiRegionAccessPointRequest = &s3ControlMultiRegionAccessPointInput{
+				Name: op.RequestParams.CreateRequest.Name,
+				Regions: s3ControlMultiRegionAccessPointRegions{
+					Regions: s.mrapRegionsXML(op.RequestParams.CreateRequest.Regions),
 				},
 			}
 		}
 	case "PutMultiRegionAccessPointPolicy":
-		params.PutMultiRegionAccessPointPolicyRequest = &s3ControlPutMultiRegionAccessPointPolicyRequest{
-			Xmlns: s3ControlNamespace,
-			Details: s3ControlPutMultiRegionAccessPointPolicyInput{
-				Name:   op.RequestParams.PutPolicyName,
-				Policy: op.RequestParams.PutPolicyBody,
-			},
+		params.PutMultiRegionAccessPointPolicyRequest = &s3ControlPutMultiRegionAccessPointPolicyInput{
+			Name:   op.RequestParams.PutPolicyName,
+			Policy: op.RequestParams.PutPolicyBody,
 		}
 	}
 	if params.CreateMultiRegionAccessPointRequest != nil || params.PutMultiRegionAccessPointPolicyRequest != nil {
@@ -16018,7 +17205,19 @@ func (s *Server) handleS3ControlGetAccessPointConfigurationForObjectLambda(w htt
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetAccessPointConfigurationForObjectLambdaResult{
-		Configuration: s3ControlObjectLambdaConfiguration{SupportingAccessPoint: ap.AccessPointArn},
+		Configuration: s3ControlObjectLambdaConfiguration{
+			SupportingAccessPoint: ap.AccessPointArn,
+			TransformationConfigurations: []s3ControlObjectLambdaTransformationConfiguration{
+				{
+					Actions: []string{"GetObject"},
+					ContentTransformation: s3ControlObjectLambdaContentTransformation{
+						AwsLambda: &s3ControlAwsLambdaTransformation{
+							FunctionArn: "arn:aws:lambda:us-east-1:123456789012:function:stackyard-s3-object-lambda",
+						},
+					},
+				},
+			},
+		},
 	})
 }
 
@@ -16115,6 +17314,31 @@ func (s *Server) mrapReport(mrap *s3control.MultiRegionAccessPoint) s3ControlMul
 		}
 	}
 	return report
+}
+
+func storageLensARN(accountID, configID string) string {
+	return "arn:aws:s3:us-east-1:" + accountID + ":storage-lens/" + configID
+}
+
+func storageLensGroupARN(accountID, name string) string {
+	return "arn:aws:s3:us-east-1:" + accountID + ":storage-lens-group/" + name
+}
+
+func defaultS3ControlStorageLensConfiguration(accountID, configID string) s3ControlStorageLensConfiguration {
+	return s3ControlStorageLensConfiguration{
+		ID:             configID,
+		AccountLevel:   s3ControlStorageLensAccountLevel{BucketLevel: s3ControlStorageLensBucketLevel{ActivityMetrics: s3ControlStorageLensMetricFlag{IsEnabled: true}}},
+		IsEnabled:      true,
+		StorageLensArn: storageLensARN(accountID, configID),
+	}
+}
+
+func defaultS3ControlStorageLensGroup(accountID, name string) s3ControlStorageLensGroup {
+	return s3ControlStorageLensGroup{
+		Name:                name,
+		Filter:              s3ControlStorageLensGroupFilter{MatchAnyPrefix: []string{"stackyard/"}},
+		StorageLensGroupArn: storageLensGroupARN(accountID, name),
+	}
 }
 
 func (s *Server) mrapRegionsXML(regions []s3control.MultiRegionAccessPointRegion) []s3ControlMultiRegionRegion {
@@ -16234,9 +17458,17 @@ func (s *Server) handleS3ControlDescribeJob(w http.ResponseWriter, r *http.Reque
 			Priority:             job.Priority,
 			RoleArn:              job.RoleArn,
 			CreationTime:         job.CreationTime.Format(time.RFC3339),
-			Manifest:             s3ControlJobPayload{InnerXML: job.ManifestXML},
-			Operation:            s3ControlJobPayload{InnerXML: job.OperationXML},
-			Report:               s3ControlJobPayload{InnerXML: job.ReportXML},
+			Manifest: s3ControlJobManifest{
+				Spec: s3ControlJobManifestSpec{
+					Format: "S3BatchOperations_CSV_20180820",
+				},
+				Location: s3ControlJobManifestLocation{
+					ObjectArn: "arn:aws:s3:::stackyard-manifests/job.csv",
+					ETag:      "\"stackyard-etag\"",
+				},
+			},
+			Operation: s3ControlJobPayload{InnerXML: job.OperationXML},
+			Report:    s3ControlJobPayload{InnerXML: job.ReportXML},
 		},
 	})
 }
@@ -16320,11 +17552,15 @@ func (s *Server) handleS3ControlUpdateJobPriority(w http.ResponseWriter, r *http
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlUpdateJobPriorityResult{
+		JobId:    jobID,
+		Priority: priority,
+	})
 }
 
 func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
 	status := strings.TrimSpace(r.URL.Query().Get("requestedJobStatus"))
+	statusUpdateReason := strings.TrimSpace(r.URL.Query().Get("statusUpdateReason"))
 	if status == "" {
 		body, err := readBodyBytes(r)
 		if err != nil {
@@ -16346,6 +17582,7 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		var req struct {
 			RequestedJobStatus string `xml:"RequestedJobStatus"`
 			Status             string `xml:"Status"`
+			StatusUpdateReason string `xml:"StatusUpdateReason"`
 		}
 		if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
 			respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
@@ -16356,6 +17593,9 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		} else {
 			status = strings.TrimSpace(req.Status)
 		}
+		if statusUpdateReason == "" {
+			statusUpdateReason = strings.TrimSpace(req.StatusUpdateReason)
+		}
 	}
 	if status == "" {
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "invalid status")
@@ -16365,7 +17605,11 @@ func (s *Server) handleS3ControlUpdateJobStatus(w http.ResponseWriter, r *http.R
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlUpdateJobStatusResult{
+		JobId:              jobID,
+		Status:             status,
+		StatusUpdateReason: statusUpdateReason,
+	})
 }
 
 func (s *Server) handleS3ControlPutJobTagging(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
@@ -16400,11 +17644,11 @@ func (s *Server) handleS3ControlGetJobTagging(w http.ResponseWriter, r *http.Req
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchJob", "job not found")
 		return
 	}
-	out := s3ControlTagging{}
+	out := s3ControlTagListTag{}
 	for k, v := range tags {
 		out.Tags = append(out.Tags, s3ControlTag{Key: k, Value: v})
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetJobTaggingResult{Tagging: out})
+	respondS3XML(w, http.StatusOK, s3ControlGetJobTaggingResult{Tags: out})
 }
 
 func (s *Server) handleS3ControlDeleteJobTagging(w http.ResponseWriter, r *http.Request, accountID, jobID string) {
@@ -16432,16 +17676,11 @@ func (s *Server) handleS3ControlPutStorageLensConfiguration(w http.ResponseWrite
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
-	var req s3ControlPutStorageLensConfigurationRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+	if strings.TrimSpace(extractXMLPathValue(body, "StorageLensConfiguration/Id")) == "" {
+		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing configuration id")
 		return
 	}
-	if strings.TrimSpace(req.Config.InnerXML) == "" {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing configuration")
-		return
-	}
-	_ = s.s3control.PutStorageLensConfiguration(accountID, configID, req.Config.InnerXML)
+	_ = s.s3control.PutStorageLensConfiguration(accountID, configID, string(body))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -16452,7 +17691,7 @@ func (s *Server) handleS3ControlGetStorageLensConfiguration(w http.ResponseWrite
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensConfigurationResult{
-		Config: s3ControlStorageLensConfiguration{InnerXML: cfg.ConfigXML},
+		Config: defaultS3ControlStorageLensConfiguration(accountID, cfg.ID),
 	})
 }
 
@@ -16499,11 +17738,10 @@ func (s *Server) handleS3ControlListStorageLensConfigurations(w http.ResponseWri
 	items := make([]s3ControlStorageLensConfigurationListItem, 0, max(0, end-start))
 	for _, cfg := range configs[start:end] {
 		items = append(items, s3ControlStorageLensConfigurationListItem{
-			ID:          cfg.ID,
-			HomeRegion:  "us-east-1",
-			Status:      "ACTIVE",
-			Enabled:     true,
-			HomeAccount: accountID,
+			ID:             cfg.ID,
+			StorageLensArn: storageLensARN(accountID, cfg.ID),
+			HomeRegion:     "us-east-1",
+			Enabled:        true,
 		})
 	}
 	resp := s3ControlListStorageLensConfigurationsResult{
@@ -16547,11 +17785,11 @@ func (s *Server) handleS3ControlGetStorageLensConfigurationTagging(w http.Respon
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchConfiguration", "configuration not found")
 		return
 	}
-	out := s3ControlTagging{}
+	out := s3ControlTagListTag{}
 	for k, v := range tags {
 		out.Tags = append(out.Tags, s3ControlTag{Key: k, Value: v})
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensTaggingResult{Tagging: out})
+	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensTaggingResult{Tags: out})
 }
 
 func (s *Server) handleS3ControlDeleteStorageLensConfigurationTagging(w http.ResponseWriter, r *http.Request, accountID, configID string) {
@@ -16585,12 +17823,7 @@ func (s *Server) handleS3ControlCreateStorageLensGroup(w http.ResponseWriter, r 
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing group name")
 		return
 	}
-	var req s3ControlCreateStorageLensGroupRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	_ = s.s3control.CreateStorageLensGroup(accountID, name, req.Group.InnerXML)
+	_ = s.s3control.CreateStorageLensGroup(accountID, name, string(body))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -16601,7 +17834,7 @@ func (s *Server) handleS3ControlGetStorageLensGroup(w http.ResponseWriter, r *ht
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlGetStorageLensGroupResult{
-		Group: s3ControlStorageLensGroup{InnerXML: group.GroupXML},
+		Group: defaultS3ControlStorageLensGroup(accountID, group.Name),
 	})
 }
 
@@ -16618,12 +17851,7 @@ func (s *Server) handleS3ControlUpdateStorageLensGroup(w http.ResponseWriter, r 
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
-	var req s3ControlUpdateStorageLensGroupRequest
-	if err := xml.NewDecoder(bytes.NewReader(body)).Decode(&req); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	if err := s.s3control.CreateStorageLensGroup(accountID, name, req.Group.InnerXML); err != nil {
+	if err := s.s3control.CreateStorageLensGroup(accountID, name, string(body)); err != nil {
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchStorageLensGroup", "group not found")
 		return
 	}
@@ -16643,8 +17871,9 @@ func (s *Server) handleS3ControlListStorageLensGroups(w http.ResponseWriter, r *
 	out := make([]s3ControlStorageLensGroupSummary, 0, len(list))
 	for _, group := range list {
 		out = append(out, s3ControlStorageLensGroupSummary{
-			Name:      group.Name,
-			CreatedAt: group.CreatedAt.Format(time.RFC3339),
+			Name:                group.Name,
+			StorageLensGroupArn: storageLensGroupARN(accountID, group.Name),
+			HomeRegion:          "us-east-1",
 		})
 	}
 	respondS3XML(w, http.StatusOK, s3ControlListStorageLensGroupsResult{
@@ -16715,13 +17944,11 @@ func (s *Server) handleS3ControlCreateAccessGrantsInstance(w http.ResponseWriter
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlAccessGrantsInstanceResult{
-		XMLName:                      xml.Name{Local: "CreateAccessGrantsInstanceResult"},
-		AccessGrantsInstanceArn:      instance.Arn,
-		AccessGrantsInstanceId:       instance.ID,
-		IdentityCenterArn:            instance.IdentityCenterArn,
-		IdentityCenterInstanceArn:    instance.IdentityCenterInstanceArn,
-		IdentityCenterApplicationArn: instance.IdentityCenterApplicationArn,
-		CreatedAt:                    instance.CreatedAt.Format(time.RFC3339),
+		XMLName:                 xml.Name{Local: "CreateAccessGrantsInstanceResult"},
+		AccessGrantsInstanceArn: instance.Arn,
+		AccessGrantsInstanceId:  instance.ID,
+		IdentityCenterArn:       instance.IdentityCenterArn,
+		CreatedAt:               instance.CreatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -16732,13 +17959,11 @@ func (s *Server) handleS3ControlGetAccessGrantsInstance(w http.ResponseWriter, r
 		return
 	}
 	respondS3XML(w, http.StatusOK, s3ControlAccessGrantsInstanceResult{
-		XMLName:                      xml.Name{Local: "GetAccessGrantsInstanceResult"},
-		AccessGrantsInstanceArn:      instance.Arn,
-		AccessGrantsInstanceId:       instance.ID,
-		IdentityCenterArn:            instance.IdentityCenterArn,
-		IdentityCenterInstanceArn:    instance.IdentityCenterInstanceArn,
-		IdentityCenterApplicationArn: instance.IdentityCenterApplicationArn,
-		CreatedAt:                    instance.CreatedAt.Format(time.RFC3339),
+		XMLName:                 xml.Name{Local: "GetAccessGrantsInstanceResult"},
+		AccessGrantsInstanceArn: instance.Arn,
+		AccessGrantsInstanceId:  instance.ID,
+		IdentityCenterArn:       instance.IdentityCenterArn,
+		CreatedAt:               instance.CreatedAt.Format(time.RFC3339),
 	})
 }
 
@@ -16776,12 +18001,10 @@ func (s *Server) handleS3ControlListAccessGrantsInstances(w http.ResponseWriter,
 	out := make([]s3ControlAccessGrantsInstanceSummary, 0, max(0, end-start))
 	for _, item := range list[start:end] {
 		out = append(out, s3ControlAccessGrantsInstanceSummary{
-			AccessGrantsInstanceArn:      item.Arn,
-			AccessGrantsInstanceId:       item.ID,
-			IdentityCenterArn:            item.IdentityCenterArn,
-			IdentityCenterInstanceArn:    item.IdentityCenterInstanceArn,
-			IdentityCenterApplicationArn: item.IdentityCenterApplicationArn,
-			CreatedAt:                    item.CreatedAt.Format(time.RFC3339),
+			AccessGrantsInstanceArn: item.Arn,
+			AccessGrantsInstanceId:  item.ID,
+			IdentityCenterArn:       item.IdentityCenterArn,
+			CreatedAt:               item.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	resp := s3ControlListAccessGrantsInstancesResult{
@@ -16828,7 +18051,11 @@ func (s *Server) handleS3ControlPutAccessGrantsInstanceResourcePolicy(w http.Res
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchAccessGrantsInstance", "access grants instance not found")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	respondS3XML(w, http.StatusOK, s3ControlPutAccessGrantsInstanceResourcePolicyResult{
+		Policy:       strings.TrimSpace(req.Policy),
+		Organization: strings.TrimSpace(req.Organization),
+		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
+	})
 }
 
 func (s *Server) handleS3ControlGetAccessGrantsInstanceResourcePolicy(w http.ResponseWriter, r *http.Request, accountID string) {
@@ -17634,7 +18861,16 @@ func (s *Server) handleS3ControlGetBucketLifecycleConfiguration(w http.ResponseW
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketLifecycleConfigurationResult{})
+	xmlBody, err := s.s3control.GetOutpostsBucketLifecycle(accountID, bucket)
+	if err != nil {
+		if errors.Is(err, s3control.ErrOutpostsBucketLifecycleNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchLifecycleConfiguration", "lifecycle configuration not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketLifecycleConfigurationResult{InnerXML: xmlBody})
 }
 
 func (s *Server) handleS3ControlDeleteBucketLifecycleConfiguration(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
@@ -17667,7 +18903,18 @@ func (s *Server) handleS3ControlGetBucketReplication(w http.ResponseWriter, r *h
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketReplicationResult{})
+	xmlBody, err := s.s3control.GetOutpostsBucketReplication(accountID, bucket)
+	if err != nil {
+		if errors.Is(err, s3control.ErrOutpostsBucketReplicationNotFound) {
+			respondS3ControlErrorXML(w, http.StatusNotFound, "ReplicationConfigurationNotFoundError", "replication configuration not found")
+			return
+		}
+		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
+		return
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketReplicationResult{
+		ReplicationConfiguration: s3ControlReplicationConfiguration{InnerXML: xmlBody},
+	})
 }
 
 func (s *Server) handleS3ControlDeleteBucketReplication(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
@@ -17687,15 +18934,27 @@ func (s *Server) handleS3ControlPutBucketVersioning(w http.ResponseWriter, r *ht
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
+	body, err := readBodyBytes(r)
+	if err == nil {
+		status := strings.TrimSpace(extractXMLPathValue(body, "Status"))
+		if status != "" {
+			_ = s.s3control.SetOutpostsBucketVersioning(accountID, bucket, status)
+		}
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) handleS3ControlGetBucketVersioning(w http.ResponseWriter, r *http.Request, accountID, bucket string) {
-	if _, err := s.s3control.GetOutpostsBucket(accountID, bucket); err != nil {
+	info, err := s.s3control.GetOutpostsBucket(accountID, bucket)
+	if err != nil {
 		respondS3ControlErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
 		return
 	}
-	respondS3XML(w, http.StatusOK, s3ControlGetBucketVersioningResult{})
+	status := info.VersioningStatus
+	if status == "" {
+		status = "Enabled"
+	}
+	respondS3XML(w, http.StatusOK, s3ControlGetBucketVersioningResult{Status: status})
 }
 
 func (s *Server) handleS3ControlTagResource(w http.ResponseWriter, r *http.Request, accountID, resourceArn string) {
@@ -18010,27 +19269,13 @@ func (s *Server) handleS3ControlPutAccountPublicAccessBlock(w http.ResponseWrite
 			"RestrictPublicBuckets": true,
 		},
 	}
-	required := []string{
-		"PublicAccessBlockConfiguration/BlockPublicAcls",
-		"PublicAccessBlockConfiguration/IgnorePublicAcls",
-		"PublicAccessBlockConfiguration/BlockPublicPolicy",
-		"PublicAccessBlockConfiguration/RestrictPublicBuckets",
-	}
-	if err := validateS3ControlXML(body, "PublicAccessBlockConfiguration", s3ControlNamespace, allowed, required); err != nil {
-		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
-		return
-	}
-	if err := validateS3ControlElementOrder(body, "PublicAccessBlockConfiguration", []string{
-		"BlockPublicAcls",
-		"IgnorePublicAcls",
-		"BlockPublicPolicy",
-		"RestrictPublicBuckets",
-	}); err != nil {
+	if err := validateS3ControlXML(body, "PublicAccessBlockConfiguration", s3ControlNamespace, allowed, nil); err != nil {
 		respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
 	for _, field := range []string{"BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets"} {
-		if !validateBoolText(extractXMLPathValue(body, field)) {
+		value := extractXMLPathValue(body, field)
+		if strings.TrimSpace(value) != "" && !validateBoolText(value) {
 			respondS3ControlErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 			return
 		}
@@ -18333,7 +19578,11 @@ func (s *Server) handleS3WriteAWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.URL.Query().Has("encryption") {
-		s.putBucketEncryption(w, r, bucket)
+		if key == "" {
+			s.putBucketEncryption(w, r, bucket)
+		} else {
+			s.updateObjectEncryptionAWS(w, r, bucket, key)
+		}
 		return
 	}
 	if r.URL.Query().Has("notification") {
@@ -19529,6 +20778,12 @@ type s3BucketAbacConfiguration struct {
 	Status  string   `xml:"Status"`
 }
 
+type s3BucketAbacStatus struct {
+	XMLName xml.Name `xml:"AbacStatus"`
+	Xmlns   string   `xml:"xmlns,attr,omitempty"`
+	Value   string   `xml:",chardata"`
+}
+
 type s3NotificationConfiguration struct {
 	XMLName             xml.Name               `xml:"NotificationConfiguration"`
 	Xmlns               string                 `xml:"xmlns,attr"`
@@ -19962,16 +21217,26 @@ type s3ControlAccessPointListResult struct {
 	NextToken       string                     `xml:"NextToken,omitempty"`
 }
 
+type s3ControlListAccessPointsForDirectoryBucketsResult struct {
+	XMLName         xml.Name                   `xml:"ListAccessPointsForDirectoryBucketsResult"`
+	AccessPointList []s3ControlAccessPointInfo `xml:"AccessPointList>AccessPoint"`
+	NextToken       string                     `xml:"NextToken,omitempty"`
+}
+
 type s3ControlAccessPointInfo struct {
 	AccessPointArn   string                     `xml:"AccessPointArn,omitempty"`
 	Alias            string                     `xml:"Alias,omitempty"`
 	Bucket           string                     `xml:"Bucket"`
 	BucketAccountID  string                     `xml:"BucketAccountId,omitempty"`
 	DataSourceID     string                     `xml:"DataSourceId,omitempty"`
-	DataSourceType   string                     `xml:"DataSourceType,omitempty"`
 	Name             string                     `xml:"Name"`
 	NetworkOrigin    string                     `xml:"NetworkOrigin"`
 	VpcConfiguration *s3ControlVpcConfiguration `xml:"VpcConfiguration,omitempty"`
+}
+
+type s3ControlGetAccessPointScopeResult struct {
+	XMLName xml.Name                  `xml:"GetAccessPointScopeResult"`
+	Scope   s3ControlAccessPointScope `xml:"Scope"`
 }
 
 type s3ControlPutAccessPointPolicyRequest struct {
@@ -20123,8 +21388,8 @@ type s3ControlAsyncOperation struct {
 }
 
 type s3ControlAsyncRequestParameters struct {
-	CreateMultiRegionAccessPointRequest    *s3ControlCreateMultiRegionAccessPointRequest    `xml:"CreateMultiRegionAccessPointRequest,omitempty"`
-	PutMultiRegionAccessPointPolicyRequest *s3ControlPutMultiRegionAccessPointPolicyRequest `xml:"PutMultiRegionAccessPointPolicyRequest,omitempty"`
+	CreateMultiRegionAccessPointRequest    *s3ControlMultiRegionAccessPointInput          `xml:"CreateMultiRegionAccessPointRequest,omitempty"`
+	PutMultiRegionAccessPointPolicyRequest *s3ControlPutMultiRegionAccessPointPolicyInput `xml:"PutMultiRegionAccessPointPolicyRequest,omitempty"`
 }
 
 type s3ControlAsyncResponseDetails struct {
@@ -20158,15 +21423,29 @@ type s3ControlDescribeJobResult struct {
 }
 
 type s3ControlJobDescriptor struct {
-	JobId                string              `xml:"JobId"`
-	Status               string              `xml:"Status"`
-	ConfirmationRequired bool                `xml:"ConfirmationRequired"`
-	Priority             int                 `xml:"Priority"`
-	RoleArn              string              `xml:"RoleArn"`
-	CreationTime         string              `xml:"CreationTime"`
-	Manifest             s3ControlJobPayload `xml:"Manifest"`
-	Operation            s3ControlJobPayload `xml:"Operation"`
-	Report               s3ControlJobPayload `xml:"Report"`
+	JobId                string               `xml:"JobId"`
+	Status               string               `xml:"Status"`
+	ConfirmationRequired bool                 `xml:"ConfirmationRequired"`
+	Priority             int                  `xml:"Priority"`
+	RoleArn              string               `xml:"RoleArn"`
+	CreationTime         string               `xml:"CreationTime"`
+	Manifest             s3ControlJobManifest `xml:"Manifest"`
+	Operation            s3ControlJobPayload  `xml:"Operation"`
+	Report               s3ControlJobPayload  `xml:"Report"`
+}
+
+type s3ControlJobManifest struct {
+	Spec     s3ControlJobManifestSpec     `xml:"Spec"`
+	Location s3ControlJobManifestLocation `xml:"Location"`
+}
+
+type s3ControlJobManifestSpec struct {
+	Format string `xml:"Format"`
+}
+
+type s3ControlJobManifestLocation struct {
+	ObjectArn string `xml:"ObjectArn"`
+	ETag      string `xml:"ETag"`
 }
 
 type s3ControlListJobsResult struct {
@@ -20188,10 +21467,23 @@ type s3ControlUpdateJobPriorityRequest struct {
 	Priority int      `xml:"Priority"`
 }
 
+type s3ControlUpdateJobPriorityResult struct {
+	XMLName  xml.Name `xml:"UpdateJobPriorityResult"`
+	JobId    string   `xml:"JobId"`
+	Priority int      `xml:"Priority"`
+}
+
 type s3ControlUpdateJobStatusRequest struct {
 	XMLName xml.Name `xml:"UpdateJobStatusRequest"`
 	Xmlns   string   `xml:"xmlns,attr"`
 	Status  string   `xml:"Status"`
+}
+
+type s3ControlUpdateJobStatusResult struct {
+	XMLName            xml.Name `xml:"UpdateJobStatusResult"`
+	JobId              string   `xml:"JobId,omitempty"`
+	Status             string   `xml:"Status,omitempty"`
+	StatusUpdateReason string   `xml:"StatusUpdateReason,omitempty"`
 }
 
 type s3ControlPutJobTaggingRequest struct {
@@ -20201,8 +21493,8 @@ type s3ControlPutJobTaggingRequest struct {
 }
 
 type s3ControlGetJobTaggingResult struct {
-	XMLName xml.Name         `xml:"GetJobTaggingResult"`
-	Tagging s3ControlTagging `xml:"Tagging"`
+	XMLName xml.Name            `xml:"GetJobTaggingResult"`
+	Tags    s3ControlTagListTag `xml:"Tags"`
 }
 
 type s3ControlPutStorageLensConfigurationRequest struct {
@@ -20212,7 +21504,22 @@ type s3ControlPutStorageLensConfigurationRequest struct {
 }
 
 type s3ControlStorageLensConfiguration struct {
-	InnerXML string `xml:",innerxml"`
+	ID             string                           `xml:"Id"`
+	AccountLevel   s3ControlStorageLensAccountLevel `xml:"AccountLevel"`
+	IsEnabled      bool                             `xml:"IsEnabled"`
+	StorageLensArn string                           `xml:"StorageLensArn,omitempty"`
+}
+
+type s3ControlStorageLensAccountLevel struct {
+	BucketLevel s3ControlStorageLensBucketLevel `xml:"BucketLevel"`
+}
+
+type s3ControlStorageLensBucketLevel struct {
+	ActivityMetrics s3ControlStorageLensMetricFlag `xml:"ActivityMetrics"`
+}
+
+type s3ControlStorageLensMetricFlag struct {
+	IsEnabled bool `xml:"IsEnabled"`
 }
 
 type s3ControlGetStorageLensConfigurationResult struct {
@@ -20221,17 +21528,16 @@ type s3ControlGetStorageLensConfigurationResult struct {
 }
 
 type s3ControlListStorageLensConfigurationsResult struct {
-	XMLName        xml.Name                                    `xml:"ListStorageLensConfigurationsResult"`
+	XMLName        xml.Name                                    `xml:"ListStorageLensConfigurationResult"`
 	Configurations []s3ControlStorageLensConfigurationListItem `xml:"StorageLensConfigurationList>StorageLensConfiguration"`
 	NextToken      string                                      `xml:"NextToken,omitempty"`
 }
 
 type s3ControlStorageLensConfigurationListItem struct {
-	ID          string `xml:"Id"`
-	HomeRegion  string `xml:"HomeRegion"`
-	Status      string `xml:"Status"`
-	Enabled     bool   `xml:"Enabled"`
-	HomeAccount string `xml:"HomeAccountId"`
+	ID             string `xml:"Id"`
+	StorageLensArn string `xml:"StorageLensArn"`
+	HomeRegion     string `xml:"HomeRegion"`
+	Enabled        bool   `xml:"IsEnabled"`
 }
 
 type s3ControlPutStorageLensTaggingRequest struct {
@@ -20241,8 +21547,8 @@ type s3ControlPutStorageLensTaggingRequest struct {
 }
 
 type s3ControlGetStorageLensTaggingResult struct {
-	XMLName xml.Name         `xml:"GetStorageLensConfigurationTaggingResult"`
-	Tagging s3ControlTagging `xml:"Tagging"`
+	XMLName xml.Name            `xml:"GetStorageLensConfigurationTaggingResult"`
+	Tags    s3ControlTagListTag `xml:"Tags"`
 }
 
 type s3ControlCreateStorageLensGroupRequest struct {
@@ -20264,7 +21570,7 @@ type s3ControlGetStorageLensGroupResult struct {
 
 type s3ControlListStorageLensGroupsResult struct {
 	XMLName   xml.Name                           `xml:"ListStorageLensGroupsResult"`
-	Groups    []s3ControlStorageLensGroupSummary `xml:"StorageLensGroups>StorageLensGroup"`
+	Groups    []s3ControlStorageLensGroupSummary `xml:"StorageLensGroupList>StorageLensGroup"`
 	NextToken string                             `xml:"NextToken,omitempty"`
 }
 
@@ -20319,7 +21625,21 @@ type s3ControlGetAccessPointForObjectLambdaResult struct {
 }
 
 type s3ControlObjectLambdaConfiguration struct {
-	SupportingAccessPoint string `xml:"SupportingAccessPoint,omitempty"`
+	SupportingAccessPoint        string                                             `xml:"SupportingAccessPoint,omitempty"`
+	TransformationConfigurations []s3ControlObjectLambdaTransformationConfiguration `xml:"TransformationConfigurations>TransformationConfiguration"`
+}
+
+type s3ControlObjectLambdaTransformationConfiguration struct {
+	Actions               []string                                   `xml:"Actions>Action"`
+	ContentTransformation s3ControlObjectLambdaContentTransformation `xml:"ContentTransformation"`
+}
+
+type s3ControlObjectLambdaContentTransformation struct {
+	AwsLambda *s3ControlAwsLambdaTransformation `xml:"AwsLambda,omitempty"`
+}
+
+type s3ControlAwsLambdaTransformation struct {
+	FunctionArn string `xml:"FunctionArn"`
 }
 
 type s3ControlGetAccessPointConfigurationForObjectLambdaResult struct {
@@ -20380,6 +21700,10 @@ type s3ControlTaggingList struct {
 	Members []s3ControlTag `xml:"member"`
 }
 
+type s3ControlTagListTag struct {
+	Tags []s3ControlTag `xml:"Tag"`
+}
+
 type s3ControlGetBucketTaggingResult struct {
 	XMLName xml.Name             `xml:"GetBucketTaggingResult"`
 	TagSet  s3ControlTaggingList `xml:"TagSet"`
@@ -20392,11 +21716,13 @@ type s3ControlGetBucketVersioningResult struct {
 }
 
 type s3ControlGetBucketLifecycleConfigurationResult struct {
-	XMLName xml.Name `xml:"GetBucketLifecycleConfigurationResult"`
+	XMLName  xml.Name `xml:"GetBucketLifecycleConfigurationResult"`
+	InnerXML string   `xml:",innerxml"`
 }
 
 type s3ControlGetBucketReplicationResult struct {
-	XMLName xml.Name `xml:"GetBucketReplicationResult"`
+	XMLName                  xml.Name                          `xml:"GetBucketReplicationResult"`
+	ReplicationConfiguration s3ControlReplicationConfiguration `xml:"ReplicationConfiguration"`
 }
 
 type s3ControlEmptyResult struct {
@@ -20409,12 +21735,19 @@ type s3ControlListTagsForResourceResult struct {
 }
 
 type s3ControlStorageLensGroup struct {
-	InnerXML string `xml:",innerxml"`
+	Name                string                          `xml:"Name"`
+	Filter              s3ControlStorageLensGroupFilter `xml:"Filter"`
+	StorageLensGroupArn string                          `xml:"StorageLensGroupArn,omitempty"`
 }
 
 type s3ControlStorageLensGroupSummary struct {
-	Name      string `xml:"Name"`
-	CreatedAt string `xml:"CreatedAt"`
+	Name                string `xml:"Name"`
+	StorageLensGroupArn string `xml:"StorageLensGroupArn"`
+	HomeRegion          string `xml:"HomeRegion"`
+}
+
+type s3ControlStorageLensGroupFilter struct {
+	MatchAnyPrefix []string `xml:"MatchAnyPrefix>Prefix,omitempty"`
 }
 
 type s3ControlCreateAccessGrantsInstanceRequest struct {
@@ -20424,22 +21757,18 @@ type s3ControlCreateAccessGrantsInstanceRequest struct {
 }
 
 type s3ControlAccessGrantsInstanceResult struct {
-	XMLName                      xml.Name `xml:""`
-	AccessGrantsInstanceArn      string   `xml:"AccessGrantsInstanceArn,omitempty"`
-	AccessGrantsInstanceId       string   `xml:"AccessGrantsInstanceId,omitempty"`
-	IdentityCenterArn            string   `xml:"IdentityCenterArn,omitempty"`
-	IdentityCenterInstanceArn    string   `xml:"IdentityCenterInstanceArn,omitempty"`
-	IdentityCenterApplicationArn string   `xml:"IdentityCenterApplicationArn,omitempty"`
-	CreatedAt                    string   `xml:"CreatedAt,omitempty"`
+	XMLName                 xml.Name `xml:""`
+	AccessGrantsInstanceArn string   `xml:"AccessGrantsInstanceArn,omitempty"`
+	AccessGrantsInstanceId  string   `xml:"AccessGrantsInstanceId,omitempty"`
+	IdentityCenterArn       string   `xml:"IdentityCenterArn,omitempty"`
+	CreatedAt               string   `xml:"CreatedAt,omitempty"`
 }
 
 type s3ControlAccessGrantsInstanceSummary struct {
-	AccessGrantsInstanceArn      string `xml:"AccessGrantsInstanceArn,omitempty"`
-	AccessGrantsInstanceId       string `xml:"AccessGrantsInstanceId,omitempty"`
-	IdentityCenterArn            string `xml:"IdentityCenterArn,omitempty"`
-	IdentityCenterInstanceArn    string `xml:"IdentityCenterInstanceArn,omitempty"`
-	IdentityCenterApplicationArn string `xml:"IdentityCenterApplicationArn,omitempty"`
-	CreatedAt                    string `xml:"CreatedAt,omitempty"`
+	AccessGrantsInstanceArn string `xml:"AccessGrantsInstanceArn,omitempty"`
+	AccessGrantsInstanceId  string `xml:"AccessGrantsInstanceId,omitempty"`
+	IdentityCenterArn       string `xml:"IdentityCenterArn,omitempty"`
+	CreatedAt               string `xml:"CreatedAt,omitempty"`
 }
 
 type s3ControlListAccessGrantsInstancesResult struct {
@@ -20456,6 +21785,13 @@ type s3ControlPutAccessGrantsInstanceResourcePolicyRequest struct {
 
 type s3ControlGetAccessGrantsInstanceResourcePolicyResult struct {
 	XMLName      xml.Name `xml:"GetAccessGrantsInstanceResourcePolicyResult"`
+	Policy       string   `xml:"Policy"`
+	Organization string   `xml:"Organization,omitempty"`
+	CreatedAt    string   `xml:"CreatedAt,omitempty"`
+}
+
+type s3ControlPutAccessGrantsInstanceResourcePolicyResult struct {
+	XMLName      xml.Name `xml:"PutAccessGrantsInstanceResourcePolicyResult"`
 	Policy       string   `xml:"Policy"`
 	Organization string   `xml:"Organization,omitempty"`
 	CreatedAt    string   `xml:"CreatedAt,omitempty"`
@@ -24111,6 +25447,16 @@ type s3ObjectLockDefaultRetention struct {
 	Years int    `xml:"Years,omitempty"`
 }
 
+type s3ObjectEncryptionUpdate struct {
+	XMLName xml.Name             `xml:"ObjectEncryption"`
+	SSEKMS  *s3ObjectSSEKMSEntry `xml:"SSE-KMS"`
+}
+
+type s3ObjectSSEKMSEntry struct {
+	KMSKeyARN        string `xml:"KMSKeyArn"`
+	BucketKeyEnabled *bool  `xml:"BucketKeyEnabled,omitempty"`
+}
+
 func (s *Server) getBucketVersioning(w http.ResponseWriter, r *http.Request, bucket string) {
 	if !s.requireSigV4(w, r) {
 		return
@@ -24449,12 +25795,23 @@ func (s *Server) putBucketAbac(w http.ResponseWriter, r *http.Request, bucket st
 	if !s.requireSigV4(w, r) {
 		return
 	}
-	var cfg s3BucketAbacConfiguration
-	if err := xml.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&cfg); err != nil {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
 		respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
 		return
 	}
+	var cfg s3BucketAbacConfiguration
+	legacyErr := xml.Unmarshal(body, &cfg)
 	status := strings.TrimSpace(cfg.Status)
+	if status == "" {
+		var modeled s3BucketAbacStatus
+		if err := xml.Unmarshal(body, &modeled); err == nil {
+			status = strings.TrimSpace(modeled.Value)
+		} else if legacyErr != nil {
+			respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+			return
+		}
+	}
 	if status == "" {
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing abac status")
 		return
@@ -25080,6 +26437,46 @@ func (s *Server) putBucketEncryption(w http.ResponseWriter, r *http.Request, buc
 	if err := s.s3.SetBucketEncryption(bucket, out); err != nil {
 		if errors.Is(err, s3.ErrBucketNotFound) {
 			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchBucket", err.Error())
+			return
+		}
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) updateObjectEncryptionAWS(w http.ResponseWriter, r *http.Request, bucket, key string) {
+	if !s.requireSigV4(w, r) {
+		return
+	}
+	bucketInfo, err := s.s3.GetBucket(bucket)
+	if err != nil {
+		if errors.Is(err, s3.ErrBucketNotFound) {
+			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchBucket", err.Error())
+			return
+		}
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())
+		return
+	}
+	if !s.authorizeS3Request(r, bucket, key, "s3:PutObject", bucketInfo.ACL) {
+		respondS3ErrorXML(w, http.StatusForbidden, "AccessDenied", "access denied")
+		return
+	}
+
+	var req s3ObjectEncryptionUpdate
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		respondS3ErrorXML(w, http.StatusBadRequest, "MalformedXML", "invalid XML")
+		return
+	}
+	if req.SSEKMS == nil || strings.TrimSpace(req.SSEKMS.KMSKeyARN) == "" {
+		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", "missing SSE-KMS key ARN")
+		return
+	}
+
+	versionID := strings.TrimSpace(r.URL.Query().Get("versionId"))
+	if err := s.s3.SetObjectEncryption(bucket, key, versionID, "aws:kms", "", ""); err != nil {
+		if errors.Is(err, s3.ErrObjectNotFound) {
+			respondS3ErrorXML(w, http.StatusNotFound, "NoSuchKey", err.Error())
 			return
 		}
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())

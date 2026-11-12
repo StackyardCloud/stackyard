@@ -1,0 +1,36 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  deviceregistry:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/deviceregistry-2026-04-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEVICEREGISTRY_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEVICEREGISTRY_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-deviceregistry
+      - STACKYARD_AZURE_LOCATION=westeurope
+      - STACKYARD_AZURE_DEVICEREGISTRY_AEP_NAME=my-assetendpointprofile
+      - STACKYARD_AZURE_DEVICEREGISTRY_ASSET_NAME=my-asset
+      - STACKYARD_AZURE_DEVICEREGISTRY_BILLING_CONTAINER_NAME=my-billing-container
+      - STACKYARD_AZURE_DEVICEREGISTRY_NAMESPACE_NAME=my-namespace-1
+      - STACKYARD_AZURE_DEVICEREGISTRY_DEVICE_NAME=device1
+      - STACKYARD_AZURE_DEVICEREGISTRY_DISCOVERED_ASSET_NAME=my-discoveredasset-1
+      - STACKYARD_AZURE_DEVICEREGISTRY_DISCOVERED_DEVICE_NAME=my-discovereddevice-1
+      - STACKYARD_AZURE_DEVICEREGISTRY_SCHEMA_REGISTRY_NAME=my-schema-registry
+      - STACKYARD_AZURE_DEVICEREGISTRY_SCHEMA_NAME=my-schema
+      - STACKYARD_AZURE_DEVICEREGISTRY_SCHEMA_VERSION_NAME=v1
+      - STACKYARD_AZURE_DEVICEREGISTRY_OPERATION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      - STACKYARD_AZURE_DEVICEREGISTRY_CUSTOM_LOCATION_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-deviceregistry/providers/Microsoft.ExtendedLocation/customLocations/location1
+      - STACKYARD_AZURE_DEVICEREGISTRY_SCHEMA_STORAGE_CONTAINER_URL=my-blob-storage.blob.core.windows.net/my-container

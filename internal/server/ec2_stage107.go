@@ -493,7 +493,6 @@ func ec2Stage107InstanceConnectEndpointItemFrom(in ec2svc.InstanceConnectEndpoin
 		FipsDNSName:                in.FipsDNSName,
 		InstanceConnectEndpointARN: in.InstanceConnectEndpointARN,
 		InstanceConnectEndpointID:  in.InstanceConnectEndpointID,
-		IPAddressType:              in.IPAddressType,
 		OwnerID:                    in.OwnerID,
 		SecurityGroupIDSet:         ec2StringSet{Items: append([]string(nil), in.SecurityGroupIDs...)},
 		State:                      in.State,
@@ -535,11 +534,10 @@ func ec2Stage107InstanceEventWindowTimeRangeItemsFrom(in []ec2svc.InstanceEventW
 
 func ec2Stage107IpamItemFrom(in ec2svc.Ipam) ec2Stage107IpamItem {
 	out := ec2Stage107IpamItem{
-		Description:    in.Description,
-		IpamARN:        in.IpamARN,
-		IpamID:         in.IpamID,
-		IpamRegion:     in.IpamRegion,
-		MeteredAccount: in.MeteredAccount,
+		Description: in.Description,
+		IpamARN:     in.IpamARN,
+		IpamID:      in.IpamID,
+		IpamRegion:  in.IpamRegion,
 		OperatingRegionSet: ec2Stage107IpamOperatingRegionSet{
 			Items: ec2Stage107IpamOperatingRegionItemsFrom(in.OperatingRegions),
 		},
@@ -548,7 +546,6 @@ func ec2Stage107IpamItemFrom(in ec2svc.Ipam) ec2Stage107IpamItem {
 		TagSet:  ec2TagSet{Items: ec2TagItemsFromMap(in.Tags)},
 		Tier:    in.Tier,
 	}
-	out.EnablePrivateGua = &in.EnablePrivateGua
 	return out
 }
 
@@ -655,7 +652,6 @@ type ec2Stage107InstanceConnectEndpointItem struct {
 	FipsDNSName                string       `xml:"fipsDnsName,omitempty"`
 	InstanceConnectEndpointARN string       `xml:"instanceConnectEndpointArn,omitempty"`
 	InstanceConnectEndpointID  string       `xml:"instanceConnectEndpointId,omitempty"`
-	IPAddressType              string       `xml:"ipAddressType,omitempty"`
 	OwnerID                    string       `xml:"ownerId,omitempty"`
 	PreserveClientIP           *bool        `xml:"preserveClientIp,omitempty"`
 	SecurityGroupIDSet         ec2StringSet `xml:"securityGroupIdSet"`
@@ -731,11 +727,9 @@ type ec2Stage107CreateIpamResponse struct {
 
 type ec2Stage107IpamItem struct {
 	Description        string                            `xml:"description,omitempty"`
-	EnablePrivateGua   *bool                             `xml:"enablePrivateGua,omitempty"`
 	IpamARN            string                            `xml:"ipamArn,omitempty"`
 	IpamID             string                            `xml:"ipamId,omitempty"`
 	IpamRegion         string                            `xml:"ipamRegion,omitempty"`
-	MeteredAccount     string                            `xml:"meteredAccount,omitempty"`
 	OperatingRegionSet ec2Stage107IpamOperatingRegionSet `xml:"operatingRegionSet"`
 	OwnerID            string                            `xml:"ownerId,omitempty"`
 	State              string                            `xml:"state,omitempty"`

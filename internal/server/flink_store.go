@@ -121,7 +121,9 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 		}
 		application.UpdatedAt = now
 		s.addOperationLocked(application.Name, "RollbackApplication", "SUCCEEDED")
-		return map[string]any{}
+		return map[string]any{
+			"ApplicationDetail": s.applicationDetailPayload(application),
+		}
 
 	case "UpdateApplication",
 		"AddApplicationCloudWatchLoggingOption",
@@ -139,7 +141,7 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 		application.VersionID++
 		application.UpdatedAt = now
 		s.addOperationLocked(application.Name, action, "SUCCEEDED")
-		return map[string]any{}
+		return s.applicationMutationPayload(action, application)
 
 	case "DescribeApplicationVersion":
 		version := flinkPayloadInt64(payload, "ApplicationVersionId", application.VersionID)
@@ -148,9 +150,11 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 		}
 		return map[string]any{
 			"ApplicationVersionDetail": map[string]any{
+				"ApplicationARN":       application.ARN,
 				"ApplicationName":      application.Name,
 				"ApplicationVersionId": version,
 				"ApplicationStatus":    application.Status,
+				"RuntimeEnvironment":   application.RuntimeEnvironment,
 				"CreateTimestamp":      application.CreatedAt.Format(time.RFC3339),
 				"UpdateTimestamp":      application.UpdatedAt.Format(time.RFC3339),
 			},
@@ -184,12 +188,7 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 	case "DescribeApplicationSnapshot":
 		snapshot := s.resolveSnapshotLocked(application.Name, flinkPayloadString(payload, "SnapshotName", ""))
 		return map[string]any{
-			"SnapshotDetails": map[string]any{
-				"ApplicationName":           application.Name,
-				"SnapshotName":              snapshot.SnapshotName,
-				"SnapshotStatus":            snapshot.Status,
-				"SnapshotCreationTimestamp": snapshot.CreatedAt.Format(time.RFC3339),
-			},
+			"SnapshotDetails": s.snapshotDetailsPayload(application, snapshot),
 		}
 
 	case "ListApplicationSnapshots":
@@ -197,12 +196,7 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 		items := make([]any, 0, len(names))
 		for _, snapshotName := range names {
 			snapshot := s.snapshots[application.Name][snapshotName]
-			items = append(items, map[string]any{
-				"ApplicationName":           application.Name,
-				"SnapshotName":              snapshot.SnapshotName,
-				"SnapshotStatus":            snapshot.Status,
-				"SnapshotCreationTimestamp": snapshot.CreatedAt.Format(time.RFC3339),
-			})
+			items = append(items, s.snapshotDetailsPayload(application, snapshot))
 		}
 		return map[string]any{"SnapshotSummaries": items, "NextToken": ""}
 
@@ -416,6 +410,130 @@ func (s *flinkStore) applicationDetailPayload(app *flinkApplication) map[string]
 		"RuntimeEnvironment":   app.RuntimeEnvironment,
 		"CreateTimestamp":      app.CreatedAt.Format(time.RFC3339),
 		"LastUpdateTimestamp":  app.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+func (s *flinkStore) applicationMutationPayload(action string, app *flinkApplication) map[string]any {
+	versionID := app.VersionID
+	switch action {
+	case "UpdateApplication":
+		return map[string]any{
+			"ApplicationDetail": s.applicationDetailPayload(app),
+		}
+	case "UpdateApplicationMaintenanceConfiguration":
+		return map[string]any{
+			"ApplicationARN": app.ARN,
+			"ApplicationMaintenanceConfigurationDescription": map[string]any{
+				"ApplicationMaintenanceWindowStartTime": "01:00",
+				"ApplicationMaintenanceWindowEndTime":   "02:00",
+			},
+		}
+	case "AddApplicationCloudWatchLoggingOption", "DeleteApplicationCloudWatchLoggingOption":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"CloudWatchLoggingOptionDescriptions": []any{
+				map[string]any{
+					"CloudWatchLoggingOptionId": "cwl-000001",
+					"LogStreamARN":              "arn:aws:logs:us-east-1:123456789012:log-group:/aws/kinesisanalytics/" + app.Name + ":log-stream:stackyard",
+				},
+			},
+		}
+	case "AddApplicationInput":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"InputDescriptions": []any{
+				map[string]any{"InputId": "1"},
+			},
+		}
+	case "AddApplicationInputProcessingConfiguration":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"InputId":              "1",
+			"InputProcessingConfigurationDescription": map[string]any{
+				"InputLambdaProcessorDescription": map[string]any{
+					"ResourceARN": "arn:aws:lambda:us-east-1:123456789012:function:" + app.Name + "-processor",
+				},
+			},
+		}
+	case "DeleteApplicationInputProcessingConfiguration":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+		}
+	case "AddApplicationOutput":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"OutputDescriptions": []any{
+				map[string]any{
+					"OutputId": "1",
+					"DestinationSchema": map[string]any{
+						"RecordFormatType": "JSON",
+					},
+					"KinesisStreamsOutputDescription": map[string]any{
+						"ResourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/" + app.Name,
+					},
+				},
+			},
+		}
+	case "DeleteApplicationOutput":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+		}
+	case "AddApplicationReferenceDataSource":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"ReferenceDataSourceDescriptions": []any{
+				map[string]any{
+					"ReferenceId": "reference-000001",
+					"TableName":   "REFERENCE_DATA",
+					"S3ReferenceDataSourceDescription": map[string]any{
+						"BucketARN": "arn:aws:s3:::stackyard-flink",
+						"FileKey":   app.Name + "/reference.json",
+					},
+				},
+			},
+		}
+	case "DeleteApplicationReferenceDataSource":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+		}
+	case "AddApplicationVpcConfiguration":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+			"VpcConfigurationDescription": map[string]any{
+				"VpcConfigurationId": "vpc-configuration-000001",
+				"VpcId":              "vpc-12345678",
+				"SubnetIds":          []any{"subnet-12345678"},
+				"SecurityGroupIds":   []any{"sg-12345678"},
+			},
+		}
+	case "DeleteApplicationVpcConfiguration":
+		return map[string]any{
+			"ApplicationARN":       app.ARN,
+			"ApplicationVersionId": versionID,
+		}
+	default:
+		return map[string]any{}
+	}
+}
+
+func (s *flinkStore) snapshotDetailsPayload(app *flinkApplication, snapshot *flinkSnapshot) map[string]any {
+	if snapshot == nil {
+		return map[string]any{}
+	}
+	return map[string]any{
+		"SnapshotName":              snapshot.SnapshotName,
+		"SnapshotStatus":            snapshot.Status,
+		"ApplicationVersionId":      app.VersionID,
+		"SnapshotCreationTimestamp": snapshot.CreatedAt.Format(time.RFC3339),
 	}
 }
 

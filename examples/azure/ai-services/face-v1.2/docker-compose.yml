@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  face-v1-2:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/face-v1.2/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_FACE_LIST_ID=list-a
+      - STACKYARD_AZURE_FACE_LARGE_FACE_LIST_ID=large-list-a
+      - STACKYARD_AZURE_FACE_PERSON_GROUP_ID=pg-a
+      - STACKYARD_AZURE_FACE_LARGE_PERSON_GROUP_ID=lpg-a

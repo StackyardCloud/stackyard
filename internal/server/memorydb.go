@@ -962,11 +962,9 @@ func memorydbClusterToAPI(cluster memorydbsvc.Cluster) map[string]any {
 		"Name":                    cluster.Name,
 		"Description":             cluster.Description,
 		"Status":                  cluster.Status,
-		"MultiRegionClusterName":  cluster.MultiRegionClusterName,
 		"NumberOfShards":          cluster.NumberOfShards,
 		"ClusterEndpoint":         endpoint,
 		"NodeType":                cluster.NodeType,
-		"Engine":                  cluster.Engine,
 		"EngineVersion":           cluster.EngineVersion,
 		"ParameterGroupName":      cluster.ParameterGroupName,
 		"SecurityGroups":          securityGroups,
@@ -1055,7 +1053,6 @@ func memorydbUnprocessedClusterToAPI(cluster memorydbsvc.UnprocessedCluster) map
 
 func memorydbEngineVersionToAPI(version memorydbsvc.EngineVersion) map[string]any {
 	return map[string]any{
-		"Engine":               version.Engine,
 		"EngineVersion":        version.EngineVersion,
 		"EnginePatchVersion":   version.EnginePatchVersion,
 		"ParameterGroupFamily": version.ParameterGroupFamily,
@@ -1121,7 +1118,6 @@ func memorydbServiceUpdateToAPI(update memorydbsvc.ServiceUpdate) map[string]any
 		"Description":         update.Description,
 		"Status":              update.Status,
 		"Type":                update.Type,
-		"Engine":              update.Engine,
 		"NodesUpdated":        update.NodesUpdated,
 		"AutoUpdateStartDate": update.AutoUpdateStartDate,
 	}

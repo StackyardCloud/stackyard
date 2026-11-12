@@ -156,7 +156,168 @@ func (s *Server) handleRDSCompatNoop(w http.ResponseWriter, r *http.Request) {
 		respondRDSErrorXML(w, http.StatusBadRequest, "MissingParameter", "Action is required")
 		return
 	}
-	respondRDSXML(w, action, rdsCompatResult{XMLName: xml.Name{Local: action + "Result"}})
+	switch action {
+	case "EnableHttpEndpoint":
+		respondRDSXML(w, action, rdsHTTPEndpointResultXML{
+			XMLName:             xml.Name{Local: action + "Result"},
+			ResourceArn:         strings.TrimSpace(r.Form.Get("ResourceArn")),
+			HttpEndpointEnabled: true,
+		})
+	case "DisableHttpEndpoint":
+		respondRDSXML(w, action, rdsHTTPEndpointResultXML{
+			XMLName:             xml.Name{Local: action + "Result"},
+			ResourceArn:         strings.TrimSpace(r.Form.Get("ResourceArn")),
+			HttpEndpointEnabled: false,
+		})
+	case "ModifyCertificates":
+		identifier := strings.TrimSpace(r.Form.Get("CertificateIdentifier"))
+		if identifier == "" {
+			identifier = "rds-ca-rsa4096-g1"
+		}
+		respondRDSXML(w, action, struct {
+			XMLName     xml.Name          `xml:"ModifyCertificatesResult"`
+			Certificate rdsCertificateXML `xml:"Certificate"`
+		}{
+			Certificate: rdsCertificateXML{CertificateIdentifier: identifier},
+		})
+	case "ModifyActivityStream":
+		respondRDSXML(w, action, rdsModifyActivityStreamResultXML{
+			XMLName:                         xml.Name{Local: action + "Result"},
+			KmsKeyId:                        strings.TrimSpace(r.Form.Get("KmsKeyId")),
+			KinesisStreamName:               "stackyard-rds-activity-stream",
+			Status:                          "started",
+			Mode:                            firstNonEmpty(strings.TrimSpace(r.Form.Get("Mode")), "async"),
+			EngineNativeAuditFieldsIncluded: true,
+			PolicyStatus:                    "locked",
+		})
+	case "AddSourceIdentifierToSubscription", "RemoveSourceIdentifierFromSubscription":
+		sourceID := strings.TrimSpace(firstNonEmpty(r.Form.Get("SourceIdentifier"), r.Form.Get("SourceId")))
+		respondRDSXML(w, action, struct {
+			XMLName           xml.Name                `xml:""`
+			EventSubscription rdsEventSubscriptionXML `xml:"EventSubscription"`
+		}{
+			XMLName: xml.Name{Local: action + "Result"},
+			EventSubscription: rdsEventSubscriptionXML{
+				CustSubscriptionId:   strings.TrimSpace(r.Form.Get("SubscriptionName")),
+				SnsTopicArn:          strings.TrimSpace(r.Form.Get("SnsTopicArn")),
+				SourceType:           strings.TrimSpace(r.Form.Get("SourceType")),
+				SourceIdsList:        []string{sourceID},
+				EventCategoriesList:  []string{"availability"},
+				Enabled:              true,
+				Status:               "active",
+				EventSubscriptionArn: "arn:aws:rds:us-east-1:123456789012:es:stackyard",
+			},
+		})
+	case "CopyOptionGroup":
+		name := strings.TrimSpace(firstNonEmpty(
+			r.Form.Get("TargetOptionGroupIdentifier"),
+			r.Form.Get("OptionGroupName"),
+			r.Form.Get("TargetOptionGroupName"),
+		))
+		if name == "" {
+			name = "stackyard-option-group-copy"
+		}
+		respondRDSXML(w, action, struct {
+			XMLName     xml.Name          `xml:"CopyOptionGroupResult"`
+			OptionGroup rdsOptionGroupXML `xml:"OptionGroup"`
+		}{
+			OptionGroup: rdsOptionGroupXML{
+				OptionGroupName:        name,
+				OptionGroupDescription: strings.TrimSpace(firstNonEmpty(r.Form.Get("TargetOptionGroupDescription"), r.Form.Get("OptionGroupDescription"))),
+				EngineName:             strings.TrimSpace(firstNonEmpty(r.Form.Get("EngineName"), r.Form.Get("Engine"))),
+				MajorEngineVersion:     strings.TrimSpace(r.Form.Get("MajorEngineVersion")),
+			},
+		})
+	case "RemoveFromGlobalCluster":
+		globalClusterIdentifier := strings.TrimSpace(r.Form.Get("GlobalClusterIdentifier"))
+		dbClusterIdentifier := strings.TrimSpace(firstNonEmpty(r.Form.Get("DbClusterIdentifier"), r.Form.Get("DBClusterIdentifier")))
+		respondRDSXML(w, action, struct {
+			XMLName       xml.Name            `xml:"RemoveFromGlobalClusterResult"`
+			GlobalCluster rdsGlobalClusterXML `xml:"GlobalCluster"`
+		}{
+			GlobalCluster: rdsGlobalClusterXML{
+				GlobalClusterIdentifier: globalClusterIdentifier,
+				GlobalClusterArn:        "arn:aws:rds:us-east-1:123456789012:global-cluster:" + globalClusterIdentifier,
+				Status:                  "available",
+				GlobalClusterMembers: []rdsGlobalClusterMemberXML{
+					{
+						DBClusterArn: "arn:aws:rds:us-east-1:123456789012:cluster:" + dbClusterIdentifier,
+						IsWriter:     false,
+					},
+				},
+			},
+		})
+	case "DescribeEngineDefaultClusterParameters", "DescribeEngineDefaultParameters":
+		family := strings.TrimSpace(firstNonEmpty(r.Form.Get("DBParameterGroupFamily"), r.Form.Get("DBClusterParameterGroupFamily")))
+		if family == "" {
+			family = "mysql8.0"
+		}
+		respondRDSXML(w, action, struct {
+			XMLName        xml.Name             `xml:""`
+			EngineDefaults rdsEngineDefaultsXML `xml:"EngineDefaults"`
+		}{
+			XMLName: xml.Name{Local: action + "Result"},
+			EngineDefaults: rdsEngineDefaultsXML{
+				DBParameterGroupFamily: family,
+				Parameters: []rdsParameterXML{
+					{
+						ParameterName:  "autocommit",
+						ParameterValue: "1",
+						ApplyType:      "dynamic",
+						ApplyMethod:    "immediate",
+						Source:         "engine-default",
+						IsModifiable:   true,
+					},
+				},
+			},
+		})
+	case "DescribeEventCategories":
+		sourceType := strings.TrimSpace(r.Form.Get("SourceType"))
+		if sourceType == "" {
+			sourceType = "db-instance"
+		}
+		respondRDSXML(w, action, struct {
+			XMLName                xml.Name                   `xml:"DescribeEventCategoriesResult"`
+			EventCategoriesMapList []rdsEventCategoriesMapXML `xml:"EventCategoriesMapList>EventCategoriesMap"`
+		}{
+			EventCategoriesMapList: []rdsEventCategoriesMapXML{
+				{
+					SourceType:      sourceType,
+					EventCategories: []string{"availability", "backup"},
+				},
+			},
+		})
+	case "DescribeOptionGroupOptions":
+		engine := strings.TrimSpace(firstNonEmpty(r.Form.Get("EngineName"), r.Form.Get("Engine")))
+		if engine == "" {
+			engine = "mysql"
+		}
+		majorVersion := strings.TrimSpace(r.Form.Get("MajorEngineVersion"))
+		if majorVersion == "" {
+			majorVersion = "8.0"
+		}
+		respondRDSXML(w, action, struct {
+			XMLName            xml.Name                  `xml:"DescribeOptionGroupOptionsResult"`
+			OptionGroupOptions []rdsOptionGroupOptionXML `xml:"OptionGroupOptions>OptionGroupOption"`
+		}{
+			OptionGroupOptions: []rdsOptionGroupOptionXML{
+				{
+					Name:                 "MEMCACHED",
+					Description:          "Stackyard compatibility option",
+					EngineName:           engine,
+					MajorEngineVersion:   majorVersion,
+					PortRequired:         false,
+					DefaultPort:          0,
+					Persistent:           false,
+					Permanent:            false,
+					VpcOnly:              false,
+					CopyableCrossAccount: true,
+				},
+			},
+		})
+	default:
+		respondRDSXML(w, action, rdsCompatResult{XMLName: xml.Name{Local: action + "Result"}})
+	}
 }
 
 func rdsReservedDBInstancesOfferingToXML(in rdssvc.ReservedDBInstancesOffering) rdsReservedDBInstancesOfferingXML {
@@ -193,6 +354,46 @@ func rdsReservedDBInstanceToXML(in rdssvc.ReservedDBInstance) rdsReservedDBInsta
 
 type rdsCompatResult struct {
 	XMLName xml.Name `xml:""`
+}
+
+type rdsHTTPEndpointResultXML struct {
+	XMLName             xml.Name `xml:""`
+	ResourceArn         string   `xml:"ResourceArn,omitempty"`
+	HttpEndpointEnabled bool     `xml:"HttpEndpointEnabled"`
+}
+
+type rdsModifyActivityStreamResultXML struct {
+	XMLName                         xml.Name `xml:""`
+	KmsKeyId                        string   `xml:"KmsKeyId,omitempty"`
+	KinesisStreamName               string   `xml:"KinesisStreamName,omitempty"`
+	Status                          string   `xml:"Status,omitempty"`
+	Mode                            string   `xml:"Mode,omitempty"`
+	EngineNativeAuditFieldsIncluded bool     `xml:"EngineNativeAuditFieldsIncluded"`
+	PolicyStatus                    string   `xml:"PolicyStatus,omitempty"`
+}
+
+type rdsEngineDefaultsXML struct {
+	DBParameterGroupFamily string            `xml:"DBParameterGroupFamily,omitempty"`
+	Marker                 string            `xml:"Marker,omitempty"`
+	Parameters             []rdsParameterXML `xml:"Parameters>Parameter,omitempty"`
+}
+
+type rdsEventCategoriesMapXML struct {
+	SourceType      string   `xml:"SourceType,omitempty"`
+	EventCategories []string `xml:"EventCategories>EventCategory,omitempty"`
+}
+
+type rdsOptionGroupOptionXML struct {
+	Name                 string `xml:"Name,omitempty"`
+	Description          string `xml:"Description,omitempty"`
+	EngineName           string `xml:"EngineName,omitempty"`
+	MajorEngineVersion   string `xml:"MajorEngineVersion,omitempty"`
+	PortRequired         bool   `xml:"PortRequired"`
+	DefaultPort          int    `xml:"DefaultPort,omitempty"`
+	Persistent           bool   `xml:"Persistent"`
+	Permanent            bool   `xml:"Permanent"`
+	VpcOnly              bool   `xml:"VpcOnly"`
+	CopyableCrossAccount bool   `xml:"CopyableCrossAccount"`
 }
 
 type rdsReservedDBInstancesOfferingXML struct {

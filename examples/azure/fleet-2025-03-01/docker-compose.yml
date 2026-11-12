@@ -1,0 +1,29 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  fleet:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/fleet-2025-03-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_FLEET_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_FLEET_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-fleet
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_FLEET_NAME=fleet1
+      - STACKYARD_AZURE_FLEET_AUTO_UPGRADE_PROFILE_NAME=autoupgradeprofile1
+      - STACKYARD_AZURE_FLEET_MEMBER_NAME=member-1
+      - STACKYARD_AZURE_FLEET_UPDATE_STRATEGY_NAME=strategy1
+      - STACKYARD_AZURE_FLEET_UPDATE_RUN_NAME=run1
+      - STACKYARD_AZURE_FLEET_MANAGED_CLUSTER_NAME=cluster-1

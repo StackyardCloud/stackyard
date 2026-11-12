@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  luis-v3-0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/luis-v3.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_LUIS_APP_ID=4fdbf3f0-d5de-4a6d-af4b-1213d1e6e123
+      - STACKYARD_AZURE_LUIS_SLOT_NAME=staging
+      - STACKYARD_AZURE_LUIS_VERSION_ID=0.1
+      - STACKYARD_AZURE_LUIS_QUERY=forward to frank 30 dollars through HSBC

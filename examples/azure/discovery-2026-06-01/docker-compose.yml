@@ -1,0 +1,37 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  discovery:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/discovery-2026-06-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DISCOVERY_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DISCOVERY_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-discovery
+      - STACKYARD_AZURE_LOCATION=uksouth
+      - STACKYARD_AZURE_DISCOVERY_WORKSPACE_NAME=workspace01
+      - STACKYARD_AZURE_DISCOVERY_BOOKSHELF_NAME=bookshelf01
+      - STACKYARD_AZURE_DISCOVERY_STORAGE_CONTAINER_NAME=storagecontainer01
+      - STACKYARD_AZURE_DISCOVERY_STORAGE_ASSET_NAME=storageasset01
+      - STACKYARD_AZURE_DISCOVERY_SUPERCOMPUTER_NAME=supercomputer01
+      - STACKYARD_AZURE_DISCOVERY_NODE_POOL_NAME=nodepool01
+      - STACKYARD_AZURE_DISCOVERY_PROJECT_NAME=project01
+      - STACKYARD_AZURE_DISCOVERY_CHAT_MODEL_DEPLOYMENT_NAME=chatdeploy01
+      - STACKYARD_AZURE_DISCOVERY_TOOL_NAME=tool01
+      - STACKYARD_AZURE_DISCOVERY_PRIVATE_ENDPOINT_CONNECTION_NAME=connection
+      - STACKYARD_AZURE_DISCOVERY_PRIVATE_LINK_RESOURCE_NAME=plr1
+      - STACKYARD_AZURE_DISCOVERY_WORKSPACE_MANAGED_IDENTITY_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-discovery/providers/Microsoft.ManagedIdentity/userAssignedIdentities/managedid1
+      - STACKYARD_AZURE_DISCOVERY_PRIVATE_ENDPOINT_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-discovery/providers/Microsoft.Network/privateEndpoints/privateEndpoint1
+      - STACKYARD_AZURE_DISCOVERY_STORAGE_CONTAINER_PATH=https://examplestorage.blob.core.windows.net/discovery

@@ -1,0 +1,30 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  deviceupdate-resourcemanager:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/deviceupdate-resourcemanager-2023-07-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-deviceupdate
+      - STACKYARD_AZURE_LOCATION=westus2
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_ACCOUNT_NAME=contoso
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_INSTANCE_NAME=blue
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_PRIVATE_ENDPOINT_CONNECTION_PROXY_ID=peproxy01
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_PRIVATE_ENDPOINT_CONNECTION_NAME=peconnection01
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_PRIVATE_LINK_GROUP_ID=DeviceUpdate
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_IOTHUB_NAME=blue-contoso-hub
+      - STACKYARD_AZURE_DEVICEUPDATE_RM_PRIVATE_ENDPOINT_NAME=pe-deviceupdate

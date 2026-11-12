@@ -218,9 +218,9 @@ func (s *elasticLoadBalancingStore) Handle(action string, form url.Values) map[s
 			"NextMarker": "",
 		}
 	case "GetTrustStoreCaCertificatesBundle":
-		return map[string]any{"CaCertificatesBundle": "-----BEGIN CERTIFICATE-----\nSTACKYARD\n-----END CERTIFICATE-----"}
+		return map[string]any{"Location": "https://stackyard.local/truststores/stackyard-ca-bundle.pem"}
 	case "GetTrustStoreRevocationContent":
-		return map[string]any{"RevocationContent": "{}"}
+		return map[string]any{"Location": "https://stackyard.local/truststores/stackyard-revocations.crl"}
 
 	case "AddTags":
 		resources := elasticLoadBalancingFormMembers(form, "ResourceArns.member.")

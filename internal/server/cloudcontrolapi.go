@@ -137,8 +137,7 @@ func (s *Server) handleCloudControlAPIJSONRouter(w http.ResponseWriter, r *http.
 			return true
 		}
 		respondCloudControlAPIJSON(w, http.StatusOK, map[string]any{
-			"ProgressEvent":      cloudControlAPIProgressEventPayload(event),
-			"HooksProgressEvent": []any{},
+			"ProgressEvent": cloudControlAPIProgressEventPayload(event),
 		})
 		return true
 

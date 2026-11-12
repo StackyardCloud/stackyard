@@ -1,0 +1,36 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  desktopvirtualization:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/desktopvirtualization-2025-10-10/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DESKTOPVIRTUALIZATION_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DESKTOPVIRTUALIZATION_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-desktopvirtualization
+      - STACKYARD_AZURE_LOCATION=eastus
+      - STACKYARD_AZURE_DV_HOST_POOL_NAME=dv-hostpool-example
+      - STACKYARD_AZURE_DV_APPLICATION_GROUP_NAME=dv-appgroup-example
+      - STACKYARD_AZURE_DV_APPLICATION_NAME=dv-app-example
+      - STACKYARD_AZURE_DV_DESKTOP_NAME=SessionDesktop
+      - STACKYARD_AZURE_DV_WORKSPACE_NAME=dv-workspace-example
+      - STACKYARD_AZURE_DV_SESSION_HOST_NAME=sessionhost1.contoso.com
+      - STACKYARD_AZURE_DV_USER_SESSION_ID=1
+      - STACKYARD_AZURE_DV_APP_ATTACH_PACKAGE_NAME=dv-appattach-package
+      - STACKYARD_AZURE_DV_MSIX_PACKAGE_FULL_NAME=dv-msix-package-fullname
+      - STACKYARD_AZURE_DV_SCALING_PLAN_NAME=dv-scaling-plan
+      - STACKYARD_AZURE_DV_PERSONAL_SCHEDULE_NAME=dv-personal-weekday
+      - STACKYARD_AZURE_DV_POOLED_SCHEDULE_NAME=dv-pooled-weekday
+      - STACKYARD_AZURE_DV_PRIVATE_ENDPOINT_CONNECTION_NAME=dv-hostpool-example.377103f1-5179-4bdf-8556-4cdd3207cc5b

@@ -192,7 +192,9 @@ func (s *Server) handleCognitoUserPoolsStage6Action(w http.ResponseWriter, actio
 			respondCognitoUserPoolsErrorForErr(w, err)
 			return true
 		}
-		respondCognitoUserPoolsJSON(w, http.StatusOK, cognitoUserPoolsLogDeliveryConfigurationPayload(record))
+		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{
+			"LogDeliveryConfiguration": cognitoUserPoolsLogDeliveryConfigurationPayload(record),
+		})
 		return true
 
 	case "GetLogDeliveryConfiguration":
@@ -201,7 +203,9 @@ func (s *Server) handleCognitoUserPoolsStage6Action(w http.ResponseWriter, actio
 			respondCognitoUserPoolsErrorForErr(w, err)
 			return true
 		}
-		respondCognitoUserPoolsJSON(w, http.StatusOK, cognitoUserPoolsLogDeliveryConfigurationPayload(record))
+		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{
+			"LogDeliveryConfiguration": cognitoUserPoolsLogDeliveryConfigurationPayload(record),
+		})
 		return true
 
 	case "AdminListUserAuthEvents":

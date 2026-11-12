@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,6 +28,15 @@ func TestCognitoUserPoolsStage89ManagedBrandingTermsAndCompatibilityActions(t *t
 		"Domain":     domain,
 	})
 	assertStatus(t, createDomainResp, http.StatusOK)
+	createDomainBody := decodeCognitoUserPoolsBody(t, createDomainResp)
+	createCloudFrontDomain, _ := createDomainBody["CloudFrontDomain"].(string)
+	if strings.TrimSpace(createCloudFrontDomain) == "" {
+		t.Fatalf("expected CloudFrontDomain in create domain response, got %#v", createDomainBody["CloudFrontDomain"])
+	}
+	createManagedLoginVersion, ok := createDomainBody["ManagedLoginVersion"].(json.Number)
+	if !ok || createManagedLoginVersion.String() == "" {
+		t.Fatalf("expected ManagedLoginVersion in create domain response, got %#v", createDomainBody["ManagedLoginVersion"])
+	}
 
 	addCustomAttributesResp := cognitoUserPoolsRequestPayload(t, ts, "AddCustomAttributes", map[string]any{
 		"UserPoolId": userPoolID,
@@ -55,6 +65,23 @@ func TestCognitoUserPoolsStage89ManagedBrandingTermsAndCompatibilityActions(t *t
 		},
 	})
 	assertStatus(t, updateDomainResp, http.StatusOK)
+	updateDomainBody := decodeCognitoUserPoolsBody(t, updateDomainResp)
+	if got, _ := updateDomainBody["CloudFrontDomain"].(string); !strings.Contains(got, ".custom.") {
+		t.Fatalf("expected custom CloudFrontDomain after update, got %#v", updateDomainBody["CloudFrontDomain"])
+	}
+	if got, _ := updateDomainBody["ManagedLoginVersion"].(json.Number); got.String() != "2" {
+		t.Fatalf("expected ManagedLoginVersion 2 after update, got %#v", updateDomainBody["ManagedLoginVersion"])
+	}
+
+	describeDomainResp := cognitoUserPoolsRequestPayload(t, ts, "DescribeUserPoolDomain", map[string]any{
+		"Domain": domain,
+	})
+	assertStatus(t, describeDomainResp, http.StatusOK)
+	describeDomainBody := decodeCognitoUserPoolsBody(t, describeDomainResp)
+	domainDescription, _ := describeDomainBody["DomainDescription"].(map[string]any)
+	if got, _ := domainDescription["Version"].(string); got != "2" {
+		t.Fatalf("expected DescribeUserPoolDomain.Version to be string \"2\", got %#v", domainDescription["Version"])
+	}
 
 	setUICustomizationResp := cognitoUserPoolsRequestPayload(t, ts, "SetUICustomization", map[string]any{
 		"UserPoolId": userPoolID,
@@ -137,11 +164,16 @@ func TestCognitoUserPoolsStage89ManagedBrandingTermsAndCompatibilityActions(t *t
 	}
 
 	createTermsResp := cognitoUserPoolsRequestPayload(t, ts, "CreateTerms", map[string]any{
-		"UserPoolId": userPoolID,
-		"TermsName":  "stage89-terms",
-		"Content": map[string]any{
-			"Text": "stackyard terms v1",
-		},
+		"UserPoolId":  userPoolID,
+		"ClientId":    clientID,
+		"TermsName":   "privacy-policy",
+		"Enforcement": "NONE",
+		"TermsSource": "LINK",
+		"Links": []map[string]any{{
+			"Text": "stackyard privacy policy",
+			"Type": "privacy-policy",
+			"Url":  "https://example.com/privacy",
+		}},
 	})
 	assertStatus(t, createTermsResp, http.StatusOK)
 	createTermsBody := decodeCognitoUserPoolsBody(t, createTermsResp)
@@ -153,22 +185,49 @@ func TestCognitoUserPoolsStage89ManagedBrandingTermsAndCompatibilityActions(t *t
 	if strings.TrimSpace(termsID) == "" {
 		t.Fatalf("expected TermsId in create response: %#v", termsObj)
 	}
+	if got, _ := termsObj["ClientId"].(string); got != clientID {
+		t.Fatalf("expected Terms.ClientId %q, got %#v", clientID, termsObj["ClientId"])
+	}
+	if got, _ := termsObj["TermsSource"].(string); got != "LINK" {
+		t.Fatalf("expected TermsSource LINK in create response, got %#v", termsObj["TermsSource"])
+	}
+	createLinks, ok := termsObj["Links"].([]any)
+	if !ok || len(createLinks) != 1 {
+		t.Fatalf("expected one top-level Terms link in create response, got %#v", termsObj["Links"])
+	}
 
 	updateTermsResp := cognitoUserPoolsRequestPayload(t, ts, "UpdateTerms", map[string]any{
-		"UserPoolId": userPoolID,
-		"TermsId":    termsID,
-		"TermsName":  "stage89-terms-v2",
-		"Content": map[string]any{
-			"Text": "stackyard terms v2",
-		},
+		"UserPoolId":  userPoolID,
+		"TermsId":     termsID,
+		"TermsName":   "privacy-policy",
+		"Enforcement": "REQUIRED",
+		"TermsSource": "LINK",
+		"Links": []map[string]any{{
+			"Text": "stackyard privacy policy v2",
+			"Type": "privacy-policy",
+			"Url":  "https://example.com/privacy-v2",
+		}},
 	})
 	assertStatus(t, updateTermsResp, http.StatusOK)
+	updateTermsBody := decodeCognitoUserPoolsBody(t, updateTermsResp)
+	updateTermsObj, _ := updateTermsBody["Terms"].(map[string]any)
+	if got, _ := updateTermsObj["Enforcement"].(string); got != "REQUIRED" {
+		t.Fatalf("expected updated Enforcement REQUIRED, got %#v", updateTermsObj["Enforcement"])
+	}
 
 	describeTermsResp := cognitoUserPoolsRequestPayload(t, ts, "DescribeTerms", map[string]any{
 		"UserPoolId": userPoolID,
 		"TermsId":    termsID,
 	})
 	assertStatus(t, describeTermsResp, http.StatusOK)
+	describeTermsBody := decodeCognitoUserPoolsBody(t, describeTermsResp)
+	describeTermsObj, _ := describeTermsBody["Terms"].(map[string]any)
+	if got, _ := describeTermsObj["TermsSource"].(string); got != "LINK" {
+		t.Fatalf("expected top-level TermsSource LINK in describe response, got %#v", describeTermsObj["TermsSource"])
+	}
+	if got, _ := describeTermsObj["Enforcement"].(string); got != "REQUIRED" {
+		t.Fatalf("expected top-level Enforcement REQUIRED in describe response, got %#v", describeTermsObj["Enforcement"])
+	}
 
 	listTermsResp := cognitoUserPoolsRequestPayload(t, ts, "ListTerms", map[string]any{
 		"UserPoolId": userPoolID,

@@ -434,13 +434,19 @@ func (s *Server) handleRDSDescribeCertificates(w http.ResponseWriter, r *http.Re
 	for _, cert := range certs {
 		out = append(out, rdsCertificateToXML(cert))
 	}
+	defaultCertificate := ""
+	if len(certs) > 0 {
+		defaultCertificate = certs[0].Identifier
+	}
 	respondRDSXML(w, "DescribeCertificates", struct {
-		XMLName      xml.Name            `xml:"DescribeCertificatesResult"`
-		Marker       string              `xml:"Marker,omitempty"`
-		Certificates []rdsCertificateXML `xml:"Certificates>Certificate"`
+		XMLName                          xml.Name            `xml:"DescribeCertificatesResult"`
+		DefaultCertificateForNewLaunches string              `xml:"DefaultCertificateForNewLaunches,omitempty"`
+		Marker                           string              `xml:"Marker,omitempty"`
+		Certificates                     []rdsCertificateXML `xml:"Certificates>Certificate"`
 	}{
-		Marker:       marker,
-		Certificates: out,
+		DefaultCertificateForNewLaunches: defaultCertificate,
+		Marker:                           marker,
+		Certificates:                     out,
 	})
 }
 

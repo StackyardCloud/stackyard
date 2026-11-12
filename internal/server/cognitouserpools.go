@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -121,7 +122,7 @@ func (s *Server) handleCognitoUserPoolsJSONRouter(w http.ResponseWriter, r *http
 		return true
 
 	case "CreateUserPoolDomain":
-		_, err := s.cognitouserpools.CreateUserPoolDomain(
+		record, err := s.cognitouserpools.CreateUserPoolDomain(
 			cognitoUserPoolsString(payload["UserPoolId"]),
 			cognitoUserPoolsString(payload["Domain"]),
 		)
@@ -129,7 +130,10 @@ func (s *Server) handleCognitoUserPoolsJSONRouter(w http.ResponseWriter, r *http
 			respondCognitoUserPoolsErrorForErr(w, err)
 			return true
 		}
-		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{})
+		respondCognitoUserPoolsJSON(w, http.StatusOK, map[string]any{
+			"CloudFrontDomain":    record.CloudFrontDomain,
+			"ManagedLoginVersion": record.Version,
+		})
 		return true
 
 	case "DescribeUserPoolDomain":
@@ -692,7 +696,7 @@ func cognitoUserPoolsDomainDescriptionPayload(record cognitoUserPoolsDomainRecor
 		"Domain":           record.Domain,
 		"UserPoolId":       record.UserPoolID,
 		"CloudFrontDomain": record.CloudFrontDomain,
-		"Version":          record.Version,
+		"Version":          strconv.Itoa(record.Version),
 		"Status":           "ACTIVE",
 	}
 }

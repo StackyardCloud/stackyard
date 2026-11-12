@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  durabletask:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/durabletask-2026-02-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DURABLETASK_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DURABLETASK_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-durabletask
+      - STACKYARD_AZURE_LOCATION=northcentralus
+      - STACKYARD_AZURE_DURABLETASK_SCHEDULER_NAME=testscheduler
+      - STACKYARD_AZURE_DURABLETASK_TASK_HUB_NAME=testtaskhub
+      - STACKYARD_AZURE_DURABLETASK_PRIVATE_ENDPOINT_CONNECTION_NAME=peconnection01
+      - STACKYARD_AZURE_DURABLETASK_PRIVATE_LINK_RESOURCE_NAME=default

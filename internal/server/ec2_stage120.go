@@ -416,7 +416,6 @@ func ec2Stage120ReservedInstanceItemsFrom(in []ec2svc.ReservedInstance) []ec2Sta
 	for _, item := range in {
 		entry := ec2Stage120ReservedInstanceItem{
 			AvailabilityZone:    item.AvailabilityZone,
-			AvailabilityZoneID:  item.AvailabilityZoneID,
 			CurrencyCode:        item.CurrencyCode,
 			Duration:            item.Duration,
 			FixedPrice:          item.FixedPrice,
@@ -639,7 +638,6 @@ type ec2Stage120ReservedInstanceSet struct {
 
 type ec2Stage120ReservedInstanceItem struct {
 	AvailabilityZone    string                        `xml:"availabilityZone,omitempty"`
-	AvailabilityZoneID  string                        `xml:"availabilityZoneId,omitempty"`
 	CurrencyCode        string                        `xml:"currencyCode,omitempty"`
 	Duration            *int64                        `xml:"duration,omitempty"`
 	End                 string                        `xml:"end,omitempty"`

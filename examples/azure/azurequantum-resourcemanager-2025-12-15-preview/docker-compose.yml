@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azurequantum-resourcemanager-2025-12-15-preview:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/azurequantum-resourcemanager-2025-12-15-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_QUANTUM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_QUANTUM_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-quantum
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_QUANTUM_WORKSPACE_NAME=workspace-a

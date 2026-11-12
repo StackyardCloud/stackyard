@@ -40,7 +40,6 @@ func (s *Server) handleEC2Stage71Action(w http.ResponseWriter, r *http.Request, 
 			Xmlns:                       ec2Namespace,
 			RequestID:                   "stackyard-request",
 			ImageBlockPublicAccessState: state.ImageBlockPublicAccessState,
-			ManagedBy:                   state.ManagedBy,
 		})
 		return true
 	case "DisableImageDeprecation":
@@ -114,5 +113,4 @@ type ec2GetImageBlockPublicAccessStateResponse struct {
 	Xmlns                       string   `xml:"xmlns,attr"`
 	RequestID                   string   `xml:"requestId"`
 	ImageBlockPublicAccessState string   `xml:"imageBlockPublicAccessState,omitempty"`
-	ManagedBy                   string   `xml:"managedBy,omitempty"`
 }

@@ -1,0 +1,23 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  data-catalog-custom-data-source:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/datacatalog/data-catalog-custom-data-source/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATACATALOG_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATACATALOG_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_DATACATALOG_CATALOG_NAME=DefaultCatalog
+      - STACKYARD_AZURE_DATACATALOG_PROTOCOL_NAMESPACE=Test.MyTestProtocols
+      - STACKYARD_AZURE_DATACATALOG_PROTOCOL_NAME=abc-def

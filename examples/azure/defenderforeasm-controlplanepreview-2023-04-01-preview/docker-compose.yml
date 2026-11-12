@@ -1,0 +1,26 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  defenderforeasm:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/defenderforeasm-controlplanepreview-2023-04-01-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DEFENDERFOREASM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DEFENDERFOREASM_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-defenderforeasm
+      - STACKYARD_AZURE_LOCATION=westus
+      - STACKYARD_AZURE_DEFENDERFOREASM_WORKSPACE_NAME=ThisisaWorkspace
+      - STACKYARD_AZURE_DEFENDERFOREASM_LABEL_NAME=ThisisaLabel
+      - STACKYARD_AZURE_DEFENDERFOREASM_TASK_ID=ThisisaTaskId

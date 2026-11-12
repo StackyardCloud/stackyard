@@ -1,0 +1,25 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  content-moderator-v1.0:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/content-moderator-v1.0/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_CONTENT_MODERATOR_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_CONTENT_MODERATOR_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_CONTENT_MODERATOR_TEAM=local-team
+      - STACKYARD_AZURE_CONTENT_MODERATOR_REVIEW_ID=review-1
+      - STACKYARD_AZURE_CONTENT_MODERATOR_JOB_ID=job-1
+      - STACKYARD_AZURE_CONTENT_MODERATOR_TERM_LIST_ID=123
+      - STACKYARD_AZURE_CONTENT_MODERATOR_IMAGE_URL=https://example.com/safe-image.jpg

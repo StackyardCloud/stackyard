@@ -1,0 +1,27 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  account-management-2025-06-01:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-foundry/account-management-2025-06-01/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-foundry
+      - STACKYARD_AZURE_REGION=eastus
+      - STACKYARD_AZURE_AI_FOUNDRY_ACCOUNT=foundry-a
+      - STACKYARD_AZURE_AI_FOUNDRY_PROJECT=project-a
+      - STACKYARD_AZURE_AI_FOUNDRY_CONNECTION=conn-a
+      - STACKYARD_AZURE_AI_FOUNDRY_VECTOR_STORE_CONNECTION=vsconn-a

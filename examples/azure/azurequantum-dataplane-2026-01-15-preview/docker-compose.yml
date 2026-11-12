@@ -1,0 +1,20 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  azurequantum-dataplane-2026-01-15-preview:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/azurequantum-dataplane-2026-01-15-preview/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_QUANTUM_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_QUANTUM_SUBSCRIPTION_KEY=stackyard-local-subscription-key

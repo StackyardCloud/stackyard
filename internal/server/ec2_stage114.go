@@ -371,19 +371,18 @@ func ec2Stage114CapacityBlockOfferingItemsFrom(in []ec2svc.CapacityBlockOffering
 	out := make([]ec2Stage114CapacityBlockOfferingItem, 0, len(in))
 	for _, item := range in {
 		out = append(out, ec2Stage114CapacityBlockOfferingItem{
-			AvailabilityZone:             item.AvailabilityZone,
-			CapacityBlockDurationHours:   item.CapacityBlockDurationHours,
-			CapacityBlockDurationMinutes: item.CapacityBlockDurationMinutes,
-			CapacityBlockOfferingID:      item.CapacityBlockOfferingID,
-			CurrencyCode:                 item.CurrencyCode,
-			EndDate:                      ec2OptionalRFC3339(item.EndDate),
-			InstanceCount:                item.InstanceCount,
-			InstanceType:                 item.InstanceType,
-			StartDate:                    ec2OptionalRFC3339(item.StartDate),
-			Tenancy:                      item.Tenancy,
-			UltraserverCount:             item.UltraserverCount,
-			UltraserverType:              item.UltraserverType,
-			UpfrontFee:                   item.UpfrontFee,
+			AvailabilityZone:           item.AvailabilityZone,
+			CapacityBlockDurationHours: item.CapacityBlockDurationHours,
+			CapacityBlockOfferingID:    item.CapacityBlockOfferingID,
+			CurrencyCode:               item.CurrencyCode,
+			EndDate:                    ec2OptionalRFC3339(item.EndDate),
+			InstanceCount:              item.InstanceCount,
+			InstanceType:               item.InstanceType,
+			StartDate:                  ec2OptionalRFC3339(item.StartDate),
+			Tenancy:                    item.Tenancy,
+			UltraserverCount:           item.UltraserverCount,
+			UltraserverType:            item.UltraserverType,
+			UpfrontFee:                 item.UpfrontFee,
 		})
 	}
 	return out
@@ -564,19 +563,18 @@ type ec2Stage114CapacityBlockOfferingSet struct {
 }
 
 type ec2Stage114CapacityBlockOfferingItem struct {
-	AvailabilityZone             *string `xml:"availabilityZone,omitempty"`
-	CapacityBlockDurationHours   *int32  `xml:"capacityBlockDurationHours,omitempty"`
-	CapacityBlockDurationMinutes *int32  `xml:"capacityBlockDurationMinutes,omitempty"`
-	CapacityBlockOfferingID      *string `xml:"capacityBlockOfferingId,omitempty"`
-	CurrencyCode                 *string `xml:"currencyCode,omitempty"`
-	EndDate                      string  `xml:"endDate,omitempty"`
-	InstanceCount                *int32  `xml:"instanceCount,omitempty"`
-	InstanceType                 *string `xml:"instanceType,omitempty"`
-	StartDate                    string  `xml:"startDate,omitempty"`
-	Tenancy                      *string `xml:"tenancy,omitempty"`
-	UltraserverCount             *int32  `xml:"ultraserverCount,omitempty"`
-	UltraserverType              *string `xml:"ultraserverType,omitempty"`
-	UpfrontFee                   *string `xml:"upfrontFee,omitempty"`
+	AvailabilityZone           *string `xml:"availabilityZone,omitempty"`
+	CapacityBlockDurationHours *int32  `xml:"capacityBlockDurationHours,omitempty"`
+	CapacityBlockOfferingID    *string `xml:"capacityBlockOfferingId,omitempty"`
+	CurrencyCode               *string `xml:"currencyCode,omitempty"`
+	EndDate                    string  `xml:"endDate,omitempty"`
+	InstanceCount              *int32  `xml:"instanceCount,omitempty"`
+	InstanceType               *string `xml:"instanceType,omitempty"`
+	StartDate                  string  `xml:"startDate,omitempty"`
+	Tenancy                    *string `xml:"tenancy,omitempty"`
+	UltraserverCount           *int32  `xml:"ultraserverCount,omitempty"`
+	UltraserverType            *string `xml:"ultraserverType,omitempty"`
+	UpfrontFee                 *string `xml:"upfrontFee,omitempty"`
 }
 
 type ec2Stage114DescribeCapacityBlockStatusResponse struct {

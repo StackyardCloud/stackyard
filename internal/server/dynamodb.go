@@ -108,17 +108,18 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		return true
 
 	case "PutItem":
+		tableName := dynamodbString(payload["TableName"])
 		item, ok := dynamodbMap(payload["Item"])
 		if !ok {
 			respondDynamoDBError(w, http.StatusBadRequest, "ValidationException", "invalid Item")
 			return true
 		}
-		attrs, err := s.dynamodb.PutItem(dynamodbString(payload["TableName"]), item, dynamodbString(payload["ReturnValues"]))
+		attrs, err := s.dynamodb.PutItem(tableName, item, dynamodbString(payload["ReturnValues"]))
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		response := map[string]any{}
+		response := map[string]any{"ConsumedCapacity": dynamodbConsumedCapacity(tableName)}
 		if len(attrs) > 0 {
 			response["Attributes"] = attrs
 		}
@@ -144,17 +145,18 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		return true
 
 	case "DeleteItem":
+		tableName := dynamodbString(payload["TableName"])
 		key, ok := dynamodbMap(payload["Key"])
 		if !ok {
 			respondDynamoDBError(w, http.StatusBadRequest, "ValidationException", "invalid Key")
 			return true
 		}
-		attrs, err := s.dynamodb.DeleteItem(dynamodbString(payload["TableName"]), key, dynamodbString(payload["ReturnValues"]))
+		attrs, err := s.dynamodb.DeleteItem(tableName, key, dynamodbString(payload["ReturnValues"]))
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		response := map[string]any{}
+		response := map[string]any{"ConsumedCapacity": dynamodbConsumedCapacity(tableName)}
 		if len(attrs) > 0 {
 			response["Attributes"] = attrs
 		}
@@ -162,13 +164,14 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		return true
 
 	case "UpdateItem":
+		tableName := dynamodbString(payload["TableName"])
 		key, ok := dynamodbMap(payload["Key"])
 		if !ok {
 			respondDynamoDBError(w, http.StatusBadRequest, "ValidationException", "invalid Key")
 			return true
 		}
 		attrs, err := s.dynamodb.UpdateItem(
-			dynamodbString(payload["TableName"]),
+			tableName,
 			key,
 			dynamodbMapAny(payload["AttributeUpdates"]),
 			dynamodbString(payload["UpdateExpression"]),
@@ -180,7 +183,7 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		response := map[string]any{}
+		response := map[string]any{"ConsumedCapacity": dynamodbConsumedCapacity(tableName)}
 		if len(attrs) > 0 {
 			response["Attributes"] = attrs
 		}
@@ -216,8 +219,9 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		return true
 
 	case "Query":
+		tableName := dynamodbString(payload["TableName"])
 		out, err := s.dynamodb.Query(dynamodbsvc.QueryInput{
-			TableName:                 dynamodbString(payload["TableName"]),
+			TableName:                 tableName,
 			KeyConditionExpression:    dynamodbString(payload["KeyConditionExpression"]),
 			KeyConditions:             dynamodbMapAny(payload["KeyConditions"]),
 			ExpressionAttributeNames:  dynamodbStringMap(payload["ExpressionAttributeNames"]),
@@ -228,16 +232,27 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"Items": out.Items, "Count": out.Count, "ScannedCount": out.ScannedCount})
+		respondDynamoDBJSON(w, http.StatusOK, map[string]any{
+			"Items":            out.Items,
+			"Count":            out.Count,
+			"ScannedCount":     out.ScannedCount,
+			"ConsumedCapacity": dynamodbConsumedCapacity(tableName),
+		})
 		return true
 
 	case "Scan":
-		out, err := s.dynamodb.Scan(dynamodbString(payload["TableName"]), dynamodbIntValue(payload["Limit"]))
+		tableName := dynamodbString(payload["TableName"])
+		out, err := s.dynamodb.Scan(tableName, dynamodbIntValue(payload["Limit"]))
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"Items": out.Items, "Count": out.Count, "ScannedCount": out.ScannedCount})
+		respondDynamoDBJSON(w, http.StatusOK, map[string]any{
+			"Items":            out.Items,
+			"Count":            out.Count,
+			"ScannedCount":     out.ScannedCount,
+			"ConsumedCapacity": dynamodbConsumedCapacity(tableName),
+		})
 		return true
 
 	case "ExecuteStatement":
@@ -322,7 +337,20 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		respondDynamoDBJSON(w, http.StatusOK, map[string]any{})
+		tableName := ""
+		if len(transactItems) > 0 {
+			for _, key := range []string{"Put", "Update", "Delete", "ConditionCheck"} {
+				if item, ok := transactItems[0][key].(map[string]any); ok {
+					tableName = dynamodbString(item["TableName"])
+					if tableName != "" {
+						break
+					}
+				}
+			}
+		}
+		respondDynamoDBJSON(w, http.StatusOK, map[string]any{
+			"ConsumedCapacity": []any{dynamodbConsumedCapacity(tableName)},
+		})
 		return true
 
 	case "CreateBackup":
@@ -457,7 +485,10 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"GlobalTableSettingsDescription": settings})
+		respondDynamoDBJSON(w, http.StatusOK, map[string]any{
+			"GlobalTableName": settings.GlobalTableName,
+			"ReplicaSettings": settings.ReplicaSettings,
+		})
 		return true
 
 	case "UpdateGlobalTableSettings":
@@ -471,7 +502,10 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"GlobalTableSettingsDescription": settings})
+		respondDynamoDBJSON(w, http.StatusOK, map[string]any{
+			"GlobalTableName": settings.GlobalTableName,
+			"ReplicaSettings": settings.ReplicaSettings,
+		})
 		return true
 
 	case "DescribeTableReplicaAutoScaling":
@@ -892,6 +926,16 @@ func dynamodbMapAny(v any) map[string]any {
 		return map[string]any{}
 	}
 	return m
+}
+
+func dynamodbConsumedCapacity(tableName string) map[string]any {
+	if strings.TrimSpace(tableName) == "" {
+		tableName = "stackyard-dynamodb-table"
+	}
+	return map[string]any{
+		"TableName":     tableName,
+		"CapacityUnits": 1.0,
+	}
 }
 
 func dynamodbMapSlice(v any) ([]map[string]any, bool) {

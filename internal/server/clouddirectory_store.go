@@ -201,7 +201,7 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 			"CreatedDateTime": now,
 		}
 		s.facets[facetName] = facet
-		return map[string]any{"Facet": cloudDirectoryCloneMap(facet)}
+		return map[string]any{}
 
 	case "GetFacet":
 		return map[string]any{"Facet": cloudDirectoryCloneMap(s.ensureFacetLocked(facetName, schemaARN, now))}
@@ -209,7 +209,7 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "UpdateFacet":
 		facet := s.ensureFacetLocked(facetName, schemaARN, now)
 		facet["UpdatedDateTime"] = now
-		return map[string]any{"Facet": cloudDirectoryCloneMap(facet)}
+		return map[string]any{}
 
 	case "DeleteFacet":
 		delete(s.facets, facetName)
@@ -237,7 +237,7 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 			"CreatedDateTime": now,
 		}
 		s.typedLinkFacets[typedLinkFacetName] = facet
-		return map[string]any{"TypedLinkFacet": cloudDirectoryCloneMap(facet)}
+		return map[string]any{}
 
 	case "GetTypedLinkFacetInformation":
 		facet := s.ensureTypedLinkFacetLocked(typedLinkFacetName, schemaARN, now)
@@ -249,7 +249,18 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "UpdateTypedLinkFacet":
 		facet := s.ensureTypedLinkFacetLocked(typedLinkFacetName, schemaARN, now)
 		facet["UpdatedDateTime"] = now
-		return map[string]any{"TypedLinkFacet": cloudDirectoryCloneMap(facet)}
+		return map[string]any{}
+
+	case "CreateIndex":
+		objectIdentifier = fmt.Sprintf("index-%08d", s.nextObject)
+		s.nextObject++
+		s.objects[objectIdentifier] = map[string]any{
+			"ObjectIdentifier": objectIdentifier,
+			"SchemaFacets":     []any{},
+			"CreatedDateTime":  now,
+			"ObjectType":       "INDEX",
+		}
+		return map[string]any{"ObjectIdentifier": objectIdentifier}
 
 	case "DeleteTypedLinkFacet":
 		delete(s.typedLinkFacets, typedLinkFacetName)
@@ -308,10 +319,13 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "ListObjectPolicies":
 		return map[string]any{"AttachedPolicyIds": []any{}, "NextToken": ""}
 
-	case "AttachObject", "DetachObject":
+	case "AttachObject":
 		return map[string]any{"AttachedObjectIdentifier": objectIdentifier}
 
-	case "AttachToIndex", "DetachFromIndex":
+	case "DetachObject", "DetachFromIndex":
+		return map[string]any{"DetachedObjectIdentifier": objectIdentifier}
+
+	case "AttachToIndex":
 		return map[string]any{"AttachedObjectIdentifier": objectIdentifier}
 
 	case "ListAttachedIndices", "ListIndex":
@@ -326,17 +340,33 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "ListPolicyAttachments":
 		return map[string]any{"ObjectIdentifiers": []any{}, "NextToken": ""}
 
-	case "AttachTypedLink", "DetachTypedLink":
-		return map[string]any{"TypedLinkSpecifier": map[string]any{}}
+	case "AttachTypedLink":
+		return map[string]any{
+			"TypedLinkSpecifier": cloudDirectoryBuildTypedLinkSpecifier(
+				payload,
+				schemaARN,
+				typedLinkFacetName,
+				objectIdentifier,
+			),
+		}
+
+	case "DetachTypedLink":
+		return map[string]any{}
 
 	case "GetLinkAttributes":
 		return map[string]any{"Attributes": map[string]any{}}
 
-	case "UpdateLinkAttributes", "UpdateObjectAttributes":
+	case "UpdateLinkAttributes":
+		return map[string]any{}
+
+	case "UpdateObjectAttributes":
 		return map[string]any{"ObjectIdentifier": objectIdentifier}
 
-	case "ListIncomingTypedLinks", "ListOutgoingTypedLinks":
+	case "ListIncomingTypedLinks":
 		return map[string]any{"LinkSpecifiers": []any{}, "NextToken": ""}
+
+	case "ListOutgoingTypedLinks":
+		return map[string]any{"TypedLinkSpecifiers": []any{}, "NextToken": ""}
 
 	case "BatchRead":
 		return map[string]any{"Responses": []any{}, "Exceptions": []any{}}
@@ -344,8 +374,17 @@ func (s *cloudDirectoryStore) Handle(action string, payload map[string]any, _ ma
 	case "BatchWrite":
 		return map[string]any{"Responses": []any{}, "Exceptions": []any{}}
 
-	case "ApplySchema", "AddFacetToObject", "RemoveFacetFromObject":
-		return map[string]any{"ObjectIdentifier": objectIdentifier}
+	case "ApplySchema":
+		dir := s.ensureDirectoryLocked(directoryARN, now)
+		dir["AppliedSchemaArn"] = schemaARN
+		dir["PublishedSchemaArn"] = schemaARN + "/published"
+		return map[string]any{
+			"AppliedSchemaArn": schemaARN,
+			"DirectoryArn":     directoryARN,
+		}
+
+	case "AddFacetToObject", "RemoveFacetFromObject":
+		return map[string]any{}
 
 	case "TagResource":
 		tagMap := s.ensureTagsLocked(resourceARN)
@@ -534,6 +573,72 @@ func cloudDirectoryCloneMap(in map[string]any) map[string]any {
 	for k, v := range in {
 		out[k] = v
 	}
+	return out
+}
+
+func cloudDirectoryBuildTypedLinkSpecifier(
+	payload map[string]any,
+	schemaARN, typedLinkFacetName, objectIdentifier string,
+) map[string]any {
+	specifierKey := cloudDirectoryFindKeyCaseInsensitive(payload, "TypedLinkSpecifier")
+	if specifierKey != "" {
+		if specifier, ok := payload[specifierKey].(map[string]any); ok {
+			return cloudDirectoryNormalizeTypedLinkSpecifier(specifier, schemaARN, typedLinkFacetName, objectIdentifier)
+		}
+	}
+	return cloudDirectoryNormalizeTypedLinkSpecifier(payload, schemaARN, typedLinkFacetName, objectIdentifier)
+}
+
+func cloudDirectoryNormalizeTypedLinkSpecifier(
+	specifier map[string]any,
+	schemaARN, typedLinkFacetName, objectIdentifier string,
+) map[string]any {
+	out := map[string]any{
+		"TypedLinkFacet": map[string]any{
+			"SchemaArn":     schemaARN,
+			"TypedLinkName": typedLinkFacetName,
+		},
+		"SourceObjectReference":   map[string]any{"Selector": objectIdentifier},
+		"TargetObjectReference":   map[string]any{"Selector": objectIdentifier},
+		"IdentityAttributeValues": []any{},
+	}
+	if specifier == nil {
+		return out
+	}
+
+	if facetKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "TypedLinkFacet"); facetKey != "" {
+		if facet, ok := specifier[facetKey].(map[string]any); ok {
+			typedLinkFacet := map[string]any{
+				"SchemaArn": cloudDirectoryFirstNonEmpty(
+					cloudDirectoryString(facet, "SchemaArn", ""),
+					schemaARN,
+				),
+				"TypedLinkName": cloudDirectoryFirstNonEmpty(
+					cloudDirectoryString(facet, "TypedLinkName", ""),
+					cloudDirectoryString(facet, "Name", ""),
+					typedLinkFacetName,
+				),
+			}
+			out["TypedLinkFacet"] = typedLinkFacet
+		}
+	}
+
+	if sourceKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "SourceObjectReference"); sourceKey != "" {
+		if source, ok := specifier[sourceKey].(map[string]any); ok {
+			out["SourceObjectReference"] = cloudDirectoryCloneMap(source)
+		}
+	}
+	if targetKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "TargetObjectReference"); targetKey != "" {
+		if target, ok := specifier[targetKey].(map[string]any); ok {
+			out["TargetObjectReference"] = cloudDirectoryCloneMap(target)
+		}
+	}
+	if identityKey := cloudDirectoryFindKeyCaseInsensitive(specifier, "IdentityAttributeValues"); identityKey != "" {
+		if values, ok := specifier[identityKey].([]any); ok {
+			out["IdentityAttributeValues"] = append([]any(nil), values...)
+		}
+	}
+
 	return out
 }
 

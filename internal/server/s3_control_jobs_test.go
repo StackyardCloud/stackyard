@@ -93,8 +93,8 @@ func TestS3ControlJobsStage5(t *testing.T) {
 	if err := xml.Unmarshal(mustBody(t, resp), &taggingResp); err != nil {
 		t.Fatalf("parse job tagging response: %v", err)
 	}
-	if len(taggingResp.Tagging.Tags) != 1 {
-		t.Fatalf("expected 1 tag, got %d", len(taggingResp.Tagging.Tags))
+	if len(taggingResp.Tags.Tags) != 1 {
+		t.Fatalf("expected 1 tag, got %d", len(taggingResp.Tags.Tags))
 	}
 
 	resp = signedRequestWithService(t, http.MethodDelete, ts.URL+"/v20180820/jobs/"+createResp.JobId+"/tagging", nil, headers, "s3-control")

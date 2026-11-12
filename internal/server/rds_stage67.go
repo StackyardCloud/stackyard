@@ -256,10 +256,10 @@ func (s *Server) handleRDSDescribeAccountAttributes(w http.ResponseWriter, _ *ht
 		out = append(out, rdsAccountAttributeToXML(item))
 	}
 	respondRDSXML(w, "DescribeAccountAttributes", struct {
-		XMLName           xml.Name                 `xml:"DescribeAccountAttributesResult"`
-		AccountAttributes []rdsAccountAttributeXML `xml:"AccountAttributes>AccountQuota"`
+		XMLName       xml.Name                 `xml:"DescribeAccountAttributesResult"`
+		AccountQuotas []rdsAccountAttributeXML `xml:"AccountQuotas>AccountQuota"`
 	}{
-		AccountAttributes: out,
+		AccountQuotas: out,
 	})
 }
 
@@ -462,12 +462,7 @@ func (s *Server) handleRDSStartActivityStream(w http.ResponseWriter, r *http.Req
 		respondRDSServiceError(w, "StartActivityStream", err)
 		return
 	}
-	respondRDSXML(w, "StartActivityStream", struct {
-		XMLName        xml.Name             `xml:"StartActivityStreamResult"`
-		ActivityStream rdsActivityStreamXML `xml:"ActivityStream"`
-	}{
-		ActivityStream: rdsActivityStreamToXML(item),
-	})
+	respondRDSXML(w, "StartActivityStream", rdsStartActivityStreamResultToXML(item))
 }
 
 func (s *Server) handleRDSStopActivityStream(w http.ResponseWriter, r *http.Request) {
@@ -484,12 +479,7 @@ func (s *Server) handleRDSStopActivityStream(w http.ResponseWriter, r *http.Requ
 		respondRDSServiceError(w, "StopActivityStream", err)
 		return
 	}
-	respondRDSXML(w, "StopActivityStream", struct {
-		XMLName        xml.Name             `xml:"StopActivityStreamResult"`
-		ActivityStream rdsActivityStreamXML `xml:"ActivityStream"`
-	}{
-		ActivityStream: rdsActivityStreamToXML(item),
-	})
+	respondRDSXML(w, "StopActivityStream", rdsStopActivityStreamResultToXML(item))
 }
 
 func (s *Server) handleRDSCreateDBProxy(w http.ResponseWriter, r *http.Request) {
@@ -778,12 +768,7 @@ func (s *Server) handleRDSCreateIntegration(w http.ResponseWriter, r *http.Reque
 		respondRDSServiceError(w, "CreateIntegration", err)
 		return
 	}
-	respondRDSXML(w, "CreateIntegration", struct {
-		XMLName     xml.Name          `xml:"CreateIntegrationResult"`
-		Integration rdsIntegrationXML `xml:"Integration"`
-	}{
-		Integration: rdsIntegrationToXML(item),
-	})
+	respondRDSXML(w, "CreateIntegration", rdsIntegrationResultToXML("CreateIntegrationResult", item))
 }
 
 func (s *Server) handleRDSDescribeIntegrations(w http.ResponseWriter, r *http.Request) {
@@ -840,12 +825,7 @@ func (s *Server) handleRDSDeleteIntegration(w http.ResponseWriter, r *http.Reque
 		respondRDSServiceError(w, "DeleteIntegration", err)
 		return
 	}
-	respondRDSXML(w, "DeleteIntegration", struct {
-		XMLName     xml.Name          `xml:"DeleteIntegrationResult"`
-		Integration rdsIntegrationXML `xml:"Integration"`
-	}{
-		Integration: rdsIntegrationToXML(item),
-	})
+	respondRDSXML(w, "DeleteIntegration", rdsIntegrationResultToXML("DeleteIntegrationResult", item))
 }
 
 func parseRDSTagMembers(values url.Values, prefix string) map[string]string {
@@ -985,11 +965,16 @@ func rdsEventRecordToXML(in rdssvc.EventRecord) rdsEventRecordXML {
 
 func rdsAccountAttributeToXML(in rdssvc.AccountAttribute) rdsAccountAttributeXML {
 	max := ""
+	used := "0"
 	if len(in.Values) > 0 {
 		max = in.Values[0]
 	}
+	if len(in.Values) > 1 {
+		used = in.Values[1]
+	}
 	return rdsAccountAttributeXML{
 		AccountQuotaName: in.Name,
+		Used:             used,
 		Max:              max,
 	}
 }
@@ -1037,6 +1022,27 @@ func rdsActivityStreamToXML(in rdssvc.ActivityStream) rdsActivityStreamXML {
 		KmsKeyId:    in.KmsKeyID,
 		Status:      in.Status,
 		CreateTime:  formatRDSTime(in.CreatedAt),
+	}
+}
+
+func rdsStartActivityStreamResultToXML(in rdssvc.ActivityStream) rdsStartActivityStreamResultXML {
+	return rdsStartActivityStreamResultXML{
+		XMLName:                         xml.Name{Local: "StartActivityStreamResult"},
+		KmsKeyId:                        in.KmsKeyID,
+		KinesisStreamName:               "stackyard-rds-activity-stream",
+		Status:                          in.Status,
+		Mode:                            in.Mode,
+		ApplyImmediately:                true,
+		EngineNativeAuditFieldsIncluded: true,
+	}
+}
+
+func rdsStopActivityStreamResultToXML(in rdssvc.ActivityStream) rdsStopActivityStreamResultXML {
+	return rdsStopActivityStreamResultXML{
+		XMLName:           xml.Name{Local: "StopActivityStreamResult"},
+		KmsKeyId:          in.KmsKeyID,
+		KinesisStreamName: "stackyard-rds-activity-stream",
+		Status:            in.Status,
 	}
 }
 
@@ -1101,6 +1107,18 @@ func rdsIntegrationToXML(in rdssvc.Integration) rdsIntegrationXML {
 	}
 }
 
+func rdsIntegrationResultToXML(root string, in rdssvc.Integration) rdsIntegrationResultXML {
+	return rdsIntegrationResultXML{
+		XMLName:         xml.Name{Local: root},
+		SourceArn:       in.SourceArn,
+		TargetArn:       in.TargetArn,
+		IntegrationName: in.Name,
+		IntegrationArn:  in.Arn,
+		Status:          in.Status,
+		CreateTime:      formatRDSTime(in.CreatedAt),
+	}
+}
+
 type rdsTagXML struct {
 	Key   string `xml:"Key,omitempty"`
 	Value string `xml:"Value,omitempty"`
@@ -1136,6 +1154,7 @@ type rdsEventRecordXML struct {
 
 type rdsAccountAttributeXML struct {
 	AccountQuotaName string `xml:"AccountQuotaName,omitempty"`
+	Used             string `xml:"Used,omitempty"`
 	Max              string `xml:"Max,omitempty"`
 }
 
@@ -1177,6 +1196,23 @@ type rdsActivityStreamXML struct {
 	KmsKeyId    string `xml:"KmsKeyId,omitempty"`
 	Status      string `xml:"Status,omitempty"`
 	CreateTime  string `xml:"CreateTime,omitempty"`
+}
+
+type rdsStartActivityStreamResultXML struct {
+	XMLName                         xml.Name `xml:""`
+	KmsKeyId                        string   `xml:"KmsKeyId,omitempty"`
+	KinesisStreamName               string   `xml:"KinesisStreamName,omitempty"`
+	Status                          string   `xml:"Status,omitempty"`
+	Mode                            string   `xml:"Mode,omitempty"`
+	ApplyImmediately                bool     `xml:"ApplyImmediately"`
+	EngineNativeAuditFieldsIncluded bool     `xml:"EngineNativeAuditFieldsIncluded"`
+}
+
+type rdsStopActivityStreamResultXML struct {
+	XMLName           xml.Name `xml:""`
+	KmsKeyId          string   `xml:"KmsKeyId,omitempty"`
+	KinesisStreamName string   `xml:"KinesisStreamName,omitempty"`
+	Status            string   `xml:"Status,omitempty"`
 }
 
 type rdsDBProxyAuthXML struct {
@@ -1228,4 +1264,14 @@ type rdsIntegrationXML struct {
 	TargetArn             string `xml:"TargetArn,omitempty"`
 	Status                string `xml:"Status,omitempty"`
 	CreateTime            string `xml:"CreateTime,omitempty"`
+}
+
+type rdsIntegrationResultXML struct {
+	XMLName         xml.Name `xml:""`
+	SourceArn       string   `xml:"SourceArn,omitempty"`
+	TargetArn       string   `xml:"TargetArn,omitempty"`
+	IntegrationName string   `xml:"IntegrationName,omitempty"`
+	IntegrationArn  string   `xml:"IntegrationArn,omitempty"`
+	Status          string   `xml:"Status,omitempty"`
+	CreateTime      string   `xml:"CreateTime,omitempty"`
 }

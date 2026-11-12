@@ -1,0 +1,24 @@
+services:
+  stackyard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  speaker-recognition-2021-09-05:
+    build:
+      context: ../../../..
+      dockerfile: examples/azure/ai-services/speaker-recognition-2021-09-05/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_AISERVICES_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_AISERVICES_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SPEAKER_RECOGNITION_LOCALE=en-us
+      - STACKYARD_AZURE_SPEAKER_RECOGNITION_TEXT_DEPENDENT_PROFILE_ID=td-profile-a
+      - STACKYARD_AZURE_SPEAKER_RECOGNITION_TEXT_INDEPENDENT_PROFILE_ID=ti-profile-a
+      - STACKYARD_AZURE_SPEAKER_RECOGNITION_TEXT_INDEPENDENT_VERIFICATION_PROFILE_ID=tiv-profile-a

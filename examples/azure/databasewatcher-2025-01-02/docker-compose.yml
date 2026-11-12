@@ -1,0 +1,35 @@
+services:
+  stackyard:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    environment:
+      - STACKYARD_LOG_LEVEL=debug
+      - STACKYARD_PROVIDERS=aws,azure
+      - STACKYARD_AZURE_AUTH_MODE=shared_key
+
+  databasewatcher:
+    build:
+      context: ../../..
+      dockerfile: examples/azure/databasewatcher-2025-01-02/Dockerfile
+    depends_on:
+      - stackyard
+    environment:
+      - STACKYARD_ENDPOINT=http://stackyard:4566
+      - STACKYARD_AZURE_DATABASEWATCHER_ACCOUNT=devstoreaccount1
+      - STACKYARD_AZURE_DATABASEWATCHER_SUBSCRIPTION_KEY=stackyard-local-subscription-key
+      - STACKYARD_AZURE_SUBSCRIPTION_ID=00000000-0000-0000-0000-000000000000
+      - STACKYARD_AZURE_RESOURCE_GROUP=rg-databasewatcher
+      - STACKYARD_AZURE_LOCATION=eastus2
+      - STACKYARD_AZURE_DATABASEWATCHER_NAME=databasewatcher-example
+      - STACKYARD_AZURE_DATABASEWATCHER_TARGET_NAME=databasewatcher-target-example
+      - STACKYARD_AZURE_DATABASEWATCHER_ALERT_RULE_NAME=databasewatcher-alert-example
+      - STACKYARD_AZURE_DATABASEWATCHER_HEALTH_VALIDATION_NAME=databasewatcher-health-example
+      - STACKYARD_AZURE_DATABASEWATCHER_SHARED_PRIVATE_LINK_NAME=databasewatcher-spl-example
+      - STACKYARD_AZURE_DATABASEWATCHER_MANAGED_IDENTITY_RESOURCE_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databasewatcher/providers/Microsoft.ManagedIdentity/userAssignedIdentities/databasewatcher-mi-example
+      - STACKYARD_AZURE_DATABASEWATCHER_ADX_CLUSTER_RESOURCE_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databasewatcher/providers/Microsoft.Kusto/clusters/databasewatcher-adx-example
+      - STACKYARD_AZURE_DATABASEWATCHER_KUSTO_CLUSTER_URI=https://databasewatcher-adx-example.eastus2.kusto.windows.net
+      - STACKYARD_AZURE_DATABASEWATCHER_KUSTO_INGEST_URI=https://ingest-databasewatcher-adx-example.eastus2.kusto.windows.net
+      - STACKYARD_AZURE_DATABASEWATCHER_KUSTO_DB=databasewatcher
+      - STACKYARD_AZURE_DATABASEWATCHER_SQL_DB_RESOURCE_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databasewatcher/providers/Microsoft.Sql/servers/databasewatcher-sql/databases/monitoring
+      - STACKYARD_AZURE_DATABASEWATCHER_PRIVATE_LINK_RESOURCE_ID=/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-databasewatcher/providers/Microsoft.KeyVault/vaults/databasewatcher-kv

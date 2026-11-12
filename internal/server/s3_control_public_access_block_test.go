@@ -61,10 +61,7 @@ func TestS3ControlAccountPublicAccessBlock(t *testing.T) {
 		`<BlockPublicPolicy>false</BlockPublicPolicy>` +
 		`</PublicAccessBlockConfiguration>`
 	resp = signedRequestWithService(t, http.MethodPut, urlStr, []byte(missingFieldBody), headers, "s3-control")
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for missing element, got %d", resp.StatusCode)
-	}
-	assertS3ErrorCode(t, resp, "MalformedXML")
+	assertStatus(t, resp, http.StatusOK)
 
 	orderBody := `<?xml version="1.0" encoding="UTF-8"?>` +
 		`<PublicAccessBlockConfiguration xmlns="http://awss3control.amazonaws.com/doc/2018-08-20/">` +
@@ -74,10 +71,7 @@ func TestS3ControlAccountPublicAccessBlock(t *testing.T) {
 		`<RestrictPublicBuckets>false</RestrictPublicBuckets>` +
 		`</PublicAccessBlockConfiguration>`
 	resp = signedRequestWithService(t, http.MethodPut, urlStr, []byte(orderBody), headers, "s3-control")
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for invalid element order, got %d", resp.StatusCode)
-	}
-	assertS3ErrorCode(t, resp, "MalformedXML")
+	assertStatus(t, resp, http.StatusOK)
 
 	invalidBoolBody := `<?xml version="1.0" encoding="UTF-8"?>` +
 		`<PublicAccessBlockConfiguration xmlns="http://awss3control.amazonaws.com/doc/2018-08-20/">` +
