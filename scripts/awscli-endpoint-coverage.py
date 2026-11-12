@@ -12774,6 +12774,30 @@ def iotevents_raw_fallback_routes() -> dict[str, tuple[str, str]]:
     return routes
 
 
+_SENSITIVE_NAME = r"(?:password|passphrase|secret|token|private|credential|api-?key|access-?key)"
+_SENSITIVE_FLAG_RE = re.compile(rf"^--[\w-]*{_SENSITIVE_NAME}[\w-]*$", re.IGNORECASE)
+_SENSITIVE_JSON_RE = re.compile(rf'("[\w-]*{_SENSITIVE_NAME}[\w-]*"\s*:\s*)"(?:[^"\\]|\\.)*"', re.IGNORECASE)
+_REDACTED = "***"
+
+
+def _redact_cmd_for_log(cmd: Sequence[object]) -> str:
+    """Render a command for logs with secret-looking argument values masked."""
+    parts: list[str] = []
+    redact_next = False
+    for raw in cmd:
+        part = str(raw)
+        if redact_next:
+            part, redact_next = _REDACTED, False
+        elif "=" in part and _SENSITIVE_FLAG_RE.match(part.split("=", 1)[0]):
+            part = part.split("=", 1)[0] + "=" + _REDACTED
+        elif _SENSITIVE_FLAG_RE.match(part):
+            redact_next = True
+        else:
+            part = _SENSITIVE_JSON_RE.sub(rf'\1"{_REDACTED}"', part)
+        parts.append(shlex.quote(part))
+    return " ".join(parts)
+
+
 def run_subprocess(
     cmd: Sequence[str],
     env: dict[str, str],
@@ -12781,7 +12805,7 @@ def run_subprocess(
     progress_label: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     started = time.time()
-    rendered_cmd = " ".join(shlex.quote(str(part)) for part in cmd)
+    rendered_cmd = _redact_cmd_for_log(cmd)
     progress_enabled = env.get("STACKYARD_AWSCLI_PROGRESS", "1").strip().lower() not in {"", "0", "false", "no"}
     log_subprocess_start = bool(
         progress_label
