@@ -1,0 +1,63 @@
+name: CodeQL
+
+# Advanced setup: replaces GitHub's default setup, whose Go autobuild extracts
+# every package in the module (including ~630 example programs and the cloud
+# SDKs they import) at once and exhausts the runner's memory.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: go
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      # Scan the server and CLI only; examples are standalone SDK demos.
+      # GOMEMLIMIT makes the Go extractor collect garbage harder before the
+      # runner's 16 GB is exhausted.
+      - if: matrix.build-mode == 'manual'
+        name: Build server and CLI
+        env:
+          GOMEMLIMIT: 11GiB
+        run: go build ./cmd/... ./internal/...
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
