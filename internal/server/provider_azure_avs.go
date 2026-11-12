@@ -1,7 +1,7 @@
 package server
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -2333,7 +2333,7 @@ func azureAVSClusterVirtualMachineID(subscriptionID, resourceGroup, privateCloud
 }
 
 func azureAVSHash(parts ...string) string {
-	sum := sha1.Sum([]byte(strings.Join(parts, "/")))
+	sum := sha256.Sum256([]byte(strings.Join(parts, "/")))
 	return hex.EncodeToString(sum[:16])
 }
 
