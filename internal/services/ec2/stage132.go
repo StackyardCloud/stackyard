@@ -158,7 +158,7 @@ func (s *Service) RequestSpotInstances(
 	if instanceCount != nil {
 		count = *instanceCount
 	}
-	if count <= 0 {
+	if count <= 0 || count > maxLaunchCount {
 		return nil, ErrInvalidParameter
 	}
 
@@ -174,7 +174,7 @@ func (s *Service) RequestSpotInstances(
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	items := make([]SpotInstanceRequest, 0, count)
+	items := []SpotInstanceRequest{}
 	for i := int32(0); i < count; i++ {
 		spotInstanceRequestID := s.nextIDLocked("sir")
 		s.spotInstanceRequestStates[spotInstanceRequestID] = "open"

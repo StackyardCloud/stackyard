@@ -1361,7 +1361,7 @@ func lambdaMapInt32(values map[string]any, key string) int32 {
 	case float64:
 		return int32(tv)
 	case string:
-		n, err := strconv.Atoi(strings.TrimSpace(tv))
+		n, err := strconv.ParseInt(strings.TrimSpace(tv), 10, 32)
 		if err == nil {
 			return int32(n)
 		}

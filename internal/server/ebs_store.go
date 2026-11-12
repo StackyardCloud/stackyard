@@ -235,7 +235,7 @@ func (s *ebsStore) listSnapshotBlocksLocked(snapshot *ebsSnapshot, query url.Val
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
 
 	startingBlock := ebsInt64FromString(query.Get("startingBlockIndex"), 0)
-	maxResults := int(ebsInt64FromString(query.Get("maxResults"), 1000))
+	maxResults := ebsIntFromString(query.Get("maxResults"), 1000)
 	if maxResults <= 0 {
 		maxResults = 1000
 	}
@@ -247,7 +247,7 @@ func (s *ebsStore) listSnapshotBlocksLocked(snapshot *ebsSnapshot, query url.Val
 		}
 	}
 
-	offset := int(ebsInt64FromString(query.Get("pageToken"), 0))
+	offset := ebsIntFromString(query.Get("pageToken"), 0)
 	if offset < 0 {
 		offset = 0
 	}
@@ -293,7 +293,7 @@ func (s *ebsStore) listChangedBlocksLocked(first, second *ebsSnapshot, query url
 	sort.Slice(indices, func(i, j int) bool { return indices[i] < indices[j] })
 
 	startingBlock := ebsInt64FromString(query.Get("startingBlockIndex"), 0)
-	maxResults := int(ebsInt64FromString(query.Get("maxResults"), 1000))
+	maxResults := ebsIntFromString(query.Get("maxResults"), 1000)
 	if maxResults <= 0 {
 		maxResults = 1000
 	}
@@ -305,7 +305,7 @@ func (s *ebsStore) listChangedBlocksLocked(first, second *ebsSnapshot, query url
 		}
 	}
 
-	offset := int(ebsInt64FromString(query.Get("pageToken"), 0))
+	offset := ebsIntFromString(query.Get("pageToken"), 0)
 	if offset < 0 {
 		offset = 0
 	}
@@ -451,6 +451,14 @@ func ebsInt64FromString(raw string, fallback int64) int64 {
 		return fallback
 	}
 	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return n
+}
+
+func ebsIntFromString(raw string, fallback int) int {
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
 	if err != nil {
 		return fallback
 	}

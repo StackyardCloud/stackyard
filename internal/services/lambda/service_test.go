@@ -367,3 +367,19 @@ func zipBootstrapCode(t *testing.T, script string) []byte {
 	}
 	return buf.Bytes()
 }
+
+func TestUnpackLambdaArchiveRejectsTraversal(t *testing.T) {
+	for _, name := range []string{"../evil", "/abs/evil", "a/../../evil", `..\evil`} {
+		var buf bytes.Buffer
+		zw := zip.NewWriter(&buf)
+		if _, err := zw.Create(name); err != nil {
+			t.Fatal(err)
+		}
+		if err := zw.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := unpackLambdaArchive(buf.Bytes(), t.TempDir()); err == nil {
+			t.Fatalf("expected %q to be rejected", name)
+		}
+	}
+}

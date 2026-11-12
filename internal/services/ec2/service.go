@@ -18,6 +18,10 @@ var (
 	ErrConflict         = errors.New("conflict")
 )
 
+// maxLaunchCount bounds per-request instance/host counts so one request
+// cannot make the emulator allocate unbounded state.
+const maxLaunchCount = 1000
+
 const (
 	DefaultRegion        = "us-east-1"
 	DefaultAccountID     = "123456789012"
@@ -720,7 +724,7 @@ func (s *Service) RunInstances(imageID, instanceType, keyName, subnetID, availab
 	if imageID == "" {
 		return ReservationResult{}, ErrInvalidParameter
 	}
-	if minCount <= 0 || maxCount <= 0 || maxCount < minCount {
+	if minCount <= 0 || maxCount <= 0 || maxCount < minCount || maxCount > maxLaunchCount {
 		return ReservationResult{}, ErrInvalidParameter
 	}
 	if strings.TrimSpace(instanceType) == "" {
@@ -768,7 +772,7 @@ func (s *Service) RunInstances(imageID, instanceType, keyName, subnetID, availab
 	}
 
 	count := maxCount
-	instances := make([]Instance, 0, count)
+	instances := []Instance{}
 	for i := int32(0); i < count; i++ {
 		instanceID := s.nextIDLocked("i")
 		suffix := int(atomic.LoadUint64(&s.seq) % 250)

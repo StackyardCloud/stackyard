@@ -537,13 +537,18 @@ func (s *ec2AutoScalingStore) ensureGroupLocked(name string) map[string]any {
 	return group
 }
 
+const ec2AutoScalingMaxInstances = 1000
+
 func (s *ec2AutoScalingStore) reconcileInstancesLocked(group map[string]any) {
 	desired := ec2AutoScalingFormIntFromAny(group["DesiredCapacity"], 1)
 	if desired < 0 {
 		desired = 0
 	}
+	if desired > ec2AutoScalingMaxInstances {
+		desired = ec2AutoScalingMaxInstances
+	}
 	name, _ := group["AutoScalingGroupName"].(string)
-	instances := make([]any, 0, desired)
+	instances := []any{}
 	for i := 0; i < desired; i++ {
 		instances = append(instances, map[string]any{
 			"InstanceId":           fmt.Sprintf("i-%017d", i+1),

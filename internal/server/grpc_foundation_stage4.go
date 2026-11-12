@@ -13785,7 +13785,7 @@ func gcpStage4GRPCSpanner(path string, grpcReqBody []byte) ([]byte, string, stri
 				}
 			}
 		}
-		sessions := make([]*spannerpb.Session, 0, req.GetSessionCount())
+		sessions := []*spannerpb.Session{}
 		for i := int32(1); i <= req.GetSessionCount(); i++ {
 			sessions = append(sessions, gcpStage4SpannerSession(project, instance, database, fmt.Sprintf("s-%d", i), multiplexed))
 		}

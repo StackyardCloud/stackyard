@@ -776,7 +776,7 @@ func parseSignerOptionalMaxResults(value string) (int32, error) {
 	if trimmed == "" {
 		return 0, nil
 	}
-	parsed, err := strconv.Atoi(trimmed)
+	parsed, err := strconv.ParseInt(trimmed, 10, 32)
 	if err != nil || parsed <= 0 {
 		return 0, errors.New("invalid maxResults")
 	}

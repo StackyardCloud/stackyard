@@ -12782,7 +12782,7 @@ func (s *Server) handleS3VectorsRouter(w http.ResponseWriter, r *http.Request) {
 		if topK > len(scoredMatches) {
 			topK = len(scoredMatches)
 		}
-		matches := make([]s3VectorsMatch, 0, topK)
+		matches := []s3VectorsMatch{}
 		for i := 0; i < topK; i++ {
 			match := scoredMatches[i]
 			matches = append(matches, s3VectorsMatch{

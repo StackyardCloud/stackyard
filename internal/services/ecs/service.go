@@ -1679,7 +1679,7 @@ func (s *Service) RunTask(clusterRef, taskDefinitionRef, launchType, startedBy, 
 	}
 
 	now := time.Now().UTC()
-	out := make([]Task, 0, count)
+	out := []Task{}
 	for idx := int32(0); idx < count; idx++ {
 		s.taskSeq++
 		task := &Task{

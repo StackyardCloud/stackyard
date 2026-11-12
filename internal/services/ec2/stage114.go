@@ -549,7 +549,7 @@ func parseCIDRNetmaskLength(cidr string) *int32 {
 	if !found {
 		return nil
 	}
-	netmaskValue, err := strconv.Atoi(strings.TrimSpace(suffix))
+	netmaskValue, err := strconv.ParseInt(strings.TrimSpace(suffix), 10, 32)
 	if err != nil {
 		return nil
 	}
