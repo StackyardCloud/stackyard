@@ -569,11 +569,17 @@ func kinesisTagListPayload(tags map[string]string) []any {
 	return out
 }
 
+// kinesisMaxShards matches the default per-account shard quota.
+const kinesisMaxShards = 500
+
 func kinesisShardIDs(count int) []string {
 	if count < 1 {
 		count = 1
 	}
-	shards := make([]string, 0, count)
+	if count > kinesisMaxShards {
+		count = kinesisMaxShards
+	}
+	shards := []string{}
 	for i := 0; i < count; i++ {
 		shards = append(shards, fmt.Sprintf("shardId-%012d", i))
 	}

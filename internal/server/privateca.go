@@ -522,7 +522,7 @@ func privateCAInt32(value any) (int32, bool) {
 		if strings.TrimSpace(v) == "" {
 			return 0, true
 		}
-		parsed, err := strconv.Atoi(strings.TrimSpace(v))
+		parsed, err := strconv.ParseInt(strings.TrimSpace(v), 10, 32)
 		if err != nil {
 			return 0, false
 		}

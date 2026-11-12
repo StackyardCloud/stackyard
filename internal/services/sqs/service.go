@@ -305,7 +305,7 @@ func (s *Service) ReceiveMessagesWithVisibility(queue string, maxMessages int, v
 	}
 
 	now := time.Now().UTC()
-	picked := make([]Message, 0, maxMessages)
+	picked := []Message{}
 	for _, msg := range state.messages {
 		if len(picked) >= maxMessages {
 			break

@@ -533,7 +533,7 @@ func (s *Server) handleNeptuneDataGetPropertygraphStream(w http.ResponseWriter, 
 		recordCount = 5
 	}
 	nowMillis := time.Now().UTC().UnixMilli()
-	records := make([]map[string]any, 0, recordCount)
+	records := []map[string]any{}
 	for i := 0; i < recordCount; i++ {
 		records = append(records, map[string]any{
 			"commitTimestamp": nowMillis,
@@ -630,7 +630,7 @@ func (s *Server) handleNeptuneDataGetSparqlStream(w http.ResponseWriter, r *http
 		recordCount = 5
 	}
 	nowMillis := time.Now().UTC().UnixMilli()
-	records := make([]map[string]any, 0, recordCount)
+	records := []map[string]any{}
 	for i := 0; i < recordCount; i++ {
 		records = append(records, map[string]any{
 			"commitTimestamp": nowMillis,
@@ -1348,7 +1348,7 @@ func (s *neptuneDataStore) ListLoaderJobs(limit int) []string {
 	if limit <= 0 || limit > len(items) {
 		limit = len(items)
 	}
-	ids := make([]string, 0, limit)
+	ids := []string{}
 	for _, item := range items[:limit] {
 		ids = append(ids, item.ID)
 	}

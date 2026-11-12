@@ -138,14 +138,10 @@ func unpackLambdaArchive(code []byte, dest string) error {
 		if name == "." || name == "" {
 			continue
 		}
-		if strings.HasPrefix(name, "/") || name == ".." || strings.HasPrefix(name, "../") {
+		if !filepath.IsLocal(filepath.FromSlash(name)) {
 			return fmt.Errorf("invalid archive entry path %q", file.Name)
 		}
 		target := filepath.Join(destRoot, filepath.FromSlash(name))
-		rel, err := filepath.Rel(destRoot, target)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-			return fmt.Errorf("invalid archive entry path %q", file.Name)
-		}
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, file.Mode()); err != nil {
 				return err

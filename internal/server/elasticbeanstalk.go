@@ -1170,7 +1170,7 @@ func parseElasticBeanstalkInt32Value(values url.Values, key string) (int32, bool
 		}
 		return 0, false, nil
 	}
-	parsed, err := strconv.Atoi(raw)
+	parsed, err := strconv.ParseInt(raw, 10, 32)
 	if err != nil || parsed < 0 {
 		return 0, true, ebservice.ErrInvalidParameter
 	}

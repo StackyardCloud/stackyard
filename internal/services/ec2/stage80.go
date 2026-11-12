@@ -24,7 +24,7 @@ func (s *Service) AllocateHosts(
 	} else if len(normalizedAssets) > 0 {
 		hostCount = int32(len(normalizedAssets))
 	}
-	if hostCount <= 0 {
+	if hostCount <= 0 || hostCount > maxLaunchCount {
 		return nil, ErrInvalidParameter
 	}
 	if len(normalizedAssets) > 0 && int32(len(normalizedAssets)) != hostCount {
@@ -74,7 +74,7 @@ func (s *Service) AllocateHosts(
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	hostIDs := make([]string, 0, hostCount)
+	hostIDs := []string{}
 	for i := int32(0); i < hostCount; i++ {
 		hostID := s.nextIDLocked("h")
 		s.dedicatedHosts[hostID] = &DedicatedHost{

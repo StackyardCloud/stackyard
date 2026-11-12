@@ -364,7 +364,7 @@ func acmInt32(value any) int32 {
 	case int64:
 		return int32(raw)
 	case string:
-		parsed, err := strconv.Atoi(strings.TrimSpace(raw))
+		parsed, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 32)
 		if err != nil {
 			return 0
 		}

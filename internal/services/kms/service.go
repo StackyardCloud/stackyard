@@ -1819,9 +1819,7 @@ func buildCiphertext(key *Key, plaintext []byte, algorithm string) ([]byte, erro
 	mac.Write(body)
 	sum := mac.Sum(nil)
 
-	out := make([]byte, 0, 4+16+len(body))
-	out = append(out, []byte("SYK2")...)
-	out = append(out, sum[:16]...)
+	out := append([]byte("SYK2"), sum[:16]...)
 	out = append(out, body...)
 	return out, nil
 }

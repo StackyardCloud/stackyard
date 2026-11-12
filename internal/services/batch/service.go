@@ -1164,7 +1164,7 @@ func (s *Service) resolveJobDefinitionLocked(id string) *JobDefinition {
 	name := id
 	revision := int32(-1)
 	if idx := strings.LastIndex(id, ":"); idx > 0 {
-		if rev, err := strconv.Atoi(id[idx+1:]); err == nil {
+		if rev, err := strconv.ParseInt(id[idx+1:], 10, 32); err == nil {
 			name = id[:idx]
 			revision = int32(rev)
 		}

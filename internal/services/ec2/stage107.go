@@ -193,7 +193,7 @@ func (s *Service) CreateFleet(
 	instanceType string,
 	tags []Tag,
 ) (Fleet, error) {
-	if !hasLaunchTemplateConfigs || totalTargetCapacity <= 0 {
+	if !hasLaunchTemplateConfigs || totalTargetCapacity <= 0 || totalTargetCapacity > maxLaunchCount {
 		return Fleet{}, ErrInvalidParameter
 	}
 	instanceType = strings.TrimSpace(instanceType)
@@ -205,7 +205,7 @@ func (s *Service) CreateFleet(
 	defer s.mu.Unlock()
 
 	fleetID := s.nextIDLocked("fleet")
-	instanceIDs := make([]string, 0, totalTargetCapacity)
+	instanceIDs := []string{}
 	for i := int32(0); i < totalTargetCapacity; i++ {
 		instanceIDs = append(instanceIDs, s.nextIDLocked("i"))
 	}

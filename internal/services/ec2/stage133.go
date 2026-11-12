@@ -101,11 +101,11 @@ func (s *Service) RunScheduledInstances(
 	if instanceCount != nil {
 		count = *instanceCount
 	}
-	if count <= 0 {
+	if count <= 0 || count > maxLaunchCount {
 		return nil, ErrInvalidParameter
 	}
 
-	instanceIDs := make([]string, 0, count)
+	instanceIDs := []string{}
 	for i := int32(0); i < count; i++ {
 		result, err := s.RunInstances(launchImageID, launchInstanceType, "", "", "", nil, 1, 1, nil)
 		if err != nil {

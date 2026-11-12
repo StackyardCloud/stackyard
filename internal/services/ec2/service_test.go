@@ -1745,3 +1745,10 @@ func TestServiceStage24AddressTransitionsAndAttributes(t *testing.T) {
 		t.Fatalf("unexpected restore address output: publicIp=%q status=%q", publicIP, status)
 	}
 }
+
+func TestRunInstancesRejectsCountAboveLimit(t *testing.T) {
+	svc := NewService()
+	if _, err := svc.RunInstances("ami-test", "t3.micro", "", "", "", nil, 1, maxLaunchCount+1, nil); err != ErrInvalidParameter {
+		t.Fatalf("expected ErrInvalidParameter, got %v", err)
+	}
+}
