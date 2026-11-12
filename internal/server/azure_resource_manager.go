@@ -14,14 +14,27 @@ import (
 // resource group and by subscription, backed by one store that cascades with
 // resource group deletion.
 type azureARMResourceType struct {
-	Namespace string // e.g. "Microsoft.ManagedIdentity"
-	Type      string // e.g. "userAssignedIdentities"
+	Namespace string // e.g. "Microsoft.ContainerRegistry"
+	// Type is the resource type path; nested child types include their
+	// parents, e.g. "registries" or "registries/webhooks".
+	Type string
+	// Proxy marks ARM proxy resources, which have no location.
+	Proxy bool
 	// ReadOnlyProperties returns server-owned properties for a resource ID.
 	// They override anything the client sends. Optional.
 	ReadOnlyProperties func(id string) map[string]any
+	// ValidateName returns a non-empty message to reject a resource name. Optional.
+	ValidateName func(name string) string
 	// Validate returns a non-empty message to reject a PUT payload. Optional.
 	Validate func(payload map[string]any) string
+	// Actions are POST operations on an existing resource, keyed by the
+	// lower-cased action segment, e.g. "listcredentials". Optional.
+	Actions map[string]azureARMAction
 }
+
+// azureARMAction handles POST {resourceId}/{action} and returns the status
+// and JSON body. The record is immutable and must not be modified.
+type azureARMAction func(record *azureARMResource, payload map[string]any) (int, any)
 
 func (t azureARMResourceType) fullType() string { return t.Namespace + "/" + t.Type }
 
@@ -67,29 +80,38 @@ func lookupAzureARMResourceType(namespace, typ string) (azureARMResourceType, bo
 	return t, ok
 }
 
-// handleAzureARMRouter serves top-level tracked resources of registered types.
-// ponytail: nested child resource types are not routed yet; add a parent
-// segment to azureARMResourceType when the first service needs one.
+// handleAzureARMRouter serves registered resource types, including nested
+// child types, at subscription, resource group and parent-resource scope.
 func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
 	if !strings.HasPrefix(path, "/azure/subscriptions/") {
 		return false
 	}
 	seg := splitPathSegments(strings.TrimPrefix(path, "/azure/"))
-	var sub, rg, name string
-	var typ azureARMResourceType
-	var ok bool
+	var sub, rg, namespace string
+	var rest []string
 	switch {
+	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "checkNameAvailability"):
+		return s.checkAzureARMNameAvailability(w, r, seg[3])
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"):
-		sub = seg[1]
-		typ, ok = lookupAzureARMResourceType(seg[3], seg[4])
-	case len(seg) >= 7 && len(seg) <= 8 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers"):
-		sub, rg = seg[1], seg[3]
-		typ, ok = lookupAzureARMResourceType(seg[5], seg[6])
-		if len(seg) == 8 {
-			name = seg[7]
-		}
+		sub, namespace, rest = seg[1], seg[3], seg[4:]
+	case len(seg) >= 7 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers"):
+		sub, rg, namespace, rest = seg[1], seg[3], seg[5], seg[6:]
+	default:
+		return false
 	}
+
+	// POST {resourceId}/{action}: the trailing segment is an action, not a type.
+	var action azureARMAction
+	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
+		typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest[:len(rest)-1]))
+		if !ok || typ.Actions[strings.ToLower(rest[len(rest)-1])] == nil {
+			return false
+		}
+		action = typ.Actions[strings.ToLower(rest[len(rest)-1])]
+		rest = rest[:len(rest)-1]
+	}
+	typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest))
 	if !ok {
 		return false
 	}
@@ -97,23 +119,50 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
 		return true
 	}
-	if name == "" {
+
+	// Rebuild the ID with the registered type casing; names keep client casing.
+	scope := "/subscriptions/" + sub
+	if rg != "" {
+		scope += "/resourceGroups/" + rg
+	}
+	// ids[i] is the resource ID after the i-th type/name pair.
+	typeParts := strings.Split(typ.Type, "/")
+	ids := make([]string, 0, len(typeParts))
+	id := scope + "/providers/" + typ.Namespace
+	for i := 1; i < len(rest); i += 2 {
+		id += "/" + typeParts[i/2] + "/" + rest[i]
+		ids = append(ids, id)
+	}
+
+	if len(rest)%2 == 1 {
 		if r.Method != http.MethodGet {
 			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 			return true
 		}
-		s.listAzureARMResources(w, typ, sub, rg)
+		parentID := ""
+		if len(ids) > 0 {
+			parentID = ids[len(ids)-1]
+		}
+		s.listAzureARMResources(w, typ, sub, rg, parentID, scope)
 		return true
 	}
+	parentID := ""
+	if len(ids) > 1 {
+		parentID = ids[len(ids)-2]
+	}
+	name := rest[len(rest)-1]
 
-	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", sub, rg, typ.fullType(), name)
+	if action != nil {
+		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
+		return true
+	}
 	switch r.Method {
 	case http.MethodPut:
-		s.putAzureARMResource(w, r, typ, id, sub, rg, name)
+		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
 	case http.MethodPatch:
-		s.patchAzureARMResource(w, r, typ, id, sub, rg)
+		s.patchAzureARMResource(w, r, typ, id, sub, rg, parentID)
 	case http.MethodGet, http.MethodHead:
-		record, code := s.getAzureARMResource(id, sub, rg)
+		record, code := s.getAzureARMResource(id, sub, rg, parentID)
 		switch {
 		case record != nil && r.Method == http.MethodHead:
 			w.WriteHeader(http.StatusNoContent)
@@ -122,12 +171,19 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		case r.Method == http.MethodHead:
 			w.WriteHeader(http.StatusNotFound)
 		default:
-			azureARMNotFound(w, code, id)
+			azureARMNotFound(w, code, id, parentID)
 		}
 	case http.MethodDelete:
 		s.providerStorageMu.Lock()
 		_, existed := s.azureARMResources[azureARMKey(id)]
 		delete(s.azureARMResources, azureARMKey(id))
+		// Child resources go with their parent.
+		prefix := azureARMKey(id + "/")
+		for k := range s.azureARMResources {
+			if strings.HasPrefix(k, prefix) {
+				delete(s.azureARMResources, k)
+			}
+		}
 		s.providerStorageMu.Unlock()
 		if existed {
 			w.WriteHeader(http.StatusOK)
@@ -140,13 +196,103 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	return true
 }
 
-func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, name string) {
+// azureARMTypePath returns the type segments (even indexes) joined by "/".
+func azureARMTypePath(rest []string) string {
+	types := make([]string, 0, (len(rest)+1)/2)
+	for i := 0; i < len(rest); i += 2 {
+		types = append(types, rest[i])
+	}
+	return strings.Join(types, "/")
+}
+
+func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, action azureARMAction, id, sub, rg, parentID string) {
 	payload, ok := azureARMReadBody(w, r)
 	if !ok {
 		return
 	}
+	record, code := s.getAzureARMResource(id, sub, rg, parentID)
+	if record == nil {
+		azureARMNotFound(w, code, id, parentID)
+		return
+	}
+	status, body := action(record, payload)
+	if errBody, _ := body.(map[string]any); errBody != nil {
+		if code := azureARMString(azureARMObject(errBody["error"])["code"]); code != "" {
+			w.Header().Set("x-ms-error-code", code)
+		}
+	}
+	if body == nil {
+		w.WriteHeader(status)
+		return
+	}
+	respondJSON(w, status, body)
+}
+
+// checkAzureARMNameAvailability serves the subscription-scoped
+// POST /providers/{namespace}/checkNameAvailability for registered types.
+func (s *Server) checkAzureARMNameAvailability(w http.ResponseWriter, r *http.Request, namespace string) bool {
+	if !azureARMNamespaceRegistered(namespace) {
+		return false
+	}
+	if r.Method != http.MethodPost {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return true
+	}
+	payload, ok := azureARMReadBody(w, r)
+	if !ok {
+		return true
+	}
+	name := strings.TrimSpace(azureARMString(payload["name"]))
+	fullType := azureARMString(payload["type"])
+	ns, typePath, _ := strings.Cut(fullType, "/")
+	typ, found := lookupAzureARMResourceType(ns, typePath)
+	if name == "" || !found || !strings.EqualFold(ns, namespace) {
+		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", "name and a supported type are required")
+		return true
+	}
+	if typ.ValidateName != nil {
+		if msg := typ.ValidateName(name); msg != "" {
+			respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": false, "reason": "Invalid", "message": msg})
+			return true
+		}
+	}
+	s.providerStorageMu.Lock()
+	taken := len(s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
+		return strings.EqualFold(rec.Type, typ.fullType()) && strings.EqualFold(rec.Name, name)
+	})) > 0
+	s.providerStorageMu.Unlock()
+	if taken {
+		respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": false, "reason": "AlreadyExists", "message": fmt.Sprintf("The name '%s' is already in use.", name)})
+		return true
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": true})
+	return true
+}
+
+func azureARMNamespaceRegistered(namespace string) bool {
+	for _, t := range azureARMResourceTypes {
+		if strings.EqualFold(t.Namespace, namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID, name string) {
+	payload, ok := azureARMReadBody(w, r)
+	if !ok {
+		return
+	}
+	if typ.ValidateName != nil {
+		if msg := typ.ValidateName(name); msg != "" {
+			azureARMError(w, http.StatusBadRequest, "InvalidResourceName", msg)
+			return
+		}
+	}
 	location := strings.TrimSpace(azureARMString(payload["location"]))
-	if location == "" {
+	if typ.Proxy {
+		location = ""
+	} else if location == "" {
 		azureARMError(w, http.StatusBadRequest, "LocationRequired", "The location property is required for this definition.")
 		return
 	}
@@ -174,8 +320,16 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
 	if group == nil {
 		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, "ResourceGroupNotFound", id)
+		azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 		return
+	}
+	var parent *azureARMResource
+	if parentID != "" {
+		if parent = s.azureARMResources[azureARMKey(parentID)]; parent == nil {
+			s.providerStorageMu.Unlock()
+			azureARMNotFound(w, "ParentResourceNotFound", id, parentID)
+			return
+		}
 	}
 	existing := s.azureARMResources[azureARMKey(id)]
 	switch {
@@ -188,6 +342,9 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		// Keep the casing the resource was created with, like ARM does.
 		record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
 		record.CreatedAt = existing.CreatedAt
+	case parent != nil:
+		record.ResourceGroup = parent.ResourceGroup
+		record.ID = parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
 	default:
 		record.ResourceGroup = group.Name
 		record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
@@ -202,16 +359,16 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 	respondJSON(w, status, record.fixture())
 }
 
-func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg string) {
+func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID string) {
 	payload, ok := azureARMReadBody(w, r)
 	if !ok {
 		return
 	}
 	s.providerStorageMu.Lock()
-	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg)
+	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
 	if existing == nil {
 		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, code, id)
+		azureARMNotFound(w, code, id, parentID)
 		return
 	}
 	updated := *existing
@@ -234,17 +391,20 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	respondJSON(w, http.StatusOK, updated.fixture())
 }
 
-func (s *Server) getAzureARMResource(id, sub, rg string) (*azureARMResource, string) {
+func (s *Server) getAzureARMResource(id, sub, rg, parentID string) (*azureARMResource, string) {
 	s.providerStorageMu.Lock()
 	defer s.providerStorageMu.Unlock()
-	return s.lookupAzureARMResourceLocked(id, sub, rg)
+	return s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
 }
 
 // lookupAzureARMResourceLocked returns the record, or nil and the ARM error
 // code explaining why it is missing. Caller holds providerStorageMu.
-func (s *Server) lookupAzureARMResourceLocked(id, sub, rg string) (*azureARMResource, string) {
+func (s *Server) lookupAzureARMResourceLocked(id, sub, rg, parentID string) (*azureARMResource, string) {
 	if s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
 		return nil, "ResourceGroupNotFound"
+	}
+	if parentID != "" && s.azureARMResources[azureARMKey(parentID)] == nil {
+		return nil, "ParentResourceNotFound"
 	}
 	if record := s.azureARMResources[azureARMKey(id)]; record != nil {
 		return record, ""
@@ -252,16 +412,26 @@ func (s *Server) lookupAzureARMResourceLocked(id, sub, rg string) (*azureARMReso
 	return nil, "ResourceNotFound"
 }
 
-func (s *Server) listAzureARMResources(w http.ResponseWriter, typ azureARMResourceType, sub, rg string) {
+// listAzureARMResources lists typ under parentID when set, else under scope
+// (a subscription or resource group ID).
+func (s *Server) listAzureARMResources(w http.ResponseWriter, typ azureARMResourceType, sub, rg, parentID, scope string) {
 	s.providerStorageMu.Lock()
 	if rg != "" && s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
 		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, "ResourceGroupNotFound", "/subscriptions/"+sub+"/resourceGroups/"+rg)
+		azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
 		return
 	}
+	if parentID != "" {
+		if s.azureARMResources[azureARMKey(parentID)] == nil {
+			s.providerStorageMu.Unlock()
+			azureARMNotFound(w, "ParentResourceNotFound", parentID, parentID)
+			return
+		}
+		scope = parentID
+	}
+	prefix := azureARMKey(scope + "/")
 	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
-		return strings.EqualFold(rec.Type, typ.fullType()) && strings.EqualFold(rec.SubscriptionID, sub) &&
-			(rg == "" || strings.EqualFold(rec.ResourceGroup, rg))
+		return strings.EqualFold(rec.Type, typ.fullType()) && strings.HasPrefix(azureARMKey(rec.ID), prefix)
 	})
 	s.providerStorageMu.Unlock()
 	respondAzureARMList(w, records)
@@ -293,10 +463,12 @@ func (rec *azureARMResource) fixture() map[string]any {
 		"id":         rec.ID,
 		"name":       rec.Name,
 		"type":       rec.Type,
-		"location":   rec.Location,
 		"tags":       azureARMMerge(rec.Tags, nil),
 		"properties": rec.Properties,
 		"systemData": azureARMSystemData(rec.CreatedAt, rec.UpdatedAt),
+	}
+	if rec.Location != "" {
+		out["location"] = rec.Location
 	}
 	if rec.Kind != "" {
 		out["kind"] = rec.Kind
@@ -347,9 +519,13 @@ func azureARMError(w http.ResponseWriter, status int, code, message string) {
 	respondJSON(w, status, map[string]any{"error": map[string]any{"code": code, "message": message}})
 }
 
-func azureARMNotFound(w http.ResponseWriter, code, id string) {
-	if code == "ResourceGroupNotFound" {
+func azureARMNotFound(w http.ResponseWriter, code, id, parentID string) {
+	switch code {
+	case "ResourceGroupNotFound":
 		azureARMError(w, http.StatusNotFound, code, "Resource group for '"+id+"' could not be found.")
+		return
+	case "ParentResourceNotFound":
+		azureARMError(w, http.StatusNotFound, code, "Can not perform requested operation on nested resource. Parent resource '"+parentID+"' not found.")
 		return
 	}
 	azureARMError(w, http.StatusNotFound, code, "The resource '"+id+"' was not found.")
