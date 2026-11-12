@@ -81,8 +81,6 @@ type azureCommunicationPhoneNumbersRecord struct {
 	ReservationID   string
 }
 
-const azureCommunicationPhoneNumbersMaxPrealloc = 100
-
 func (s *Server) handleAzureCommunicationPhoneNumbersRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
 	if !strings.HasPrefix(path, azureCommunicationPhoneNumbersPrefix) {
@@ -1114,12 +1112,8 @@ func (s *Server) azureCommunicationPhoneNumbersAvailableRecords(countryCode stri
 		}
 	}
 
-	// quantity comes from the request; cap the preallocation, append grows past it if needed.
-	capacity := quantity
-	if capacity > azureCommunicationPhoneNumbersMaxPrealloc {
-		capacity = azureCommunicationPhoneNumbersMaxPrealloc
-	}
-	results := make([]*azureCommunicationPhoneNumbersRecord, 0, capacity)
+	// Not preallocated: quantity comes from the request.
+	results := []*azureCommunicationPhoneNumbersRecord{}
 	prefixes := params.PhoneNumberPrefixes
 	for _, areaCode := range country.AreaCodes {
 		if params.AreaCode != "" && params.AreaCode != areaCode {

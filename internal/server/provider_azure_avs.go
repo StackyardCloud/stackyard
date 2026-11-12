@@ -906,7 +906,7 @@ func (s *Server) handleAzureAVSAuthorizationCreateOrUpdate(w http.ResponseWriter
 		return
 	}
 	now := time.Now().UTC()
-	key := azureAVSAuthorizationKey(subscriptionID, resourceGroup, privateCloudName, name)
+	recordID := azureAVSAuthorizationRecordID(subscriptionID, resourceGroup, privateCloudName, name)
 
 	s.providerStorageMu.Lock()
 	resource := &azureAVSAuthorization{
@@ -916,11 +916,11 @@ func (s *Server) handleAzureAVSAuthorizationCreateOrUpdate(w http.ResponseWriter
 		Name:             name,
 		Location:         azureAVSCoalesceString(azureAVSString(payload["location"]), "eastus"),
 		Tags:             azureAVSStringMap(payload["tags"]),
-		Properties:       azureAVSMergeObject(map[string]any{"authorizationKey": azureAVSHash("auth", key)}, azureAVSObject(payload["properties"])),
+		Properties:       azureAVSMergeObject(map[string]any{"authorizationKey": azureAVSHash("auth", recordID)}, azureAVSObject(payload["properties"])),
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
-	s.azureAVSAuthorizations[key] = resource
+	s.azureAVSAuthorizations[recordID] = resource
 	s.providerStorageMu.Unlock()
 
 	_ = body
@@ -929,7 +929,7 @@ func (s *Server) handleAzureAVSAuthorizationCreateOrUpdate(w http.ResponseWriter
 
 func (s *Server) handleAzureAVSAuthorizationGet(w http.ResponseWriter, path, subscriptionID, resourceGroup, privateCloudName, name string) {
 	s.providerStorageMu.Lock()
-	resource := s.azureAVSAuthorizations[azureAVSAuthorizationKey(subscriptionID, resourceGroup, privateCloudName, name)]
+	resource := s.azureAVSAuthorizations[azureAVSAuthorizationRecordID(subscriptionID, resourceGroup, privateCloudName, name)]
 	s.providerStorageMu.Unlock()
 	if resource == nil {
 		azureAVSNotFound(w, path, "authorization not found")
@@ -939,10 +939,10 @@ func (s *Server) handleAzureAVSAuthorizationGet(w http.ResponseWriter, path, sub
 }
 
 func (s *Server) handleAzureAVSAuthorizationDelete(w http.ResponseWriter, path, subscriptionID, resourceGroup, privateCloudName, name string) {
-	key := azureAVSAuthorizationKey(subscriptionID, resourceGroup, privateCloudName, name)
+	recordID := azureAVSAuthorizationRecordID(subscriptionID, resourceGroup, privateCloudName, name)
 	s.providerStorageMu.Lock()
-	resource := s.azureAVSAuthorizations[key]
-	delete(s.azureAVSAuthorizations, key)
+	resource := s.azureAVSAuthorizations[recordID]
+	delete(s.azureAVSAuthorizations, recordID)
 	s.providerStorageMu.Unlock()
 	if resource == nil {
 		resource = &azureAVSAuthorization{
@@ -2240,7 +2240,7 @@ func azureAVSPrivateCloudKey(subscriptionID, resourceGroup, name string) string 
 	return strings.ToLower(subscriptionID + "/" + resourceGroup + "/" + name)
 }
 
-func azureAVSAuthorizationKey(subscriptionID, resourceGroup, privateCloudName, name string) string {
+func azureAVSAuthorizationRecordID(subscriptionID, resourceGroup, privateCloudName, name string) string {
 	return strings.ToLower(subscriptionID + "/" + resourceGroup + "/" + privateCloudName + "/" + name)
 }
 
