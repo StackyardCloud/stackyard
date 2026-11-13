@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,9 +22,10 @@ type azureARMResourceType struct {
 	Type string
 	// Proxy marks ARM proxy resources, which have no location.
 	Proxy bool
-	// ReadOnlyProperties returns server-owned properties for a resource ID.
-	// They override anything the client sends. Optional.
-	ReadOnlyProperties func(id string) map[string]any
+	// ReadOnlyProperties returns server-owned properties for a resource ID,
+	// given the client-supplied properties. They override anything the client
+	// sends. Optional.
+	ReadOnlyProperties func(id string, properties map[string]any) map[string]any
 	// ValidateName returns a non-empty message to reject a resource name. Optional.
 	ValidateName func(name string) string
 	// Validate returns a non-empty message to reject a PUT payload. Optional.
@@ -30,6 +33,9 @@ type azureARMResourceType struct {
 	// Actions are POST operations on an existing resource, keyed by the
 	// lower-cased action segment, e.g. "listcredentials". Optional.
 	Actions map[string]azureARMAction
+	// DefaultChildren returns child resources ARM creates along with a new
+	// resource, e.g. a default authorization rule. Optional.
+	DefaultChildren func(parent *azureARMResource) []*azureARMResource
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -66,13 +72,29 @@ func registerAzureARMResourceType(t azureARMResourceType) {
 	azureARMResourceTypes[key] = t
 }
 
-// azureARMServerProperties are the properties clients can never overwrite.
-func azureARMServerProperties(typ azureARMResourceType, id string) map[string]any {
-	props := map[string]any{"provisioningState": "Succeeded"}
+// azureARMProperties returns the client properties with the server-owned
+// ones, which clients can never overwrite, applied on top.
+func azureARMProperties(typ azureARMResourceType, id string, client map[string]any) map[string]any {
+	server := map[string]any{"provisioningState": "Succeeded"}
 	if typ.ReadOnlyProperties != nil {
-		props = azureARMMerge(props, typ.ReadOnlyProperties(id))
+		server = azureARMMerge(server, typ.ReadOnlyProperties(id, client))
 	}
-	return props
+	return azureARMMerge(client, server)
+}
+
+// azureARMProviderAction handles POST .../providers/{namespace}/{action},
+// such as a name availability check.
+type azureARMProviderAction func(s *Server, payload map[string]any) (int, any)
+
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMProviderActions = map[string]azureARMProviderAction{}
+
+func registerAzureARMProviderAction(namespace, action string, fn azureARMProviderAction) {
+	key := strings.ToLower(namespace + "/" + action)
+	if _, exists := azureARMProviderActions[key]; exists {
+		panic("azure ARM provider action registered twice: " + namespace + "/" + action)
+	}
+	azureARMProviderActions[key] = fn
 }
 
 func lookupAzureARMResourceType(namespace, typ string) (azureARMResourceType, bool) {
@@ -84,15 +106,19 @@ func lookupAzureARMResourceType(namespace, typ string) (azureARMResourceType, bo
 // child types, at subscription, resource group and parent-resource scope.
 func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bool {
 	path := rawRequestPath(r)
-	if !strings.HasPrefix(path, "/azure/subscriptions/") {
+	if !strings.HasPrefix(path, "/azure/subscriptions/") && !strings.HasPrefix(path, "/azure/providers/") {
 		return false
 	}
 	seg := splitPathSegments(strings.TrimPrefix(path, "/azure/"))
 	var sub, rg, namespace string
 	var rest []string
 	switch {
-	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "checkNameAvailability"):
-		return s.checkAzureARMNameAvailability(w, r, seg[3])
+	case len(seg) == 3 && strings.EqualFold(seg[0], "providers"):
+		return s.invokeAzureARMProviderAction(w, r, seg[1], seg[2])
+	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && azureARMProviderActions[strings.ToLower(seg[3]+"/"+seg[4])] != nil:
+		return s.invokeAzureARMProviderAction(w, r, seg[3], seg[4])
+	case len(seg) < 2 || !strings.EqualFold(seg[0], "subscriptions"):
+		return false
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"):
 		sub, namespace, rest = seg[1], seg[3], seg[4:]
 	case len(seg) >= 7 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers"):
@@ -216,22 +242,12 @@ func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, ac
 		return
 	}
 	status, body := action(record, payload)
-	if errBody, _ := body.(map[string]any); errBody != nil {
-		if code := azureARMString(azureARMObject(errBody["error"])["code"]); code != "" {
-			w.Header().Set("x-ms-error-code", code)
-		}
-	}
-	if body == nil {
-		w.WriteHeader(status)
-		return
-	}
-	respondJSON(w, status, body)
+	respondAzureARMAction(w, status, body)
 }
 
-// checkAzureARMNameAvailability serves the subscription-scoped
-// POST /providers/{namespace}/checkNameAvailability for registered types.
-func (s *Server) checkAzureARMNameAvailability(w http.ResponseWriter, r *http.Request, namespace string) bool {
-	if !azureARMNamespaceRegistered(namespace) {
+func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Request, namespace, name string) bool {
+	action := azureARMProviderActions[strings.ToLower(namespace+"/"+name)]
+	if action == nil {
 		return false
 	}
 	if r.Method != http.MethodPost {
@@ -242,40 +258,28 @@ func (s *Server) checkAzureARMNameAvailability(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return true
 	}
-	name := strings.TrimSpace(azureARMString(payload["name"]))
-	fullType := azureARMString(payload["type"])
-	ns, typePath, _ := strings.Cut(fullType, "/")
-	typ, found := lookupAzureARMResourceType(ns, typePath)
-	if name == "" || !found || !strings.EqualFold(ns, namespace) {
-		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", "name and a supported type are required")
-		return true
-	}
-	if typ.ValidateName != nil {
-		if msg := typ.ValidateName(name); msg != "" {
-			respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": false, "reason": "Invalid", "message": msg})
-			return true
-		}
-	}
-	s.providerStorageMu.Lock()
-	taken := len(s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
-		return strings.EqualFold(rec.Type, typ.fullType()) && strings.EqualFold(rec.Name, name)
-	})) > 0
-	s.providerStorageMu.Unlock()
-	if taken {
-		respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": false, "reason": "AlreadyExists", "message": fmt.Sprintf("The name '%s' is already in use.", name)})
-		return true
-	}
-	respondJSON(w, http.StatusOK, map[string]any{"nameAvailable": true})
+	status, body := action(s, payload)
+	respondAzureARMAction(w, status, body)
 	return true
 }
 
-func azureARMNamespaceRegistered(namespace string) bool {
-	for _, t := range azureARMResourceTypes {
-		if strings.EqualFold(t.Namespace, namespace) {
-			return true
-		}
+// azureARMResourcesWhere returns matching records across all subscriptions,
+// for checks of globally unique names.
+func (s *Server) azureARMResourcesWhere(match func(*azureARMResource) bool) []*azureARMResource {
+	s.providerStorageMu.Lock()
+	defer s.providerStorageMu.Unlock()
+	return s.azureARMResourcesMatchingLocked(match)
+}
+
+// azureARMChild builds a child record of parent, for DefaultChildren hooks.
+func azureARMChild(parent *azureARMResource, typ azureARMResourceType, name string, properties map[string]any) *azureARMResource {
+	id := parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
+	return &azureARMResource{
+		ID: id, SubscriptionID: parent.SubscriptionID, ResourceGroup: parent.ResourceGroup, Name: name, Type: typ.fullType(),
+		Properties: azureARMProperties(typ, id, properties),
+		CreatedAt:  parent.CreatedAt,
+		UpdatedAt:  parent.UpdatedAt,
 	}
-	return false
 }
 
 func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID, name string) {
@@ -311,7 +315,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		Tags:       azureARMObject(payload["tags"]),
 		Identity:   azureARMObject(payload["identity"]),
 		SKU:        azureARMObject(payload["sku"]),
-		Properties: azureARMMerge(azureARMObject(payload["properties"]), azureARMServerProperties(typ, id)),
+		Properties: azureARMProperties(typ, id, azureARMObject(payload["properties"])),
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
@@ -350,6 +354,11 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
 	}
 	s.azureARMResources[azureARMKey(id)] = record
+	if existing == nil && typ.DefaultChildren != nil {
+		for _, child := range typ.DefaultChildren(record) {
+			s.azureARMResources[azureARMKey(child.ID)] = child
+		}
+	}
 	s.providerStorageMu.Unlock()
 
 	status := http.StatusCreated
@@ -381,10 +390,7 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	if sku := azureARMObject(payload["sku"]); len(sku) != 0 {
 		updated.SKU = sku
 	}
-	updated.Properties = azureARMMerge(
-		azureARMMerge(existing.Properties, azureARMObject(payload["properties"])),
-		azureARMServerProperties(typ, id),
-	)
+	updated.Properties = azureARMProperties(typ, id, azureARMMerge(existing.Properties, azureARMObject(payload["properties"])))
 	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
 	s.providerStorageMu.Unlock()
@@ -495,6 +501,13 @@ func azureARMSystemData(created, updated time.Time) map[string]any {
 
 func azureARMKey(id string) string { return strings.ToLower(id) }
 
+// azureARMDerivedKey returns a stable 44-character base64 access key derived
+// from a resource ID, so keys survive restarts without being stored.
+func azureARMDerivedKey(id, label string) string {
+	sum := sha256.Sum256([]byte(azureARMKey(id) + "#" + label))
+	return base64.StdEncoding.EncodeToString(sum[:])
+}
+
 // azureARMReadBody decodes a JSON object body; an empty body is an empty object.
 func azureARMReadBody(w http.ResponseWriter, r *http.Request) (map[string]any, bool) {
 	body, err := readBodyBytes(r)
@@ -515,8 +528,26 @@ func azureARMReadBody(w http.ResponseWriter, r *http.Request) (map[string]any, b
 
 // azureARMError writes the ARM error envelope Azure SDKs parse.
 func azureARMError(w http.ResponseWriter, status int, code, message string) {
-	w.Header().Set("x-ms-error-code", code)
-	respondJSON(w, status, map[string]any{"error": map[string]any{"code": code, "message": message}})
+	respondAzureARMAction(w, status, azureARMErrorBody(code, message))
+}
+
+func azureARMErrorBody(code, message string) map[string]any {
+	return map[string]any{"error": map[string]any{"code": code, "message": message}}
+}
+
+// respondAzureARMAction writes an action result, mirroring an error body's
+// code into the x-ms-error-code header. A nil body writes the status only.
+func respondAzureARMAction(w http.ResponseWriter, status int, body any) {
+	if errBody, _ := body.(map[string]any); errBody != nil {
+		if code := azureARMString(azureARMObject(errBody["error"])["code"]); code != "" {
+			w.Header().Set("x-ms-error-code", code)
+		}
+	}
+	if body == nil {
+		w.WriteHeader(status)
+		return
+	}
+	respondJSON(w, status, body)
 }
 
 func azureARMNotFound(w http.ResponseWriter, code, id, parentID string) {

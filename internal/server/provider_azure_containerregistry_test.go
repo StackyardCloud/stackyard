@@ -116,7 +116,9 @@ func TestAzureContainerRegistryValidation(t *testing.T) {
 	}
 	for _, tc := range childCases {
 		resp = providerContractRequest(t, ts, http.MethodPut, registry+tc.path+azureACRTestAPIVersion, []byte(tc.body), headers)
-		t.Run(tc.name, func(t *testing.T) { azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent") })
+		t.Run(tc.name, func(t *testing.T) {
+			azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent")
+		})
 	}
 
 	// The admin user is disabled by default, so no credentials are issued.
