@@ -1553,9 +1553,14 @@ def discover_service_files() -> dict[str, list[Path]]:
         out.setdefault(service, []).append(path)
     # Services registered with the shared ARM handler keep their validation and
     # response logic in azure_resource_manager.go, so count it as their source.
+    # PostgreSQL and MySQL register through azure_flexible_servers.go.
     shared = SERVER_DIR / "azure_resource_manager.go"
+    flexible = SERVER_DIR / "azure_flexible_servers.go"
     for paths in out.values():
-        if any("registerAzureARMResourceType(" in read_text(p) for p in paths):
+        text = "".join(read_text(p) for p in paths)
+        if "registerAzureFlexibleServer(" in text:
+            paths.append(flexible)
+        if "registerAzureARMResourceType(" in text or "registerAzureFlexibleServer(" in text:
             paths.append(shared)
     return out
 
