@@ -135,6 +135,31 @@ func registerAzureARMProviderAction(namespace, action string, fn azureARMProvide
 	azureARMProviderActions[key] = fn
 }
 
+// azureARMNameChecks maps a lower-cased "{namespace}/{collection}" to the
+// resource type whose names HEAD /providers/{namespace}/{collection}/{name}
+// checks: 200 when a resource of that type has the name in any
+// subscription, 404 otherwise.
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMNameChecks = map[string]string{}
+
+func registerAzureARMNameCheck(namespace, collection, resourceType string) {
+	azureARMNameChecks[strings.ToLower(namespace+"/"+collection)] = namespace + "/" + resourceType
+}
+
+func (s *Server) serveAzureARMNameCheck(w http.ResponseWriter, r *http.Request, fullType, name string) {
+	if r.Method != http.MethodHead {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return
+	}
+	if len(s.azureARMResourcesWhere(func(rec *azureARMResource) bool {
+		return strings.EqualFold(rec.Type, fullType) && strings.EqualFold(rec.Name, name)
+	})) > 0 {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.WriteHeader(http.StatusNotFound)
+}
+
 func lookupAzureARMResourceType(namespace, typ string) (azureARMResourceType, bool) {
 	t, ok := azureARMResourceTypes[strings.ToLower(namespace+"/"+typ)]
 	return t, ok
@@ -156,6 +181,9 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	switch {
 	case len(seg) == 3 && strings.EqualFold(seg[0], "providers"):
 		return s.invokeAzureARMProviderAction(w, r, seg[1], seg[2])
+	case len(seg) == 4 && strings.EqualFold(seg[0], "providers") && azureARMNameChecks[strings.ToLower(seg[1]+"/"+seg[2])] != "":
+		s.serveAzureARMNameCheck(w, r, azureARMNameChecks[strings.ToLower(seg[1]+"/"+seg[2])], seg[3])
+		return true
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && azureARMProviderActions[strings.ToLower(seg[3]+"/"+seg[4])] != nil:
 		return s.invokeAzureARMProviderAction(w, r, seg[3], seg[4])
 	case len(seg) == 7 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations"):
