@@ -1380,6 +1380,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "iothub": ["iothub-2023-06-30-plan.md"],
     "deviceprovisioningservices": ["deviceprovisioningservices-2022-02-05-plan.md"],
     "digitaltwins": ["digitaltwins-2023-01-31-plan.md"],
+    "recoveryservices": ["recoveryservices-2024-04-01-plan.md"],
+    "recoveryservicesbackup": ["recoveryservicesbackup-2024-10-01-plan.md"],
+    "recoveryservicessiterecovery": ["recoveryservicessiterecovery-2024-10-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",

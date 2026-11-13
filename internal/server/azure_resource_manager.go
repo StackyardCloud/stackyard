@@ -135,6 +135,22 @@ func registerAzureARMProviderAction(namespace, action string, fn azureARMProvide
 	azureARMProviderActions[key] = fn
 }
 
+// azureARMGroupAction handles POST /subscriptions/{sub}/resourceGroups/{rg}/
+// providers/{namespace}/locations/{location}/{action}, such as a name check
+// scoped to one resource group. The resource group exists.
+type azureARMGroupAction func(s *Server, sub, rg string, payload map[string]any) (int, any)
+
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMGroupActions = map[string]azureARMGroupAction{}
+
+func registerAzureARMGroupAction(namespace, action string, fn azureARMGroupAction) {
+	key := strings.ToLower(namespace + "/locations/" + action)
+	if _, exists := azureARMGroupActions[key]; exists {
+		panic("azure ARM group action registered twice: " + namespace + "/" + action)
+	}
+	azureARMGroupActions[key] = fn
+}
+
 // azureARMNameChecks maps a lower-cased "{namespace}/{collection}" to the
 // resource type whose names HEAD /providers/{namespace}/{collection}/{name}
 // checks: 200 when a resource of that type has the name in any
@@ -190,6 +206,9 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return s.invokeAzureARMProviderAction(w, r, seg[3], "locations/"+seg[6])
 	case len(seg) < 2 || !strings.EqualFold(seg[0], "subscriptions"):
 		return false
+	case len(seg) == 9 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers") && strings.EqualFold(seg[6], "locations") && azureARMGroupActions[strings.ToLower(seg[5]+"/locations/"+seg[8])] != nil:
+		s.invokeAzureARMGroupAction(w, r, azureARMGroupActions[strings.ToLower(seg[5]+"/locations/"+seg[8])], seg[1], seg[3])
+		return true
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"):
 		sub, namespace, rest = seg[1], seg[3], seg[4:]
 	case len(seg) >= 7 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers"):
@@ -412,6 +431,26 @@ func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Req
 	status, body := action(s, payload)
 	respondAzureARMAction(w, status, body)
 	return true
+}
+
+func (s *Server) invokeAzureARMGroupAction(w http.ResponseWriter, r *http.Request, action azureARMGroupAction, sub, rg string) {
+	if r.Method != http.MethodPost {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return
+	}
+	payload, ok := azureARMReadBody(w, r)
+	if !ok {
+		return
+	}
+	s.providerStorageMu.Lock()
+	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
+	s.providerStorageMu.Unlock()
+	if group == nil {
+		azureARMNotFound(w, "ResourceGroupNotFound", "/subscriptions/"+sub+"/resourceGroups/"+rg, "")
+		return
+	}
+	status, body := action(s, sub, rg, payload)
+	respondAzureARMAction(w, status, body)
 }
 
 // azureARMResourcesWhere returns matching records across all subscriptions,
