@@ -40,6 +40,16 @@ func TestAzureIoTHubLifecycle(t *testing.T) {
 	azureResourcesExpectErrorCode(t, do(http.MethodPut, hub+"/eventHubEndpoints/other/ConsumerGroups/x"+azureIoTHubTestAPIVersion, `{"properties":{"name":"x"}}`), http.StatusNotFound, "ParentResourceNotFound")
 	azureResourcesExpectErrorCode(t, do(http.MethodPut, hub+"/eventHubEndpoints/other"+azureIoTHubTestAPIVersion, `{}`), http.StatusBadRequest, "InvalidResourceName")
 
+	// PATCH skips SKU validation; an invalid partition count must neither
+	// panic nor wedge the store.
+	for _, count := range []string{"-1", "1e12", "2.5"} {
+		resp = do(http.MethodPatch, hub+azureIoTHubTestAPIVersion, `{"properties":{"eventHubEndpoints":{"events":{"partitionCount":`+count+`}}}}`)
+		azureResourcesExpectStatus(t, resp, http.StatusOK)
+		events := providerContractJSONMap(t, resp)["properties"].(map[string]any)["eventHubEndpoints"].(map[string]any)["events"].(map[string]any)
+		if ids, _ := events["partitionIds"].([]any); len(ids) != 4 {
+			t.Fatalf("partitionCount %s: expected the default 4 partitions, got %d", count, len(ids))
+		}
+	}
 	azureResourcesExpectStatus(t, do(http.MethodDelete, hub+azureIoTHubTestAPIVersion, ""), http.StatusOK)
 	azureResourcesExpectErrorCode(t, do(http.MethodGet, groups+"/analytics"+azureIoTHubTestAPIVersion, ""), http.StatusNotFound, "ParentResourceNotFound")
 }

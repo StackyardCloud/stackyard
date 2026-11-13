@@ -529,12 +529,23 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	if !ok {
 		return
 	}
-	s.providerStorageMu.Lock()
-	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
-	if existing == nil {
-		s.providerStorageMu.Unlock()
+	updated, code := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload)
+	if updated == nil {
 		azureARMNotFound(w, code, id, parentID)
 		return
+	}
+	respondJSON(w, http.StatusOK, updated.fixture())
+}
+
+// patchAzureARMRecord merges payload into the stored record. It runs the
+// type's hooks under the lock, so it unlocks with defer: a panicking hook
+// must not leave the store locked.
+func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload map[string]any) (*azureARMResource, string) {
+	s.providerStorageMu.Lock()
+	defer s.providerStorageMu.Unlock()
+	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
+	if existing == nil {
+		return nil, code
 	}
 	updated := *existing
 	if tags, present := payload["tags"]; present {
@@ -550,8 +561,7 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	updated.Properties = azureARMProperties(typ, &updated)
 	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
-	s.providerStorageMu.Unlock()
-	respondJSON(w, http.StatusOK, updated.fixture())
+	return &updated, ""
 }
 
 func (s *Server) getAzureARMResource(id, sub, rg, parentID string) (*azureARMResource, string) {

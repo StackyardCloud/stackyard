@@ -100,8 +100,9 @@ func azureIoTHubValidateConsumerGroup(payload map[string]any) string {
 // and retention.
 func azureIoTHubProperties(rec *azureARMResource) map[string]any {
 	events := azureARMObject(azureARMObject(rec.Properties["eventHubEndpoints"])["events"])
+	// PATCH skips Validate, so only a valid count sizes partitionIds.
 	partitions := 4
-	if n, ok := events["partitionCount"].(float64); ok {
+	if n, ok := events["partitionCount"].(float64); ok && n >= 2 && n <= 128 && n == float64(int(n)) {
 		partitions = int(n)
 	}
 	ids := make([]any, partitions)
