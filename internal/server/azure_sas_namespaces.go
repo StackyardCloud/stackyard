@@ -102,7 +102,8 @@ func azureSASListKeys(record *azureARMResource, withEntityPath bool) map[string]
 	for i := 0; i+1 < len(parts); i++ {
 		if strings.EqualFold(parts[i], "namespaces") {
 			namespace = parts[i+1]
-			if i+4 < len(parts)-2 {
+			// An entity sits between the namespace and authorizationRules/{rule}.
+			if i+3 < len(parts)-2 {
 				entity = parts[i+3]
 			}
 			break
