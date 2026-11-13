@@ -195,6 +195,11 @@ func (s *Server) handleAzureWebPubSubCheckNameAvailability(w http.ResponseWriter
 		respondAzureInvalidRequest(w, path, "name and type are required")
 		return
 	}
+	// SignalR shares this location-scoped route; its resources live in the shared ARM store.
+	if strings.EqualFold(resourceType, azureSignalRType) {
+		respondJSON(w, http.StatusOK, s.azureSignalRNameAvailability(name))
+		return
+	}
 	if !azureWebPubSubAllowedNameAvailabilityType(resourceType) {
 		respondAzureInvalidRequest(w, path, "type must target Microsoft.SignalRService/WebPubSub")
 		return
