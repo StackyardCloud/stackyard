@@ -22,6 +22,11 @@ type azureARMResourceType struct {
 	Type string
 	// Proxy marks ARM proxy resources, which have no location.
 	Proxy bool
+	// Extension marks extension resources, which attach to any scope (a
+	// subscription, resource group or resource) at
+	// {scope}/providers/{Namespace}/{Type}/{name}. They are proxy resources,
+	// and Type must be a single segment.
+	Extension bool
 	// ReadOnlyProperties returns server-owned properties for a record whose
 	// Properties still hold only what the client sent. They override anything
 	// the client sends. Optional.
@@ -65,6 +70,9 @@ type azureARMResource struct {
 var azureARMResourceTypes = map[string]azureARMResourceType{}
 
 func registerAzureARMResourceType(t azureARMResourceType) {
+	if t.Extension {
+		t.Proxy = true
+	}
 	key := strings.ToLower(t.fullType())
 	if _, exists := azureARMResourceTypes[key]; exists {
 		panic("azure ARM resource type registered twice: " + t.fullType())
@@ -110,6 +118,9 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return false
 	}
 	seg := splitPathSegments(strings.TrimPrefix(path, "/azure/"))
+	if s.handleAzureARMExtension(w, r, seg) {
+		return true
+	}
 	var sub, rg, namespace string
 	var rest []string
 	switch {
@@ -182,6 +193,13 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
 		return true
 	}
+	s.serveAzureARMItem(w, r, typ, id, sub, rg, parentID, name)
+	return true
+}
+
+// serveAzureARMItem handles the CRUD verbs on one resource. rg is empty only
+// for extension resources at subscription scope.
+func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID, name string) {
 	switch r.Method {
 	case http.MethodPut:
 		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
@@ -203,7 +221,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		s.providerStorageMu.Lock()
 		_, existed := s.azureARMResources[azureARMKey(id)]
 		delete(s.azureARMResources, azureARMKey(id))
-		// Child resources go with their parent.
+		// Child and extension resources go with their parent.
 		prefix := azureARMKey(id + "/")
 		for k := range s.azureARMResources {
 			if strings.HasPrefix(k, prefix) {
@@ -219,6 +237,55 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	default:
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 	}
+}
+
+// handleAzureARMExtension serves extension resources: the segments after the
+// last "providers" name a registered extension type, and everything before
+// it is the scope. The scope resource itself is not required to exist,
+// because it may belong to a service with its own store.
+func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request, seg []string) bool {
+	i := len(seg) - 1
+	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
+		i--
+	}
+	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 || len(seg)-i > 4 {
+		return false
+	}
+	typ, ok := lookupAzureARMResourceType(seg[i+1], seg[i+2])
+	if !ok || !typ.Extension {
+		return false
+	}
+	if hasAzureInvalidAPIVersion(r) {
+		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
+		return true
+	}
+	sub, rg := seg[1], ""
+	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
+		rg = seg[3]
+	}
+	collection := "/" + strings.Join(seg[:i], "/") + "/providers/" + typ.Namespace + "/" + typ.Type
+	if len(seg)-i == 4 {
+		s.serveAzureARMItem(w, r, typ, collection+"/"+seg[i+3], sub, rg, "", seg[i+3])
+		return true
+	}
+	if r.Method != http.MethodGet {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return true
+	}
+	s.providerStorageMu.Lock()
+	if rg != "" && s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
+		s.providerStorageMu.Unlock()
+		azureARMNotFound(w, "ResourceGroupNotFound", collection, "")
+		return true
+	}
+	// Only settings attached directly to this scope, not to resources under it.
+	prefix := azureARMKey(collection + "/")
+	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
+		key := azureARMKey(rec.ID)
+		return strings.EqualFold(rec.Type, typ.fullType()) && strings.HasPrefix(key, prefix) && !strings.Contains(key[len(prefix):], "/")
+	})
+	s.providerStorageMu.Unlock()
+	respondAzureARMList(w, records)
 	return true
 }
 
@@ -325,7 +392,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 
 	s.providerStorageMu.Lock()
 	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
-	if group == nil {
+	if group == nil && rg != "" {
 		s.providerStorageMu.Unlock()
 		azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 		return
@@ -349,6 +416,8 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		// Keep the casing the resource was created with, like ARM does.
 		record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
 		record.CreatedAt = existing.CreatedAt
+	case typ.Extension:
+		// The ID keeps the scope as the client sent it.
 	case parent != nil:
 		record.ResourceGroup = parent.ResourceGroup
 		record.ID = parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
@@ -410,7 +479,7 @@ func (s *Server) getAzureARMResource(id, sub, rg, parentID string) (*azureARMRes
 // lookupAzureARMResourceLocked returns the record, or nil and the ARM error
 // code explaining why it is missing. Caller holds providerStorageMu.
 func (s *Server) lookupAzureARMResourceLocked(id, sub, rg, parentID string) (*azureARMResource, string) {
-	if s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
+	if rg != "" && s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
 		return nil, "ResourceGroupNotFound"
 	}
 	if parentID != "" && s.azureARMResources[azureARMKey(parentID)] == nil {
