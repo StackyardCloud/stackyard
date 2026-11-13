@@ -42,7 +42,7 @@ Out of scope for this stage:
 - the Redis data plane (no Redis protocol listener)
 - `regenerateKey`, `forceReboot`, `importData`/`exportData`, `checkNameAvailability`
 - patch schedules, linked servers, private endpoint connections and access policies
-- Azure Managed Redis (`Microsoft.Cache/redisEnterprise`, issue #423)
+- Azure Managed Redis (`Microsoft.Cache/redisEnterprise`), covered by `docs/redisenterprise-2024-10-01-plan.md`
 
 ## Quality Gates
 
