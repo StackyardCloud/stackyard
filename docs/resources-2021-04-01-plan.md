@@ -73,8 +73,8 @@ Every namespace reports `Registered` because tools such as Terraform's `azurerm`
 - nested child types (`Type: "registries/webhooks"`): routed under the parent resource, `ParentResourceNotFound` when the parent is missing, deleted with the parent, and not listed at resource group scope
 - proxy types (`Proxy: true`) that take no location
 - `POST {resourceId}/{action}` through per-type `Actions`
-- `POST /subscriptions/{sub}/providers/{ns}/checkNameAvailability` for registered types, with `Invalid` and `AlreadyExists` reasons
-- optional per-type `ReadOnlyProperties`, `ValidateName` (400 `InvalidResourceName`) and `Validate` hooks
+- provider actions (`registerAzureARMProviderAction`) at `POST /subscriptions/{sub}/providers/{ns}/{action}` and `POST /providers/{ns}/{action}`, used for each namespace's own name availability check
+- optional per-type `ReadOnlyProperties` (given the client properties), `ValidateName` (400 `InvalidResourceName`), `Validate` and `DefaultChildren` hooks
 
 Out of scope for this stage:
 - deployments (needs an ARM template evaluator)

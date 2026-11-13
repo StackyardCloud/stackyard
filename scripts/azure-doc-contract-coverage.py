@@ -1363,6 +1363,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "resources": ["resources-2021-04-01-plan.md"],
     "msi": ["msi-2024-11-30-plan.md"],
     "containerregistry": ["containerregistry-2023-07-01-plan.md"],
+    "redis": ["redis-2024-11-01-plan.md"],
+    "servicebus": ["servicebus-2021-11-01-plan.md"],
+    "trafficmanager": ["trafficmanager-2022-04-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",

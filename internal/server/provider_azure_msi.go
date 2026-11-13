@@ -13,7 +13,7 @@ func init() {
 
 // azureMSIIdentityProperties derives stable IDs from the resource ID so an
 // identity keeps its principal across updates and server restarts.
-func azureMSIIdentityProperties(id string) map[string]any {
+func azureMSIIdentityProperties(id string, _ map[string]any) map[string]any {
 	key := []byte(azureARMKey(id))
 	return map[string]any{
 		"tenantId":    azureDefaultTenantID,

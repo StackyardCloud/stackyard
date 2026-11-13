@@ -1,8 +1,6 @@
 package server
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"net/http"
 	"regexp"
 	"strings"
@@ -26,6 +24,25 @@ func init() {
 	registerAzureARMResourceType(azureARMResourceType{Namespace: ns, Type: "registries/webhooks", Validate: azureContainerRegistryValidateWebhook})
 	registerAzureARMResourceType(azureARMResourceType{Namespace: ns, Type: "registries/scopeMaps", Proxy: true, Validate: azureContainerRegistryValidateScopeMap})
 	registerAzureARMResourceType(azureARMResourceType{Namespace: ns, Type: "registries/tokens", Proxy: true})
+	registerAzureARMProviderAction(ns, "checkNameAvailability", azureContainerRegistryCheckNameAvailability)
+}
+
+// azureContainerRegistryCheckNameAvailability checks a registry name; names
+// are global, so it compares case-insensitively across all subscriptions.
+func azureContainerRegistryCheckNameAvailability(s *Server, payload map[string]any) (int, any) {
+	name := strings.TrimSpace(azureARMString(payload["name"]))
+	if name == "" || !strings.EqualFold(azureARMString(payload["type"]), "Microsoft.ContainerRegistry/registries") {
+		return http.StatusBadRequest, azureARMErrorBody("InvalidRequestContent", "name and type 'Microsoft.ContainerRegistry/registries' are required")
+	}
+	if msg := azureContainerRegistryValidateName(name); msg != "" {
+		return http.StatusOK, map[string]any{"nameAvailable": false, "reason": "Invalid", "message": msg}
+	}
+	if len(s.azureARMResourcesWhere(func(rec *azureARMResource) bool {
+		return strings.EqualFold(rec.Type, "Microsoft.ContainerRegistry/registries") && strings.EqualFold(rec.Name, name)
+	})) > 0 {
+		return http.StatusOK, map[string]any{"nameAvailable": false, "reason": "AlreadyExists", "message": "The registry " + name + " is already in use."}
+	}
+	return http.StatusOK, map[string]any{"nameAvailable": true}
 }
 
 var azureContainerRegistryNamePattern = regexp.MustCompile(`^[a-zA-Z0-9]{5,50}$`)
@@ -62,7 +79,7 @@ func azureContainerRegistryValidateScopeMap(payload map[string]any) string {
 	return ""
 }
 
-func azureContainerRegistryProperties(id string) map[string]any {
+func azureContainerRegistryProperties(id string, _ map[string]any) map[string]any {
 	return map[string]any{"loginServer": strings.ToLower(id[strings.LastIndex(id, "/")+1:]) + ".azurecr.io"}
 }
 
@@ -71,14 +88,10 @@ func azureContainerRegistryProperties(id string) map[string]any {
 // resource ID so they are stable across calls and restarts.
 func azureContainerRegistryListCredentials(record *azureARMResource, _ map[string]any) (int, any) {
 	if enabled, _ := record.Properties["adminUserEnabled"].(bool); !enabled {
-		return http.StatusBadRequest, map[string]any{"error": map[string]any{
-			"code":    "AdminUserDisabled",
-			"message": "Admin user is disabled for registry '" + record.Name + "'.",
-		}}
+		return http.StatusBadRequest, azureARMErrorBody("AdminUserDisabled", "Admin user is disabled for registry '"+record.Name+"'.")
 	}
 	password := func(label string) map[string]any {
-		sum := sha256.Sum256([]byte(azureARMKey(record.ID) + "#" + label))
-		return map[string]any{"name": label, "value": base64.RawStdEncoding.EncodeToString(sum[:24])}
+		return map[string]any{"name": label, "value": azureARMDerivedKey(record.ID, label)}
 	}
 	return http.StatusOK, map[string]any{
 		"username":  record.Name,
