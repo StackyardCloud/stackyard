@@ -94,7 +94,7 @@ func (s *Server) handleAzureResourceGroup(w http.ResponseWriter, r *http.Request
 		existing := s.azureResourceGroups[key]
 		if existing == nil {
 			s.providerStorageMu.Unlock()
-			azureARMNotFound(w, "ResourceGroupNotFound", id)
+			azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 			return
 		}
 		updated := *existing
@@ -119,7 +119,7 @@ func (s *Server) handleAzureResourceGroup(w http.ResponseWriter, r *http.Request
 		case r.Method == http.MethodHead:
 			w.WriteHeader(http.StatusNotFound)
 		default:
-			azureARMNotFound(w, "ResourceGroupNotFound", id)
+			azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 		}
 	case http.MethodDelete:
 		s.providerStorageMu.Lock()
@@ -135,7 +135,7 @@ func (s *Server) handleAzureResourceGroup(w http.ResponseWriter, r *http.Request
 		}
 		s.providerStorageMu.Unlock()
 		if group == nil {
-			azureARMNotFound(w, "ResourceGroupNotFound", id)
+			azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -210,11 +210,13 @@ func (s *Server) listAzureResourceGroupResources(w http.ResponseWriter, sub, rg 
 	s.providerStorageMu.Lock()
 	if s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
 		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, "ResourceGroupNotFound", "/subscriptions/"+sub+"/resourceGroups/"+rg)
+		azureARMNotFound(w, "ResourceGroupNotFound", "/subscriptions/"+sub+"/resourceGroups/"+rg, "")
 		return
 	}
 	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
-		return strings.EqualFold(rec.SubscriptionID, sub) && strings.EqualFold(rec.ResourceGroup, rg)
+		// Like ARM, nested child resources are not listed at group scope.
+		return strings.EqualFold(rec.SubscriptionID, sub) && strings.EqualFold(rec.ResourceGroup, rg) &&
+			strings.Count(rec.Type, "/") == 1
 	})
 	s.providerStorageMu.Unlock()
 	respondAzureARMList(w, records)

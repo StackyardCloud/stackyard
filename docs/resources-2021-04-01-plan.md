@@ -70,12 +70,15 @@ Every namespace reports `Registered` because tools such as Terraform's `azurerm`
 - PUT (201 create / 200 update), GET, HEAD (204/404), PATCH (tags, identity, sku, merged properties), DELETE (200 / 204 when absent)
 - list by resource group and by subscription
 - `ResourceGroupNotFound` when the parent group does not exist, `ResourceNotFound` when the resource does not
-- optional per-type `ReadOnlyProperties` and `Validate` hooks
+- nested child types (`Type: "registries/webhooks"`): routed under the parent resource, `ParentResourceNotFound` when the parent is missing, deleted with the parent, and not listed at resource group scope
+- proxy types (`Proxy: true`) that take no location
+- `POST {resourceId}/{action}` through per-type `Actions`
+- `POST /subscriptions/{sub}/providers/{ns}/checkNameAvailability` for registered types, with `Invalid` and `AlreadyExists` reasons
+- optional per-type `ReadOnlyProperties`, `ValidateName` (400 `InvalidResourceName`) and `Validate` hooks
 
 Out of scope for this stage:
 - deployments (needs an ARM template evaluator)
 - the tags API and resource moves
-- nested child resource types in the shared handler
 - long-running-operation polling (all operations complete synchronously)
 - services with their own stores (everything implemented before this handler): their resources do not require an existing resource group, are not removed by resource group deletion, and are not listed by `.../resourcegroups/{rg}/resources`. Migrating a service onto the shared handler brings it into all three.
 
