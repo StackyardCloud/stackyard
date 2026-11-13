@@ -42,7 +42,9 @@ func TestAzureBackupDefaultsAndPolicies(t *testing.T) {
 	}
 	for _, tc := range cases {
 		resp := do(http.MethodPut, tc.path+azureBackupTestAPIVersion, tc.body)
-		t.Run(tc.name, func(t *testing.T) { azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent") })
+		t.Run(tc.name, func(t *testing.T) {
+			azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent")
+		})
 	}
 	azureResourcesExpectErrorCode(t, do(http.MethodPut, vault+"/backupconfig/other"+azureBackupTestAPIVersion, `{"properties":{}}`), http.StatusBadRequest, "InvalidResourceName")
 }

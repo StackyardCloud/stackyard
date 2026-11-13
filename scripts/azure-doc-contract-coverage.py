@@ -1383,6 +1383,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "recoveryservices": ["recoveryservices-2024-04-01-plan.md"],
     "recoveryservicesbackup": ["recoveryservicesbackup-2024-10-01-plan.md"],
     "recoveryservicessiterecovery": ["recoveryservicessiterecovery-2024-10-01-plan.md"],
+    "advisor": ["advisor-2023-01-01-plan.md"],
+    "alertsmanagement": ["alertsmanagement-2021-08-08-plan.md"],
+    "resourcehealth": ["resourcehealth-2022-10-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
@@ -1653,7 +1656,7 @@ def discover_service_files() -> dict[str, list[Path]]:
         text = "".join(read_text(p) for p in paths)
         if "registerAzureFlexibleServer(" in text:
             paths.append(flexible)
-        if "registerAzureARMResourceType(" in text or "registerAzureFlexibleServer(" in text:
+        if any(f"{fn}(" in text for fn in ("registerAzureARMResourceType", "registerAzureFlexibleServer", "registerAzureARMView")):
             paths.append(shared)
     return out
 

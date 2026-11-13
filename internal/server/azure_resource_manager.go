@@ -151,6 +151,81 @@ func registerAzureARMGroupAction(namespace, action string, fn azureARMGroupActio
 	azureARMGroupActions[key] = fn
 }
 
+// azureARMView is a read-only collection computed from emulator state, such
+// as health statuses or generated recommendations. GET is served at
+// {scope}/providers/{namespace}/{collection} and, for one item found by
+// name, at .../{collection}/{name}. scope is a subscription, resource group
+// or resource ID, or empty at tenant scope. List returns items with an
+// "id" key; GET by name finds the item whose id is {scope}/providers/...
+type azureARMView func(s *Server, scope string) []map[string]any
+
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMViews = map[string]azureARMView{}
+
+func registerAzureARMView(namespace, collection string, list azureARMView) {
+	key := strings.ToLower(namespace + "/" + collection)
+	if _, exists := azureARMViews[key]; exists {
+		panic("azure ARM view registered twice: " + namespace + "/" + collection)
+	}
+	azureARMViews[key] = list
+}
+
+// handleAzureARMView serves registered views; the segments after the last
+// "providers" name the view and everything before it is the scope.
+func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg []string) bool {
+	i := len(seg) - 1
+	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
+		i--
+	}
+	if i < 0 || len(seg)-i < 3 || len(seg)-i > 4 {
+		return false
+	}
+	list := azureARMViews[strings.ToLower(seg[i+1]+"/"+seg[i+2])]
+	if list == nil {
+		return false
+	}
+	if r.Method != http.MethodGet {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return true
+	}
+	if hasAzureInvalidAPIVersion(r) {
+		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
+		return true
+	}
+	scope := ""
+	if i > 0 {
+		scope = "/" + strings.Join(seg[:i], "/")
+	}
+	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
+		s.providerStorageMu.Lock()
+		group := s.azureResourceGroups[azureResourceGroupKey(seg[1], seg[3])]
+		s.providerStorageMu.Unlock()
+		if group == nil {
+			azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
+			return true
+		}
+	}
+	items := list(s, scope)
+	if items == nil {
+		items = []map[string]any{}
+	}
+	if len(seg)-i == 3 {
+		respondJSON(w, http.StatusOK, map[string]any{"value": items})
+		return true
+	}
+	// Only an item directly under this scope: a subscription list may hold
+	// items of the same name for many resources.
+	id := scope + "/providers/" + seg[i+1] + "/" + seg[i+2] + "/" + seg[i+3]
+	for _, item := range items {
+		if strings.EqualFold(azureARMString(item["id"]), id) {
+			respondJSON(w, http.StatusOK, item)
+			return true
+		}
+	}
+	azureARMNotFound(w, "ResourceNotFound", id, "")
+	return true
+}
+
 // azureARMNameChecks maps a lower-cased "{namespace}/{collection}" to the
 // resource type whose names HEAD /providers/{namespace}/{collection}/{name}
 // checks: 200 when a resource of that type has the name in any
@@ -189,7 +264,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return false
 	}
 	seg := splitPathSegments(strings.TrimPrefix(path, "/azure/"))
-	if s.handleAzureARMExtension(w, r, seg) {
+	if s.handleAzureARMView(w, r, seg) || s.handleAzureARMExtension(w, r, seg) {
 		return true
 	}
 	var sub, rg, namespace string
