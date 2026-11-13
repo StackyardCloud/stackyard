@@ -1377,6 +1377,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "mongocluster": ["mongocluster-2024-07-01-plan.md"],
     "sql": ["sql-2021-11-01-plan.md"],
     "cosmosdb": ["cosmosdb-2024-11-15-plan.md"],
+    "iothub": ["iothub-2023-06-30-plan.md"],
+    "deviceprovisioningservices": ["deviceprovisioningservices-2022-02-05-plan.md"],
+    "digitaltwins": ["digitaltwins-2023-01-31-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
