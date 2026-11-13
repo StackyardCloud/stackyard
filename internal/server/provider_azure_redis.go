@@ -61,9 +61,9 @@ func azureRedisValidateFirewallRule(payload map[string]any) string {
 	return ""
 }
 
-func azureRedisProperties(id string, _ map[string]any) map[string]any {
+func azureRedisProperties(rec *azureARMResource) map[string]any {
 	return map[string]any{
-		"hostName": strings.ToLower(id[strings.LastIndex(id, "/")+1:]) + ".redis.cache.windows.net",
+		"hostName": strings.ToLower(rec.Name) + ".redis.cache.windows.net",
 		"port":     6379,
 		"sslPort":  6380,
 	}

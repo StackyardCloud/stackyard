@@ -79,8 +79,8 @@ func azureContainerRegistryValidateScopeMap(payload map[string]any) string {
 	return ""
 }
 
-func azureContainerRegistryProperties(id string, _ map[string]any) map[string]any {
-	return map[string]any{"loginServer": strings.ToLower(id[strings.LastIndex(id, "/")+1:]) + ".azurecr.io"}
+func azureContainerRegistryProperties(rec *azureARMResource) map[string]any {
+	return map[string]any{"loginServer": strings.ToLower(rec.Name) + ".azurecr.io"}
 }
 
 // azureContainerRegistryListCredentials returns admin credentials, which ACR
