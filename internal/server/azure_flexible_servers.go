@@ -46,6 +46,8 @@ func registerAzureFlexibleServer(f azureFlexibleServerFlavor) {
 		ValidateName:        azureFlexibleServerValidateName,
 		Validate:            func(payload map[string]any) string { return azureFlexibleServerValidate(f, payload) },
 		WriteOnlyProperties: []string{"administratorLoginPassword"},
+		// start and stop own the state, so a stopped server stays stopped until started.
+		StateProperties: map[string]any{"state": "Ready"},
 		Transitions: map[string]map[string]any{
 			"start":   {"state": "Ready"},
 			"stop":    {"state": "Stopped"},
@@ -101,16 +103,9 @@ func azureFlexibleServerValidate(f azureFlexibleServerFlavor, payload map[string
 	return ""
 }
 
-// azureFlexibleServerProperties sets the host name and keeps state across
-// updates, so a stopped server stays stopped until started.
+// azureFlexibleServerProperties sets the host name and default version.
 func azureFlexibleServerProperties(f azureFlexibleServerFlavor, rec *azureARMResource) map[string]any {
-	props := map[string]any{
-		"fullyQualifiedDomainName": rec.Name + f.DNSSuffix,
-		"state":                    "Ready",
-	}
-	if azureARMString(rec.Properties["state"]) == "Stopped" {
-		props["state"] = "Stopped"
-	}
+	props := map[string]any{"fullyQualifiedDomainName": rec.Name + f.DNSSuffix}
 	if azureARMString(rec.Properties["version"]) == "" {
 		props["version"] = f.DefaultVersion
 	}

@@ -43,8 +43,15 @@ type azureARMResourceType struct {
 	// Actions, e.g. "stop": {"state": "Stopped"}. Optional.
 	Transitions map[string]map[string]any
 	// WriteOnlyProperties are dotted property paths accepted on PUT and
-	// PATCH but never stored or returned, such as passwords. Optional.
+	// PATCH but never stored or returned, such as passwords. A segment
+	// ending in "[]" applies the rest of the path to every element of that
+	// array, e.g. "roles[].password". Optional.
 	WriteOnlyProperties []string
+	// StateProperties are properties only Transitions change, mapped to
+	// the value a new resource starts with, e.g. {"state": "Ready"}.
+	// Clients can't set them, and PUT and PATCH keep the stored value.
+	// Optional.
+	StateProperties map[string]any
 	// DefaultChildren returns child resources ARM creates along with a new
 	// resource, e.g. a default authorization rule. Optional.
 	DefaultChildren func(parent *azureARMResource) []*azureARMResource
@@ -105,17 +112,51 @@ func azureARMProperties(typ azureARMResourceType, rec *azureARMResource) map[str
 // along it so props itself is not modified.
 func azureARMWithout(props map[string]any, path string) map[string]any {
 	key, rest, nested := strings.Cut(path, ".")
+	key, each := strings.CutSuffix(key, "[]")
 	child, present := props[key]
 	if !present {
 		return props
 	}
 	out := azureARMMerge(props, nil)
-	if !nested {
+	items, isList := child.([]any)
+	switch {
+	case each && isList && nested:
+		copied := make([]any, len(items))
+		for i, item := range items {
+			if itemMap, ok := item.(map[string]any); ok {
+				item = azureARMWithout(itemMap, rest)
+			}
+			copied[i] = item
+		}
+		out[key] = copied
+	case each:
+		return props
+	case !nested:
 		delete(out, key)
-	} else if childMap, ok := child.(map[string]any); ok {
-		out[key] = azureARMWithout(childMap, rest)
+	default:
+		if childMap, ok := child.(map[string]any); ok {
+			out[key] = azureARMWithout(childMap, rest)
+		}
 	}
 	return out
+}
+
+// azureARMWithState returns props with each state property taken from the
+// existing record, or set to its initial value for a new resource.
+func azureARMWithState(typ azureARMResourceType, props map[string]any, existing *azureARMResource) map[string]any {
+	if len(typ.StateProperties) == 0 {
+		return props
+	}
+	state := make(map[string]any, len(typ.StateProperties))
+	for key, initial := range typ.StateProperties {
+		state[key] = initial
+		if existing != nil {
+			if stored, ok := existing.Properties[key]; ok {
+				state[key] = stored
+			}
+		}
+	}
+	return azureARMMerge(props, state)
 }
 
 // azureARMProviderAction handles POST .../providers/{namespace}/{action},
@@ -545,7 +586,7 @@ func azureARMChild(parent *azureARMResource, typ azureARMResourceType, name stri
 		CreatedAt:  parent.CreatedAt,
 		UpdatedAt:  parent.UpdatedAt,
 	}
-	child.Properties = azureARMProperties(typ, child)
+	child.Properties = azureARMWithState(typ, azureARMProperties(typ, child), nil)
 	return child
 }
 
@@ -623,6 +664,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		record.ResourceGroup = group.Name
 		record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
 	}
+	record.Properties = azureARMWithState(typ, record.Properties, existing)
 	s.azureARMResources[azureARMKey(id)] = record
 	if existing == nil && typ.DefaultChildren != nil {
 		for _, child := range typ.DefaultChildren(record) {
@@ -672,7 +714,7 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 		updated.SKU = sku
 	}
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
-	updated.Properties = azureARMProperties(typ, &updated)
+	updated.Properties = azureARMWithState(typ, azureARMProperties(typ, &updated), existing)
 	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
 	return &updated, ""
