@@ -38,6 +38,13 @@ type azureARMResourceType struct {
 	// Actions are POST operations on an existing resource, keyed by the
 	// lower-cased action segment, e.g. "listcredentials". Optional.
 	Actions map[string]azureARMAction
+	// Transitions are POST operations that merge server-owned properties
+	// into the stored resource and return 200 with no body, keyed like
+	// Actions, e.g. "stop": {"state": "Stopped"}. Optional.
+	Transitions map[string]map[string]any
+	// WriteOnlyProperties are dotted property paths accepted on PUT and
+	// PATCH but never stored or returned, such as passwords. Optional.
+	WriteOnlyProperties []string
 	// DefaultChildren returns child resources ARM creates along with a new
 	// resource, e.g. a default authorization rule. Optional.
 	DefaultChildren func(parent *azureARMResource) []*azureARMResource
@@ -87,11 +94,34 @@ func azureARMProperties(typ azureARMResourceType, rec *azureARMResource) map[str
 	if typ.ReadOnlyProperties != nil {
 		server = azureARMMerge(server, typ.ReadOnlyProperties(rec))
 	}
-	return azureARMMerge(rec.Properties, server)
+	props := azureARMMerge(rec.Properties, server)
+	for _, path := range typ.WriteOnlyProperties {
+		props = azureARMWithout(props, path)
+	}
+	return props
+}
+
+// azureARMWithout returns props without the dotted path, copying the maps
+// along it so props itself is not modified.
+func azureARMWithout(props map[string]any, path string) map[string]any {
+	key, rest, nested := strings.Cut(path, ".")
+	child, present := props[key]
+	if !present {
+		return props
+	}
+	out := azureARMMerge(props, nil)
+	if !nested {
+		delete(out, key)
+	} else if childMap, ok := child.(map[string]any); ok {
+		out[key] = azureARMWithout(childMap, rest)
+	}
+	return out
 }
 
 // azureARMProviderAction handles POST .../providers/{namespace}/{action},
-// such as a name availability check.
+// such as a name availability check. Actions registered as
+// "locations/{action}" are served at
+// /subscriptions/{sub}/providers/{namespace}/locations/{location}/{action}.
 type azureARMProviderAction func(s *Server, payload map[string]any) (int, any)
 
 // ponytail: registered in init() only, like azureARMResourceTypes.
@@ -128,6 +158,8 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return s.invokeAzureARMProviderAction(w, r, seg[1], seg[2])
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && azureARMProviderActions[strings.ToLower(seg[3]+"/"+seg[4])] != nil:
 		return s.invokeAzureARMProviderAction(w, r, seg[3], seg[4])
+	case len(seg) == 7 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations"):
+		return s.invokeAzureARMProviderAction(w, r, seg[3], "locations/"+seg[6])
 	case len(seg) < 2 || !strings.EqualFold(seg[0], "subscriptions"):
 		return false
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"):
@@ -140,12 +172,14 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 
 	// POST {resourceId}/{action}: the trailing segment is an action, not a type.
 	var action azureARMAction
+	var transition map[string]any
 	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
 		typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest[:len(rest)-1]))
-		if !ok || typ.Actions[strings.ToLower(rest[len(rest)-1])] == nil {
+		verb := strings.ToLower(rest[len(rest)-1])
+		if !ok || (typ.Actions[verb] == nil && typ.Transitions[verb] == nil) {
 			return false
 		}
-		action = typ.Actions[strings.ToLower(rest[len(rest)-1])]
+		action, transition = typ.Actions[verb], typ.Transitions[verb]
 		rest = rest[:len(rest)-1]
 	}
 	typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest))
@@ -191,6 +225,10 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 
 	if action != nil {
 		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
+		return true
+	}
+	if transition != nil {
+		s.transitionAzureARMResource(w, transition, id, sub, rg, parentID)
 		return true
 	}
 	s.serveAzureARMItem(w, r, typ, id, sub, rg, parentID, name)
@@ -310,6 +348,24 @@ func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, ac
 	}
 	status, body := action(record, payload)
 	respondAzureARMAction(w, status, body)
+}
+
+// transitionAzureARMResource stores a copy of the resource with the
+// transition's properties merged in.
+func (s *Server) transitionAzureARMResource(w http.ResponseWriter, transition map[string]any, id, sub, rg, parentID string) {
+	s.providerStorageMu.Lock()
+	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
+	if existing == nil {
+		s.providerStorageMu.Unlock()
+		azureARMNotFound(w, code, id, parentID)
+		return
+	}
+	updated := *existing
+	updated.Properties = azureARMMerge(existing.Properties, transition)
+	updated.UpdatedAt = time.Now().UTC()
+	s.azureARMResources[azureARMKey(id)] = &updated
+	s.providerStorageMu.Unlock()
+	respondAzureARMAction(w, http.StatusOK, nil)
 }
 
 func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Request, namespace, name string) bool {
