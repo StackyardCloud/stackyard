@@ -59,7 +59,9 @@ func TestAzureSiteRecoveryValidation(t *testing.T) {
 	}
 	for _, tc := range cases {
 		resp := do(http.MethodPut, tc.path+azureSiteRecoveryTestAPIVersion, tc.body)
-		t.Run(tc.name, func(t *testing.T) { azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent") })
+		t.Run(tc.name, func(t *testing.T) {
+			azureResourcesExpectErrorCode(t, resp, http.StatusBadRequest, "InvalidRequestContent")
+		})
 	}
 	azureResourcesExpectStatus(t, do(http.MethodPut, fabric+azureSiteRecoveryTestAPIVersion, `{"properties":{"customDetails":{"instanceType":"VMwareV2"}}}`), http.StatusCreated)
 	mapping := fabric + "/replicationProtectionContainers/c1/replicationProtectionContainerMappings/m1"

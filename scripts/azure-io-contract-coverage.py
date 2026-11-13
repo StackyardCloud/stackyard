@@ -1560,7 +1560,7 @@ def discover_service_files() -> dict[str, list[Path]]:
         text = "".join(read_text(p) for p in paths)
         if "registerAzureFlexibleServer(" in text:
             paths.append(flexible)
-        if "registerAzureARMResourceType(" in text or "registerAzureFlexibleServer(" in text:
+        if any(f"{fn}(" in text for fn in ("registerAzureARMResourceType", "registerAzureFlexibleServer", "registerAzureARMView")):
             paths.append(shared)
     return out
 
