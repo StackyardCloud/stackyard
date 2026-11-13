@@ -72,6 +72,7 @@ Every namespace reports `Registered` because tools such as Terraform's `azurerm`
 - `ResourceGroupNotFound` when the parent group does not exist, `ResourceNotFound` when the resource does not
 - nested child types (`Type: "registries/webhooks"`): routed under the parent resource, `ParentResourceNotFound` when the parent is missing, deleted with the parent, and not listed at resource group scope
 - proxy types (`Proxy: true`) that take no location
+- extension types (`Extension: true`) at `{scope}/providers/{ns}/{type}/{name}` on a subscription, resource group or any resource; lists return only resources attached directly to the scope, the scope resource itself is not required to exist (it may belong to a service with its own store), and they are deleted with a shared-handler resource they attach to
 - `POST {resourceId}/{action}` through per-type `Actions`
 - provider actions (`registerAzureARMProviderAction`) at `POST /subscriptions/{sub}/providers/{ns}/{action}` and `POST /providers/{ns}/{action}`, used for each namespace's own name availability check
 - optional per-type `ReadOnlyProperties` (given the client properties), `ValidateName` (400 `InvalidResourceName`), `Validate` and `DefaultChildren` hooks

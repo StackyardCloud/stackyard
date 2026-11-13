@@ -1369,6 +1369,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "redisenterprise": ["redisenterprise-2024-10-01-plan.md"],
     "notificationhubs": ["notificationhubs-2023-09-01-plan.md"],
     "relay": ["relay-2021-11-01-plan.md"],
+    "signalr": ["signalr-2024-03-01-plan.md"],
+    "monitor": ["monitor-2023-01-01-plan.md"],
+    "operationalinsights": ["operationalinsights-2022-10-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",

@@ -214,9 +214,9 @@ func (s *Server) listAzureResourceGroupResources(w http.ResponseWriter, sub, rg 
 		return
 	}
 	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
-		// Like ARM, nested child resources are not listed at group scope.
+		// Like ARM, nested child and extension resources are not listed at group scope.
 		return strings.EqualFold(rec.SubscriptionID, sub) && strings.EqualFold(rec.ResourceGroup, rg) &&
-			strings.Count(rec.Type, "/") == 1
+			strings.Count(rec.Type, "/") == 1 && !azureARMResourceTypes[strings.ToLower(rec.Type)].Extension
 	})
 	s.providerStorageMu.Unlock()
 	respondAzureARMList(w, records)
