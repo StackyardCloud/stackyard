@@ -1372,6 +1372,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "signalr": ["signalr-2024-03-01-plan.md"],
     "monitor": ["monitor-2023-01-01-plan.md"],
     "operationalinsights": ["operationalinsights-2022-10-01-plan.md"],
+    "postgresql": ["postgresql-2024-08-01-plan.md"],
+    "mysql": ["mysql-2023-12-30-plan.md"],
+    "mongocluster": ["mongocluster-2024-07-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
@@ -1635,9 +1638,14 @@ def discover_service_files() -> dict[str, list[Path]]:
         out.setdefault(service, []).append(path)
     # Services registered with the shared ARM handler keep their validation and
     # response logic in azure_resource_manager.go, so count it as their source.
+    # PostgreSQL and MySQL register through azure_flexible_servers.go.
     shared = SERVER_DIR / "azure_resource_manager.go"
+    flexible = SERVER_DIR / "azure_flexible_servers.go"
     for paths in out.values():
-        if any("registerAzureARMResourceType(" in read_text(p) for p in paths):
+        text = "".join(read_text(p) for p in paths)
+        if "registerAzureFlexibleServer(" in text:
+            paths.append(flexible)
+        if "registerAzureARMResourceType(" in text or "registerAzureFlexibleServer(" in text:
             paths.append(shared)
     return out
 
