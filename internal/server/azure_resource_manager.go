@@ -22,10 +22,10 @@ type azureARMResourceType struct {
 	Type string
 	// Proxy marks ARM proxy resources, which have no location.
 	Proxy bool
-	// ReadOnlyProperties returns server-owned properties for a resource ID,
-	// given the client-supplied properties. They override anything the client
-	// sends. Optional.
-	ReadOnlyProperties func(id string, properties map[string]any) map[string]any
+	// ReadOnlyProperties returns server-owned properties for a record whose
+	// Properties still hold only what the client sent. They override anything
+	// the client sends. Optional.
+	ReadOnlyProperties func(rec *azureARMResource) map[string]any
 	// ValidateName returns a non-empty message to reject a resource name. Optional.
 	ValidateName func(name string) string
 	// Validate returns a non-empty message to reject a PUT payload. Optional.
@@ -74,12 +74,12 @@ func registerAzureARMResourceType(t azureARMResourceType) {
 
 // azureARMProperties returns the client properties with the server-owned
 // ones, which clients can never overwrite, applied on top.
-func azureARMProperties(typ azureARMResourceType, id string, client map[string]any) map[string]any {
+func azureARMProperties(typ azureARMResourceType, rec *azureARMResource) map[string]any {
 	server := map[string]any{"provisioningState": "Succeeded"}
 	if typ.ReadOnlyProperties != nil {
-		server = azureARMMerge(server, typ.ReadOnlyProperties(id, client))
+		server = azureARMMerge(server, typ.ReadOnlyProperties(rec))
 	}
-	return azureARMMerge(client, server)
+	return azureARMMerge(rec.Properties, server)
 }
 
 // azureARMProviderAction handles POST .../providers/{namespace}/{action},
@@ -274,12 +274,14 @@ func (s *Server) azureARMResourcesWhere(match func(*azureARMResource) bool) []*a
 // azureARMChild builds a child record of parent, for DefaultChildren hooks.
 func azureARMChild(parent *azureARMResource, typ azureARMResourceType, name string, properties map[string]any) *azureARMResource {
 	id := parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
-	return &azureARMResource{
+	child := &azureARMResource{
 		ID: id, SubscriptionID: parent.SubscriptionID, ResourceGroup: parent.ResourceGroup, Name: name, Type: typ.fullType(),
-		Properties: azureARMProperties(typ, id, properties),
+		Properties: properties,
 		CreatedAt:  parent.CreatedAt,
 		UpdatedAt:  parent.UpdatedAt,
 	}
+	child.Properties = azureARMProperties(typ, child)
+	return child
 }
 
 func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID, name string) {
@@ -315,10 +317,11 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		Tags:       azureARMObject(payload["tags"]),
 		Identity:   azureARMObject(payload["identity"]),
 		SKU:        azureARMObject(payload["sku"]),
-		Properties: azureARMProperties(typ, id, azureARMObject(payload["properties"])),
+		Properties: azureARMObject(payload["properties"]),
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
+	record.Properties = azureARMProperties(typ, record)
 
 	s.providerStorageMu.Lock()
 	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
@@ -390,7 +393,8 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	if sku := azureARMObject(payload["sku"]); len(sku) != 0 {
 		updated.SKU = sku
 	}
-	updated.Properties = azureARMProperties(typ, id, azureARMMerge(existing.Properties, azureARMObject(payload["properties"])))
+	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
+	updated.Properties = azureARMProperties(typ, &updated)
 	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
 	s.providerStorageMu.Unlock()

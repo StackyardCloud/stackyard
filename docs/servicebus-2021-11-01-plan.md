@@ -38,7 +38,7 @@ Microsoft Learn pages for the `2021-11-01` API version:
 
 CRUD, listing, cascade and error behavior come from the shared ARM handler (see `docs/resources-2021-04-01-plan.md`). Service-specific rules:
 
-- namespace names are 6-50 letters, digits or hyphens, start with a letter, end with a letter or digit, and may not end in `-sb` or `-mgmt` (400 `InvalidResourceName`)
+- namespace names are 6-50 letters, digits or hyphens, start with a letter, end with a letter or digit, and may not end in `-sb` or `-mgmt` (400 `InvalidResourceName`); they share the `servicebus.windows.net` DNS space with Relay and Notification Hubs namespaces, and these rules live in `internal/server/azure_sas_namespaces.go`
 - `sku.name` must be `Basic`, `Standard` or `Premium`
 - `serviceBusEndpoint` (the HTTPS endpoint of `{lower(name)}.servicebus.windows.net` on port 443) and `status` `Active` are server-owned
 - creating a namespace also creates its `RootManageSharedAccessKey` rule with `Listen`, `Manage` and `Send`, like Azure

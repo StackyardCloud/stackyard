@@ -57,8 +57,8 @@ func azureTrafficManagerValidateProfile(payload map[string]any) string {
 
 // azureTrafficManagerProfileProperties derives the profile FQDN from its
 // relative DNS name.
-func azureTrafficManagerProfileProperties(_ string, properties map[string]any) map[string]any {
-	relativeName := azureARMString(azureARMObject(properties["dnsConfig"])["relativeName"])
+func azureTrafficManagerProfileProperties(rec *azureARMResource) map[string]any {
+	relativeName := azureARMString(azureARMObject(rec.Properties["dnsConfig"])["relativeName"])
 	return map[string]any{"dnsConfig": map[string]any{"fqdn": strings.ToLower(relativeName) + ".trafficmanager.net"}}
 }
 
