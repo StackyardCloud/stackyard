@@ -1386,6 +1386,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "advisor": ["advisor-2023-01-01-plan.md"],
     "alertsmanagement": ["alertsmanagement-2021-08-08-plan.md"],
     "resourcehealth": ["resourcehealth-2022-10-01-plan.md"],
+    "synapse": ["synapse-2021-06-01-plan.md"],
+    "streamanalytics": ["streamanalytics-2020-03-01-plan.md"],
+    "hdinsight": ["hdinsight-2021-06-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",

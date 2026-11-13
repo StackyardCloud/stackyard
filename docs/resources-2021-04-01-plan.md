@@ -79,7 +79,8 @@ Every namespace reports `Registered` because tools such as Terraform's `azurerm`
 - read-only views (`registerAzureARMView`) computed from emulator state, served for GET at `{scope}/providers/{ns}/{collection}` and `.../{collection}/{name}`, where the scope is a tenant, subscription, resource group or resource; other methods return 405 `MethodNotAllowed`, a missing resource group returns 404 `ResourceGroupNotFound`, and a name with no item directly under the scope returns 404 `ResourceNotFound`
 - name existence checks (`registerAzureARMNameCheck`) at `HEAD /providers/{ns}/{collection}/{name}`: 200 when a resource of the registered type has that name in any subscription, 404 otherwise
 - optional per-type `ReadOnlyProperties` (given the client properties), `ValidateName` (400 `InvalidResourceName`), `Validate` and `DefaultChildren` hooks
-- optional per-type `WriteOnlyProperties`: dotted property paths, such as passwords, accepted on PUT and PATCH but never stored or returned
+- optional per-type `WriteOnlyProperties`: dotted property paths, such as passwords, accepted on PUT and PATCH but never stored or returned; a segment ending in `[]` applies to every element of an array, as in `roles[].password`
+- optional per-type `StateProperties` with their initial values, such as `state` `Ready`: only `Transitions` change them, so client values on PUT and PATCH are ignored and the stored value is kept
 
 Out of scope for this stage:
 - deployments (needs an ARM template evaluator)

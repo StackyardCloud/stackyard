@@ -64,6 +64,10 @@ func TestAzurePostgreSQLFlexibleServerLifecycle(t *testing.T) {
 	if state := azureDatabaseTestState(t, do(http.MethodPatch, server+azurePostgreSQLTestAPIVersion, `{"tags":{"env":"test"},"properties":{"administratorLoginPassword":"Rotated-Passw0rd"}}`)); state != "Stopped" {
 		t.Fatalf("expected Stopped after PATCH, got %v", state)
 	}
+	// Only start and stop change the state.
+	if state := azureDatabaseTestState(t, do(http.MethodPatch, server+azurePostgreSQLTestAPIVersion, `{"properties":{"state":"Ready"}}`)); state != "Stopped" {
+		t.Fatalf("a PATCH must not set the state, got %v", state)
+	}
 	resp = do(http.MethodGet, server+azurePostgreSQLTestAPIVersion, "")
 	if got := providerContractJSONMap(t, resp)["properties"].(map[string]any); got["administratorLoginPassword"] != nil {
 		t.Fatalf("PATCHed password must not be returned: %#v", got)
