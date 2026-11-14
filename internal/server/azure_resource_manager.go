@@ -27,6 +27,10 @@ type azureARMResourceType struct {
 	// {scope}/providers/{Namespace}/{Type}/{name}. They are proxy resources,
 	// and Type must be a single segment.
 	Extension bool
+	// ValidateScope returns a non-empty message to reject the scope an
+	// extension resource attaches to, such as a resource of the wrong type.
+	// Optional; only for Extension types.
+	ValidateScope func(scope string) string
 	// ReadOnlyProperties returns server-owned properties for a record whose
 	// Properties still hold only what the client sent. They override anything
 	// the client sends. Optional.
@@ -460,6 +464,12 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
 		return true
 	}
+	if typ.ValidateScope != nil {
+		if msg := typ.ValidateScope("/" + strings.Join(seg[:i], "/")); msg != "" {
+			azureARMError(w, http.StatusBadRequest, "InvalidScope", msg)
+			return true
+		}
+	}
 	sub, rg := seg[1], ""
 	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
 		rg = seg[3]
@@ -627,7 +637,6 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
-	record.Properties = azureARMProperties(typ, record)
 
 	s.providerStorageMu.Lock()
 	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
@@ -664,7 +673,8 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		record.ResourceGroup = group.Name
 		record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
 	}
-	record.Properties = azureARMWithState(typ, record.Properties, existing)
+	// Server-owned properties see the final ID and creation time.
+	record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
 	s.azureARMResources[azureARMKey(id)] = record
 	if existing == nil && typ.DefaultChildren != nil {
 		for _, child := range typ.DefaultChildren(record) {
@@ -713,9 +723,9 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	if sku := azureARMObject(payload["sku"]); len(sku) != 0 {
 		updated.SKU = sku
 	}
+	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
 	updated.Properties = azureARMWithState(typ, azureARMProperties(typ, &updated), existing)
-	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
 	return &updated, ""
 }
