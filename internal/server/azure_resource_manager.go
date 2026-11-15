@@ -27,6 +27,11 @@ type azureARMResourceType struct {
 	// {scope}/providers/{Namespace}/{Type}/{name}. They are proxy resources,
 	// and Type must be a single segment.
 	Extension bool
+	// Tenant marks tenant resources, served at /providers/{Namespace}/{Type}/
+	// {name} outside any subscription, such as subscription aliases. They
+	// are proxy resources. Child types nested under a tenant type must set
+	// it too.
+	Tenant bool
 	// ValidateScope returns a non-empty message to reject the scope an
 	// extension resource attaches to, such as a resource of the wrong type.
 	// Optional; only for Extension types.
@@ -89,7 +94,7 @@ type azureARMResource struct {
 var azureARMResourceTypes = map[string]azureARMResourceType{}
 
 func registerAzureARMResourceType(t azureARMResourceType) {
-	if t.Extension {
+	if t.Extension || t.Tenant {
 		t.Proxy = true
 	}
 	key := strings.ToLower(t.fullType())
@@ -378,6 +383,8 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	var sub, rg, namespace string
 	var rest []string
 	switch {
+	case len(seg) >= 3 && strings.EqualFold(seg[0], "providers") && azureARMIsTenantType(seg[1], seg[2]):
+		namespace, rest = seg[1], seg[2:]
 	case len(seg) == 3 && strings.EqualFold(seg[0], "providers"):
 		return s.invokeAzureARMProviderAction(w, r, seg[1], seg[2])
 	case len(seg) == 4 && strings.EqualFold(seg[0], "providers") && azureARMNameChecks[strings.ToLower(seg[1]+"/"+seg[2])] != "":
@@ -413,7 +420,8 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		rest = rest[:len(rest)-1]
 	}
 	typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest))
-	if !ok {
+	// Tenant types live only at tenant scope, and others only under a subscription.
+	if !ok || typ.Tenant != (sub == "") {
 		return false
 	}
 	if hasAzureInvalidAPIVersion(r) {
@@ -422,7 +430,10 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	}
 
 	// Rebuild the ID with the registered type casing; names keep client casing.
-	scope := "/subscriptions/" + sub
+	scope := ""
+	if sub != "" {
+		scope = "/subscriptions/" + sub
+	}
 	if rg != "" {
 		scope += "/resourceGroups/" + rg
 	}
@@ -579,6 +590,13 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	s.providerStorageMu.Unlock()
 	respondAzureARMList(w, records)
 	return true
+}
+
+// azureARMIsTenantType reports whether typ, a top-level type, is a
+// registered tenant type.
+func azureARMIsTenantType(namespace, typ string) bool {
+	t, ok := lookupAzureARMResourceType(namespace, typ)
+	return ok && t.Tenant
 }
 
 // azureARMTypePath returns the type segments (even indexes) joined by "/".
@@ -745,7 +763,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		// Keep the casing the resource was created with, like ARM does.
 		record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
 		record.CreatedAt = existing.CreatedAt
-	case typ.Extension:
+	case typ.Extension, typ.Tenant && parent == nil:
 		// The ID keeps the scope as the client sent it.
 	case parent != nil:
 		record.ResourceGroup = parent.ResourceGroup

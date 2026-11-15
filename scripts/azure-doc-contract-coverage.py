@@ -1401,6 +1401,8 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "sqlvirtualmachine": ["sqlvirtualmachine-2023-10-01-plan.md"],
     "servicefabricmanagedclusters": ["servicefabricmanagedclusters-2024-04-01-plan.md"],
     "redhatopenshift": ["redhatopenshift-2023-11-22-plan.md"],
+    "management": ["management-2021-04-01-plan.md"],
+    "subscription": ["subscription-2021-10-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
