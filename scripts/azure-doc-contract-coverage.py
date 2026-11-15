@@ -1392,6 +1392,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "hybridcompute": ["hybridcompute-2024-07-10-plan.md"],
     "hybridkubernetes": ["hybridkubernetes-2024-01-01-plan.md"],
     "kubernetesconfiguration": ["kubernetesconfiguration-2023-05-01-plan.md"],
+    "logic": ["logic-2019-05-01-plan.md"],
+    "maps": ["maps-2023-06-01-plan.md"],
+    "iotcentral": ["iotcentral-2021-06-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
