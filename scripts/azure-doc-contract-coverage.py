@@ -1398,6 +1398,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "purview": ["purview-2021-12-01-plan.md"],
     "policyinsights": ["policyinsights-2021-10-01-plan.md"],
     "imagebuilder": ["imagebuilder-2024-02-01-plan.md"],
+    "sqlvirtualmachine": ["sqlvirtualmachine-2023-10-01-plan.md"],
+    "servicefabricmanagedclusters": ["servicefabricmanagedclusters-2024-04-01-plan.md"],
+    "redhatopenshift": ["redhatopenshift-2023-11-22-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
