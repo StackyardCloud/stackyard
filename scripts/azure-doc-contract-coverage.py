@@ -1395,6 +1395,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "logic": ["logic-2019-05-01-plan.md"],
     "maps": ["maps-2023-06-01-plan.md"],
     "iotcentral": ["iotcentral-2021-06-01-plan.md"],
+    "purview": ["purview-2021-12-01-plan.md"],
+    "policyinsights": ["policyinsights-2021-10-01-plan.md"],
+    "imagebuilder": ["imagebuilder-2024-02-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",

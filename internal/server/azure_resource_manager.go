@@ -52,7 +52,8 @@ type azureARMResourceType struct {
 	// array, e.g. "roles[].password". Optional.
 	WriteOnlyProperties []string
 	// StateProperties are properties only Transitions change, mapped to
-	// the value a new resource starts with, e.g. {"state": "Ready"}.
+	// the value a new resource starts with, e.g. {"state": "Ready"}, or
+	// nil for a property a new resource lacks until a transition sets it.
 	// Clients can't set them, and PUT and PATCH keep the stored value.
 	// Optional.
 	StateProperties map[string]any
@@ -151,16 +152,19 @@ func azureARMWithState(typ azureARMResourceType, props map[string]any, existing 
 	if len(typ.StateProperties) == 0 {
 		return props
 	}
-	state := make(map[string]any, len(typ.StateProperties))
+	out := azureARMMerge(props, nil)
 	for key, initial := range typ.StateProperties {
-		state[key] = initial
+		delete(out, key)
+		if initial != nil {
+			out[key] = initial
+		}
 		if existing != nil {
 			if stored, ok := existing.Properties[key]; ok {
-				state[key] = stored
+				out[key] = stored
 			}
 		}
 	}
-	return azureARMMerge(props, state)
+	return out
 }
 
 // azureARMProviderAction handles POST .../providers/{namespace}/{action},
@@ -194,6 +198,65 @@ func registerAzureARMGroupAction(namespace, action string, fn azureARMGroupActio
 		panic("azure ARM group action registered twice: " + namespace + "/" + action)
 	}
 	azureARMGroupActions[key] = fn
+}
+
+// azureARMScopeAction handles POST {scope}/providers/{namespace}/{path},
+// where scope is a subscription, resource group or resource ID and path
+// may have several segments, such as "policyStates/latest/queryResults".
+// A resource group in the scope exists.
+type azureARMScopeAction func(s *Server, scope string, payload map[string]any) (int, any)
+
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMScopeActions = map[string]azureARMScopeAction{}
+
+func registerAzureARMScopeAction(namespace, path string, fn azureARMScopeAction) {
+	key := strings.ToLower(namespace + "/" + path)
+	if _, exists := azureARMScopeActions[key]; exists {
+		panic("azure ARM scope action registered twice: " + namespace + "/" + path)
+	}
+	azureARMScopeActions[key] = fn
+}
+
+// handleAzureARMScopeAction serves registered scope actions; the segments
+// after the last "providers" name the action and everything before it is
+// the scope.
+func (s *Server) handleAzureARMScopeAction(w http.ResponseWriter, r *http.Request, seg []string) bool {
+	i := len(seg) - 1
+	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
+		i--
+	}
+	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 {
+		return false
+	}
+	action := azureARMScopeActions[strings.ToLower(strings.Join(seg[i+1:], "/"))]
+	if action == nil {
+		return false
+	}
+	if r.Method != http.MethodPost {
+		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return true
+	}
+	if hasAzureInvalidAPIVersion(r) {
+		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
+		return true
+	}
+	payload, ok := azureARMReadBody(w, r)
+	if !ok {
+		return true
+	}
+	scope := "/" + strings.Join(seg[:i], "/")
+	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
+		s.providerStorageMu.Lock()
+		group := s.azureResourceGroups[azureResourceGroupKey(seg[1], seg[3])]
+		s.providerStorageMu.Unlock()
+		if group == nil {
+			azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
+			return true
+		}
+	}
+	status, body := action(s, scope, payload)
+	respondAzureARMAction(w, status, body)
+	return true
 }
 
 // azureARMView is a read-only collection computed from emulator state, such
@@ -309,7 +372,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return false
 	}
 	seg := splitPathSegments(strings.TrimPrefix(path, "/azure/"))
-	if s.handleAzureARMView(w, r, seg) || s.handleAzureARMExtension(w, r, seg) {
+	if s.handleAzureARMView(w, r, seg) || s.handleAzureARMScopeAction(w, r, seg) || s.handleAzureARMExtension(w, r, seg) {
 		return true
 	}
 	var sub, rg, namespace string
@@ -453,12 +516,22 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
 		i--
 	}
-	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 || len(seg)-i > 4 {
+	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 || len(seg)-i > 5 {
 		return false
 	}
 	typ, ok := lookupAzureARMResourceType(seg[i+1], seg[i+2])
 	if !ok || !typ.Extension {
 		return false
+	}
+	// POST {extension}/{action}
+	var action azureARMAction
+	var transition map[string]any
+	if len(seg)-i == 5 {
+		verb := strings.ToLower(seg[i+4])
+		action, transition = typ.Actions[verb], typ.Transitions[verb]
+		if r.Method != http.MethodPost || (action == nil && transition == nil) {
+			return false
+		}
 	}
 	if hasAzureInvalidAPIVersion(r) {
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
@@ -475,6 +548,14 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 		rg = seg[3]
 	}
 	collection := "/" + strings.Join(seg[:i], "/") + "/providers/" + typ.Namespace + "/" + typ.Type
+	switch {
+	case action != nil:
+		s.invokeAzureARMAction(w, r, action, collection+"/"+seg[i+3], sub, rg, "")
+		return true
+	case transition != nil:
+		s.transitionAzureARMResource(w, transition, collection+"/"+seg[i+3], sub, rg, "")
+		return true
+	}
 	if len(seg)-i == 4 {
 		s.serveAzureARMItem(w, r, typ, collection+"/"+seg[i+3], sub, rg, "", seg[i+3])
 		return true
