@@ -24,9 +24,14 @@ type azureARMResourceType struct {
 	Proxy bool
 	// Extension marks extension resources, which attach to any scope (a
 	// subscription, resource group or resource) at
-	// {scope}/providers/{Namespace}/{Type}/{name}. They are proxy resources,
-	// and Type must be a single segment.
+	// {scope}/providers/{Namespace}/{Type}/{name}. They are proxy
+	// resources. Child types nested under one must set it too.
 	Extension bool
+	// ScopeStored makes an extension type's scope a resource that must be
+	// in the store, such as a Log Analytics workspace: requests under a
+	// missing one get 404 ParentResourceNotFound. Its resources are deleted
+	// with it either way.
+	ScopeStored bool
 	// Tenant marks tenant resources, served at /providers/{Namespace}/{Type}/
 	// {name} outside any subscription, such as subscription aliases. They
 	// are proxy resources. Child types nested under a tenant type must set
@@ -104,6 +109,9 @@ type azureARMResourceType struct {
 	// returns them, and deleted with it. A non-empty message rejects the
 	// PUT with 400 InvalidRequestContent. Optional.
 	Linked func(s *Server, rec *azureARMResource) (props map[string]any, linked []*azureARMResource, msg string)
+	// DeleteStatus is the status of a DELETE that removes the resource, for
+	// APIs that never answer 200, such as Sentinel watchlists. Default 200.
+	DeleteStatus int
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
 	// Linked never accept PATCH either.
 	NoPatch bool
@@ -590,9 +598,12 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 			s.refreshAzureARMParentLocked(parentID)
 		}
 		s.providerStorageMu.Unlock()
-		if existed {
+		switch {
+		case existed && typ.DeleteStatus != 0:
+			w.WriteHeader(typ.DeleteStatus)
+		case existed:
 			w.WriteHeader(http.StatusOK)
-		} else {
+		default:
 			w.WriteHeader(http.StatusNoContent)
 		}
 	default:
@@ -600,29 +611,34 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 	}
 }
 
-// handleAzureARMExtension serves extension resources: the segments after the
-// last "providers" name a registered extension type, and everything before
-// it is the scope. The scope resource itself is not required to exist,
+// handleAzureARMExtension serves extension resources and their child
+// types: the segments after the last "providers" name a registered
+// extension type, and everything before it is the scope. The scope resource
+// itself is not required to exist, unless the type sets ScopeStored,
 // because it may belong to a service with its own store.
 func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request, seg []string) bool {
 	i := len(seg) - 1
 	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
 		i--
 	}
-	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 || len(seg)-i > 5 {
+	if i < 2 || !strings.EqualFold(seg[0], "subscriptions") || len(seg)-i < 3 {
 		return false
 	}
-	typ, ok := lookupAzureARMResourceType(seg[i+1], seg[i+2])
+	rest := seg[i+2:]
+	// POST {extension}/{action}
+	verb := ""
+	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
+		verb, rest = strings.ToLower(rest[len(rest)-1]), rest[:len(rest)-1]
+	}
+	typ, ok := lookupAzureARMResourceType(seg[i+1], azureARMTypePath(rest))
 	if !ok || !typ.Extension {
 		return false
 	}
-	// POST {extension}/{action}
 	var action azureARMAction
 	var transition map[string]any
-	if len(seg)-i == 5 {
-		verb := strings.ToLower(seg[i+4])
+	if verb != "" {
 		action, transition = s.azureARMActionFor(typ, verb), typ.Transitions[verb]
-		if r.Method != http.MethodPost || (action == nil && transition == nil) {
+		if action == nil && transition == nil {
 			return false
 		}
 	}
@@ -630,9 +646,16 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
 		return true
 	}
+	scope := "/" + strings.Join(seg[:i], "/")
 	if typ.ValidateScope != nil {
-		if msg := typ.ValidateScope("/" + strings.Join(seg[:i], "/")); msg != "" {
+		if msg := typ.ValidateScope(scope); msg != "" {
 			azureARMError(w, http.StatusBadRequest, "InvalidScope", msg)
+			return true
+		}
+	}
+	if typ.ScopeStored {
+		if stored, _ := s.getAzureARMResource(scope, "", "", ""); stored == nil {
+			azureARMNotFound(w, "ParentResourceNotFound", scope+"/providers/"+typ.fullType(), scope)
 			return true
 		}
 	}
@@ -640,31 +663,45 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
 		rg = seg[3]
 	}
-	collection := "/" + strings.Join(seg[:i], "/") + "/providers/" + typ.Namespace + "/" + typ.Type
+	// Rebuild the ID with the registered type casing; names keep client casing.
+	typeParts := strings.Split(typ.Type, "/")
+	id, parentID := scope+"/providers/"+typ.Namespace, ""
+	for j := 1; j < len(rest); j += 2 {
+		parentID = id
+		id += "/" + typeParts[j/2] + "/" + rest[j]
+	}
+	if len(rest)%2 == 1 {
+		// A collection: id names its parent, if any.
+		parentID, id = id, id+"/"+typeParts[len(typeParts)-1]
+	}
+	if len(rest) <= 2 {
+		parentID = ""
+	}
 	switch {
 	case action != nil:
-		s.invokeAzureARMAction(w, r, action, collection+"/"+seg[i+3], sub, rg, "")
+		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
 		return true
 	case transition != nil:
-		s.transitionAzureARMResource(w, transition, collection+"/"+seg[i+3], sub, rg, "")
+		s.transitionAzureARMResource(w, transition, id, sub, rg, parentID)
 		return true
-	}
-	if len(seg)-i == 4 {
-		s.serveAzureARMItem(w, r, typ, collection+"/"+seg[i+3], sub, rg, "", seg[i+3])
+	case len(rest)%2 == 0:
+		s.serveAzureARMItem(w, r, typ, id, sub, rg, parentID, rest[len(rest)-1])
 		return true
-	}
-	if r.Method != http.MethodGet {
+	case r.Method != http.MethodGet:
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return true
+	case parentID != "":
+		s.listAzureARMResources(w, typ, sub, rg, parentID, scope)
 		return true
 	}
 	s.providerStorageMu.Lock()
 	if rg != "" && s.azureResourceGroups[azureResourceGroupKey(sub, rg)] == nil {
 		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, "ResourceGroupNotFound", collection, "")
+		azureARMNotFound(w, "ResourceGroupNotFound", id, "")
 		return true
 	}
 	// Only settings attached directly to this scope, not to resources under it.
-	prefix := azureARMKey(collection + "/")
+	prefix := azureARMKey(id + "/")
 	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
 		key := azureARMKey(rec.ID)
 		return strings.EqualFold(rec.Type, typ.fullType()) && strings.HasPrefix(key, prefix) && !strings.Contains(key[len(prefix):], "/")
