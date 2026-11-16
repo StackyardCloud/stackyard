@@ -1,7 +1,6 @@
 package server
 
 import (
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -274,14 +273,16 @@ func azureNginxCertificateValidate(payload map[string]any) string {
 // azureNginxCertificateProperties reports a stable thumbprint and the
 // secret version, from the URL when it names one.
 func azureNginxCertificateProperties(rec *azureARMResource) map[string]any {
-	secret := azureARMString(rec.Properties["keyVaultSecretId"])
-	sum := sha1.Sum([]byte(strings.ToLower(secret)))
+	secretURL := azureARMString(rec.Properties["keyVaultSecretId"])
+	// A SHA-1-length (20-byte) thumbprint, derived from the URL since no
+	// certificate is fetched.
+	sum := sha256.Sum256([]byte(strings.ToLower(secretURL)))
 	version := hex.EncodeToString(sum[:16])
-	if parts := strings.Split(strings.TrimRight(secret, "/"), "/secrets/"); len(parts) == 2 && strings.Contains(parts[1], "/") {
+	if parts := strings.Split(strings.TrimRight(secretURL, "/"), "/secrets/"); len(parts) == 2 && strings.Contains(parts[1], "/") {
 		version = parts[1][strings.Index(parts[1], "/")+1:]
 	}
 	return map[string]any{
-		"sha1Thumbprint":        strings.ToUpper(hex.EncodeToString(sum[:])),
+		"sha1Thumbprint":        strings.ToUpper(hex.EncodeToString(sum[:20])),
 		"keyVaultSecretVersion": version,
 		"keyVaultSecretCreated": rec.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
