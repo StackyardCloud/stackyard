@@ -179,7 +179,7 @@ func (s *Server) deleteAzureARMTreeLocked(id string) bool {
 		}
 	}
 	// Resources created alongside, such as a private endpoint's interface.
-	// ponytail: only the deleted record's own; no child type is Linked yet.
+	// ponytail: only the deleted record's own; no child type links resources yet.
 	if existed {
 		for _, linkedID := range record.LinkedIDs {
 			s.deleteAzureARMTreeLocked(linkedID)

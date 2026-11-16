@@ -1425,6 +1425,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "support": ["support-2024-04-01-plan.md"],
     "customproviders": ["customproviders-2018-09-01-preview-plan.md"],
     "customerlockbox": ["customerlockbox-2018-02-28-preview-plan.md"],
+    "securityinsights": ["securityinsights-2025-09-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
