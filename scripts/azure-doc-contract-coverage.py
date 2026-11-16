@@ -1414,6 +1414,10 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "storagecache": ["storagecache-2024-03-01-plan.md"],
     "storagemover": ["storagemover-2024-07-01-plan.md"],
     "storageactions": ["storageactions-2023-01-01-plan.md"],
+    "maintenance": ["maintenance-2023-04-01-plan.md"],
+    "servicelinker": ["servicelinker-2024-04-01-plan.md"],
+    "standbypool": ["standbypool-2026-04-01-plan.md"],
+    "quota": ["quota-2025-09-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
