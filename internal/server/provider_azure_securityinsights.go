@@ -134,9 +134,17 @@ func azureSentinelOnboarded(extra func(s *Server, rec *azureARMResource) map[str
 	}
 }
 
-// azureSentinelWorkspace returns the workspace ID a Sentinel resource ID is under.
+// azureSentinelWorkspace returns the workspace ID a Sentinel resource ID is
+// under. It compares segments with EqualFold rather than searching a
+// lower-cased copy, whose byte offsets can differ for non-ASCII names.
 func azureSentinelWorkspace(id string) string {
-	return id[:strings.Index(strings.ToLower(id), "/providers/"+strings.ToLower(azureSentinelNamespace)+"/")]
+	seg := strings.Split(id, "/")
+	for i := len(seg) - 2; i > 0; i-- {
+		if strings.EqualFold(seg[i], "providers") && strings.EqualFold(seg[i+1], azureSentinelNamespace) {
+			return strings.Join(seg[:i], "/")
+		}
+	}
+	return id
 }
 
 // azureSentinelDurationOf parses an ISO 8601 duration of days, hours,

@@ -67,7 +67,7 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 - relations must name a bookmark in the incident's workspace; an incident's `bookmarks` action lists them, and `alerts` and `entities` are always empty
 - relation names are 3-63 letters, digits or hyphens
 - incident numbers are never reused, even after a delete
-- watchlist aliases and display names are 3-64 characters, alphanumeric at both ends, with spaces, hyphens and underscores between; `rawContent` must be `text/csv` of at most 3.8 MB whose header (after `numberOfLinesToSkip` lines) includes `itemsSearchKey`, and a new watchlist gets one item per row
+- watchlist aliases and display names are 3-64 characters, alphanumeric at both ends, with spaces, hyphens and underscores between; `rawContent` must be `text/csv` of at most 3.8 MB whose header (after `numberOfLinesToSkip` lines) includes `itemsSearchKey`, and a new watchlist gets one item per row; the emulator also caps one upload at 100,000 rows, since each becomes a stored item
 
 Out of scope for this stage:
 - running rules, raising alerts, firing automation rules or running playbooks (including the `runPlaybook` actions)

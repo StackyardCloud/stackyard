@@ -225,6 +225,16 @@ func TestAzureSentinelIncidents(t *testing.T) {
 	azureResourcesExpectErrorCode(t, do(http.MethodGet, first+"/comments/c1"+azureSentinelTestAPIVersion, ""), http.StatusNotFound, "ParentResourceNotFound")
 }
 
+func TestAzureSentinelWorkspaceOfNonASCIIName(t *testing.T) {
+	t.Parallel()
+	// U+212A KELVIN SIGN lower-cases to a shorter "k", which shifted the
+	// offsets of a search in a lower-cased copy.
+	id := "/subscriptions/s/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/\u212a\u212a\u212a/providers/Microsoft.SecurityInsights/incidents/i1"
+	if got, want := azureSentinelWorkspace(id), "/subscriptions/s/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/\u212a\u212a\u212a"; got != want {
+		t.Fatalf("azureSentinelWorkspace = %q, want %q", got, want)
+	}
+}
+
 func TestAzureSentinelWatchlists(t *testing.T) {
 	t.Parallel()
 	_, sentinel, do := newAzureSentinelTestServer(t)
@@ -245,13 +255,14 @@ func TestAzureSentinelWatchlists(t *testing.T) {
 
 	base := `{"properties":{"displayName":"Assets","provider":"Microsoft","itemsSearchKey":"ip"`
 	for name, payload := range map[string]string{
-		"search key":   base + `,"contentType":"text/csv","rawContent":"host,owner\na,b"}}`,
-		"content type": base + `,"contentType":"application/json","rawContent":"ip\n1.2.3.4"}}`,
-		"ragged":       base + `,"contentType":"text/csv","rawContent":"ip,owner\n1.2.3.4"}}`,
-		"too large":    base + `,"contentType":"text/csv","rawContent":"ip\n` + strings.Repeat("1", 3_800_001) + `"}}`,
-		"skip":         base + `,"contentType":"text/csv","numberOfLinesToSkip":3,"rawContent":"ip\n1.2.3.4"}}`,
-		"display name": `{"properties":{"displayName":"-bad-","provider":"Microsoft","itemsSearchKey":"ip"}}`,
-		"provider":     `{"properties":{"displayName":"Assets","itemsSearchKey":"ip"}}`,
+		"search key":    base + `,"contentType":"text/csv","rawContent":"host,owner\na,b"}}`,
+		"content type":  base + `,"contentType":"application/json","rawContent":"ip\n1.2.3.4"}}`,
+		"ragged":        base + `,"contentType":"text/csv","rawContent":"ip,owner\n1.2.3.4"}}`,
+		"too large":     base + `,"contentType":"text/csv","rawContent":"ip\n` + strings.Repeat("1", 3_800_001) + `"}}`,
+		"too many rows": base + `,"contentType":"text/csv","rawContent":"ip` + strings.Repeat(`\n1`, 100_001) + `"}}`,
+		"skip":          base + `,"contentType":"text/csv","numberOfLinesToSkip":3,"rawContent":"ip\n1.2.3.4"}}`,
+		"display name":  `{"properties":{"displayName":"-bad-","provider":"Microsoft","itemsSearchKey":"ip"}}`,
+		"provider":      `{"properties":{"displayName":"Assets","itemsSearchKey":"ip"}}`,
 	} {
 		resp := do(http.MethodPut, sentinel+"/watchlists/assets"+azureSentinelTestAPIVersion, payload)
 		t.Run(name, func(t *testing.T) {

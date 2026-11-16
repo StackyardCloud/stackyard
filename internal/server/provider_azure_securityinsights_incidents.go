@@ -31,6 +31,11 @@ var (
 // Local watchlist uploads are limited to 3.8 MB.
 const azureSentinelMaxWatchlistContent = 3_800_000
 
+// ponytail: an emulator cap, not a documented Azure limit. Each row becomes
+// a stored record created under the store lock, and 3.8 MB of one-character
+// rows would be about 1.9 million of them. Raise it if a real workload needs more.
+const azureSentinelMaxWatchlistRows = 100_000
+
 func azureSentinelRegisterIncidents() {
 	registerAzureARMResourceType(azureSentinelType("incidents", azureARMResourceType{
 		Validate:           azureSentinelIncidentValidate,
@@ -286,6 +291,9 @@ func azureSentinelWatchlistRows(props map[string]any) ([]map[string]any, string)
 	records, err := csv.NewReader(strings.NewReader(lines[len(lines)-1])).ReadAll()
 	if err != nil || len(records) == 0 {
 		return nil, "properties.rawContent must be CSV with a header row and the same number of fields in every row."
+	}
+	if len(records)-1 > azureSentinelMaxWatchlistRows {
+		return nil, "properties.rawContent can have at most 100,000 rows in the emulator."
 	}
 	header := records[0]
 	if !slices.Contains(header, azureARMString(props["itemsSearchKey"])) {
