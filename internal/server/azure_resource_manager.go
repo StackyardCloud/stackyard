@@ -80,6 +80,12 @@ type azureARMResourceType struct {
 	// same way against the parent payload. Like Validate, it does not run
 	// on PATCH. Optional.
 	ValidateInParent func(parent map[string]any, name string, payload map[string]any) string
+	// KeepLocation keeps the optional location a client sends to a proxy
+	// or extension type, such as a maintenance configuration assignment.
+	KeepLocation bool
+	// CreateStatus is the status of a PUT that creates the resource, for
+	// APIs that never answer 201, such as quota limits. Default 201.
+	CreateStatus int
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -283,8 +289,11 @@ func (s *Server) handleAzureARMScopeAction(w http.ResponseWriter, r *http.Reques
 // as health statuses or generated recommendations. GET is served at
 // {scope}/providers/{namespace}/{collection} and, for one item found by
 // name, at .../{collection}/{name}. scope is a subscription, resource group
-// or resource ID, or empty at tenant scope. List returns items with an
-// "id" key; GET by name finds the item whose id is {scope}/providers/...
+// or resource ID, or empty at tenant scope. A collection registered as
+// "{type}/{collection}" is nested under a stored resource of that type
+// instead, at {resourceId}/{collection}, and scope is the resource ID.
+// List returns items with an "id" key; GET by name finds the item whose
+// id is the collection path plus "/{name}".
 type azureARMView func(s *Server, scope string) []map[string]any
 
 // ponytail: registered in init() only, like azureARMResourceTypes.
@@ -305,14 +314,33 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
 		i--
 	}
-	if i < 0 || len(seg)-i < 3 || len(seg)-i > 4 {
+	var key, scope, collection string
+	nested := len(seg)-i == 5 || len(seg)-i == 6
+	switch {
+	case i < 0:
+		return false
+	case len(seg)-i == 3 || len(seg)-i == 4:
+		key = seg[i+1] + "/" + seg[i+2]
+		if i > 0 {
+			scope = "/" + strings.Join(seg[:i], "/")
+		}
+		collection = scope + "/providers/" + key
+	case nested:
+		key = seg[i+1] + "/" + seg[i+2] + "/" + seg[i+4]
+		scope = "/" + strings.Join(seg[:i+4], "/")
+		collection = scope + "/" + seg[i+4]
+	default:
 		return false
 	}
-	list := azureARMViews[strings.ToLower(seg[i+1]+"/"+seg[i+2])]
+	list := azureARMViews[strings.ToLower(key)]
 	if list == nil {
 		return false
 	}
 	if r.Method != http.MethodGet {
+		// Writes go to an extension type sharing the collection, if any.
+		if typ, ok := lookupAzureARMResourceType(seg[i+1], seg[i+2]); ok && typ.Extension && !nested {
+			return false
+		}
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 		return true
 	}
@@ -320,30 +348,29 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
 		return true
 	}
-	scope := ""
-	if i > 0 {
-		scope = "/" + strings.Join(seg[:i], "/")
-	}
-	if i >= 4 && strings.EqualFold(seg[2], "resourceGroups") {
-		s.providerStorageMu.Lock()
-		group := s.azureResourceGroups[azureResourceGroupKey(seg[1], seg[3])]
-		s.providerStorageMu.Unlock()
-		if group == nil {
-			azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
-			return true
-		}
+	s.providerStorageMu.Lock()
+	groupMissing := i >= 4 && strings.EqualFold(seg[2], "resourceGroups") && s.azureResourceGroups[azureResourceGroupKey(seg[1], seg[3])] == nil
+	parentMissing := nested && s.azureARMResources[azureARMKey(scope)] == nil
+	s.providerStorageMu.Unlock()
+	switch {
+	case groupMissing:
+		azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
+		return true
+	case parentMissing:
+		azureARMNotFound(w, "ParentResourceNotFound", collection, scope)
+		return true
 	}
 	items := list(s, scope)
 	if items == nil {
 		items = []map[string]any{}
 	}
-	if len(seg)-i == 3 {
+	if len(seg)-i == 3 || len(seg)-i == 5 {
 		respondJSON(w, http.StatusOK, map[string]any{"value": items})
 		return true
 	}
 	// Only an item directly under this scope: a subscription list may hold
 	// items of the same name for many resources.
-	id := scope + "/providers/" + seg[i+1] + "/" + seg[i+2] + "/" + seg[i+3]
+	id := collection + "/" + seg[len(seg)-1]
 	for _, item := range items {
 		if strings.EqualFold(azureARMString(item["id"]), id) {
 			respondJSON(w, http.StatusOK, item)
@@ -725,9 +752,10 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		}
 	}
 	location := strings.TrimSpace(azureARMString(payload["location"]))
-	if typ.Proxy {
+	switch {
+	case typ.Proxy && !typ.KeepLocation:
 		location = ""
-	} else if location == "" {
+	case !typ.Proxy && location == "":
 		azureARMError(w, http.StatusBadRequest, "LocationRequired", "The location property is required for this definition.")
 		return
 	}
@@ -822,6 +850,9 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 	}
 
 	status := http.StatusCreated
+	if typ.CreateStatus != 0 {
+		status = typ.CreateStatus
+	}
 	if existing != nil {
 		status = http.StatusOK
 	}
