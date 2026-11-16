@@ -1410,6 +1410,10 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "management": ["management-2021-04-01-plan.md"],
     "subscription": ["subscription-2021-10-01-plan.md"],
     "network": ["network-2024-05-01-plan.md"],
+    "storagesync": ["storagesync-2022-09-01-plan.md"],
+    "storagecache": ["storagecache-2024-03-01-plan.md"],
+    "storagemover": ["storagemover-2024-07-01-plan.md"],
+    "storageactions": ["storageactions-2023-01-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
