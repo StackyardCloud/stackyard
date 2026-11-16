@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 )
@@ -169,7 +170,7 @@ func (s *Server) azureARMInlineChildrenLocked(parentID string, child azureARMRes
 // extension resources, reporting whether it existed. Caller holds
 // providerStorageMu.
 func (s *Server) deleteAzureARMTreeLocked(id string) bool {
-	_, existed := s.azureARMResources[azureARMKey(id)]
+	record, existed := s.azureARMResources[azureARMKey(id)]
 	delete(s.azureARMResources, azureARMKey(id))
 	prefix := azureARMKey(id + "/")
 	for k := range s.azureARMResources {
@@ -177,5 +178,40 @@ func (s *Server) deleteAzureARMTreeLocked(id string) bool {
 			delete(s.azureARMResources, k)
 		}
 	}
+	// Resources created alongside, such as a private endpoint's interface.
+	// ponytail: only the deleted record's own; no child type is Linked yet.
+	if existed {
+		for _, linkedID := range record.LinkedIDs {
+			s.deleteAzureARMTreeLocked(linkedID)
+		}
+	}
 	return existed
+}
+
+// storeAzureARMLinkedLocked runs typ.Linked for a record about to be
+// stored: it merges the returned properties into it, stores the linked
+// resources, and deletes those the previous version linked but this one
+// does not. On rejection it writes the error and returns false. Caller
+// holds providerStorageMu.
+func (s *Server) storeAzureARMLinkedLocked(w http.ResponseWriter, typ azureARMResourceType, record, existing *azureARMResource) bool {
+	props, linked, msg := typ.Linked(s, record)
+	if msg != "" {
+		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+		return false
+	}
+	record.Properties = azureARMMerge(record.Properties, props)
+	record.LinkedIDs = make([]string, 0, len(linked))
+	for _, rec := range linked {
+		s.azureARMResources[azureARMKey(rec.ID)] = rec
+		record.LinkedIDs = append(record.LinkedIDs, rec.ID)
+	}
+	if existing == nil {
+		return true
+	}
+	for _, old := range existing.LinkedIDs {
+		if !slices.ContainsFunc(record.LinkedIDs, func(id string) bool { return strings.EqualFold(id, old) }) {
+			s.deleteAzureARMTreeLocked(old)
+		}
+	}
+	return true
 }

@@ -86,6 +86,14 @@ type azureARMResourceType struct {
 	// CreateStatus is the status of a PUT that creates the resource, for
 	// APIs that never answer 201, such as quota limits. Default 201.
 	CreateStatus int
+	// Linked runs on PUT, after validation and under the store lock (so it
+	// may read the store but not lock it). It returns server-owned
+	// properties for the record and resources ARM creates alongside it
+	// outside its own ID, such as a private endpoint's network interface.
+	// Those are stored with the record, dropped when a later PUT no longer
+	// returns them, and deleted with it. A non-empty message rejects the
+	// PUT with 400 InvalidRequestContent. Optional.
+	Linked func(s *Server, rec *azureARMResource) (props map[string]any, linked []*azureARMResource, msg string)
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -109,6 +117,8 @@ type azureARMResource struct {
 	Properties     map[string]any
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	// LinkedIDs are the resources a Linked hook created with this one.
+	LinkedIDs []string
 }
 
 // ponytail: registration happens in init() only, so the map needs no lock.
@@ -525,6 +535,11 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 	case http.MethodPut:
 		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
 	case http.MethodPatch:
+		if typ.Linked != nil {
+			// Linked resources follow PUT only, and these APIs have no PATCH.
+			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+			return
+		}
 		s.patchAzureARMResource(w, r, typ, id, sub, rg, parentID)
 	case http.MethodGet, http.MethodHead:
 		record, code := s.getAzureARMResource(id, sub, rg, parentID)
@@ -832,6 +847,9 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		// Server-owned properties see the final ID and creation time.
 		record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
 		record.Properties = s.syncAzureARMInlineLocked(typ, record, azureARMObject(payload["properties"]))
+		if typ.Linked != nil && !s.storeAzureARMLinkedLocked(w, typ, record, existing) {
+			return nil, false
+		}
 		s.azureARMResources[azureARMKey(id)] = record
 		if parent != nil {
 			s.refreshAzureARMParentLocked(parent.ID)

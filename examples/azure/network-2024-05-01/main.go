@@ -15,7 +15,7 @@ import (
 
 const (
 	resourcesAPIVersion = "2021-04-01"
-	networkAPIVersion = "2024-05-01"
+	networkAPIVersion   = "2024-05-01"
 )
 
 type armClient struct {
@@ -142,10 +142,17 @@ func main() {
 		{name: "CreatePublicIP", method: http.MethodPut, path: net + "/publicIPAddresses/web-ip" + q, payload: map[string]any{"location": region, "sku": map[string]any{"name": "Standard"}, "properties": map[string]any{"publicIPAllocationMethod": "Static", "dnsSettings": map[string]any{"domainNameLabel": "stackyard-web-example"}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
 		{name: "CreateLoadBalancer", method: http.MethodPut, path: net + "/loadBalancers/web-lb" + q, payload: map[string]any{"location": region, "sku": map[string]any{"name": "Standard"}, "properties": map[string]any{"frontendIPConfigurations": []any{map[string]any{"name": "public", "properties": map[string]any{"publicIPAddress": map[string]any{"id": ids + "/publicIPAddresses/web-ip"}}}}, "backendAddressPools": []any{map[string]any{"name": "web"}}, "probes": []any{map[string]any{"name": "https", "properties": map[string]any{"protocol": "Https", "port": 443, "requestPath": "/healthz"}}}, "loadBalancingRules": []any{map[string]any{"name": "https", "properties": map[string]any{"protocol": "Tcp", "frontendPort": 443, "backendPort": 443, "frontendIPConfiguration": map[string]any{"id": lb + "/frontendIPConfigurations/public"}, "backendAddressPool": map[string]any{"id": lb + "/backendAddressPools/web"}, "probe": map[string]any{"id": lb + "/probes/https"}}}}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
 		{name: "CreateNetworkInterface", method: http.MethodPut, path: net + "/networkInterfaces/web-01-nic" + q, payload: map[string]any{"location": region, "properties": map[string]any{"ipConfigurations": []any{map[string]any{"name": "ipconfig1", "properties": map[string]any{"subnet": map[string]any{"id": ids + "/virtualNetworks/" + vnetName + "/subnets/web"}, "loadBalancerBackendAddressPools": []any{map[string]any{"id": lb + "/backendAddressPools/web"}}}}}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
+		{name: "CreateNATGateway", method: http.MethodPut, path: net + "/natGateways/egress" + q, payload: map[string]any{"location": region, "sku": map[string]any{"name": "Standard"}, "properties": map[string]any{"idleTimeoutInMinutes": 10, "publicIpAddresses": []any{map[string]any{"id": ids + "/publicIPAddresses/web-ip"}}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
+		{name: "AttachNATGatewayToSubnet", method: http.MethodPut, path: vnet + "/subnets/data" + q, payload: map[string]any{"properties": map[string]any{"addressPrefix": "10.20.2.0/24", "natGateway": map[string]any{"id": ids + "/natGateways/egress"}}}, statuses: []int{http.StatusOK}},
+		// The endpoint gets a network interface with the next free address in the subnet.
+		{name: "CreatePrivateEndpoint", method: http.MethodPut, path: net + "/privateEndpoints/data-blob" + q, payload: map[string]any{"location": region, "properties": map[string]any{"subnet": map[string]any{"id": ids + "/virtualNetworks/" + vnetName + "/subnets/data"}, "privateLinkServiceConnections": []any{map[string]any{"name": "blob", "properties": map[string]any{"privateLinkServiceId": "/subscriptions/" + subscriptionID + "/resourceGroups/" + resourceGroup + "/providers/Microsoft.Storage/storageAccounts/stackyarddata", "groupIds": []any{"blob"}}}}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
+		{name: "AddPrivateDNSZoneGroup", method: http.MethodPut, path: net + "/privateEndpoints/data-blob/privateDnsZoneGroups/default" + q, payload: map[string]any{"properties": map[string]any{"privateDnsZoneConfigs": []any{map[string]any{"name": "blob", "properties": map[string]any{"privateDnsZoneId": ids + "/privateDnsZones/privatelink.blob.core.windows.net"}}}}}, statuses: []int{http.StatusCreated, http.StatusOK}},
+		{name: "DeletePrivateEndpoint", method: http.MethodDelete, path: net + "/privateEndpoints/data-blob" + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteNetworkInterface", method: http.MethodDelete, path: net + "/networkInterfaces/web-01-nic" + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteLoadBalancer", method: http.MethodDelete, path: net + "/loadBalancers/web-lb" + q, statuses: []int{http.StatusOK}},
 		{name: "DeletePublicIP", method: http.MethodDelete, path: net + "/publicIPAddresses/web-ip" + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteSubnet", method: http.MethodDelete, path: vnet + "/subnets/data" + q, statuses: []int{http.StatusOK}},
+		{name: "DeleteNATGateway", method: http.MethodDelete, path: net + "/natGateways/egress" + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteVirtualNetwork", method: http.MethodDelete, path: vnet + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteSecurityGroup", method: http.MethodDelete, path: net + "/networkSecurityGroups/web-nsg" + q, statuses: []int{http.StatusOK}},
 		{name: "DeleteRouteTable", method: http.MethodDelete, path: net + "/routeTables/spoke-routes" + q, statuses: []int{http.StatusOK}},

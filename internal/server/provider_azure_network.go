@@ -149,7 +149,7 @@ func azureSubnetValidate(payload map[string]any) string {
 	if !ok || len(prefixes) == 0 {
 		return "properties.addressPrefix or addressPrefixes must give canonical CIDR prefixes."
 	}
-	for _, ref := range [][2]string{{"networkSecurityGroup", "networksecuritygroups"}, {"routeTable", "routetables"}} {
+	for _, ref := range [][2]string{{"networkSecurityGroup", "networksecuritygroups"}, {"routeTable", "routetables"}, {"natGateway", "natgateways"}} {
 		if msg := azureNetworkOptionalRef(props, ref[0], ref[1]); msg != "" {
 			return msg
 		}
