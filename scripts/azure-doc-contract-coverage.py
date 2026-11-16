@@ -1409,6 +1409,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "machinelearningservices": ["machinelearningservices-2024-10-01-plan.md"],
     "management": ["management-2021-04-01-plan.md"],
     "subscription": ["subscription-2021-10-01-plan.md"],
+    "network": ["network-2024-05-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
