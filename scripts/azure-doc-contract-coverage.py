@@ -1404,6 +1404,9 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "certificateregistration": ["certificateregistration-2023-12-01-plan.md"],
     "domainregistration": ["domainregistration-2023-12-01-plan.md"],
     "healthcareapis": ["healthcareapis-2024-03-31-plan.md"],
+    "costmanagement": ["costmanagement-2023-11-01-plan.md"],
+    "servicefabric": ["servicefabric-2023-11-01-preview-plan.md"],
+    "machinelearningservices": ["machinelearningservices-2024-10-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
