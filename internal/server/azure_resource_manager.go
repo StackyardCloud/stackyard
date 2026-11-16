@@ -65,6 +65,21 @@ type azureARMResourceType struct {
 	// DefaultChildren returns child resources ARM creates along with a new
 	// resource, e.g. a default authorization rule. Optional.
 	DefaultChildren func(parent *azureARMResource) []*azureARMResource
+	// InlineChildren maps a property to the child type it embeds, e.g.
+	// {"subnets": "virtualNetworks/subnets"}. A PUT that sets the property
+	// replaces the child resources with its items; one that omits it (or
+	// sends null) keeps them, rechecked with ValidateInParent. Responses
+	// list the current children there, so inline and child resources stay
+	// in sync.
+	// Optional; see azure_resource_manager_inline.go.
+	InlineChildren map[string]string
+	// ValidateInParent returns a non-empty message to reject a child PUT,
+	// given its parent's properties (which list the child's siblings when
+	// the parent embeds them) and the child's name, such as a subnet
+	// outside its network's address space. Inline items are checked the
+	// same way against the parent payload. Like Validate, it does not run
+	// on PATCH. Optional.
+	ValidateInParent func(parent map[string]any, name string, payload map[string]any) string
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -498,14 +513,10 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 		}
 	case http.MethodDelete:
 		s.providerStorageMu.Lock()
-		_, existed := s.azureARMResources[azureARMKey(id)]
-		delete(s.azureARMResources, azureARMKey(id))
 		// Child and extension resources go with their parent.
-		prefix := azureARMKey(id + "/")
-		for k := range s.azureARMResources {
-			if strings.HasPrefix(k, prefix) {
-				delete(s.azureARMResources, k)
-			}
+		existed := s.deleteAzureARMTreeLocked(id)
+		if parentID != "" {
+			s.refreshAzureARMParentLocked(parentID)
 		}
 		s.providerStorageMu.Unlock()
 		if existed {
@@ -636,6 +647,9 @@ func (s *Server) transitionAzureARMResource(w http.ResponseWriter, transition ma
 	updated.Properties = azureARMMerge(existing.Properties, transition)
 	updated.UpdatedAt = time.Now().UTC()
 	s.azureARMResources[azureARMKey(id)] = &updated
+	if parentID != "" {
+		s.refreshAzureARMParentLocked(parentID)
+	}
 	s.providerStorageMu.Unlock()
 	respondAzureARMAction(w, http.StatusOK, nil)
 }
@@ -723,6 +737,10 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 			return
 		}
 	}
+	if msg := validateAzureARMInline(typ, payload); msg != "" {
+		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+		return
+	}
 
 	now := time.Now().UTC()
 	record := &azureARMResource{
@@ -737,50 +755,71 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		UpdatedAt:  now,
 	}
 
-	s.providerStorageMu.Lock()
-	group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
-	if group == nil && rg != "" {
-		s.providerStorageMu.Unlock()
-		azureARMNotFound(w, "ResourceGroupNotFound", id, "")
+	// Hooks run under the lock, so unlock with defer: a panicking hook must
+	// not leave the store locked.
+	existing, ok := func() (*azureARMResource, bool) {
+		s.providerStorageMu.Lock()
+		defer s.providerStorageMu.Unlock()
+		group := s.azureResourceGroups[azureResourceGroupKey(sub, rg)]
+		if group == nil && rg != "" {
+			azureARMNotFound(w, "ResourceGroupNotFound", id, "")
+			return nil, false
+		}
+		var parent *azureARMResource
+		if parentID != "" {
+			if parent = s.azureARMResources[azureARMKey(parentID)]; parent == nil {
+				azureARMNotFound(w, "ParentResourceNotFound", id, parentID)
+				return nil, false
+			}
+		}
+		if parent != nil && typ.ValidateInParent != nil {
+			if msg := typ.ValidateInParent(parent.Properties, name, payload); msg != "" {
+				azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+				return nil, false
+			}
+		}
+		if msg := s.validateAzureARMKeptInlineLocked(typ, id, payload); msg != "" {
+			azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+			return nil, false
+		}
+		existing := s.azureARMResources[azureARMKey(id)]
+		switch {
+		case existing != nil && !strings.EqualFold(existing.Location, location):
+			azureARMError(w, http.StatusConflict, "InvalidResourceLocation",
+				fmt.Sprintf("The resource '%s' already exists in location '%s'. A resource with the same name cannot be created in location '%s'.", existing.ID, existing.Location, location))
+			return nil, false
+		case existing != nil:
+			// Keep the casing the resource was created with, like ARM does.
+			record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
+			record.CreatedAt = existing.CreatedAt
+		case typ.Extension, typ.Tenant && parent == nil:
+			// The ID keeps the scope as the client sent it.
+		case parent != nil:
+			record.ResourceGroup = parent.ResourceGroup
+			record.ID = parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
+		default:
+			record.ResourceGroup = group.Name
+			record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
+		}
+		// Server-owned properties see the final ID and creation time.
+		record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
+		record.Properties = s.syncAzureARMInlineLocked(typ, record, azureARMObject(payload["properties"]))
+		s.azureARMResources[azureARMKey(id)] = record
+		if parent != nil {
+			s.refreshAzureARMParentLocked(parent.ID)
+		}
+		if existing == nil && typ.DefaultChildren != nil {
+			for _, child := range typ.DefaultChildren(record) {
+				s.azureARMResources[azureARMKey(child.ID)] = child
+			}
+			s.refreshAzureARMParentLocked(record.ID)
+			record = s.azureARMResources[azureARMKey(id)]
+		}
+		return existing, true
+	}()
+	if !ok {
 		return
 	}
-	var parent *azureARMResource
-	if parentID != "" {
-		if parent = s.azureARMResources[azureARMKey(parentID)]; parent == nil {
-			s.providerStorageMu.Unlock()
-			azureARMNotFound(w, "ParentResourceNotFound", id, parentID)
-			return
-		}
-	}
-	existing := s.azureARMResources[azureARMKey(id)]
-	switch {
-	case existing != nil && !strings.EqualFold(existing.Location, location):
-		s.providerStorageMu.Unlock()
-		azureARMError(w, http.StatusConflict, "InvalidResourceLocation",
-			fmt.Sprintf("The resource '%s' already exists in location '%s'. A resource with the same name cannot be created in location '%s'.", existing.ID, existing.Location, location))
-		return
-	case existing != nil:
-		// Keep the casing the resource was created with, like ARM does.
-		record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
-		record.CreatedAt = existing.CreatedAt
-	case typ.Extension, typ.Tenant && parent == nil:
-		// The ID keeps the scope as the client sent it.
-	case parent != nil:
-		record.ResourceGroup = parent.ResourceGroup
-		record.ID = parent.ID + "/" + typ.Type[strings.LastIndex(typ.Type, "/")+1:] + "/" + name
-	default:
-		record.ResourceGroup = group.Name
-		record.ID = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s", group.SubscriptionID, group.Name, typ.fullType(), name)
-	}
-	// Server-owned properties see the final ID and creation time.
-	record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
-	s.azureARMResources[azureARMKey(id)] = record
-	if existing == nil && typ.DefaultChildren != nil {
-		for _, child := range typ.DefaultChildren(record) {
-			s.azureARMResources[azureARMKey(child.ID)] = child
-		}
-	}
-	s.providerStorageMu.Unlock()
 
 	status := http.StatusCreated
 	if existing != nil {
@@ -825,7 +864,12 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
 	updated.Properties = azureARMWithState(typ, azureARMProperties(typ, &updated), existing)
+	// PATCH never changes inline children; it lists them as they are.
+	updated.Properties = s.azureARMInlinePropertiesLocked(typ, &updated)
 	s.azureARMResources[azureARMKey(id)] = &updated
+	if parentID != "" {
+		s.refreshAzureARMParentLocked(parentID)
+	}
 	return &updated, ""
 }
 
