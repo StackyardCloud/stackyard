@@ -32,6 +32,12 @@ type azureARMResourceType struct {
 	// are proxy resources. Child types nested under a tenant type must set
 	// it too.
 	Tenant bool
+	// Subscription marks types served at /subscriptions/{id}/providers/
+	// {Namespace}/{Type}/{name}, outside any resource group, such as
+	// support tickets. They are proxy resources, and child types nested
+	// under one must set it too. A type may also be Tenant, to be served
+	// at both scopes.
+	Subscription bool
 	// ValidateScope returns a non-empty message to reject the scope an
 	// extension resource attaches to, such as a resource of the wrong type.
 	// Optional; only for Extension types.
@@ -47,6 +53,10 @@ type azureARMResourceType struct {
 	// Actions are POST operations on an existing resource, keyed by the
 	// lower-cased action segment, e.g. "listcredentials". Optional.
 	Actions map[string]azureARMAction
+	// ServerActions are Actions given the server, for operations that read
+	// or change other records, such as moving a collection's resources.
+	// They run without the store lock held. Optional.
+	ServerActions map[string]func(s *Server, rec *azureARMResource, payload map[string]any) (int, any)
 	// Transitions are POST operations that merge server-owned properties
 	// into the stored resource and return 200 with no body, keyed like
 	// Actions, e.g. "stop": {"state": "Stopped"}. Optional.
@@ -97,6 +107,12 @@ type azureARMResourceType struct {
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
 	// Linked never accept PATCH either.
 	NoPatch bool
+	// PatchBody rewrites and checks a PATCH body for APIs whose update
+	// model differs from the resource, such as support tickets' top-level
+	// fields. It returns the body to merge, the StateProperties values the
+	// update sets, or a non-empty message to reject it (400
+	// InvalidRequestContent). Optional.
+	PatchBody func(payload map[string]any) (body, state map[string]any, msg string)
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -128,7 +144,7 @@ type azureARMResource struct {
 var azureARMResourceTypes = map[string]azureARMResourceType{}
 
 func registerAzureARMResourceType(t azureARMResourceType) {
-	if t.Extension || t.Tenant {
+	if t.Extension || t.Tenant || t.Subscription {
 		t.Proxy = true
 	}
 	key := strings.ToLower(t.fullType())
@@ -363,7 +379,10 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	}
 	s.providerStorageMu.Lock()
 	groupMissing := i >= 4 && strings.EqualFold(seg[2], "resourceGroups") && s.azureResourceGroups[azureResourceGroupKey(seg[1], seg[3])] == nil
-	parentMissing := nested && s.azureARMResources[azureARMKey(scope)] == nil
+	// Only stored parents can be missing; others, such as Azure support
+	// services, are views themselves.
+	_, stored := lookupAzureARMResourceType(seg[i+1], seg[i+2])
+	parentMissing := nested && stored && s.azureARMResources[azureARMKey(scope)] == nil
 	s.providerStorageMu.Unlock()
 	switch {
 	case groupMissing:
@@ -454,7 +473,8 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	case len(seg) == 9 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers") && strings.EqualFold(seg[6], "locations") && azureARMGroupActions[strings.ToLower(seg[5]+"/locations/"+seg[8])] != nil:
 		s.invokeAzureARMGroupAction(w, r, azureARMGroupActions[strings.ToLower(seg[5]+"/locations/"+seg[8])], seg[1], seg[3])
 		return true
-	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"):
+	case len(seg) == 5 && strings.EqualFold(seg[2], "providers"),
+		len(seg) > 5 && strings.EqualFold(seg[2], "providers") && azureARMIsSubscriptionType(seg[3], seg[4]):
 		sub, namespace, rest = seg[1], seg[3], seg[4:]
 	case len(seg) >= 7 && strings.EqualFold(seg[2], "resourceGroups") && strings.EqualFold(seg[4], "providers"):
 		sub, rg, namespace, rest = seg[1], seg[3], seg[5], seg[6:]
@@ -468,15 +488,21 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
 		typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest[:len(rest)-1]))
 		verb := strings.ToLower(rest[len(rest)-1])
-		if !ok || (typ.Actions[verb] == nil && typ.Transitions[verb] == nil) {
+		if !ok {
 			return false
 		}
-		action, transition = typ.Actions[verb], typ.Transitions[verb]
+		action, transition = s.azureARMActionFor(typ, verb), typ.Transitions[verb]
+		if action == nil && transition == nil {
+			return false
+		}
 		rest = rest[:len(rest)-1]
 	}
 	typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest))
 	// Tenant types live only at tenant scope, and others only under a subscription.
-	if !ok || typ.Tenant != (sub == "") {
+	// Tenant types live only at tenant scope (unless also Subscription),
+	// Subscription types never in a resource group, and others only under
+	// a subscription.
+	if !ok || (sub == "" && !typ.Tenant) || (sub != "" && typ.Tenant && !typ.Subscription) || (rg != "" && typ.Subscription) {
 		return false
 	}
 	if hasAzureInvalidAPIVersion(r) {
@@ -595,7 +621,7 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	var transition map[string]any
 	if len(seg)-i == 5 {
 		verb := strings.ToLower(seg[i+4])
-		action, transition = typ.Actions[verb], typ.Transitions[verb]
+		action, transition = s.azureARMActionFor(typ, verb), typ.Transitions[verb]
 		if r.Method != http.MethodPost || (action == nil && transition == nil) {
 			return false
 		}
@@ -646,6 +672,24 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	s.providerStorageMu.Unlock()
 	respondAzureARMList(w, records)
 	return true
+}
+
+// azureARMIsSubscriptionType reports whether typ, a top-level type, is a
+// registered subscription type.
+func azureARMIsSubscriptionType(namespace, typ string) bool {
+	t, ok := lookupAzureARMResourceType(namespace, typ)
+	return ok && t.Subscription
+}
+
+// azureARMActionFor returns the action, or server action, named verb.
+func (s *Server) azureARMActionFor(typ azureARMResourceType, verb string) azureARMAction {
+	if action := typ.Actions[verb]; action != nil {
+		return action
+	}
+	if action := typ.ServerActions[verb]; action != nil {
+		return func(rec *azureARMResource, payload map[string]any) (int, any) { return action(s, rec, payload) }
+	}
+	return nil
 }
 
 // azureARMIsTenantType reports whether typ, a top-level type, is a
@@ -838,7 +882,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 			// Keep the casing the resource was created with, like ARM does.
 			record.ID, record.SubscriptionID, record.ResourceGroup, record.Name = existing.ID, existing.SubscriptionID, existing.ResourceGroup, existing.Name
 			record.CreatedAt = existing.CreatedAt
-		case typ.Extension, typ.Tenant && parent == nil:
+		case typ.Extension, (typ.Tenant || typ.Subscription) && parent == nil:
 			// The ID keeps the scope as the client sent it.
 		case parent != nil:
 			record.ResourceGroup = parent.ResourceGroup
@@ -885,7 +929,15 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	if !ok {
 		return
 	}
-	updated, code := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload)
+	var state map[string]any
+	if typ.PatchBody != nil {
+		var msg string
+		if payload, state, msg = typ.PatchBody(payload); msg != "" {
+			azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+			return
+		}
+	}
+	updated, code := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload, state)
 	if updated == nil {
 		azureARMNotFound(w, code, id, parentID)
 		return
@@ -893,10 +945,11 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 	respondJSON(w, http.StatusOK, updated.fixture())
 }
 
-// patchAzureARMRecord merges payload into the stored record. It runs the
-// type's hooks under the lock, so it unlocks with defer: a panicking hook
-// must not leave the store locked.
-func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload map[string]any) (*azureARMResource, string) {
+// patchAzureARMRecord merges payload, and any state values from the type's
+// PatchBody, into the stored record. It runs the type's hooks under the
+// lock, so it unlocks with defer: a panicking hook must not leave the
+// store locked.
+func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload, state map[string]any) (*azureARMResource, string) {
 	s.providerStorageMu.Lock()
 	defer s.providerStorageMu.Unlock()
 	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
@@ -915,7 +968,7 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	}
 	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
-	updated.Properties = azureARMWithState(typ, azureARMProperties(typ, &updated), existing)
+	updated.Properties = azureARMMerge(azureARMWithState(typ, azureARMProperties(typ, &updated), existing), state)
 	// PATCH never changes inline children; it lists them as they are.
 	updated.Properties = s.azureARMInlinePropertiesLocked(typ, &updated)
 	s.azureARMResources[azureARMKey(id)] = &updated
@@ -962,6 +1015,11 @@ func (s *Server) listAzureARMResources(w http.ResponseWriter, typ azureARMResour
 			return
 		}
 		scope = parentID
+	}
+	if scope == "" {
+		// Tenant scope lists only tenant resources, not those of a type
+		// that is also served under subscriptions.
+		scope = "/providers"
 	}
 	prefix := azureARMKey(scope + "/")
 	records := s.azureARMResourcesMatchingLocked(func(rec *azureARMResource) bool {
