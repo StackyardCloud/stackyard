@@ -94,6 +94,9 @@ type azureARMResourceType struct {
 	// returns them, and deleted with it. A non-empty message rejects the
 	// PUT with 400 InvalidRequestContent. Optional.
 	Linked func(s *Server, rec *azureARMResource) (props map[string]any, linked []*azureARMResource, msg string)
+	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
+	// Linked never accept PATCH either.
+	NoPatch bool
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -535,7 +538,7 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 	case http.MethodPut:
 		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
 	case http.MethodPatch:
-		if typ.Linked != nil {
+		if typ.Linked != nil || typ.NoPatch {
 			// Linked resources follow PUT only, and these APIs have no PATCH.
 			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 			return

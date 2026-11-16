@@ -1418,6 +1418,10 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "servicelinker": ["servicelinker-2024-04-01-plan.md"],
     "standbypool": ["standbypool-2026-04-01-plan.md"],
     "quota": ["quota-2025-09-01-plan.md"],
+    "dashboard": ["dashboard-2025-08-01-plan.md"],
+    "portal": ["portal-2020-09-01-preview-plan.md"],
+    "managedservices": ["managedservices-2022-10-01-plan.md"],
+    "nginx": ["nginx-2025-11-01-plan.md"],
     "botframework": [
         "azure-bot-service-4.0-plan.md",
         "bot-framework-bot-connector-v3.1-plan.md",
