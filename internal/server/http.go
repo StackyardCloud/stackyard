@@ -2197,6 +2197,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureManagementPartnerRouter(w, r) {
 			return
 		}
+		if s.handleAzureMarketplaceOrderingRouter(w, r) {
+			return
+		}
 		if s.handleAzureBotFrameworkRouter(w, r) {
 			return
 		}
