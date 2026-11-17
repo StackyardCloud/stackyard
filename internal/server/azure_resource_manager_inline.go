@@ -195,9 +195,13 @@ func (s *Server) deleteAzureARMTreeLocked(id string) bool {
 // holds providerStorageMu.
 func (s *Server) storeAzureARMLinkedLocked(w http.ResponseWriter, typ azureARMResourceType, record, existing *azureARMResource, sent map[string]any) bool {
 	// The hook sees what the client sent, write-only properties included,
-	// under the record's own properties.
+	// under the record's own properties. Merging replaces arrays, so
+	// write-only properties inside them are copied back item by item.
 	view := *record
 	view.Properties = azureARMMerge(sent, record.Properties)
+	for _, path := range typ.WriteOnlyProperties {
+		view.Properties = azureARMWithSent(view.Properties, sent, path)
+	}
 	props, linked, msg := typ.Linked(s, &view)
 	if msg != "" {
 		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
