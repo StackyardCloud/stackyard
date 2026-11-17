@@ -193,8 +193,12 @@ func (s *Server) deleteAzureARMTreeLocked(id string) bool {
 // resources, and deletes those the previous version linked but this one
 // does not. On rejection it writes the error and returns false. Caller
 // holds providerStorageMu.
-func (s *Server) storeAzureARMLinkedLocked(w http.ResponseWriter, typ azureARMResourceType, record, existing *azureARMResource) bool {
-	props, linked, msg := typ.Linked(s, record)
+func (s *Server) storeAzureARMLinkedLocked(w http.ResponseWriter, typ azureARMResourceType, record, existing *azureARMResource, sent map[string]any) bool {
+	// The hook sees what the client sent, write-only properties included,
+	// under the record's own properties.
+	view := *record
+	view.Properties = azureARMMerge(sent, record.Properties)
+	props, linked, msg := typ.Linked(s, &view)
 	if msg != "" {
 		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
 		return false

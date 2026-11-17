@@ -515,6 +515,7 @@ type Server struct {
 	azureARMResources                                   map[string]*azureARMResource
 	azureManagementGroups                               map[string]*azureManagementGroup
 	azureManagementGroupSubscriptions                   map[string]string
+	azureManagementPartner                              *azureManagementPartnerLink
 	azureAutomationAccounts                             map[string]*azureAutomationAccount
 	azureAutomationAssets                               map[string]*azureAutomationAsset
 	azureAutomationJobs                                 map[string]*azureAutomationJob
@@ -2191,6 +2192,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureManagementRouter(w, r) {
+			return
+		}
+		if s.handleAzureManagementPartnerRouter(w, r) {
 			return
 		}
 		if s.handleAzureBotFrameworkRouter(w, r) {

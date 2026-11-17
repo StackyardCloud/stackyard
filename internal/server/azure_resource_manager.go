@@ -47,6 +47,9 @@ type azureARMResourceType struct {
 	// extension resource attaches to, such as a resource of the wrong type.
 	// Optional; only for Extension types.
 	ValidateScope func(scope string) string
+	// ReadOnlySKU returns server-owned sku fields merged over the sku the
+	// client sent on PUT, such as a tier derived from the sku name. Optional.
+	ReadOnlySKU func(sku map[string]any) map[string]any
 	// ReadOnlyProperties returns server-owned properties for a record whose
 	// Properties still hold only what the client sent. They override anything
 	// the client sends. Optional.
@@ -107,13 +110,18 @@ type azureARMResourceType struct {
 	// outside its own ID, such as a private endpoint's network interface.
 	// Those are stored with the record, dropped when a later PUT no longer
 	// returns them, and deleted with it. A non-empty message rejects the
-	// PUT with 400 InvalidRequestContent. Optional.
+	// PUT with 400 InvalidRequestContent. The record it gets also holds the
+	// WriteOnlyProperties the client sent, such as the purchase details a
+	// reservation order turns into reservations. Optional.
 	Linked func(s *Server, rec *azureARMResource) (props map[string]any, linked []*azureARMResource, msg string)
 	// DeleteStatus is the status of a DELETE that removes the resource, for
 	// APIs that never answer 200, such as Sentinel watchlists. Default 200.
 	DeleteStatus int
+	// NoDelete rejects DELETE with 405 for APIs that have none, such as
+	// reservation orders, which are returned rather than deleted.
+	NoDelete bool
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
-	// Linked never accept PATCH either.
+	// Linked don't accept PATCH either, unless they set PatchBody.
 	NoPatch bool
 	// PatchBody rewrites and checks a PATCH body for APIs whose update
 	// model differs from the resource, such as support tickets' top-level
@@ -572,8 +580,9 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 	case http.MethodPut:
 		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
 	case http.MethodPatch:
-		if typ.Linked != nil || typ.NoPatch {
-			// Linked resources follow PUT only, and these APIs have no PATCH.
+		if (typ.Linked != nil && typ.PatchBody == nil) || typ.NoPatch {
+			// Linked resources follow PUT only, unless the type's PatchBody
+			// limits what PATCH changes; these APIs have no PATCH.
 			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 			return
 		}
@@ -591,6 +600,10 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 			azureARMNotFound(w, code, id, parentID)
 		}
 	case http.MethodDelete:
+		if typ.NoDelete {
+			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+			return
+		}
 		s.providerStorageMu.Lock()
 		// Child and extension resources go with their parent.
 		existed := s.deleteAzureARMTreeLocked(id)
@@ -881,6 +894,9 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
+	if typ.ReadOnlySKU != nil {
+		record.SKU = azureARMMerge(record.SKU, typ.ReadOnlySKU(record.SKU))
+	}
 
 	// Hooks run under the lock, so unlock with defer: a panicking hook must
 	// not leave the store locked.
@@ -931,7 +947,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		// Server-owned properties see the final ID and creation time.
 		record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
 		record.Properties = s.syncAzureARMInlineLocked(typ, record, azureARMObject(payload["properties"]))
-		if typ.Linked != nil && !s.storeAzureARMLinkedLocked(w, typ, record, existing) {
+		if typ.Linked != nil && !s.storeAzureARMLinkedLocked(w, typ, record, existing, azureARMObject(payload["properties"])) {
 			return nil, false
 		}
 		s.azureARMResources[azureARMKey(id)] = record
