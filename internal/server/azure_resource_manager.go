@@ -120,6 +120,12 @@ type azureARMResourceType struct {
 	// NoDelete rejects DELETE with 405 for APIs that have none, such as
 	// reservation orders, which are returned rather than deleted.
 	NoDelete bool
+	// ValidatePatch and ValidateDelete return a non-empty message to reject
+	// a PATCH or DELETE with 409 Conflict, given the stored resource, such
+	// as a Data Box job past the stage where it can change. They run under
+	// the store lock. Optional.
+	ValidatePatch  func(existing *azureARMResource, payload map[string]any) string
+	ValidateDelete func(existing *azureARMResource) string
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
 	// Linked don't accept PATCH either, unless they set PatchBody.
 	NoPatch bool
@@ -215,6 +221,51 @@ func azureARMWithout(props map[string]any, path string) map[string]any {
 		}
 	}
 	return out
+}
+
+// azureARMWithSent returns props with the value at the dotted path (as in
+// WriteOnlyProperties) taken from sent, matching array items by index (so
+// the server must keep the client's item order) and copying the maps along
+// the path so props itself is not modified. Records never hold their
+// write-only values, so taking the sent value whole loses nothing.
+func azureARMWithSent(props, sent map[string]any, path string) map[string]any {
+	key, rest, nested := strings.Cut(path, ".")
+	key, each := strings.CutSuffix(key, "[]")
+	value, present := sent[key]
+	if !present {
+		return props
+	}
+	out := azureARMMerge(props, nil)
+	sentItems, sentList := value.([]any)
+	items, isList := props[key].([]any)
+	switch {
+	case !nested:
+		out[key] = value
+	case each && sentList && isList:
+		copied := make([]any, len(items))
+		for i, item := range items {
+			itemMap, ok := item.(map[string]any)
+			sentMap, sentOK := azureARMIndex(sentItems, i).(map[string]any)
+			if ok && sentOK {
+				item = azureARMWithSent(itemMap, sentMap, rest)
+			}
+			copied[i] = item
+		}
+		out[key] = copied
+	case !each:
+		if sentMap, ok := value.(map[string]any); ok {
+			own, _ := props[key].(map[string]any)
+			out[key] = azureARMWithSent(own, sentMap, rest)
+		}
+	}
+	return out
+}
+
+func azureARMIndex(items []any, i int) any {
+	if i < len(items) {
+		return items[i]
+	}
+	return nil
 }
 
 // azureARMWithState returns props with each state property taken from the
@@ -605,6 +656,13 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 			return
 		}
 		s.providerStorageMu.Lock()
+		if existing := s.azureARMResources[azureARMKey(id)]; existing != nil && typ.ValidateDelete != nil {
+			if msg := typ.ValidateDelete(existing); msg != "" {
+				s.providerStorageMu.Unlock()
+				azureARMError(w, http.StatusConflict, "Conflict", msg)
+				return
+			}
+		}
 		// Child and extension resources go with their parent.
 		existed := s.deleteAzureARMTreeLocked(id)
 		if parentID != "" {
@@ -990,7 +1048,11 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 			return
 		}
 	}
-	updated, code := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload, state)
+	updated, code, conflict := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload, state)
+	if conflict != "" {
+		azureARMError(w, http.StatusConflict, "Conflict", conflict)
+		return
+	}
 	if updated == nil {
 		azureARMNotFound(w, code, id, parentID)
 		return
@@ -1001,15 +1063,22 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 // patchAzureARMRecord merges payload, and any state values from the type's
 // PatchBody, into the stored record. It runs the type's hooks under the
 // lock, so it unlocks with defer: a panicking hook must not leave the
-// store locked.
-func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload, state map[string]any) (*azureARMResource, string) {
+// store locked. It returns the updated record, or the ARM error code for a
+// missing one, or the type's ValidatePatch message.
+func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload, state map[string]any) (updated *azureARMResource, code, conflict string) {
 	s.providerStorageMu.Lock()
 	defer s.providerStorageMu.Unlock()
 	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
 	if existing == nil {
-		return nil, code
+		return nil, code, ""
 	}
-	updated := *existing
+	if typ.ValidatePatch != nil {
+		if msg := typ.ValidatePatch(existing, payload); msg != "" {
+			return nil, "", msg
+		}
+	}
+	copied := *existing
+	updated = &copied
 	if tags, present := payload["tags"]; present {
 		updated.Tags = azureARMObject(tags)
 	}
@@ -1021,14 +1090,14 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	}
 	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
-	updated.Properties = azureARMMerge(azureARMWithState(typ, azureARMProperties(typ, &updated), existing), state)
+	updated.Properties = azureARMMerge(azureARMWithState(typ, azureARMProperties(typ, updated), existing), state)
 	// PATCH never changes inline children; it lists them as they are.
-	updated.Properties = s.azureARMInlinePropertiesLocked(typ, &updated)
-	s.azureARMResources[azureARMKey(id)] = &updated
+	updated.Properties = s.azureARMInlinePropertiesLocked(typ, updated)
+	s.azureARMResources[azureARMKey(id)] = updated
 	if parentID != "" {
 		s.refreshAzureARMParentLocked(parentID)
 	}
-	return &updated, ""
+	return updated, "", ""
 }
 
 func (s *Server) getAzureARMResource(id, sub, rg, parentID string) (*azureARMResource, string) {
