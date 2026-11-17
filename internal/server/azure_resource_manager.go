@@ -860,6 +860,10 @@ func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Req
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
 		return true
 	}
+	if hasAzureInvalidAPIVersion(r) {
+		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
+		return true
+	}
 	payload, ok := azureARMReadBody(w, r)
 	if !ok {
 		return true
@@ -872,6 +876,10 @@ func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Req
 func (s *Server) invokeAzureARMGroupAction(w http.ResponseWriter, r *http.Request, action azureARMGroupAction, sub, rg string) {
 	if r.Method != http.MethodPost {
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+		return
+	}
+	if hasAzureInvalidAPIVersion(r) {
+		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
 		return
 	}
 	payload, ok := azureARMReadBody(w, r)
