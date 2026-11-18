@@ -1430,6 +1430,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "reservations": ["reservations-2022-11-01-plan.md"],
     "managementpartner": ["managementpartner-2018-02-01-plan.md"],
     "databox": ["databox-2025-07-01-plan.md"],
+    "labservices": ["labservices-2023-06-07-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],
     "powerbidedicated": ["powerbidedicated-2021-01-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],

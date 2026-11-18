@@ -123,8 +123,9 @@ type azureARMResourceType struct {
 	// ValidatePatch and ValidateDelete return a non-empty message to reject
 	// a PATCH or DELETE with 409 Conflict, given the stored resource, such
 	// as a Data Box job past the stage where it can change. They run under
-	// the store lock. Optional.
-	ValidatePatch  func(existing *azureARMResource, payload map[string]any) string
+	// the store lock, so ValidatePatch may read the store but not lock it.
+	// Optional.
+	ValidatePatch  func(s *Server, existing *azureARMResource, payload map[string]any) string
 	ValidateDelete func(existing *azureARMResource) string
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
 	// Linked don't accept PATCH either, unless they set PatchBody.
@@ -1081,7 +1082,7 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 		return nil, code, ""
 	}
 	if typ.ValidatePatch != nil {
-		if msg := typ.ValidatePatch(existing, payload); msg != "" {
+		if msg := typ.ValidatePatch(s, existing, payload); msg != "" {
 			return nil, "", msg
 		}
 	}
