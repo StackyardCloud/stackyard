@@ -1431,6 +1431,8 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "managementpartner": ["managementpartner-2018-02-01-plan.md"],
     "databox": ["databox-2025-07-01-plan.md"],
     "labservices": ["labservices-2023-06-07-plan.md"],
+    "serialconsole": ["serialconsole-2024-07-01-plan.md"],
+    "terraform": ["terraform-2026-09-01-preview-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],
     "powerbidedicated": ["powerbidedicated-2021-01-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],
@@ -1704,7 +1706,7 @@ def discover_service_files() -> dict[str, list[Path]]:
         text = "".join(read_text(p) for p in paths)
         if "registerAzureFlexibleServer(" in text:
             paths.append(flexible)
-        if any(f"{fn}(" in text for fn in ("registerAzureARMResourceType", "registerAzureFlexibleServer", "registerAzureARMView")):
+        if any(f"{fn}(" in text for fn in ("registerAzureARMResourceType", "registerAzureFlexibleServer", "registerAzureARMView", "registerAzureARMScopeAction", "registerAzureARMProviderAction", "registerAzureARMGroupAction")):
             paths.append(shared)
     return out
 

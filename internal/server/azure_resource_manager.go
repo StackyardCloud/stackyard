@@ -159,6 +159,10 @@ type azureARMResource struct {
 	Properties     map[string]any
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	// APIVersion is the api-version of the PUT that wrote the record, or
+	// of its parent's for children ARM creates with it, such as the version
+	// a Terraform export names. Empty for records custom routers store.
+	APIVersion string
 	// LinkedIDs are the resources a Linked hook created with this one.
 	LinkedIDs []string
 }
@@ -914,6 +918,7 @@ func azureARMChild(parent *azureARMResource, typ azureARMResourceType, name stri
 		Properties: properties,
 		CreatedAt:  parent.CreatedAt,
 		UpdatedAt:  parent.UpdatedAt,
+		APIVersion: parent.APIVersion,
 	}
 	child.Properties = azureARMWithState(typ, azureARMProperties(typ, child), nil)
 	return child
@@ -960,6 +965,7 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		Properties: azureARMObject(payload["properties"]),
 		CreatedAt:  now,
 		UpdatedAt:  now,
+		APIVersion: r.URL.Query().Get("api-version"),
 	}
 	if typ.ReadOnlySKU != nil {
 		record.SKU = azureARMMerge(record.SKU, typ.ReadOnlySKU(record.SKU))
