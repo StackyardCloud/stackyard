@@ -56,7 +56,7 @@ func init() {
 		ReadOnlyProperties: azureDataBoxJobProperties,
 		Linked:             azureDataBoxJobLinked,
 		PatchBody:          azureDataBoxJobPatch,
-		ValidatePatch: func(existing *azureARMResource, payload map[string]any) string {
+		ValidatePatch: func(_ *Server, existing *azureARMResource, payload map[string]any) string {
 			if _, present := azureARMObject(payload["properties"])["details"]; present && azureDataBoxStatus(existing) != azureDataBoxOrdered {
 				return "Job " + existing.Name + " is " + azureDataBoxStatus(existing) + "; only its tags can change now."
 			}
