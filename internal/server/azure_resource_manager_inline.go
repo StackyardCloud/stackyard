@@ -124,7 +124,7 @@ func (s *Server) syncAzureARMInlineLocked(typ azureARMResourceType, record *azur
 // inline property listing its current children. Caller holds
 // providerStorageMu.
 func (s *Server) azureARMInlinePropertiesLocked(typ azureARMResourceType, record *azureARMResource) map[string]any {
-	if len(typ.InlineChildren) == 0 {
+	if len(typ.InlineChildren) == 0 && typ.ChildProperties == nil {
 		return record.Properties
 	}
 	overlay := map[string]any{}
@@ -136,7 +136,12 @@ func (s *Server) azureARMInlinePropertiesLocked(typ azureARMResourceType, record
 		}
 		overlay[prop] = list
 	}
-	return azureARMMerge(record.Properties, overlay)
+	out := azureARMMerge(record.Properties, overlay)
+	if typ.ChildProperties != nil {
+		// Replace rather than merge, so a value's dropped keys don't linger.
+		maps.Copy(out, typ.ChildProperties(s, record))
+	}
+	return out
 }
 
 // refreshAzureARMParentLocked re-lists the inline children of the record
@@ -149,7 +154,7 @@ func (s *Server) refreshAzureARMParentLocked(parentID string) {
 	}
 	namespace, typePath, _ := strings.Cut(parent.Type, "/")
 	typ, ok := lookupAzureARMResourceType(namespace, typePath)
-	if !ok || len(typ.InlineChildren) == 0 {
+	if !ok || len(typ.InlineChildren) == 0 && typ.ChildProperties == nil {
 		return
 	}
 	updated := *parent

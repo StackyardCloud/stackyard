@@ -1435,6 +1435,8 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "terraform": ["terraform-2026-09-01-preview-plan.md"],
     "fileshares": ["fileshares-2026-09-01-plan.md"],
     "help": ["help-2024-03-01-preview-plan.md"],
+    "impact": ["impact-2026-01-01-preview-plan.md"],
+    "recommendationsservice": ["recommendationsservice-2022-02-01-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],
     "powerbidedicated": ["powerbidedicated-2021-01-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],

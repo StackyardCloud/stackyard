@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -91,6 +92,11 @@ type azureARMResourceType struct {
 	// in sync.
 	// Optional; see azure_resource_manager_inline.go.
 	InlineChildren map[string]string
+	// ChildProperties returns properties derived from the record's child
+	// resources, such as a summary of them. Like inline properties, they
+	// are recomputed whenever a child changes. Caller holds the store
+	// lock. Optional.
+	ChildProperties func(s *Server, rec *azureARMResource) map[string]any
 	// ValidateInParent returns a non-empty message to reject a child PUT,
 	// given its parent's properties (which list the child's siblings when
 	// the parent embeds them) and the child's name, such as a subnet
@@ -423,10 +429,20 @@ func (s *Server) handleAzureARMScopeAction(w http.ResponseWriter, r *http.Reques
 // id is the collection path plus "/{name}".
 type azureARMView func(s *Server, scope string) []map[string]any
 
+// azureARMQueryView is an azureARMView that also reads the request's
+// query parameters, such as optional list filters.
+type azureARMQueryView func(s *Server, scope string, query url.Values) []map[string]any
+
 // ponytail: registered in init() only, like azureARMResourceTypes.
-var azureARMViews = map[string]azureARMView{}
+var azureARMViews = map[string]azureARMQueryView{}
 
 func registerAzureARMView(namespace, collection string, list azureARMView) {
+	registerAzureARMQueryView(namespace, collection, func(s *Server, scope string, _ url.Values) []map[string]any {
+		return list(s, scope)
+	})
+}
+
+func registerAzureARMQueryView(namespace, collection string, list azureARMQueryView) {
 	key := strings.ToLower(namespace + "/" + collection)
 	if _, exists := azureARMViews[key]; exists {
 		panic("azure ARM view registered twice: " + namespace + "/" + collection)
@@ -490,7 +506,7 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 		azureARMNotFound(w, "ParentResourceNotFound", collection, scope)
 		return true
 	}
-	items := list(s, scope)
+	items := list(s, scope, r.URL.Query())
 	if items == nil {
 		items = []map[string]any{}
 	}
