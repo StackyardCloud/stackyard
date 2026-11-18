@@ -136,6 +136,14 @@ type azureARMResourceType struct {
 	// update sets, or a non-empty message to reject it (400
 	// InvalidRequestContent). Optional.
 	PatchBody func(payload map[string]any) (body, state map[string]any, msg string)
+	// Reconcile runs on PUT and PATCH under the store lock, once the
+	// write's properties are final and before anything is stored, given
+	// the stored record (nil on create). It returns server-owned
+	// properties merged into the record, such as values derived from what
+	// changed, or a non-empty message to reject the write with 400
+	// InvalidRequestContent, such as a limit counted across the store. It
+	// may read the store but not lock it. Optional.
+	Reconcile func(s *Server, existing, rec *azureARMResource) (props map[string]any, msg string)
 }
 
 // azureARMAction handles POST {resourceId}/{action} and returns the status
@@ -309,6 +317,24 @@ func registerAzureARMProviderAction(namespace, action string, fn azureARMProvide
 		panic("azure ARM provider action registered twice: " + namespace + "/" + action)
 	}
 	azureARMProviderActions[key] = fn
+}
+
+// azureARMLocationAction handles POST /subscriptions/{sub}/providers/
+// {namespace}/locations/{location}/{action} for actions that need the
+// subscription and location, such as per-region usage. Registered as
+// "{action}"; provider actions registered as "locations/{action}" take
+// precedence.
+type azureARMLocationAction func(s *Server, sub, location string, payload map[string]any) (int, any)
+
+// ponytail: registered in init() only, like azureARMResourceTypes.
+var azureARMLocationActions = map[string]azureARMLocationAction{}
+
+func registerAzureARMLocationAction(namespace, action string, fn azureARMLocationAction) {
+	key := strings.ToLower(namespace + "/locations/" + action)
+	if _, exists := azureARMLocationActions[key]; exists {
+		panic("azure ARM location action registered twice: " + namespace + "/" + action)
+	}
+	azureARMLocationActions[key] = fn
 }
 
 // azureARMGroupAction handles POST /subscriptions/{sub}/resourceGroups/{rg}/
@@ -538,6 +564,11 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return true
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && azureARMProviderActions[strings.ToLower(seg[3]+"/"+seg[4])] != nil:
 		return s.invokeAzureARMProviderAction(w, r, seg[3], seg[4])
+	case len(seg) == 7 && strings.EqualFold(seg[0], "subscriptions") && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations") && azureARMProviderActions[strings.ToLower(seg[3]+"/locations/"+seg[6])] == nil && azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+seg[6])] != nil:
+		sub, location := seg[1], seg[5]
+		action := azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+seg[6])]
+		s.serveAzureARMPost(w, r, func(payload map[string]any) (int, any) { return action(s, sub, location, payload) })
+		return true
 	case len(seg) == 7 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations"):
 		return s.invokeAzureARMProviderAction(w, r, seg[3], "locations/"+seg[6])
 	case len(seg) < 2 || !strings.EqualFold(seg[0], "subscriptions"):
@@ -861,21 +892,27 @@ func (s *Server) invokeAzureARMProviderAction(w http.ResponseWriter, r *http.Req
 	if action == nil {
 		return false
 	}
+	s.serveAzureARMPost(w, r, func(payload map[string]any) (int, any) { return action(s, payload) })
+	return true
+}
+
+// serveAzureARMPost checks the verb and api-version of an action request,
+// reads its body and writes what run returns.
+func (s *Server) serveAzureARMPost(w http.ResponseWriter, r *http.Request, run func(payload map[string]any) (int, any)) {
 	if r.Method != http.MethodPost {
 		azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
-		return true
+		return
 	}
 	if hasAzureInvalidAPIVersion(r) {
 		azureARMError(w, http.StatusBadRequest, "InvalidApiVersionParameter", "invalid api-version query parameter")
-		return true
+		return
 	}
 	payload, ok := azureARMReadBody(w, r)
 	if !ok {
-		return true
+		return
 	}
-	status, body := action(s, payload)
+	status, body := run(payload)
 	respondAzureARMAction(w, status, body)
-	return true
 }
 
 func (s *Server) invokeAzureARMGroupAction(w http.ResponseWriter, r *http.Request, action azureARMGroupAction, sub, rg string) {
@@ -1019,6 +1056,9 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		}
 		// Server-owned properties see the final ID and creation time.
 		record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
+		if !s.reconcileAzureARMLocked(w, typ, existing, record) {
+			return nil, false
+		}
 		record.Properties = s.syncAzureARMInlineLocked(typ, record, azureARMObject(payload["properties"]))
 		if typ.Linked != nil && !s.storeAzureARMLinkedLocked(w, typ, record, existing, azureARMObject(payload["properties"])) {
 			return nil, false
@@ -1063,9 +1103,13 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 			return
 		}
 	}
-	updated, code, conflict := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload, state)
+	updated, code, conflict, invalid := s.patchAzureARMRecord(typ, id, sub, rg, parentID, payload, state)
 	if conflict != "" {
 		azureARMError(w, http.StatusConflict, "Conflict", conflict)
+		return
+	}
+	if invalid != "" {
+		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", invalid)
 		return
 	}
 	if updated == nil {
@@ -1079,17 +1123,17 @@ func (s *Server) patchAzureARMResource(w http.ResponseWriter, r *http.Request, t
 // PatchBody, into the stored record. It runs the type's hooks under the
 // lock, so it unlocks with defer: a panicking hook must not leave the
 // store locked. It returns the updated record, or the ARM error code for a
-// missing one, or the type's ValidatePatch message.
-func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload, state map[string]any) (updated *azureARMResource, code, conflict string) {
+// missing one, or the type's ValidatePatch or Reconcile message.
+func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, parentID string, payload, state map[string]any) (updated *azureARMResource, code, conflict, invalid string) {
 	s.providerStorageMu.Lock()
 	defer s.providerStorageMu.Unlock()
 	existing, code := s.lookupAzureARMResourceLocked(id, sub, rg, parentID)
 	if existing == nil {
-		return nil, code, ""
+		return nil, code, "", ""
 	}
 	if typ.ValidatePatch != nil {
 		if msg := typ.ValidatePatch(s, existing, payload); msg != "" {
-			return nil, "", msg
+			return nil, "", msg, ""
 		}
 	}
 	copied := *existing
@@ -1106,13 +1150,35 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
 	updated.Properties = azureARMMerge(azureARMWithState(typ, azureARMProperties(typ, updated), existing), state)
+	if typ.Reconcile != nil {
+		props, msg := typ.Reconcile(s, existing, updated)
+		if msg != "" {
+			return nil, "", "", msg
+		}
+		updated.Properties = azureARMMerge(updated.Properties, props)
+	}
 	// PATCH never changes inline children; it lists them as they are.
 	updated.Properties = s.azureARMInlinePropertiesLocked(typ, updated)
 	s.azureARMResources[azureARMKey(id)] = updated
 	if parentID != "" {
 		s.refreshAzureARMParentLocked(parentID)
 	}
-	return updated, "", ""
+	return updated, "", "", ""
+}
+
+// reconcileAzureARMLocked merges the type's Reconcile properties into a PUT
+// record, or writes the 400 that rejects it. Caller holds providerStorageMu.
+func (s *Server) reconcileAzureARMLocked(w http.ResponseWriter, typ azureARMResourceType, existing, record *azureARMResource) bool {
+	if typ.Reconcile == nil {
+		return true
+	}
+	props, msg := typ.Reconcile(s, existing, record)
+	if msg != "" {
+		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", msg)
+		return false
+	}
+	record.Properties = azureARMMerge(record.Properties, props)
+	return true
 }
 
 func (s *Server) getAzureARMResource(id, sub, rg, parentID string) (*azureARMResource, string) {
