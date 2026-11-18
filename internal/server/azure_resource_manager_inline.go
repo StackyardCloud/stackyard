@@ -210,6 +210,12 @@ func (s *Server) storeAzureARMLinkedLocked(w http.ResponseWriter, typ azureARMRe
 	record.Properties = azureARMMerge(record.Properties, props)
 	record.LinkedIDs = make([]string, 0, len(linked))
 	for _, rec := range linked {
+		// Linked records of the same provider share its API version.
+		if rec.APIVersion == "" && strings.HasPrefix(strings.ToLower(rec.Type), strings.ToLower(typ.Namespace+"/")) {
+			copied := *rec
+			copied.APIVersion = record.APIVersion
+			rec = &copied
+		}
 		s.azureARMResources[azureARMKey(rec.ID)] = rec
 		record.LinkedIDs = append(record.LinkedIDs, rec.ID)
 	}
