@@ -264,10 +264,6 @@ type azureBBListOptions struct {
 	state      string
 }
 
-// azureBBMaxPageIndex bounds take and $skiptoken so paging math can't
-// overflow.
-const azureBBMaxPageIndex = 1_000_000
-
 func azureBBListQuery(query url.Values) (azureBBListOptions, string) {
 	var q azureBBListOptions
 	var msg string
@@ -285,8 +281,8 @@ func azureBBListQuery(query url.Values) (azureBBListOptions, string) {
 	for name, target := range map[string]*int{"$skiptoken": &q.skip, "take": &q.take} {
 		if raw := query.Get(name); raw != "" {
 			n, err := strconv.Atoi(raw)
-			if err != nil || n < 0 || n > azureBBMaxPageIndex || (name == "take" && n < 1) {
-				return q, name + " must be a whole number" + map[bool]string{true: " from 1", false: " from 0"}[name == "take"] + " to " + strconv.Itoa(azureBBMaxPageIndex) + "."
+			if err != nil || n < 0 || (name == "take" && n < 1) {
+				return q, name + " must be a whole number" + map[bool]string{true: " of at least 1.", false: " of at least 0."}[name == "take"]
 			}
 			*target = n
 		}

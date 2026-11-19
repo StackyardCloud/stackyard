@@ -286,6 +286,10 @@ func TestAzureBillingBenefitsSavingsPlanList(t *testing.T) {
 			t.Fatalf("%s matched %d plans", query, len(got["value"].([]any)))
 		}
 	}
+	// The largest take with a skiptoken pages without overflowing.
+	if got := list("&$orderby=properties/displayName&take=9223372036854775807&$skiptoken=1"); names(got) != "bravo,charlie" {
+		t.Fatalf("huge take = %q", names(got))
+	}
 	expiry := list("&$orderby=properties/expiryDate")["value"].([]any)[0].(map[string]any)["properties"].(map[string]any)["expiryDateTime"]
 	if got := list("&$filter=properties/expiryDate+eq+'" + expiry.(string) + "'"); len(got["value"].([]any)) == 0 {
 		t.Fatalf("expiryDate filter matched nothing")
