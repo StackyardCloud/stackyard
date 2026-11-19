@@ -1439,6 +1439,8 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "recommendationsservice": ["recommendationsservice-2022-02-01-plan.md"],
     "postgresqlhsc": ["postgresqlhsc-2023-03-02-preview-plan.md"],
     "newrelic": ["newrelic-2026-06-01-plan.md"],
+    "marketplacecatalog": ["marketplacecatalog-2025-05-01-plan.md"],
+    "workloads": ["workloads-2023-04-01-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],
     "powerbidedicated": ["powerbidedicated-2021-01-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],

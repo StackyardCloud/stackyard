@@ -333,8 +333,9 @@ func registerAzureARMProviderAction(namespace, action string, fn azureARMProvide
 // azureARMLocationAction handles POST /subscriptions/{sub}/providers/
 // {namespace}/locations/{location}/{action} for actions that need the
 // subscription and location, such as per-region usage. Registered as
-// "{action}"; provider actions registered as "locations/{action}" take
-// precedence.
+// "{action}", which may span segments, such as
+// "sapVirtualInstanceMetadata/default/getSizingRecommendations"; provider
+// actions registered as "locations/{action}" take precedence.
 type azureARMLocationAction func(s *Server, sub, location string, payload map[string]any) (int, any)
 
 // ponytail: registered in init() only, like azureARMResourceTypes.
@@ -613,9 +614,9 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 		return true
 	case len(seg) == 5 && strings.EqualFold(seg[2], "providers") && azureARMProviderActions[strings.ToLower(seg[3]+"/"+seg[4])] != nil:
 		return s.invokeAzureARMProviderAction(w, r, seg[3], seg[4])
-	case len(seg) == 7 && strings.EqualFold(seg[0], "subscriptions") && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations") && azureARMProviderActions[strings.ToLower(seg[3]+"/locations/"+seg[6])] == nil && azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+seg[6])] != nil:
+	case len(seg) >= 7 && strings.EqualFold(seg[0], "subscriptions") && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations") && azureARMProviderActions[strings.ToLower(seg[3]+"/locations/"+seg[6])] == nil && azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+strings.Join(seg[6:], "/"))] != nil:
 		sub, location := seg[1], seg[5]
-		action := azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+seg[6])]
+		action := azureARMLocationActions[strings.ToLower(seg[3]+"/locations/"+strings.Join(seg[6:], "/"))]
 		s.serveAzureARMPost(w, r, func(payload map[string]any) (int, any) { return action(s, sub, location, payload) })
 		return true
 	case len(seg) == 7 && strings.EqualFold(seg[2], "providers") && strings.EqualFold(seg[4], "locations"):
