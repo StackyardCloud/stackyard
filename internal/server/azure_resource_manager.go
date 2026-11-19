@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -66,6 +67,10 @@ type azureARMResourceType struct {
 	// or change other records, such as moving a collection's resources.
 	// They run without the store lock held. Optional.
 	ServerActions map[string]func(s *Server, rec *azureARMResource, payload map[string]any) (int, any)
+	// StringBodyActions are the Actions or ServerActions, keyed like them,
+	// whose request body is a bare JSON string; it arrives as
+	// payload["body"]. Optional.
+	StringBodyActions map[string]bool
 	// Transitions are POST operations that merge server-owned properties
 	// into the stored resource and return 200 with no body, keyed like
 	// Actions, e.g. "stop": {"state": "Stopped"}. Optional.
@@ -457,21 +462,30 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	for i >= 0 && !strings.EqualFold(seg[i], "providers") {
 		i--
 	}
-	var key, scope, collection string
-	nested := len(seg)-i == 5 || len(seg)-i == 6
+	var key, scope, collection, root string
+	n := len(seg) - i
+	nested := n >= 5
+	// c is the index of the collection segment in a nested path, which may
+	// sit under another view's item, as in {resourceId}/servers/{name}/
+	// configurations.
+	c := len(seg) - 1 - (n+1)%2
 	switch {
 	case i < 0:
 		return false
-	case len(seg)-i == 3 || len(seg)-i == 4:
+	case n == 3 || n == 4:
 		key = seg[i+1] + "/" + seg[i+2]
 		if i > 0 {
 			scope = "/" + strings.Join(seg[:i], "/")
 		}
 		collection = scope + "/providers/" + key
 	case nested:
-		key = seg[i+1] + "/" + seg[i+2] + "/" + seg[i+4]
-		scope = "/" + strings.Join(seg[:i+4], "/")
-		collection = scope + "/" + seg[i+4]
+		key = seg[i+1] + "/" + seg[i+2]
+		for j := i + 4; j <= c; j += 2 {
+			key += "/" + seg[j]
+		}
+		scope = "/" + strings.Join(seg[:c], "/")
+		collection = scope + "/" + seg[c]
+		root = "/" + strings.Join(seg[:i+4], "/")
 	default:
 		return false
 	}
@@ -496,13 +510,16 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	// Only stored parents can be missing; others, such as Azure support
 	// services, are views themselves.
 	_, stored := lookupAzureARMResourceType(seg[i+1], seg[i+2])
-	parentMissing := nested && stored && s.azureARMResources[azureARMKey(scope)] == nil
+	parentMissing := nested && stored && s.azureARMResources[azureARMKey(root)] == nil
 	s.providerStorageMu.Unlock()
 	switch {
 	case groupMissing:
 		azureARMNotFound(w, "ResourceGroupNotFound", scope, "")
 		return true
 	case parentMissing:
+		azureARMNotFound(w, "ParentResourceNotFound", collection, root)
+		return true
+	case nested && c > i+4 && !s.azureARMViewHas(key[:strings.LastIndex(key, "/")], seg[:c], r.URL.Query()):
 		azureARMNotFound(w, "ParentResourceNotFound", collection, scope)
 		return true
 	}
@@ -510,7 +527,7 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	if items == nil {
 		items = []map[string]any{}
 	}
-	if len(seg)-i == 3 || len(seg)-i == 5 {
+	if n%2 == 1 {
 		respondJSON(w, http.StatusOK, map[string]any{"value": items})
 		return true
 	}
@@ -525,6 +542,22 @@ func (s *Server) handleAzureARMView(w http.ResponseWriter, r *http.Request, seg 
 	}
 	azureARMNotFound(w, "ResourceNotFound", id, "")
 	return true
+}
+
+// azureARMViewHas reports whether the item at path, the parent of a view
+// nested under another collection, exists: an item the view registered as
+// key lists, or a stored resource when no view is registered there.
+func (s *Server) azureARMViewHas(key string, path []string, query url.Values) bool {
+	id := "/" + strings.Join(path, "/")
+	list := azureARMViews[strings.ToLower(key)]
+	if list == nil {
+		s.providerStorageMu.Lock()
+		defer s.providerStorageMu.Unlock()
+		return s.azureARMResources[azureARMKey(id)] != nil
+	}
+	return slices.ContainsFunc(list(s, "/"+strings.Join(path[:len(path)-2], "/"), query), func(item map[string]any) bool {
+		return strings.EqualFold(azureARMString(item["id"]), id)
+	})
 }
 
 // azureARMNameChecks maps a lower-cased "{namespace}/{collection}" to the
@@ -604,6 +637,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	// POST {resourceId}/{action}: the trailing segment is an action, not a type.
 	var action azureARMAction
 	var transition map[string]any
+	var stringBody bool
 	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
 		typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest[:len(rest)-1]))
 		verb := strings.ToLower(rest[len(rest)-1])
@@ -611,6 +645,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 			return false
 		}
 		action, transition = s.azureARMActionFor(typ, verb), typ.Transitions[verb]
+		stringBody = typ.StringBodyActions[verb]
 		if action == nil && transition == nil {
 			return false
 		}
@@ -665,7 +700,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	name := rest[len(rest)-1]
 
 	if action != nil {
-		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
+		s.invokeAzureARMAction(w, r, action, stringBody, id, sub, rg, parentID)
 		return true
 	}
 	if transition != nil {
@@ -802,7 +837,7 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	}
 	switch {
 	case action != nil:
-		s.invokeAzureARMAction(w, r, action, id, sub, rg, parentID)
+		s.invokeAzureARMAction(w, r, action, typ.StringBodyActions[verb], id, sub, rg, parentID)
 		return true
 	case transition != nil:
 		s.transitionAzureARMResource(w, transition, id, sub, rg, parentID)
@@ -868,8 +903,8 @@ func azureARMTypePath(rest []string) string {
 	return strings.Join(types, "/")
 }
 
-func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, action azureARMAction, id, sub, rg, parentID string) {
-	payload, ok := azureARMReadBody(w, r)
+func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, action azureARMAction, stringBody bool, id, sub, rg, parentID string) {
+	payload, ok := azureARMReadBodyAs(w, r, stringBody)
 	if !ok {
 		return
 	}
@@ -1315,6 +1350,12 @@ func azureARMDerivedKey(id, label string) string {
 
 // azureARMReadBody decodes a JSON object body; an empty body is an empty object.
 func azureARMReadBody(w http.ResponseWriter, r *http.Request) (map[string]any, bool) {
+	return azureARMReadBodyAs(w, r, false)
+}
+
+// azureARMReadBodyAs is azureARMReadBody that, with allowString, also takes
+// a bare JSON string as payload["body"], the name REST references give it.
+func azureARMReadBodyAs(w http.ResponseWriter, r *http.Request, allowString bool) (map[string]any, bool) {
 	body, err := readBodyBytes(r)
 	if err != nil {
 		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", "unable to read request body")
@@ -1323,6 +1364,10 @@ func azureARMReadBody(w http.ResponseWriter, r *http.Request) (map[string]any, b
 	payload := map[string]any{}
 	if strings.TrimSpace(string(body)) == "" {
 		return payload, true
+	}
+	var text string
+	if allowString && strings.HasPrefix(strings.TrimSpace(string(body)), `"`) && json.Unmarshal(body, &text) == nil {
+		return map[string]any{"body": text}, true
 	}
 	if err := json.Unmarshal(body, &payload); err != nil || payload == nil {
 		azureARMError(w, http.StatusBadRequest, "InvalidRequestContent", "The request content was invalid and could not be deserialized.")
