@@ -125,6 +125,11 @@ func azureFlexibleServerDatabaseDefaults(f azureFlexibleServerFlavor, rec *azure
 // azureFlexibleServerCheckName checks a server name; host names are global,
 // so it compares across all subscriptions and regions.
 func (s *Server) azureFlexibleServerCheckName(f azureFlexibleServerFlavor, payload map[string]any) (int, any) {
+	// Microsoft.DBforPostgreSQL checks Cosmos DB for PostgreSQL cluster
+	// names at the same endpoint.
+	if strings.EqualFold(azureARMString(payload["type"]), azurePGClusterType) {
+		return s.azurePGClusterCheckName(payload)
+	}
 	name := strings.TrimSpace(azureARMString(payload["name"]))
 	if name == "" {
 		return http.StatusBadRequest, azureARMErrorBody("InvalidRequestContent", "name is required")
