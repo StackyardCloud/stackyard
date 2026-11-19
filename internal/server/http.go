@@ -2185,7 +2185,7 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		}
 		// Resource groups and the shared ARM handler match narrow, exact routes,
 		// so they run first; anything they don't own falls through.
-		if s.handleAzureMarketplaceCatalogRouter(w, r) {
+		if s.handleAzureMarketplaceCatalogRouter(w, r) || s.handleAzureBillingBenefitsRouter(w, r) {
 			return
 		}
 		if s.handleAzureResourcesRouter(w, r) {
