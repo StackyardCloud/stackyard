@@ -1441,6 +1441,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "newrelic": ["newrelic-2026-06-01-plan.md"],
     "marketplacecatalog": ["marketplacecatalog-2025-05-01-plan.md"],
     "workloads": ["workloads-2023-04-01-plan.md"],
+    "oracle": ["oracle-2026-06-01-plan.md"],
     "billingbenefits": ["billingbenefits-2026-06-01-plan.md"],
     "hybridnetwork": ["hybridnetwork-2023-09-01-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],

@@ -175,9 +175,13 @@ type azureARMResource struct {
 	Tags           map[string]any
 	Identity       map[string]any
 	SKU            map[string]any
-	Properties     map[string]any
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	// Zones and Plan are the optional top-level zones and marketplace plan
+	// some resources carry, such as Oracle Exadata infrastructure.
+	Zones      []any
+	Plan       map[string]any
+	Properties map[string]any
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 	// APIVersion is the api-version of the PUT that wrote the record, or
 	// of its parent's for children ARM creates with it, such as the version
 	// a Terraform export names. Empty for records custom routers store.
@@ -1051,6 +1055,8 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		Tags:       azureARMObject(payload["tags"]),
 		Identity:   azureARMObject(payload["identity"]),
 		SKU:        azureARMObject(payload["sku"]),
+		Zones:      azureARMSlice(payload["zones"]),
+		Plan:       azureARMObject(payload["plan"]),
 		Properties: azureARMObject(payload["properties"]),
 		CreatedAt:  now,
 		UpdatedAt:  now,
@@ -1199,6 +1205,12 @@ func (s *Server) patchAzureARMRecord(typ azureARMResourceType, id, sub, rg, pare
 	if sku := azureARMObject(payload["sku"]); len(sku) != 0 {
 		updated.SKU = sku
 	}
+	if zones, ok := payload["zones"].([]any); ok {
+		updated.Zones = slices.Clone(zones)
+	}
+	if plan := azureARMObject(payload["plan"]); len(plan) != 0 {
+		updated.Plan = azureARMMerge(existing.Plan, plan)
+	}
 	updated.UpdatedAt = time.Now().UTC()
 	updated.Properties = azureARMMerge(existing.Properties, azureARMObject(payload["properties"]))
 	updated.Properties = azureARMMerge(azureARMWithState(typ, azureARMProperties(typ, updated), existing), state)
@@ -1325,6 +1337,12 @@ func (rec *azureARMResource) fixture() map[string]any {
 	}
 	if len(rec.SKU) != 0 {
 		out["sku"] = rec.SKU
+	}
+	if len(rec.Zones) != 0 {
+		out["zones"] = rec.Zones
+	}
+	if len(rec.Plan) != 0 {
+		out["plan"] = rec.Plan
 	}
 	return out
 }
