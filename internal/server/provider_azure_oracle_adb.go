@@ -73,7 +73,7 @@ func azureOracleRegisterADB() {
 		ValidatePatch: func(_ *Server, existing *azureARMResource, _ map[string]any) string {
 			return azureOracleManualBackup(existing)
 		},
-		ValidateDelete: azureOracleManualBackup,
+		ValidateDelete: func(_ *Server, existing *azureARMResource) string { return azureOracleManualBackup(existing) },
 	})
 }
 

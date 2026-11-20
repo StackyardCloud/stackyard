@@ -62,7 +62,7 @@ func init() {
 			}
 			return ""
 		},
-		ValidateDelete: func(existing *azureARMResource) string {
+		ValidateDelete: func(_ *Server, existing *azureARMResource) string {
 			if !slices.Contains(azureDataBoxFinished, azureDataBoxStatus(existing)) {
 				return "Only completed or cancelled jobs can be deleted; cancel job " + existing.Name + " first."
 			}

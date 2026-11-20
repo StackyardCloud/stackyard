@@ -1444,6 +1444,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "oracle": ["oracle-2026-06-01-plan.md"],
     "billingbenefits": ["billingbenefits-2026-06-01-plan.md"],
     "hybridnetwork": ["hybridnetwork-2023-09-01-plan.md"],
+    "horizondb": ["horizondb-2026-10-01-preview-plan.md"],
     "marketplaceordering": ["marketplaceordering-2021-01-01-plan.md"],
     "powerbidedicated": ["powerbidedicated-2021-01-01-plan.md"],
     "resourcemover": ["resourcemover-2023-08-01-plan.md"],
