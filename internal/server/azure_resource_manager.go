@@ -1,8 +1,10 @@
 package server
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -137,7 +139,31 @@ type azureARMResourceType struct {
 	// the store lock, so ValidatePatch may read the store but not lock it.
 	// Optional.
 	ValidatePatch  func(s *Server, existing *azureARMResource, payload map[string]any) string
-	ValidateDelete func(existing *azureARMResource) string
+	ValidateDelete func(s *Server, existing *azureARMResource) string
+	// ValidatePut returns an error code (default "Conflict") and a
+	// non-empty message to reject a PUT with 409, given the stored record
+	// (nil on create) and the new one with its final ID, such as a limit on
+	// sibling resources. It runs under the store lock before Reconcile, so
+	// it may read the store but not lock it. Optional.
+	ValidatePut func(s *Server, existing, rec *azureARMResource) (code, msg string)
+	// Deleted runs under the store lock after a DELETE removed the
+	// resource and its children, for changes to other records it implies,
+	// such as connections a parent loses with its last child. Optional.
+	Deleted func(s *Server, removed *azureARMResource)
+	// ETag adds an etag to the type's responses, which changes with every
+	// write. Optional.
+	ETag bool
+	// IfMatchActions are the Actions or ServerActions, keyed like them,
+	// that require an If-Match header matching the resource's etag:
+	// missing is 400 here. The action gets the header in
+	// payload[azureARMIfMatch] and checks it under the store lock with
+	// azureARMIfMatchStale, answering azureARMPreconditionFailed (412) when
+	// stale, so racing requests can't both pass. "*" matches any, and a
+	// weak W/ prefix is ignored. Set ETag with it. Optional.
+	IfMatchActions map[string]bool
+	// NoPut rejects PUT with 405 for resources only the service creates,
+	// such as configurations every parent has. Optional.
+	NoPut bool
 	// NoPatch rejects PATCH with 405 for APIs that have none. Types with
 	// Linked don't accept PATCH either, unless they set PatchBody.
 	NoPatch bool
@@ -642,7 +668,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	// POST {resourceId}/{action}: the trailing segment is an action, not a type.
 	var action azureARMAction
 	var transition map[string]any
-	var stringBody bool
+	var stringBody, ifMatch bool
 	if r.Method == http.MethodPost && len(rest) >= 3 && len(rest)%2 == 1 {
 		typ, ok := lookupAzureARMResourceType(namespace, azureARMTypePath(rest[:len(rest)-1]))
 		verb := strings.ToLower(rest[len(rest)-1])
@@ -650,7 +676,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 			return false
 		}
 		action, transition = s.azureARMActionFor(typ, verb), typ.Transitions[verb]
-		stringBody = typ.StringBodyActions[verb]
+		stringBody, ifMatch = typ.StringBodyActions[verb], typ.IfMatchActions[verb]
 		if action == nil && transition == nil {
 			return false
 		}
@@ -705,7 +731,7 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 	name := rest[len(rest)-1]
 
 	if action != nil {
-		s.invokeAzureARMAction(w, r, action, stringBody, id, sub, rg, parentID)
+		s.invokeAzureARMAction(w, r, action, stringBody, ifMatch, id, sub, rg, parentID)
 		return true
 	}
 	if transition != nil {
@@ -721,6 +747,10 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ azureARMResourceType, id, sub, rg, parentID, name string) {
 	switch r.Method {
 	case http.MethodPut:
+		if typ.NoPut {
+			azureARMError(w, http.StatusMethodNotAllowed, "MethodNotAllowed", "method not allowed")
+			return
+		}
 		s.putAzureARMResource(w, r, typ, id, sub, rg, parentID, name)
 	case http.MethodPatch:
 		if (typ.Linked != nil && typ.PatchBody == nil) || typ.NoPatch {
@@ -748,8 +778,9 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 			return
 		}
 		s.providerStorageMu.Lock()
-		if existing := s.azureARMResources[azureARMKey(id)]; existing != nil && typ.ValidateDelete != nil {
-			if msg := typ.ValidateDelete(existing); msg != "" {
+		existing := s.azureARMResources[azureARMKey(id)]
+		if existing != nil && typ.ValidateDelete != nil {
+			if msg := typ.ValidateDelete(s, existing); msg != "" {
 				s.providerStorageMu.Unlock()
 				azureARMError(w, http.StatusConflict, "Conflict", msg)
 				return
@@ -757,6 +788,9 @@ func (s *Server) serveAzureARMItem(w http.ResponseWriter, r *http.Request, typ a
 		}
 		// Child and extension resources go with their parent.
 		existed := s.deleteAzureARMTreeLocked(id)
+		if existed && typ.Deleted != nil {
+			typ.Deleted(s, existing)
+		}
 		if parentID != "" {
 			s.refreshAzureARMParentLocked(parentID)
 		}
@@ -842,7 +876,7 @@ func (s *Server) handleAzureARMExtension(w http.ResponseWriter, r *http.Request,
 	}
 	switch {
 	case action != nil:
-		s.invokeAzureARMAction(w, r, action, typ.StringBodyActions[verb], id, sub, rg, parentID)
+		s.invokeAzureARMAction(w, r, action, typ.StringBodyActions[verb], typ.IfMatchActions[verb], id, sub, rg, parentID)
 		return true
 	case transition != nil:
 		s.transitionAzureARMResource(w, transition, id, sub, rg, parentID)
@@ -908,7 +942,7 @@ func azureARMTypePath(rest []string) string {
 	return strings.Join(types, "/")
 }
 
-func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, action azureARMAction, stringBody bool, id, sub, rg, parentID string) {
+func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, action azureARMAction, stringBody, ifMatch bool, id, sub, rg, parentID string) {
 	payload, ok := azureARMReadBodyAs(w, r, stringBody)
 	if !ok {
 		return
@@ -917,6 +951,13 @@ func (s *Server) invokeAzureARMAction(w http.ResponseWriter, r *http.Request, ac
 	if record == nil {
 		azureARMNotFound(w, code, id, parentID)
 		return
+	}
+	// The action compares the etag under the store lock (azureARMIfMatchStale).
+	if match := strings.TrimPrefix(r.Header.Get("If-Match"), "W/"); ifMatch && match == "" {
+		azureARMError(w, http.StatusBadRequest, "MissingIfMatchHeader", "The If-Match header is required.")
+		return
+	} else if ifMatch {
+		payload = azureARMMerge(payload, map[string]any{azureARMIfMatch: match})
 	}
 	status, body := action(record, payload)
 	respondAzureARMAction(w, status, body)
@@ -1114,6 +1155,12 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 		}
 		// Server-owned properties see the final ID and creation time.
 		record.Properties = azureARMWithState(typ, azureARMProperties(typ, record), existing)
+		if typ.ValidatePut != nil {
+			if code, msg := typ.ValidatePut(s, existing, record); msg != "" {
+				azureARMError(w, http.StatusConflict, cmp.Or(code, "Conflict"), msg)
+				return nil, false
+			}
+		}
 		if !s.reconcileAzureARMLocked(w, typ, existing, record) {
 			return nil, false
 		}
@@ -1344,7 +1391,31 @@ func (rec *azureARMResource) fixture() map[string]any {
 	if len(rec.Plan) != 0 {
 		out["plan"] = rec.Plan
 	}
+	if azureARMResourceTypes[strings.ToLower(rec.Type)].ETag {
+		out["etag"] = rec.etag()
+	}
 	return out
+}
+
+// azureARMIfMatch is the payload key IfMatchActions receive the If-Match
+// header in; the handler sets it, so a request body can't.
+const azureARMIfMatch = "\x00If-Match"
+
+// azureARMIfMatchStale reports whether an IfMatchActions payload's
+// If-Match no longer matches rec.
+func azureARMIfMatchStale(rec *azureARMResource, payload map[string]any) bool {
+	match := azureARMString(payload[azureARMIfMatch])
+	return match != "*" && match != rec.etag()
+}
+
+func azureARMPreconditionFailed() (int, any) {
+	return http.StatusPreconditionFailed, azureARMErrorBody("PreconditionFailed", "The If-Match header doesn't match the resource's current etag.")
+}
+
+// etag is a quoted hash of the record's ID and last write time.
+func (rec *azureARMResource) etag() string {
+	sum := sha256.Sum256([]byte(azureARMKey(rec.ID) + "#" + rec.UpdatedAt.Format(time.RFC3339Nano)))
+	return `"` + hex.EncodeToString(sum[:8]) + `"`
 }
 
 func azureARMSystemData(created, updated time.Time) map[string]any {
