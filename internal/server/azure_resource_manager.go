@@ -203,11 +203,15 @@ type azureARMResource struct {
 	SKU            map[string]any
 	// Zones and Plan are the optional top-level zones and marketplace plan
 	// some resources carry, such as Oracle Exadata infrastructure.
-	Zones      []any
-	Plan       map[string]any
-	Properties map[string]any
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	Zones []any
+	Plan  map[string]any
+	// ExtendedLocation is the create-time extended location (a custom
+	// location or edge zone) some resources carry, such as Network Cloud
+	// clusters. PATCH keeps it.
+	ExtendedLocation map[string]any
+	Properties       map[string]any
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 	// APIVersion is the api-version of the PUT that wrote the record, or
 	// of its parent's for children ARM creates with it, such as the version
 	// a Terraform export names. Empty for records custom routers store.
@@ -1091,17 +1095,18 @@ func (s *Server) putAzureARMResource(w http.ResponseWriter, r *http.Request, typ
 	now := time.Now().UTC()
 	record := &azureARMResource{
 		ID: id, SubscriptionID: sub, ResourceGroup: rg, Name: name, Type: typ.fullType(),
-		Location:   location,
-		Kind:       azureARMString(payload["kind"]),
-		Tags:       azureARMObject(payload["tags"]),
-		Identity:   azureARMObject(payload["identity"]),
-		SKU:        azureARMObject(payload["sku"]),
-		Zones:      azureARMSlice(payload["zones"]),
-		Plan:       azureARMObject(payload["plan"]),
-		Properties: azureARMObject(payload["properties"]),
-		CreatedAt:  now,
-		UpdatedAt:  now,
-		APIVersion: r.URL.Query().Get("api-version"),
+		Location:         location,
+		Kind:             azureARMString(payload["kind"]),
+		Tags:             azureARMObject(payload["tags"]),
+		Identity:         azureARMObject(payload["identity"]),
+		SKU:              azureARMObject(payload["sku"]),
+		Zones:            azureARMSlice(payload["zones"]),
+		Plan:             azureARMObject(payload["plan"]),
+		Properties:       azureARMObject(payload["properties"]),
+		ExtendedLocation: azureARMObject(payload["extendedLocation"]),
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		APIVersion:       r.URL.Query().Get("api-version"),
 	}
 	if typ.ReadOnlySKU != nil {
 		record.SKU = azureARMMerge(record.SKU, typ.ReadOnlySKU(record.SKU))
@@ -1390,6 +1395,9 @@ func (rec *azureARMResource) fixture() map[string]any {
 	}
 	if len(rec.Plan) != 0 {
 		out["plan"] = rec.Plan
+	}
+	if len(rec.ExtendedLocation) != 0 {
+		out["extendedLocation"] = rec.ExtendedLocation
 	}
 	if azureARMResourceTypes[strings.ToLower(rec.Type)].ETag {
 		out["etag"] = rec.etag()
