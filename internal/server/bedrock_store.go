@@ -9,15 +9,30 @@ import (
 type bedrockStore struct {
 	mu     sync.Mutex
 	nextID int64
+	// guardrails and models are the only control-plane records the Bedrock
+	// Runtime reads: guardrail policies for ApplyGuardrail, and the base model
+	// behind provisioned throughput and application inference profile ARNs.
+	guardrails map[string]*bedrockGuardrail
+	models     map[string]string
+}
+
+type bedrockGuardrail struct {
+	id, arn  string
+	versions map[string]map[string]any // "DRAFT" plus numbered snapshots
+	next     int
 }
 
 func newBedrockStore() *bedrockStore {
-	return &bedrockStore{nextID: 1}
+	return &bedrockStore{nextID: 1, guardrails: map[string]*bedrockGuardrail{}, models: map[string]string{}}
 }
 
 func (s *bedrockStore) Handle(action string, payload map[string]any) map[string]any {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if out := s.handleRuntimeRecordLocked(action, payload); out != nil {
+		return out
+	}
 
 	switch action {
 	case "ListFoundationModels":

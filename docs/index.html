@@ -99,6 +99,7 @@
         <a href="#routing-control">Routing Control</a>
         <a href="#augmented-ai">Amazon Augmented AI</a>
         <a href="#bedrock">Bedrock</a>
+        <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
         <a href="#comprehend">Comprehend</a>
@@ -3973,6 +3974,46 @@
         <ul>
                 <li><code>bedrock</code>: <code>docker compose -f examples/aws/bedrock/docker-compose.yml up --build</code></li>
                 <li><code>bedrock</code>: <code>docker compose -f examples/aws/bedrock/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+        <section id="bedrockruntime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Bedrock Runtime</h2>
+        <p>SigV4 signed with service <code>bedrock</code>. REST JSON API under <code>/model/{modelId}/...</code>, <code>/guardrail/...</code>, <code>/guardrail-checks/invoke</code> and <code>/async-invoke</code>. Responses are deterministic echoes in each model family's documented format; streaming operations use the AWS event-stream encoding.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bedrock</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ApplyGuardrail</code></td></tr>
+        <tr><td><code>Converse</code></td></tr>
+        <tr><td><code>ConverseStream</code></td></tr>
+        <tr><td><code>CountTokens</code></td></tr>
+        <tr><td><code>GetAsyncInvoke</code></td></tr>
+        <tr><td><code>InvokeGuardrailChecks</code></td></tr>
+        <tr><td><code>InvokeModel</code></td></tr>
+        <tr><td><code>InvokeModelWithBidirectionalStream</code></td></tr>
+        <tr><td><code>InvokeModelWithResponseStream</code></td></tr>
+        <tr><td><code>ListAsyncInvokes</code></td></tr>
+        <tr><td><code>StartAsyncInvoke</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>bedrock-runtime</code>: <code>docker compose -f examples/aws/bedrock-runtime/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
