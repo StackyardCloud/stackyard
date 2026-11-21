@@ -256,6 +256,7 @@
         <a href="#rtb-fabric">RTB Fabric</a>
         <a href="#rds">RDS</a>
         <a href="#redshift">Redshift</a>
+        <a href="#redshift-data">Redshift Data API</a>
         <a href="#redshift-serverless">Redshift Serverless</a>
         <a href="#rekognition">Rekognition</a>
         <a href="#sagemaker">SageMaker</a>
@@ -17595,6 +17596,38 @@
         <ul>
         <li><code>redshift</code>: <code>docker compose -f examples/aws/redshift/docker-compose.yml up --build</code></li>
         <li><code>redshift</code>: <code>docker compose -f examples/aws/redshift/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="redshift-data" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Redshift Data API</h2>
+        <p>SigV4 signed with service <code>redshift-data</code>. The Data API exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: RedshiftData.&lt;Action&gt;</code>. Statements target a provisioned cluster from the Redshift emulation or a Redshift Serverless workgroup, run on a small in-memory SQL engine (CREATE TABLE/SCHEMA/DATABASE, DROP TABLE, INSERT, SELECT, UPDATE, DELETE), and finish on the next API call so a queued statement can still be cancelled.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: redshift-data</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>12</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/redshiftdata_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>redshift-data</code>: <code>docker compose -f examples/aws/redshift-data/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

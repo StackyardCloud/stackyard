@@ -848,6 +848,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/redshift/docker-compose.yml"
   },
   {
+    id: "redshift-data",
+    name: "Redshift Data API",
+    category: "database",
+    summary: "Run SQL statements against Redshift clusters and Serverless workgroups over HTTP.",
+    docsHref: "../../../index.html#redshift-data",
+    exampleHref: "../../../../examples/aws/redshift-data/docker-compose.yml"
+  },
+  {
     id: "ram",
     name: "RAM",
     category: "integration",

@@ -553,6 +553,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "redshift-serverless",
         "ops_file": REPO_ROOT / "internal/server/redshiftserverless_ops.go",
     },
+    "redshiftdata": {
+        "cli": "redshift-data",
+        "ops_file": REPO_ROOT / "internal/server/redshiftdata_ops.go",
+    },
     "s3": {"cli": "s3api", "ops_file": None},
     "s3control": {"cli": "s3control", "ops_file": None},
     "s3outposts": {"cli": "s3outposts", "ops_file": None},
@@ -2124,6 +2128,12 @@ SERVICE_ALIASES = {
     "amazon redshift serverless": "redshiftserverless",
     "awsredshiftserverless": "redshiftserverless",
     "aws redshift serverless": "redshiftserverless",
+    "redshiftdata": "redshiftdata",
+    "redshift-data": "redshiftdata",
+    "redshift data": "redshiftdata",
+    "redshift data api": "redshiftdata",
+    "amazonredshiftdata": "redshiftdata",
+    "amazon redshift data api": "redshiftdata",
     "secretsmanager": "secretsmanager",
     "secrets-manager": "secretsmanager",
     "signer": "signer",
@@ -2988,6 +2998,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "mwaa": {},
     "mwaaserverless": {},
     "redshiftserverless": {},
+    "redshiftdata": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
     "bedrockagentcorecontrol": {},
@@ -30020,6 +30031,60 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+REDSHIFTDATA_WORKGROUP = "stackyard-redshiftdata"  # created below so other shards deleting the seed workgroup don't matter
+REDSHIFTDATA_TABLE = "stackyard_coverage"
+
+
+def redshiftdata_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a workgroup, a secret and a table, then fill each
+    Redshift Data payload with a live target or a fresh statement Id."""
+    state = RUNTIME_STATE.setdefault("redshiftdata", {})
+    conn = {"Database": "dev", "WorkgroupName": REDSHIFTDATA_WORKGROUP}
+
+    def _execute(sql: str, *extra: str) -> str:
+        out = run_aws_json(
+            aws_bin, endpoint_url, region, "redshift-data", "execute-statement", env,
+            ["--database", "dev", "--workgroup-name", REDSHIFTDATA_WORKGROUP, "--sql", sql, *extra],
+        )
+        return str((out or {}).get("Id") or "")
+
+    if not state.get("secret_arn"):
+        run_aws_json(
+            aws_bin, endpoint_url, region, "redshift-serverless", "create-workgroup", env,
+            ["--workgroup-name", REDSHIFTDATA_WORKGROUP, "--namespace-name", "stackyard-namespace"],
+        )
+        name = "stackyard-redshiftdata-coverage"
+        secret = run_aws_json(aws_bin, endpoint_url, region, "secretsmanager", "describe-secret", env, ["--secret-id", name])
+        if not secret:
+            secret = run_aws_json(
+                aws_bin, endpoint_url, region, "secretsmanager", "create-secret", env,
+                ["--name", name, "--secret-string", '{"username":"awsuser","password":"stackyard"}'],
+            )
+        state["secret_arn"] = str((secret or {}).get("ARN") or "")
+        _execute(f"CREATE TABLE IF NOT EXISTS {REDSHIFTDATA_TABLE} (id INT, name VARCHAR(20))", "--wait-time-seconds", "1")
+    op = endpoint.operation
+    if op == "ExecuteStatement":
+        return {**conn, "Sql": f"SELECT * FROM {REDSHIFTDATA_TABLE}", "SecretArn": state["secret_arn"]}
+    if op == "BatchExecuteStatement":
+        return {**conn, "Sqls": [f"INSERT INTO {REDSHIFTDATA_TABLE} VALUES (1, 'a')", f"SELECT * FROM {REDSHIFTDATA_TABLE}"]}
+    if op in ("DescribeStatement", "GetStatementResult", "CancelStatement"):
+        return {"Id": _execute(f"SELECT * FROM {REDSHIFTDATA_TABLE}")}
+    if op == "GetStatementResultV2":
+        return {"Id": _execute(f"SELECT * FROM {REDSHIFTDATA_TABLE}", "--result-format", "CSV")}
+    if op in ("ListDatabases", "ListSchemas", "ListTables"):
+        return dict(conn)
+    if op == "DescribeTable":
+        return {**conn, "Table": REDSHIFTDATA_TABLE}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30030,6 +30095,9 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "redshiftdata":
+        return redshiftdata_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)
