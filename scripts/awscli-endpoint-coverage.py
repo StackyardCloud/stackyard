@@ -512,6 +512,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cognitosync": {"cli": "cognito-sync", "ops_file": REPO_ROOT / "internal/server/cognitosync_ops.go"},
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
+    "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
     "ecr": {"cli": "ecr", "ops_file": REPO_ROOT / "internal/server/ecr_ops.go"},
@@ -2059,6 +2060,10 @@ SERVICE_ALIASES = {
     "auroradsql": "dsql",
     "aurora-dsql": "dsql",
     "amazonauroradsql": "dsql",
+    "rdsdata": "rdsdata",
+    "rds-data": "rdsdata",
+    "rdsdataservice": "rdsdata",
+    "amazonrdsdataservice": "rdsdata",
     "acmpca": "privateca",
     "acm-pca": "privateca",
     "events": "eventbridge",
@@ -34463,6 +34468,110 @@ def hydrate_payload_with_service_state(
             _replace_payload({"resourceArn": arn, "tagKeys": ["team"]})
             return hydrated
 
+        return hydrated
+
+    if endpoint.service == "rdsdata":
+        hydrated = copy.deepcopy(payload)
+        op = endpoint.operation
+        state = RUNTIME_STATE.setdefault("rdsdata", {})
+
+        def _ensure_rdsdata_target() -> tuple[str, str]:
+            cluster_arn = str(state.get("cluster_arn", ""))
+            secret_arn = str(state.get("secret_arn", ""))
+            if cluster_arn and secret_arn:
+                return cluster_arn, secret_arn
+            cluster_id = f"coverage-data-api-{int(time.time() * 1000) % 1000000}"
+            created = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "create-db-cluster",
+                env,
+                [
+                    "--db-cluster-identifier",
+                    cluster_id,
+                    "--engine",
+                    "aurora-postgresql",
+                    "--master-username",
+                    "admin",
+                    "--master-user-password",
+                    "Coverage1234",
+                    "--database-name",
+                    "app",
+                    "--enable-http-endpoint",
+                ],
+            )
+            if isinstance(created, dict):
+                cluster_arn = str((created.get("DBCluster") or {}).get("DBClusterArn", ""))
+            secret = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "secretsmanager",
+                "create-secret",
+                env,
+                [
+                    "--name",
+                    f"{cluster_id}-creds",
+                    "--secret-string",
+                    '{"username":"admin","password":"Coverage1234"}',
+                ],
+            )
+            if isinstance(secret, dict):
+                secret_arn = str(secret.get("ARN", ""))
+            state["cluster_arn"], state["secret_arn"] = cluster_arn, secret_arn
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds-data",
+                "execute-statement",
+                env,
+                [
+                    "--resource-arn",
+                    cluster_arn,
+                    "--secret-arn",
+                    secret_arn,
+                    "--sql",
+                    "CREATE TABLE IF NOT EXISTS coverage_items (id SERIAL PRIMARY KEY, name TEXT)",
+                ],
+            )
+            return cluster_arn, secret_arn
+
+        def _begin_rdsdata_transaction(cluster_arn: str, secret_arn: str) -> str:
+            begun = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds-data",
+                "begin-transaction",
+                env,
+                ["--resource-arn", cluster_arn, "--secret-arn", secret_arn],
+            )
+            return str(begun.get("transactionId", "")) if isinstance(begun, dict) else ""
+
+        cluster_arn, secret_arn = _ensure_rdsdata_target()
+        target = {"resourceArn": cluster_arn, "secretArn": secret_arn}
+        hydrated.clear()
+        if op == "ExecuteStatement":
+            hydrated.update(target, sql="SELECT id, name FROM coverage_items", includeResultMetadata=True)
+        elif op == "BatchExecuteStatement":
+            hydrated.update(
+                target,
+                sql="INSERT INTO coverage_items (name) VALUES (:name)",
+                parameterSets=[[{"name": "name", "value": {"stringValue": "coverage"}}]],
+            )
+        elif op == "BeginTransaction":
+            hydrated.update(target)
+        elif op in {"CommitTransaction", "RollbackTransaction"}:
+            hydrated.update(target, transactionId=_begin_rdsdata_transaction(cluster_arn, secret_arn))
+        elif op == "ExecuteSql":
+            hydrated.update(
+                dbClusterOrInstanceArn=cluster_arn,
+                awsSecretStoreArn=secret_arn,
+                sqlStatements="SELECT id FROM coverage_items",
+            )
         return hydrated
 
     if endpoint.service == "eventbridge":

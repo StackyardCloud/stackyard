@@ -142,6 +142,7 @@
         <a href="#healthlake">HealthLake</a>
         <a href="#batch">Batch</a>
         <a href="#aurora-dsql">Aurora DSQL</a>
+        <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
         <a href="#ec2">EC2</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
@@ -15524,6 +15525,55 @@
         <ul>
                 <li><code>aurora-dsql</code>: <code>docker compose -f examples/aws/aurora-dsql/docker-compose.yml up --build</code></li>
                 <li><code>aurora-dsql</code>: <code>docker compose -f examples/aws/aurora-dsql/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+        <section id="rds-data" class="service">
+
+        <div class="service-header">
+        <h2>Amazon RDS Data API</h2>
+        <p>SigV4 signed with service <code>rds-data</code>. REST JSON API over <code>POST /Execute</code>, <code>/BatchExecute</code>, <code>/BeginTransaction</code>, <code>/CommitTransaction</code>, <code>/RollbackTransaction</code> and <code>/ExecuteSql</code>. Statements target an RDS DB cluster ARN with the HTTP endpoint enabled (<code>EnableHttpEndpoint</code> or <code>--enable-http-endpoint</code>) and an existing Secrets Manager secret. The emulator runs a small SQL subset: <code>CREATE TABLE</code>, <code>DROP TABLE</code>, <code>INSERT ... VALUES</code>, <code>SELECT * | columns FROM</code>, <code>UPDATE ... SET</code> and <code>DELETE FROM</code>, with <code>WHERE col = value</code> terms joined by <code>AND</code> and <code>:named</code> parameters. Other SQL returns <code>BadRequestException</code>. Transactions see their own writes, apply on commit, and expire after three idle minutes.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: rds-data</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchExecuteStatement</code></td>
+        </tr>
+        <tr>
+        <td><code>BeginTransaction</code></td>
+        </tr>
+        <tr>
+        <td><code>CommitTransaction</code></td>
+        </tr>
+        <tr>
+        <td><code>ExecuteSql</code></td>
+        </tr>
+        <tr>
+        <td><code>ExecuteStatement</code></td>
+        </tr>
+        <tr>
+        <td><code>RollbackTransaction</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>rds-data</code>: <code>docker compose -f examples/aws/rds-data/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
