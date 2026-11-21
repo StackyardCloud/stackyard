@@ -23,6 +23,7 @@ const (
 	rsdTargetPrefix   = "RedshiftData."
 	rsdRetention      = 24 * time.Hour // results, statements and sessions are kept for 24 hours
 	rsdResultPageRows = 1000
+	rsdMaxStatements  = 1000
 )
 
 var (
@@ -250,7 +251,7 @@ func (s *Server) resolveRedshiftDataTarget(req *rsdRequest) (rsdTarget, *rsdErr)
 			return t, rsdBad("Cluster %s is paused", req.ClusterIdentifier)
 		}
 		t.cluster = req.ClusterIdentifier
-		t.key = fmt.Sprintf("cluster:%s:%d", t.cluster, created.UnixNano())
+		t.key = rsdClusterKey(t.cluster, created)
 		t.defaultDBs = []string{"dev", dbName}
 	default:
 		if len(req.WorkgroupName) < 3 || len(req.WorkgroupName) > 128 || !rsdWorkgroupRE.MatchString(req.WorkgroupName) {
@@ -278,7 +279,7 @@ func (s *Server) resolveRedshiftDataTarget(req *rsdRequest) (rsdTarget, *rsdErr)
 			return t, rsdBad("Redshift endpoint doesn't exist in this region: workgroup %s was not found", req.WorkgroupName)
 		}
 		t.workgroup, t.workgroupARN = name, arn
-		t.key = "workgroup:" + name + ":" + created
+		t.key = rsdWorkgroupKey(name, created)
 		t.defaultDBs = []string{"dev", dbName}
 	}
 	t.dbUser = req.DbUser
@@ -307,6 +308,38 @@ func (s *Server) resolveRedshiftDataTarget(req *rsdRequest) (rsdTarget, *rsdErr)
 
 func (st *redshiftDataStore) newIDLocked() string { return uuid.NewString() }
 
+func rsdClusterKey(id string, created time.Time) string {
+	return fmt.Sprintf("cluster:%s:%d", id, created.UnixNano())
+}
+
+func rsdWorkgroupKey(name, created string) string { return "workgroup:" + name + ":" + created }
+
+// pruneRedshiftDataTargets drops the data of clusters and workgroups that no
+// longer exist (or were recreated, which gives them a new key).
+func (s *Server) pruneRedshiftDataTargets() {
+	live := map[string]bool{}
+	s.redshiftMu.Lock()
+	for id, c := range s.redshift.clusters {
+		live[rsdClusterKey(id, c.CreatedAt)] = true
+	}
+	s.redshiftMu.Unlock()
+	s.redshiftserverless.mu.Lock()
+	for _, wg := range s.redshiftserverless.workgroups {
+		if wg.Status != "DELETING" {
+			live[rsdWorkgroupKey(wg.Name, wg.CreatedAtRFC)] = true
+		}
+	}
+	s.redshiftserverless.mu.Unlock()
+	st := s.redshiftData
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	for key := range st.targets {
+		if !live[key] && (st.pending == nil || st.pending.target.key != key) {
+			delete(st.targets, key)
+		}
+	}
+}
+
 // settleLocked runs the pending statement, if any. Statements are executed
 // lazily, on the next API call, so a CancelStatement right after submission can
 // still abort them, as with a real queued query.
@@ -317,12 +350,13 @@ func (st *redshiftDataStore) settleLocked() {
 	now := st.now()
 	if p := st.pending; p != nil {
 		st.pending = nil
-		st.runLocked(p)
+		st.runSafeLocked(p)
 	}
 	cutoff := now.Add(-rsdRetention)
 	kept := st.order[:0]
-	for _, stmt := range st.order {
-		if stmt.created.Before(cutoff) {
+	for i, stmt := range st.order {
+		// ponytail: only the newest rsdMaxStatements are kept, besides the 24-hour retention
+		if stmt.created.Before(cutoff) || len(st.order)-i > rsdMaxStatements {
 			delete(st.statements, stmt.id)
 			continue
 		}
@@ -341,8 +375,48 @@ func (st *redshiftDataStore) settleLocked() {
 	}
 }
 
+// runSafeLocked turns a panic in the SQL engine into a FAILED statement
+// instead of crashing the request.
+func (st *redshiftDataStore) runSafeLocked(stmt *rsdStatement) {
+	defer func() {
+		if r := recover(); r != nil {
+			stmt.status, stmt.errText, stmt.result, stmt.hasResultSet = "FAILED", fmt.Sprintf("ERROR: internal error: %v", r), nil, false
+			stmt.updated = st.now()
+			if stmt.execMode == "TRANSACTION" {
+				st.rollbackSubs(stmt)
+			}
+			for _, sub := range stmt.subs {
+				if sub != nil && sub.status == "SUBMITTED" { // the handler itself must never panic
+					sub.status, sub.updated = "ABORTED", stmt.updated
+				}
+			}
+		}
+	}()
+	st.runLocked(stmt)
+}
+
+// rollbackSubs marks the sub-statements of a rolled-back transaction ABORTED
+// and drops their results, since none of their work survives.
+func (st *redshiftDataStore) rollbackSubs(stmt *rsdStatement) {
+	for _, sub := range stmt.subs {
+		if sub != nil && sub.status == "FINISHED" {
+			sub.status, sub.result, sub.hasResultSet, sub.resultRows, sub.updated = "ABORTED", nil, false, -1, st.now()
+		}
+	}
+	stmt.hasResultSet, stmt.resultRows = false, -1
+}
+
 func (st *redshiftDataStore) runLocked(stmt *rsdStatement) {
 	start := time.Now()
+	if stmt.sessionID != "" {
+		if sess, ok := st.sessions[stmt.sessionID]; !ok || !st.now().Before(sess.ttl) {
+			stmt.status, stmt.errText, stmt.updated = "FAILED", "ERROR: session "+stmt.sessionID+" is closed", st.now()
+			for _, sub := range stmt.subs {
+				sub.status, sub.updated = "ABORTED", stmt.updated
+			}
+			return
+		}
+	}
 	td := st.targetLocked(stmt.target)
 	params := make(map[string]string, len(stmt.params))
 	for _, p := range stmt.params {
@@ -373,10 +447,14 @@ func (st *redshiftDataStore) runLocked(stmt *rsdStatement) {
 				failed = sub.errText
 			}
 		}
-		if failed == "" {
+		switch {
+		case failed == "":
 			stmt.status = "FINISHED"
 			td.dbs = work.dbs
-		} else {
+		case stmt.execMode == "TRANSACTION":
+			stmt.status, stmt.errText = "FAILED", failed
+			st.rollbackSubs(stmt)
+		default:
 			stmt.status, stmt.errText = "FAILED", failed
 		}
 	}
@@ -422,9 +500,6 @@ func rsdRunSQL(td *rsdTargetData, dbName, sql string, params map[string]string, 
 	db, ok := td.dbs[dbName]
 	if !ok {
 		return rsdResult{}, fmt.Errorf("database \"%s\" does not exist", dbName)
-	}
-	if len(sql) > rsdMaxSQLLength {
-		return rsdResult{}, fmt.Errorf("statement is too long")
 	}
 	tokens, err := rsdTokenize(sql)
 	if err != nil {

@@ -323,8 +323,14 @@ func TestRedshiftDataStage1SessionsTokensAndClusters(t *testing.T) {
 	if status != http.StatusOK || body["Database"] != "dev" || body["WorkgroupName"] != rsdTestWorkgroup {
 		t.Fatalf("session reuse: %d %v", status, body)
 	}
+	pendingID := body["Id"]
 	_, sessions := redshiftDataCall(t, ts, "ListSessions", map[string]any{})
-	if items := sessions["Sessions"].([]any); len(items) != 1 || items[0].(map[string]any)["Status"] != "AVAILABLE" {
+	if items := sessions["Sessions"].([]any); len(items) != 1 || items[0].(map[string]any)["Status"] != "BUSY" || items[0].(map[string]any)["CurrentStatementId"] != pendingID {
+		t.Fatalf("a pending statement keeps its session BUSY: %v", sessions)
+	}
+	rsdDescribe(t, ts, pendingID.(string)) // runs the pending statement
+	_, sessions = redshiftDataCall(t, ts, "ListSessions", map[string]any{})
+	if items := sessions["Sessions"].([]any); len(items) != 1 || items[0].(map[string]any)["Status"] != "AVAILABLE" || items[0].(map[string]any)["CurrentStatementId"] != nil {
 		t.Fatalf("list sessions: %v", sessions)
 	}
 	if status, _ := redshiftDataCall(t, ts, "ListSessions", map[string]any{"SessionId": sessionID, "Status": "BUSY"}); status != http.StatusBadRequest {

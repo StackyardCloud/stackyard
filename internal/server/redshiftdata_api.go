@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -17,6 +16,7 @@ func (s *Server) redshiftDataDispatch(action string, req *rsdRequest, body []byt
 	if req.WaitTimeSeconds != nil && (*req.WaitTimeSeconds < 1 || *req.WaitTimeSeconds > 30) {
 		return nil, rsdBad("WaitTimeSeconds must be between 1 and 30")
 	}
+	s.pruneRedshiftDataTargets()
 	switch action {
 	case "ExecuteStatement":
 		return s.redshiftDataSubmit(req, body, false)
@@ -78,6 +78,9 @@ func (s *Server) redshiftDataSubmit(req *rsdRequest, body []byte, batch bool) (a
 	for _, sql := range sqls {
 		if strings.TrimSpace(sql) == "" {
 			return nil, rsdBad("SQL statements must not be empty")
+		}
+		if len(sql) > rsdMaxSQLLength {
+			return nil, rsdBad("SQL statements must be at most %d bytes", rsdMaxSQLLength)
 		}
 	}
 	if req.Parameters != nil && len(req.Parameters) == 0 {
@@ -157,10 +160,14 @@ func (s *Server) redshiftDataSubmit(req *rsdRequest, body []byte, batch bool) (a
 	st.settleLocked()
 	if req.ClientToken != nil {
 		if prior, ok := st.tokens[*req.ClientToken]; ok {
-			if stmt, live := st.statements[prior.statementID]; live && prior.fingerprint == fp {
+			stmt, live := st.statements[prior.statementID]
+			switch {
+			case live && prior.fingerprint == fp:
 				return st.submitOutputLocked(stmt), nil
+			case live:
+				return nil, rsdBad("ClientToken %s was already used with different parameters", *req.ClientToken)
 			}
-			return nil, rsdBad("ClientToken %s was already used with different parameters", *req.ClientToken)
+			delete(st.tokens, *req.ClientToken) // its statement was pruned: treat as a new request
 		}
 	}
 	now := st.now()
@@ -319,22 +326,16 @@ func (s *Server) redshiftDataStatementCall(action string, req *rsdRequest) (any,
 	}
 	if csvOut {
 		var buf bytes.Buffer
-		w := csv.NewWriter(&buf)
 		if start == 0 {
-			header := make([]string, len(res.cols))
+			header := make([]any, len(res.cols))
 			for i, c := range res.cols {
 				header[i] = c.name
 			}
-			_ = w.Write(header)
+			rsdWriteCSVRow(&buf, header)
 		}
 		for _, row := range res.rows[start:end] {
-			rec := make([]string, len(row))
-			for i, v := range row {
-				rec[i] = rsdCSVValue(v)
-			}
-			_ = w.Write(rec)
+			rsdWriteCSVRow(&buf, row)
 		}
-		w.Flush()
 		out["Records"] = []map[string]any{{"CSVRecords": buf.String()}}
 		out["ResultFormat"] = "CSV"
 		return out, nil
@@ -494,8 +495,7 @@ func (s *Server) redshiftDataListSessions(req *rsdRequest) (any, *rsdErr) {
 	st := s.redshiftData
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	st.settleLocked()
-	now := st.now()
+	now := st.now() // no settle here: a still-pending statement keeps its session BUSY
 	sessions := make([]*rsdSession, 0, len(st.sessions))
 	for _, sess := range st.sessions {
 		sessions = append(sessions, sess)
@@ -545,13 +545,29 @@ func (s *Server) redshiftDataListSessions(req *rsdRequest) (any, *rsdErr) {
 	return out, nil
 }
 
+// rsdLike compiles a SQL LIKE pattern: % and _ are wildcards, \% and \_
+// match them literally.
 func rsdLike(pattern string) *regexp.Regexp {
 	if pattern == "" {
 		return nil
 	}
-	q := regexp.QuoteMeta(pattern)
-	q = strings.NewReplacer("%", ".*", "_", ".").Replace(q)
-	return regexp.MustCompile("^" + q + "$")
+	var b strings.Builder
+	b.WriteString("(?s)^")
+	for i := 0; i < len(pattern); i++ {
+		switch c := pattern[i]; {
+		case c == '\\' && i+1 < len(pattern):
+			i++
+			b.WriteString(regexp.QuoteMeta(pattern[i : i+1]))
+		case c == '%':
+			b.WriteString(".*")
+		case c == '_':
+			b.WriteString(".")
+		default:
+			b.WriteString(regexp.QuoteMeta(pattern[i : i+1]))
+		}
+	}
+	b.WriteString("$")
+	return regexp.MustCompile(b.String())
 }
 
 func (s *Server) redshiftDataMetadata(action string, req *rsdRequest) (any, *rsdErr) {
@@ -665,6 +681,23 @@ func rsdField(v any) map[string]any {
 		return map[string]any{"blobValue": x} // encoding/json base64-encodes []byte, as the Blob shape expects
 	}
 	return map[string]any{"stringValue": v.(string)}
+}
+
+func rsdWriteCSVRow(buf *bytes.Buffer, row []any) {
+	for i, v := range row {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		if v == nil {
+			continue // NULL is an empty, unquoted field
+		}
+		text := rsdCSVValue(v)
+		if text == "" || strings.ContainsAny(text, ",\"\r\n") || strings.TrimSpace(text) != text {
+			text = `"` + strings.ReplaceAll(text, `"`, `""`) + `"`
+		}
+		buf.WriteString(text)
+	}
+	buf.WriteByte('\n')
 }
 
 func rsdCSVValue(v any) string {

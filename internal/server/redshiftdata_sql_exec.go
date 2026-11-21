@@ -1,8 +1,10 @@
 package server
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,14 +49,24 @@ func rsdResolveType(words string, args []int) (rsdType, error) {
 	case "double precision", "float8", "float":
 		return rsdType{name: "float8", kind: rsdKindDouble, precision: 17}, nil
 	case "decimal", "numeric":
-		return rsdType{name: "numeric", kind: rsdKindNumeric, precision: arg(0, 18), scale: arg(1, 0)}, nil
+		p, sc := arg(0, 18), arg(1, 0)
+		if p < 1 || p > 38 || sc < 0 || sc > p {
+			return rsdType{}, fmt.Errorf("NUMERIC precision %d must be between 1 and 38 and scale %d between 0 and the precision", p, sc)
+		}
+		return rsdType{name: "numeric", kind: rsdKindNumeric, precision: p, scale: sc}, nil
 	case "boolean", "bool":
 		return rsdType{name: "bool", kind: rsdKindBool, precision: 1}, nil
 	case "varchar", "character varying", "nvarchar", "text":
 		n := arg(0, 256)
+		if n < 1 || n > 65535 {
+			return rsdType{}, fmt.Errorf("length for type varchar must be between 1 and 65535")
+		}
 		return rsdType{name: "varchar", kind: rsdKindString, length: n, precision: n}, nil
 	case "char", "character", "nchar", "bpchar":
 		n := arg(0, 1)
+		if n < 1 || n > 4096 {
+			return rsdType{}, fmt.Errorf("length for type character must be between 1 and 4096")
+		}
 		return rsdType{name: "bpchar", kind: rsdKindString, length: n, precision: n}, nil
 	case "date", "time", "timetz", "timestamptz", "super":
 		return rsdType{name: words, kind: rsdKindString}, nil
@@ -179,7 +191,7 @@ func rsdCoerce(e rsdExpr, typ rsdType, params map[string]string) (any, error) {
 		return f, nil
 	case rsdKindNumeric:
 		t := strings.TrimSpace(text)
-		if f, err := strconv.ParseFloat(t, 64); kind == rsdTokWord || err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+		if _, ok := new(big.Rat).SetString(t); kind == rsdTokWord || !ok {
 			return nil, fmt.Errorf("invalid input syntax for type numeric: \"%s\"", text)
 		}
 		return t, nil // ponytail: kept as text so scale survives; no rounding to the declared scale
@@ -223,77 +235,75 @@ func rsdLiteralType(e rsdExpr) rsdType {
 	return rsdType{name: "varchar", kind: rsdKindString, length: 65535, precision: 65535}
 }
 
-func rsdValueEqual(a, b any) bool {
-	if a == nil || b == nil {
-		return false
-	}
-	if ab, ok := a.([]byte); ok {
-		bb, ok := b.([]byte)
-		return ok && string(ab) == string(bb)
-	}
-	if as, ok := a.(string); ok { // numeric text compares by value
-		if bs, ok := b.(string); ok {
-			if af, aerr := strconv.ParseFloat(as, 64); aerr == nil {
-				if bf, berr := strconv.ParseFloat(bs, 64); berr == nil && rsdLooksNumeric(as) && rsdLooksNumeric(bs) {
-					return af == bf
-				}
-			}
-			return as == bs
+// rsdCompare orders two non-NULL values of the same column kind: text and
+// binary compare as bytes, NUMERIC exactly as rationals, numbers natively.
+func rsdCompare(kind rsdKind, a, b any) int {
+	switch kind {
+	case rsdKindLong:
+		return cmp.Compare(a.(int64), b.(int64))
+	case rsdKindDouble:
+		return cmp.Compare(a.(float64), b.(float64))
+	case rsdKindBool:
+		return cmp.Compare(rsdBoolInt(a.(bool)), rsdBoolInt(b.(bool)))
+	case rsdKindBlob:
+		return strings.Compare(string(a.([]byte)), string(b.([]byte)))
+	case rsdKindNumeric:
+		x, okx := new(big.Rat).SetString(a.(string))
+		y, oky := new(big.Rat).SetString(b.(string))
+		if okx && oky {
+			return x.Cmp(y)
 		}
 	}
-	return a == b
+	return strings.Compare(a.(string), b.(string))
 }
 
-func rsdLooksNumeric(s string) bool { return s != "" && strings.Trim(s, "+-0123456789.eE") == "" }
-
-func rsdLess(a, b any) bool {
-	switch av := a.(type) {
-	case int64:
-		return av < b.(int64)
-	case float64:
-		return av < b.(float64)
-	case bool:
-		return !av && b.(bool)
-	case []byte:
-		return string(av) < string(b.([]byte))
-	case string:
-		bs := b.(string)
-		if rsdLooksNumeric(av) && rsdLooksNumeric(bs) {
-			af, _ := strconv.ParseFloat(av, 64)
-			bf, _ := strconv.ParseFloat(bs, 64)
-			return af < bf
-		}
-		return av < bs
+func rsdBoolInt(b bool) int {
+	if b {
+		return 1
 	}
-	return false
+	return 0
 }
 
-func (t *rsdTable) match(row []any, where []rsdCond, params map[string]string) (bool, error) {
+type rsdBoundCond struct {
+	col  int
+	kind rsdKind
+	op   string
+	val  any
+}
+
+// bindWhere resolves columns and coerces values once, so an unknown column,
+// missing parameter or bad literal fails even when no row is examined.
+func (t *rsdTable) bindWhere(where []rsdCond, params map[string]string) ([]rsdBoundCond, error) {
+	out := make([]rsdBoundCond, 0, len(where))
 	for _, c := range where {
 		i := t.colIndex(c.col)
 		if i < 0 {
-			return false, fmt.Errorf("column \"%s\" does not exist", c.col)
+			return nil, fmt.Errorf("column \"%s\" does not exist", c.col)
 		}
-		switch c.op {
-		case "isnull":
-			if row[i] != nil {
-				return false, nil
-			}
-		case "notnull":
-			if row[i] == nil {
-				return false, nil
-			}
-		default:
+		b := rsdBoundCond{col: i, kind: t.cols[i].typ.kind, op: c.op}
+		if c.op == "=" {
 			v, err := rsdCoerce(c.expr, t.cols[i].typ, params)
 			if err != nil {
-				return false, err
+				return nil, err
 			}
-			if !rsdValueEqual(row[i], v) {
-				return false, nil
-			}
+			b.val = v
+		}
+		out = append(out, b)
+	}
+	return out, nil
+}
+
+func rsdMatch(row []any, conds []rsdBoundCond) bool {
+	for _, c := range conds {
+		v := row[c.col]
+		switch {
+		case c.op == "isnull" && v != nil, c.op == "notnull" && v == nil:
+			return false
+		case c.op == "=" && (v == nil || c.val == nil || rsdCompare(c.kind, v, c.val) != 0):
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 func (t *rsdTable) outCol(i int) rsdOutCol {
@@ -372,14 +382,14 @@ func rsdExec(db *rsdDatabase, st *rsdStmt, params map[string]string) (rsdResult,
 	case "update":
 		return rsdUpdate(t, st, params)
 	}
+	conds, err := t.bindWhere(st.where, params)
+	if err != nil {
+		return rsdResult{}, err
+	}
 	var kept [][]any
 	var n int64
 	for _, row := range t.rows {
-		ok, err := t.match(row, st.where, params)
-		if err != nil {
-			return rsdResult{}, err
-		}
-		if ok {
+		if rsdMatch(row, conds) {
 			n++
 		} else {
 			kept = append(kept, row)
@@ -456,13 +466,13 @@ func rsdUpdate(t *rsdTable, st *rsdStmt, params map[string]string) (rsdResult, e
 		}
 		sets = append(sets, set{i, v})
 	}
+	conds, err := t.bindWhere(st.where, params)
+	if err != nil {
+		return rsdResult{}, err
+	}
 	var n int64
 	for ri, row := range t.rows {
-		ok, err := t.match(row, st.where, params)
-		if err != nil {
-			return rsdResult{}, err
-		}
-		if !ok {
+		if !rsdMatch(row, conds) {
 			continue
 		}
 		updated := append([]any(nil), row...)
@@ -480,6 +490,15 @@ func rsdSelect(db *rsdDatabase, st *rsdStmt, params map[string]string) (rsdResul
 	if !st.hasFrom {
 		row := make([]any, 0, len(st.items))
 		for _, it := range st.items {
+			if it.count { // COUNT(*) without FROM counts the single implicit row
+				name := it.alias
+				if name == "" {
+					name = "count"
+				}
+				res.cols = append(res.cols, rsdOutCol{name: name, typ: rsdType{name: "int8", kind: rsdKindLong, precision: 19, min: math.MinInt64, max: math.MaxInt64}})
+				row = append(row, int64(1))
+				continue
+			}
 			if it.lit == nil {
 				return rsdResult{}, fmt.Errorf("column reference requires a FROM clause")
 			}
@@ -504,13 +523,13 @@ func rsdSelect(db *rsdDatabase, st *rsdStmt, params map[string]string) (rsdResul
 	if err != nil {
 		return rsdResult{}, err
 	}
+	conds, err := t.bindWhere(st.where, params)
+	if err != nil {
+		return rsdResult{}, err
+	}
 	var rows [][]any
 	for _, row := range t.rows {
-		ok, err := t.match(row, st.where, params)
-		if err != nil {
-			return rsdResult{}, err
-		}
-		if ok {
+		if rsdMatch(row, conds) {
 			rows = append(rows, row)
 		}
 	}
@@ -519,6 +538,7 @@ func rsdSelect(db *rsdDatabase, st *rsdStmt, params map[string]string) (rsdResul
 		if oi < 0 {
 			return rsdResult{}, fmt.Errorf("column \"%s\" does not exist", st.orderBy)
 		}
+		kind := t.cols[oi].typ.kind
 		sort.SliceStable(rows, func(a, b int) bool {
 			x, y := rows[a][oi], rows[b][oi]
 			if x == nil || y == nil { // NULLs sort last ascending, first descending
@@ -528,9 +548,9 @@ func rsdSelect(db *rsdDatabase, st *rsdStmt, params map[string]string) (rsdResul
 				return y == nil && x != nil
 			}
 			if st.desc {
-				return rsdLess(y, x)
+				return rsdCompare(kind, y, x) < 0
 			}
-			return rsdLess(x, y)
+			return rsdCompare(kind, x, y) < 0
 		})
 	}
 	counting, total := false, int64(len(rows))

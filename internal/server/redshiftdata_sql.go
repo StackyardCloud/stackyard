@@ -60,7 +60,11 @@ func rsdTokenize(sql string) ([]rsdToken, error) {
 					return nil, fmt.Errorf("unterminated quoted string at or near \"%s\"", rsdSnippet(sql[i:]))
 				}
 				if sql[j] == '\\' && j+1 < len(sql) {
-					b.WriteByte(sql[j+1])
+					esc := sql[j+1]
+					if mapped, ok := rsdEscapes[esc]; ok {
+						esc = mapped
+					}
+					b.WriteByte(esc)
 					j += 2
 					continue
 				}
@@ -115,6 +119,10 @@ func rsdTokenize(sql string) ([]rsdToken, error) {
 	}
 	return out, nil
 }
+
+// rsdEscapes maps backslash escapes in string literals; any other escaped
+// character (\\, \', ...) stands for itself.
+var rsdEscapes = map[byte]byte{'n': '\n', 't': '\t', 'r': '\r', 'b': '\b', 'f': '\f', '0': 0}
 
 func rsdIdentChar(c byte) bool {
 	return c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
@@ -432,8 +440,13 @@ func (p *rsdParser) columnDef() (rsdColumnDef, error) {
 		for !p.isPunct(")") {
 			t := p.next()
 			if t.kind == rsdTokNumber {
-				n, _ := strconv.Atoi(t.text)
+				n, err := strconv.Atoi(t.text)
+				if err != nil {
+					return col, fmt.Errorf("invalid type modifier \"%s\"", t.text)
+				}
 				args = append(args, n)
+			} else if p.done() {
+				return col, p.syntaxErr()
 			} else if t.kind == rsdTokWord && t.text == "max" {
 				args = append(args, 65535)
 			} else if !(t.kind == rsdTokPunct && t.text == ",") {
@@ -473,9 +486,13 @@ func (p *rsdParser) columnDef() (rsdColumnDef, error) {
 				if err := p.expectPunct(")"); err != nil {
 					return col, err
 				}
-				col.seed, _ = strconv.ParseInt(a.text, 10, 64)
+				var err1, err2 error
+				col.seed, err1 = strconv.ParseInt(a.text, 10, 64)
 				if b.text != "" {
-					col.step, _ = strconv.ParseInt(b.text, 10, 64)
+					col.step, err2 = strconv.ParseInt(b.text, 10, 64)
+				}
+				if err1 != nil || err2 != nil {
+					return col, fmt.Errorf("IDENTITY seed and step must be integers")
 				}
 				if col.step == 0 {
 					return col, fmt.Errorf("IDENTITY step can't be 0")
@@ -572,7 +589,8 @@ func (p *rsdParser) selectStmt() (*rsdStmt, error) {
 		case t.kind == rsdTokPunct && t.text == "*":
 			p.pos++
 			item.star = true
-		case p.acceptWords("count"):
+		case p.isWord("count") && p.pos+1 < len(p.toks) && p.toks[p.pos+1].text == "(" && p.toks[p.pos+1].kind == rsdTokPunct:
+			p.pos++
 			if p.expectPunct("(") != nil || p.expectPunct("*") != nil || p.expectPunct(")") != nil {
 				return nil, fmt.Errorf("unsupported expression: only COUNT(*) is supported")
 			}
