@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -120,34 +119,25 @@ func ValidateStreamSpecification(spec *StreamSpecification) error {
 	return fmt.Errorf("%w: StreamViewType must be one of %s", ErrValidation, strings.Join(streamViewTypes, ", "))
 }
 
-// UpdateStreamSpecification enables or disables the table's stream. creating
-// is true when called right after CreateTable, where StreamEnabled=false is a
-// no-op rather than an error.
-func (s *Service) UpdateStreamSpecification(tableName string, spec *StreamSpecification, creating bool) (TableDescription, error) {
-	if err := ValidateStreamSpecification(spec); err != nil {
-		return TableDescription{}, err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	table, err := s.requireTable(tableName)
-	if err != nil {
-		return TableDescription{}, err
-	}
+// applyStreamSpecLocked enables or disables the table's stream. creating is
+// true for CreateTable, where StreamEnabled=false is a no-op rather than an
+// error. It checks before it mutates, so an error leaves the table as it was.
+func (s *Service) applyStreamSpecLocked(table *Table, spec *StreamSpecification, creating bool) error {
 	if spec == nil {
-		return cloneTableDescription(table.description), nil
+		return nil
 	}
 	current := table.stream
 	switch {
 	case spec.StreamEnabled && current != nil:
-		return TableDescription{}, fmt.Errorf("%w: Table already has an enabled stream", ErrValidation)
+		return fmt.Errorf("%w: Table already has an enabled stream", ErrValidation)
 	case spec.StreamEnabled:
 		s.openStreamLocked(table, spec.StreamViewType)
 	case current == nil && !creating:
-		return TableDescription{}, fmt.Errorf("%w: Table does not have an enabled stream", ErrValidation)
+		return fmt.Errorf("%w: Table does not have an enabled stream", ErrValidation)
 	case current != nil:
 		s.closeStreamLocked(table)
 	}
-	return cloneTableDescription(table.description), nil
+	return nil
 }
 
 func (s *Service) openStreamLocked(table *Table, viewType string) {
@@ -191,18 +181,19 @@ func (s *Service) closeStreamLocked(table *Table) {
 		st.endSeq, _ = strconv.ParseUint(st.records[n-1].Dynamodb.SequenceNumber, 10, 64)
 	}
 	table.stream = nil
-	table.description.StreamSpecification = &StreamSpecification{StreamEnabled: false}
+	table.description.StreamSpecification = nil // LatestStreamArn/Label stay
 }
 
 // writeItemLocked stores item under key and records the change on the
 // table's stream. A write that changes nothing emits no record.
 func (s *Service) writeItemLocked(table *Table, key string, item map[string]any) {
 	old := table.items[key]
-	table.items[key] = cloneItem(item)
+	stored := cloneItem(item) // normalize first so the comparison sees what is stored
+	table.items[key] = stored
 	if old == nil {
-		s.recordLocked(table, "INSERT", nil, item)
-	} else if !reflect.DeepEqual(old, item) {
-		s.recordLocked(table, "MODIFY", old, item)
+		s.recordLocked(table, "INSERT", nil, stored)
+	} else if !sameItem(old, stored) {
+		s.recordLocked(table, "MODIFY", old, stored)
 	}
 }
 
@@ -270,16 +261,16 @@ func (s *Service) ListStreams(tableName string, limit int, exclusiveStartStreamA
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	tableName = strings.TrimSpace(tableName)
-	if tableName != "" {
-		if _, err := s.requireTable(tableName); err != nil {
-			return nil, "", err
-		}
-	}
 	arns := make([]string, 0, len(s.streams))
 	for arn, st := range s.streams {
 		if tableName == "" || st.tableName == tableName {
 			arns = append(arns, arn)
 		}
+	}
+	// A deleted table's streams stay listed; only an unknown name with no
+	// streams is an error.
+	if _, exists := s.tables[tableName]; tableName != "" && !exists && len(arns) == 0 {
+		return nil, "", fmt.Errorf("%w: Requested resource not found: Table: %s not found", ErrResourceNotFound, tableName)
 	}
 	sort.Strings(arns)
 	start := 0

@@ -56,16 +56,11 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			dynamodbAttrDefinitions(payload["AttributeDefinitions"]),
 			dynamodbKeySchema(payload["KeySchema"]),
 			dynamodbString(payload["BillingMode"]),
+			streamSpec,
 		)
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true
-		}
-		if streamSpec != nil {
-			if table, err = s.dynamodb.UpdateStreamSpecification(table.TableName, streamSpec, true); err != nil {
-				respondDynamoDBErrorForErr(w, err)
-				return true
-			}
 		}
 		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"TableDescription": table})
 		return true
@@ -103,13 +98,7 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 			respondDynamoDBErrorForErr(w, err)
 			return true
 		}
-		if streamSpec != nil {
-			if _, err := s.dynamodb.UpdateStreamSpecification(dynamodbString(payload["TableName"]), streamSpec, false); err != nil {
-				respondDynamoDBErrorForErr(w, err)
-				return true
-			}
-		}
-		table, err := s.dynamodb.UpdateTable(dynamodbString(payload["TableName"]), dynamodbString(payload["BillingMode"]))
+		table, err := s.dynamodb.UpdateTable(dynamodbString(payload["TableName"]), dynamodbString(payload["BillingMode"]), streamSpec)
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true

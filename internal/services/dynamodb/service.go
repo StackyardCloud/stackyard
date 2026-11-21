@@ -219,7 +219,12 @@ func NewService() *Service {
 	}
 }
 
-func (s *Service) CreateTable(name string, attrs []AttributeDefinition, keys []KeySchemaElement, billingMode string) (TableDescription, error) {
+// CreateTable creates a table; a non-nil stream enables its stream in the
+// same locked step.
+func (s *Service) CreateTable(name string, attrs []AttributeDefinition, keys []KeySchemaElement, billingMode string, stream *StreamSpecification) (TableDescription, error) {
+	if err := ValidateStreamSpecification(stream); err != nil {
+		return TableDescription{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -248,8 +253,12 @@ func (s *Service) CreateTable(name string, attrs []AttributeDefinition, keys []K
 		TableSizeBytes:       0,
 		TableStatus:          "ACTIVE",
 	}
-	s.tables[name] = &Table{description: desc, hashKey: hashKey, rangeKey: rangeKey, items: map[string]map[string]any{}}
-	return cloneTableDescription(desc), nil
+	table := &Table{description: desc, hashKey: hashKey, rangeKey: rangeKey, items: map[string]map[string]any{}}
+	s.tables[name] = table
+	if err := s.applyStreamSpecLocked(table, stream, true); err != nil {
+		return TableDescription{}, err
+	}
+	return cloneTableDescription(table.description), nil
 }
 
 func (s *Service) DescribeTable(name string) (TableDescription, error) {
@@ -310,11 +319,19 @@ func (s *Service) ListTables(limit int, exclusiveStartTableName string) ([]strin
 	return out, lastEvaluated, nil
 }
 
-func (s *Service) UpdateTable(name string, billingMode string) (TableDescription, error) {
+// UpdateTable changes the billing mode and, when stream is non-nil, enables
+// or disables the table's stream, all under one lock.
+func (s *Service) UpdateTable(name string, billingMode string, stream *StreamSpecification) (TableDescription, error) {
+	if err := ValidateStreamSpecification(stream); err != nil {
+		return TableDescription{}, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	table, err := s.requireTable(name)
 	if err != nil {
+		return TableDescription{}, err
+	}
+	if err := s.applyStreamSpecLocked(table, stream, false); err != nil {
 		return TableDescription{}, err
 	}
 	if strings.TrimSpace(billingMode) != "" {
@@ -484,51 +501,6 @@ func (s *Service) UpdateItem(
 	default:
 		return nil, nil
 	}
-}
-
-func (s *Service) BatchWriteItem(requestItems map[string]any) (map[string]any, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for tableName, rawRequests := range requestItems {
-		table, err := s.requireTable(tableName)
-		if err != nil {
-			return nil, err
-		}
-		requests, ok := rawRequests.([]any)
-		if !ok {
-			return nil, ErrValidation
-		}
-		for _, rawReq := range requests {
-			req, ok := rawReq.(map[string]any)
-			if !ok {
-				return nil, ErrValidation
-			}
-			if putReq, ok := req["PutRequest"].(map[string]any); ok {
-				item, _ := putReq["Item"].(map[string]any)
-				if len(item) == 0 {
-					return nil, ErrValidation
-				}
-				key, err := table.itemKey(item)
-				if err != nil {
-					return nil, err
-				}
-				s.writeItemLocked(table, key, item)
-				continue
-			}
-			if delReq, ok := req["DeleteRequest"].(map[string]any); ok {
-				keySpec, _ := delReq["Key"].(map[string]any)
-				lookupKey, err := table.lookupKey(keySpec)
-				if err != nil {
-					return nil, err
-				}
-				s.removeItemLocked(table, lookupKey)
-				continue
-			}
-			return nil, ErrValidation
-		}
-		refreshTableMetrics(table)
-	}
-	return map[string]any{}, nil
 }
 
 func (s *Service) BatchGetItem(requestItems map[string]any) (map[string][]map[string]any, error) {
@@ -723,90 +695,6 @@ func (s *Service) TransactGetItems(transactItems []map[string]any) ([]map[string
 		out = append(out, response)
 	}
 	return out, nil
-}
-
-func (s *Service) TransactWriteItems(transactItems []map[string]any) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, entry := range transactItems {
-		if putReq, ok := entry["Put"].(map[string]any); ok {
-			table, err := s.requireTable(stringValue(putReq["TableName"]))
-			if err != nil {
-				return err
-			}
-			item, _ := putReq["Item"].(map[string]any)
-			if len(item) == 0 {
-				return ErrValidation
-			}
-			key, err := table.itemKey(item)
-			if err != nil {
-				return err
-			}
-			s.writeItemLocked(table, key, item)
-			refreshTableMetrics(table)
-			continue
-		}
-		if deleteReq, ok := entry["Delete"].(map[string]any); ok {
-			table, err := s.requireTable(stringValue(deleteReq["TableName"]))
-			if err != nil {
-				return err
-			}
-			keySpec, _ := deleteReq["Key"].(map[string]any)
-			key, err := table.lookupKey(keySpec)
-			if err != nil {
-				return err
-			}
-			s.removeItemLocked(table, key)
-			refreshTableMetrics(table)
-			continue
-		}
-		if updateReq, ok := entry["Update"].(map[string]any); ok {
-			table, err := s.requireTable(stringValue(updateReq["TableName"]))
-			if err != nil {
-				return err
-			}
-			keySpec, _ := updateReq["Key"].(map[string]any)
-			key, err := table.lookupKey(keySpec)
-			if err != nil {
-				return err
-			}
-			current := cloneItem(table.items[key])
-			if current == nil {
-				current = cloneItem(keySpec)
-			}
-			err = applyUpdateExpression(
-				current,
-				stringValue(updateReq["UpdateExpression"]),
-				toStringMap(updateReq["ExpressionAttributeNames"]),
-				toAnyMap(updateReq["ExpressionAttributeValues"]),
-			)
-			if err != nil {
-				return err
-			}
-			s.writeItemLocked(table, key, current)
-			refreshTableMetrics(table)
-			continue
-		}
-		if conditionReq, ok := entry["ConditionCheck"].(map[string]any); ok {
-			table, err := s.requireTable(stringValue(conditionReq["TableName"]))
-			if err != nil {
-				return err
-			}
-			keySpec, _ := conditionReq["Key"].(map[string]any)
-			key, err := table.lookupKey(keySpec)
-			if err != nil {
-				return err
-			}
-			if table.items[key] == nil {
-				return ErrConditionalCheckFailed
-			}
-			continue
-		}
-		return ErrValidation
-	}
-
-	return nil
 }
 
 func (s *Service) CreateBackup(tableName, backupName string) (BackupDescription, error) {

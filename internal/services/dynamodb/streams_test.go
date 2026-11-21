@@ -6,14 +6,22 @@ import (
 	"time"
 )
 
+func TestDynamoDBCreateTableRejectsBadStreamSpecificationFirst(t *testing.T) {
+	s := NewService()
+	_, err := s.CreateTable("t", nil, []KeySchemaElement{{AttributeName: "pk", KeyType: "HASH"}}, "", &StreamSpecification{StreamEnabled: true, StreamViewType: "ALL"})
+	if !errors.Is(err, ErrValidation) {
+		t.Fatalf("expected ErrValidation, got %v", err)
+	}
+	if _, err := s.DescribeTable("t"); !errors.Is(err, ErrResourceNotFound) {
+		t.Fatalf("a rejected stream specification must not create the table, got %v", err)
+	}
+}
+
 func TestShardIteratorExpiresAfterFifteenMinutes(t *testing.T) {
 	clock := time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
 	s := NewService()
 	s.now = func() time.Time { return clock }
-	if _, err := s.CreateTable("t", nil, []KeySchemaElement{{AttributeName: "pk", KeyType: "HASH"}}, ""); err != nil {
-		t.Fatal(err)
-	}
-	desc, err := s.UpdateStreamSpecification("t", &StreamSpecification{StreamEnabled: true, StreamViewType: "NEW_IMAGE"}, true)
+	desc, err := s.CreateTable("t", nil, []KeySchemaElement{{AttributeName: "pk", KeyType: "HASH"}}, "", &StreamSpecification{StreamEnabled: true, StreamViewType: "NEW_IMAGE"})
 	if err != nil {
 		t.Fatal(err)
 	}
