@@ -165,12 +165,10 @@ func (s *Server) appConfigDataGetLatest(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	setAppConfigContentType(w, poll.version.ContentType)
 	if poll.version.Label != "" {
 		w.Header().Set("Version-Label", poll.version.Label)
 	}
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(poll.version.Content)
+	writeAppConfigContent(w, http.StatusOK, poll.version.ContentType, poll.version.Content)
 }
 
 // appConfigDataPoll is a GetLatestConfiguration answer built under the store
