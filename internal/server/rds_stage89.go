@@ -157,17 +157,16 @@ func (s *Server) handleRDSCompatNoop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch action {
-	case "EnableHttpEndpoint":
+	case "EnableHttpEndpoint", "DisableHttpEndpoint":
+		arn := strings.TrimSpace(r.Form.Get("ResourceArn"))
+		enabled := action == "EnableHttpEndpoint"
+		// ponytail: an unknown ARN still answers success, as before; only known
+		// clusters record the state the RDS Data API checks.
+		_, _ = s.rds.SetDBClusterHTTPEndpoint(arn, enabled)
 		respondRDSXML(w, action, rdsHTTPEndpointResultXML{
 			XMLName:             xml.Name{Local: action + "Result"},
-			ResourceArn:         strings.TrimSpace(r.Form.Get("ResourceArn")),
-			HttpEndpointEnabled: true,
-		})
-	case "DisableHttpEndpoint":
-		respondRDSXML(w, action, rdsHTTPEndpointResultXML{
-			XMLName:             xml.Name{Local: action + "Result"},
-			ResourceArn:         strings.TrimSpace(r.Form.Get("ResourceArn")),
-			HttpEndpointEnabled: false,
+			ResourceArn:         arn,
+			HttpEndpointEnabled: enabled,
 		})
 	case "ModifyCertificates":
 		identifier := strings.TrimSpace(r.Form.Get("CertificateIdentifier"))

@@ -49,6 +49,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/aurora-dsql/docker-compose.yml"
   },
   {
+    id: "rds-data",
+    name: "RDS Data API",
+    category: "database",
+    summary: "Run SQL over HTTP against Aurora clusters with the RDS Data API.",
+    docsHref: "../../../index.html#rds-data",
+    exampleHref: "../../../../examples/aws/rds-data/docker-compose.yml"
+  },
+  {
     id: "augmented-ai",
     name: "Amazon Augmented AI",
     category: "integration",
