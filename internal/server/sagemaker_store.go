@@ -19,6 +19,8 @@ type sagemakerStore struct {
 	endpoints       map[string]*sagemakerEndpoint
 	notebooks       map[string]*sagemakerNotebookInstance
 	tags            map[string]map[string]string
+	// runtimeSessions maps SageMaker Runtime stateful session IDs to their endpoint.
+	runtimeSessions map[string]string
 }
 
 type sagemakerTrainingJob struct {
@@ -46,6 +48,10 @@ type sagemakerEndpointConfig struct {
 	Name         string
 	ARN          string
 	CreationTime string
+	// ProductionVariants and AsyncInferenceConfig are kept as sent so that
+	// SageMaker Runtime can route invocations; nil means the seeded default.
+	ProductionVariants   []any
+	AsyncInferenceConfig map[string]any
 }
 
 type sagemakerEndpoint struct {
@@ -250,6 +256,8 @@ func (s *sagemakerStore) Handle(action string, payload map[string]any) map[strin
 		name := sagemakerPayloadString(payload, "EndpointConfigName", s.nextTokenLocked("endpoint-config"))
 		ec := s.ensureEndpointConfigLocked(name)
 		ec.CreationTime = now
+		ec.ProductionVariants, _ = payload["ProductionVariants"].([]any)
+		ec.AsyncInferenceConfig, _ = payload["AsyncInferenceConfig"].(map[string]any)
 		s.ensureTagsLocked(ec.ARN)
 		return map[string]any{"EndpointConfigArn": ec.ARN}
 
@@ -257,12 +265,20 @@ func (s *sagemakerStore) Handle(action string, payload map[string]any) map[strin
 		name := sagemakerPayloadString(payload, "EndpointConfigName", "stackyard-endpoint-config")
 		ec := s.ensureEndpointConfigLocked(name)
 		modelName := sagemakerPayloadString(payload, "ModelName", "stackyard-model")
-		return map[string]any{
+		variants := ec.ProductionVariants
+		if len(variants) == 0 {
+			variants = []any{map[string]any{"VariantName": "AllTraffic", "ModelName": modelName, "InitialInstanceCount": 1, "InstanceType": "ml.t3.medium"}}
+		}
+		out := map[string]any{
 			"EndpointConfigName": ec.Name,
 			"EndpointConfigArn":  ec.ARN,
 			"CreationTime":       ec.CreationTime,
-			"ProductionVariants": []any{map[string]any{"VariantName": "AllTraffic", "ModelName": modelName, "InitialInstanceCount": 1, "InstanceType": "ml.t3.medium"}},
+			"ProductionVariants": variants,
 		}
+		if ec.AsyncInferenceConfig != nil {
+			out["AsyncInferenceConfig"] = ec.AsyncInferenceConfig
+		}
+		return out
 
 	case "ListEndpointConfigs":
 		items := make([]any, 0, len(s.endpointConfigs))

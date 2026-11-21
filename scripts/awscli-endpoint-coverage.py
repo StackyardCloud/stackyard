@@ -131,6 +131,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "workspacesweb": {"cli": "workspaces-web", "ops_file": REPO_ROOT / "internal/server/workspacesweb_ops.go"},
     "sagemaker": {"cli": "sagemaker", "ops_file": REPO_ROOT / "internal/server/sagemaker_ops.go"},
+    "sagemakerruntime": {"cli": "sagemaker-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerruntime_ops.go"},
     "simspaceweaver": {
         "cli": "simspaceweaver",
         "ops_file": REPO_ROOT / "internal/server/simspaceweaver_ops.go",
@@ -996,6 +997,11 @@ SERVICE_ALIASES = {
     "amazonsagemaker": "sagemaker",
     "aws sagemaker": "sagemaker",
     "awssagemaker": "sagemaker",
+    "sagemakerruntime": "sagemakerruntime",
+    "sagemaker-runtime": "sagemakerruntime",
+    "runtime.sagemaker": "sagemakerruntime",
+    "amazonsagemakerruntime": "sagemakerruntime",
+    "amazon sagemaker runtime": "sagemakerruntime",
     "simspaceweaver": "simspaceweaver",
     "simspace-weaver": "simspaceweaver",
     "simspace weaver": "simspaceweaver",
@@ -2962,6 +2968,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "rekognition": {},
     "transcribe": {},
     "sagemaker": {},
+    "sagemakerruntime": {},
     "simspaceweaver": {},
     "supplychain": {},
     "tnb": {},
@@ -4247,6 +4254,11 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return healthimaging_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "omics":
         return omics_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "sagemakerruntime":
+        # The awscli has no invoke-endpoint-with-response-stream command.
+        return {"InvokeEndpointWithResponseStream": ("POST", "/endpoints/{EndpointName}/invocations-response-stream")}.get(
+            endpoint.operation
+        )
     if endpoint.service == "augmentedai":
         return augmentedai_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "iotmi":
@@ -7111,6 +7123,8 @@ def invoke_raw_endpoint(
         signing_service = "chatbot"
     elif endpoint.service == "iotgreengrass":
         signing_service = "greengrass"
+    elif endpoint.service == "sagemakerruntime":
+        signing_service = "sagemaker"
     elif endpoint.service == "augmentedai":
         signing_service = "sagemaker"
     elif endpoint.service == "healthimaging":
@@ -9445,6 +9459,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
         return {}
     if endpoint.service == "healthimaging":
         return {}
+    if endpoint.service == "sagemakerruntime":
+        return {"EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME, "inputs": "coverage"}
     if endpoint.service == "augmentedai":
         return {}
     if endpoint.service == "iotmi":
@@ -13098,6 +13114,10 @@ def generate_cli_input_payload(
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         # aws lambda invoke does not support --generate-cli-skeleton input without --function-name.
         return {"FunctionName": LAMBDA_DEFAULT_FUNCTION_NAME, "Payload": "e30="}, None
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        # aws sagemaker-runtime invoke-endpoint requires --endpoint-name/--body even for
+        # skeleton generation; the payload is filled in by sagemakerruntime_hydrate_payload.
+        return {"EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME, "Body": "e30="}, None
     if endpoint.service == "s3" and endpoint.operation in {"GetObject", "GetObjectTorrent"}:
         # aws s3api get-object/get-object-torrent require explicit --bucket/--key args and do not
         # reliably support skeleton generation.
@@ -13779,6 +13799,9 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
         return [err for err in errors if err != "$.ChecksumType: unknown field"]
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        # The awscli writes the Body payload to the outfile, not stdout.
+        return [err for err in errors if err != "$.Body: missing required field"]
     if endpoint.service == "cognitouserpools" and endpoint.operation in {"CreateUserPoolDomain", "UpdateUserPoolDomain"}:
         return [err for err in errors if err != "$.ManagedLoginVersion: unknown field"]
     if endpoint.service == "controltower" and endpoint.operation == "GetControlOperation":
@@ -30020,6 +30043,94 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+SAGEMAKERRUNTIME_ENDPOINT_NAME = "stackyard-runtime-endpoint"
+SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME = "stackyard-runtime-async-endpoint"
+SAGEMAKERRUNTIME_BUCKET = "stackyard-sagemakerruntime-coverage"
+
+
+def sagemakerruntime_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a real-time and an asynchronous SageMaker endpoint plus an S3 input
+    object once, then point each SageMaker Runtime payload at them."""
+    state = RUNTIME_STATE.setdefault("sagemakerruntime", {})
+    if not state.get("seeded"):
+
+        def _sagemaker(op: str, args: list[str]) -> dict | None:
+            return run_aws_json(aws_bin, endpoint_url, region, "sagemaker", op, env, args)
+
+        variants = "VariantName=AllTraffic,ModelName=stackyard-runtime-model,InitialInstanceCount=1,InstanceType=ml.m5.large"
+        async_config = json.dumps(
+            {
+                "OutputConfig": {
+                    "S3OutputPath": f"s3://{SAGEMAKERRUNTIME_BUCKET}/output",
+                    "S3FailurePath": f"s3://{SAGEMAKERRUNTIME_BUCKET}/failures",
+                }
+            }
+        )
+        _sagemaker(
+            "create-model",
+            [
+                "--model-name",
+                "stackyard-runtime-model",
+                "--execution-role-arn",
+                "arn:aws:iam::123456789012:role/stackyard-sagemaker",
+                "--primary-container",
+                "Image=123456789012.dkr.ecr.us-east-1.amazonaws.com/model:latest",
+            ],
+        )
+        for name, extra in (
+            (SAGEMAKERRUNTIME_ENDPOINT_NAME, []),
+            (SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME, ["--async-inference-config", async_config]),
+        ):
+            _sagemaker(
+                "create-endpoint-config",
+                ["--endpoint-config-name", f"{name}-config", "--production-variants", variants, *extra],
+            )
+            _sagemaker("create-endpoint", ["--endpoint-name", name, "--endpoint-config-name", f"{name}-config"])
+            _sagemaker("describe-endpoint", ["--endpoint-name", name])
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", SAGEMAKERRUNTIME_BUCKET])
+        with tempfile.TemporaryDirectory(prefix="stackyard-sagemakerruntime-") as tmp:
+            body = Path(tmp) / "input.json"
+            body.write_text('{"inputs":"coverage"}', encoding="utf-8")
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "s3api",
+                "put-object",
+                env,
+                ["--bucket", SAGEMAKERRUNTIME_BUCKET, "--key", "input.json", "--body", str(body)],
+            )
+        state["seeded"] = True
+
+    op = endpoint.operation
+    if op == "InvokeEndpoint":
+        # cli-input-json blobs are base64 under awscli v2's default binary format.
+        return {
+            "EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME,
+            "Body": base64.b64encode(b'{"inputs":"coverage"}').decode("ascii"),
+            "ContentType": "application/json",
+            "Accept": "application/json",
+        }
+    if op == "InvokeEndpointAsync":
+        return {
+            "EndpointName": SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME,
+            "InputLocation": f"s3://{SAGEMAKERRUNTIME_BUCKET}/input.json",
+            "ContentType": "application/json",
+        }
+    if op == "InvokeEndpointWithResponseStream":
+        hydrated = copy.deepcopy(payload)
+        hydrated["EndpointName"] = SAGEMAKERRUNTIME_ENDPOINT_NAME
+        return hydrated
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30030,6 +30141,9 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "sagemakerruntime":
+        return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)
@@ -50158,6 +50272,39 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_sagemakerruntime_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """aws sagemaker-runtime invoke-endpoint ignores --cli-input-json for its
+    required args, so pass them explicitly plus the positional outfile."""
+    cmd = list(base_cmd)
+    endpoint_name = str(payload_value_case_insensitive(payload, "EndpointName", SAGEMAKERRUNTIME_ENDPOINT_NAME))
+    raw_body = str(payload_value_case_insensitive(payload, "Body", ""))
+    try:
+        body_bytes = base64.b64decode(raw_body, validate=True) if raw_body else b"{}"
+    except (ValueError, TypeError):
+        body_bytes = raw_body.encode("utf-8")
+    with tempfile.TemporaryDirectory(prefix="stackyard-awscli-sagemakerruntime-") as tmp:
+        body_path = Path(tmp) / "body.bin"
+        body_path.write_bytes(body_bytes)
+        out_path = Path(tmp) / "invoke.out"
+        cmd.extend(["--endpoint-name", endpoint_name, "--body", f"fileb://{body_path}"])
+        for key, flag in (("ContentType", "--content-type"), ("Accept", "--accept")):
+            value = str(payload_value_case_insensitive(payload, key, "")).strip()
+            if value:
+                cmd.extend([flag, value])
+        cmd.append(str(out_path))
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = out_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    return cp, cmd, extra_output
+
+
 def run_ebs_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -51873,7 +52020,10 @@ def run_endpoint(
     neptuneanalytics_outfile_ops = {"ExecuteQuery"}
     appsync_outfile_ops = {"GetIntrospectionSchema"}
     ebs_outfile_ops = {"GetSnapshotBlock"}
-    if endpoint.service == "s3" and endpoint.operation in s3_manual_arg_ops:
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        cp, cmd, extra_output_text = run_sagemakerruntime_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "s3" and endpoint.operation in s3_manual_arg_ops:
         cp, cmd, extra_output_text = run_s3_manual_arg_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "s3" and endpoint.operation in s3_outfile_ops:

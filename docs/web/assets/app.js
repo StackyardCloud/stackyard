@@ -56,6 +56,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/augmented-ai/docker-compose.yml"
   },
   {
+    id: "sagemaker-runtime",
+    name: "Amazon SageMaker Runtime",
+    category: "integration",
+    summary: "Invoke SageMaker endpoints in real time, asynchronously through S3, and with event-stream responses.",
+    docsHref: "../../../index.html#sagemaker-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
+  },
+  {
     id: "batch",
     name: "Batch",
     category: "compute",
