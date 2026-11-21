@@ -55,7 +55,7 @@ func TestDynamoDBStage3TransactionsAndPartiQLCore(t *testing.T) {
 	resp = dynamodbRequest(t, ts, "TransactWriteItems", []byte(`{
 		"TransactItems":[
 			{"ConditionCheck":{"TableName":"stage3-table","Key":{"pk":{"S":"id#1"}}}},
-			{"Update":{"TableName":"stage3-table","Key":{"pk":{"S":"id#1"}},"UpdateExpression":"SET #s = :s","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":s":{"S":"UPDATED"}}}},
+			{"Update":{"TableName":"stage3-table","Key":{"pk":{"S":"id#4"}},"UpdateExpression":"SET #s = :s","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":s":{"S":"UPDATED"}}}},
 			{"Delete":{"TableName":"stage3-table","Key":{"pk":{"S":"id#2"}}}},
 			{"Put":{"TableName":"stage3-table","Item":{"pk":{"S":"id#3"},"status":{"S":"NEW"}}}}
 		]

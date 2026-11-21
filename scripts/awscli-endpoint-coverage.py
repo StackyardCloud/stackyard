@@ -55,6 +55,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "apigateway": {"cli": "apigateway", "ops_file": REPO_ROOT / "internal/server/apigateway_ops.go"},
     "apigatewayv2": {"cli": "apigatewayv2", "ops_file": REPO_ROOT / "internal/server/apigatewayv2_ops.go"},
     "appconfig": {"cli": "appconfig", "ops_file": REPO_ROOT / "internal/server/appconfig_ops.go"},
+    "appconfigdata": {"cli": "appconfigdata", "ops_file": REPO_ROOT / "internal/server/appconfigdata_ops.go"},
     "amplify": {"cli": "amplify", "ops_file": REPO_ROOT / "internal/server/amplify_ops.go"},
     "amplifyadminui": {
         "cli": "amplifybackend",
@@ -511,7 +512,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cloudhsm": {"cli": "cloudhsmv2", "ops_file": REPO_ROOT / "internal/server/cloudhsm_ops.go"},
     "cognitosync": {"cli": "cognito-sync", "ops_file": REPO_ROOT / "internal/server/cognitosync_ops.go"},
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
+    "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
+    "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
     "ecr": {"cli": "ecr", "ops_file": REPO_ROOT / "internal/server/ecr_ops.go"},
@@ -585,6 +588,9 @@ SERVICE_ALIASES = {
     "appconfig": "appconfig",
     "app-config": "appconfig",
     "awsappconfig": "appconfig",
+    "appconfigdata": "appconfigdata",
+    "appconfig-data": "appconfigdata",
+    "awsappconfigdata": "appconfigdata",
     "amplify": "amplify",
     "awsamplify": "amplify",
     "amazonamplify": "amplify",
@@ -2055,10 +2061,17 @@ SERVICE_ALIASES = {
     "dynamodb": "dynamodb",
     "dynamo-db": "dynamodb",
     "amazondynamodb": "dynamodb",
+    "dynamodbstreams": "dynamodbstreams",
+    "dynamodb-streams": "dynamodbstreams",
+    "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "auroradsql": "dsql",
     "aurora-dsql": "dsql",
     "amazonauroradsql": "dsql",
+    "rdsdata": "rdsdata",
+    "rds-data": "rdsdata",
+    "rdsdataservice": "rdsdata",
+    "amazonrdsdataservice": "rdsdata",
     "acmpca": "privateca",
     "acm-pca": "privateca",
     "events": "eventbridge",
@@ -3085,6 +3098,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "ecs": {},
     "eks": {},
     "dynamodb": {},
+    "dynamodbstreams": {},
     "keyspaces": {},
     "lambda": {},
     "lightsail": {},
@@ -13095,6 +13109,10 @@ def generate_cli_input_payload(
             "apiId": "api-0123456789abcdef0123456789abcdef0123456789abcdef",
             "format": "SDL",
         }, None
+    if endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
+        # aws appconfigdata get-latest-configuration needs --configuration-token and an outfile even
+        # to print a skeleton; hydration swaps in a token from a fresh session.
+        return {"ConfigurationToken": "placeholder"}, None
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         # aws lambda invoke does not support --generate-cli-skeleton input without --function-name.
         return {"FunctionName": LAMBDA_DEFAULT_FUNCTION_NAME, "Payload": "e30="}, None
@@ -30020,6 +30038,165 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+DYNAMODBSTREAMS_TABLE_NAME = "stackyard-streams-coverage"
+
+
+def dynamodbstreams_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a table with an enabled stream and one change record, then fill
+    StreamArn / ShardId / ShardIterator into the DynamoDB Streams payloads."""
+    state = RUNTIME_STATE.setdefault("dynamodbstreams", {})
+
+    def _dynamodb(op: str, args: list[str]) -> dict | None:
+        return run_aws_json(aws_bin, endpoint_url, region, "dynamodb", op, env, args)
+
+    def _streams(op: str, args: list[str]) -> dict | None:
+        return run_aws_json(aws_bin, endpoint_url, region, "dynamodbstreams", op, env, args)
+
+    if not state.get("stream_arn"):
+        spec = "StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES"
+        table = _dynamodb("describe-table", ["--table-name", DYNAMODBSTREAMS_TABLE_NAME])
+        if isinstance(table, dict) and table.get("Table"):
+            table = table["Table"]
+        else:
+            created = _dynamodb(
+                "create-table",
+                [
+                    "--table-name", DYNAMODBSTREAMS_TABLE_NAME,
+                    "--attribute-definitions", "AttributeName=pk,AttributeType=S",
+                    "--key-schema", "AttributeName=pk,KeyType=HASH",
+                    "--billing-mode", "PAY_PER_REQUEST",
+                    "--stream-specification", spec,
+                ],
+            )
+            table = (created or {}).get("TableDescription", {})
+        if not (table.get("StreamSpecification") or {}).get("StreamEnabled"):
+            updated = _dynamodb("update-table", ["--table-name", DYNAMODBSTREAMS_TABLE_NAME, "--stream-specification", spec])
+            table = (updated or {}).get("TableDescription", {})
+        _dynamodb(
+            "put-item",
+            ["--table-name", DYNAMODBSTREAMS_TABLE_NAME, "--item", '{"pk":{"S":"coverage"},"n":{"N":"' + str(int(time.time())) + '"}}'],
+        )
+        stream_arn = str(table.get("LatestStreamArn") or "")
+        described = _streams("describe-stream", ["--stream-arn", stream_arn]) if stream_arn else None
+        shards = ((described or {}).get("StreamDescription") or {}).get("Shards") or []
+        if stream_arn and shards:
+            state["stream_arn"] = stream_arn
+            state["shard_id"] = str(shards[0].get("ShardId") or "")
+
+    stream_arn = str(state.get("stream_arn") or "")
+    shard_id = str(state.get("shard_id") or "")
+    op = endpoint.operation
+    if op == "ListStreams":
+        return {"TableName": DYNAMODBSTREAMS_TABLE_NAME}
+    if op == "DescribeStream":
+        return {"StreamArn": stream_arn}
+    if op == "GetShardIterator":
+        return {"StreamArn": stream_arn, "ShardId": shard_id, "ShardIteratorType": "TRIM_HORIZON"}
+    if op == "GetRecords":
+        got = _streams(
+            "get-shard-iterator",
+            ["--stream-arn", stream_arn, "--shard-id", shard_id, "--shard-iterator-type", "TRIM_HORIZON"],
+        )
+        return {"ShardIterator": str((got or {}).get("ShardIterator") or "")}
+    return copy.deepcopy(payload)
+
+
+def appconfigdata_seed_session(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict[str, str] | None:
+    """Create an AppConfig application, environment, hosted profile, version and
+    deployment, and return StartConfigurationSession identifiers for them.
+
+    The appconfig shard may delete the emulator's seed resources, so each
+    appconfigdata check deploys its own configuration.
+    """
+    unique = str(int(time.time() * 1000) % 1000000)
+
+    def _id(result: dict | None) -> str:
+        value = result.get("Id") if isinstance(result, dict) else None
+        return value if isinstance(value, str) else ""
+
+    app_id = _id(run_aws_json(aws_bin, endpoint_url, region, "appconfig", "create-application", env, ["--name", f"coverage-app-{unique}"]))
+    if not app_id:
+        return None
+    env_id = _id(run_aws_json(aws_bin, endpoint_url, region, "appconfig", "create-environment", env, ["--application-id", app_id, "--name", f"coverage-env-{unique}"]))
+    profile_id = _id(
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "appconfig",
+            "create-configuration-profile",
+            env,
+            ["--application-id", app_id, "--name", f"coverage-profile-{unique}", "--location-uri", "hosted"],
+        )
+    )
+    if not env_id or not profile_id:
+        return None
+    with tempfile.TemporaryDirectory(prefix="stackyard-appconfigdata-") as tmp:
+        content = Path(tmp) / "content.json"
+        content.write_text('{"coverage":true}', encoding="utf-8")
+        version = run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "appconfig",
+            "create-hosted-configuration-version",
+            env,
+            [
+                "--application-id",
+                app_id,
+                "--configuration-profile-id",
+                profile_id,
+                "--content",
+                f"fileb://{content}",
+                "--content-type",
+                "application/json",
+                str(Path(tmp) / "version.out"),
+            ],
+        )
+    version_number = version.get("VersionNumber") if isinstance(version, dict) else None
+    if version_number is None:
+        return None
+    deployed = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "appconfig",
+        "start-deployment",
+        env,
+        [
+            "--application-id",
+            app_id,
+            "--environment-id",
+            env_id,
+            "--configuration-profile-id",
+            profile_id,
+            "--configuration-version",
+            str(version_number),
+            "--deployment-strategy-id",
+            "ds-000001",
+        ],
+    )
+    if not isinstance(deployed, dict):
+        return None
+    return {
+        "ApplicationIdentifier": app_id,
+        "EnvironmentIdentifier": env_id,
+        "ConfigurationProfileIdentifier": profile_id,
+    }
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30029,6 +30206,29 @@ def hydrate_payload_with_service_state(
     env: dict[str, str],
 ):
     if not isinstance(payload, dict):
+        return payload
+
+    if endpoint.service == "dynamodbstreams":
+        return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "appconfigdata":
+        session = appconfigdata_seed_session(aws_bin, endpoint_url, region, env)
+        if session is None:
+            return payload
+        if endpoint.operation == "StartConfigurationSession":
+            return session
+        if endpoint.operation == "GetLatestConfiguration":
+            started = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "appconfigdata",
+                "start-configuration-session",
+                env,
+                ["--cli-input-json", json.dumps(session, separators=(",", ":"))],
+            )
+            token = started.get("InitialConfigurationToken") if isinstance(started, dict) else None
+            if isinstance(token, str) and token:
+                return {"ConfigurationToken": token}
         return payload
 
     if endpoint.service == "acm":
@@ -34463,6 +34663,110 @@ def hydrate_payload_with_service_state(
             _replace_payload({"resourceArn": arn, "tagKeys": ["team"]})
             return hydrated
 
+        return hydrated
+
+    if endpoint.service == "rdsdata":
+        hydrated = copy.deepcopy(payload)
+        op = endpoint.operation
+        state = RUNTIME_STATE.setdefault("rdsdata", {})
+
+        def _ensure_rdsdata_target() -> tuple[str, str]:
+            cluster_arn = str(state.get("cluster_arn", ""))
+            secret_arn = str(state.get("secret_arn", ""))
+            if cluster_arn and secret_arn:
+                return cluster_arn, secret_arn
+            cluster_id = f"coverage-data-api-{int(time.time() * 1000) % 1000000}"
+            created = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "create-db-cluster",
+                env,
+                [
+                    "--db-cluster-identifier",
+                    cluster_id,
+                    "--engine",
+                    "aurora-postgresql",
+                    "--master-username",
+                    "admin",
+                    "--master-user-password",
+                    "Coverage1234",
+                    "--database-name",
+                    "app",
+                    "--enable-http-endpoint",
+                ],
+            )
+            if isinstance(created, dict):
+                cluster_arn = str((created.get("DBCluster") or {}).get("DBClusterArn", ""))
+            secret = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "secretsmanager",
+                "create-secret",
+                env,
+                [
+                    "--name",
+                    f"{cluster_id}-creds",
+                    "--secret-string",
+                    '{"username":"admin","password":"Coverage1234"}',
+                ],
+            )
+            if isinstance(secret, dict):
+                secret_arn = str(secret.get("ARN", ""))
+            state["cluster_arn"], state["secret_arn"] = cluster_arn, secret_arn
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds-data",
+                "execute-statement",
+                env,
+                [
+                    "--resource-arn",
+                    cluster_arn,
+                    "--secret-arn",
+                    secret_arn,
+                    "--sql",
+                    "CREATE TABLE IF NOT EXISTS coverage_items (id SERIAL PRIMARY KEY, name TEXT)",
+                ],
+            )
+            return cluster_arn, secret_arn
+
+        def _begin_rdsdata_transaction(cluster_arn: str, secret_arn: str) -> str:
+            begun = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds-data",
+                "begin-transaction",
+                env,
+                ["--resource-arn", cluster_arn, "--secret-arn", secret_arn],
+            )
+            return str(begun.get("transactionId", "")) if isinstance(begun, dict) else ""
+
+        cluster_arn, secret_arn = _ensure_rdsdata_target()
+        target = {"resourceArn": cluster_arn, "secretArn": secret_arn}
+        hydrated.clear()
+        if op == "ExecuteStatement":
+            hydrated.update(target, sql="SELECT id, name FROM coverage_items", includeResultMetadata=True)
+        elif op == "BatchExecuteStatement":
+            hydrated.update(
+                target,
+                sql="INSERT INTO coverage_items (name) VALUES (:name)",
+                parameterSets=[[{"name": "name", "value": {"stringValue": "coverage"}}]],
+            )
+        elif op == "BeginTransaction":
+            hydrated.update(target)
+        elif op in {"CommitTransaction", "RollbackTransaction"}:
+            hydrated.update(target, transactionId=_begin_rdsdata_transaction(cluster_arn, secret_arn))
+        elif op == "ExecuteSql":
+            hydrated.update(
+                dbClusterOrInstanceArn=cluster_arn,
+                awsSecretStoreArn=secret_arn,
+                sqlStatements="SELECT id FROM coverage_items",
+            )
         return hydrated
 
     if endpoint.service == "eventbridge":
@@ -39265,6 +39569,24 @@ def hydrate_payload_with_service_state(
 
         if op == "RebootDbCluster":
             _replace_payload({"DBClusterIdentifier": _ensure_db_cluster()})
+            return hydrated
+
+        if op in {"EnableHttpEndpoint", "DisableHttpEndpoint"}:
+            cluster_id = _ensure_db_cluster()
+            described = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "describe-db-clusters",
+                env,
+                ["--db-cluster-identifier", cluster_id],
+            )
+            clusters = described.get("DBClusters") if isinstance(described, dict) else None
+            cluster_arn = f"arn:aws:rds:{region}:123456789012:cluster:{cluster_id}"
+            if isinstance(clusters, list) and clusters and isinstance(clusters[0], dict):
+                cluster_arn = str(clusters[0].get("DBClusterArn") or cluster_arn)
+            _replace_payload({"ResourceArn": cluster_arn})
             return hydrated
 
         if op == "RegisterDbProxyTargets":
@@ -50158,6 +50480,34 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_appconfigdata_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    # aws appconfigdata get-latest-configuration requires the explicit
+    # --configuration-token flag (even with --cli-input-json) and an outfile.
+    token = str(payload_value_case_insensitive(payload, "ConfigurationToken", "placeholder")).strip() or "placeholder"
+    cmd = [*base_cmd, "--configuration-token", token]
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-appconfigdata-", suffix=".out", delete=False) as tmp:
+        out_path = tmp.name
+    try:
+        cmd.append(out_path)
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = Path(out_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    finally:
+        try:
+            os.unlink(out_path)
+        except OSError:
+            pass
+
+    return cp, cmd, extra_output
+
+
 def run_ebs_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -51887,6 +52237,9 @@ def run_endpoint(
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
+        cp, cmd, extra_output_text = run_appconfigdata_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)

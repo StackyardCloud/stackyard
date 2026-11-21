@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,18 +35,67 @@ func (s *Server) handleAppConfigRESTRouter(w http.ResponseWriter, r *http.Reques
 		return true
 	}
 
-	payload, err := parseAppConfigPayload(r)
-	if err != nil {
-		respondAppConfigError(w, http.StatusBadRequest, "ValidationException", "invalid JSON body")
-		return true
+	var payload map[string]any
+	if action == "CreateHostedConfigurationVersion" {
+		// The body is the configuration itself (any bytes, not a JSON
+		// request); the metadata travels in headers.
+		body, err := readBodyBytes(r)
+		if err != nil {
+			respondAppConfigError(w, http.StatusBadRequest, "BadRequestException", "unable to read request body")
+			return true
+		}
+		payload = map[string]any{
+			appConfigDataContentKey: body,
+			"ContentType":           r.Header.Get("Content-Type"),
+			"VersionLabel":          r.Header.Get("VersionLabel"),
+			"Description":           r.Header.Get("Description"),
+		}
+	} else {
+		var err error
+		if payload, err = parseAppConfigPayload(r); err != nil {
+			respondAppConfigError(w, http.StatusBadRequest, "ValidationException", "invalid JSON body")
+			return true
+		}
 	}
 
-	response := s.appconfig.Handle(action, payload, pathParams, r.URL.Query())
+	response, fault := s.appconfig.Handle(action, payload, pathParams, r.URL.Query())
+	if fault != nil {
+		respondAppConfigError(w, fault.Status, fault.Code, fault.Message)
+		return true
+	}
 	if response == nil {
 		response = map[string]any{}
 	}
+	if action == "CreateHostedConfigurationVersion" || action == "GetHostedConfigurationVersion" {
+		status := http.StatusOK
+		if action == "CreateHostedConfigurationVersion" {
+			status = http.StatusCreated
+		}
+		respondAppConfigHostedVersion(w, status, response)
+		return true
+	}
 	respondAppConfigJSON(w, http.StatusOK, response)
 	return true
+}
+
+// respondAppConfigHostedVersion writes a HostedConfigurationVersion the way
+// the API does: the content is the body and everything else is a header.
+func respondAppConfigHostedVersion(w http.ResponseWriter, status int, version map[string]any) {
+	for header, key := range map[string]string{
+		"Application-Id":           "ApplicationId",
+		"Configuration-Profile-Id": "ConfigurationProfileId",
+		"Version-Number":           "VersionNumber",
+		"Content-Type":             "ContentType",
+		"Description":              "Description",
+		"VersionLabel":             "VersionLabel",
+	} {
+		if value := fmt.Sprint(version[key]); version[key] != nil && value != "" {
+			w.Header().Set(header, value)
+		}
+	}
+	w.WriteHeader(status)
+	content, _ := version["Content"].([]byte)
+	_, _ = w.Write(content)
 }
 
 func isAppConfigRESTCandidate(r *http.Request) bool {
