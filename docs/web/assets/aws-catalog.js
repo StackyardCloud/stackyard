@@ -121,6 +121,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/cloudfront/docker-compose.yml"
   },
   {
+    id: "cloudfrontkeyvaluestore",
+    name: "CloudFront KeyValueStore",
+    category: "integration",
+    summary: "Read and write keys in CloudFront KeyValueStores with ETag concurrency, atomic batch updates, size quotas, and SigV4A signing.",
+    docsHref: "../../../index.html#cloudfrontkeyvaluestore",
+    exampleHref: "../../../../examples/aws/cloudfront-keyvaluestore/docker-compose.yml"
+  },
+  {
     id: "directconnect",
     name: "Direct Connect",
     category: "integration",

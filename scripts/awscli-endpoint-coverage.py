@@ -349,6 +349,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "controltower": {"cli": "controltower", "ops_file": REPO_ROOT / "internal/server/controltower_ops.go"},
     "cloudformation": {"cli": "cloudformation", "ops_file": REPO_ROOT / "internal/server/cloudformation_ops.go"},
     "cloudfront": {"cli": "cloudfront", "ops_file": REPO_ROOT / "internal/server/cloudfront_ops.go"},
+    "cloudfrontkeyvaluestore": {
+        "cli": "cloudfront-keyvaluestore",
+        "ops_file": REPO_ROOT / "internal/server/cloudfrontkeyvaluestore_ops.go",
+    },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
@@ -1585,6 +1589,11 @@ SERVICE_ALIASES = {
     "cloud front": "cloudfront",
     "awscloudfront": "cloudfront",
     "amazoncloudfront": "cloudfront",
+    "cloudfrontkeyvaluestore": "cloudfrontkeyvaluestore",
+    "cloudfront-keyvaluestore": "cloudfrontkeyvaluestore",
+    "cloudfront keyvaluestore": "cloudfrontkeyvaluestore",
+    "cloudfront-kvs": "cloudfrontkeyvaluestore",
+    "amazoncloudfrontkeyvaluestore": "cloudfrontkeyvaluestore",
     "directconnect": "directconnect",
     "direct-connect": "directconnect",
     "direct connect": "directconnect",
@@ -2999,6 +3008,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "controltower": {},
     "cloudformation": {},
     "cloudfront": {},
+    "cloudfrontkeyvaluestore": {},
     "cloudmap": {},
     "config": {},
     "cloudtrail": {},
@@ -30020,6 +30030,115 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+CLOUDFRONT_KVS_CONTROL_OPERATIONS = {
+    "CreateKeyValueStore",
+    "DescribeKeyValueStore",
+    "ListKeyValueStores",
+    "UpdateKeyValueStore",
+    "DeleteKeyValueStore",
+}
+CLOUDFRONT_KVS_COVERAGE_KEY = "coverage-key"
+
+
+def cloudfrontkeyvaluestore_cli_env(env: dict[str, str], endpoint_url: str) -> dict[str, str]:
+    # The KeyValueStore endpoint rules prepend the account id to the endpoint
+    # host ({account}.localhost), which does not resolve. Send the CLI through
+    # Stackyard as its HTTP proxy instead: Stackyard accepts absolute-form
+    # request targets, and the SigV4A signature still covers the real host.
+    proxied = dict(env)
+    for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        proxied[key] = endpoint_url
+    proxied["NO_PROXY"] = ""
+    proxied["no_proxy"] = ""
+    return proxied
+
+
+def cloudfront_kvs_create_store(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    name = f"stackyard-kvs-{time.time_ns()}"
+    data = run_aws_json(aws_bin, endpoint_url, region, "cloudfront", "create-key-value-store", env, ["--name", name])
+    store = data.get("KeyValueStore") if isinstance(data, dict) else None
+    if not isinstance(store, dict):
+        return {"name": name, "arn": "", "etag": ""}
+    return {"name": name, "arn": str(store.get("ARN") or ""), "etag": str(data.get("ETag") or "")}
+
+
+def cloudfront_kvs_shared_store(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("cloudfrontkeyvaluestore", {})
+    if not state.get("arn"):
+        state.update(cloudfront_kvs_create_store(aws_bin, endpoint_url, region, env))
+    return state
+
+
+def cloudfront_kvs_store_etag(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "cloudfront", "describe-key-value-store", env, ["--name", name])
+    return str(data.get("ETag") or "") if isinstance(data, dict) else ""
+
+
+def cloudfront_kvs_data_etag(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], arn: str) -> str:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "cloudfront-keyvaluestore", "describe-key-value-store", env, ["--kvs-arn", arn]
+    )
+    return str(data.get("ETag") or "") if isinstance(data, dict) else ""
+
+
+def cloudfront_kvs_hydrate_control_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    # Raw-fallback JSON payloads for the CloudFront KeyValueStore control plane.
+    hydrated = copy.deepcopy(payload)
+    op = endpoint.operation
+    if op == "ListKeyValueStores":
+        for key in ("Marker", "MaxItems", "Status"):
+            delete_key_if_present_case_insensitive(hydrated, key)
+        return hydrated
+    if op == "CreateKeyValueStore":
+        delete_key_if_present_case_insensitive(hydrated, "ImportSource")
+        hydrated["Name"] = f"stackyard-kvs-create-{time.time_ns()}"
+        return hydrated
+    if op == "DeleteKeyValueStore":
+        store = cloudfront_kvs_create_store(aws_bin, endpoint_url, region, env)
+        hydrated["Name"], hydrated["IfMatch"] = store["name"], store["etag"]
+        return hydrated
+    store = cloudfront_kvs_shared_store(aws_bin, endpoint_url, region, env)
+    hydrated["Name"] = store["name"]
+    if op == "UpdateKeyValueStore":
+        hydrated["Comment"] = "stackyard coverage"
+        hydrated["IfMatch"] = cloudfront_kvs_store_etag(aws_bin, endpoint_url, region, env, store["name"])
+    return hydrated
+
+
+def cloudfrontkeyvaluestore_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    # env is already routed through cloudfrontkeyvaluestore_cli_env.
+    hydrated = copy.deepcopy(payload)
+    op = endpoint.operation
+    arn = cloudfront_kvs_shared_store(aws_bin, endpoint_url, region, env).get("arn", "")
+    hydrated["KvsARN"] = arn
+    delete_key_if_present_case_insensitive(hydrated, "NextToken")
+    if op in {"GetKey", "DeleteKey"}:
+        etag = cloudfront_kvs_data_etag(aws_bin, endpoint_url, region, env, arn)
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "cloudfront-keyvaluestore",
+            "put-key",
+            env,
+            ["--kvs-arn", arn, "--key", CLOUDFRONT_KVS_COVERAGE_KEY, "--value", "v", "--if-match", etag],
+        )
+    if op in {"GetKey", "DeleteKey", "PutKey"}:
+        hydrated["Key"] = CLOUDFRONT_KVS_COVERAGE_KEY
+    if op == "PutKey":
+        hydrated["Value"] = "stackyard"
+    if op == "UpdateKeys":
+        delete_key_if_present_case_insensitive(hydrated, "Deletes")
+        hydrated["Puts"] = [{"Key": CLOUDFRONT_KVS_COVERAGE_KEY, "Value": "stackyard"}]
+    if op in {"PutKey", "DeleteKey", "UpdateKeys"}:
+        hydrated["IfMatch"] = cloudfront_kvs_data_etag(aws_bin, endpoint_url, region, env, arn)
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30030,6 +30149,11 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:
+        return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloudfrontkeyvaluestore":
+        return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)
@@ -50603,6 +50727,8 @@ def run_endpoint(
 ) -> Result:
     started = time.time()
     extra_output_text = ""
+    if endpoint.service == "cloudfrontkeyvaluestore":
+        env = cloudfrontkeyvaluestore_cli_env(env, endpoint_url)
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         lambda_ensure_function(aws_bin, endpoint_url, region, env)
         function_name = str(lambda_runtime_state(region).get("function_name", LAMBDA_DEFAULT_FUNCTION_NAME))
