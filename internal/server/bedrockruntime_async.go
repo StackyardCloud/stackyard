@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -12,20 +13,32 @@ import (
 	"time"
 )
 
-// bedrockRuntimeStore keeps asynchronous invocations.
+// ponytail: invocations are kept in memory and the oldest are dropped past
+// this cap; a real deployment would expire them by age.
+const brtMaxAsyncInvokes = 1000
+
+const brtAccountID = "123456789012"
+
+// bedrockRuntimeStore keeps asynchronous invocations in submission order,
+// indexed by ARN and client token.
 type bedrockRuntimeStore struct {
 	mu      sync.Mutex
 	next    int
 	invokes []*brtAsync
+	byARN   map[string]*brtAsync
+	byToken map[string]*brtAsync
 }
 
 type brtAsync struct {
-	arn, modelArn, token, status, failure, s3URI, bodyKey string
-	submit, end                                           time.Time
-	output                                                map[string]any
+	arn, modelArn, token, status, failure string
+	bodyHash                              [32]byte
+	submit, end                           time.Time
+	output                                map[string]any
 }
 
-func newBedrockRuntimeStore() *bedrockRuntimeStore { return &bedrockRuntimeStore{} }
+func newBedrockRuntimeStore() *bedrockRuntimeStore {
+	return &bedrockRuntimeStore{byARN: map[string]*brtAsync{}, byToken: map[string]*brtAsync{}}
+}
 
 func (a *brtAsync) summary() map[string]any {
 	out := map[string]any{
@@ -46,6 +59,36 @@ func (a *brtAsync) summary() map[string]any {
 	return out
 }
 
+// replayLocked answers a repeated clientRequestToken: the same invocation, or
+// a conflict when the parameters differ.
+func (st *bedrockRuntimeStore) replayLocked(w http.ResponseWriter, token string, hash [32]byte) (bool, *brtError) {
+	a := st.byToken[token]
+	if token == "" || a == nil {
+		return false, nil
+	}
+	if a.bodyHash != hash {
+		return true, &brtError{http.StatusConflict, "ConflictException", "The clientRequestToken was already used with different request parameters."}
+	}
+	respondBedrockRuntimeJSON(w, http.StatusOK, map[string]any{"invocationArn": a.arn})
+	return true, nil
+}
+
+func (st *bedrockRuntimeStore) insertLocked(a *brtAsync) {
+	st.invokes = append(st.invokes, a)
+	st.byARN[a.arn] = a
+	if a.token != "" {
+		st.byToken[a.token] = a
+	}
+	for len(st.invokes) > brtMaxAsyncInvokes {
+		old := st.invokes[0]
+		st.invokes = st.invokes[1:]
+		delete(st.byARN, old.arn)
+		if st.byToken[old.token] == old {
+			delete(st.byToken, old.token)
+		}
+	}
+}
+
 var brtNovaReelTasks = []string{"TEXT_VIDEO", "MULTI_SHOT_AUTOMATED", "MULTI_SHOT_MANUAL"}
 
 func (s *Server) brtStartAsyncInvoke(w http.ResponseWriter, req *brtRequest) *brtError {
@@ -53,12 +96,17 @@ func (s *Server) brtStartAsyncInvoke(w http.ResponseWriter, req *brtRequest) *br
 	if e != nil {
 		return e
 	}
-	model, modelArn, e := s.brtResolveModel(bedrockString(p, "modelId"))
+	modelID := bedrockString(p, "modelId")
+	model, modelArn, e := s.brtResolveModel(modelID)
 	if e != nil {
 		return e
 	}
 	if model.family != brtNovaReel {
 		return brtValidation("The provided model doesn't support asynchronous invocation.")
+	}
+	region := cognitoIdentityRegionFromRequest(req.r)
+	if !strings.HasPrefix(modelID, "arn:") {
+		modelArn = fmt.Sprintf("arn:aws:bedrock:%s::foundation-model/%s", region, model.id)
 	}
 	input, ok := p["modelInput"].(map[string]any)
 	if !ok {
@@ -91,27 +139,22 @@ func (s *Server) brtStartAsyncInvoke(w http.ResponseWriter, req *brtRequest) *br
 	}
 	token := bedrockString(p, "clientRequestToken")
 	body, _ := json.Marshal(p)
+	hash := sha256.Sum256(body)
 
 	st := s.bedrockruntime
 	st.mu.Lock()
-	defer st.mu.Unlock()
-	if token != "" {
-		for _, a := range st.invokes {
-			if a.token == token {
-				if a.bodyKey != string(body) {
-					return &brtError{http.StatusConflict, "ConflictException", "The clientRequestToken was already used with different request parameters."}
-				}
-				respondBedrockRuntimeJSON(w, http.StatusOK, map[string]any{"invocationArn": a.arn})
-				return nil
-			}
-		}
+	if done, e := st.replayLocked(w, token, hash); done {
+		st.mu.Unlock()
+		return e
 	}
 	st.next++
 	id := fmt.Sprintf("%012d", st.next)
+	st.mu.Unlock()
+
 	now := time.Now().UTC()
 	a := &brtAsync{
-		arn: "arn:aws:bedrock:us-east-1:123456789012:async-invoke/" + id, modelArn: modelArn, token: token,
-		s3URI: uri, bodyKey: string(body), submit: now, end: now, status: "Completed", output: map[string]any{"s3OutputDataConfig": s3cfg},
+		arn: fmt.Sprintf("arn:aws:bedrock:%s:%s:async-invoke/%s", region, brtAccountID, id), modelArn: modelArn, token: token,
+		bodyHash: hash, submit: now, end: now, status: "Completed", output: map[string]any{"s3OutputDataConfig": s3cfg},
 	}
 	// ponytail: the "video" is a placeholder written straight to the emulator's
 	// S3; the job completes at once.
@@ -122,7 +165,15 @@ func (s *Server) brtStartAsyncInvoke(w http.ResponseWriter, req *brtRequest) *br
 	} else {
 		_, _ = s.s3.PutObject(bucket, key+"/manifest.json", "application/json", manifest, nil, "", "")
 	}
-	st.invokes = append(st.invokes, a)
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	// A concurrent request with the same token may have won while S3 was
+	// written; answer as its replay.
+	if done, e := st.replayLocked(w, token, hash); done {
+		return e
+	}
+	st.insertLocked(a)
 	respondBedrockRuntimeJSON(w, http.StatusOK, map[string]any{"invocationArn": a.arn})
 	return nil
 }
@@ -131,14 +182,44 @@ func (s *Server) brtGetAsyncInvoke(w http.ResponseWriter, req *brtRequest) *brtE
 	arn := req.params["invocationArn"]
 	st := s.bedrockruntime
 	st.mu.Lock()
-	defer st.mu.Unlock()
-	for _, a := range st.invokes {
-		if a.arn == arn {
-			respondBedrockRuntimeJSON(w, http.StatusOK, a.summary())
-			return nil
-		}
+	a := st.byARN[arn]
+	var out map[string]any
+	if a != nil {
+		out = a.summary()
 	}
-	return brtValidation("The invocation %s doesn't exist.", arn)
+	st.mu.Unlock()
+	if a == nil {
+		return brtValidation("The invocation %s doesn't exist.", arn)
+	}
+	respondBedrockRuntimeJSON(w, http.StatusOK, out)
+	return nil
+}
+
+// brtCursor orders invocations by (submitTime, ARN).
+type brtCursor struct {
+	submit int64
+	arn    string
+}
+
+func (c brtCursor) before(o brtCursor) bool {
+	if c.submit != o.submit {
+		return c.submit < o.submit
+	}
+	return c.arn < o.arn
+}
+
+func (c brtCursor) token() string {
+	return base64.RawURLEncoding.EncodeToString([]byte(strconv.FormatInt(c.submit, 10) + "|" + c.arn))
+}
+
+func brtParseCursor(token string) (brtCursor, bool) {
+	raw, err := base64.RawURLEncoding.DecodeString(token)
+	nanos, arn, ok := strings.Cut(string(raw), "|")
+	n, convErr := strconv.ParseInt(nanos, 10, 64)
+	if err != nil || !ok || convErr != nil || arn == "" {
+		return brtCursor{}, false
+	}
+	return brtCursor{n, arn}, true
 }
 
 func (s *Server) brtListAsyncInvokes(w http.ResponseWriter, req *brtRequest) *brtError {
@@ -172,45 +253,53 @@ func (s *Server) brtListAsyncInvokes(w http.ResponseWriter, req *brtRequest) *br
 			*dst = t
 		}
 	}
-	start := 0
+	var cursor *brtCursor
 	if v := q.Get("nextToken"); v != "" {
-		raw, err := base64.RawURLEncoding.DecodeString(v)
-		n, convErr := strconv.Atoi(string(raw))
-		if err != nil || convErr != nil || n < 0 {
+		c, ok := brtParseCursor(v)
+		if !ok {
 			return brtValidation("The nextToken is invalid.")
 		}
-		start = n
+		cursor = &c
 	}
+	asc := order == "Ascending"
 
+	type entry struct {
+		key     brtCursor
+		summary map[string]any
+	}
 	st := s.bedrockruntime
 	st.mu.Lock()
-	var matches []map[string]any
-	var times []time.Time
+	var matches []entry
 	for _, a := range st.invokes {
 		if (status == "" || a.status == status) && (after.IsZero() || a.submit.After(after)) && (before.IsZero() || a.submit.Before(before)) {
-			matches = append(matches, a.summary())
-			times = append(times, a.submit)
+			matches = append(matches, entry{brtCursor{a.submit.UnixNano(), a.arn}, a.summary()})
 		}
 	}
 	st.mu.Unlock()
-	idx := make([]int, len(matches))
-	for i := range idx {
-		idx[i] = i
-	}
-	sort.SliceStable(idx, func(i, j int) bool {
-		if order == "Ascending" {
-			return times[idx[i]].Before(times[idx[j]])
+	sort.Slice(matches, func(i, j int) bool {
+		if asc {
+			return matches[i].key.before(matches[j].key)
 		}
-		return times[idx[i]].After(times[idx[j]])
+		return matches[j].key.before(matches[i].key)
 	})
-	out := map[string]any{"asyncInvokeSummaries": []any{}}
 	page := []any{}
-	for i := start; i < len(idx) && len(page) < limit; i++ {
-		page = append(page, matches[idx[i]])
+	var last brtCursor
+	more := false
+	for _, m := range matches {
+		// Skip everything up to and including the cursor in this sort order.
+		if cursor != nil && ((asc && !cursor.before(m.key)) || (!asc && !m.key.before(*cursor))) {
+			continue
+		}
+		if len(page) == limit {
+			more = true
+			break
+		}
+		page = append(page, m.summary)
+		last = m.key
 	}
-	out["asyncInvokeSummaries"] = page
-	if end := start + len(page); end < len(idx) {
-		out["nextToken"] = base64.RawURLEncoding.EncodeToString([]byte(strconv.Itoa(end)))
+	out := map[string]any{"asyncInvokeSummaries": page}
+	if more {
+		out["nextToken"] = last.token()
 	}
 	respondBedrockRuntimeJSON(w, http.StatusOK, out)
 	return nil

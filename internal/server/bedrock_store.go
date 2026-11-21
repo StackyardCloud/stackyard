@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -17,23 +18,36 @@ type bedrockStore struct {
 }
 
 type bedrockGuardrail struct {
-	id, arn  string
-	versions map[string]map[string]any // "DRAFT" plus numbered snapshots
-	next     int
+	id, arn, name string
+	created       string
+	versions      map[string]*bedrockGuardrailVersion // "DRAFT" plus numbered snapshots
+	next          int
+}
+
+// bedrockGuardrailVersion is a guardrail configuration with its regexes
+// compiled once, in regexesConfig order.
+type bedrockGuardrailVersion struct {
+	cfg     map[string]any
+	regexes []*regexp.Regexp
+	updated string
 }
 
 func newBedrockStore() *bedrockStore {
 	return &bedrockStore{nextID: 1, guardrails: map[string]*bedrockGuardrail{}, models: map[string]string{}}
 }
 
-func (s *bedrockStore) Handle(action string, payload map[string]any) map[string]any {
+// Handle answers a control-plane action; a non-nil error is the response.
+func (s *bedrockStore) Handle(action string, payload map[string]any) (map[string]any, *brtError) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if out := s.handleRuntimeRecordLocked(action, payload); out != nil {
-		return out
+	if out, e := s.handleRuntimeRecordLocked(action, payload); out != nil || e != nil {
+		return out, e
 	}
+	return s.handleFabricatedLocked(action, payload), nil
+}
 
+func (s *bedrockStore) handleFabricatedLocked(action string, payload map[string]any) map[string]any {
 	switch action {
 	case "ListFoundationModels":
 		return map[string]any{"modelSummaries": []any{}, "nextToken": ""}

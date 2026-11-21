@@ -250,7 +250,7 @@ func TestBedrockRuntimeAsyncInvoke(t *testing.T) {
 	if page["asyncInvokeSummaries"].([]any)[0].(map[string]any)["invocationArn"] != arn || page["nextToken"] == nil {
 		t.Fatalf("page: %s", raw)
 	}
-	status, _, raw = brtCall(t, ts, http.MethodGet, "/async-invoke?nextToken="+page["nextToken"].(string), nil, nil)
+	status, _, raw = brtCall(t, ts, http.MethodGet, "/async-invoke?sortOrder=Ascending&maxResults=1&nextToken="+page["nextToken"].(string), nil, nil)
 	if next := brtExpect(t, status, raw, http.StatusOK, ""); len(next["asyncInvokeSummaries"].([]any)) != 1 || next["nextToken"] != nil {
 		t.Fatalf("second page: %s", raw)
 	}

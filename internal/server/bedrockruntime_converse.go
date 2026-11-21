@@ -89,6 +89,7 @@ func brtParseConversation(p map[string]any, inference bool) (*brtConversation, *
 	}
 	usesTools := false
 	pending := map[string]bool{} // toolUse IDs the next user turn must answer
+	seenUses := map[string]bool{}
 	for i, raw := range messages {
 		msg, _ := raw.(map[string]any)
 		role := bedrockString(msg, "role")
@@ -137,7 +138,10 @@ func brtParseConversation(p map[string]any, inference bool) (*brtConversation, *
 				if e != nil {
 					return nil, e
 				}
-				uses[id] = true
+				if seenUses[id] {
+					return nil, brtValidation("The toolUseId %s at %s.toolUse is used by more than one toolUse block.", id, path)
+				}
+				uses[id], seenUses[id] = true, true
 			case "toolResult":
 				usesTools = true
 				id, text, e := brtCheckToolResult(m["toolResult"], role, path)
@@ -308,7 +312,7 @@ func brtParseInference(c *brtConversation, p map[string]any) *brtError {
 	}
 	if v, set, _ := brtRange(cfg, "maxTokens", "", 1, 1e9, true); set {
 		c.maxTokens = int(v)
-	} else if raw, present := cfg["maxTokens"]; present {
+	} else if raw := cfg["maxTokens"]; raw != nil {
 		return brtConstraint(raw, "inferenceConfig.maxTokens", "Member must have value greater than or equal to 1")
 	}
 	for _, key := range []string{"temperature", "topP"} {
@@ -411,7 +415,7 @@ func (s *Server) brtConverse(w http.ResponseWriter, req *brtRequest, stream bool
 			return e
 		}
 		gid := bedrockString(gc, "guardrailIdentifier")
-		cfg, e := s.brtGuardrail(gid, bedrockString(gc, "guardrailVersion"))
+		evaluate, e := s.brtGuardrail(gid, bedrockString(gc, "guardrailVersion"))
 		if e != nil {
 			return e
 		}
@@ -419,7 +423,7 @@ func (s *Server) brtConverse(w http.ResponseWriter, req *brtRequest, stream bool
 		if len(texts) == 0 {
 			texts = []string{conv.prompt}
 		}
-		res := brtEvaluateGuardrail(cfg, texts, "INPUT")
+		res := evaluate(texts, "INPUT")
 		guard = &res
 		if mode == "enabled" || mode == "enabled_full" {
 			trace = map[string]any{"guardrail": map[string]any{"inputAssessment": map[string]any{gid: res.assessment}}}

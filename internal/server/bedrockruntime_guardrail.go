@@ -57,7 +57,9 @@ func brtPolicyList(cfg map[string]any, policy, list string) []map[string]any {
 // brtEvaluateGuardrail applies a guardrail's denied topics, custom words, PII
 // entities and regexes to the texts. Content filters, managed word lists and
 // contextual grounding are not evaluated.
-func brtEvaluateGuardrail(cfg map[string]any, texts []string, source string) brtGuardrailResult {
+// compiled holds the guardrail's regexesConfig patterns, compiled when the
+// guardrail was stored.
+func brtEvaluateGuardrail(cfg map[string]any, compiled []*regexp.Regexp, texts []string, source string) brtGuardrailResult {
 	joined := strings.Join(texts, "\n")
 	lower := strings.ToLower(joined)
 	blocked, masked := false, false
@@ -96,18 +98,33 @@ func brtEvaluateGuardrail(cfg map[string]any, texts []string, source string) brt
 
 	outputs := append([]string(nil), texts...)
 	var pii, regexes []any
+	// apply records each non-empty match, then masks them with one pass per
+	// regex; empty matches are skipped so a pattern like `\d*` can't blow up
+	// the output.
 	apply := func(re *regexp.Regexp, label, action string, record func(match, act string)) {
+		act, hit := brtPIIAction(action), false
 		for _, match := range re.FindAllString(joined, -1) {
-			act := brtPIIAction(action)
+			if match == "" {
+				continue
+			}
+			hit = true
 			record(match, act)
-			switch act {
-			case "BLOCKED":
-				blocked = true
-			case "ANONYMIZED":
-				masked = true
-				for i := range outputs {
-					outputs[i] = strings.ReplaceAll(outputs[i], match, "{"+label+"}")
-				}
+		}
+		if !hit {
+			return
+		}
+		switch act {
+		case "BLOCKED":
+			blocked = true
+		case "ANONYMIZED":
+			masked = true
+			for i := range outputs {
+				outputs[i] = re.ReplaceAllStringFunc(outputs[i], func(m string) string {
+					if m == "" {
+						return m
+					}
+					return "{" + label + "}"
+				})
 			}
 		}
 	}
@@ -119,12 +136,11 @@ func brtEvaluateGuardrail(cfg map[string]any, texts []string, source string) brt
 			})
 		}
 	}
-	for _, e := range brtPolicyList(cfg, "sensitiveInformationPolicyConfig", "regexesConfig") {
-		re, err := regexp.Compile(bedrockString(e, "pattern"))
-		if err != nil {
-			continue
+	for i, e := range brtPolicyList(cfg, "sensitiveInformationPolicyConfig", "regexesConfig") {
+		if i >= len(compiled) {
+			break
 		}
-		name := bedrockString(e, "name")
+		re, name := compiled[i], bedrockString(e, "name")
 		apply(re, name, brtActionFor(e, source, "BLOCK"), func(match, act string) {
 			regexes = append(regexes, map[string]any{"name": name, "match": match, "regex": re.String(), "action": act, "detected": true})
 		})
@@ -191,16 +207,18 @@ func brtPIIAction(action string) string {
 	return "BLOCKED"
 }
 
-// brtGuardrail looks up a guardrail version for a runtime call.
-func (s *Server) brtGuardrail(identifier, version string) (map[string]any, *brtError) {
+// brtGuardrail looks up a guardrail version and returns its evaluator.
+func (s *Server) brtGuardrail(identifier, version string) (func(texts []string, source string) brtGuardrailResult, *brtError) {
 	if strings.TrimSpace(identifier) == "" || strings.TrimSpace(version) == "" {
 		return nil, brtValidation("Guardrail identifier and version must both be provided.")
 	}
-	cfg, ok := s.bedrock.guardrailPolicy(identifier, version)
+	cfg, compiled, ok := s.bedrock.guardrailPolicy(identifier, version)
 	if !ok {
 		return nil, brtNotFound("The guardrail identifier or version provided in the request does not exist.")
 	}
-	return cfg, nil
+	return func(texts []string, source string) brtGuardrailResult {
+		return brtEvaluateGuardrail(cfg, compiled, texts, source)
+	}, nil
 }
 
 func (s *Server) brtApplyGuardrail(w http.ResponseWriter, req *brtRequest) *brtError {
@@ -238,11 +256,11 @@ func (s *Server) brtApplyGuardrail(w http.ResponseWriter, req *brtRequest) *brtE
 			return brtValidation("content.%d must contain exactly one of text or image.", i)
 		}
 	}
-	cfg, e := s.brtGuardrail(req.params["guardrailIdentifier"], req.params["guardrailVersion"])
+	evaluate, e := s.brtGuardrail(req.params["guardrailIdentifier"], req.params["guardrailVersion"])
 	if e != nil {
 		return e
 	}
-	res := brtEvaluateGuardrail(cfg, texts, source)
+	res := evaluate(texts, source)
 	action := "NONE"
 	if res.intervened {
 		action = "GUARDRAIL_INTERVENED"

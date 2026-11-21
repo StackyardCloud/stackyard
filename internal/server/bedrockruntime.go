@@ -29,6 +29,10 @@ func brtNotFound(format string, args ...any) *brtError {
 	return &brtError{http.StatusNotFound, "ResourceNotFoundException", fmt.Sprintf(format, args...)}
 }
 
+// brtMaxBody is the documented InvokeModel body limit (the Body blob's max in
+// the API model), applied to every runtime request.
+const brtMaxBody = 25_000_000
+
 type brtRequest struct {
 	r      *http.Request
 	body   []byte
@@ -40,13 +44,31 @@ func (s *Server) handleBedrockRuntimeRESTRouter(w http.ResponseWriter, r *http.R
 	if !ok {
 		return false
 	}
+	if id, ok := params["modelId"]; ok {
+		if _, _, e := s.brtResolveModel(id); e != nil {
+			respondBedrockRuntimeError(w, e)
+			return true
+		}
+	}
+	// Reject a declared oversized body before SigV4 reads (and truncates) it.
+	tooLarge := brtValidation("The request body exceeds the maximum size of %d bytes.", brtMaxBody)
+	if r.ContentLength > brtMaxBody {
+		respondBedrockRuntimeError(w, tooLarge)
+		return true
+	}
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "bedrock"); !ok {
 		respondBedrockRuntimeError(w, &brtError{status, code, msg})
 		return true
 	}
+	// SigV4 validation already buffered the body (capped above brtMaxBody), so
+	// an oversized chunked body shows up here as a long read.
 	body, err := readBodyBytes(r)
 	if err != nil {
 		respondBedrockRuntimeError(w, brtValidation("unable to read request body"))
+		return true
+	}
+	if len(body) > brtMaxBody {
+		respondBedrockRuntimeError(w, tooLarge)
 		return true
 	}
 	req := &brtRequest{r: r, body: body, params: params}

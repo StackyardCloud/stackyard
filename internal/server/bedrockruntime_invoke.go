@@ -69,11 +69,11 @@ func (s *Server) brtInvokeModel(w http.ResponseWriter, req *brtRequest, stream b
 	var guard *brtGuardrailResult
 	gid, gver := req.r.Header.Get("X-Amzn-Bedrock-GuardrailIdentifier"), req.r.Header.Get("X-Amzn-Bedrock-GuardrailVersion")
 	if gid != "" || gver != "" {
-		cfg, e := s.brtGuardrail(gid, gver)
+		evaluate, e := s.brtGuardrail(gid, gver)
 		if e != nil {
 			return e
 		}
-		res := brtEvaluateGuardrail(cfg, []string{inv.prompt}, "INPUT")
+		res := evaluate([]string{inv.prompt}, "INPUT")
 		guard = &res
 	}
 	gen := brtGenerate(inv.last, inv.maxTokens, inv.stops)

@@ -13820,6 +13820,21 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
     return errors
 
 
+def output_payload_exempt_member(output_shape) -> str | None:
+    """Return the output's HTTP payload member when it is a blob or event
+    stream: the CLI writes those to an outfile (or streams them), so they never
+    appear on stdout even when required. Other payload members must appear."""
+    name = (getattr(output_shape, "serialization", None) or {}).get("payload")
+    member = (getattr(output_shape, "members", {}) or {}).get(name) if name else None
+    if member is None:
+        return None
+    if str(getattr(member, "type_name", "")).lower() == "blob":
+        return name
+    if (getattr(member, "serialization", None) or {}).get("eventstream"):
+        return name
+    return None
+
+
 def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
     op_model = get_operation_model(endpoint)
     output_shape = getattr(op_model, "output_shape", None) if op_model is not None else None
@@ -13842,7 +13857,7 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
         return f"non-json output: {err}"
 
     errors: list[str] = []
-    payload_member = (getattr(output_shape, "serialization", None) or {}).get("payload")
+    payload_member = output_payload_exempt_member(output_shape)
 
     def _validate(shape, value, path: str) -> None:
         if shape is None:
@@ -30072,6 +30087,36 @@ def bedrockruntime_event_stream_body(payload: dict) -> bytes:
     return out
 
 
+BEDROCK_GUARDRAIL_OPERATIONS = {"GetGuardrail", "UpdateGuardrail", "DeleteGuardrail", "CreateGuardrailVersion"}
+
+
+def bedrock_create_coverage_guardrail(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a guardrail through the control plane and return its ID."""
+    create = Endpoint(
+        service="bedrock",
+        cli_service="bedrock",
+        operation="CreateGuardrail",
+        cli_operation="create-guardrail",
+        source="runtime-state",
+    )
+    _, text = invoke_raw_endpoint(
+        create,
+        endpoint_url,
+        region,
+        env,
+        {
+            "name": "stackyard-coverage",
+            "blockedInputMessaging": "Blocked.",
+            "blockedOutputsMessaging": "Blocked.",
+            "wordPolicyConfig": {"wordsConfig": [{"text": "forbidden"}]},
+        },
+    )
+    try:
+        return str(json.loads(text).get("guardrailId") or "")
+    except (json.JSONDecodeError, AttributeError):
+        return ""
+
+
 def bedrockruntime_hydrate_payload(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30115,29 +30160,7 @@ def bedrockruntime_hydrate_payload(
     if op == "ApplyGuardrail":
         guardrail_id = str(state.get("guardrail_id") or "")
         if not guardrail_id:
-            create = Endpoint(
-                service="bedrock",
-                cli_service="bedrock",
-                operation="CreateGuardrail",
-                cli_operation="create-guardrail",
-                source="runtime-state",
-            )
-            _, text = invoke_raw_endpoint(
-                create,
-                endpoint_url,
-                region,
-                env,
-                {
-                    "name": "stackyard-coverage",
-                    "blockedInputMessaging": "Blocked.",
-                    "blockedOutputsMessaging": "Blocked.",
-                    "wordPolicyConfig": {"wordsConfig": [{"text": "forbidden"}]},
-                },
-            )
-            try:
-                guardrail_id = str(json.loads(text).get("guardrailId") or "")
-            except (json.JSONDecodeError, AttributeError):
-                guardrail_id = ""
+            guardrail_id = bedrock_create_coverage_guardrail(endpoint_url, region, env)
             state["guardrail_id"] = guardrail_id
         return {
             "guardrailIdentifier": guardrail_id,
@@ -30182,6 +30205,12 @@ def hydrate_payload_with_service_state(
 
     if endpoint.service == "bedrockruntime":
         return bedrockruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+
+    if endpoint.service == "bedrock" and endpoint.operation in BEDROCK_GUARDRAIL_OPERATIONS:
+        # The control plane stores guardrails, so these need a real identifier.
+        hydrated = copy.deepcopy(payload)
+        hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
+        return hydrated
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)
