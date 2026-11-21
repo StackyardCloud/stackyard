@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"maps"
 	"net/http"
 	"slices"
 	"strconv"
@@ -148,100 +150,196 @@ func (s *Server) appConfigDataGetLatest(w http.ResponseWriter, r *http.Request) 
 	}
 	st := s.appconfig
 	st.mu.Lock()
-	defer st.mu.Unlock()
-	now := time.Now().UTC()
-	session, ok := st.sessions[token]
-	switch {
-	case !ok:
-		respondAppConfigDataTokenProblem(w, "Corrupted", "Token is invalid or has already been used")
-		return
-	case now.Sub(session.IssuedAt) > appConfigDataTokenTTL:
-		delete(st.sessions, token)
-		respondAppConfigDataTokenProblem(w, "Expired", "Token has expired")
-		return
-	case now.Before(session.NotBefore):
-		respondAppConfigDataTokenProblem(w, "PollIntervalNotSatisfied", "Request too early; wait for the poll interval to pass")
+	poll := st.pollLocked(token, time.Now().UTC())
+	st.mu.Unlock()
+
+	// Written after unlocking so a slow client can't hold the store lock.
+	if poll.fail != nil {
+		poll.fail(w)
 		return
 	}
-
-	number, deployment, ok := st.latestDeploymentLocked(session)
-	if !ok {
-		respondAppConfigDataNotFound(w, "Deployment", "ConfigurationToken", token)
-		return
-	}
-	versions := st.versions[session.AppID+"/"+session.ProfileID]
-	index, err := strconv.Atoi(deployment.Version)
-	if err != nil || index < 1 || index > len(versions) {
-		respondAppConfigDataNotFound(w, "Configuration", "ConfigurationToken", token)
-		return
-	}
-	version := versions[index-1]
-
-	interval := cmp.Or(session.MinPollSeconds, appConfigDataDefaultPollSecond)
-	next := session
-	next.Delivered = strconv.Itoa(number) + "/" + deployment.Version
-	next.IssuedAt = now
-	next.NotBefore = now.Add(time.Duration(session.MinPollSeconds) * time.Second)
-	nextToken := appConfigDataNewToken()
-	delete(st.sessions, token)
-	st.sessions[nextToken] = next
-
-	w.Header().Set("Next-Poll-Configuration-Token", nextToken)
-	w.Header().Set("Next-Poll-Interval-In-Seconds", strconv.Itoa(interval))
-	if next.Delivered == session.Delivered {
+	w.Header().Set("Next-Poll-Configuration-Token", poll.nextToken)
+	w.Header().Set("Next-Poll-Interval-In-Seconds", strconv.Itoa(poll.interval))
+	if !poll.changed {
 		// The client already has this version: empty body, no Version-Label.
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	w.Header().Set("Content-Type", cmp.Or(version.ContentType, "application/octet-stream"))
-	if version.Label != "" {
-		w.Header().Set("Version-Label", version.Label)
+	w.Header().Set("Content-Type", cmp.Or(poll.version.ContentType, "application/octet-stream"))
+	if poll.version.Label != "" {
+		w.Header().Set("Version-Label", poll.version.Label)
 	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(version.Content)
+	_, _ = w.Write(poll.version.Content)
+}
+
+// appConfigDataPoll is a GetLatestConfiguration answer built under the store
+// lock: either fail, or the next token plus the version to send.
+type appConfigDataPoll struct {
+	fail      func(http.ResponseWriter)
+	nextToken string
+	interval  int
+	changed   bool
+	version   appConfigHostedVersion
+}
+
+func (s *appConfigStore) pollLocked(token string, now time.Time) appConfigDataPoll {
+	session, ok := s.sessions[token]
+	switch {
+	case !ok:
+		return appConfigDataPoll{fail: func(w http.ResponseWriter) {
+			respondAppConfigDataTokenProblem(w, "Corrupted", "Token is invalid or has already been used")
+		}}
+	case now.Sub(session.IssuedAt) > appConfigDataTokenTTL:
+		delete(s.sessions, token)
+		return appConfigDataPoll{fail: func(w http.ResponseWriter) { respondAppConfigDataTokenProblem(w, "Expired", "Token has expired") }}
+	case now.Before(session.NotBefore):
+		return appConfigDataPoll{fail: func(w http.ResponseWriter) {
+			respondAppConfigDataTokenProblem(w, "PollIntervalNotSatisfied", "Request too early; wait for the poll interval to pass")
+		}}
+	}
+
+	deployment, ok := s.latestDeploymentLocked(session)
+	if !ok {
+		return appConfigDataPoll{fail: func(w http.ResponseWriter) {
+			respondAppConfigDataNotFound(w, "Deployment", "ConfigurationToken", token)
+		}}
+	}
+	version, ok := s.hostedVersionLocked(session.AppID+"/"+session.ProfileID, deployment.Version)
+	if !ok {
+		return appConfigDataPoll{fail: func(w http.ResponseWriter) {
+			respondAppConfigDataNotFound(w, "Configuration", "ConfigurationToken", token)
+		}}
+	}
+
+	next := session
+	next.Delivered = deployment.Version // version identity: redeploying it again sends nothing new
+	next.IssuedAt = now
+	next.NotBefore = now.Add(time.Duration(session.MinPollSeconds) * time.Second)
+	nextToken := appConfigDataNewToken()
+	delete(s.sessions, token)
+	s.sessions[nextToken] = next
+	version.Content = bytes.Clone(version.Content)
+	return appConfigDataPoll{
+		nextToken: nextToken,
+		interval:  cmp.Or(session.MinPollSeconds, appConfigDataDefaultPollSecond),
+		changed:   next.Delivered != session.Delivered,
+		version:   version,
+	}
 }
 
 // latestDeploymentLocked returns the newest deployment of the session's
 // profile to its environment that was not stopped (rolled back).
-func (s *appConfigStore) latestDeploymentLocked(session appConfigDataSession) (int, appConfigDeployment, bool) {
+func (s *appConfigStore) latestDeploymentLocked(session appConfigDataSession) (appConfigDeployment, bool) {
 	deployments := s.deployments[session.AppID+"/"+session.EnvID]
 	for i := len(deployments) - 1; i >= 0; i-- {
 		if d := deployments[i]; d.ProfileID == session.ProfileID && !d.RolledBack {
-			return i + 1, d, true
+			return d, true
 		}
 	}
-	return 0, appConfigDeployment{}, false
+	return appConfigDeployment{}, false
+}
+
+// hostedVersionLocked returns a stored, not deleted hosted version.
+func (s *appConfigStore) hostedVersionLocked(profileKey, number string) (appConfigHostedVersion, bool) {
+	versions := s.versions[profileKey]
+	index, err := strconv.Atoi(number)
+	if err != nil || index < 1 || index > len(versions) || versions[index-1].Deleted {
+		return appConfigHostedVersion{}, false
+	}
+	return versions[index-1], true
+}
+
+// validateDataPlaneLocked rejects control-plane writes the registry can
+// check. Unknown (fabricated) applications and profiles are still accepted.
+func (s *appConfigStore) validateDataPlaneLocked(action string, payload map[string]any, path map[string]string) *appConfigFault {
+	if action != "StartDeployment" {
+		return nil
+	}
+	key := path["ApplicationId"] + "/" + appConfigDefaultString(payload, "ConfigurationProfileId", "")
+	version := appConfigDefaultString(payload, "ConfigurationVersion", "1")
+	if s.hosted[key] {
+		if _, ok := s.hostedVersionLocked(key, version); !ok {
+			return &appConfigFault{Status: http.StatusNotFound, Code: "ResourceNotFoundException", Message: "hosted configuration version " + version + " not found"}
+		}
+	}
+	return nil
 }
 
 // recordDataPlaneLocked keeps the registry AppConfig Data reads in step with
 // the control plane, whose own responses stay fabricated.
 func (s *appConfigStore) recordDataPlaneLocked(action string, payload map[string]any, path map[string]string, result map[string]any) {
 	str := func(key string) string { v, _ := result[key].(string); return v }
+	// Updates rename only when they send a Name; the result's Name falls
+	// back to a fabricated default otherwise.
+	newName := appConfigDefaultString(payload, "Name", "")
+	app := path["ApplicationId"]
 	switch action {
 	case "CreateApplication":
 		s.apps[str("Id")] = str("Name")
 	case "UpdateApplication":
-		if _, ok := s.apps[str("Id")]; ok {
-			s.apps[str("Id")] = str("Name")
+		if _, ok := s.apps[str("Id")]; ok && newName != "" {
+			s.apps[str("Id")] = newName
 		}
 	case "DeleteApplication":
-		delete(s.apps, path["ApplicationId"])
-	case "CreateEnvironment", "UpdateEnvironment":
-		appConfigDataRecordName(s.envs, str("ApplicationId"), str("Id"), str("Name"), action == "CreateEnvironment")
+		delete(s.apps, app)
+		delete(s.envs, app)
+		delete(s.profiles, app)
+		maps.DeleteFunc(s.hosted, func(k string, _ bool) bool { return strings.HasPrefix(k, app+"/") })
+		maps.DeleteFunc(s.versions, func(k string, _ []appConfigHostedVersion) bool { return strings.HasPrefix(k, app+"/") })
+		maps.DeleteFunc(s.deployments, func(k string, _ []appConfigDeployment) bool { return strings.HasPrefix(k, app+"/") })
+		s.dropSessionsLocked(func(x appConfigDataSession) bool { return x.AppID == app })
+	case "CreateEnvironment":
+		appConfigDataRecordName(s.envs, str("ApplicationId"), str("Id"), str("Name"), true)
+	case "UpdateEnvironment":
+		if newName != "" {
+			appConfigDataRecordName(s.envs, str("ApplicationId"), str("Id"), newName, false)
+		}
 	case "DeleteEnvironment":
-		delete(s.envs[path["ApplicationId"]], path["EnvironmentId"])
-	case "CreateConfigurationProfile", "UpdateConfigurationProfile":
-		appConfigDataRecordName(s.profiles, str("ApplicationId"), str("Id"), str("Name"), action == "CreateConfigurationProfile")
+		env := path["EnvironmentId"]
+		delete(s.envs[app], env)
+		delete(s.deployments, app+"/"+env)
+		s.dropSessionsLocked(func(x appConfigDataSession) bool { return x.AppID == app && x.EnvID == env })
+	case "CreateConfigurationProfile":
+		appConfigDataRecordName(s.profiles, str("ApplicationId"), str("Id"), str("Name"), true)
+		if strings.EqualFold(str("LocationUri"), "hosted") {
+			s.hosted[str("ApplicationId")+"/"+str("Id")] = true
+		}
+	case "UpdateConfigurationProfile":
+		if newName != "" {
+			appConfigDataRecordName(s.profiles, str("ApplicationId"), str("Id"), newName, false)
+		}
 	case "DeleteConfigurationProfile":
-		delete(s.profiles[path["ApplicationId"]], path["ConfigurationProfileId"])
+		profile := path["ConfigurationProfileId"]
+		delete(s.profiles[app], profile)
+		delete(s.versions, app+"/"+profile)
+		delete(s.hosted, app+"/"+profile)
+		s.dropSessionsLocked(func(x appConfigDataSession) bool { return x.AppID == app && x.ProfileID == profile })
 	case "CreateHostedConfigurationVersion":
 		key := str("ApplicationId") + "/" + str("ConfigurationProfileId")
 		content, _ := payload[appConfigDataContentKey].([]byte)
-		label := appConfigDefaultString(payload, "VersionLabel", "")
-		s.versions[key] = append(s.versions[key], appConfigHostedVersion{Content: bytes.Clone(content), ContentType: str("ContentType"), Label: label})
+		version := appConfigHostedVersion{
+			Content:     bytes.Clone(content),
+			ContentType: str("ContentType"),
+			Label:       appConfigDefaultString(payload, "VersionLabel", ""),
+			Description: appConfigDefaultString(payload, "Description", ""),
+		}
+		s.versions[key] = append(s.versions[key], version)
 		result["VersionNumber"] = int64(len(s.versions[key]))
-		if label != "" {
-			result["VersionLabel"] = label
+		appConfigDataVersionResult(result, version)
+	case "GetHostedConfigurationVersion":
+		// ponytail: an unknown version keeps the fabricated answer, like the
+		// rest of this control plane; only recorded versions are real.
+		key := str("ApplicationId") + "/" + str("ConfigurationProfileId")
+		if version, ok := s.hostedVersionLocked(key, fmt.Sprint(result["VersionNumber"])); ok {
+			appConfigDataVersionResult(result, version)
+		} else {
+			result["Content"] = []byte(`{"stackyard":true}`)
+		}
+	case "DeleteHostedConfigurationVersion":
+		key := app + "/" + path["ConfigurationProfileId"]
+		if index, err := strconv.Atoi(path["VersionNumber"]); err == nil && index >= 1 && index <= len(s.versions[key]) {
+			s.versions[key][index-1] = appConfigHostedVersion{Deleted: true}
 		}
 	case "StartDeployment":
 		key := str("ApplicationId") + "/" + str("EnvironmentId")
@@ -255,6 +353,19 @@ func (s *appConfigStore) recordDataPlaneLocked(action string, payload map[string
 			deployments[n-1].RolledBack = true
 		}
 	}
+}
+
+// appConfigDataVersionResult copies a stored version into a
+// HostedConfigurationVersion result.
+func appConfigDataVersionResult(result map[string]any, version appConfigHostedVersion) {
+	result["Content"] = bytes.Clone(version.Content)
+	result["ContentType"] = cmp.Or(version.ContentType, "application/octet-stream")
+	result["VersionLabel"] = version.Label
+	result["Description"] = version.Description
+}
+
+func (s *appConfigStore) dropSessionsLocked(match func(appConfigDataSession) bool) {
+	maps.DeleteFunc(s.sessions, func(_ string, session appConfigDataSession) bool { return match(session) })
 }
 
 func appConfigDataRecordName(byApp map[string]map[string]string, appID, id, name string, create bool) {

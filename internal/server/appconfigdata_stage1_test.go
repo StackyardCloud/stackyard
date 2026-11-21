@@ -21,7 +21,7 @@ func appConfigDataStart(t *testing.T, ts *httptest.Server, body string) string {
 	return out.InitialConfigurationToken
 }
 
-func appConfigDataPoll(t *testing.T, ts *httptest.Server, token string) (*http.Response, string) {
+func appConfigDataGet(t *testing.T, ts *httptest.Server, token string) (*http.Response, string) {
 	t.Helper()
 	resp := appConfigDataRequest(t, ts, http.MethodGet, "/configuration?configuration_token="+url.QueryEscape(token), nil, nil)
 	return resp, string(mustBody(t, resp))
@@ -42,7 +42,7 @@ func TestAppConfigDataStage1SeededSession(t *testing.T) {
 	_, ts := newAppConfigDataTestServer(t)
 	token := appConfigDataStart(t, ts, `{"ApplicationIdentifier":"app-000001","EnvironmentIdentifier":"env-000001","ConfigurationProfileIdentifier":"cp-000001"}`)
 
-	resp, body := appConfigDataPoll(t, ts, token)
+	resp, body := appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if body != `{"stackyard":true}` || resp.Header.Get("Content-Type") != "application/json" {
 		t.Fatalf("unexpected seeded configuration %q (%s)", body, resp.Header.Get("Content-Type"))
@@ -56,14 +56,14 @@ func TestAppConfigDataStage1SeededSession(t *testing.T) {
 	}
 
 	// Same version again: empty body, no Version-Label.
-	resp, body = appConfigDataPoll(t, ts, next)
+	resp, body = appConfigDataGet(t, ts, next)
 	assertStatus(t, resp, http.StatusOK)
 	if body != "" {
 		t.Fatalf("expected empty body for an unchanged configuration, got %q", body)
 	}
 
 	// Tokens are single-use.
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusBadRequest)
 	if !strings.Contains(body, `"Problem":"Corrupted"`) {
 		t.Fatalf("expected Corrupted token problem, got %q", body)
@@ -78,14 +78,14 @@ func TestAppConfigDataStage1ControlPlaneLifecycle(t *testing.T) {
 
 	versionPath := "/applications/" + app + "/configurationprofiles/" + profile + "/hostedconfigurationversions"
 	resp := appConfigDataRequest(t, ts, http.MethodPost, versionPath, []byte("feature=on"), map[string]string{"Content-Type": "text/plain", "VersionLabel": "v1"})
-	assertStatus(t, resp, http.StatusOK)
+	assertStatus(t, resp, http.StatusCreated)
 	if resp.Header.Get("Version-Number") != "1" {
 		t.Fatalf("expected Version-Number 1, got %q", resp.Header.Get("Version-Number"))
 	}
 
 	// Sessions resolve names; nothing is deployed yet.
 	token := appConfigDataStart(t, ts, `{"ApplicationIdentifier":"orders","EnvironmentIdentifier":"prod","ConfigurationProfileIdentifier":"flags"}`)
-	resp, body := appConfigDataPoll(t, ts, token)
+	resp, body := appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusNotFound)
 	if !strings.Contains(body, `"ResourceType":"Deployment"`) {
 		t.Fatalf("expected missing Deployment, got %q", body)
@@ -105,7 +105,7 @@ func TestAppConfigDataStage1ControlPlaneLifecycle(t *testing.T) {
 	deploy("1")
 
 	// A failed poll leaves the token usable.
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if body != "feature=on" || resp.Header.Get("Version-Label") != "v1" || resp.Header.Get("Content-Type") != "text/plain" {
 		t.Fatalf("unexpected v1 response %q label=%q type=%q", body, resp.Header.Get("Version-Label"), resp.Header.Get("Content-Type"))
@@ -113,12 +113,12 @@ func TestAppConfigDataStage1ControlPlaneLifecycle(t *testing.T) {
 	token = resp.Header.Get("Next-Poll-Configuration-Token")
 
 	resp = appConfigDataRequest(t, ts, http.MethodPost, versionPath, []byte("feature=off"), map[string]string{"Content-Type": "text/plain"})
-	assertStatus(t, resp, http.StatusOK)
+	assertStatus(t, resp, http.StatusCreated)
 	if resp.Header.Get("Version-Number") != "2" {
 		t.Fatalf("expected Version-Number 2, got %q", resp.Header.Get("Version-Number"))
 	}
 	deploy("2")
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if body != "feature=off" || resp.Header.Get("Version-Label") != "" {
 		t.Fatalf("expected unlabelled v2, got %q label=%q", body, resp.Header.Get("Version-Label"))
@@ -128,9 +128,9 @@ func TestAppConfigDataStage1ControlPlaneLifecycle(t *testing.T) {
 	// A deployment of another profile to the same environment doesn't reach this session.
 	other := appConfigDataControl(t, ts, http.MethodPost, "/applications/"+app+"/configurationprofiles", `{"Name":"other","LocationUri":"hosted"}`, nil)["Id"].(string)
 	resp = appConfigDataRequest(t, ts, http.MethodPost, "/applications/"+app+"/configurationprofiles/"+other+"/hostedconfigurationversions", []byte("other=1"), map[string]string{"Content-Type": "text/plain"})
-	assertStatus(t, resp, http.StatusOK)
+	assertStatus(t, resp, http.StatusCreated)
 	deployProfile(other, "1")
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if body != "" {
 		t.Fatalf("expected no change from another profile's deployment, got %q", body)
@@ -140,7 +140,7 @@ func TestAppConfigDataStage1ControlPlaneLifecycle(t *testing.T) {
 	// Stopping deployment 2 rolls the environment back to version 1.
 	resp = appConfigDataRequest(t, ts, http.MethodDelete, "/applications/"+app+"/environments/"+env+"/deployments/2", nil, nil)
 	assertStatus(t, resp, http.StatusOK)
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if body != "feature=on" {
 		t.Fatalf("expected rollback to v1, got %q", body)
@@ -182,7 +182,7 @@ func TestAppConfigDataStage1Validation(t *testing.T) {
 		})
 	}
 
-	resp, body := appConfigDataPoll(t, ts, "")
+	resp, body := appConfigDataGet(t, ts, "")
 	assertStatus(t, resp, http.StatusBadRequest)
 	if !strings.Contains(body, "ConfigurationToken is required") {
 		t.Fatalf("expected missing token error, got %q", body)
@@ -190,13 +190,13 @@ func TestAppConfigDataStage1Validation(t *testing.T) {
 
 	// The minimum poll interval is enforced, and the early token stays valid.
 	token := appConfigDataStart(t, ts, seeded(`,"RequiredMinimumPollIntervalInSeconds":15`))
-	resp, _ = appConfigDataPoll(t, ts, token)
+	resp, _ = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusOK)
 	if resp.Header.Get("Next-Poll-Interval-In-Seconds") != "15" {
 		t.Fatalf("expected poll interval 15, got %q", resp.Header.Get("Next-Poll-Interval-In-Seconds"))
 	}
 	next := resp.Header.Get("Next-Poll-Configuration-Token")
-	resp, body = appConfigDataPoll(t, ts, next)
+	resp, body = appConfigDataGet(t, ts, next)
 	assertStatus(t, resp, http.StatusBadRequest)
 	if !strings.Contains(body, `"Problem":"PollIntervalNotSatisfied"`) {
 		t.Fatalf("expected PollIntervalNotSatisfied, got %q", body)
@@ -206,7 +206,7 @@ func TestAppConfigDataStage1Validation(t *testing.T) {
 	session.NotBefore = time.Now().Add(-time.Second)
 	srv.appconfig.sessions[next] = session
 	srv.appconfig.mu.Unlock()
-	resp, _ = appConfigDataPoll(t, ts, next)
+	resp, _ = appConfigDataGet(t, ts, next)
 	assertStatus(t, resp, http.StatusOK)
 
 	// Tokens expire after 24 hours.
@@ -216,7 +216,7 @@ func TestAppConfigDataStage1Validation(t *testing.T) {
 	session.IssuedAt = time.Now().Add(-25 * time.Hour)
 	srv.appconfig.sessions[token] = session
 	srv.appconfig.mu.Unlock()
-	resp, body = appConfigDataPoll(t, ts, token)
+	resp, body = appConfigDataGet(t, ts, token)
 	assertStatus(t, resp, http.StatusBadRequest)
 	if !strings.Contains(body, `"Problem":"Expired"`) {
 		t.Fatalf("expected Expired, got %q", body)
