@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream"
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ import (
 const (
 	sagemakerRuntimeMaxBody      = 6291456 // BodyBlob max
 	sagemakerRuntimeMaxAsyncBody = 128000  // AsyncBodyBlob max
-	// ponytail: streamed responses are cut into fixed-size PayloadPart events.
+	// ponytail: streamed responses are cut into PayloadPart events of at most this size.
 	sagemakerRuntimeStreamChunk = 256
 )
 
@@ -101,7 +102,8 @@ func sagemakerRuntimeRoute(r *http.Request) (string, string, bool) {
 	if m == nil {
 		return "", "", false
 	}
-	if sigV4ServiceHint(r) != "sagemaker" && !strings.Contains(strings.ToLower(r.Host), "runtime.sagemaker") {
+	host := strings.ToLower(r.Host)
+	if sigV4ServiceHint(r) != "sagemaker" && !strings.HasPrefix(host, "runtime.sagemaker.") && !strings.HasPrefix(host, "runtime-fips.sagemaker.") {
 		return "", "", false
 	}
 	name, err := url.PathUnescape(m[1])
@@ -116,13 +118,26 @@ func (s *Server) handleSageMakerRuntimeRESTRouter(w http.ResponseWriter, r *http
 	if !ok {
 		return false
 	}
-	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "sagemaker"); !ok {
-		respondSageMakerRuntimeError(w, status, code, msg)
+	// Bound the body before SigV4 validation reads it (readBodyBytes only caps
+	// at 25 MB); MaxBytesReader also bounds chunked bodies without a length.
+	limit, limitMsg := int64(sagemakerRuntimeMaxBody), "Request body exceeds the 6 MB invocation payload limit"
+	if op == "InvokeEndpointAsync" {
+		limit, limitMsg = sagemakerRuntimeMaxAsyncBody, "Request body exceeds the 128000 byte inline payload limit; use InputLocation"
+	}
+	if r.ContentLength > limit {
+		respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", limitMsg)
 		return true
 	}
+	if r.Body != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, limit+1)
+	}
 	body, err := readBodyBytes(r)
-	if err != nil {
-		respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", "unable to read request body")
+	if err != nil || int64(len(body)) > limit {
+		respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", limitMsg)
+		return true
+	}
+	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "sagemaker"); !ok {
+		respondSageMakerRuntimeError(w, status, code, msg)
 		return true
 	}
 	if msg := sagemakerRuntimeValidate(r, op, name, body); msg != "" {
@@ -149,6 +164,9 @@ func sagemakerRuntimeValidate(r *http.Request, op, name string, body []byte) str
 	if len(name) > 63 || !sagemakerRuntimeNameRE.MatchString(name) {
 		return fmt.Sprintf("1 validation error detected: Value '%s' at 'endpointName' failed to satisfy constraint: Member must satisfy regular expression pattern: ^[a-zA-Z0-9](-*[a-zA-Z0-9])*", name)
 	}
+	if op == "InvokeEndpointWithResponseStream" && r.Header.Get("X-Amzn-SageMaker-Session-Id") == "NEW_SESSION" {
+		return "InvokeEndpointWithResponseStream cannot open a session; start one with InvokeEndpoint and SessionId NEW_SESSION"
+	}
 	for _, h := range sagemakerRuntimeHeaders[op] {
 		value, present := r.Header[http.CanonicalHeaderKey(h.name)]
 		if !present {
@@ -164,19 +182,16 @@ func sagemakerRuntimeValidate(r *http.Request, op, name string, body []byte) str
 		if sid := r.Header.Get("X-Amzn-SageMaker-Session-Id"); sid != "" && sid != "NEW_SESSION" && (len(sid) > 256 || !sagemakerRuntimeNameRE.MatchString(sid)) {
 			return "1 validation error detected: Value at 'sessionId' failed to satisfy constraint: Member must be NEW_SESSION or a session ID"
 		}
-		if len(body) > sagemakerRuntimeMaxBody {
-			return "Request body exceeds the 6 MB invocation payload limit"
-		}
-	case "InvokeEndpointWithResponseStream":
-		if len(body) > sagemakerRuntimeMaxBody {
-			return "Request body exceeds the 6 MB invocation payload limit"
-		}
 	case "InvokeEndpointAsync":
-		if len(body) > sagemakerRuntimeMaxAsyncBody {
-			return "Request body exceeds the 128000 byte inline payload limit; use InputLocation"
-		}
-		if len(body) == 0 && r.Header.Get("X-Amzn-SageMaker-InputLocation") == "" {
+		location := r.Header.Get("X-Amzn-SageMaker-InputLocation")
+		if len(body) == 0 && location == "" {
 			return "InputLocation is required when no inline Body is sent"
+		}
+		// ponytail: the pattern also allows https:// S3 URLs; add parsing for
+		// virtual-hosted/path-style URLs if a client needs them. Checked even when
+		// an inline Body (which takes precedence) is sent.
+		if location != "" && !strings.HasPrefix(location, "s3://") {
+			return "InputLocation must be an s3:// URI; https:// input locations are not supported by this emulator"
 		}
 		if strings.Count(r.Header.Get("X-Amzn-SageMaker-Filename"), ".") > 1 {
 			return "Filename may contain at most one '.'"
@@ -209,12 +224,12 @@ func (s *sagemakerStore) runtimeTarget(name, variant string, async bool) (sagema
 	defer s.mu.Unlock()
 	endpoint, ok := s.endpoints[name]
 	if !ok {
-		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s of account %s not found.", name, "123456789012")
+		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s of account %s not found.", name, sagemakerAccountID)
 	}
 	if endpoint.Status == "Creating" || endpoint.Status == "Updating" {
-		// Endpoints finish deploying at once, as DescribeEndpoint already reports.
+		// Endpoints finish deploying at once, as DescribeEndpoint already reports;
+		// an invocation is not a modification, so LastModifiedTime stays put.
 		endpoint.Status = "InService"
-		endpoint.LastModifiedTime = time.Now().UTC().Format(time.RFC3339)
 	}
 	if endpoint.Status != "InService" {
 		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s is not in service (status %s).", name, endpoint.Status)
@@ -227,6 +242,8 @@ func (s *sagemakerStore) runtimeTarget(name, variant string, async bool) (sagema
 			variants = names
 		}
 	}
+	// ponytail: untargeted calls always go to the first variant, ignoring
+	// InitialVariantWeight; add weighted random routing if traffic splits matter.
 	target := sagemakerRuntimeTarget{Variant: variants[0]}
 	if variant != "" {
 		found := false
@@ -246,31 +263,98 @@ func (s *sagemakerStore) runtimeTarget(name, variant string, async bool) (sagema
 		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s is not configured for asynchronous inference.", name)
 	case !async && asyncConfig != nil:
 		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s is configured for asynchronous inference; use InvokeEndpointAsync.", name)
+	case async && target.OutputPath == "":
+		return sagemakerRuntimeTarget{}, fmt.Sprintf("Endpoint %s has no AsyncInferenceConfig.OutputConfig.S3OutputPath to write results to.", name)
 	}
 	return target, ""
 }
 
+// sagemakerRuntimeSessionTTL is the lifetime advertised in the
+// X-Amzn-SageMaker-New-Session-Id "Expires" attribute and enforced on use.
+const sagemakerRuntimeSessionTTL = 20 * time.Minute
+
+// sagemakerAccountID is the account the SageMaker emulation reports in ARNs.
+const sagemakerAccountID = "123456789012"
+
+type sagemakerRuntimeSession struct {
+	Endpoint string
+	Expires  time.Time
+}
+
 // runtimeSession opens a stateful session ("NEW_SESSION") or checks that an
-// existing one belongs to the endpoint. It returns the new session ID, if any.
-func (s *sagemakerStore) runtimeSession(endpoint, sessionID string) (string, string) {
+// existing, unexpired one belongs to the endpoint. It returns the new session
+// ID and its expiry when one was opened.
+func (s *sagemakerStore) runtimeSession(endpoint, sessionID string) (string, time.Time, string) {
 	if sessionID == "" {
-		return "", ""
+		return "", time.Time{}, ""
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.runtimeSessions == nil {
-		s.runtimeSessions = map[string]string{}
-	}
+	now := time.Now().UTC()
 	if sessionID == "NEW_SESSION" {
-		// ponytail: sessions never expire; add a TTL sweep if clients rely on expiry.
+		for id, session := range s.runtimeSessions {
+			if !now.Before(session.Expires) {
+				delete(s.runtimeSessions, id)
+			}
+		}
+		if s.runtimeSessions == nil {
+			s.runtimeSessions = map[string]sagemakerRuntimeSession{}
+		}
 		id := strings.ReplaceAll(uuid.NewString(), "-", "")
-		s.runtimeSessions[id] = endpoint
-		return id, ""
+		expires := now.Add(sagemakerRuntimeSessionTTL)
+		s.runtimeSessions[id] = sagemakerRuntimeSession{Endpoint: endpoint, Expires: expires}
+		return id, expires, ""
 	}
-	if s.runtimeSessions[sessionID] != endpoint {
-		return "", fmt.Sprintf("Session %s not found for endpoint %s.", sessionID, endpoint)
+	session, ok := s.runtimeSessions[sessionID]
+	switch {
+	case !ok || session.Endpoint != endpoint:
+		return "", time.Time{}, fmt.Sprintf("Session %s not found for endpoint %s.", sessionID, endpoint)
+	case !now.Before(session.Expires):
+		delete(s.runtimeSessions, sessionID)
+		return "", time.Time{}, fmt.Sprintf("Session %s for endpoint %s has expired.", sessionID, endpoint)
 	}
-	return "", ""
+	return "", time.Time{}, ""
+}
+
+// dropRuntimeSessionsLocked forgets the sessions of a deleted endpoint, so a
+// recreated endpoint of the same name rejects the old session IDs.
+func (s *sagemakerStore) dropRuntimeSessionsLocked(endpoint string) {
+	for id, session := range s.runtimeSessions {
+		if session.Endpoint == endpoint {
+			delete(s.runtimeSessions, id)
+		}
+	}
+}
+
+var sagemakerS3URIRE = regexp.MustCompile(`^(https|s3)://([^/])/?(.*)$`)
+
+// sagemakerAsyncInferenceConfigError checks CreateEndpointConfig's
+// AsyncInferenceConfig, which async invocations depend on: OutputConfig is
+// required, and its S3 paths must be S3 URIs of at most 512 characters.
+func sagemakerAsyncInferenceConfigError(payload map[string]any) string {
+	raw, present := payload["AsyncInferenceConfig"]
+	if !present || raw == nil {
+		return ""
+	}
+	config, ok := raw.(map[string]any)
+	if !ok {
+		return "AsyncInferenceConfig must be an object"
+	}
+	output, ok := config["OutputConfig"].(map[string]any)
+	if !ok {
+		return "1 validation error detected: Value null at 'asyncInferenceConfig.outputConfig' failed to satisfy constraint: Member must not be null"
+	}
+	for _, key := range []string{"S3OutputPath", "S3FailurePath"} {
+		value, present := output[key]
+		if !present {
+			continue
+		}
+		path, ok := value.(string)
+		if !ok || len(path) > 512 || !sagemakerS3URIRE.MatchString(path) {
+			return fmt.Sprintf("AsyncInferenceConfig.OutputConfig.%s must be an S3 URI of at most 512 characters", key)
+		}
+	}
+	return ""
 }
 
 func sagemakerVariantNames(variants []any) []string {
@@ -286,53 +370,91 @@ func sagemakerVariantNames(variants []any) []string {
 }
 
 func (s *Server) sagemakerRuntimeInvoke(w http.ResponseWriter, r *http.Request, name string, target sagemakerRuntimeTarget, body []byte) {
-	newSession, msg := s.sagemaker.runtimeSession(name, r.Header.Get("X-Amzn-SageMaker-Session-Id"))
+	newSession, expires, msg := s.sagemaker.runtimeSession(name, r.Header.Get("X-Amzn-SageMaker-Session-Id"))
 	if msg != "" {
 		respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", msg)
 		return
 	}
 	h := w.Header()
-	h.Set("Content-Type", firstNonEmptyString(r.Header.Get("Accept"), r.Header.Get("Content-Type"), "application/octet-stream"))
+	h.Set("Content-Type", sagemakerRuntimeResponseType(r.Header.Get("Accept"), r.Header.Get("Content-Type")))
 	h.Set("x-Amzn-Invoked-Production-Variant", target.Variant)
 	if attrs := r.Header.Get("X-Amzn-SageMaker-Custom-Attributes"); attrs != "" {
 		h.Set("X-Amzn-SageMaker-Custom-Attributes", attrs)
 	}
 	if newSession != "" {
-		h.Set("X-Amzn-SageMaker-New-Session-Id", newSession+"; Expires="+time.Now().UTC().Add(20*time.Minute).Format(time.RFC3339))
+		h.Set("X-Amzn-SageMaker-New-Session-Id", newSession+"; Expires="+expires.Format(time.RFC3339))
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
 }
 
 func (s *Server) sagemakerRuntimeInvokeStream(w http.ResponseWriter, r *http.Request, name string, target sagemakerRuntimeTarget, body []byte) {
-	if sid := r.Header.Get("X-Amzn-SageMaker-Session-Id"); sid != "" {
-		if _, msg := s.sagemaker.runtimeSession(name, sid); msg != "" {
-			respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", msg)
-			return
-		}
-	}
-	var stream bytes.Buffer
-	enc := eventstream.NewEncoder()
-	for start := 0; start == 0 || start < len(body); start += sagemakerRuntimeStreamChunk {
-		end := min(start+sagemakerRuntimeStreamChunk, len(body))
-		msg := eventstream.Message{Payload: body[start:end]}
-		msg.Headers.Set(":message-type", eventstream.StringValue("event"))
-		msg.Headers.Set(":event-type", eventstream.StringValue("PayloadPart"))
-		msg.Headers.Set(":content-type", eventstream.StringValue("application/octet-stream"))
-		if err := enc.Encode(&stream, msg); err != nil {
-			respondSageMakerRuntimeError(w, http.StatusInternalServerError, "InternalFailure", "unable to encode response stream")
-			return
-		}
+	if _, _, msg := s.sagemaker.runtimeSession(name, r.Header.Get("X-Amzn-SageMaker-Session-Id")); msg != "" {
+		respondSageMakerRuntimeError(w, http.StatusBadRequest, "ValidationError", msg)
+		return
 	}
 	h := w.Header()
 	h.Set("Content-Type", "application/vnd.amazon.eventstream")
-	h.Set("X-Amzn-SageMaker-Content-Type", firstNonEmptyString(r.Header.Get("X-Amzn-SageMaker-Accept"), r.Header.Get("Content-Type"), "application/octet-stream"))
+	h.Set("X-Amzn-SageMaker-Content-Type", sagemakerRuntimeResponseType(r.Header.Get("X-Amzn-SageMaker-Accept"), r.Header.Get("Content-Type")))
 	h.Set("x-Amzn-Invoked-Production-Variant", target.Variant)
 	if attrs := r.Header.Get("X-Amzn-SageMaker-Custom-Attributes"); attrs != "" {
 		h.Set("X-Amzn-SageMaker-Custom-Attributes", attrs)
 	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(stream.Bytes())
+	flusher, _ := w.(http.Flusher)
+	enc := eventstream.NewEncoder()
+	for _, part := range sagemakerRuntimeChunks(body, sagemakerRuntimeStreamChunk) {
+		msg := eventstream.Message{Payload: part}
+		msg.Headers.Set(":message-type", eventstream.StringValue("event"))
+		msg.Headers.Set(":event-type", eventstream.StringValue("PayloadPart"))
+		msg.Headers.Set(":content-type", eventstream.StringValue("application/octet-stream"))
+		// ponytail: the status is already sent, so a failed write just ends the stream.
+		if err := enc.Encode(w, msg); err != nil {
+			return
+		}
+		if flusher != nil {
+			flusher.Flush()
+		}
+	}
+}
+
+// sagemakerRuntimeChunks cuts body into parts of at most size bytes, ending a
+// part after its last newline when there is one and never inside a UTF-8
+// rune. An empty body still gives one empty part.
+func sagemakerRuntimeChunks(body []byte, size int) [][]byte {
+	if len(body) == 0 {
+		return [][]byte{{}}
+	}
+	var parts [][]byte
+	for len(body) > 0 {
+		n := min(size, len(body))
+		if n < len(body) {
+			if nl := bytes.LastIndexByte(body[:n], '\n'); nl >= 0 {
+				n = nl + 1
+			} else {
+				cut := n
+				for cut > 0 && !utf8.RuneStart(body[cut]) {
+					cut--
+				}
+				if cut > 0 {
+					n = cut
+				}
+			}
+		}
+		parts = append(parts, body[:n])
+		body = body[n:]
+	}
+	return parts
+}
+
+// sagemakerRuntimeResponseType picks the echoed response's content type: a
+// concrete Accept wins, while a wildcard or a list falls back to the request's
+// own Content-Type.
+func sagemakerRuntimeResponseType(accept, contentType string) string {
+	if strings.ContainsAny(accept, "*,") {
+		accept = ""
+	}
+	return firstNonEmptyString(accept, contentType, "application/octet-stream")
 }
 
 // sagemakerRuntimeInvokeAsync "runs" the inference at once: the echoed input
@@ -341,17 +463,20 @@ func (s *Server) sagemakerRuntimeInvokeStream(w http.ResponseWriter, r *http.Req
 func (s *Server) sagemakerRuntimeInvokeAsync(w http.ResponseWriter, r *http.Request, target sagemakerRuntimeTarget, body []byte) {
 	id := firstNonEmptyString(r.Header.Get("X-Amzn-SageMaker-Inference-Id"), uuid.NewString())
 	ext := strings.Trim(r.Header.Get("X-Amzn-SageMaker-S3OutputPathExtension"), "/")
-	output := sagemakerRuntimeJoinS3(target.OutputPath, ext, firstNonEmptyString(r.Header.Get("X-Amzn-SageMaker-Filename"), id+".out"))
+	// InferenceId may hold any printable character, so it is escaped into the
+	// key; Filename and the extension are already limited to key-safe characters.
+	key := url.PathEscape(id)
+	output := sagemakerRuntimeJoinS3(target.OutputPath, ext, firstNonEmptyString(r.Header.Get("X-Amzn-SageMaker-Filename"), key+".out"))
 	failure := ""
 	if target.FailurePath != "" {
-		failure = sagemakerRuntimeJoinS3(target.FailurePath, ext, id+"-error.out")
+		failure = sagemakerRuntimeJoinS3(target.FailurePath, ext, key+"-error.out")
 	}
 
 	input, readErr := body, ""
 	if len(input) == 0 {
 		input, readErr = s.sagemakerRuntimeReadS3(r.Header.Get("X-Amzn-SageMaker-InputLocation"))
 	}
-	contentType := firstNonEmptyString(r.Header.Get("X-Amzn-SageMaker-Accept"), r.Header.Get("X-Amzn-SageMaker-Content-Type"), "application/octet-stream")
+	contentType := sagemakerRuntimeResponseType(r.Header.Get("X-Amzn-SageMaker-Accept"), r.Header.Get("X-Amzn-SageMaker-Content-Type"))
 	if readErr == "" {
 		readErr = s.sagemakerRuntimeWriteS3(output, contentType, input)
 	}

@@ -20,7 +20,7 @@ type sagemakerStore struct {
 	notebooks       map[string]*sagemakerNotebookInstance
 	tags            map[string]map[string]string
 	// runtimeSessions maps SageMaker Runtime stateful session IDs to their endpoint.
-	runtimeSessions map[string]string
+	runtimeSessions map[string]sagemakerRuntimeSession
 }
 
 type sagemakerTrainingJob struct {
@@ -348,6 +348,7 @@ func (s *sagemakerStore) Handle(action string, payload map[string]any) map[strin
 			delete(s.tags, endpoint.ARN)
 		}
 		delete(s.endpoints, name)
+		s.dropRuntimeSessionsLocked(name)
 		return map[string]any{}
 
 	case "CreateNotebookInstance":
