@@ -558,6 +558,7 @@ func (s *Server) handleRDSDeleteDBCluster(w http.ResponseWriter, r *http.Request
 		respondRDSServiceError(w, "DeleteDBCluster", err)
 		return
 	}
+	s.rdsData.dropCluster(cluster.ARN)
 	respondRDSXML(w, "DeleteDBCluster", struct {
 		XMLName   xml.Name        `xml:"DeleteDBClusterResult"`
 		DBCluster rdsDBClusterXML `xml:"DBCluster"`

@@ -14,7 +14,7 @@ type rdsDataField struct {
 	LongValue    *int64   `json:"longValue,omitempty"`
 	DoubleValue  *float64 `json:"doubleValue,omitempty"`
 	StringValue  *string  `json:"stringValue,omitempty"`
-	BlobValue    []byte   `json:"blobValue,omitempty"`
+	BlobValue    *[]byte  `json:"blobValue,omitempty"` // pointer so an empty blob still round-trips
 	ArrayValue   any      `json:"arrayValue,omitempty"`
 }
 
@@ -87,7 +87,7 @@ func rdsDataParams(in []rdsDataParameter) (map[string]any, error) {
 		case v.StringValue != nil:
 			out[name] = *v.StringValue
 		case v.BlobValue != nil:
-			out[name] = v.BlobValue
+			out[name] = append([]byte{}, *v.BlobValue...)
 		default:
 			return nil, rdsDataBadRequest("parameter " + name + " has no value")
 		}
@@ -96,8 +96,8 @@ func rdsDataParams(in []rdsDataParameter) (map[string]any, error) {
 }
 
 // rdsDataFieldOf renders a stored value, honouring resultSetOptions: longs as
-// strings when longReturnType is STRING, and DECIMAL/NUMERIC columns as
-// strings unless decimalReturnType is DOUBLE_OR_LONG (STRING is the default).
+// strings when longReturnType is STRING, and DECIMAL/NUMERIC text as a string
+// unless decimalReturnType is DOUBLE_OR_LONG (STRING is the default).
 func rdsDataFieldOf(col rdsDataColumn, v any, opts rdsDataResultSetOptions) rdsDataField {
 	switch x := v.(type) {
 	case nil:
@@ -112,14 +112,18 @@ func rdsDataFieldOf(col rdsDataColumn, v any, opts rdsDataResultSetOptions) rdsD
 		}
 		return rdsDataField{LongValue: &x}
 	case float64:
-		if (col.TypeName == "DECIMAL" || col.TypeName == "NUMERIC") && opts.DecimalReturnType != "DOUBLE_OR_LONG" {
-			s := strconv.FormatFloat(x, 'f', -1, 64)
-			return rdsDataField{StringValue: &s}
-		}
 		return rdsDataField{DoubleValue: &x}
 	case []byte:
-		return rdsDataField{BlobValue: x}
+		return rdsDataField{BlobValue: &x}
 	case string:
+		if col.Kind == "decimal" && opts.DecimalReturnType == "DOUBLE_OR_LONG" {
+			if n, err := strconv.ParseInt(x, 10, 64); err == nil {
+				return rdsDataField{LongValue: &n}
+			}
+			if f, ok := rdsDataFloat(x); ok {
+				return rdsDataField{DoubleValue: &f}
+			}
+		}
 		return rdsDataField{StringValue: &x}
 	}
 	return rdsDataField{}
@@ -144,6 +148,8 @@ func rdsDataJDBCType(typeName string) int {
 		return 3
 	case "NUMERIC":
 		return 2
+	case "VARCHAR":
+		return 12
 	case "BOOL", "BOOLEAN":
 		return 16
 	case "BIT":
@@ -168,7 +174,7 @@ func rdsDataMetadata(cols []rdsDataColumn) []rdsDataColumnMetadata {
 			TypeName:        col.TypeName,
 			TableName:       col.Table,
 			IsAutoIncrement: col.AutoInc,
-			IsSigned:        col.Kind == "long" || col.Kind == "double",
+			IsSigned:        col.Kind == "long" || col.Kind == "double" || col.Kind == "decimal",
 			IsCaseSensitive: col.Kind == "string",
 			Nullable:        1,
 		})
@@ -186,7 +192,7 @@ func rdsDataGenerated(result rdsDataResult) []rdsDataField {
 
 // rdsDataFormatted renders a SELECT result as the JSON string returned when
 // formatRecordsAs is JSON: an array of objects keyed by column name.
-func rdsDataFormatted(result rdsDataResult) string {
+func rdsDataFormatted(result rdsDataResult) (string, error) {
 	rows := make([]map[string]any, 0, len(result.Rows))
 	for _, row := range result.Rows {
 		obj := make(map[string]any, len(row))
@@ -198,8 +204,8 @@ func rdsDataFormatted(result rdsDataResult) string {
 		}
 		rows = append(rows, obj)
 	}
-	out, _ := json.Marshal(rows)
-	return string(out)
+	out, err := json.Marshal(rows)
+	return string(out), err
 }
 
 func (s *Server) handleRDSDataExecuteStatement(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +239,12 @@ func (s *Server) handleRDSDataExecuteStatement(w http.ResponseWriter, r *http.Re
 			out["columnMetadata"] = rdsDataMetadata(result.Columns)
 		}
 		if req.FormatRecordsAs == "JSON" {
-			out["formattedRecords"] = rdsDataFormatted(result)
+			formatted, err := rdsDataFormatted(result)
+			if err != nil {
+				respondRDSDataErr(w, err, false)
+				return
+			}
+			out["formattedRecords"] = formatted
 		} else {
 			records := make([][]rdsDataField, 0, len(result.Rows))
 			for _, row := range result.Rows {
@@ -334,7 +345,10 @@ func (s *Server) handleRDSDataFinishTransaction(w http.ResponseWriter, r *http.R
 	if !decodeRDSDataBody(w, r, &req) {
 		return
 	}
-	resourceARN, _, err := s.rdsDataTarget(req.ResourceArn, req.SecretArn, "", "")
+	// Commit and rollback still clean up when the endpoint is disabled or the
+	// cluster is stopped: rollback succeeds, commit discards the transaction
+	// and reports why it couldn't commit.
+	info, err := s.rdsDataResolve(req.ResourceArn, req.SecretArn, "", "")
 	if err == nil && strings.TrimSpace(req.TransactionID) == "" {
 		err = rdsDataBadRequest("transactionId is required")
 	}
@@ -342,7 +356,10 @@ func (s *Server) handleRDSDataFinishTransaction(w http.ResponseWriter, r *http.R
 		err = rdsDataTxID(req.TransactionID)
 	}
 	if err == nil {
-		err = s.rdsData.finish(req.TransactionID, resourceARN, commit)
+		err = s.rdsData.finish(req.TransactionID, info.arn, commit && info.unavailable == nil)
+		if err == nil && commit && info.unavailable != nil {
+			err = info.unavailable
+		}
 	}
 	if err != nil {
 		respondRDSDataErr(w, err, true)
@@ -357,6 +374,8 @@ func (s *Server) handleRDSDataFinishTransaction(w http.ResponseWriter, r *http.R
 
 // handleRDSDataExecuteSQL serves the deprecated ExecuteSql operation: several
 // semicolon-separated statements run in order, atomically.
+// ponytail: one result per statement in the older Value shape; per-statement
+// details the real service adds (for example update counts on DDL) are approximated.
 func (s *Server) handleRDSDataExecuteSQL(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		DBClusterOrInstanceArn string `json:"dbClusterOrInstanceArn"`
@@ -421,29 +440,4 @@ func rdsDataLegacyValue(v any) map[string]any {
 		return map[string]any{"blobValue": x}
 	}
 	return map[string]any{"stringValue": v}
-}
-
-// rdsDataSplitStatements splits on semicolons outside quotes.
-func rdsDataSplitStatements(sql string) []string {
-	var out []string
-	var quote byte
-	start := 0
-	for i := 0; i < len(sql); i++ {
-		c := sql[i]
-		switch {
-		case quote != 0 && c == quote:
-			quote = 0
-		case quote == 0 && (c == '\'' || c == '"' || c == '`'):
-			quote = c
-		case quote == 0 && c == ';':
-			if part := strings.TrimSpace(sql[start:i]); part != "" {
-				out = append(out, part)
-			}
-			start = i + 1
-		}
-	}
-	if part := strings.TrimSpace(sql[start:]); part != "" {
-		out = append(out, part)
-	}
-	return out
 }
