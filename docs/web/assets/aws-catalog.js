@@ -81,6 +81,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bedrock/docker-compose.yml"
   },
   {
+    id: "bedrockruntime",
+    name: "Bedrock Runtime",
+    category: "integration",
+    summary: "Emulate model invocation, Converse, streaming, token counting, guardrails, and async invoke with deterministic responses.",
+    docsHref: "../../../index.html#bedrockruntime",
+    exampleHref: "../../../../examples/aws/bedrock-runtime/docker-compose.yml"
+  },
+  {
     id: "cloudcontrolapi",
     name: "Cloud Control API",
     category: "integration",

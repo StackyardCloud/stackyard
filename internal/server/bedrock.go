@@ -39,7 +39,11 @@ func (s *Server) handleBedrockJSONRouter(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 
-	response := s.bedrock.Handle(action, payload)
+	response, fault := s.bedrock.Handle(action, payload)
+	if fault != nil {
+		respondBedrockError(w, fault.status, fault.code, fault.msg)
+		return true
+	}
 	if response == nil {
 		response = map[string]any{}
 	}

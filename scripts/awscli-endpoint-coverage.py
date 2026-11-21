@@ -244,6 +244,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "athena": {"cli": "athena", "ops_file": None},
     "batch": {"cli": "batch", "ops_file": REPO_ROOT / "internal/server/batch_ops.go"},
     "bedrock": {"cli": "bedrock", "ops_file": REPO_ROOT / "internal/server/bedrock_ops.go"},
+    "bedrockruntime": {"cli": "bedrock-runtime", "ops_file": REPO_ROOT / "internal/server/bedrockruntime_ops.go"},
     "devopsguru": {"cli": "devops-guru", "ops_file": REPO_ROOT / "internal/server/devopsguru_ops.go"},
     "directoryservice": {
         "cli": "ds",
@@ -1991,6 +1992,11 @@ SERVICE_ALIASES = {
     "sagemakera2iruntime": "augmentedai",
     "bedrock": "bedrock",
     "amazonbedrock": "bedrock",
+    "bedrockruntime": "bedrockruntime",
+    "bedrock-runtime": "bedrockruntime",
+    "bedrock runtime": "bedrockruntime",
+    "amazonbedrockruntime": "bedrockruntime",
+    "awsbedrockruntime": "bedrockruntime",
     "awsbedrock": "bedrock",
     "devopsguru": "devopsguru",
     "devops-guru": "devopsguru",
@@ -3011,6 +3017,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
+    "bedrockruntime": {},
     "devopsguru": {},
     "cloudcontrolapi": {},
     "controlcatalog": {},
@@ -3344,6 +3351,13 @@ _MSKCONNECT_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _MQ_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _MWAA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _CODECATALYST_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
+# The AWS CLI has no commands for Bedrock Runtime's event-stream operations.
+BEDROCKRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "ConverseStream": ("POST", "/model/{modelId}/converse-stream"),
+    "InvokeModelWithResponseStream": ("POST", "/model/{modelId}/invoke-with-response-stream"),
+    "InvokeModelWithBidirectionalStream": ("POST", "/model/{modelId}/invoke-with-bidirectional-stream"),
+}
+BEDROCKRUNTIME_COVERAGE_BUCKET = "stackyard-bedrockruntime-coverage"
 _BEDROCKAGENTCOREDATA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _BEDROCKAGENTCORECONTROL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _APPMESH_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -4292,6 +4306,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return ("POST", "/")
     if endpoint.service == "batch":
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "bedrockruntime":
+        return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
         return ("POST", "/")
     if endpoint.service == "devopsguru":
@@ -6145,6 +6161,14 @@ def invoke_raw_endpoint(
                 _flatten(str(key), value)
         body = urlparse.urlencode(params, doseq=True).encode("utf-8")
         extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+    elif endpoint.service == "bedrockruntime":
+        # Path parameters were already moved into the URL; the rest is the body.
+        if endpoint.operation == "InvokeModelWithBidirectionalStream":
+            body = bedrockruntime_event_stream_body(payload_for_transport)
+            extra_headers = {"Content-Type": "application/vnd.amazon.eventstream"}
+        else:
+            body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
+            extra_headers = {"Content-Type": "application/json"}
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7175,6 +7199,8 @@ def invoke_raw_endpoint(
             signing_service = "ssm-incidents"
     elif endpoint.service == "applicationsignals":
         signing_service = "application-signals"
+    elif endpoint.service == "bedrockruntime":
+        signing_service = "bedrock"
     elif endpoint.service == "bedrockagentcoredata":
         signing_service = "bedrock-agentcore"
     elif endpoint.service == "bedrockagentcorecontrol":
@@ -9367,6 +9393,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
     if endpoint.service == "codeguru":
         return {}
     if endpoint.service == "codeguruprofiler":
+        return {}
+    if endpoint.service == "bedrockruntime":
         return {}
     if endpoint.service == "bedrock":
         return {}
@@ -13168,6 +13196,10 @@ def generate_cli_input_payload(
             "PartNumber": 1,
             "CopySource": f"{S3_DEFAULT_BUCKET_NAME}/coverage-copy-source.txt",
         }, None
+    if endpoint.service == "bedrockruntime" and endpoint.operation == "InvokeModel":
+        # aws bedrock-runtime invoke-model requires --model-id and an outfile even for
+        # skeleton generation; hydrate_payload_with_service_state builds the request.
+        return {}, None
     if endpoint.service == "s3" and endpoint.operation == "SelectObjectContent":
         # aws s3api select-object-content requires explicit stream arguments and does not
         # reliably support skeleton generation.
@@ -13822,6 +13854,21 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
     return errors
 
 
+def output_payload_exempt_member(output_shape) -> str | None:
+    """Return the output's HTTP payload member when it is a blob or event
+    stream: the CLI writes those to an outfile (or streams them), so they never
+    appear on stdout even when required. Other payload members must appear."""
+    name = (getattr(output_shape, "serialization", None) or {}).get("payload")
+    member = (getattr(output_shape, "members", {}) or {}).get(name) if name else None
+    if member is None:
+        return None
+    if str(getattr(member, "type_name", "")).lower() == "blob":
+        return name
+    if (getattr(member, "serialization", None) or {}).get("eventstream"):
+        return name
+    return None
+
+
 def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
     op_model = get_operation_model(endpoint)
     output_shape = getattr(op_model, "output_shape", None) if op_model is not None else None
@@ -13844,6 +13891,7 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
         return f"non-json output: {err}"
 
     errors: list[str] = []
+    payload_member = output_payload_exempt_member(output_shape)
 
     def _validate(shape, value, path: str) -> None:
         if shape is None:
@@ -13860,7 +13908,7 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
             members = getattr(shape, "members", {}) or {}
             required = set(getattr(shape, "required_members", []) or [])
             for name in required:
-                if name not in value:
+                if name not in value and not (not path and name == payload_member):
                     errors.append(f"{label}.{name}: missing required field")
             for key, item in value.items():
                 member_shape = members.get(key)
@@ -30054,6 +30102,130 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+def bedrockruntime_event_stream_body(payload: dict) -> bytes:
+    """Encode payload["events"] as AWS event-stream chunk frames."""
+    import struct
+    import zlib
+
+    out = b""
+    for event in payload.get("events") or []:
+        inner = json.dumps({"event": event}, separators=(",", ":")).encode("utf-8")
+        body = json.dumps({"bytes": base64.b64encode(inner).decode("ascii")}).encode("utf-8")
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", "chunk")):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("utf-8") + b"\x07" + struct.pack(">H", len(raw)) + raw
+        prelude = struct.pack(">II", 16 + len(headers) + len(body), len(headers))
+        frame = prelude + struct.pack(">I", zlib.crc32(prelude)) + headers + body
+        out += frame + struct.pack(">I", zlib.crc32(frame))
+    return out
+
+
+BEDROCK_GUARDRAIL_OPERATIONS = {"GetGuardrail", "UpdateGuardrail", "DeleteGuardrail", "CreateGuardrailVersion"}
+
+
+def bedrock_create_coverage_guardrail(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a guardrail through the control plane and return its ID."""
+    create = Endpoint(
+        service="bedrock",
+        cli_service="bedrock",
+        operation="CreateGuardrail",
+        cli_operation="create-guardrail",
+        source="runtime-state",
+    )
+    _, text = invoke_raw_endpoint(
+        create,
+        endpoint_url,
+        region,
+        env,
+        {
+            "name": "stackyard-coverage",
+            "blockedInputMessaging": "Blocked.",
+            "blockedOutputsMessaging": "Blocked.",
+            "wordPolicyConfig": {"wordsConfig": [{"text": "forbidden"}]},
+        },
+    )
+    try:
+        return str(json.loads(text).get("guardrailId") or "")
+    except (json.JSONDecodeError, AttributeError):
+        return ""
+
+
+def bedrockruntime_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Build a working Bedrock Runtime request, seeding the guardrail and S3
+    bucket the guardrail and async-invoke operations need."""
+    state = RUNTIME_STATE.setdefault("bedrockruntime", {})
+    user = [{"role": "user", "content": [{"text": "Hello from Stackyard coverage"}]}]
+    anthropic = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 64,
+        "messages": [{"role": "user", "content": "Hello from Stackyard coverage"}],
+    }
+    claude = "anthropic.claude-3-haiku-20240307-v1:0"
+    op = endpoint.operation
+    if op == "InvokeModel":
+        body = base64.b64encode(json.dumps(anthropic).encode("utf-8")).decode("ascii")
+        return {"modelId": claude, "contentType": "application/json", "accept": "application/json", "body": body}
+    if op == "InvokeModelWithResponseStream":
+        return {"modelId": claude, **anthropic}
+    if op in {"Converse", "ConverseStream"}:
+        return {"modelId": "amazon.nova-lite-v1:0", "messages": user}
+    if op == "CountTokens":
+        return {"modelId": "anthropic.claude-3-5-haiku-20241022-v1:0", "input": {"converse": {"messages": user}}}
+    if op == "InvokeGuardrailChecks":
+        return {"messages": user, "checks": {"contentFilter": {"categories": [{"category": "VIOLENCE"}]}}}
+    if op == "InvokeModelWithBidirectionalStream":
+        return {
+            "modelId": "amazon.nova-sonic-v1:0",
+            "events": [
+                {"sessionStart": {}},
+                {"promptStart": {"promptName": "coverage"}},
+                {"textInput": {"promptName": "coverage", "content": "Hello from Stackyard coverage"}},
+                {"sessionEnd": {}},
+            ],
+        }
+    if op == "ApplyGuardrail":
+        guardrail_id = str(state.get("guardrail_id") or "")
+        if not guardrail_id:
+            guardrail_id = bedrock_create_coverage_guardrail(endpoint_url, region, env)
+            state["guardrail_id"] = guardrail_id
+        return {
+            "guardrailIdentifier": guardrail_id,
+            "guardrailVersion": "DRAFT",
+            "source": "INPUT",
+            "content": [{"text": {"text": "Hello from Stackyard coverage"}}],
+        }
+    if op in {"StartAsyncInvoke", "GetAsyncInvoke"}:
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", BEDROCKRUNTIME_COVERAGE_BUCKET])
+        start = {
+            "modelId": "amazon.nova-reel-v1:0",
+            "modelInput": {"taskType": "TEXT_VIDEO", "textToVideoParams": {"text": "A lighthouse at dawn"}},
+            "outputDataConfig": {"s3OutputDataConfig": {"s3Uri": f"s3://{BEDROCKRUNTIME_COVERAGE_BUCKET}/videos"}},
+        }
+        if op == "StartAsyncInvoke":
+            return start
+        started = run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "bedrock-runtime",
+            "start-async-invoke",
+            env,
+            ["--cli-input-json", json.dumps(start, separators=(",", ":"))],
+        )
+        return {"invocationArn": str((started or {}).get("invocationArn") or "")}
+    if op == "ListAsyncInvokes":
+        return {}
+    return payload
+
+
 SAGEMAKERRUNTIME_ENDPOINT_NAME = "stackyard-runtime-endpoint"
 SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME = "stackyard-runtime-async-endpoint"
 SAGEMAKERRUNTIME_BUCKET = "stackyard-sagemakerruntime-coverage"
@@ -30211,6 +30383,14 @@ def hydrate_payload_with_service_state(
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":
         return redshiftdata_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bedrockruntime":
+        return bedrockruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+
+    if endpoint.service == "bedrock" and endpoint.operation in BEDROCK_GUARDRAIL_OPERATIONS:
+        # The control plane stores guardrails, so these need a real identifier.
+        hydrated = copy.deepcopy(payload)
+        hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
+        return hydrated
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)
@@ -50339,6 +50519,35 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_bedrockruntime_invoke_model(
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """aws bedrock-runtime invoke-model needs --model-id on the command line and
+    writes the response body to an outfile."""
+    cmd = list(base_cmd)
+    for flag, key in (("--model-id", "modelId"), ("--content-type", "contentType"), ("--accept", "accept"), ("--body", "body")):
+        value = str(payload_value_case_insensitive(payload, key, "") or "").strip()
+        if value:
+            cmd.extend([flag, value])
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-bedrockruntime-", suffix=".out", delete=False) as tmp:
+        out_path = tmp.name
+    try:
+        cmd.append(out_path)
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = Path(out_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    finally:
+        try:
+            os.unlink(out_path)
+        except OSError:
+            pass
+    return cp, cmd, extra_output
+
+
 def run_sagemakerruntime_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -52107,6 +52316,9 @@ def run_endpoint(
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "bedrockruntime" and endpoint.operation == "InvokeModel":
+        cp, cmd, extra_output_text = run_bedrockruntime_invoke_model(base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     else:
         for _ in range(4):
