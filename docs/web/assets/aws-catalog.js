@@ -57,6 +57,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/augmented-ai/docker-compose.yml"
   },
   {
+    id: "sagemaker-runtime",
+    name: "Amazon SageMaker Runtime",
+    category: "integration",
+    summary: "Invoke SageMaker endpoints in real time, asynchronously through S3, and with event-stream responses.",
+    docsHref: "../../../index.html#sagemaker-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
+  },
+  {
     id: "batch",
     name: "Batch",
     category: "compute",
@@ -71,6 +79,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate foundation model catalog, guardrails, jobs, and provisioning control-plane APIs.",
     docsHref: "../../../index.html#bedrock",
     exampleHref: "../../../../examples/aws/bedrock/docker-compose.yml"
+  },
+  {
+    id: "bedrockruntime",
+    name: "Bedrock Runtime",
+    category: "integration",
+    summary: "Emulate model invocation, Converse, streaming, token counting, guardrails, and async invoke with deterministic responses.",
+    docsHref: "../../../index.html#bedrockruntime",
+    exampleHref: "../../../../examples/aws/bedrock-runtime/docker-compose.yml"
   },
   {
     id: "cloudcontrolapi",
@@ -847,6 +863,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Validate warehouse lifecycle and metadata operations.",
     docsHref: "../../../index.html#redshift",
     exampleHref: "../../../../examples/aws/redshift/docker-compose.yml"
+  },
+  {
+    id: "redshift-data",
+    name: "Redshift Data API",
+    category: "database",
+    summary: "Run SQL statements against Redshift clusters and Serverless workgroups over HTTP.",
+    docsHref: "../../../index.html#redshift-data",
+    exampleHref: "../../../../examples/aws/redshift-data/docker-compose.yml"
   },
   {
     id: "ram",
