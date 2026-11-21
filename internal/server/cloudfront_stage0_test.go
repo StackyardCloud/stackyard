@@ -88,7 +88,8 @@ func TestCloudFrontAllCatalogActionsDoNotReturnNotImplemented(t *testing.T) {
 		if resp.StatusCode == http.StatusNotImplemented || strings.Contains(respBody, "NotImplemented") {
 			t.Fatalf("%s unexpectedly returned NotImplemented: status=%d body=%s", op.Name, resp.StatusCode, respBody)
 		}
-		if resp.StatusCode >= http.StatusBadRequest {
+		// KeyValueStore operations are stateful: an empty request is a 4xx.
+		if resp.StatusCode >= http.StatusBadRequest && !(cloudFrontKVSOperations[op.Name] && resp.StatusCode < http.StatusInternalServerError) {
 			t.Fatalf("%s unexpectedly returned status=%d body=%s", op.Name, resp.StatusCode, respBody)
 		}
 	}

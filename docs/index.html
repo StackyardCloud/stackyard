@@ -21163,6 +21163,40 @@
         </details>
         </section>
 
+        <section id="cloudfrontkeyvaluestore" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudFront KeyValueStore</h2>
+        <p>Data plane for key value stores created with the CloudFront <code>CreateKeyValueStore</code> API. REST JSON over <code>/key-value-stores/{KvsARN}</code>. Clients sign with SigV4A (<code>AWS4-ECDSA-P256-SHA256</code>) or SigV4; mutations require the current <code>ETag</code> in <code>If-Match</code>. The AWS CLI prepends the account ID to the endpoint host, so point it at Stackyard as an HTTP proxy: <code>HTTP_PROXY=http://localhost:4566 aws cloudfront-keyvaluestore list-keys --kvs-arn ARN --endpoint-url http://localhost:4566</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudfront-keyvaluestore</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteKey</code></td></tr>
+        <tr><td><code>DescribeKeyValueStore</code></td></tr>
+        <tr><td><code>GetKey</code></td></tr>
+        <tr><td><code>ListKeys</code></td></tr>
+        <tr><td><code>PutKey</code></td></tr>
+        <tr><td><code>UpdateKeys</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>cloudfront-keyvaluestore</code>: <code>docker compose -f examples/aws/cloudfront-keyvaluestore/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
 
         <section id="directconnect" class="service">
 
