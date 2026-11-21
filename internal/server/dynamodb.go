@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -45,6 +46,11 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 
 	switch action {
 	case "CreateTable":
+		streamSpec, err := dynamodbStreamSpecification(payload["StreamSpecification"])
+		if err != nil {
+			respondDynamoDBErrorForErr(w, err)
+			return true
+		}
 		table, err := s.dynamodb.CreateTable(
 			dynamodbString(payload["TableName"]),
 			dynamodbAttrDefinitions(payload["AttributeDefinitions"]),
@@ -54,6 +60,12 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
 			return true
+		}
+		if streamSpec != nil {
+			if table, err = s.dynamodb.UpdateStreamSpecification(table.TableName, streamSpec, true); err != nil {
+				respondDynamoDBErrorForErr(w, err)
+				return true
+			}
 		}
 		respondDynamoDBJSON(w, http.StatusOK, map[string]any{"TableDescription": table})
 		return true
@@ -86,6 +98,17 @@ func (s *Server) handleDynamoDBJSONRouter(w http.ResponseWriter, r *http.Request
 		return true
 
 	case "UpdateTable":
+		streamSpec, err := dynamodbStreamSpecification(payload["StreamSpecification"])
+		if err != nil {
+			respondDynamoDBErrorForErr(w, err)
+			return true
+		}
+		if streamSpec != nil {
+			if _, err := s.dynamodb.UpdateStreamSpecification(dynamodbString(payload["TableName"]), streamSpec, false); err != nil {
+				respondDynamoDBErrorForErr(w, err)
+				return true
+			}
+		}
 		table, err := s.dynamodb.UpdateTable(dynamodbString(payload["TableName"]), dynamodbString(payload["BillingMode"]))
 		if err != nil {
 			respondDynamoDBErrorForErr(w, err)
@@ -1131,4 +1154,29 @@ func dynamodbKeySchema(v any) []dynamodbsvc.KeySchemaElement {
 		out = append(out, dynamodbsvc.KeySchemaElement{AttributeName: name, KeyType: typ})
 	}
 	return out
+}
+
+// dynamodbStreamSpecification parses the StreamSpecification request member;
+// nil when it was not sent.
+func dynamodbStreamSpecification(v any) (*dynamodbsvc.StreamSpecification, error) {
+	if v == nil {
+		return nil, nil
+	}
+	raw, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("%w: StreamSpecification must be an object", dynamodbsvc.ErrValidation)
+	}
+	enabled, ok := raw["StreamEnabled"].(bool)
+	if !ok {
+		return nil, fmt.Errorf("%w: StreamSpecification.StreamEnabled is required", dynamodbsvc.ErrValidation)
+	}
+	viewType, ok := raw["StreamViewType"].(string)
+	if raw["StreamViewType"] != nil && !ok {
+		return nil, fmt.Errorf("%w: StreamSpecification.StreamViewType must be a string", dynamodbsvc.ErrValidation)
+	}
+	spec := &dynamodbsvc.StreamSpecification{StreamEnabled: enabled, StreamViewType: viewType}
+	if err := dynamodbsvc.ValidateStreamSpecification(spec); err != nil {
+		return nil, err
+	}
+	return spec, nil
 }

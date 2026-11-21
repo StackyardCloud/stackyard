@@ -511,6 +511,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cloudhsm": {"cli": "cloudhsmv2", "ops_file": REPO_ROOT / "internal/server/cloudhsm_ops.go"},
     "cognitosync": {"cli": "cognito-sync", "ops_file": REPO_ROOT / "internal/server/cognitosync_ops.go"},
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
+    "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2055,6 +2056,9 @@ SERVICE_ALIASES = {
     "dynamodb": "dynamodb",
     "dynamo-db": "dynamodb",
     "amazondynamodb": "dynamodb",
+    "dynamodbstreams": "dynamodbstreams",
+    "dynamodb-streams": "dynamodbstreams",
+    "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "auroradsql": "dsql",
     "aurora-dsql": "dsql",
@@ -3085,6 +3089,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "ecs": {},
     "eks": {},
     "dynamodb": {},
+    "dynamodbstreams": {},
     "keyspaces": {},
     "lambda": {},
     "lightsail": {},
@@ -30020,6 +30025,76 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+DYNAMODBSTREAMS_TABLE_NAME = "stackyard-streams-coverage"
+
+
+def dynamodbstreams_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a table with an enabled stream and one change record, then fill
+    StreamArn / ShardId / ShardIterator into the DynamoDB Streams payloads."""
+    state = RUNTIME_STATE.setdefault("dynamodbstreams", {})
+
+    def _dynamodb(op: str, args: list[str]) -> dict | None:
+        return run_aws_json(aws_bin, endpoint_url, region, "dynamodb", op, env, args)
+
+    def _streams(op: str, args: list[str]) -> dict | None:
+        return run_aws_json(aws_bin, endpoint_url, region, "dynamodbstreams", op, env, args)
+
+    if not state.get("stream_arn"):
+        spec = "StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES"
+        table = _dynamodb("describe-table", ["--table-name", DYNAMODBSTREAMS_TABLE_NAME])
+        if isinstance(table, dict) and table.get("Table"):
+            table = table["Table"]
+        else:
+            created = _dynamodb(
+                "create-table",
+                [
+                    "--table-name", DYNAMODBSTREAMS_TABLE_NAME,
+                    "--attribute-definitions", "AttributeName=pk,AttributeType=S",
+                    "--key-schema", "AttributeName=pk,KeyType=HASH",
+                    "--billing-mode", "PAY_PER_REQUEST",
+                    "--stream-specification", spec,
+                ],
+            )
+            table = (created or {}).get("TableDescription", {})
+        if not (table.get("StreamSpecification") or {}).get("StreamEnabled"):
+            updated = _dynamodb("update-table", ["--table-name", DYNAMODBSTREAMS_TABLE_NAME, "--stream-specification", spec])
+            table = (updated or {}).get("TableDescription", {})
+        _dynamodb(
+            "put-item",
+            ["--table-name", DYNAMODBSTREAMS_TABLE_NAME, "--item", '{"pk":{"S":"coverage"},"n":{"N":"' + str(int(time.time())) + '"}}'],
+        )
+        stream_arn = str(table.get("LatestStreamArn") or "")
+        described = _streams("describe-stream", ["--stream-arn", stream_arn]) if stream_arn else None
+        shards = ((described or {}).get("StreamDescription") or {}).get("Shards") or []
+        if stream_arn and shards:
+            state["stream_arn"] = stream_arn
+            state["shard_id"] = str(shards[0].get("ShardId") or "")
+
+    stream_arn = str(state.get("stream_arn") or "")
+    shard_id = str(state.get("shard_id") or "")
+    op = endpoint.operation
+    if op == "ListStreams":
+        return {"TableName": DYNAMODBSTREAMS_TABLE_NAME}
+    if op == "DescribeStream":
+        return {"StreamArn": stream_arn}
+    if op == "GetShardIterator":
+        return {"StreamArn": stream_arn, "ShardId": shard_id, "ShardIteratorType": "TRIM_HORIZON"}
+    if op == "GetRecords":
+        got = _streams(
+            "get-shard-iterator",
+            ["--stream-arn", stream_arn, "--shard-id", shard_id, "--shard-iterator-type", "TRIM_HORIZON"],
+        )
+        return {"ShardIterator": str((got or {}).get("ShardIterator") or "")}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30030,6 +30105,9 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "dynamodbstreams":
+        return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)

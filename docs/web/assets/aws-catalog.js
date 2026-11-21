@@ -529,6 +529,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "dynamodbstreams",
+    name: "DynamoDB Streams",
+    category: "database",
+    summary: "Read table change records with shard iterators and GetRecords.",
+    docsHref: "../../../index.html#dynamodbstreams",
+    exampleHref: "../../../../examples/aws/dynamodb-streams/docker-compose.yml"
+  },
+  {
     id: "ebs",
     name: "EBS",
     category: "compute",

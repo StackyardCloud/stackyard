@@ -46,6 +46,9 @@ type TableDescription struct {
 	TableName            string                `json:"TableName"`
 	TableSizeBytes       int64                 `json:"TableSizeBytes"`
 	TableStatus          string                `json:"TableStatus"`
+	StreamSpecification  *StreamSpecification  `json:"StreamSpecification,omitempty"`
+	LatestStreamArn      string                `json:"LatestStreamArn,omitempty"`
+	LatestStreamLabel    string                `json:"LatestStreamLabel,omitempty"`
 }
 
 type Limits struct {
@@ -152,6 +155,7 @@ type Table struct {
 	hashKey     string
 	rangeKey    string
 	items       map[string]map[string]any
+	stream      *stream // the enabled stream, nil when streams are off
 }
 
 type QueryInput struct {
@@ -189,6 +193,9 @@ type Service struct {
 	exportIDSequence    uint64
 	importIDSequence    uint64
 	resourcePolicySeq   uint64
+	streams             map[string]*stream // by stream ARN, including disabled ones
+	streamSeq           uint64             // shared sequence counter for stream records and shards
+	now                 func() time.Time
 }
 
 func NewService() *Service {
@@ -207,6 +214,8 @@ func NewService() *Service {
 		resourcePolicies:    map[string]*resourcePolicyRecord{},
 		exportTokenRecords:  map[string]*exportTokenRecord{},
 		importTokenRecords:  map[string]*importTokenRecord{},
+		streams:             map[string]*stream{},
+		now:                 time.Now,
 	}
 }
 
@@ -327,6 +336,7 @@ func (s *Service) DeleteTable(name string) (TableDescription, error) {
 	tableArn := table.description.TableArn
 	deleted := cloneTableDescription(table.description)
 	deleted.TableStatus = "DELETING"
+	s.closeStreamLocked(table)
 	delete(s.tables, strings.TrimSpace(name))
 	delete(s.tableAutoScaling, tableName)
 	delete(s.kinesisDestinations, tableName)
@@ -366,7 +376,7 @@ func (s *Service) PutItem(tableName string, item map[string]any, returnValues st
 		return nil, err
 	}
 	old := cloneItem(table.items[key])
-	table.items[key] = cloneItem(item)
+	s.writeItemLocked(table, key, item)
 	refreshTableMetrics(table)
 	if strings.EqualFold(strings.TrimSpace(returnValues), "ALL_OLD") {
 		return old, nil
@@ -404,7 +414,7 @@ func (s *Service) DeleteItem(tableName string, key map[string]any, returnValues 
 		return nil, err
 	}
 	old := cloneItem(table.items[compositeKey])
-	delete(table.items, compositeKey)
+	s.removeItemLocked(table, compositeKey)
 	refreshTableMetrics(table)
 	if strings.EqualFold(strings.TrimSpace(returnValues), "ALL_OLD") {
 		return old, nil
@@ -463,7 +473,7 @@ func (s *Service) UpdateItem(
 		}
 	}
 
-	table.items[compositeKey] = cloneItem(current)
+	s.writeItemLocked(table, compositeKey, current)
 	refreshTableMetrics(table)
 
 	switch strings.ToUpper(strings.TrimSpace(returnValues)) {
@@ -502,7 +512,7 @@ func (s *Service) BatchWriteItem(requestItems map[string]any) (map[string]any, e
 				if err != nil {
 					return nil, err
 				}
-				table.items[key] = cloneItem(item)
+				s.writeItemLocked(table, key, item)
 				continue
 			}
 			if delReq, ok := req["DeleteRequest"].(map[string]any); ok {
@@ -511,7 +521,7 @@ func (s *Service) BatchWriteItem(requestItems map[string]any) (map[string]any, e
 				if err != nil {
 					return nil, err
 				}
-				delete(table.items, lookupKey)
+				s.removeItemLocked(table, lookupKey)
 				continue
 			}
 			return nil, ErrValidation
@@ -733,7 +743,7 @@ func (s *Service) TransactWriteItems(transactItems []map[string]any) error {
 			if err != nil {
 				return err
 			}
-			table.items[key] = cloneItem(item)
+			s.writeItemLocked(table, key, item)
 			refreshTableMetrics(table)
 			continue
 		}
@@ -747,7 +757,7 @@ func (s *Service) TransactWriteItems(transactItems []map[string]any) error {
 			if err != nil {
 				return err
 			}
-			delete(table.items, key)
+			s.removeItemLocked(table, key)
 			refreshTableMetrics(table)
 			continue
 		}
@@ -774,7 +784,7 @@ func (s *Service) TransactWriteItems(transactItems []map[string]any) error {
 			if err != nil {
 				return err
 			}
-			table.items[key] = current
+			s.writeItemLocked(table, key, current)
 			refreshTableMetrics(table)
 			continue
 		}
@@ -2053,6 +2063,10 @@ func cloneTableDescription(in TableDescription) TableDescription {
 		bm := *in.BillingModeSummary
 		out.BillingModeSummary = &bm
 	}
+	if in.StreamSpecification != nil {
+		spec := *in.StreamSpecification
+		out.StreamSpecification = &spec
+	}
 	return out
 }
 
@@ -2269,6 +2283,7 @@ func restoreTableFromSnapshot(targetName string, snapshot tableSnapshot) *Table 
 	desc.TableArn = tableARN(targetName)
 	desc.CreationDateTime = time.Now().UTC()
 	desc.TableStatus = "ACTIVE"
+	desc.StreamSpecification, desc.LatestStreamArn, desc.LatestStreamLabel = nil, "", ""
 	table := &Table{
 		description: desc,
 		hashKey:     snapshot.HashKey,

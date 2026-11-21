@@ -143,6 +143,7 @@
         <a href="#batch">Batch</a>
         <a href="#aurora-dsql">Aurora DSQL</a>
         <a href="#dynamodb">DynamoDB</a>
+        <a href="#dynamodbstreams">DynamoDB Streams</a>
         <a href="#ec2">EC2</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
@@ -15728,6 +15729,49 @@
         <ul>
                 <li><code>dynamodb</code>: <code>docker compose -f examples/aws/dynamodb/docker-compose.yml up --build</code></li>
                 <li><code>dynamodb</code>: <code>docker compose -f examples/aws/dynamodb/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="dynamodbstreams" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DynamoDB Streams</h2>
+        <p>SigV4 signed with service <code>dynamodb</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.0</code> and <code>X-Amz-Target: DynamoDBStreams_20120810.&lt;Action&gt;</code>. Tables created or updated with a <code>StreamSpecification</code> record INSERT, MODIFY and REMOVE events from item writes; each stream has one shard, and records are read with shard iterators (TRIM_HORIZON, LATEST, AT_SEQUENCE_NUMBER, AFTER_SEQUENCE_NUMBER) that expire after 15 minutes.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: dynamodb</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>DescribeStream</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRecords</code></td>
+        </tr>
+        <tr>
+        <td><code>GetShardIterator</code></td>
+        </tr>
+        <tr>
+        <td><code>ListStreams</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>dynamodbstreams</code>: <code>docker compose -f examples/aws/dynamodb-streams/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
