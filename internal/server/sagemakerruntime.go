@@ -376,7 +376,7 @@ func (s *Server) sagemakerRuntimeInvoke(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	h := w.Header()
-	h.Set("Content-Type", sagemakerRuntimeResponseType(r.Header.Get("Accept"), r.Header.Get("Content-Type")))
+	setSageMakerRuntimeContentType(w, sagemakerRuntimeResponseType(r.Header.Get("Accept"), r.Header.Get("Content-Type")))
 	h.Set("x-Amzn-Invoked-Production-Variant", target.Variant)
 	if attrs := r.Header.Get("X-Amzn-SageMaker-Custom-Attributes"); attrs != "" {
 		h.Set("X-Amzn-SageMaker-Custom-Attributes", attrs)
@@ -545,4 +545,31 @@ func respondSageMakerRuntimeJSON(w http.ResponseWriter, status int, body any) {
 func respondSageMakerRuntimeError(w http.ResponseWriter, status int, code, msg string) {
 	w.Header().Set("X-Amzn-ErrorType", code)
 	respondSageMakerRuntimeJSON(w, status, map[string]string{"__type": code, "message": msg})
+}
+
+// setSageMakerRuntimeContentType sets the content type of an echoed inference
+// body. The body is caller bytes, so only known non-HTML inference media types
+// are echoed (each as a constant); anything else, including text/html, is served
+// as application/octet-stream, always with nosniff.
+func setSageMakerRuntimeContentType(w http.ResponseWriter, contentType string) {
+	h := w.Header()
+	h.Set("X-Content-Type-Options", "nosniff")
+	switch strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0])) {
+	case "application/json":
+		h.Set("Content-Type", "application/json")
+	case "application/jsonlines":
+		h.Set("Content-Type", "application/jsonlines")
+	case "text/csv":
+		h.Set("Content-Type", "text/csv")
+	case "text/plain":
+		h.Set("Content-Type", "text/plain")
+	case "application/x-npy":
+		h.Set("Content-Type", "application/x-npy")
+	case "application/x-recordio-protobuf":
+		h.Set("Content-Type", "application/x-recordio-protobuf")
+	case "application/x-image":
+		h.Set("Content-Type", "application/x-image")
+	default:
+		h.Set("Content-Type", "application/octet-stream")
+	}
 }

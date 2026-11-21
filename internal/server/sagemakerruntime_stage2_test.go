@@ -178,8 +178,9 @@ func TestSageMakerRuntimeStage2StreamChunks(t *testing.T) {
 func TestSageMakerRuntimeStage2ResponsesAndRouting(t *testing.T) {
 	srv, ts := newSageMakerRuntimeTestServer(t)
 
-	// Wildcard or listed Accept values fall back to the request Content-Type.
-	for accept, want := range map[string]string{"*/*": "text/csv", "application/json, text/csv": "text/csv", "application/json": "application/json"} {
+	// Wildcard or listed Accept values fall back to the request Content-Type;
+	// HTML is never echoed as a response type.
+	for accept, want := range map[string]string{"*/*": "text/csv", "application/json, text/csv": "text/csv", "application/json": "application/json", "text/html": "application/octet-stream"} {
 		resp := sagemakerRuntimeRequest(t, ts, "stackyard-endpoint", "invocations", []byte("1,2"), map[string]string{"Content-Type": "text/csv", "Accept": accept})
 		assertStatus(t, resp, http.StatusOK)
 		_ = mustBody(t, resp)
