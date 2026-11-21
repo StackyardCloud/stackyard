@@ -13,16 +13,49 @@ type appConfigStore struct {
 	mu     sync.Mutex
 	nextID int64
 	tags   map[string]map[string]string
+
+	// The control-plane responses above are fabricated, but AppConfig Data
+	// needs real content, so these record what was created and deployed.
+	apps        map[string]string                   // application ID -> name
+	envs        map[string]map[string]string        // application ID -> environment ID -> name
+	profiles    map[string]map[string]string        // application ID -> profile ID -> name
+	versions    map[string][]appConfigHostedVersion // appID/profileID -> versions, number = index+1
+	deployments map[string][]appConfigDeployment    // appID/envID -> deployments, number = index+1
+	sessions    map[string]appConfigDataSession     // configuration token -> session state
+}
+
+type appConfigHostedVersion struct {
+	Content     []byte
+	ContentType string
+	Label       string
+}
+
+type appConfigDeployment struct {
+	ProfileID  string
+	Version    string
+	RolledBack bool
 }
 
 func newAppConfigStore() *appConfigStore {
+	// The seed matches what the fabricated control plane already reports:
+	// app-000001/env-000001/cp-000001 with deployment 1 of hosted version 1.
 	return &appConfigStore{
-		nextID: 1,
+		nextID: 2, // 1 is the seed below; created IDs must not collide with it
 		tags: map[string]map[string]string{
 			"arn:aws:appconfig:us-east-1:123456789012:application/app-000001": {
 				"seed": "true",
 			},
 		},
+		apps:     map[string]string{"app-000001": "stackyard-app"},
+		envs:     map[string]map[string]string{"app-000001": {"env-000001": "stackyard-env"}},
+		profiles: map[string]map[string]string{"app-000001": {"cp-000001": "stackyard-config-profile"}},
+		versions: map[string][]appConfigHostedVersion{
+			"app-000001/cp-000001": {{Content: []byte(`{"stackyard":true}`), ContentType: "application/json"}},
+		},
+		deployments: map[string][]appConfigDeployment{
+			"app-000001/env-000001": {{ProfileID: "cp-000001", Version: "1"}},
+		},
+		sessions: map[string]appConfigDataSession{},
 	}
 }
 
@@ -30,6 +63,12 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	result := s.handleLocked(action, payload, pathParams, query)
+	s.recordDataPlaneLocked(action, payload, pathParams, result)
+	return result
+}
+
+func (s *appConfigStore) handleLocked(action string, payload map[string]any, pathParams map[string]string, query url.Values) map[string]any {
 	now := time.Now().UTC()
 
 	switch action {

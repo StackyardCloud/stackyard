@@ -55,6 +55,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "apigateway": {"cli": "apigateway", "ops_file": REPO_ROOT / "internal/server/apigateway_ops.go"},
     "apigatewayv2": {"cli": "apigatewayv2", "ops_file": REPO_ROOT / "internal/server/apigatewayv2_ops.go"},
     "appconfig": {"cli": "appconfig", "ops_file": REPO_ROOT / "internal/server/appconfig_ops.go"},
+    "appconfigdata": {"cli": "appconfigdata", "ops_file": REPO_ROOT / "internal/server/appconfigdata_ops.go"},
     "amplify": {"cli": "amplify", "ops_file": REPO_ROOT / "internal/server/amplify_ops.go"},
     "amplifyadminui": {
         "cli": "amplifybackend",
@@ -585,6 +586,9 @@ SERVICE_ALIASES = {
     "appconfig": "appconfig",
     "app-config": "appconfig",
     "awsappconfig": "appconfig",
+    "appconfigdata": "appconfigdata",
+    "appconfig-data": "appconfigdata",
+    "awsappconfigdata": "appconfigdata",
     "amplify": "amplify",
     "awsamplify": "amplify",
     "amazonamplify": "amplify",
@@ -13095,6 +13099,10 @@ def generate_cli_input_payload(
             "apiId": "api-0123456789abcdef0123456789abcdef0123456789abcdef",
             "format": "SDL",
         }, None
+    if endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
+        # aws appconfigdata get-latest-configuration needs --configuration-token and an outfile even
+        # to print a skeleton; hydration swaps in a token from a fresh session.
+        return {"ConfigurationToken": "placeholder"}, None
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         # aws lambda invoke does not support --generate-cli-skeleton input without --function-name.
         return {"FunctionName": LAMBDA_DEFAULT_FUNCTION_NAME, "Payload": "e30="}, None
@@ -30020,6 +30028,95 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+def appconfigdata_seed_session(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict[str, str] | None:
+    """Create an AppConfig application, environment, hosted profile, version and
+    deployment, and return StartConfigurationSession identifiers for them.
+
+    The appconfig shard may delete the emulator's seed resources, so each
+    appconfigdata check deploys its own configuration.
+    """
+    unique = str(int(time.time() * 1000) % 1000000)
+
+    def _id(result: dict | None) -> str:
+        value = result.get("Id") if isinstance(result, dict) else None
+        return value if isinstance(value, str) else ""
+
+    app_id = _id(run_aws_json(aws_bin, endpoint_url, region, "appconfig", "create-application", env, ["--name", f"coverage-app-{unique}"]))
+    if not app_id:
+        return None
+    env_id = _id(run_aws_json(aws_bin, endpoint_url, region, "appconfig", "create-environment", env, ["--application-id", app_id, "--name", f"coverage-env-{unique}"]))
+    profile_id = _id(
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "appconfig",
+            "create-configuration-profile",
+            env,
+            ["--application-id", app_id, "--name", f"coverage-profile-{unique}", "--location-uri", "hosted"],
+        )
+    )
+    if not env_id or not profile_id:
+        return None
+    with tempfile.TemporaryDirectory(prefix="stackyard-appconfigdata-") as tmp:
+        content = Path(tmp) / "content.json"
+        content.write_text('{"coverage":true}', encoding="utf-8")
+        version = run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "appconfig",
+            "create-hosted-configuration-version",
+            env,
+            [
+                "--application-id",
+                app_id,
+                "--configuration-profile-id",
+                profile_id,
+                "--content",
+                f"fileb://{content}",
+                "--content-type",
+                "application/json",
+                str(Path(tmp) / "version.out"),
+            ],
+        )
+    version_number = version.get("VersionNumber") if isinstance(version, dict) else None
+    if version_number is None:
+        return None
+    deployed = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "appconfig",
+        "start-deployment",
+        env,
+        [
+            "--application-id",
+            app_id,
+            "--environment-id",
+            env_id,
+            "--configuration-profile-id",
+            profile_id,
+            "--configuration-version",
+            str(version_number),
+            "--deployment-strategy-id",
+            "ds-000001",
+        ],
+    )
+    if not isinstance(deployed, dict):
+        return None
+    return {
+        "ApplicationIdentifier": app_id,
+        "EnvironmentIdentifier": env_id,
+        "ConfigurationProfileIdentifier": profile_id,
+    }
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30029,6 +30126,27 @@ def hydrate_payload_with_service_state(
     env: dict[str, str],
 ):
     if not isinstance(payload, dict):
+        return payload
+
+    if endpoint.service == "appconfigdata":
+        session = appconfigdata_seed_session(aws_bin, endpoint_url, region, env)
+        if session is None:
+            return payload
+        if endpoint.operation == "StartConfigurationSession":
+            return session
+        if endpoint.operation == "GetLatestConfiguration":
+            started = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "appconfigdata",
+                "start-configuration-session",
+                env,
+                ["--cli-input-json", json.dumps(session, separators=(",", ":"))],
+            )
+            token = started.get("InitialConfigurationToken") if isinstance(started, dict) else None
+            if isinstance(token, str) and token:
+                return {"ConfigurationToken": token}
         return payload
 
     if endpoint.service == "acm":
@@ -50158,6 +50276,34 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_appconfigdata_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    # aws appconfigdata get-latest-configuration requires the explicit
+    # --configuration-token flag (even with --cli-input-json) and an outfile.
+    token = str(payload_value_case_insensitive(payload, "ConfigurationToken", "placeholder")).strip() or "placeholder"
+    cmd = [*base_cmd, "--configuration-token", token]
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-appconfigdata-", suffix=".out", delete=False) as tmp:
+        out_path = tmp.name
+    try:
+        cmd.append(out_path)
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = Path(out_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    finally:
+        try:
+            os.unlink(out_path)
+        except OSError:
+            pass
+
+    return cp, cmd, extra_output
+
+
 def run_ebs_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -51887,6 +52033,9 @@ def run_endpoint(
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
+        cp, cmd, extra_output_text = run_appconfigdata_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)

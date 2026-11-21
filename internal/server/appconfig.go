@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -40,9 +41,22 @@ func (s *Server) handleAppConfigRESTRouter(w http.ResponseWriter, r *http.Reques
 		return true
 	}
 
+	if action == "CreateHostedConfigurationVersion" {
+		// The configuration content is the raw body; metadata travels in headers.
+		body, _ := readBodyBytes(r)
+		payload[appConfigDataContentKey] = body
+		payload["ContentType"] = r.Header.Get("Content-Type")
+		payload["VersionLabel"] = r.Header.Get("VersionLabel")
+	}
+
 	response := s.appconfig.Handle(action, payload, pathParams, r.URL.Query())
 	if response == nil {
 		response = map[string]any{}
+	}
+	if action == "CreateHostedConfigurationVersion" {
+		w.Header().Set("Application-Id", fmt.Sprint(response["ApplicationId"]))
+		w.Header().Set("Configuration-Profile-Id", fmt.Sprint(response["ConfigurationProfileId"]))
+		w.Header().Set("Version-Number", fmt.Sprint(response["VersionNumber"]))
 	}
 	respondAppConfigJSON(w, http.StatusOK, response)
 	return true
