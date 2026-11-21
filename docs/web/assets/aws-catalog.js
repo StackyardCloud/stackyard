@@ -25,6 +25,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/apigatewayv2/docker-compose.yml"
   },
   {
+    id: "apigatewaymanagementapi",
+    name: "API Gateway Management API",
+    category: "integration",
+    summary: "Push messages to, inspect, and disconnect WebSocket API client connections through the @connections callback API.",
+    docsHref: "../../../index.html#apigatewaymanagementapi",
+    exampleHref: "../../../../examples/aws/apigatewaymanagementapi/docker-compose.yml"
+  },
+  {
     id: "appconfig",
     name: "AppConfig",
     category: "integration",

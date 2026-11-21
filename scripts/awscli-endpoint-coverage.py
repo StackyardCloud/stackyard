@@ -54,6 +54,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "acm": {"cli": "acm", "ops_file": REPO_ROOT / "internal/server/acm_ops.go"},
     "apigateway": {"cli": "apigateway", "ops_file": REPO_ROOT / "internal/server/apigateway_ops.go"},
     "apigatewayv2": {"cli": "apigatewayv2", "ops_file": REPO_ROOT / "internal/server/apigatewayv2_ops.go"},
+    "apigatewaymanagementapi": {
+        "cli": "apigatewaymanagementapi",
+        "ops_file": REPO_ROOT / "internal/server/apigatewaymanagementapi_ops.go",
+    },
     "appconfig": {"cli": "appconfig", "ops_file": REPO_ROOT / "internal/server/appconfig_ops.go"},
     "amplify": {"cli": "amplify", "ops_file": REPO_ROOT / "internal/server/amplify_ops.go"},
     "amplifyadminui": {
@@ -578,6 +582,10 @@ SERVICE_ALIASES = {
     "api gateway v2": "apigatewayv2",
     "amazonapigatewayv2": "apigatewayv2",
     "awsapigatewayv2": "apigatewayv2",
+    "apigatewaymanagementapi": "apigatewaymanagementapi",
+    "api-gateway-management-api": "apigatewaymanagementapi",
+    "apigateway-management-api": "apigatewaymanagementapi",
+    "amazonapigatewaymanagementapi": "apigatewaymanagementapi",
     "api-gateway": "apigateway",
     "api gateway": "apigateway",
     "amazonapigateway": "apigateway",
@@ -3038,6 +3046,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "support": {},
     "apigateway": {},
     "apigatewayv2": {},
+    "apigatewaymanagementapi": {},
     "marketplace": {},
     "supportapp": {},
     "trustedadvisor": {},
@@ -30020,6 +30029,40 @@ def lambda_ensure_durable_execution(
     return str(lambda_runtime_state(region).get("durable_execution_arn", arn))
 
 
+def apigatewaymanagementapi_connect(endpoint_url: str) -> str:
+    """Register a client connection through Stackyard's stand-in for a WebSocket
+    connect, since there is no CLI call that opens one."""
+    req = urlrequest.Request(
+        endpoint_url.rstrip("/") + "/_stackyard/apigatewaymanagementapi/connections",
+        data=b"{}",
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            return str(json.loads(resp.read().decode("utf-8")).get("connectionId") or "")
+    except (urlerror.URLError, OSError, json.JSONDecodeError, AttributeError):
+        return ""
+
+
+def apigatewaymanagementapi_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str) -> dict:
+    """Point each op at a live connection. DeleteConnection gets its own, so the
+    shared one stays open for the other ops."""
+    state = RUNTIME_STATE.setdefault("apigatewaymanagementapi", {})
+    if endpoint.operation == "DeleteConnection":
+        connection_id = apigatewaymanagementapi_connect(endpoint_url)
+    else:
+        connection_id = str(state.get("connection_id") or "")
+        if not connection_id:
+            connection_id = apigatewaymanagementapi_connect(endpoint_url)
+            state["connection_id"] = connection_id
+    hydrated = copy.deepcopy(payload)
+    hydrated["ConnectionId"] = connection_id
+    if endpoint.operation == "PostToConnection":
+        hydrated["Data"] = base64.b64encode(b"stackyard coverage").decode("ascii")
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30030,6 +30073,9 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "apigatewaymanagementapi":
+        return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
 
     if endpoint.service == "acm":
         hydrated = copy.deepcopy(payload)

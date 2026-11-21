@@ -278,3 +278,16 @@ func apiGatewayV2CloneMap(in map[string]any) map[string]any {
 	}
 	return out
 }
+
+// protocolType reports an API's ProtocolType (HTTP or WEBSOCKET) without
+// creating the API, unlike ensureAPILocked.
+func (s *apiGatewayV2Store) protocolType(id string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	api, ok := s.apis[id]
+	if !ok {
+		return "", false
+	}
+	protocol, _ := api["ProtocolType"].(string)
+	return protocol, true
+}
