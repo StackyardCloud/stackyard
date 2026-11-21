@@ -46,6 +46,7 @@
         <a href="#acm">ACM</a>
         <a href="#apigateway">API Gateway</a>
         <a href="#apigatewayv2">API Gateway v2</a>
+        <a href="#apigatewaymanagementapi">API Gateway Management API</a>
         <a href="#appconfig">AppConfig</a>
         <a href="#appflow">AppFlow</a>
         <a href="#datapipeline">Data Pipeline</a>
@@ -700,6 +701,37 @@
         <ul>
         <li><code>apigatewayv2</code>: <code>docker compose -f examples/aws/apigatewayv2/docker-compose.yml up --build</code></li>
         <li><code>apigatewayv2</code>: <code>docker compose -f examples/aws/apigatewayv2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="apigatewaymanagementapi" class="service">
+
+        <div class="service-header">
+        <h2>Amazon API Gateway Management API</h2>
+        <p>SigV4 signed with service <code>execute-api</code>. REST JSON over <code>/@connections/{connectionId}</code> or <code>/{stage}/@connections/{connectionId}</code>, scoped to the API ID in an <code>{apiId}.execute-api.*</code> host when one is present. Stackyard has no WebSocket runtime: register a client with <code>POST /_stackyard/apigatewaymanagementapi/connections</code> (optional <code>apiId</code> of a <code>WEBSOCKET</code> API, <code>stage</code>, <code>sourceIp</code>, <code>userAgent</code>) and read what the backend posted with <code>GET /_stackyard/apigatewaymanagementapi/connections/{connectionId}/messages</code>. Unknown or deleted connections return <code>410 GoneException</code>, and data over 128 KB returns <code>413 PayloadTooLargeException</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: execute-api</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>PostToConnection</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>apigatewaymanagementapi</code>: <code>docker compose -f examples/aws/apigatewaymanagementapi/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
