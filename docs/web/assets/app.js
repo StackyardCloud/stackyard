@@ -32,6 +32,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/appconfig/docker-compose.yml"
   },
   {
+    id: "appconfigdata",
+    name: "AppConfig Data",
+    category: "integration",
+    summary: "Start configuration sessions and poll the latest deployed AppConfig configuration with single-use tokens.",
+    docsHref: "../../../index.html#appconfigdata",
+    exampleHref: "../../../../examples/aws/appconfig-data/docker-compose.yml"
+  },
+  {
     id: "athena",
     name: "Athena",
     category: "database",

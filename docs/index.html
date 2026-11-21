@@ -47,6 +47,7 @@
         <a href="#apigateway">API Gateway</a>
         <a href="#apigatewayv2">API Gateway v2</a>
         <a href="#appconfig">AppConfig</a>
+        <a href="#appconfigdata">AppConfig Data</a>
         <a href="#appflow">AppFlow</a>
         <a href="#datapipeline">Data Pipeline</a>
         <a href="#b2bi">B2B Data Interchange</a>
@@ -775,6 +776,36 @@
         <ul>
         <li><code>appconfig</code>: <code>docker compose -f examples/aws/appconfig/docker-compose.yml up --build</code></li>
         <li><code>appconfig</code>: <code>docker compose -f examples/aws/appconfig/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="appconfigdata" class="service">
+
+        <div class="service-header">
+        <h2>AWS AppConfig Data</h2>
+        <p>SigV4 signed with service <code>appconfig</code>. REST JSON data plane: <code>POST /configurationsessions</code> starts a session for an application, environment and configuration profile (by ID or name), and <code>GET /configuration?configuration_token=...</code> returns the latest deployed hosted configuration. Tokens are single-use and expire after 24 hours; an unchanged configuration returns an empty body. Content comes from AppConfig hosted configuration versions and deployments.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: appconfig</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetLatestConfiguration</code></td></tr>
+        <tr><td><code>StartConfigurationSession</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>appconfig-data</code>: <code>docker compose -f examples/aws/appconfig-data/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
