@@ -165,7 +165,7 @@ func (s *Server) appConfigDataGetLatest(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	w.Header().Set("Content-Type", cmp.Or(poll.version.ContentType, "application/octet-stream"))
+	setAppConfigContentType(w, poll.version.ContentType)
 	if poll.version.Label != "" {
 		w.Header().Set("Version-Label", poll.version.Label)
 	}

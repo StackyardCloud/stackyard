@@ -85,7 +85,6 @@ func respondAppConfigHostedVersion(w http.ResponseWriter, status int, version ma
 		"Application-Id":           "ApplicationId",
 		"Configuration-Profile-Id": "ConfigurationProfileId",
 		"Version-Number":           "VersionNumber",
-		"Content-Type":             "ContentType",
 		"Description":              "Description",
 		"VersionLabel":             "VersionLabel",
 	} {
@@ -93,6 +92,8 @@ func respondAppConfigHostedVersion(w http.ResponseWriter, status int, version ma
 			w.Header().Set(header, value)
 		}
 	}
+	contentType, _ := version["ContentType"].(string)
+	setAppConfigContentType(w, contentType)
 	w.WriteHeader(status)
 	content, _ := version["Content"].([]byte)
 	_, _ = w.Write(content)
@@ -249,4 +250,26 @@ func respondAppConfigJSON(w http.ResponseWriter, status int, body any) {
 func respondAppConfigError(w http.ResponseWriter, status int, code, msg string) {
 	w.Header().Set("X-Amzn-ErrorType", code)
 	respondAppConfigJSON(w, status, appConfigError{Type: code, Message: msg})
+}
+
+// setAppConfigContentType echoes stored configuration content types from a
+// fixed list of non-HTML media types. Hosted content is caller-supplied bytes,
+// so an HTML or unknown type is served as application/octet-stream with
+// nosniff rather than letting a browser render it.
+func setAppConfigContentType(w http.ResponseWriter, contentType string) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	switch strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0])) {
+	case "application/json":
+		w.Header().Set("Content-Type", "application/json")
+	case "application/x-yaml":
+		w.Header().Set("Content-Type", "application/x-yaml")
+	case "application/yaml":
+		w.Header().Set("Content-Type", "application/yaml")
+	case "text/yaml":
+		w.Header().Set("Content-Type", "text/yaml")
+	case "text/plain":
+		w.Header().Set("Content-Type", "text/plain")
+	default:
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
 }

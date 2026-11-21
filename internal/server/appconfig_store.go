@@ -183,7 +183,7 @@ func (s *appConfigStore) handleLocked(action string, payload map[string]any, pat
 		appID := s.resolveID(payload, pathParams, "ApplicationId", "app-000001")
 		profileID := s.resolveID(payload, pathParams, "ConfigurationProfileId", "cp-000001")
 		version := s.resolveID(payload, pathParams, "VersionNumber", "1")
-		versionNum, _ := strconv.ParseInt(version, 10, 64)
+		versionNum, _ := strconv.ParseInt(version, 10, 32)
 		if versionNum <= 0 {
 			versionNum = 1
 		}
@@ -211,7 +211,7 @@ func (s *appConfigStore) handleLocked(action string, payload map[string]any, pat
 		profileID := s.resolveID(payload, pathParams, "ConfigurationProfileId", "cp-000001")
 		strategyID := s.resolveID(payload, pathParams, "DeploymentStrategyId", "ds-000001")
 		deploymentNumRaw := s.resolveID(payload, pathParams, "DeploymentNumber", "1")
-		deploymentNum, _ := strconv.ParseInt(deploymentNumRaw, 10, 64)
+		deploymentNum, _ := strconv.ParseInt(deploymentNumRaw, 10, 32)
 		if deploymentNum <= 0 {
 			deploymentNum = 1
 		}
