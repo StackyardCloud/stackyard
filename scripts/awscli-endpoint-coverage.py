@@ -39376,6 +39376,24 @@ def hydrate_payload_with_service_state(
             _replace_payload({"DBClusterIdentifier": _ensure_db_cluster()})
             return hydrated
 
+        if op in {"EnableHttpEndpoint", "DisableHttpEndpoint"}:
+            cluster_id = _ensure_db_cluster()
+            described = run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "rds",
+                "describe-db-clusters",
+                env,
+                ["--db-cluster-identifier", cluster_id],
+            )
+            clusters = described.get("DBClusters") if isinstance(described, dict) else None
+            cluster_arn = f"arn:aws:rds:{region}:123456789012:cluster:{cluster_id}"
+            if isinstance(clusters, list) and clusters and isinstance(clusters[0], dict):
+                cluster_arn = str(clusters[0].get("DBClusterArn") or cluster_arn)
+            _replace_payload({"ResourceArn": cluster_arn})
+            return hydrated
+
         if op == "RegisterDbProxyTargets":
             _replace_payload(
                 {

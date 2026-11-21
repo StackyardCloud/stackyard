@@ -160,9 +160,14 @@ func (s *Server) handleRDSCompatNoop(w http.ResponseWriter, r *http.Request) {
 	case "EnableHttpEndpoint", "DisableHttpEndpoint":
 		arn := strings.TrimSpace(r.Form.Get("ResourceArn"))
 		enabled := action == "EnableHttpEndpoint"
-		// ponytail: an unknown ARN still answers success, as before; only known
-		// clusters record the state the RDS Data API checks.
-		_, _ = s.rds.SetDBClusterHTTPEndpoint(arn, enabled)
+		if arn == "" {
+			respondRDSErrorXML(w, http.StatusBadRequest, "MissingParameter", "ResourceArn is required")
+			return
+		}
+		if _, err := s.rds.SetDBClusterHTTPEndpoint(arn, enabled); err != nil {
+			respondRDSErrorXML(w, http.StatusNotFound, "ResourceNotFoundFault", "DB cluster "+arn+" not found")
+			return
+		}
 		respondRDSXML(w, action, rdsHTTPEndpointResultXML{
 			XMLName:             xml.Name{Local: action + "Result"},
 			ResourceArn:         arn,
