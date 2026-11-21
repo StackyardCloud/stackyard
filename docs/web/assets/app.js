@@ -144,6 +144,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/cloudtrail/docker-compose.yml"
   },
   {
+    id: "cloudtraildata",
+    name: "CloudTrail Data",
+    category: "integration",
+    summary: "Ingest external audit events into CloudTrail Lake channels with PutAuditEvents and query them back.",
+    docsHref: "../../../index.html#cloudtraildata",
+    exampleHref: "../../../../examples/aws/cloudtrail-data/docker-compose.yml"
+  },
+  {
     id: "cloudwatch",
     name: "CloudWatch",
     category: "integration",

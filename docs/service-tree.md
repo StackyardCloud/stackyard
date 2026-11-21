@@ -3291,6 +3291,8 @@
         - endpoint: [Action:UpdateDashboard](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_Operations.html)
         - endpoint: [Action:UpdateEventDataStore](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_Operations.html)
         - endpoint: [Action:UpdateTrail](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_Operations.html)
+      - service: CloudTrail Data (cloudtraildata)
+        - endpoint: [Action:PutAuditEvents](https://docs.aws.amazon.com/awscloudtraildata/latest/APIReference/API_PutAuditEvents.html)
       - service: CloudWatch (cloudwatch)
         - endpoint: [Action:DeleteAlarmMuteRule](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_Operations.html)
         - endpoint: [Action:DeleteAlarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_Operations.html)

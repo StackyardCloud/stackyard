@@ -121,6 +121,7 @@
         <a href="#controltower">Control Tower</a>
         <a href="#cloudformation">CloudFormation</a>
         <a href="#cloudtrail">CloudTrail</a>
+        <a href="#cloudtraildata">CloudTrail Data</a>
         <a href="#cloudwatch">CloudWatch</a>
         <a href="#cloudwatchlogs">CloudWatch Logs</a>
         <a href="#cloudwatchrum">CloudWatch RUM</a>
@@ -5903,6 +5904,36 @@
 <ul>
 <li><code>cloudtrail</code>: <code>docker compose -f examples/aws/cloudtrail/docker-compose.yml up --build</code></li>
 <li><code>cloudtrail</code>: <code>docker compose -f examples/aws/cloudtrail/docker-compose.yml up --build</code></li>
+</ul>
+</details>
+</section>
+
+<section id="cloudtraildata" class="service">
+
+<div class="service-header">
+<h2>AWS CloudTrail Data</h2>
+<p>SigV4 signed with service <code>cloudtrail-data</code>. REST JSON API: <code>POST /PutAuditEvents?channelArn=&lt;arn-or-id&gt;[&amp;externalId=&lt;id&gt;]</code>. Events are validated against the CloudTrail Lake integration schema (checksum, required fields, recipient account) and delivered to the channel's event data stores, where <code>StartQuery</code>/<code>GetQueryResults</code> can read them with a <code>SELECT ... FROM &lt;event-data-store&gt; [WHERE col = 'v'] [LIMIT n]</code> subset.</p>
+</div>
+<div class="service-meta">
+<span class="meta-pill">SigV4: cloudtrail-data</span>
+<span class="meta-pill">API: REST JSON</span>
+</div><details class="details">
+<summary>Supported Actions</summary>
+<p class="note">Action Type: SDK action</p>
+<table class="table">
+<thead>
+<tr>
+<th>Action Name</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>PutAuditEvents</code></td></tr>
+</tbody>
+</table>
+</details><details class="details">
+<summary>Examples</summary>
+<ul>
+<li><code>cloudtrail-data</code>: <code>docker compose -f examples/aws/cloudtrail-data/docker-compose.yml up --build</code></li>
 </ul>
 </details>
 </section>

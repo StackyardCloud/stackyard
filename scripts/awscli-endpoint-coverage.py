@@ -362,6 +362,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cloudmap": {"cli": "servicediscovery", "ops_file": REPO_ROOT / "internal/server/cloudmap_ops.go"},
     "config": {"cli": "configservice", "ops_file": REPO_ROOT / "internal/server/config_ops.go"},
     "cloudtrail": {"cli": "cloudtrail", "ops_file": REPO_ROOT / "internal/server/cloudtrail_ops.go"},
+    "cloudtraildata": {"cli": "cloudtrail-data", "ops_file": REPO_ROOT / "internal/server/cloudtraildata_ops.go"},
     "cloudwatchrum": {"cli": "rum", "ops_file": REPO_ROOT / "internal/server/cloudwatchrum_ops.go"},
     "cloudwatchobservabilityadmin": {
         "cli": "observabilityadmin",
@@ -1616,6 +1617,9 @@ SERVICE_ALIASES = {
     "cloudtrail": "cloudtrail",
     "cloud-trail": "cloudtrail",
     "awscloudtrail": "cloudtrail",
+    "cloudtraildata": "cloudtraildata",
+    "cloudtrail-data": "cloudtraildata",
+    "awscloudtraildata": "cloudtraildata",
     "cloudwatchrum": "cloudwatchrum",
     "cloudwatch-rum": "cloudwatchrum",
     "cloudwatch rum": "cloudwatchrum",
@@ -3001,6 +3005,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "cloudfront": {},
     "cloudmap": {},
     "config": {},
+    "cloudtraildata": {},
     "cloudtrail": {},
     "cloudwatchrum": {},
     "cloudwatchobservabilityadmin": {},
@@ -34228,6 +34233,44 @@ def hydrate_payload_with_service_state(
             _replace_payload({"resourceArn": profile_arn, "tagKeys": ["env"]})
             return hydrated
 
+        return hydrated
+
+    if endpoint.service == "cloudtraildata":
+        hydrated = copy.deepcopy(payload)
+        if not isinstance(hydrated, dict):
+            return payload
+        state = RUNTIME_STATE.setdefault("cloudtraildata", {})
+        channel_arn = str(state.get("channel_arn", "")).strip()
+        if not channel_arn:
+            unique = str(int(time.time() * 1000) % 1000000)
+            run_aws_json(aws_bin, endpoint_url, region, "cloudtrail", "create-event-data-store", env,
+                         ["--name", "coverage-audit-eds"])
+            created = run_aws_json(
+                aws_bin, endpoint_url, region, "cloudtrail", "create-channel", env,
+                [
+                    "--name", f"coverage-channel-{unique}",
+                    "--source", "Custom",
+                    "--destinations",
+                    f"Type=EventDataStore,Location=arn:aws:cloudtrail:{region}:123456789012:eventdatastore/coverage-audit-eds",
+                ],
+            )
+            channel_arn = str((created or {}).get("ChannelArn", "")).strip()
+            state["channel_arn"] = channel_arn
+        if channel_arn and endpoint.operation == "PutAuditEvents":
+            event_data = json.dumps({
+                "version": "1.0",
+                "userIdentity": {"type": "CoverageUser", "principalId": "coverage"},
+                "eventSource": "coverage.example.com",
+                "eventName": "CoverageEvent",
+                "eventTime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "UID": f"coverage-{int(time.time() * 1000)}",
+                "recipientAccountId": "123456789012",
+            }, separators=(",", ":"))
+            hydrated.clear()
+            hydrated.update({
+                "channelArn": channel_arn,
+                "auditEvents": [{"id": f"coverage-{int(time.time() * 1000)}", "eventData": event_data}],
+            })
         return hydrated
 
     if endpoint.service == "dsql":
