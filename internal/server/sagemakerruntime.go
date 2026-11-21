@@ -376,7 +376,6 @@ func (s *Server) sagemakerRuntimeInvoke(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	h := w.Header()
-	setSageMakerRuntimeContentType(w, sagemakerRuntimeResponseType(r.Header.Get("Accept"), r.Header.Get("Content-Type")))
 	h.Set("x-Amzn-Invoked-Production-Variant", target.Variant)
 	if attrs := r.Header.Get("X-Amzn-SageMaker-Custom-Attributes"); attrs != "" {
 		h.Set("X-Amzn-SageMaker-Custom-Attributes", attrs)
@@ -384,8 +383,7 @@ func (s *Server) sagemakerRuntimeInvoke(w http.ResponseWriter, r *http.Request, 
 	if newSession != "" {
 		h.Set("X-Amzn-SageMaker-New-Session-Id", newSession+"; Expires="+expires.Format(time.RFC3339))
 	}
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(body)
+	writeSageMakerRuntimeBody(w, sagemakerRuntimeResponseType(r.Header.Get("Accept"), r.Header.Get("Content-Type")), body)
 }
 
 func (s *Server) sagemakerRuntimeInvokeStream(w http.ResponseWriter, r *http.Request, name string, target sagemakerRuntimeTarget, body []byte) {
@@ -547,11 +545,10 @@ func respondSageMakerRuntimeError(w http.ResponseWriter, status int, code, msg s
 	respondSageMakerRuntimeJSON(w, status, map[string]string{"__type": code, "message": msg})
 }
 
-// setSageMakerRuntimeContentType sets the content type of an echoed inference
-// body. The body is caller bytes, so only known non-HTML inference media types
+// writeSageMakerRuntimeBody writes an echoed inference body with a 200. The body is caller bytes, so only known non-HTML inference media types
 // are echoed (each as a constant); anything else, including text/html, is served
 // as application/octet-stream, always with nosniff.
-func setSageMakerRuntimeContentType(w http.ResponseWriter, contentType string) {
+func writeSageMakerRuntimeBody(w http.ResponseWriter, contentType string, body []byte) {
 	h := w.Header()
 	h.Set("X-Content-Type-Options", "nosniff")
 	switch strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0])) {
@@ -572,4 +569,6 @@ func setSageMakerRuntimeContentType(w http.ResponseWriter, contentType string) {
 	default:
 		h.Set("Content-Type", "application/octet-stream")
 	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(body)
 }
