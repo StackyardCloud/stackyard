@@ -33,6 +33,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/appconfig/docker-compose.yml"
   },
   {
+    id: "appconfigdata",
+    name: "AppConfig Data",
+    category: "integration",
+    summary: "Start configuration sessions and poll the latest deployed AppConfig configuration with single-use tokens.",
+    docsHref: "../../../index.html#appconfigdata",
+    exampleHref: "../../../../examples/aws/appconfig-data/docker-compose.yml"
+  },
+  {
     id: "athena",
     name: "Athena",
     category: "database",
@@ -47,6 +55,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Use Aurora DSQL endpoints for distributed SQL integration testing.",
     docsHref: "../../../index.html#aurora-dsql",
     exampleHref: "../../../../examples/aws/aurora-dsql/docker-compose.yml"
+  },
+  {
+    id: "rds-data",
+    name: "RDS Data API",
+    category: "database",
+    summary: "Run SQL over HTTP against Aurora clusters with the RDS Data API.",
+    docsHref: "../../../index.html#rds-data",
+    exampleHref: "../../../../examples/aws/rds-data/docker-compose.yml"
   },
   {
     id: "augmented-ai",
@@ -527,6 +543,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Exercise table, item, and query-style DynamoDB operations.",
     docsHref: "../../../index.html#dynamodb",
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
+  },
+  {
+    id: "dynamodbstreams",
+    name: "DynamoDB Streams",
+    category: "database",
+    summary: "Read table change records with shard iterators and GetRecords.",
+    docsHref: "../../../index.html#dynamodbstreams",
+    exampleHref: "../../../../examples/aws/dynamodb-streams/docker-compose.yml"
   },
   {
     id: "ebs",
