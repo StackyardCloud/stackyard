@@ -889,6 +889,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/docdb/docker-compose.yml"
   },
   {
+    id: "docdbelastic",
+    name: "DocumentDB Elastic Clusters",
+    category: "database",
+    summary: "Run sharded DocumentDB elastic clusters with settle-on-read lifecycles, manual and automated snapshots, copy and restore, maintenance opt-in and tags.",
+    docsHref: "../../../index.html#docdbelastic",
+    exampleHref: "../../../../examples/aws/docdb-elastic/docker-compose.yml"
+  },
+  {
     id: "neptune",
     name: "Neptune",
     category: "database",

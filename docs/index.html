@@ -199,6 +199,7 @@
         <a href="#lightsail">Lightsail</a>
         <a href="#memorydb">MemoryDB</a>
         <a href="#docdb">DocumentDB</a>
+        <a href="#docdbelastic">DocumentDB Elastic Clusters</a>
         <a href="#neptune">Neptune</a>
         <a href="#neptunedata">Neptune Data API</a>
         <a href="#neptuneanalytics">Neptune Analytics API</a>
@@ -16576,6 +16577,94 @@
         <summary>Examples</summary>
         <ul>
                 <li><code>docdb</code>: <code>docker compose -f examples/aws/docdb/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+
+        <section id="docdbelastic" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DocumentDB Elastic Clusters</h2>
+        <p>SigV4 signed with service <code>docdb-elastic</code>. REST JSON API under <code>/cluster</code>, <code>/clusters</code>, <code>/cluster-snapshot</code>, <code>/cluster-snapshots</code>, <code>/pending-action</code>, <code>/pending-actions</code> and <code>/tags/</code>. Clusters and snapshots settle out of CREATING, UPDATING, STOPPING and similar states on the next read; subnets and security groups are checked against the EC2 store (defaulting to the default VPC), and <code>SECRET_ARN</code> auth needs an existing Secrets Manager secret. Passwords are never returned. All 19 actions are implemented; the DocumentDB wire protocol is not.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: docdb-elastic</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>ApplyPendingMaintenanceAction</code></td>
+        </tr>
+        <tr>
+        <td><code>CopyClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>GetCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>GetClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPendingMaintenanceAction</code></td>
+        </tr>
+        <tr>
+        <td><code>ListClusterSnapshots</code></td>
+        </tr>
+        <tr>
+        <td><code>ListClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPendingMaintenanceActions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>RestoreClusterFromSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>StartCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>StopCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCluster</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>docdb-elastic</code>: <code>docker compose -f examples/aws/docdb-elastic/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
