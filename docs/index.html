@@ -122,6 +122,7 @@
         <a href="#codeguru">CodeGuru Reviewer</a>
         <a href="#codeguru-profiler">CodeGuru Profiler</a>
         <a href="#codedeploy">CodeDeploy</a>
+        <a href="#codecommit">CodeCommit</a>
         <a href="#codepipeline">CodePipeline</a>
         <a href="#qdeveloper">AWS Q Developer</a>
         <a href="#qbusiness">Amazon Q Business</a>
@@ -6069,6 +6070,114 @@
         </details>
         </section>
 
+        <section id="codecommit" class="service">
+
+        <div class="service-header">
+        <h2>AWS CodeCommit</h2>
+        <p>SigV4 signed with service <code>codecommit</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: CodeCommit_20150413.&lt;Action&gt;</code>. Repositories keep a real in-memory Git object model (blobs, trees, commits with parents) behind commits, files, folders, diffs and history; merges detect line-level conflicts; pull requests track revisions, approval rules from templates, approvals, overrides, events and comments. Requests are validated against the botocore model.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: codecommit</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateApprovalRuleTemplateWithRepository</code></td></tr>
+        <tr><td><code>BatchAssociateApprovalRuleTemplateWithRepositories</code></td></tr>
+        <tr><td><code>BatchDescribeMergeConflicts</code></td></tr>
+        <tr><td><code>BatchDisassociateApprovalRuleTemplateFromRepositories</code></td></tr>
+        <tr><td><code>BatchGetCommits</code></td></tr>
+        <tr><td><code>BatchGetRepositories</code></td></tr>
+        <tr><td><code>CreateApprovalRuleTemplate</code></td></tr>
+        <tr><td><code>CreateBranch</code></td></tr>
+        <tr><td><code>CreateCommit</code></td></tr>
+        <tr><td><code>CreatePullRequest</code></td></tr>
+        <tr><td><code>CreatePullRequestApprovalRule</code></td></tr>
+        <tr><td><code>CreateRepository</code></td></tr>
+        <tr><td><code>CreateUnreferencedMergeCommit</code></td></tr>
+        <tr><td><code>DeleteApprovalRuleTemplate</code></td></tr>
+        <tr><td><code>DeleteBranch</code></td></tr>
+        <tr><td><code>DeleteCommentContent</code></td></tr>
+        <tr><td><code>DeleteFile</code></td></tr>
+        <tr><td><code>DeletePullRequestApprovalRule</code></td></tr>
+        <tr><td><code>DeleteRepository</code></td></tr>
+        <tr><td><code>DescribeMergeConflicts</code></td></tr>
+        <tr><td><code>DescribePullRequestEvents</code></td></tr>
+        <tr><td><code>DisassociateApprovalRuleTemplateFromRepository</code></td></tr>
+        <tr><td><code>EvaluatePullRequestApprovalRules</code></td></tr>
+        <tr><td><code>GetApprovalRuleTemplate</code></td></tr>
+        <tr><td><code>GetBlob</code></td></tr>
+        <tr><td><code>GetBlobDifferences</code></td></tr>
+        <tr><td><code>GetBranch</code></td></tr>
+        <tr><td><code>GetComment</code></td></tr>
+        <tr><td><code>GetCommentReactions</code></td></tr>
+        <tr><td><code>GetCommentsForComparedCommit</code></td></tr>
+        <tr><td><code>GetCommentsForPullRequest</code></td></tr>
+        <tr><td><code>GetCommit</code></td></tr>
+        <tr><td><code>GetDifferences</code></td></tr>
+        <tr><td><code>GetFile</code></td></tr>
+        <tr><td><code>GetFolder</code></td></tr>
+        <tr><td><code>GetMergeCommit</code></td></tr>
+        <tr><td><code>GetMergeConflicts</code></td></tr>
+        <tr><td><code>GetMergeOptions</code></td></tr>
+        <tr><td><code>GetPullRequest</code></td></tr>
+        <tr><td><code>GetPullRequestApprovalStates</code></td></tr>
+        <tr><td><code>GetPullRequestOverrideState</code></td></tr>
+        <tr><td><code>GetRepository</code></td></tr>
+        <tr><td><code>GetRepositoryTriggers</code></td></tr>
+        <tr><td><code>ListApprovalRuleTemplates</code></td></tr>
+        <tr><td><code>ListAssociatedApprovalRuleTemplatesForRepository</code></td></tr>
+        <tr><td><code>ListBranches</code></td></tr>
+        <tr><td><code>ListFileCommitHistory</code></td></tr>
+        <tr><td><code>ListPullRequests</code></td></tr>
+        <tr><td><code>ListRepositories</code></td></tr>
+        <tr><td><code>ListRepositoriesForApprovalRuleTemplate</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>MergeBranchesByFastForward</code></td></tr>
+        <tr><td><code>MergeBranchesBySquash</code></td></tr>
+        <tr><td><code>MergeBranchesByThreeWay</code></td></tr>
+        <tr><td><code>MergePullRequestByFastForward</code></td></tr>
+        <tr><td><code>MergePullRequestBySquash</code></td></tr>
+        <tr><td><code>MergePullRequestByThreeWay</code></td></tr>
+        <tr><td><code>OverridePullRequestApprovalRules</code></td></tr>
+        <tr><td><code>PostCommentForComparedCommit</code></td></tr>
+        <tr><td><code>PostCommentForPullRequest</code></td></tr>
+        <tr><td><code>PostCommentReply</code></td></tr>
+        <tr><td><code>PutCommentReaction</code></td></tr>
+        <tr><td><code>PutFile</code></td></tr>
+        <tr><td><code>PutRepositoryTriggers</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>TestRepositoryTriggers</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateApprovalRuleTemplateContent</code></td></tr>
+        <tr><td><code>UpdateApprovalRuleTemplateDescription</code></td></tr>
+        <tr><td><code>UpdateApprovalRuleTemplateName</code></td></tr>
+        <tr><td><code>UpdateComment</code></td></tr>
+        <tr><td><code>UpdateDefaultBranch</code></td></tr>
+        <tr><td><code>UpdatePullRequestApprovalRuleContent</code></td></tr>
+        <tr><td><code>UpdatePullRequestApprovalState</code></td></tr>
+        <tr><td><code>UpdatePullRequestDescription</code></td></tr>
+        <tr><td><code>UpdatePullRequestStatus</code></td></tr>
+        <tr><td><code>UpdatePullRequestTitle</code></td></tr>
+        <tr><td><code>UpdateRepositoryDescription</code></td></tr>
+        <tr><td><code>UpdateRepositoryEncryptionKey</code></td></tr>
+        <tr><td><code>UpdateRepositoryName</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>codecommit</code>: <code>docker compose -f examples/aws/codecommit/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="codepipeline" class="service">
 
         <div class="service-header">
