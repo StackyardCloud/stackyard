@@ -548,6 +548,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2158,6 +2159,9 @@ SERVICE_ALIASES = {
     "dsql": "dsql",
     "efs": "efs",
     "elasticfilesystem": "efs",
+    "applicationautoscaling": "applicationautoscaling",
+    "application-autoscaling": "applicationautoscaling",
+    "awsapplicationautoscaling": "applicationautoscaling",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
@@ -3045,6 +3049,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "applicationautoscaling": {},
     "efs": {},
     "appconfig": {},
     "amplify": {},
@@ -31561,6 +31566,124 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+AAS_TABLE = "stackyard-aas-coverage"
+AAS_TABLE_KEY = {
+    "ServiceNamespace": "dynamodb",
+    "ResourceId": f"table/{AAS_TABLE}",
+    "ScalableDimension": "dynamodb:table:ReadCapacityUnits",
+}
+AAS_ECS_KEY = {
+    "ServiceNamespace": "ecs",
+    "ResourceId": "service/stackyard-aas/api",
+    "ScalableDimension": "ecs:service:DesiredCount",
+}
+AAS_STEP_CONFIG = {
+    "AdjustmentType": "ChangeInCapacity",
+    "StepAdjustments": [{"MetricIntervalLowerBound": 0, "ScalingAdjustment": 1}],
+}
+
+
+def aas_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict | None:
+    return run_aws_json(
+        aws_bin, endpoint_url, region, "application-autoscaling", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+
+
+def aas_ensure_table_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Register the shared DynamoDB-table target (creating the table) and
+    return its ARN."""
+    state = RUNTIME_STATE.setdefault("applicationautoscaling", {})
+    if not run_aws_json(aws_bin, endpoint_url, region, "dynamodb", "describe-table", env, ["--table-name", AAS_TABLE]):
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dynamodb", "create-table", env,
+            [
+                "--table-name", AAS_TABLE,
+                "--attribute-definitions", "AttributeName=id,AttributeType=S",
+                "--key-schema", "AttributeName=id,KeyType=HASH",
+                "--provisioned-throughput", "ReadCapacityUnits=5,WriteCapacityUnits=5",
+            ],
+        )
+    registered = aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**AAS_TABLE_KEY, "MinCapacity": 1, "MaxCapacity": 10})
+    if isinstance(registered, dict) and registered.get("ScalableTargetARN"):
+        state["target_arn"] = registered["ScalableTargetARN"]
+    return str(state.get("target_arn") or "")
+
+
+def aas_ensure_ecs_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> None:
+    """Register an ECS service target (creating cluster, task definition and
+    service) with a predictive policy, for GetPredictiveScalingForecast."""
+    run_aws_json(aws_bin, endpoint_url, region, "ecs", "create-cluster", env, ["--cluster-name", "stackyard-aas"])
+    task = run_aws_json(
+        aws_bin, endpoint_url, region, "ecs", "register-task-definition", env,
+        ["--family", "stackyard-aas", "--container-definitions", '[{"name":"app","image":"nginx"}]'],
+    )
+    task_arn = ((task or {}).get("taskDefinition") or {}).get("taskDefinitionArn") or "stackyard-aas"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "ecs", "create-service", env,
+        ["--cluster", "stackyard-aas", "--service-name", "api", "--task-definition", task_arn, "--desired-count", "1"],
+    )
+    aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**AAS_ECS_KEY, "MinCapacity": 1, "MaxCapacity": 4})
+    aas_cli(aws_bin, endpoint_url, region, env, "put-scaling-policy", {
+        **AAS_ECS_KEY,
+        "PolicyName": "stackyard-predictive",
+        "PolicyType": "PredictiveScaling",
+        "PredictiveScalingPolicyConfiguration": {
+            "MetricSpecifications": [{"TargetValue": 40, "PredefinedMetricPairSpecification": {"PredefinedMetricType": "ECSServiceCPUUtilization"}}],
+        },
+    })
+
+
+def applicationautoscaling_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each operation at real targets. Deletes and deregistration get
+    resources of their own so the shared target stays usable."""
+    op = endpoint.operation
+    unique = f"stackyard-{time.time_ns()}"
+    arn = aas_ensure_table_target(aws_bin, endpoint_url, region, env)
+    if op.startswith("Describe"):
+        return {"ServiceNamespace": "dynamodb"}
+    if op == "RegisterScalableTarget":
+        return {**AAS_TABLE_KEY, "MinCapacity": 1, "MaxCapacity": 10}
+    if op == "DeregisterScalableTarget":
+        key = {**AAS_TABLE_KEY, "ScalableDimension": "dynamodb:table:WriteCapacityUnits"}
+        aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**key, "MinCapacity": 1, "MaxCapacity": 5})
+        return key
+    if op == "PutScalingPolicy":
+        return {
+            **AAS_TABLE_KEY,
+            "PolicyName": "stackyard-tracking",
+            "PolicyType": "TargetTrackingScaling",
+            "TargetTrackingScalingPolicyConfiguration": {
+                "TargetValue": 70,
+                "PredefinedMetricSpecification": {"PredefinedMetricType": "DynamoDBReadCapacityUtilization"},
+            },
+        }
+    if op == "DeleteScalingPolicy":
+        aas_cli(aws_bin, endpoint_url, region, env, "put-scaling-policy",
+                {**AAS_TABLE_KEY, "PolicyName": unique, "StepScalingPolicyConfiguration": AAS_STEP_CONFIG})
+        return {**AAS_TABLE_KEY, "PolicyName": unique}
+    if op == "PutScheduledAction":
+        return {**AAS_TABLE_KEY, "ScheduledActionName": "stackyard-hourly", "Schedule": "rate(1 hour)",
+                "ScalableTargetAction": {"MinCapacity": 2, "MaxCapacity": 8}}
+    if op == "DeleteScheduledAction":
+        aas_cli(aws_bin, endpoint_url, region, env, "put-scheduled-action",
+                {**AAS_TABLE_KEY, "ScheduledActionName": unique, "Schedule": "rate(1 hour)", "ScalableTargetAction": {"MinCapacity": 2}})
+        return {**AAS_TABLE_KEY, "ScheduledActionName": unique}
+    if op == "GetPredictiveScalingForecast":
+        aas_ensure_ecs_target(aws_bin, endpoint_url, region, env)
+        now = int(time.time())
+        return {**AAS_ECS_KEY, "PolicyName": "stackyard-predictive", "StartTime": now, "EndTime": now + 6 * 3600}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return copy.deepcopy(payload)
+
+
 def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
     created = run_aws_json(
         aws_bin, endpoint_url, region, "efs", "create-file-system", env,
@@ -31833,6 +31956,8 @@ def hydrate_payload_with_service_state(
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "applicationautoscaling":
+        return applicationautoscaling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":

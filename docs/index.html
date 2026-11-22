@@ -161,6 +161,7 @@
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
         <a href="#elasticloadbalancing">Elastic Load Balancing (ELB)</a>
         <a href="#elasticloadbalancingv2">Elastic Load Balancing (ELB Classic)</a>
+        <a href="#applicationautoscaling">Application Auto Scaling</a>
         <a href="#aws-autoscaling">AWS Auto Scaling</a>
         <a href="#compute-optimizer">Compute Optimizer</a>
         <a href="#ecr">ECR</a>
@@ -11189,6 +11190,48 @@
         </details>
         </section>
 
+        <section id="applicationautoscaling" class="service">
+
+        <div class="service-header">
+        <h2>Application Auto Scaling</h2>
+        <p>SigV4 signed with service <code>application-autoscaling</code>. AWS JSON 1.1 API (<code>X-Amz-Target: AnyScaleFrontendService.*</code>) for scalable targets (namespace, dimension and resource ID formats validated; ECS services, DynamoDB tables and Lambda aliases/versions must exist), step, target tracking (with CloudWatch alarms) and predictive scaling policies, scheduled actions with at/rate/cron schedules and time zones, scaling activities, suspended state, predictive forecasts and tagging. All 14 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: application-autoscaling</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteScalingPolicy</code></td></tr>
+        <tr><td><code>DeleteScheduledAction</code></td></tr>
+        <tr><td><code>DeregisterScalableTarget</code></td></tr>
+        <tr><td><code>DescribeScalableTargets</code></td></tr>
+        <tr><td><code>DescribeScalingActivities</code></td></tr>
+        <tr><td><code>DescribeScalingPolicies</code></td></tr>
+        <tr><td><code>DescribeScheduledActions</code></td></tr>
+        <tr><td><code>GetPredictiveScalingForecast</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutScalingPolicy</code></td></tr>
+        <tr><td><code>PutScheduledAction</code></td></tr>
+        <tr><td><code>RegisterScalableTarget</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>application-autoscaling</code>: <code>docker compose -f examples/aws/application-autoscaling/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="aws-autoscaling" class="service">
 
         <div class="service-header">

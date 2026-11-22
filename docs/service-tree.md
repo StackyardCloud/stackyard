@@ -1,6 +1,21 @@
 - root
   - provider: aws
     - category: Compute & Containers
+      - service: Application Auto Scaling (applicationautoscaling)
+        - endpoint: [Action:DeleteScalingPolicy](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DeleteScalingPolicy.html)
+        - endpoint: [Action:DeleteScheduledAction](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DeleteScheduledAction.html)
+        - endpoint: [Action:DeregisterScalableTarget](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DeregisterScalableTarget.html)
+        - endpoint: [Action:DescribeScalableTargets](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DescribeScalableTargets.html)
+        - endpoint: [Action:DescribeScalingActivities](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DescribeScalingActivities.html)
+        - endpoint: [Action:DescribeScalingPolicies](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DescribeScalingPolicies.html)
+        - endpoint: [Action:DescribeScheduledActions](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_DescribeScheduledActions.html)
+        - endpoint: [Action:GetPredictiveScalingForecast](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_GetPredictiveScalingForecast.html)
+        - endpoint: [Action:ListTagsForResource](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_ListTagsForResource.html)
+        - endpoint: [Action:PutScalingPolicy](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PutScalingPolicy.html)
+        - endpoint: [Action:PutScheduledAction](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PutScheduledAction.html)
+        - endpoint: [Action:RegisterScalableTarget](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_RegisterScalableTarget.html)
+        - endpoint: [Action:TagResource](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_TagResource.html)
+        - endpoint: [Action:UntagResource](https://docs.aws.amazon.com/autoscaling/application/APIReference/API_UntagResource.html)
       - service: AWS Auto Scaling (aws-autoscaling)
         - endpoint: [Action:CreateScalingPlan](https://docs.aws.amazon.com/autoscaling/plans/APIReference/API_Operations.html)
         - endpoint: [Action:DeleteScalingPlan](https://docs.aws.amazon.com/autoscaling/plans/APIReference/API_Operations.html)

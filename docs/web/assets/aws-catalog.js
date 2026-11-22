@@ -681,6 +681,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/elasticloadbalancingv2/docker-compose.yml"
   },
   {
+    id: "applicationautoscaling",
+    name: "Application Auto Scaling",
+    category: "compute",
+    summary: "Emulate scalable targets checked against ECS, DynamoDB and Lambda, step, target tracking and predictive policies with CloudWatch alarms, scheduled actions, activities and tags.",
+    docsHref: "../../../index.html#applicationautoscaling",
+    exampleHref: "../../../../examples/aws/application-autoscaling/docker-compose.yml"
+  },
+  {
     id: "aws-autoscaling",
     name: "AWS Auto Scaling",
     category: "compute",
