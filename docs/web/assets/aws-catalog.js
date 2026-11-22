@@ -993,6 +993,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/resilience-hub/docker-compose.yml"
   },
   {
+    id: "backup",
+    name: "AWS Backup",
+    category: "storage",
+    summary: "Emulate backup vaults (standard, logically air-gapped, restore access) with locks and policies, backup plans and selections, backup/copy/restore/scan jobs over real DynamoDB tables, legal holds, audit frameworks and reports, and restore testing.",
+    docsHref: "../../../index.html#backup",
+    exampleHref: "../../../../examples/aws/backup/docker-compose.yml"
+  },
+  {
     id: "s3",
     name: "S3",
     category: "storage",

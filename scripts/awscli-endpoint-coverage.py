@@ -225,6 +225,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "bedrock-agentcore",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
+    "backup": {"cli": "backup", "ops_file": REPO_ROOT / "internal/server/backup_ops.go"},
     "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
     "bedrockagentcorecontrol": {
         "cli": "bedrock-agentcore-control",
@@ -1240,6 +1241,9 @@ SERVICE_ALIASES = {
     "agentcoredata": "bedrockagentcoredata",
     "agentcore-data": "bedrockagentcoredata",
     "amazonbedrockagentcoredata": "bedrockagentcoredata",
+    "backup": "backup",
+    "awsbackup": "backup",
+    "aws backup": "backup",
     "bedrockagent": "bedrockagent",
     "bedrock-agent": "bedrockagent",
     "agents for amazon bedrock": "bedrockagent",
@@ -3080,6 +3084,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "redshiftdata": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
+    "backup": {},
     "bedrockagent": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
@@ -31409,6 +31414,333 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+BACKUP_ROLE_ARN = "arn:aws:iam::123456789012:role/backup"
+BACKUP_MPA_TEAM_ARN = "arn:aws:mpa:us-east-1:123456789012:approval-team/syteam"
+BACKUP_TEMPLATE_ID = "87c0c1ef-254d-4180-8fef-2e76a2c38aaa"
+
+
+def backup_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns()}"
+
+
+def backup_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "backup", operation, env, ["--cli-input-json", json.dumps(body, separators=(",", ":"))]
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def backup_new_vault(ctx: tuple) -> dict:
+    name = backup_unique("syv")
+    out = backup_cli(ctx, "create-backup-vault", {"BackupVaultName": name})
+    return {"name": name, "arn": out.get("BackupVaultArn", "")}
+
+
+def backup_new_recovery_point(ctx: tuple, vault: str, resource_arn: str) -> str:
+    # Each read advances a job one step, so two reads complete it.
+    job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault, "ResourceArn": resource_arn, "IamRoleArn": BACKUP_ROLE_ARN})
+    for _ in range(2):
+        backup_cli(ctx, "describe-backup-job", {"BackupJobId": job.get("BackupJobId", "")})
+    return str(job.get("RecoveryPointArn", ""))
+
+
+def backup_plan_input(name: str, vault: str) -> dict:
+    return {"BackupPlanName": name, "Rules": [{"RuleName": "daily", "TargetBackupVaultName": vault}]}
+
+
+def backup_new_plan(ctx: tuple, vault: str) -> dict:
+    name = backup_unique("syplan")
+    out = backup_cli(ctx, "create-backup-plan", {"BackupPlan": backup_plan_input(name, vault)})
+    return {"id": out.get("BackupPlanId", ""), "name": name}
+
+
+def backup_new_selection(ctx: tuple, plan_id: str) -> str:
+    body = {"BackupPlanId": plan_id, "BackupSelection": {"SelectionName": backup_unique("sysel"), "IamRoleArn": BACKUP_ROLE_ARN, "Resources": ["*"]}}
+    return str(backup_cli(ctx, "create-backup-selection", body).get("SelectionId", ""))
+
+
+def backup_framework_controls() -> list:
+    return [{"ControlName": "BACKUP_RECOVERY_POINT_ENCRYPTED"}]
+
+
+def backup_report_plan_body(name: str) -> dict:
+    return {
+        "ReportPlanName": name,
+        "ReportDeliveryChannel": {"S3BucketName": "syreports", "Formats": ["CSV"]},
+        "ReportSetting": {"ReportTemplate": "BACKUP_JOB_REPORT"},
+    }
+
+
+def backup_testing_plan_body(name: str) -> dict:
+    return {
+        "RestoreTestingPlanName": name,
+        "ScheduleExpression": "cron(0 1 ? * * *)",
+        "RecoveryPointSelection": {"Algorithm": "LATEST_WITHIN_WINDOW", "IncludeVaults": ["*"], "RecoveryPointTypes": ["SNAPSHOT"]},
+    }
+
+
+def backup_testing_selection_body(name: str) -> dict:
+    return {"RestoreTestingSelectionName": name, "ProtectedResourceType": "DynamoDB", "IamRoleArn": BACKUP_ROLE_ARN, "ProtectedResourceArns": ["*"]}
+
+
+def backup_tiering_body(name: str, vault: str) -> dict:
+    return {
+        "TieringConfigurationName": name,
+        "BackupVaultName": vault,
+        "ResourceSelection": [{"ResourceType": "S3", "Resources": ["*"], "TieringDownSettingsInDays": 60}],
+    }
+
+
+def backup_fixture(ctx: tuple) -> dict:
+    # Shared resources the read and update operations point at, created once.
+    state = RUNTIME_STATE.setdefault("backup", {})
+    if state.get("vault"):
+        return state
+    aws_bin, endpoint_url, region, env = ctx
+    table = backup_unique("sytable")
+    created = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "dynamodb",
+        "create-table",
+        env,
+        [
+            "--table-name", table,
+            "--attribute-definitions", "AttributeName=id,AttributeType=S",
+            "--key-schema", "AttributeName=id,KeyType=HASH",
+            "--billing-mode", "PAY_PER_REQUEST",
+        ],
+    ) or {}
+    table_arn = str((created.get("TableDescription") or {}).get("TableArn", ""))
+    vault = backup_new_vault(ctx)
+    vault2 = backup_new_vault(ctx)
+    if not (table_arn and vault["arn"] and vault2["arn"]):
+        return state
+    lag_name = backup_unique("sylag")
+    lag = backup_cli(ctx, "create-logically-air-gapped-backup-vault", {"BackupVaultName": lag_name, "MinRetentionDays": 7, "MaxRetentionDays": 30})
+    backup_cli(ctx, "put-backup-vault-access-policy", {"BackupVaultName": vault["name"], "Policy": '{"Version":"2012-10-17","Statement":[]}'})
+    backup_cli(
+        ctx,
+        "put-backup-vault-notifications",
+        {"BackupVaultName": vault["name"], "SNSTopicArn": "arn:aws:sns:us-east-1:123456789012:sybackup", "BackupVaultEvents": ["BACKUP_JOB_COMPLETED"]},
+    )
+    rp = backup_new_recovery_point(ctx, vault["name"], table_arn)
+    s3_arn = f"arn:aws:s3:::{backup_unique('sybucket')}"
+    rp_s3 = backup_new_recovery_point(ctx, vault["name"], s3_arn)
+    backup_cli(ctx, "update-recovery-point-index-settings", {"BackupVaultName": vault["name"], "RecoveryPointArn": rp_s3, "Index": "ENABLED"})
+    plan = backup_new_plan(ctx, vault["name"])
+    selection = backup_new_selection(ctx, plan["id"])
+    copy_job = backup_cli(
+        ctx,
+        "start-copy-job",
+        {"RecoveryPointArn": rp, "SourceBackupVaultName": vault["name"], "DestinationBackupVaultArn": vault2["arn"], "IamRoleArn": BACKUP_ROLE_ARN},
+    )
+    restore = backup_cli(ctx, "start-restore-job", {"RecoveryPointArn": rp, "IamRoleArn": BACKUP_ROLE_ARN, "Metadata": {"targetTableName": backup_unique("syrestored")}})
+    for _ in range(2):
+        backup_cli(ctx, "describe-restore-job", {"RestoreJobId": restore.get("RestoreJobId", "")})
+    scan = backup_cli(
+        ctx,
+        "start-scan-job",
+        {
+            "BackupVaultName": vault["name"], "IamRoleArn": BACKUP_ROLE_ARN, "ScannerRoleArn": BACKUP_ROLE_ARN,
+            "MalwareScanner": "GUARDDUTY", "RecoveryPointArn": rp_s3, "ScanMode": "FULL_SCAN",
+        },
+    )
+    for _ in range(2):
+        backup_cli(ctx, "describe-scan-job", {"ScanJobId": scan.get("ScanJobId", "")})
+    hold = backup_cli(ctx, "create-legal-hold", {"Title": "syhold", "Description": "coverage"})
+    framework = backup_unique("syfw")
+    backup_cli(ctx, "create-framework", {"FrameworkName": framework, "FrameworkControls": backup_framework_controls()})
+    report_plan = backup_unique("syrp")
+    backup_cli(ctx, "create-report-plan", backup_report_plan_body(report_plan))
+    report_job = backup_cli(ctx, "start-report-job", {"ReportPlanName": report_plan})
+    testing_plan = backup_unique("syrtp")
+    backup_cli(ctx, "create-restore-testing-plan", {"RestoreTestingPlan": backup_testing_plan_body(testing_plan)})
+    testing_selection = backup_unique("syrts")
+    backup_cli(
+        ctx,
+        "create-restore-testing-selection",
+        {"RestoreTestingPlanName": testing_plan, "RestoreTestingSelection": backup_testing_selection_body(testing_selection)},
+    )
+    tiering = backup_unique("sytier")
+    backup_cli(ctx, "create-tiering-configuration", {"TieringConfiguration": backup_tiering_body(tiering, vault["name"])})
+    access_point = backup_cli(ctx, "create-backup-access-point", {"Name": backup_unique("syap"), "RecoveryPointArn": rp})
+    state.update(
+        {
+            "vault": vault["name"], "vaultArn": vault["arn"], "vault2Arn": vault2["arn"],
+            "lag": lag_name, "lagArn": str(lag.get("BackupVaultArn", "")),
+            "tableArn": table_arn, "s3Arn": s3_arn, "rp": rp, "rpS3": rp_s3,
+            "planId": plan["id"], "planName": plan["name"], "selectionId": selection,
+            "copyJobId": copy_job.get("CopyJobId", ""), "restoreJobId": restore.get("RestoreJobId", ""),
+            "scanJobId": scan.get("ScanJobId", ""), "legalHoldId": hold.get("LegalHoldId", ""),
+            "framework": framework, "reportPlan": report_plan, "reportJobId": report_job.get("ReportJobId", ""),
+            "testingPlan": testing_plan, "testingSelection": testing_selection, "tiering": tiering,
+            "accessPointArn": access_point.get("AccessPointArn", ""),
+            "backupJobId": "",
+        }
+    )
+    job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault["name"], "ResourceArn": table_arn, "IamRoleArn": BACKUP_ROLE_ARN})
+    state["backupJobId"] = job.get("BackupJobId", "")
+    return state
+
+
+def backup_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = backup_fixture(ctx)
+    if not state.get("vault"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    ids = {
+        "BackupVaultName": state["vault"], "RecoveryPointArn": state["rp"], "BackupPlanId": state["planId"],
+        "SelectionId": state["selectionId"], "BackupJobId": state["backupJobId"], "CopyJobId": state["copyJobId"],
+        "RestoreJobId": state["restoreJobId"], "ScanJobId": state["scanJobId"], "ReportJobId": state["reportJobId"],
+        "ReportPlanName": state["reportPlan"], "FrameworkName": state["framework"], "LegalHoldId": state["legalHoldId"],
+        "RestoreTestingPlanName": state["testingPlan"], "RestoreTestingSelectionName": state["testingSelection"],
+        "TieringConfigurationName": state["tiering"], "AccessPointArn": state["accessPointArn"],
+        "ResourceArn": state["tableArn"], "IamRoleArn": BACKUP_ROLE_ARN, "ScannerRoleArn": BACKUP_ROLE_ARN,
+    }
+    for key, value in ids.items():
+        if key in hydrated:
+            hydrated[key] = value
+    vault = state["vault"]
+
+    if op == "CreateBackupVault":
+        hydrated["BackupVaultName"] = backup_unique("syv")
+    elif op == "CreateLogicallyAirGappedBackupVault":
+        hydrated.update({"BackupVaultName": backup_unique("sylag"), "MinRetentionDays": 7, "MaxRetentionDays": 30})
+    elif op == "CreateRestoreAccessBackupVault":
+        hydrated.update({"SourceBackupVaultArn": state["lagArn"], "BackupVaultName": backup_unique("syra")})
+    elif op == "DeleteBackupVault":
+        hydrated["BackupVaultName"] = backup_new_vault(ctx)["name"]
+    elif op in {"ListRestoreAccessBackupVaults", "AssociateBackupVaultMpaApprovalTeam", "DisassociateBackupVaultMpaApprovalTeam"}:
+        hydrated["BackupVaultName"] = state["lag"]
+        if op == "AssociateBackupVaultMpaApprovalTeam":
+            hydrated["MpaApprovalTeamArn"] = BACKUP_MPA_TEAM_ARN
+        if op == "DisassociateBackupVaultMpaApprovalTeam":
+            backup_cli(ctx, "associate-backup-vault-mpa-approval-team", {"BackupVaultName": state["lag"], "MpaApprovalTeamArn": BACKUP_MPA_TEAM_ARN})
+    elif op == "RevokeRestoreAccessBackupVault":
+        ra = backup_cli(ctx, "create-restore-access-backup-vault", {"SourceBackupVaultArn": state["lagArn"], "BackupVaultName": backup_unique("syra")})
+        hydrated.update({"BackupVaultName": state["lag"], "RestoreAccessBackupVaultArn": ra.get("RestoreAccessBackupVaultArn", "")})
+    elif op == "PutBackupVaultAccessPolicy":
+        hydrated["Policy"] = '{"Version":"2012-10-17","Statement":[]}'
+    elif op == "PutBackupVaultNotifications":
+        hydrated.update({"SNSTopicArn": "arn:aws:sns:us-east-1:123456789012:sybackup", "BackupVaultEvents": ["BACKUP_JOB_COMPLETED"]})
+    elif op in {"PutBackupVaultLockConfiguration", "DeleteBackupVaultLockConfiguration"}:
+        fresh = backup_new_vault(ctx)["name"]
+        hydrated["BackupVaultName"] = fresh
+        if op == "PutBackupVaultLockConfiguration":
+            hydrated.update({"MinRetentionDays": 1, "MaxRetentionDays": 30})
+        else:
+            backup_cli(ctx, "put-backup-vault-lock-configuration", {"BackupVaultName": fresh, "MinRetentionDays": 1})
+    elif op == "CreateBackupPlan":
+        hydrated["BackupPlan"] = backup_plan_input(backup_unique("syplan"), vault)
+    elif op == "UpdateBackupPlan":
+        hydrated["BackupPlan"] = backup_plan_input(state["planName"], vault)
+    elif op == "DeleteBackupPlan":
+        hydrated["BackupPlanId"] = backup_new_plan(ctx, vault)["id"]
+    elif op == "GetBackupPlanFromJSON":
+        exported = backup_cli(ctx, "export-backup-plan-template", {"BackupPlanId": state["planId"]})
+        hydrated["BackupPlanTemplateJson"] = exported.get("BackupPlanTemplateJson", "{}")
+    elif op == "GetBackupPlanFromTemplate":
+        hydrated["BackupPlanTemplateId"] = BACKUP_TEMPLATE_ID
+    elif op == "CreateBackupSelection":
+        hydrated["BackupSelection"] = {"SelectionName": backup_unique("sysel"), "IamRoleArn": BACKUP_ROLE_ARN, "Resources": ["*"]}
+    elif op == "DeleteBackupSelection":
+        hydrated["SelectionId"] = backup_new_selection(ctx, state["planId"])
+    elif op == "StopBackupJob":
+        job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault, "ResourceArn": state["tableArn"], "IamRoleArn": BACKUP_ROLE_ARN})
+        hydrated["BackupJobId"] = job.get("BackupJobId", "")
+    elif op == "StartCopyJob":
+        hydrated.update({"SourceBackupVaultName": vault, "DestinationBackupVaultArn": state["vault2Arn"]})
+    elif op == "StartRestoreJob":
+        hydrated["Metadata"] = {"targetTableName": backup_unique("syrestored")}
+    elif op == "PutRestoreValidationResult":
+        hydrated["ValidationStatus"] = "SUCCESSFUL"
+    elif op == "StartScanJob":
+        hydrated.update({"RecoveryPointArn": state["rpS3"], "MalwareScanner": "GUARDDUTY", "ScanMode": "FULL_SCAN"})
+    elif op == "GetPITRMalwareScanResults":
+        hydrated.update({"RecoveryPointArn": state["rpS3"], "MalwareScanner": "GUARDDUTY", "ScanEndTime": "2100-01-01T00:00:00Z"})
+    elif op in {"DeleteRecoveryPoint", "DisassociateRecoveryPoint"}:
+        hydrated["RecoveryPointArn"] = backup_new_recovery_point(ctx, vault, state["tableArn"])
+    elif op == "UpdateRecoveryPointLifecycle":
+        hydrated["Lifecycle"] = {"DeleteAfterDays": 30}
+    elif op in {"UpdateRecoveryPointIndexSettings", "GetRecoveryPointIndexDetails"}:
+        hydrated["RecoveryPointArn"] = state["rpS3"]
+        if op == "UpdateRecoveryPointIndexSettings":
+            hydrated["Index"] = "ENABLED"
+    elif op in {"TagResource", "UntagResource", "ListTags"}:
+        hydrated["ResourceArn"] = state["vaultArn"]
+        if op == "TagResource":
+            hydrated["Tags"] = {"sykey": "syvalue"}
+        if op == "UntagResource":
+            hydrated["TagKeyList"] = ["sykey"]
+    elif op == "ListBackupAccessPointsByResource":
+        hydrated["ResourceArn"] = state["tableArn"]
+    elif op == "CreateLegalHold":
+        hydrated.update({"Title": "syhold", "Description": "coverage"})
+    elif op == "CancelLegalHold":
+        hold = backup_cli(ctx, "create-legal-hold", {"Title": "syhold", "Description": "coverage"})
+        hydrated.update({"LegalHoldId": hold.get("LegalHoldId", ""), "CancelDescription": "coverage"})
+    elif op == "CreateFramework":
+        hydrated.update({"FrameworkName": backup_unique("syfw"), "FrameworkControls": backup_framework_controls()})
+    elif op == "UpdateFramework":
+        hydrated["FrameworkControls"] = backup_framework_controls()
+    elif op == "DeleteFramework":
+        name = backup_unique("syfw")
+        backup_cli(ctx, "create-framework", {"FrameworkName": name, "FrameworkControls": backup_framework_controls()})
+        hydrated["FrameworkName"] = name
+    elif op == "CreateReportPlan":
+        hydrated.update(backup_report_plan_body(backup_unique("syrp")))
+    elif op == "UpdateReportPlan":
+        body = backup_report_plan_body(state["reportPlan"])
+        hydrated.update({"ReportDeliveryChannel": body["ReportDeliveryChannel"], "ReportSetting": body["ReportSetting"]})
+    elif op == "DeleteReportPlan":
+        name = backup_unique("syrp")
+        backup_cli(ctx, "create-report-plan", backup_report_plan_body(name))
+        hydrated["ReportPlanName"] = name
+    elif op == "CreateRestoreTestingPlan":
+        hydrated["RestoreTestingPlan"] = backup_testing_plan_body(backup_unique("syrtp"))
+    elif op == "UpdateRestoreTestingPlan":
+        hydrated["RestoreTestingPlan"] = {"ScheduleExpression": "cron(0 2 ? * * *)"}
+    elif op == "DeleteRestoreTestingPlan":
+        name = backup_unique("syrtp")
+        backup_cli(ctx, "create-restore-testing-plan", {"RestoreTestingPlan": backup_testing_plan_body(name)})
+        hydrated["RestoreTestingPlanName"] = name
+    elif op == "CreateRestoreTestingSelection":
+        hydrated["RestoreTestingSelection"] = backup_testing_selection_body(backup_unique("syrts"))
+    elif op == "UpdateRestoreTestingSelection":
+        hydrated["RestoreTestingSelection"] = {"ValidationWindowHours": 1}
+    elif op == "DeleteRestoreTestingSelection":
+        name = backup_unique("syrts")
+        backup_cli(
+            ctx,
+            "create-restore-testing-selection",
+            {"RestoreTestingPlanName": state["testingPlan"], "RestoreTestingSelection": backup_testing_selection_body(name)},
+        )
+        hydrated["RestoreTestingSelectionName"] = name
+    elif op == "CreateTieringConfiguration":
+        hydrated["TieringConfiguration"] = backup_tiering_body(backup_unique("sytier"), vault)
+    elif op == "UpdateTieringConfiguration":
+        hydrated["TieringConfiguration"] = {"BackupVaultName": vault, "ResourceSelection": backup_tiering_body("x", vault)["ResourceSelection"]}
+    elif op == "DeleteTieringConfiguration":
+        name = backup_unique("sytier")
+        backup_cli(ctx, "create-tiering-configuration", {"TieringConfiguration": backup_tiering_body(name, vault)})
+        hydrated["TieringConfigurationName"] = name
+    elif op == "CreateBackupAccessPoint":
+        hydrated.update({"Name": backup_unique("syap"), "RecoveryPointArn": state["rp"]})
+    elif op == "DeleteBackupAccessPoint":
+        ap = backup_cli(ctx, "create-backup-access-point", {"Name": backup_unique("syap"), "RecoveryPointArn": state["rp"]})
+        hydrated["AccessPointArn"] = ap.get("AccessPointArn", "")
+    elif op == "UpdateGlobalSettings":
+        hydrated["GlobalSettings"] = {"isCrossAccountBackupEnabled": "false"}
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -31438,6 +31770,8 @@ def hydrate_payload_with_service_state(
         hydrated = copy.deepcopy(payload)
         hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
         return hydrated
+    if endpoint.service == "backup":
+        return backup_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bedrockagent":
         return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
