@@ -84,7 +84,10 @@ func TestRoute53ProfilesStage1ResourceAssociations(t *testing.T) {
 	_, ts := newRoute53ProfilesTestServer(t)
 	id := r53pCall(t, ts, 200, "POST", "/profile", `{"Name":"res","ClientToken":"tok"}`)["Profile"].(map[string]any)["Id"].(string)
 	zone := "arn:aws:route53:::hostedzone/Z0123456789ABC"
-	fw := "arn:aws:route53resolver:us-east-1:123456789012:firewall-rule-group/rslvr-frg-0123abcd"
+	// Resolver resources must exist: a made-up rule group is refused, a real one
+	// (created through Route 53 Resolver on the same server) is accepted.
+	missing := "arn:aws:route53resolver:us-east-1:123456789012:firewall-rule-group/rslvr-frg-0123abcd"
+	fw := r53rOK(t, ts, "CreateFirewallRuleGroup", `{"Name":"profiles-fw","CreatorRequestId":"profiles-fw"}`)["FirewallRuleGroup"].(map[string]any)["Arn"].(string)
 	assoc := func(arn, props string) string {
 		return fmt.Sprintf(`{"ProfileId":%q,"ResourceArn":%q,"Name":"r","ResourceProperties":%q}`, id, arn, props)
 	}
@@ -96,6 +99,9 @@ func TestRoute53ProfilesStage1ResourceAssociations(t *testing.T) {
 	}
 	if code := r53pErrCode(t, ts, "POST", "/profileresourceassociation", assoc(fw, `{"priority":99}`)); code != "InvalidParameterException" {
 		t.Fatalf("priority out of range: %s", code)
+	}
+	if code := r53pErrCode(t, ts, "POST", "/profileresourceassociation", assoc(missing, `{"priority":150}`)); code != "ResourceNotFoundException" {
+		t.Fatalf("missing firewall rule group: %s", code)
 	}
 	ra := r53pCall(t, ts, 200, "POST", "/profileresourceassociation", assoc(fw, `{"priority":150}`))["ProfileResourceAssociation"].(map[string]any)
 	if ra["ResourceType"] != "FIREWALL_RULE_GROUP" {

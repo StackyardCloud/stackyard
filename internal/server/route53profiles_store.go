@@ -170,8 +170,10 @@ func r53pConform(op string, out map[string]any) map[string]any {
 
 // Resource types a Profile can carry, keyed by ARN shape. Resolver rules,
 // query log configs and DNS Firewall rule groups belong to Route 53 Resolver.
-// ponytail: accepted by ARN pattern, because Stackyard's Route 53 store keeps no
-// hosted zones and Resolver isn't emulated here; look them up once those exist.
+// Resolver rules, query log configs and firewall rule groups are checked
+// against the Route 53 Resolver store when associated.
+// ponytail: hosted zones and VPC endpoints are accepted by ARN pattern, because
+// Stackyard's Route 53 store keeps no per-zone state; look them up once it does.
 var r53pResourceTypes = []struct {
 	re  *regexp.Regexp
 	typ string

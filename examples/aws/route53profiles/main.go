@@ -36,7 +36,6 @@ func main() {
 		creds: credentials.NewStaticCredentialsProvider(
 			getenv("AWS_ACCESS_KEY_ID", "stackyard"), getenv("AWS_SECRET_ACCESS_KEY", "stackyard"), ""),
 	}
-	account := getenv("AWS_ACCOUNT_ID", "123456789012")
 	fmt.Printf("Stackyard Route 53 Profiles client using %s\n", c.endpoint)
 
 	vpcXML := c.send("CreateVpc", "ec2", http.MethodPost, c.endpoint+"/",
@@ -56,7 +55,14 @@ func main() {
 	fmt.Println("Status after read:", c.call("GetProfile", http.MethodGet, "/profile/"+id, nil)["Profile"].(map[string]any)["Status"])
 
 	zone := "arn:aws:route53:::hostedzone/Z0STACKYARD42"
-	firewall := "arn:aws:route53resolver:" + c.region + ":" + account + ":firewall-rule-group/rslvr-frg-stackyard42"
+	// Resolver resources must exist, so create a DNS Firewall rule group first.
+	groupBody, _ := json.Marshal(map[string]any{"Name": "stackyard-fw", "CreatorRequestId": token})
+	var group struct{ FirewallRuleGroup struct{ Arn string } }
+	if err := json.Unmarshal(c.send("CreateFirewallRuleGroup", "route53resolver", http.MethodPost, c.endpoint+"/", groupBody,
+		"application/x-amz-json-1.1", "X-Amz-Target", "Route53Resolver.CreateFirewallRuleGroup"), &group); err != nil {
+		exitf("CreateFirewallRuleGroup: %v", err)
+	}
+	firewall := group.FirewallRuleGroup.Arn
 	for _, r := range []struct{ arn, props string }{{zone, ""}, {firewall, `{"priority":101}`}} {
 		body := map[string]any{"ProfileId": id, "ResourceArn": r.arn, "Name": "stackyard"}
 		if r.props != "" {
@@ -101,8 +107,9 @@ func (c client) call(op, method, path string, payload any) map[string]any {
 	return out
 }
 
-// send signs a request for service and exits unless it returns 2xx.
-func (c client) send(op, service, method, target string, body []byte, contentType string) []byte {
+// send signs a request for service and exits unless it returns 2xx. Extra
+// headers come in name/value pairs.
+func (c client) send(op, service, method, target string, body []byte, contentType string, headers ...string) []byte {
 	ctx := context.Background()
 	req, err := http.NewRequestWithContext(ctx, method, target, bytes.NewReader(body))
 	if err != nil {
@@ -110,6 +117,9 @@ func (c client) send(op, service, method, target string, body []byte, contentTyp
 	}
 	if len(body) > 0 {
 		req.Header.Set("Content-Type", contentType)
+	}
+	for i := 0; i+1 < len(headers); i += 2 {
+		req.Header.Set(headers[i], headers[i+1])
 	}
 	creds, err := c.creds.Retrieve(ctx)
 	if err != nil {

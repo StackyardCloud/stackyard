@@ -485,3 +485,19 @@ func r53rOmit(s string) any {
 	}
 	return s
 }
+
+// HasResource reports whether a Resolver rule, query logging configuration or
+// DNS Firewall rule group with this id exists (used by Route 53 Profiles).
+func (st *r53rStore) HasResource(kind, id string) bool {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	switch kind {
+	case "RESOLVER_RULE":
+		return st.rules[id] != nil
+	case "RESOLVER_QUERY_LOGGING_CONFIG":
+		return st.qlcs[id] != nil
+	case "FIREWALL_RULE_GROUP":
+		return st.ruleGroups[id] != nil
+	}
+	return false
+}

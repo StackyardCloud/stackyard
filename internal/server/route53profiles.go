@@ -149,6 +149,14 @@ func (s *Server) r53pRoute(r *http.Request, seg []string) (int, map[string]any, 
 		if err := r53pCheckProperties(typ, props); err != nil {
 			return 0, nil, err
 		}
+		// Resolver resources must exist; the lookup takes the Resolver lock
+		// before (not inside) the Profiles lock.
+		switch typ {
+		case "RESOLVER_RULE", "RESOLVER_QUERY_LOGGING_CONFIG", "FIREWALL_RULE_GROUP":
+			if !s.route53resolver.HasResource(typ, arn[strings.LastIndex(arn, "/")+1:]) {
+				return 0, nil, r53pNotFound(typ, "Resource %s does not exist.", arn)
+			}
+		}
 		return ok(s.route53Profiles.associateResource(r53pStr(in, "ProfileId"), arn, typ, r53pStr(in, "Name"), props))
 	case seg[0] == "profileresourceassociation" && n == 2 && (m == http.MethodGet || m == http.MethodPatch):
 		if err := r53pCheckID("ProfileResourceAssociationId", seg[1]); err != nil {
