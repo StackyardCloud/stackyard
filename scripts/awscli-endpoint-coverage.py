@@ -555,6 +555,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
+    "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
+    "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
+    "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2187,7 +2190,16 @@ SERVICE_ALIASES = {
     "codestarnotifications": "codestarnotifications",
     "codestar-notifications": "codestarnotifications",
     "awscodestarnotifications": "codestarnotifications",
+    "scheduler": "scheduler",
+    "eventbridgescheduler": "scheduler",
+    "amazoneventbridgescheduler": "scheduler",
+    "pipes": "pipes",
+    "eventbridgepipes": "pipes",
+    "amazoneventbridgepipes": "pipes",
     "elasticfilesystem": "efs",
+    "applicationautoscaling": "applicationautoscaling",
+    "application-autoscaling": "applicationautoscaling",
+    "awsapplicationautoscaling": "applicationautoscaling",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
@@ -3076,7 +3088,10 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "codecommit": {},
+    "applicationautoscaling": {},
     "efs": {},
+    "scheduler": {},
+    "pipes": {},
     "docdb": {},
     "glue": {},
     "codeconnections": {},
@@ -31626,6 +31641,185 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+SCHEDULER_COVERAGE_ROLE = "arn:aws:iam::123456789012:role/stackyard-scheduler"
+SCHEDULER_COVERAGE_TARGET = {
+    "Arn": "arn:aws:sqs:us-east-1:123456789012:stackyard-scheduler-coverage",
+    "RoleArn": SCHEDULER_COVERAGE_ROLE,
+}
+
+
+def scheduler_schedule_payload(name: str) -> dict:
+    return {
+        "Name": name,
+        "ScheduleExpression": "rate(5 minutes)",
+        "FlexibleTimeWindow": {"Mode": "OFF"},
+        "Target": dict(SCHEDULER_COVERAGE_TARGET),
+    }
+
+
+def scheduler_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> None:
+    run_aws_json(
+        aws_bin, endpoint_url, region, "scheduler", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+
+
+def scheduler_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each Scheduler operation real resources: one shared schedule and
+    group, plus fresh ones for the deletes."""
+    op = endpoint.operation
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    state = RUNTIME_STATE.setdefault("scheduler", {})
+    if not state.get("schedule"):
+        state["schedule"], state["group"] = f"{unique}-schedule", f"{unique}-group"
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule", scheduler_schedule_payload(state["schedule"]))
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule-group", {"Name": state["group"]})
+    group_arn = f"arn:aws:scheduler:{region}:123456789012:schedule-group/{state['group']}"
+    if op in {"ListSchedules", "ListScheduleGroups"}:
+        return {}
+    if op == "CreateSchedule":
+        return scheduler_schedule_payload(unique)
+    if op == "UpdateSchedule":
+        return scheduler_schedule_payload(state["schedule"])
+    if op == "GetSchedule":
+        return {"Name": state["schedule"]}
+    if op == "DeleteSchedule":
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule", scheduler_schedule_payload(unique))
+        return {"Name": unique}
+    if op == "CreateScheduleGroup":
+        return {"Name": unique}
+    if op == "GetScheduleGroup":
+        return {"Name": state["group"]}
+    if op == "DeleteScheduleGroup":
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule-group", {"Name": unique})
+        return {"Name": unique}
+    if op == "TagResource":
+        return {"ResourceArn": group_arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": group_arn, "TagKeys": ["stackyard"]}
+    return {"ResourceArn": group_arn}
+
+
+AAS_TABLE = "stackyard-aas-coverage"
+AAS_TABLE_KEY = {
+    "ServiceNamespace": "dynamodb",
+    "ResourceId": f"table/{AAS_TABLE}",
+    "ScalableDimension": "dynamodb:table:ReadCapacityUnits",
+}
+AAS_ECS_KEY = {
+    "ServiceNamespace": "ecs",
+    "ResourceId": "service/stackyard-aas/api",
+    "ScalableDimension": "ecs:service:DesiredCount",
+}
+AAS_STEP_CONFIG = {
+    "AdjustmentType": "ChangeInCapacity",
+    "StepAdjustments": [{"MetricIntervalLowerBound": 0, "ScalingAdjustment": 1}],
+}
+
+
+def aas_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict | None:
+    return run_aws_json(
+        aws_bin, endpoint_url, region, "application-autoscaling", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+
+
+def aas_ensure_table_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Register the shared DynamoDB-table target (creating the table) and
+    return its ARN."""
+    state = RUNTIME_STATE.setdefault("applicationautoscaling", {})
+    if not run_aws_json(aws_bin, endpoint_url, region, "dynamodb", "describe-table", env, ["--table-name", AAS_TABLE]):
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dynamodb", "create-table", env,
+            [
+                "--table-name", AAS_TABLE,
+                "--attribute-definitions", "AttributeName=id,AttributeType=S",
+                "--key-schema", "AttributeName=id,KeyType=HASH",
+                "--provisioned-throughput", "ReadCapacityUnits=5,WriteCapacityUnits=5",
+            ],
+        )
+    registered = aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**AAS_TABLE_KEY, "MinCapacity": 1, "MaxCapacity": 10})
+    if isinstance(registered, dict) and registered.get("ScalableTargetARN"):
+        state["target_arn"] = registered["ScalableTargetARN"]
+    return str(state.get("target_arn") or "")
+
+
+def aas_ensure_ecs_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> None:
+    """Register an ECS service target (creating cluster, task definition and
+    service) with a predictive policy, for GetPredictiveScalingForecast."""
+    run_aws_json(aws_bin, endpoint_url, region, "ecs", "create-cluster", env, ["--cluster-name", "stackyard-aas"])
+    task = run_aws_json(
+        aws_bin, endpoint_url, region, "ecs", "register-task-definition", env,
+        ["--family", "stackyard-aas", "--container-definitions", '[{"name":"app","image":"nginx"}]'],
+    )
+    task_arn = ((task or {}).get("taskDefinition") or {}).get("taskDefinitionArn") or "stackyard-aas"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "ecs", "create-service", env,
+        ["--cluster", "stackyard-aas", "--service-name", "api", "--task-definition", task_arn, "--desired-count", "1"],
+    )
+    aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**AAS_ECS_KEY, "MinCapacity": 1, "MaxCapacity": 4})
+    aas_cli(aws_bin, endpoint_url, region, env, "put-scaling-policy", {
+        **AAS_ECS_KEY,
+        "PolicyName": "stackyard-predictive",
+        "PolicyType": "PredictiveScaling",
+        "PredictiveScalingPolicyConfiguration": {
+            "MetricSpecifications": [{"TargetValue": 40, "PredefinedMetricPairSpecification": {"PredefinedMetricType": "ECSServiceCPUUtilization"}}],
+        },
+    })
+
+
+def applicationautoscaling_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each operation at real targets. Deletes and deregistration get
+    resources of their own so the shared target stays usable."""
+    op = endpoint.operation
+    unique = f"stackyard-{time.time_ns()}"
+    arn = aas_ensure_table_target(aws_bin, endpoint_url, region, env)
+    if op.startswith("Describe"):
+        return {"ServiceNamespace": "dynamodb"}
+    if op == "RegisterScalableTarget":
+        return {**AAS_TABLE_KEY, "MinCapacity": 1, "MaxCapacity": 10}
+    if op == "DeregisterScalableTarget":
+        key = {**AAS_TABLE_KEY, "ScalableDimension": "dynamodb:table:WriteCapacityUnits"}
+        aas_cli(aws_bin, endpoint_url, region, env, "register-scalable-target", {**key, "MinCapacity": 1, "MaxCapacity": 5})
+        return key
+    if op == "PutScalingPolicy":
+        return {
+            **AAS_TABLE_KEY,
+            "PolicyName": "stackyard-tracking",
+            "PolicyType": "TargetTrackingScaling",
+            "TargetTrackingScalingPolicyConfiguration": {
+                "TargetValue": 70,
+                "PredefinedMetricSpecification": {"PredefinedMetricType": "DynamoDBReadCapacityUtilization"},
+            },
+        }
+    if op == "DeleteScalingPolicy":
+        aas_cli(aws_bin, endpoint_url, region, env, "put-scaling-policy",
+                {**AAS_TABLE_KEY, "PolicyName": unique, "StepScalingPolicyConfiguration": AAS_STEP_CONFIG})
+        return {**AAS_TABLE_KEY, "PolicyName": unique}
+    if op == "PutScheduledAction":
+        return {**AAS_TABLE_KEY, "ScheduledActionName": "stackyard-hourly", "Schedule": "rate(1 hour)",
+                "ScalableTargetAction": {"MinCapacity": 2, "MaxCapacity": 8}}
+    if op == "DeleteScheduledAction":
+        aas_cli(aws_bin, endpoint_url, region, env, "put-scheduled-action",
+                {**AAS_TABLE_KEY, "ScheduledActionName": unique, "Schedule": "rate(1 hour)", "ScalableTargetAction": {"MinCapacity": 2}})
+        return {**AAS_TABLE_KEY, "ScheduledActionName": unique}
+    if op == "GetPredictiveScalingForecast":
+        aas_ensure_ecs_target(aws_bin, endpoint_url, region, env)
+        now = int(time.time())
+        return {**AAS_ECS_KEY, "PolicyName": "stackyard-predictive", "StartTime": now, "EndTime": now + 6 * 3600}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return copy.deepcopy(payload)
+
+
 CODESTARNOTIFICATIONS_RESOURCE = "arn:aws:codebuild:us-east-1:123456789012:project/stackyard-codebuild-project"
 CODESTARNOTIFICATIONS_EVENT = "codebuild-project-build-state-failed"
 
@@ -33334,6 +33528,64 @@ def docdb_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpo
     return copy.deepcopy(payload)
 
 
+PIPES_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-pipes"
+
+
+def pipes_queue_arn(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    run_aws_json(aws_bin, endpoint_url, region, "sqs", "create-queue", env, ["--queue-name", name])
+    return f"arn:aws:sqs:{region}:123456789012:{name}"
+
+
+def pipes_create_pipe(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], desired: str = "RUNNING") -> str:
+    """Create a pipe between two real queues and read it once so it has
+    settled out of CREATING (changes during a transition are a conflict)."""
+    state = pipes_shared_queues(aws_bin, endpoint_url, region, env)
+    name = f"stackyard-pipe-{time.time_ns()}"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "pipes", "create-pipe", env,
+        ["--name", name, "--source", state["source"], "--target", state["target"], "--role-arn", PIPES_ROLE_ARN, "--desired-state", desired],
+    )
+    run_aws_json(aws_bin, endpoint_url, region, "pipes", "describe-pipe", env, ["--name", name])
+    return name
+
+
+def pipes_shared_queues(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("pipes", {})
+    if not state.get("source"):
+        state["source"] = pipes_queue_arn(aws_bin, endpoint_url, region, env, "stackyard-pipes-source")
+        state["target"] = pipes_queue_arn(aws_bin, endpoint_url, region, env, "stackyard-pipes-target")
+    return state
+
+
+def pipes_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Pipes operation at real queues and a settled pipe. Changes
+    (update, start, stop, delete) each get a pipe of their own."""
+    op = endpoint.operation
+    queues = pipes_shared_queues(aws_bin, endpoint_url, region, env)
+    if op == "CreatePipe":
+        return {"Name": f"stackyard-pipe-{time.time_ns()}", "Source": queues["source"], "Target": queues["target"], "RoleArn": PIPES_ROLE_ARN}
+    if op == "ListPipes":
+        return {}
+    if op == "StartPipe":
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env, desired="STOPPED")}
+    if op in {"StopPipe", "DeletePipe"}:
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env)}
+    if op == "UpdatePipe":
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env), "RoleArn": PIPES_ROLE_ARN}
+    if not queues.get("pipe"):
+        queues["pipe"] = pipes_create_pipe(aws_bin, endpoint_url, region, env)
+    if op == "DescribePipe":
+        return {"Name": queues["pipe"]}
+    arn = f"arn:aws:pipes:{region}:123456789012:pipe/{queues['pipe']}"
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["stackyard"]}
+    return {"resourceArn": arn}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33345,6 +33597,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "pipes":
+        return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdb":
         return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glue":
@@ -33361,8 +33615,12 @@ def hydrate_payload_with_service_state(
         return codecommit_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "codestarnotifications":
         return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
+    if endpoint.service == "scheduler":
+        return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "applicationautoscaling":
+        return applicationautoscaling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":
