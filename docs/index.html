@@ -123,6 +123,7 @@
         <a href="#codeguru-profiler">CodeGuru Profiler</a>
         <a href="#codedeploy">CodeDeploy</a>
         <a href="#codepipeline">CodePipeline</a>
+        <a href="#codestarnotifications">CodeStar Notifications</a>
         <a href="#qdeveloper">AWS Q Developer</a>
         <a href="#qbusiness">Amazon Q Business</a>
         <a href="#organizations">Organizations</a>
@@ -6141,6 +6142,44 @@
         <li><code>codepipeline</code>: <code>docker compose -f examples/aws/codepipeline/docker-compose.yml up --build</code></li>
         </ul>
         </details>
+        </section>
+
+        <section id="codestarnotifications" class="service">
+
+        <div class="service-header">
+        <h2>AWS CodeStar Notifications</h2>
+        <p>SigV4 signed with service <code>codestar-notifications</code>. REST JSON API with every operation a <code>POST</code> to <code>/&lt;operationName&gt;</code> (UntagResource uses <code>/untagResource/{arn}?tagKeys=</code>). Rules target CodeBuild projects, CodeDeploy applications and CodePipeline pipelines that exist in Stackyard, or CodeCommit repositories by ARN; SNS targets must be existing topics, and AWS Chatbot Slack/Teams targets are checked by ARN. Event types follow the <code>ListEventTypes</code> catalog.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: codestar-notifications</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateNotificationRule</code></td></tr>
+        <tr><td><code>DeleteNotificationRule</code></td></tr>
+        <tr><td><code>DeleteTarget</code></td></tr>
+        <tr><td><code>DescribeNotificationRule</code></td></tr>
+        <tr><td><code>ListEventTypes</code></td></tr>
+        <tr><td><code>ListNotificationRules</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTargets</code></td></tr>
+        <tr><td><code>Subscribe</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>Unsubscribe</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateNotificationRule</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        <pre><code>aws codestar-notifications list-event-types --endpoint-url http://localhost:4566</code></pre>
         </section>
 
         <section id="codecatalyst" class="service">
