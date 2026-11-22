@@ -24,6 +24,11 @@ func (s *Server) handleBedrockAgentRESTRouter(w http.ResponseWriter, r *http.Req
 		// Bedrock Agent Runtime): let later routers try.
 		return false
 	}
+	if op.Name == "PrepareAgent" && !strings.HasSuffix(rawRequestPath(r), "/") {
+		// PrepareAgent is POST /agents/{agentId}/; without the trailing slash
+		// it's Bedrock Agent Runtime's InvokeInlineAgent (POST /agents/{sessionId}).
+		return false
+	}
 	if op.Name == "TagResource" || op.Name == "UntagResource" || op.Name == "ListTagsForResource" {
 		// Bedrock Agent Runtime tags sessions through the same /tags/{arn} route.
 		if strings.Contains(params["resourceArn"], ":session/") {
@@ -63,6 +68,9 @@ func isBedrockAgentRESTCandidate(r *http.Request) bool {
 	}
 	path := rawRequestPath(r)
 	if !hasAnyPrefix(path+"/", bedrockAgentPathPrefixes) {
+		return false
+	}
+	if isBedrockAgentRuntimeHost(r) {
 		return false
 	}
 	if sigV4ServiceHint(r) == "bedrock" {

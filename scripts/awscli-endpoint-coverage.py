@@ -226,6 +226,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
     "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
+    "bedrockagentruntime": {
+        "cli": "bedrock-agent-runtime",
+        "ops_file": REPO_ROOT / "internal/server/bedrockagentruntime_ops.go",
+    },
     "bedrockagentcorecontrol": {
         "cli": "bedrock-agentcore-control",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcorecontrol_ops.go",
@@ -1244,6 +1248,10 @@ SERVICE_ALIASES = {
     "bedrock-agent": "bedrockagent",
     "agents for amazon bedrock": "bedrockagent",
     "amazonbedrockagent": "bedrockagent",
+    "bedrockagentruntime": "bedrockagentruntime",
+    "bedrock-agent-runtime": "bedrockagentruntime",
+    "agents for amazon bedrock runtime": "bedrockagentruntime",
+    "amazonbedrockagentruntime": "bedrockagentruntime",
     "bedrockagentcorecontrol": "bedrockagentcorecontrol",
     "bedrock-agentcore-control": "bedrockagentcorecontrol",
     "bedrock agentcore control": "bedrockagentcorecontrol",
@@ -3081,6 +3089,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codecatalyst": {},
     "bedrockagentcoredata": {},
     "bedrockagent": {},
+    "bedrockagentruntime": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
@@ -3429,6 +3438,15 @@ BEDROCKRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "InvokeModelWithBidirectionalStream": ("POST", "/model/{modelId}/invoke-with-bidirectional-stream"),
 }
 BEDROCKRUNTIME_COVERAGE_BUCKET = "stackyard-bedrockruntime-coverage"
+# Event-stream operations the AWS CLI doesn't ship; sent as signed raw calls.
+BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "AgenticRetrieveStream": ("POST", "/agenticRetrieveStream"),
+    "InvokeAgent": ("POST", "/agents/{agentId}/agentAliases/{agentAliasId}/sessions/{sessionId}/text"),
+    "InvokeFlow": ("POST", "/flows/{flowIdentifier}/aliases/{flowAliasIdentifier}"),
+    "InvokeInlineAgent": ("POST", "/agents/{sessionId}"),
+    "OptimizePrompt": ("POST", "/optimize-prompt"),
+    "RetrieveAndGenerateStream": ("POST", "/retrieveAndGenerateStream"),
+}
 _BEDROCKAGENTCOREDATA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _BEDROCKAGENTCORECONTROL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _APPMESH_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -4382,6 +4400,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockruntime":
         return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "bedrockagentruntime":
+        return BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
         return ("POST", "/")
     if endpoint.service == "devopsguru":
@@ -6243,6 +6263,9 @@ def invoke_raw_endpoint(
         else:
             body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
             extra_headers = {"Content-Type": "application/json"}
+    elif endpoint.service == "bedrockagentruntime":
+        body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
+        extra_headers = {"Content-Type": "application/json"}
     elif endpoint.service == "lexruntimev2":
         body = lexruntimev2_conversation_body()
         extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
@@ -7276,7 +7299,7 @@ def invoke_raw_endpoint(
             signing_service = "ssm-incidents"
     elif endpoint.service == "applicationsignals":
         signing_service = "application-signals"
-    elif endpoint.service == "bedrockruntime":
+    elif endpoint.service in {"bedrockruntime", "bedrockagentruntime"}:
         signing_service = "bedrock"
     elif endpoint.service == "bedrockagentcoredata":
         signing_service = "bedrock-agentcore"
@@ -9475,6 +9498,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
     if endpoint.service == "codeguruprofiler":
         return {}
     if endpoint.service == "bedrockruntime":
+        return {}
+    if endpoint.service == "bedrockagentruntime":
         return {}
     if endpoint.service == "bedrock":
         return {}
@@ -30674,6 +30699,184 @@ def bedrockagent_fixture(ctx: tuple) -> dict:
     return state
 
 
+BEDROCKAGENTRUNTIME_MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2"
+
+
+def bedrockagentruntime_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "bedrock-agent-runtime",
+        operation,
+        env,
+        ["--cli-input-json", json.dumps(body, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def bedrockagentruntime_session(ctx: tuple, ended: bool = False) -> dict:
+    session = bedrockagentruntime_cli(ctx, "create-session", {})
+    if ended and session.get("sessionId"):
+        bedrockagentruntime_cli(ctx, "end-session", {"sessionIdentifier": session["sessionId"]})
+    return session
+
+
+def bedrockagentruntime_flow_inputs() -> list:
+    return [{"nodeName": "in", "nodeOutputName": "document", "content": {"document": "Stackyard coverage"}}]
+
+
+def bedrockagentruntime_fixture(ctx: tuple) -> dict:
+    # The bedrock-agent fixture (prepared agent + alias, knowledge base with one
+    # ingested document, prepared flow + alias) plus a session with an
+    # invocation and step, and a flow execution.
+    state = RUNTIME_STATE.setdefault("bedrockagentruntime", {})
+    if state.get("sessionId"):
+        return state
+    agent = bedrockagent_fixture(ctx)
+    if not agent.get("agentId"):
+        return state
+    state.update(agent)
+    session = bedrockagentruntime_session(ctx)
+    session_id = str(session.get("sessionId") or "")
+    invocation = bedrockagentruntime_cli(ctx, "create-invocation", {"sessionIdentifier": session_id}).get("invocationId", "")
+    step = bedrockagentruntime_cli(
+        ctx,
+        "put-invocation-step",
+        {
+            "sessionIdentifier": session_id,
+            "invocationIdentifier": invocation,
+            "invocationStepTime": "2025-01-01T00:00:00Z",
+            "payload": {"contentBlocks": [{"text": "Stackyard coverage step"}]},
+        },
+    ).get("invocationStepId", "")
+    execution = bedrockagentruntime_cli(
+        ctx,
+        "start-flow-execution",
+        {"flowIdentifier": agent["flowId"], "flowAliasIdentifier": agent["flowAliasId"], "inputs": bedrockagentruntime_flow_inputs()},
+    ).get("executionArn", "")
+    state.update(
+        {
+            "sessionId": session_id,
+            "sessionArn": str(session.get("sessionArn") or ""),
+            "invocationId": invocation,
+            "invocationStepId": step,
+            "executionArn": execution,
+        }
+    )
+    return state
+
+
+def bedrockagentruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = bedrockagentruntime_fixture(ctx)
+    if not state.get("sessionId"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    kb_config = {
+        "type": "KNOWLEDGE_BASE",
+        "knowledgeBaseConfiguration": {"knowledgeBaseId": state["knowledgeBaseId"], "modelArn": BEDROCKAGENTRUNTIME_MODEL_ARN},
+    }
+    flow = {"flowIdentifier": state["flowId"], "flowAliasIdentifier": state["flowAliasId"]}
+    document = {"knowledgeBaseId": state["knowledgeBaseId"], "dataSourceId": state["dataSourceId"], "documentId": "sydoc"}
+    session = {"sessionIdentifier": state["sessionId"]}
+    bodies = {
+        "AgenticRetrieveStream": {
+            "messages": [{"role": "user", "content": {"text": "What does Stackyard emulate?"}}],
+            "retrievers": [{"configuration": {"knowledgeBase": {"knowledgeBaseId": state["knowledgeBaseId"]}}}],
+            "agenticRetrieveConfiguration": {},
+            "generateResponse": True,
+        },
+        "CheckIngestedDocumentAcl": {**document, "userContext": {"userId": "stackyard-user"}},
+        "CreateInvocation": session,
+        "CreateSession": {"sessionMetadata": {"source": "coverage"}},
+        "DeleteAgentMemory": {"agentId": state["agentId"], "agentAliasId": state["agentAliasId"]},
+        "GenerateQuery": {
+            "queryGenerationInput": {"type": "TEXT", "text": "How many documents are there?"},
+            "transformationConfiguration": {
+                "mode": "TEXT_TO_SQL",
+                "textToSqlConfiguration": {
+                    "type": "KNOWLEDGE_BASE",
+                    "knowledgeBaseConfiguration": {
+                        "knowledgeBaseArn": f"arn:aws:bedrock:us-east-1:123456789012:knowledge-base/{state['knowledgeBaseId']}"
+                    },
+                },
+            },
+        },
+        "GetAgentMemory": {
+            "agentId": state["agentId"],
+            "agentAliasId": state["agentAliasId"],
+            "memoryId": "symemory",
+            "memoryType": "SESSION_SUMMARY",
+        },
+        "GetDocumentContent": document,
+        "GetExecutionFlowSnapshot": {**flow, "executionIdentifier": state["executionArn"]},
+        "GetFlowExecution": {**flow, "executionIdentifier": state["executionArn"]},
+        "GetIngestedDocumentAcl": document,
+        "GetInvocationStep": {**session, "invocationIdentifier": state["invocationId"], "invocationStepId": state["invocationStepId"]},
+        "GetSession": session,
+        "InvokeAgent": {
+            "agentId": state["agentId"],
+            "agentAliasId": state["agentAliasId"],
+            "sessionId": "stackyard-coverage",
+            "inputText": "What does Stackyard emulate?",
+        },
+        "InvokeFlow": {**flow, "inputs": bedrockagentruntime_flow_inputs()},
+        "InvokeInlineAgent": {
+            "sessionId": "stackyard-inline-coverage",
+            "foundationModel": "anthropic.claude-v2",
+            "instruction": BEDROCKAGENT_INSTRUCTION,
+            "inputText": "Hello",
+        },
+        "ListFlowExecutionEvents": {**flow, "executionIdentifier": state["executionArn"], "eventType": "Flow"},
+        "ListFlowExecutions": {"flowIdentifier": state["flowId"]},
+        "ListInvocationSteps": {**session, "invocationIdentifier": state["invocationId"]},
+        "ListInvocations": session,
+        "ListSessions": {},
+        "ListTagsForResource": {"resourceArn": state["sessionArn"]},
+        "OptimizePrompt": {"input": {"textPrompt": {"text": "Summarize the document."}}, "targetModelId": "anthropic.claude-v2"},
+        "PutInvocationStep": {
+            **session,
+            "invocationIdentifier": state["invocationId"],
+            "invocationStepTime": "2025-01-01T00:00:01Z",
+            "payload": {"contentBlocks": [{"text": "Another coverage step"}]},
+        },
+        "Rerank": {
+            "queries": [{"type": "TEXT", "textQuery": {"text": "Stackyard"}}],
+            "sources": [{"type": "INLINE", "inlineDocumentSource": {"type": "TEXT", "textDocument": {"text": "Stackyard emulates AWS."}}}],
+            "rerankingConfiguration": {
+                "type": "BEDROCK_RERANKING_MODEL",
+                "bedrockRerankingConfiguration": {
+                    "modelConfiguration": {"modelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.rerank-v1:0"}
+                },
+            },
+        },
+        "Retrieve": {"knowledgeBaseId": state["knowledgeBaseId"], "retrievalQuery": {"text": "What does Stackyard emulate?"}},
+        "RetrieveAndGenerate": {"input": {"text": "What does Stackyard emulate?"}, "retrieveAndGenerateConfiguration": kb_config},
+        "RetrieveAndGenerateStream": {"input": {"text": "What does Stackyard emulate?"}, "retrieveAndGenerateConfiguration": kb_config},
+        "StartFlowExecution": {**flow, "inputs": bedrockagentruntime_flow_inputs()},
+        "TagResource": {"resourceArn": state["sessionArn"], "tags": {"env": "coverage"}},
+        "UntagResource": {"resourceArn": state["sessionArn"], "tagKeys": ["env"]},
+        "UpdateSession": {**session, "sessionMetadata": {"source": "coverage-updated"}},
+    }
+    if op in {"DeleteSession", "EndSession"}:
+        # Each gets its own session: DeleteSession needs an ENDED one.
+        fresh_session = bedrockagentruntime_session(ctx, ended=op == "DeleteSession")
+        bodies[op] = {"sessionIdentifier": fresh_session.get("sessionId", "")}
+    if op == "StopFlowExecution":
+        fresh = bedrockagentruntime_cli(ctx, "start-flow-execution", {**flow, "inputs": bedrockagentruntime_flow_inputs()})
+        bodies[op] = {**flow, "executionIdentifier": fresh.get("executionArn", "")}
+    if op not in bodies:
+        return payload
+    hydrated.clear()
+    hydrated.update(bodies[op])
+    return hydrated
+
+
 def bedrockagent_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -31438,6 +31641,8 @@ def hydrate_payload_with_service_state(
         hydrated = copy.deepcopy(payload)
         hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
         return hydrated
+    if endpoint.service == "bedrockagentruntime":
+        return bedrockagentruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bedrockagent":
         return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
