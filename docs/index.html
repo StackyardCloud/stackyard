@@ -48,6 +48,7 @@
         <a href="#apigatewayv2">API Gateway v2</a>
         <a href="#apigatewaymanagementapi">API Gateway Management API</a>
         <a href="#appconfig">AppConfig</a>
+        <a href="#appconfigdata">AppConfig Data</a>
         <a href="#appflow">AppFlow</a>
         <a href="#datapipeline">Data Pipeline</a>
         <a href="#b2bi">B2B Data Interchange</a>
@@ -100,6 +101,7 @@
         <a href="#routing-control">Routing Control</a>
         <a href="#augmented-ai">Amazon Augmented AI</a>
         <a href="#bedrock">Bedrock</a>
+        <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
         <a href="#comprehend">Comprehend</a>
@@ -144,7 +146,9 @@
         <a href="#healthlake">HealthLake</a>
         <a href="#batch">Batch</a>
         <a href="#aurora-dsql">Aurora DSQL</a>
+        <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
+        <a href="#dynamodbstreams">DynamoDB Streams</a>
         <a href="#ec2">EC2</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
@@ -258,9 +262,11 @@
         <a href="#rtb-fabric">RTB Fabric</a>
         <a href="#rds">RDS</a>
         <a href="#redshift">Redshift</a>
+        <a href="#redshift-data">Redshift Data API</a>
         <a href="#redshift-serverless">Redshift Serverless</a>
         <a href="#rekognition">Rekognition</a>
         <a href="#sagemaker">SageMaker</a>
+        <a href="#sagemaker-runtime">SageMaker Runtime</a>
         <a href="#simspaceweaver">SimSpace Weaver</a>
         <a href="#supplychain">Supply Chain</a>
         <a href="#savingsplans">Savings Plans</a>
@@ -806,6 +812,36 @@
         <ul>
         <li><code>appconfig</code>: <code>docker compose -f examples/aws/appconfig/docker-compose.yml up --build</code></li>
         <li><code>appconfig</code>: <code>docker compose -f examples/aws/appconfig/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="appconfigdata" class="service">
+
+        <div class="service-header">
+        <h2>AWS AppConfig Data</h2>
+        <p>SigV4 signed with service <code>appconfig</code>. REST JSON data plane: <code>POST /configurationsessions</code> starts a session for an application, environment and configuration profile (by ID or name), and <code>GET /configuration?configuration_token=...</code> returns the latest deployed hosted configuration. Tokens are single-use and expire after 24 hours; an unchanged configuration returns an empty body. Content comes from AppConfig hosted configuration versions and deployments.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: appconfig</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetLatestConfiguration</code></td></tr>
+        <tr><td><code>StartConfigurationSession</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>appconfig-data</code>: <code>docker compose -f examples/aws/appconfig-data/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -4006,6 +4042,46 @@
         <ul>
                 <li><code>bedrock</code>: <code>docker compose -f examples/aws/bedrock/docker-compose.yml up --build</code></li>
                 <li><code>bedrock</code>: <code>docker compose -f examples/aws/bedrock/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+        <section id="bedrockruntime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Bedrock Runtime</h2>
+        <p>SigV4 signed with service <code>bedrock</code>. REST JSON API under <code>/model/{modelId}/...</code>, <code>/guardrail/...</code>, <code>/guardrail-checks/invoke</code> and <code>/async-invoke</code>. Responses are deterministic echoes in each model family's documented format; streaming operations use the AWS event-stream encoding.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bedrock</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ApplyGuardrail</code></td></tr>
+        <tr><td><code>Converse</code></td></tr>
+        <tr><td><code>ConverseStream</code></td></tr>
+        <tr><td><code>CountTokens</code></td></tr>
+        <tr><td><code>GetAsyncInvoke</code></td></tr>
+        <tr><td><code>InvokeGuardrailChecks</code></td></tr>
+        <tr><td><code>InvokeModel</code></td></tr>
+        <tr><td><code>InvokeModelWithBidirectionalStream</code></td></tr>
+        <tr><td><code>InvokeModelWithResponseStream</code></td></tr>
+        <tr><td><code>ListAsyncInvokes</code></td></tr>
+        <tr><td><code>StartAsyncInvoke</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>bedrock-runtime</code>: <code>docker compose -f examples/aws/bedrock-runtime/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
@@ -15590,6 +15666,55 @@
                 </ul>
         </details>
         </section>
+        <section id="rds-data" class="service">
+
+        <div class="service-header">
+        <h2>Amazon RDS Data API</h2>
+        <p>SigV4 signed with service <code>rds-data</code>. REST JSON API over <code>POST /Execute</code>, <code>/BatchExecute</code>, <code>/BeginTransaction</code>, <code>/CommitTransaction</code>, <code>/RollbackTransaction</code> and <code>/ExecuteSql</code>. Statements target an RDS DB cluster ARN with the HTTP endpoint enabled (<code>EnableHttpEndpoint</code> or <code>--enable-http-endpoint</code>) and an existing Secrets Manager secret. The emulator runs a small SQL subset: <code>CREATE TABLE</code> (PRIMARY KEY, UNIQUE, NOT NULL, literal DEFAULT, AUTO_INCREMENT/SERIAL), <code>DROP TABLE</code>, <code>INSERT ... VALUES</code>, <code>UPDATE ... SET</code>, <code>DELETE FROM</code>, and <code>SELECT</code> with <code>*</code>, columns, <code>COUNT(*)</code> or literals (<code>SELECT 1</code>), <code>WHERE col = value</code> / <code>col IS [NOT] NULL</code> terms joined by <code>AND</code>, <code>ORDER BY</code>, <code>LIMIT</code>, comments and <code>:named</code> parameters. Joins, <code>OR</code>, subqueries, <code>GROUP BY</code> and functions other than <code>COUNT(*)</code> return <code>BadRequestException</code>; schema-qualified names ignore the schema, and <code>ExecuteSql</code> results are approximated per statement. Transactions see their own writes, fail to commit with <code>DatabaseErrorException</code> when another write changed a table they touched, and expire after three idle minutes.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: rds-data</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchExecuteStatement</code></td>
+        </tr>
+        <tr>
+        <td><code>BeginTransaction</code></td>
+        </tr>
+        <tr>
+        <td><code>CommitTransaction</code></td>
+        </tr>
+        <tr>
+        <td><code>ExecuteSql</code></td>
+        </tr>
+        <tr>
+        <td><code>ExecuteStatement</code></td>
+        </tr>
+        <tr>
+        <td><code>RollbackTransaction</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>rds-data</code>: <code>docker compose -f examples/aws/rds-data/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
 
         <section id="dynamodb" class="service">
 
@@ -15791,6 +15916,49 @@
         <ul>
                 <li><code>dynamodb</code>: <code>docker compose -f examples/aws/dynamodb/docker-compose.yml up --build</code></li>
                 <li><code>dynamodb</code>: <code>docker compose -f examples/aws/dynamodb/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="dynamodbstreams" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DynamoDB Streams</h2>
+        <p>SigV4 signed with service <code>dynamodb</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.0</code> and <code>X-Amz-Target: DynamoDBStreams_20120810.&lt;Action&gt;</code>. Tables created or updated with a <code>StreamSpecification</code> record INSERT, MODIFY and REMOVE events from item writes; each stream has one shard, and records are read with shard iterators (TRIM_HORIZON, LATEST, AT_SEQUENCE_NUMBER, AFTER_SEQUENCE_NUMBER) that expire after 15 minutes.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: dynamodb</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>DescribeStream</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRecords</code></td>
+        </tr>
+        <tr>
+        <td><code>GetShardIterator</code></td>
+        </tr>
+        <tr>
+        <td><code>ListStreams</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>dynamodbstreams</code>: <code>docker compose -f examples/aws/dynamodb-streams/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -17662,6 +17830,38 @@
         </details>
         </section>
 
+        <section id="redshift-data" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Redshift Data API</h2>
+        <p>SigV4 signed with service <code>redshift-data</code>. The Data API exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: RedshiftData.&lt;Action&gt;</code>. Statements target a provisioned cluster from the Redshift emulation or a Redshift Serverless workgroup, run on a small in-memory SQL engine (CREATE TABLE/SCHEMA/DATABASE, DROP TABLE, INSERT, SELECT, UPDATE, DELETE), and finish on the next API call so a queued statement can still be cancelled.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: redshift-data</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>12</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/redshiftdata_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>redshift-data</code>: <code>docker compose -f examples/aws/redshift-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="redshift-serverless" class="service">
 
         <div class="service-header">
@@ -17760,6 +17960,38 @@
         <ul>
         <li><code>sagemaker</code>: <code>docker compose -f examples/aws/sagemaker/docker-compose.yml up --build</code></li>
         <li><code>sagemaker</code>: <code>docker compose -f examples/aws/sagemaker/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-runtime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Runtime</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. SageMaker Runtime exposes a REST JSON API over <code>POST /endpoints/{EndpointName}/invocations</code>, <code>/async-invocations</code> and <code>/invocations-response-stream</code>. Invocations resolve against SageMaker endpoints and endpoint configs created through the control plane; responses echo the request body, asynchronous results are written to the endpoint's <code>S3OutputPath</code>, and streamed responses use <code>application/vnd.amazon.eventstream</code> framing.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>3</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakerruntime_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-runtime</code>: <code>docker compose -f examples/aws/sagemaker-runtime/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"strings"
@@ -13,28 +14,80 @@ type appConfigStore struct {
 	mu     sync.Mutex
 	nextID int64
 	tags   map[string]map[string]string
+
+	// The control-plane responses above are fabricated, but AppConfig Data
+	// needs real content, so these record what was created and deployed.
+	apps        map[string]string                   // application ID -> name
+	envs        map[string]map[string]string        // application ID -> environment ID -> name
+	profiles    map[string]map[string]string        // application ID -> profile ID -> name
+	hosted      map[string]bool                     // appID/profileID of profiles with LocationUri "hosted"
+	versions    map[string][]appConfigHostedVersion // appID/profileID -> versions, number = index+1
+	deployments map[string][]appConfigDeployment    // appID/envID -> deployments, number = index+1
+	sessions    map[string]appConfigDataSession     // configuration token -> session state
+}
+
+type appConfigHostedVersion struct {
+	Content     []byte
+	ContentType string
+	Label       string
+	Description string
+	Deleted     bool // kept as a tombstone so later version numbers don't shift
+}
+
+type appConfigDeployment struct {
+	ProfileID  string
+	Version    string
+	RolledBack bool
 }
 
 func newAppConfigStore() *appConfigStore {
+	// The seed matches what the fabricated control plane already reports:
+	// app-000001/env-000001/cp-000001 with deployment 1 of hosted version 1.
 	return &appConfigStore{
-		nextID: 1,
+		nextID: 2, // 1 is the seed below; created IDs must not collide with it
 		tags: map[string]map[string]string{
 			"arn:aws:appconfig:us-east-1:123456789012:application/app-000001": {
 				"seed": "true",
 			},
 		},
+		apps:     map[string]string{"app-000001": "stackyard-app"},
+		envs:     map[string]map[string]string{"app-000001": {"env-000001": "stackyard-env"}},
+		profiles: map[string]map[string]string{"app-000001": {"cp-000001": "stackyard-config-profile"}},
+		hosted:   map[string]bool{"app-000001/cp-000001": true},
+		versions: map[string][]appConfigHostedVersion{
+			"app-000001/cp-000001": {{Content: []byte(`{"stackyard":true}`), ContentType: "application/json"}},
+		},
+		deployments: map[string][]appConfigDeployment{
+			"app-000001/env-000001": {{ProfileID: "cp-000001", Version: "1"}},
+		},
+		sessions: map[string]appConfigDataSession{},
 	}
 }
 
-func (s *appConfigStore) Handle(action string, payload map[string]any, pathParams map[string]string, query url.Values) map[string]any {
+// appConfigFault is an error the control plane returns instead of a result.
+type appConfigFault struct {
+	Status        int
+	Code, Message string
+}
+
+func (s *appConfigStore) Handle(action string, payload map[string]any, pathParams map[string]string, query url.Values) (map[string]any, *appConfigFault) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if fault := s.validateDataPlaneLocked(action, payload, pathParams); fault != nil {
+		return nil, fault
+	}
+	result := s.handleLocked(action, payload, pathParams, query)
+	s.recordDataPlaneLocked(action, payload, pathParams, result)
+	return result, nil
+}
+
+func (s *appConfigStore) handleLocked(action string, payload map[string]any, pathParams map[string]string, query url.Values) map[string]any {
 	now := time.Now().UTC()
 
 	switch action {
 	case "CreateApplication", "UpdateApplication", "GetApplication":
-		appID := s.resolveID(payload, pathParams, "ApplicationId", "app-"+s.nextTokenLocked(6))
+		appID := s.resolveOrNewIDLocked(payload, pathParams, "ApplicationId", "app-")
 		return map[string]any{
 			"Id":          appID,
 			"Name":        appConfigDefaultString(payload, "Name", "stackyard-app"),
@@ -54,7 +107,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 
 	case "CreateEnvironment", "UpdateEnvironment", "GetEnvironment":
 		appID := s.resolveID(payload, pathParams, "ApplicationId", "app-000001")
-		envID := s.resolveID(payload, pathParams, "EnvironmentId", "env-"+s.nextTokenLocked(6))
+		envID := s.resolveOrNewIDLocked(payload, pathParams, "EnvironmentId", "env-")
 		return map[string]any{
 			"ApplicationId": appID,
 			"Id":            envID,
@@ -77,7 +130,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 
 	case "CreateConfigurationProfile", "UpdateConfigurationProfile", "GetConfigurationProfile":
 		appID := s.resolveID(payload, pathParams, "ApplicationId", "app-000001")
-		profileID := s.resolveID(payload, pathParams, "ConfigurationProfileId", "cp-"+s.nextTokenLocked(6))
+		profileID := s.resolveOrNewIDLocked(payload, pathParams, "ConfigurationProfileId", "cp-")
 		return map[string]any{
 			"ApplicationId": appID,
 			"Id":            profileID,
@@ -98,7 +151,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		return map[string]any{}
 
 	case "CreateDeploymentStrategy", "UpdateDeploymentStrategy", "GetDeploymentStrategy":
-		strategyID := s.resolveID(payload, pathParams, "DeploymentStrategyId", "ds-"+s.nextTokenLocked(6))
+		strategyID := s.resolveOrNewIDLocked(payload, pathParams, "DeploymentStrategyId", "ds-")
 		return map[string]any{
 			"Id":                          strategyID,
 			"Name":                        appConfigDefaultString(payload, "Name", "stackyard-deploy-strategy"),
@@ -130,7 +183,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		appID := s.resolveID(payload, pathParams, "ApplicationId", "app-000001")
 		profileID := s.resolveID(payload, pathParams, "ConfigurationProfileId", "cp-000001")
 		version := s.resolveID(payload, pathParams, "VersionNumber", "1")
-		versionNum, _ := strconv.ParseInt(version, 10, 64)
+		versionNum, _ := strconv.ParseInt(version, 10, 32)
 		if versionNum <= 0 {
 			versionNum = 1
 		}
@@ -158,7 +211,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		profileID := s.resolveID(payload, pathParams, "ConfigurationProfileId", "cp-000001")
 		strategyID := s.resolveID(payload, pathParams, "DeploymentStrategyId", "ds-000001")
 		deploymentNumRaw := s.resolveID(payload, pathParams, "DeploymentNumber", "1")
-		deploymentNum, _ := strconv.ParseInt(deploymentNumRaw, 10, 64)
+		deploymentNum, _ := strconv.ParseInt(deploymentNumRaw, 10, 32)
 		if deploymentNum <= 0 {
 			deploymentNum = 1
 		}
@@ -194,7 +247,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		}
 
 	case "CreateExtension", "UpdateExtension", "GetExtension":
-		extID := s.resolveID(payload, pathParams, "ExtensionIdentifier", "ext-"+s.nextTokenLocked(6))
+		extID := s.resolveOrNewIDLocked(payload, pathParams, "ExtensionIdentifier", "ext-")
 		return map[string]any{
 			"Id":            extID,
 			"Name":          appConfigDefaultString(payload, "Name", "stackyard-extension"),
@@ -214,7 +267,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		return map[string]any{}
 
 	case "CreateExtensionAssociation", "UpdateExtensionAssociation", "GetExtensionAssociation":
-		assocID := s.resolveID(payload, pathParams, "ExtensionAssociationId", "exa-"+s.nextTokenLocked(6))
+		assocID := s.resolveOrNewIDLocked(payload, pathParams, "ExtensionAssociationId", "exa-")
 		return map[string]any{
 			"Id":                     assocID,
 			"ExtensionArn":           appConfigDefaultString(payload, "ExtensionIdentifier", "ext-000001"),
@@ -290,7 +343,7 @@ func (s *appConfigStore) Handle(action string, payload map[string]any, pathParam
 		if _, ok := s.tags[arn]; !ok {
 			s.tags[arn] = map[string]string{"stackyard": "true"}
 		}
-		return map[string]any{"Tags": s.tags[arn]}
+		return map[string]any{"Tags": maps.Clone(s.tags[arn])}
 	}
 
 	return map[string]any{}
@@ -300,6 +353,16 @@ func (s *appConfigStore) nextTokenLocked(width int) string {
 	id := s.nextID
 	s.nextID++
 	return fmt.Sprintf("%0*d", width, id)
+}
+
+// resolveOrNewIDLocked takes the counter only when no ID was given, so reads
+// and updates never consume IDs (replaying only the journaled writes must
+// reproduce the same IDs).
+func (s *appConfigStore) resolveOrNewIDLocked(payload map[string]any, pathParams map[string]string, key, prefix string) string {
+	if id := s.resolveID(payload, pathParams, key, ""); id != "" {
+		return id
+	}
+	return prefix + s.nextTokenLocked(6)
 }
 
 func (s *appConfigStore) resolveID(payload map[string]any, pathParams map[string]string, key string, fallback string) string {

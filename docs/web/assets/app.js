@@ -40,6 +40,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/appconfig/docker-compose.yml"
   },
   {
+    id: "appconfigdata",
+    name: "AppConfig Data",
+    category: "integration",
+    summary: "Start configuration sessions and poll the latest deployed AppConfig configuration with single-use tokens.",
+    docsHref: "../../../index.html#appconfigdata",
+    exampleHref: "../../../../examples/aws/appconfig-data/docker-compose.yml"
+  },
+  {
     id: "athena",
     name: "Athena",
     category: "database",
@@ -56,12 +64,28 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/aurora-dsql/docker-compose.yml"
   },
   {
+    id: "rds-data",
+    name: "RDS Data API",
+    category: "database",
+    summary: "Run SQL over HTTP against Aurora clusters with the RDS Data API.",
+    docsHref: "../../../index.html#rds-data",
+    exampleHref: "../../../../examples/aws/rds-data/docker-compose.yml"
+  },
+  {
     id: "augmented-ai",
     name: "Amazon Augmented AI",
     category: "integration",
     summary: "Plan and validate human loop runtime workflows for start, stop, describe, list, and delete APIs.",
     docsHref: "../../../index.html#augmented-ai",
     exampleHref: "../../../../examples/aws/augmented-ai/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-runtime",
+    name: "Amazon SageMaker Runtime",
+    category: "integration",
+    summary: "Invoke SageMaker endpoints in real time, asynchronously through S3, and with event-stream responses.",
+    docsHref: "../../../index.html#sagemaker-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
   },
   {
     id: "batch",
@@ -78,6 +102,14 @@ const SERVICE_CATALOG = [
     summary: "Emulate foundation model catalog, guardrails, jobs, and provisioning control-plane APIs.",
     docsHref: "../../../index.html#bedrock",
     exampleHref: "../../../../examples/aws/bedrock/docker-compose.yml"
+  },
+  {
+    id: "bedrockruntime",
+    name: "Bedrock Runtime",
+    category: "integration",
+    summary: "Emulate model invocation, Converse, streaming, token counting, guardrails, and async invoke with deterministic responses.",
+    docsHref: "../../../index.html#bedrockruntime",
+    exampleHref: "../../../../examples/aws/bedrock-runtime/docker-compose.yml"
   },
   {
     id: "cloudcontrolapi",
@@ -552,6 +584,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "dynamodbstreams",
+    name: "DynamoDB Streams",
+    category: "database",
+    summary: "Read table change records with shard iterators and GetRecords.",
+    docsHref: "../../../index.html#dynamodbstreams",
+    exampleHref: "../../../../examples/aws/dynamodb-streams/docker-compose.yml"
+  },
+  {
     id: "ebs",
     name: "EBS",
     category: "compute",
@@ -870,6 +910,14 @@ const SERVICE_CATALOG = [
     summary: "Validate warehouse lifecycle and metadata operations.",
     docsHref: "../../../index.html#redshift",
     exampleHref: "../../../../examples/aws/redshift/docker-compose.yml"
+  },
+  {
+    id: "redshift-data",
+    name: "Redshift Data API",
+    category: "database",
+    summary: "Run SQL statements against Redshift clusters and Serverless workgroups over HTTP.",
+    docsHref: "../../../index.html#redshift-data",
+    exampleHref: "../../../../examples/aws/redshift-data/docker-compose.yml"
   },
   {
     id: "ram",

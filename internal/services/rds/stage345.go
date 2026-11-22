@@ -166,6 +166,7 @@ type DBCluster struct {
 	ReaderEndpoint          string
 	BackupRetentionPeriod   int
 	VpcSecurityGroupIDs     []string
+	HTTPEndpointEnabled     bool
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -180,6 +181,7 @@ type CreateDBClusterInput struct {
 	DBClusterParameterGroup string
 	VpcSecurityGroupIDs     []string
 	BackupRetentionPeriod   int
+	EnableHTTPEndpoint      bool
 }
 
 type DescribeDBClustersInput struct {
@@ -192,6 +194,7 @@ type ModifyDBClusterInput struct {
 	Identifier              string
 	BackupRetentionPeriod   int
 	DBClusterParameterGroup string
+	EnableHTTPEndpoint      *bool
 }
 
 type DeleteDBClusterInput struct {
@@ -888,6 +891,7 @@ func (s *Service) CreateDBCluster(input CreateDBClusterInput) (DBCluster, error)
 		ReaderEndpoint:          fmt.Sprintf("%s.cluster-ro-%s.rds.amazonaws.com", id, defaultRegion),
 		BackupRetentionPeriod:   maxInt(input.BackupRetentionPeriod, 1),
 		VpcSecurityGroupIDs:     compactStringSlice(input.VpcSecurityGroupIDs),
+		HTTPEndpointEnabled:     input.EnableHTTPEndpoint,
 		CreatedAt:               now,
 		UpdatedAt:               now,
 	}
@@ -939,6 +943,9 @@ func (s *Service) ModifyDBCluster(input ModifyDBClusterInput) (DBCluster, error)
 	}
 	if group := strings.TrimSpace(input.DBClusterParameterGroup); group != "" {
 		cluster.DBClusterParameterGroup = group
+	}
+	if input.EnableHTTPEndpoint != nil {
+		cluster.HTTPEndpointEnabled = *input.EnableHTTPEndpoint
 	}
 	cluster.UpdatedAt = time.Now().UTC()
 	return cloneDBCluster(cluster), nil
