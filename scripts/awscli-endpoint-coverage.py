@@ -334,6 +334,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
+    "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -1459,6 +1460,10 @@ SERVICE_ALIASES = {
     "amazondocdb": "docdb",
     "amazon-documentdb": "docdb",
     "amazondocumentdb": "docdb",
+    "docdbelastic": "docdbelastic",
+    "docdb-elastic": "docdbelastic",
+    "amazondocdbelastic": "docdbelastic",
+    "documentdbelastic": "docdbelastic",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -3093,6 +3098,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "scheduler": {},
     "pipes": {},
     "docdb": {},
+    "docdbelastic": {},
     "glue": {},
     "codeconnections": {},
     "codestarconnections": {},
@@ -33586,6 +33592,92 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
+
+
+def docdbelastic_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "docdb-elastic", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def docdbelastic_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], stopped: bool = False) -> str:
+    """Create an elastic cluster and read it once so it settles to ACTIVE
+    (changes while CREATING are conflicts); optionally stop it too."""
+    name = f"stackyard-dbe-{time.time_ns()}"
+    created = docdbelastic_cli(
+        aws_bin, endpoint_url, region, env, "create-cluster",
+        ["--cluster-name", name, "--admin-user-name", "stackyard", "--admin-user-password", DOCDBELASTIC_PASSWORD,
+         "--auth-type", "PLAIN_TEXT", "--shard-capacity", "2", "--shard-count", "1"],
+    )
+    arn = str((created.get("cluster") or {}).get("clusterArn") or "")
+    docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster", ["--cluster-arn", arn])
+    if stopped:
+        docdbelastic_cli(aws_bin, endpoint_url, region, env, "stop-cluster", ["--cluster-arn", arn])
+        docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster", ["--cluster-arn", arn])
+    return arn
+
+
+def docdbelastic_create_snapshot(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cluster_arn: str) -> str:
+    created = docdbelastic_cli(
+        aws_bin, endpoint_url, region, env, "create-cluster-snapshot",
+        ["--cluster-arn", cluster_arn, "--snapshot-name", f"stackyard-dbe-snap-{time.time_ns()}"],
+    )
+    arn = str((created.get("snapshot") or {}).get("snapshotArn") or "")
+    docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster-snapshot", ["--snapshot-arn", arn])
+    return arn
+
+
+def docdbelastic_shared(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("docdbelastic", {})
+    if not state.get("cluster"):
+        state["cluster"] = docdbelastic_create_cluster(aws_bin, endpoint_url, region, env)
+        state["snapshot"] = docdbelastic_create_snapshot(aws_bin, endpoint_url, region, env, state["cluster"])
+    return state
+
+
+def docdbelastic_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DocumentDB Elastic operation at settled resources. Changes
+    (update, start, stop, delete, maintenance) each get resources of their own."""
+    op = endpoint.operation
+    unique = f"stackyard-dbe-{time.time_ns()}"
+    if op == "CreateCluster":
+        return {"clusterName": unique, "adminUserName": "stackyard", "adminUserPassword": DOCDBELASTIC_PASSWORD,
+                "authType": "PLAIN_TEXT", "shardCapacity": 2, "shardCount": 1}
+    if op in {"ListClusters", "ListClusterSnapshots", "ListPendingMaintenanceActions"}:
+        return {}
+    if op == "UpdateCluster":
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env), "backupRetentionPeriod": 2}
+    if op in {"DeleteCluster", "StopCluster"}:
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env)}
+    if op == "StartCluster":
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env, stopped=True)}
+    if op == "ApplyPendingMaintenanceAction":
+        return {"resourceArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env),
+                "applyAction": "SYSTEM_UPDATE", "optInType": "NEXT_MAINTENANCE"}
+    shared = docdbelastic_shared(aws_bin, endpoint_url, region, env)
+    if op == "DeleteClusterSnapshot":
+        return {"snapshotArn": docdbelastic_create_snapshot(aws_bin, endpoint_url, region, env, shared["cluster"])}
+    if op == "CreateClusterSnapshot":
+        return {"clusterArn": shared["cluster"], "snapshotName": unique}
+    if op == "GetClusterSnapshot":
+        return {"snapshotArn": shared["snapshot"]}
+    if op == "CopyClusterSnapshot":
+        return {"snapshotArn": shared["snapshot"], "targetSnapshotName": unique}
+    if op == "RestoreClusterFromSnapshot":
+        return {"snapshotArn": shared["snapshot"], "clusterName": unique}
+    if op == "GetCluster":
+        return {"clusterArn": shared["cluster"]}
+    if op == "GetPendingMaintenanceAction":
+        return {"resourceArn": shared["cluster"]}
+    if op == "TagResource":
+        return {"resourceArn": shared["cluster"], "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": shared["cluster"], "tagKeys": ["stackyard"]}
+    return {"resourceArn": shared["cluster"]}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33597,6 +33689,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "docdbelastic":
+        return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdb":
