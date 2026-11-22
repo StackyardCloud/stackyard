@@ -91,8 +91,13 @@ func TestCodeStarNotificationsStage1Validation(t *testing.T) {
 			t.Fatalf("%s: %s", name, code)
 		}
 	}
-	// CodeCommit isn't emulated: repositories are accepted by ARN.
-	csnCall(t, ts, http.StatusOK, "/createNotificationRule", rule("arn:aws:codecommit:us-east-1:123456789012:repo", "codecommit-repository-pull-request-created", "AWSChatbotSlack", "arn:aws:chatbot::123456789012:chat-configuration/slack-channel/dev"))
+	// CodeCommit repositories must exist, like the other resource types.
+	repoRule := rule("arn:aws:codecommit:us-east-1:123456789012:repo", "codecommit-repository-pull-request-created", "AWSChatbotSlack", "arn:aws:chatbot::123456789012:chat-configuration/slack-channel/dev")
+	if code := csnErrorType(t, ts, "/createNotificationRule", repoRule); code != "ValidationException" {
+		t.Fatalf("missing repository: %s", code)
+	}
+	ccOK(t, ts, "CreateRepository", `{"repositoryName":"repo"}`)
+	csnCall(t, ts, http.StatusOK, "/createNotificationRule", repoRule)
 	if code := csnErrorType(t, ts, "/describeNotificationRule", `{"Arn":"arn:aws:codestar-notifications:us-east-1:123456789012:notificationrule/missing"}`); code != "ResourceNotFoundException" {
 		t.Fatalf("missing rule: %s", code)
 	}

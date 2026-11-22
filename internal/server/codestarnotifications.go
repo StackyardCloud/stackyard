@@ -408,9 +408,11 @@ func (s *Server) csnCheckResource(arn string) (string, *csnError) {
 		s.codepipeline.mu.Lock()
 		_, exists = s.codepipeline.pipelines[name]
 		s.codepipeline.mu.Unlock()
+	case "CodeCommit":
+		s.codecommit.mu.Lock()
+		_, exists = s.codecommit.repos[name]
+		s.codecommit.mu.Unlock()
 	}
-	// ponytail: CodeCommit isn't emulated yet, so repositories are accepted
-	// by ARN; check the codecommit store once it exists.
 	if !exists {
 		return "", csnValidation("Resource %s does not exist", arn)
 	}
