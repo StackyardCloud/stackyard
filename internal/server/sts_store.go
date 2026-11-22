@@ -87,3 +87,11 @@ func (s *stsStore) issueCredentials(name string) map[string]any {
 		"Expiration":      "2026-12-31T23:59:59Z",
 	}
 }
+
+// IssueCredentials hands out the next STS-style temporary credentials for
+// callers outside the STS API (EKS Auth).
+func (s *stsStore) IssueCredentials(name string) map[string]any {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.issueCredentials(name)
+}
