@@ -204,6 +204,7 @@
         <a href="#neptuneanalytics">Neptune Analytics API</a>
         <a href="#omics">HealthOmics</a>
         <a href="#opensearch">OpenSearch Service</a>
+        <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
         <a href="#servicequotas">Service Quotas</a>
@@ -17236,6 +17237,188 @@
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="elasticsearchservice" class="service">
+
+        <div class="service-header">
+        <h2>Elasticsearch Service</h2>
+        <p>SigV4 signed with service <code>es</code>. The legacy REST JSON API under <code>/2015-01-01/*</code>, served over the same domains as OpenSearch Service: a domain created with either API is visible through the other (<code>ElasticsearchVersion</code> 7.10 is <code>EngineVersion</code> Elasticsearch_7.10, and <code>.elasticsearch</code> instance types map to <code>.search</code>). Domains, configuration, tags, upgrades, packages, VPC endpoints, cross-cluster search connections and reserved instances keep real state; the domain data plane is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: es</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <pre><code>aws es create-elasticsearch-domain --domain-name logs --elasticsearch-version 7.10 --endpoint-url http://localhost:4566</code></pre>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AcceptInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>AddTags</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>AuthorizeVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>CancelDomainConfigChange</code></td>
+        </tr>
+        <tr>
+        <td><code>CancelElasticsearchServiceSoftwareUpdate</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateOutboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteElasticsearchServiceRole</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteOutboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDomainAutoTunes</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDomainChangeProgress</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomainConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchInstanceTypeLimits</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeInboundCrossClusterSearchConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeOutboundCrossClusterSearchConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribePackages</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeReservedElasticsearchInstanceOfferings</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeReservedElasticsearchInstances</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeVpcEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>DissociatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>GetCompatibleElasticsearchVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPackageVersionHistory</code></td>
+        </tr>
+        <tr>
+        <td><code>GetUpgradeHistory</code></td>
+        </tr>
+        <tr>
+        <td><code>GetUpgradeStatus</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDomainNames</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDomainsForPackage</code></td>
+        </tr>
+        <tr>
+        <td><code>ListElasticsearchInstanceTypes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListElasticsearchVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPackagesForDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTags</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpointsForDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>PurchaseReservedElasticsearchInstanceOffering</code></td>
+        </tr>
+        <tr>
+        <td><code>RejectInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>RemoveTags</code></td>
+        </tr>
+        <tr>
+        <td><code>RevokeVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>StartElasticsearchServiceSoftwareUpdate</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateClone</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateElasticsearchDomainConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>UpgradeElasticsearchDomain</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 

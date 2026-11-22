@@ -984,6 +984,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/opensearch/docker-compose.yml"
   },
   {
+    id: "elasticsearchservice",
+    name: "Elasticsearch Service",
+    category: "database",
+    summary: "Legacy es 2015-01-01 API over the OpenSearch domain store: domains, config, upgrades, packages, VPC endpoints and cross-cluster connections.",
+    docsHref: "../../../index.html#elasticsearchservice",
+    exampleHref: "../../../../examples/aws/elasticsearch/docker-compose.yml"
+  },
+  {
     id: "privateca",
     name: "Private CA",
     category: "security",
