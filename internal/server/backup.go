@@ -21,11 +21,13 @@ func (s *Server) handleBackupRESTRouter(w http.ResponseWriter, r *http.Request) 
 		respondBedrockAgentError(w, &bedrockAgentError{status: http.StatusNotFound, code: "UnknownOperationException", msg: "no AWS Backup operation matches " + r.Method + " " + rawRequestPath(r)})
 		return true
 	}
-	if r.ContentLength > backupMaxBody {
-		respondBedrockAgentError(w, bkInvalid("request body exceeds the maximum size"))
+	// A declared length bounds the body (net/http stops reading there), so
+	// require one; chunked bodies of unknown length are refused. r.Body is
+	// not reassigned (CodeQL treats that as a fresh request source).
+	if r.ContentLength < 0 || r.ContentLength > backupMaxBody {
+		respondBedrockAgentError(w, bkInvalid("request body must declare a Content-Length of at most 1 MiB"))
 		return true
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, backupMaxBody)
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "backup"); !ok {
 		respondBedrockAgentError(w, &bedrockAgentError{status: status, code: code, msg: msg})
 		return true

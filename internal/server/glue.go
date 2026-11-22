@@ -36,7 +36,13 @@ func (s *Server) handleGlueJSONRouter(w http.ResponseWriter, r *http.Request) bo
 		return false
 	}
 	op := strings.TrimPrefix(strings.TrimSpace(r.Header.Get("X-Amz-Target")), glueTargetPrefix)
-	r.Body = http.MaxBytesReader(w, r.Body, glueMaxBody)
+	// A declared length bounds the body (net/http stops reading there), so
+	// require one; chunked bodies of unknown length are refused. r.Body is
+	// not reassigned (CodeQL treats that as a fresh request source).
+	if r.ContentLength < 0 || r.ContentLength > glueMaxBody {
+		respondGlueError(w, http.StatusBadRequest, "InvalidInputException", "request body must declare a Content-Length within the size limit")
+		return true
+	}
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "glue"); !ok {
 		respondGlueError(w, status, code, msg)
 		return true

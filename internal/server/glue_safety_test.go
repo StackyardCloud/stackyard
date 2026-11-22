@@ -2,7 +2,9 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -55,5 +57,23 @@ func TestGlueHandleDropsUnderscoreRequestKeys(t *testing.T) {
 	}
 	if _, ok := in["_indexes"]; ok {
 		t.Fatal("handle kept a caller-supplied _ key")
+	}
+}
+
+func TestGlueRefusesBodiesWithoutDeclaredLength(t *testing.T) {
+	_, ts := newGlueTestServer(t)
+	req, err := http.NewRequest(http.MethodPost, ts.URL+"/", io.MultiReader(strings.NewReader(`{}`)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("X-Amz-Target", "AWSGlue.GetDatabases")
+	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("chunked body: %d", resp.StatusCode)
 	}
 }
