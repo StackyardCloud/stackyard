@@ -393,6 +393,22 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/kinesisvideostreams/docker-compose.yml"
   },
   {
+    id: "kinesisvideomedia",
+    name: "Kinesis Video Streams Media",
+    category: "integration",
+    summary: "PutMedia ingest of MKV fragments with acknowledgements, and GetMedia reads by fragment number, timestamp, continuation token, EARLIEST or NOW.",
+    docsHref: "../../../index.html#kinesisvideomedia",
+    exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
+  },
+  {
+    id: "kinesisvideoarchivedmedia",
+    name: "Kinesis Video Streams Archived Media",
+    category: "integration",
+    summary: "ListFragments, GetMediaForFragmentList, GetClip, GetImages and HLS/DASH session URLs that serve playlists of the stored fragments.",
+    docsHref: "../../../index.html#kinesisvideoarchivedmedia",
+    exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
+  },
+  {
     id: "mq",
     name: "Amazon MQ",
     category: "integration",

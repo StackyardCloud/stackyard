@@ -85,6 +85,8 @@
         <a href="#kendra">Kendra</a>
         <a href="#kinesis">Kinesis</a>
         <a href="#kinesis-video-streams">Kinesis Video Streams</a>
+        <a href="#kinesisvideomedia">Kinesis Video Streams Media</a>
+        <a href="#kinesisvideoarchivedmedia">Kinesis Video Streams Archived Media</a>
         <a href="#lexv2">Lex V2</a>
         <a href="#pinpoint">Pinpoint</a>
         <a href="#pcs">PCS</a>
@@ -3147,6 +3149,70 @@
         <ul>
         <li><code>kinesisvideostreams</code>: <code>docker compose -f examples/aws/kinesisvideostreams/docker-compose.yml up --build</code></li>
         <li><code>kinesisvideostreams</code>: <code>docker compose -f examples/aws/kinesisvideostreams/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideomedia" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Streams Media</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>, sent to the endpoint from <code>GetDataEndpoint</code> (Stackyard returns its own URL). <code>POST /putMedia</code> takes a Matroska (MKV) body with <code>x-amzn-stream-name</code> or <code>x-amzn-stream-arn</code> and <code>x-amzn-fragment-timecode-type</code>; each cluster becomes a fragment and is acknowledged with BUFFERING, RECEIVED and PERSISTED events (one JSON object per line). Stackyard reads the whole body, so a call carries at most 25 MiB. <code>POST /getMedia</code> returns stored fragments as standalone MKV with the <code>AWS_KINESISVIDEO_*</code> tags; a NOW selector waits briefly for new fragments instead of holding the connection open.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideomedia_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-media</code>: <code>docker compose -f examples/aws/kinesis-video-media/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideoarchivedmedia" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Streams Archived Media</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. Reads fragments stored by PutMedia on streams with data retention: ListFragments, GetMediaForFragmentList, GetClip (returns the stored Matroska fragments rather than an MP4), GetImages (solid placeholder JPEG/PNG images where media exists, since Stackyard has no decoder) and Get{HLS,DASH}StreamingSessionURL. The session URLs are served by Stackyard: an HLS master and media playlist, or a DASH manifest, listing the stored fragments.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>6</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideoarchivedmedia_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-media</code>: <code>docker compose -f examples/aws/kinesis-video-media/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

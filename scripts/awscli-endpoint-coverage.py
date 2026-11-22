@@ -153,6 +153,14 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "kinesisvideo",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
     },
+    "kinesisvideomedia": {
+        "cli": "kinesis-video-media",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideomedia_ops.go",
+    },
+    "kinesisvideoarchivedmedia": {
+        "cli": "kinesis-video-archived-media",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideoarchivedmedia_ops.go",
+    },
     "lexv2": {"cli": "lexv2-models", "ops_file": REPO_ROOT / "internal/server/lexv2_ops.go"},
     "pinpoint": {"cli": "pinpoint", "ops_file": REPO_ROOT / "internal/server/pinpoint_ops.go"},
     "smsvoicev2": {
@@ -1084,6 +1092,14 @@ SERVICE_ALIASES = {
     "amazon kinesis video streams": "kinesisvideostreams",
     "awskinesisvideostreams": "kinesisvideostreams",
     "aws kinesis video streams": "kinesisvideostreams",
+    "kinesisvideomedia": "kinesisvideomedia",
+    "kinesis-video-media": "kinesisvideomedia",
+    "kinesis video media": "kinesisvideomedia",
+    "amazonkinesisvideomedia": "kinesisvideomedia",
+    "kinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
+    "kinesis-video-archived-media": "kinesisvideoarchivedmedia",
+    "kinesis video archived media": "kinesisvideoarchivedmedia",
+    "amazonkinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
     "emr": "emr",
     "amazonemr": "emr",
     "amazon emr": "emr",
@@ -2987,6 +3003,8 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "workspacesthinclient": {},
     "workspacesweb": {},
     "kinesisvideostreams": {},
+    "kinesisvideomedia": {},
+    "kinesisvideoarchivedmedia": {},
     "finspace": {},
     "finspacemanagement": {},
     "gameliftstreams": {},
@@ -13109,6 +13127,10 @@ def generate_cli_input_payload(
             "apiId": "api-0123456789abcdef0123456789abcdef0123456789abcdef",
             "format": "SDL",
         }, None
+    if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+        # These blob-output commands demand their required members as flags (plus
+        # an outfile) even to print a skeleton; hydration fills in real values.
+        return {"StreamName": KVS_MEDIA_STREAM_NAME}, None
     if endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         # aws appconfigdata get-latest-configuration needs --configuration-token and an outfile even
         # to print a skeleton; hydration swaps in a token from a fresh session.
@@ -30197,6 +30219,118 @@ def appconfigdata_seed_session(
     }
 
 
+# One stream per process: producer timestamps must increase per stream, so
+# a rerun against the same server must not reuse an earlier run's stream.
+KVS_MEDIA_STREAM_NAME = f"stackyard-coverage-media-{os.getpid()}-{int(time.time())}"
+
+
+def kvs_media_ebml(element_id: bytes, content: bytes) -> bytes:
+    # EBML element with an 8-byte size field (0x01 marker + 7 bytes).
+    return element_id + b"\x01" + len(content).to_bytes(7, "big") + content
+
+
+def kvs_media_test_mkv(cluster_millis: Sequence[int]) -> bytes:
+    """A minimal Matroska stream: one H.264 track, one SimpleBlock per cluster."""
+    header = kvs_media_ebml(b"\x1a\x45\xdf\xa3", kvs_media_ebml(b"\x42\x82", b"matroska"))
+    segment = b"\x18\x53\x80\x67\x01" + b"\xff" * 7  # unknown-size segment
+    info = kvs_media_ebml(b"\x15\x49\xa9\x66", kvs_media_ebml(b"\x2a\xd7\xb1", (1_000_000).to_bytes(3, "big")))
+    track = kvs_media_ebml(b"\xd7", b"\x01") + kvs_media_ebml(b"\x83", b"\x01") + kvs_media_ebml(b"\x86", b"V_MPEG4/ISO/AVC")
+    tracks = kvs_media_ebml(b"\x16\x54\xae\x6b", kvs_media_ebml(b"\xae", track))
+    out = header + segment + info + tracks
+    for millis in cluster_millis:
+        cluster = kvs_media_ebml(b"\xe7", int(millis).to_bytes(8, "big")) + kvs_media_ebml(b"\xa3", b"\x81\x00\x21\x80frame")
+        out += kvs_media_ebml(b"\x1f\x43\xb6\x75", cluster)
+    return out
+
+
+def kvs_media_signed_post(
+    endpoint_url: str, region: str, env: dict[str, str], path: str, body: bytes, headers: dict[str, str]
+) -> tuple[int, str]:
+    url = endpoint_url.rstrip("/") + path
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=body,
+        service="kinesisvideo",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers=headers,
+    )
+    req = urlrequest.Request(url=url, method="POST", data=body, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            return int(resp.status), resp.read().decode("utf-8", errors="replace")
+    except urlerror.HTTPError as err:
+        return int(err.code), err.read().decode("utf-8", errors="replace")
+    except (urlerror.URLError, OSError) as err:
+        return 0, str(err)
+
+
+def kvs_media_put(endpoint_url: str, region: str, env: dict[str, str], cluster_millis: Sequence[int]) -> tuple[int, str]:
+    """PutMedia a few fragments into the coverage stream (no CLI command exists)."""
+    # Producer timestamps must keep increasing across calls on one stream.
+    state = RUNTIME_STATE.setdefault("kinesisvideomedia", {})
+    start = max(time.time(), float(state.get("next_producer_start") or 0))
+    state["next_producer_start"] = start + max(cluster_millis, default=0) / 1000 + 1
+    return kvs_media_signed_post(
+        endpoint_url,
+        region,
+        env,
+        "/putMedia",
+        kvs_media_test_mkv(cluster_millis),
+        {
+            "x-amzn-stream-name": KVS_MEDIA_STREAM_NAME,
+            "x-amzn-fragment-timecode-type": "RELATIVE",
+            "x-amzn-producer-start-timestamp": f"{start:.3f}",
+        },
+    )
+
+
+def kvs_media_seed(endpoint_url: str, region: str, env: dict[str, str]) -> dict[str, object]:
+    """Create the coverage stream once and give it archived fragments."""
+    state = RUNTIME_STATE.setdefault("kinesisvideomedia", {})
+    if state.get("fragment_number"):
+        return state
+    create = json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME, "DataRetentionInHours": 24, "MediaType": "video/h264"}).encode()
+    kvs_media_signed_post(endpoint_url, region, env, "/createStream", create, {"Content-Type": "application/json"})
+    status, text = kvs_media_put(endpoint_url, region, env, [0, 2000, 4000])
+    if status != 200:
+        return state
+    for line in text.splitlines():
+        try:
+            ack = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(ack, dict) and ack.get("FragmentNumber"):
+            state["fragment_number"] = str(ack["FragmentNumber"])
+            break
+    state["seeded_at"] = time.time()
+    return state
+
+
+def kvs_media_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = kvs_media_seed(endpoint_url, region, env)
+    seeded_at = float(state.get("seeded_at") or time.time())
+    window = {"StartTimestamp": int(seeded_at - 60), "EndTimestamp": int(seeded_at + 60)}
+    op = endpoint.operation
+    hydrated: dict = {"StreamName": KVS_MEDIA_STREAM_NAME}
+    if op == "GetMedia":
+        hydrated["StartSelector"] = {"StartSelectorType": "EARLIEST"}
+    elif op == "GetMediaForFragmentList":
+        hydrated["Fragments"] = [str(state.get("fragment_number") or "0")]
+    elif op == "GetClip":
+        hydrated["ClipFragmentSelector"] = {"FragmentSelectorType": "SERVER_TIMESTAMP", "TimestampRange": window}
+    elif op == "GetImages":
+        hydrated.update({"ImageSelectorType": "SERVER_TIMESTAMP", "Format": "PNG", "SamplingInterval": 3000, "MaxResults": 5, **window})
+    elif op in {"GetHLSStreamingSessionURL", "GetDASHStreamingSessionURL"}:
+        hydrated["PlaybackMode"] = "LIVE"
+    elif op != "ListFragments":
+        return payload
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30208,6 +30342,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
+        return kvs_media_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "appconfigdata":
@@ -50480,6 +50616,39 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+KVS_MEDIA_OUTFILE_OPERATIONS = {
+    ("kinesisvideomedia", "GetMedia"),
+    ("kinesisvideoarchivedmedia", "GetClip"),
+    ("kinesisvideoarchivedmedia", "GetMediaForFragmentList"),
+}
+
+
+def run_kvs_media_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    # Pass every member as an explicit flag; the CLI won't take the required
+    # ones from --cli-input-json for these streaming-output commands.
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-kvs-", suffix=".mkv", delete=False) as tmp:
+        out_path = tmp.name
+    # The outfile goes first: a trailing positional would be swallowed by a
+    # list flag such as --fragments.
+    cmd = [*base_cmd, out_path]
+    for key, value in payload.items():
+        flag = "--" + re.sub(r"(?<!^)(?=[A-Z])", "-", key).lower()
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            cmd += [flag, *value]  # string lists are space-separated values
+        else:
+            cmd += [flag, value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))]
+    try:
+        cp = run_subprocess(cmd, env)
+    finally:
+        Path(out_path).unlink(missing_ok=True)
+    return cp, cmd, ""
+
+
 def run_appconfigdata_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -50950,6 +51119,19 @@ def run_endpoint(
 ) -> Result:
     started = time.time()
     extra_output_text = ""
+    if endpoint.service == "kinesisvideomedia" and endpoint.operation == "PutMedia":
+        # PutMedia is the producer API and has no CLI command; send real MKV.
+        kvs_media_seed(endpoint_url, region, env)
+        status_code, response_text = kvs_media_put(endpoint_url, region, env, [0, 1000])
+        ok = status_code == 200 and '"ERROR"' not in response_text
+        return Result(
+            endpoint=endpoint,
+            status="success" if ok else ("service_error" if status_code == 200 else classify_raw_http_failure(status_code, response_text)[0]),
+            returncode=0 if ok else 1,
+            duration_ms=int((time.time() - started) * 1000),
+            detail="ok(raw_put_media)" if ok else (response_text[:300] or f"http {status_code}"),
+            command="raw:kinesisvideomedia.PutMedia",
+        )
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         lambda_ensure_function(aws_bin, endpoint_url, region, env)
         function_name = str(lambda_runtime_state(region).get("function_name", LAMBDA_DEFAULT_FUNCTION_NAME))
@@ -52235,6 +52417,9 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+        cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         cp, cmd, extra_output_text = run_appconfigdata_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
