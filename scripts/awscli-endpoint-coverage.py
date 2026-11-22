@@ -550,7 +550,11 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
+    "codecommit": {"cli": "codecommit", "ops_file": REPO_ROOT / "internal/server/codecommit_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
+    "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
+    "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
@@ -2174,7 +2178,18 @@ SERVICE_ALIASES = {
     "dynamodb-streams": "dynamodbstreams",
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
+    "codecommit": "codecommit",
+    "code-commit": "codecommit",
+    "awscodecommit": "codecommit",
     "efs": "efs",
+    "codeconnections": "codeconnections",
+    "awscodeconnections": "codeconnections",
+    "codestarconnections": "codestarconnections",
+    "codestar-connections": "codestarconnections",
+    "awscodestarconnections": "codestarconnections",
+    "codestarnotifications": "codestarnotifications",
+    "codestar-notifications": "codestarnotifications",
+    "awscodestarnotifications": "codestarnotifications",
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
@@ -3072,12 +3087,16 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "codecommit": {},
     "applicationautoscaling": {},
     "efs": {},
     "scheduler": {},
     "pipes": {},
     "docdb": {},
     "glue": {},
+    "codeconnections": {},
+    "codestarconnections": {},
+    "codestarnotifications": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31801,6 +31820,74 @@ def applicationautoscaling_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+CODESTARNOTIFICATIONS_RESOURCE = "arn:aws:codebuild:us-east-1:123456789012:project/stackyard-codebuild-project"
+CODESTARNOTIFICATIONS_EVENT = "codebuild-project-build-state-failed"
+
+
+def codestarnotifications_topic(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    created = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", name])
+    return str(created.get("TopicArn") or "") if isinstance(created, dict) else ""
+
+
+def codestarnotifications_rule(
+    aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str, topic_arn: str
+) -> str:
+    payload = {
+        "Name": name,
+        "EventTypeIds": [CODESTARNOTIFICATIONS_EVENT],
+        "Resource": CODESTARNOTIFICATIONS_RESOURCE,
+        "Targets": [{"TargetType": "SNS", "TargetAddress": topic_arn}],
+        "DetailType": "BASIC",
+    }
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "codestar-notifications", "create-notification-rule", env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return str(created.get("Arn") or "") if isinstance(created, dict) else ""
+
+
+def codestarnotifications_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each CodeStar Notifications operation a real rule on the seeded
+    CodeBuild project with an SNS target; deletes get resources of their own."""
+    op = endpoint.operation
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    state = RUNTIME_STATE.setdefault("codestarnotifications", {})
+    if not state.get("rule"):
+        state["topic"] = codestarnotifications_topic(aws_bin, endpoint_url, region, env, f"{unique}-topic")
+        state["extra_topic"] = codestarnotifications_topic(aws_bin, endpoint_url, region, env, f"{unique}-extra")
+        state["rule"] = codestarnotifications_rule(aws_bin, endpoint_url, region, env, f"{unique}-rule", state["topic"])
+    rule, topic, extra = state["rule"], state["topic"], state["extra_topic"]
+    if op in {"ListEventTypes", "ListNotificationRules", "ListTargets"}:
+        return {}
+    if op == "CreateNotificationRule":
+        return {
+            "Name": unique,
+            "EventTypeIds": [CODESTARNOTIFICATIONS_EVENT],
+            "Resource": CODESTARNOTIFICATIONS_RESOURCE,
+            "Targets": [{"TargetType": "SNS", "TargetAddress": topic}],
+            "DetailType": "FULL",
+        }
+    if op == "UpdateNotificationRule":
+        return {"Arn": rule, "Status": "ENABLED", "DetailType": "FULL"}
+    if op == "DeleteNotificationRule":
+        return {"Arn": codestarnotifications_rule(aws_bin, endpoint_url, region, env, unique, topic)}
+    if op == "Subscribe":
+        return {"Arn": rule, "Target": {"TargetType": "SNS", "TargetAddress": extra}}
+    if op == "Unsubscribe":
+        return {"Arn": rule, "TargetAddress": extra}
+    if op == "DeleteTarget":
+        doomed = codestarnotifications_topic(aws_bin, endpoint_url, region, env, unique)
+        codestarnotifications_rule(aws_bin, endpoint_url, region, env, unique, doomed)
+        return {"TargetAddress": doomed, "ForceUnsubscribeAll": True}
+    if op == "TagResource":
+        return {"Arn": rule, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"Arn": rule, "TagKeys": ["stackyard"]}
+    return {"Arn": rule}
+
+
 def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
     created = run_aws_json(
         aws_bin, endpoint_url, region, "efs", "create-file-system", env,
@@ -32052,6 +32139,375 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     if op in {"PutKey", "DeleteKey", "UpdateKeys"}:
         hydrated["IfMatch"] = cloudfront_kvs_data_etag(aws_bin, endpoint_url, region, env, arn)
     return hydrated
+
+
+CODECONNECTIONS_CLI = {"codeconnections": "codeconnections", "codestarconnections": "codestar-connections"}
+CODECONNECTIONS_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-coverage-sync"
+
+
+def codeconnections_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def codeconnections_stackyard_post(service: str, endpoint_url: str, region: str, env: dict[str, str], path: str, body: dict) -> dict:
+    """Call a Stackyard-only codeconnections endpoint (connection activation,
+    sync blockers): steps AWS completes outside the API."""
+    url = endpoint_url.rstrip("/") + "/_stackyard/codeconnections/" + path
+    raw = json.dumps(body).encode()
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=raw,
+        service=CODECONNECTIONS_CLI[service],
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers={"Content-Type": "application/json"},
+    )
+    req = urlrequest.Request(url=url, method="POST", data=raw, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace") or "{}")
+    except (urlerror.URLError, OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def codeconnections_create(service: str, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, **ids: str) -> str:
+    """Create one resource through the real CLI and return its ARN, ID or name."""
+    cli = CODECONNECTIONS_CLI[service]
+    if kind == "connection":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-connection", env, ["--provider-type", "GitHub", "--connection-name", codeconnections_unique("cov-")])
+        arn = str((data or {}).get("ConnectionArn") or "")
+        if arn:
+            codeconnections_stackyard_post(service, endpoint_url, region, env, "connections/" + arn.rsplit("/", 1)[-1] + "/activate", {})
+        return arn
+    if kind == "host":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-host", env, ["--name", codeconnections_unique("cov-host-"), "--provider-type", "GitHubEnterpriseServer", "--provider-endpoint", "https://ghe.example.com"])
+        return str((data or {}).get("HostArn") or "")
+    if kind == "link":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-repository-link", env, ["--connection-arn", ids["connection"], "--owner-id", "stackyard", "--repository-name", codeconnections_unique("repo-")])
+        return str(((data or {}).get("RepositoryLinkInfo") or {}).get("RepositoryLinkId") or "")
+    if kind == "sync":
+        name = codeconnections_unique("covstack")
+        run_aws_json(aws_bin, endpoint_url, region, cli, "create-sync-configuration", env, [
+            "--branch", "main", "--config-file", "deploy/stack.yaml", "--repository-link-id", ids["link"],
+            "--resource-name", name, "--role-arn", CODECONNECTIONS_ROLE_ARN, "--sync-type", "CFN_STACK_SYNC",
+        ])
+        return name
+    raise ValueError(kind)
+
+
+def codeconnections_fixture(service: str, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault(service, {})
+    if not state.get("sync"):
+        state["connection"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "connection")
+        state["host"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "host")
+        state["link"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "link", connection=state["connection"])
+        state["sync"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "sync", link=state["link"])
+    return state
+
+
+def codeconnections_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point CodeConnections / CodeStar Connections operations at real
+    resources; deletes and blocker resolution get resources of their own."""
+    svc, op = endpoint.service, endpoint.operation
+    fx = codeconnections_fixture(svc, aws_bin, endpoint_url, region, env)
+
+    def make(kind: str, **ids: str) -> str:
+        return codeconnections_create(svc, aws_bin, endpoint_url, region, env, kind, **ids)
+
+    sync_key = {"SyncType": "CFN_STACK_SYNC", "ResourceName": fx["sync"]}
+    if op == "CreateConnection":
+        return {"ProviderType": "GitHub", "ConnectionName": codeconnections_unique("cov-")}
+    if op == "CreateHost":
+        return {"Name": codeconnections_unique("cov-host-"), "ProviderType": "GitHubEnterpriseServer", "ProviderEndpoint": "https://ghe.example.com"}
+    if op == "CreateRepositoryLink":
+        return {"ConnectionArn": fx["connection"], "OwnerId": "stackyard", "RepositoryName": codeconnections_unique("repo-")}
+    if op == "CreateSyncConfiguration":
+        return {
+            "Branch": "main", "ConfigFile": "deploy/stack.yaml", "RepositoryLinkId": fx["link"],
+            "ResourceName": codeconnections_unique("covstack"), "RoleArn": CODECONNECTIONS_ROLE_ARN, "SyncType": "CFN_STACK_SYNC",
+        }
+    if op == "DeleteConnection":
+        return {"ConnectionArn": make("connection")}
+    if op == "DeleteHost":
+        return {"HostArn": make("host")}
+    if op == "DeleteRepositoryLink":
+        return {"RepositoryLinkId": make("link", connection=fx["connection"])}
+    if op == "DeleteSyncConfiguration":
+        return {"SyncType": "CFN_STACK_SYNC", "ResourceName": make("sync", link=fx["link"])}
+    if op == "GetConnection":
+        return {"ConnectionArn": fx["connection"]}
+    if op == "GetHost":
+        return {"HostArn": fx["host"]}
+    if op == "UpdateHost":
+        return {"HostArn": fx["host"], "ProviderEndpoint": "https://ghe2.example.com"}
+    if op in {"GetRepositoryLink", "UpdateRepositoryLink"}:
+        return {"RepositoryLinkId": fx["link"]}
+    if op == "GetRepositorySyncStatus":
+        return {"Branch": "main", "RepositoryLinkId": fx["link"], "SyncType": "CFN_STACK_SYNC"}
+    if op in {"GetResourceSyncStatus", "GetSyncBlockerSummary", "GetSyncConfiguration"}:
+        return dict(sync_key)
+    if op == "UpdateSyncConfiguration":
+        return {**sync_key, "Branch": "main"}
+    if op == "UpdateSyncBlocker":
+        blocker = codeconnections_stackyard_post(svc, endpoint_url, region, env, f"sync-configurations/CFN_STACK_SYNC/{fx['sync']}/blockers", {})
+        return {**sync_key, "Id": str(blocker.get("Id") or "missing"), "ResolvedReason": "fixed by coverage"}
+    if op in {"ListRepositorySyncDefinitions", "ListSyncConfigurations"}:
+        return {"RepositoryLinkId": fx["link"], "SyncType": "CFN_STACK_SYNC"}
+    if op in {"ListConnections", "ListHosts", "ListRepositoryLinks"}:
+        return {}
+    if op == "TagResource":
+        return {"ResourceArn": fx["connection"], "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["connection"], "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["connection"]}
+    return copy.deepcopy(payload)
+
+
+CODECOMMIT_RULE_CONTENT = json.dumps(
+    {"Version": "2018-11-08", "Statements": [{"Type": "Approvers", "NumberOfApprovalsNeeded": 1}]}
+)
+CODECOMMIT_TRIGGERS = [
+    {"name": "stackyard", "destinationArn": "arn:aws:sns:us-east-1:123456789012:stackyard-codecommit", "events": ["all"]}
+]
+
+
+def codecommit_b64(text: str) -> str:
+    return base64.b64encode(text.encode("utf-8")).decode("ascii")
+
+
+def codecommit_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "codecommit", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def codecommit_unique(prefix: str) -> str:
+    return f"{prefix}-{time.time_ns()}"
+
+
+def codecommit_branch(aws_bin, endpoint_url, region, env, repo: str, parent: str, path: str, content: str) -> tuple[str, str]:
+    """A new branch off parent carrying one extra commit; returns (name, commit id)."""
+    name = codecommit_unique("cov")
+    out = codecommit_cli(aws_bin, endpoint_url, region, env, "put-file", {
+        "repositoryName": repo, "branchName": name, "parentCommitId": parent,
+        "filePath": path, "fileContent": codecommit_b64(content),
+    })
+    return name, str(out.get("commitId") or "")
+
+
+def codecommit_pull_request(aws_bin, endpoint_url, region, env, repo: str, source: str, dest: str) -> dict:
+    out = codecommit_cli(aws_bin, endpoint_url, region, env, "create-pull-request", {
+        "title": "stackyard coverage", "targets": [{"repositoryName": repo, "sourceReference": source, "destinationReference": dest}],
+    })
+    pr = out.get("pullRequest") if isinstance(out.get("pullRequest"), dict) else {}
+    return {"id": str(pr.get("pullRequestId") or ""), "revision": str(pr.get("revisionId") or "")}
+
+
+def codecommit_template(aws_bin, endpoint_url, region, env) -> str:
+    name = codecommit_unique("cov-tmpl")
+    codecommit_cli(aws_bin, endpoint_url, region, env, "create-approval-rule-template", {
+        "approvalRuleTemplateName": name, "approvalRuleTemplateContent": CODECOMMIT_RULE_CONTENT,
+    })
+    return name
+
+
+def codecommit_comment(aws_bin, endpoint_url, region, env, state: dict) -> str:
+    out = codecommit_cli(aws_bin, endpoint_url, region, env, "post-comment-for-compared-commit", {
+        "repositoryName": state["repo"], "beforeCommitId": state["c1"], "afterCommitId": state["c2"], "content": "stackyard coverage",
+    })
+    comment = out.get("comment") if isinstance(out.get("comment"), dict) else {}
+    return str(comment.get("commentId") or "")
+
+
+def codecommit_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One repository (main, a feature branch and two conflicting branches),
+    an open pull request, a template and a comment, shared by the
+    non-destructive operations."""
+    state = RUNTIME_STATE.setdefault("codecommit", {})
+    if state.get("repo"):
+        return state
+    repo = codecommit_unique("stackyard-cc")
+    cli = lambda op, payload: codecommit_cli(aws_bin, endpoint_url, region, env, op, payload)
+    cli("create-repository", {"repositoryName": repo, "tags": {"stackyard": "coverage"}})
+    c1 = str(cli("create-commit", {
+        "repositoryName": repo, "branchName": "main", "commitMessage": "init",
+        "putFiles": [
+            {"filePath": "README.md", "fileContent": codecommit_b64("hello\n")},
+            {"filePath": "f.txt", "fileContent": codecommit_b64("a\nb\nc\n")},
+        ],
+    }).get("commitId") or "")
+    feature, c2 = codecommit_branch(aws_bin, endpoint_url, region, env, repo, c1, "feature.txt", "feature\n")
+    cx, _ = codecommit_branch(aws_bin, endpoint_url, region, env, repo, c1, "f.txt", "X\nb\nc\n")
+    cy, _ = codecommit_branch(aws_bin, endpoint_url, region, env, repo, c1, "f.txt", "Y\nb\nc\n")
+    blob_of = lambda spec, path: str(cli("get-file", {"repositoryName": repo, "commitSpecifier": spec, "filePath": path}).get("blobId") or "")
+    state.update({
+        "repo": repo, "arn": f"arn:aws:codecommit:{region}:123456789012:{repo}", "c1": c1, "c2": c2,
+        "feature": feature, "cx": cx, "cy": cy,
+        "readme_blob": blob_of(c1, "README.md"), "f_blob": blob_of(c1, "f.txt"), "fx_blob": blob_of(cx, "f.txt"),
+    })
+    state["pr"] = codecommit_pull_request(aws_bin, endpoint_url, region, env, repo, feature, "main")
+    state["template"] = codecommit_template(aws_bin, endpoint_url, region, env)
+    state["comment"] = codecommit_comment(aws_bin, endpoint_url, region, env, state)
+    return state
+
+
+def codecommit_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each operation at real resources; destructive ones get their own."""
+    st = codecommit_shared_state(aws_bin, endpoint_url, region, env)
+    repo, op = st["repo"], endpoint.operation
+    pr = st["pr"]
+    cli = lambda name, body: codecommit_cli(aws_bin, endpoint_url, region, env, name, body)
+    fresh_branch = lambda path="cov.txt": codecommit_branch(aws_bin, endpoint_url, region, env, repo, st["c1"], path, codecommit_unique("x") + "\n")
+
+    def fresh_pr() -> dict:
+        src, _ = fresh_branch()
+        dst, _ = fresh_branch("other.txt")
+        cli("create-branch", {"repositoryName": repo, "branchName": dst + "-base", "commitId": st["c1"]})
+        return {**codecommit_pull_request(aws_bin, endpoint_url, region, env, repo, src, dst + "-base"), "src": src}
+
+    def fresh_rule() -> str:
+        name = codecommit_unique("cov-rule")
+        cli("create-pull-request-approval-rule", {"pullRequestId": pr["id"], "approvalRuleName": name, "approvalRuleContent": CODECOMMIT_RULE_CONTENT})
+        return name
+
+    merge = {"repositoryName": repo, "sourceCommitSpecifier": st["cx"], "destinationCommitSpecifier": st["cy"], "mergeOption": "THREE_WAY_MERGE"}
+    simple = {
+        "BatchDescribeMergeConflicts": merge,
+        "BatchGetCommits": {"repositoryName": repo, "commitIds": [st["c1"], st["c2"]]},
+        "BatchGetRepositories": {"repositoryNames": [repo]},
+        "CreateUnreferencedMergeCommit": {"repositoryName": repo, "sourceCommitSpecifier": st["feature"], "destinationCommitSpecifier": "main", "mergeOption": "THREE_WAY_MERGE"},
+        "DescribeMergeConflicts": {**merge, "filePath": "f.txt"},
+        "DescribePullRequestEvents": {"pullRequestId": pr["id"]},
+        "EvaluatePullRequestApprovalRules": {"pullRequestId": pr["id"], "revisionId": pr["revision"]},
+        "GetApprovalRuleTemplate": {"approvalRuleTemplateName": st["template"]},
+        "GetBlob": {"repositoryName": repo, "blobId": st["readme_blob"]},
+        "GetBlobDifferences": {"repositoryName": repo, "beforeBlobId": st["f_blob"], "afterBlobId": st["fx_blob"]},
+        "GetBranch": {"repositoryName": repo, "branchName": "main"},
+        "GetComment": {"commentId": st["comment"]},
+        "GetCommentReactions": {"commentId": st["comment"]},
+        "GetCommentsForComparedCommit": {"repositoryName": repo, "beforeCommitId": st["c1"], "afterCommitId": st["c2"]},
+        "GetCommentsForPullRequest": {"pullRequestId": pr["id"]},
+        "GetCommit": {"repositoryName": repo, "commitId": st["c1"]},
+        "GetDifferences": {"repositoryName": repo, "beforeCommitSpecifier": st["c1"], "afterCommitSpecifier": st["c2"]},
+        "GetFile": {"repositoryName": repo, "filePath": "README.md"},
+        "GetFolder": {"repositoryName": repo, "folderPath": "/"},
+        "GetMergeCommit": {"repositoryName": repo, "sourceCommitSpecifier": st["feature"], "destinationCommitSpecifier": "main"},
+        "GetMergeConflicts": merge,
+        "GetMergeOptions": {"repositoryName": repo, "sourceCommitSpecifier": st["feature"], "destinationCommitSpecifier": "main"},
+        "GetPullRequest": {"pullRequestId": pr["id"]},
+        "GetPullRequestApprovalStates": {"pullRequestId": pr["id"], "revisionId": pr["revision"]},
+        "GetPullRequestOverrideState": {"pullRequestId": pr["id"], "revisionId": pr["revision"]},
+        "GetRepository": {"repositoryName": repo},
+        "GetRepositoryTriggers": {"repositoryName": repo},
+        "ListApprovalRuleTemplates": {},
+        "ListAssociatedApprovalRuleTemplatesForRepository": {"repositoryName": repo},
+        "ListBranches": {"repositoryName": repo},
+        "ListFileCommitHistory": {"repositoryName": repo, "filePath": "README.md"},
+        "ListPullRequests": {"repositoryName": repo},
+        "ListRepositories": {},
+        "ListRepositoriesForApprovalRuleTemplate": {"approvalRuleTemplateName": st["template"]},
+        "ListTagsForResource": {"resourceArn": st["arn"]},
+        "PostCommentForComparedCommit": {"repositoryName": repo, "beforeCommitId": st["c1"], "afterCommitId": st["c2"], "content": "coverage"},
+        "PostCommentForPullRequest": {"pullRequestId": pr["id"], "repositoryName": repo, "beforeCommitId": st["c1"], "afterCommitId": st["c2"], "content": "coverage"},
+        "PostCommentReply": {"inReplyTo": st["comment"], "content": "reply"},
+        "PutCommentReaction": {"commentId": st["comment"], "reactionValue": ":thumbsup:"},
+        "PutRepositoryTriggers": {"repositoryName": repo, "triggers": CODECOMMIT_TRIGGERS},
+        "TagResource": {"resourceArn": st["arn"], "tags": {"env": "coverage"}},
+        "TestRepositoryTriggers": {"repositoryName": repo, "triggers": CODECOMMIT_TRIGGERS},
+        "UntagResource": {"resourceArn": st["arn"], "tagKeys": ["env"]},
+        "UpdateApprovalRuleTemplateContent": {"approvalRuleTemplateName": st["template"], "newRuleContent": CODECOMMIT_RULE_CONTENT},
+        "UpdateApprovalRuleTemplateDescription": {"approvalRuleTemplateName": st["template"], "approvalRuleTemplateDescription": "coverage"},
+        "UpdateComment": {"commentId": st["comment"], "content": "updated"},
+        "UpdateDefaultBranch": {"repositoryName": repo, "defaultBranchName": "main"},
+        "UpdatePullRequestApprovalState": {"pullRequestId": pr["id"], "revisionId": pr["revision"], "approvalState": "APPROVE"},
+        "UpdatePullRequestDescription": {"pullRequestId": pr["id"], "description": "coverage"},
+        "UpdatePullRequestTitle": {"pullRequestId": pr["id"], "title": "coverage"},
+        "UpdateRepositoryDescription": {"repositoryName": repo, "repositoryDescription": "coverage"},
+        "UpdateRepositoryEncryptionKey": {"repositoryName": repo, "kmsKeyId": "alias/aws/codecommit"},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "AssociateApprovalRuleTemplateWithRepository":
+        return {"approvalRuleTemplateName": codecommit_template(aws_bin, endpoint_url, region, env), "repositoryName": repo}
+    if op == "BatchAssociateApprovalRuleTemplateWithRepositories":
+        return {"approvalRuleTemplateName": codecommit_template(aws_bin, endpoint_url, region, env), "repositoryNames": [repo]}
+    if op in ("BatchDisassociateApprovalRuleTemplateFromRepositories", "DisassociateApprovalRuleTemplateFromRepository"):
+        name = codecommit_template(aws_bin, endpoint_url, region, env)
+        cli("associate-approval-rule-template-with-repository", {"approvalRuleTemplateName": name, "repositoryName": repo})
+        if op.startswith("Batch"):
+            return {"approvalRuleTemplateName": name, "repositoryNames": [repo]}
+        return {"approvalRuleTemplateName": name, "repositoryName": repo}
+    if op == "CreateApprovalRuleTemplate":
+        return {"approvalRuleTemplateName": codecommit_unique("cov-tmpl"), "approvalRuleTemplateContent": CODECOMMIT_RULE_CONTENT}
+    if op == "DeleteApprovalRuleTemplate":
+        return {"approvalRuleTemplateName": codecommit_template(aws_bin, endpoint_url, region, env)}
+    if op == "UpdateApprovalRuleTemplateName":
+        return {"oldApprovalRuleTemplateName": codecommit_template(aws_bin, endpoint_url, region, env), "newApprovalRuleTemplateName": codecommit_unique("cov-tmpl")}
+    if op == "CreateBranch":
+        return {"repositoryName": repo, "branchName": codecommit_unique("cov"), "commitId": st["c1"]}
+    if op == "DeleteBranch":
+        return {"repositoryName": repo, "branchName": fresh_branch()[0]}
+    if op == "CreateCommit":
+        return {"repositoryName": repo, "branchName": codecommit_unique("cov"), "parentCommitId": st["c1"],
+                "putFiles": [{"filePath": "new.txt", "fileContent": codecommit_b64("new\n")}]}
+    if op == "PutFile":
+        return {"repositoryName": repo, "branchName": codecommit_unique("cov"), "parentCommitId": st["c1"],
+                "filePath": "put.txt", "fileContent": codecommit_b64("put\n")}
+    if op == "DeleteFile":
+        name, tip = fresh_branch()
+        return {"repositoryName": repo, "branchName": name, "parentCommitId": tip, "filePath": "README.md"}
+    if op == "CreatePullRequest":
+        return {"title": "coverage", "targets": [{"repositoryName": repo, "sourceReference": st["feature"], "destinationReference": "main"}]}
+    if op == "CreatePullRequestApprovalRule":
+        return {"pullRequestId": pr["id"], "approvalRuleName": codecommit_unique("cov-rule"), "approvalRuleContent": CODECOMMIT_RULE_CONTENT}
+    if op == "DeletePullRequestApprovalRule":
+        return {"pullRequestId": pr["id"], "approvalRuleName": fresh_rule()}
+    if op == "UpdatePullRequestApprovalRuleContent":
+        return {"pullRequestId": pr["id"], "approvalRuleName": fresh_rule(), "newRuleContent": CODECOMMIT_RULE_CONTENT}
+    if op in ("CreateRepository", "DeleteRepository", "UpdateRepositoryName"):
+        name = codecommit_unique("stackyard-cc")
+        if op == "CreateRepository":
+            return {"repositoryName": name}
+        cli("create-repository", {"repositoryName": name})
+        if op == "DeleteRepository":
+            return {"repositoryName": name}
+        return {"oldName": name, "newName": name + "-renamed"}
+    if op == "DeleteCommentContent":
+        return {"commentId": codecommit_comment(aws_bin, endpoint_url, region, env, st)}
+    if op in ("MergeBranchesByFastForward", "MergeBranchesBySquash", "MergeBranchesByThreeWay"):
+        src, _ = fresh_branch("src.txt")
+        dst = codecommit_unique("cov-dst")
+        if op == "MergeBranchesByFastForward":
+            cli("create-branch", {"repositoryName": repo, "branchName": dst, "commitId": st["c1"]})
+        else:
+            dst, _ = fresh_branch("dst.txt")
+        return {"repositoryName": repo, "sourceCommitSpecifier": src, "destinationCommitSpecifier": dst, "targetBranch": dst}
+    if op in ("MergePullRequestByFastForward", "MergePullRequestBySquash", "MergePullRequestByThreeWay"):
+        src, _ = fresh_branch("src.txt")
+        dst = codecommit_unique("cov-dst")
+        cli("create-branch", {"repositoryName": repo, "branchName": dst, "commitId": st["c1"]})
+        fresh = codecommit_pull_request(aws_bin, endpoint_url, region, env, repo, src, dst)
+        # Templates associated by other operations add approval rules; approve
+        # so the merge isn't blocked on them.
+        cli("update-pull-request-approval-state", {"pullRequestId": fresh["id"], "revisionId": fresh["revision"], "approvalState": "APPROVE"})
+        return {"pullRequestId": fresh["id"], "repositoryName": repo}
+    if op in ("OverridePullRequestApprovalRules", "UpdatePullRequestStatus"):
+        fresh = fresh_pr()
+        if op == "UpdatePullRequestStatus":
+            return {"pullRequestId": fresh["id"], "pullRequestStatus": "CLOSED"}
+        return {"pullRequestId": fresh["id"], "revisionId": fresh["revision"], "overrideStatus": "OVERRIDE"}
+    return payload
 
 
 GLUE_FIXTURE = "stackyard"
@@ -33147,12 +33603,18 @@ def hydrate_payload_with_service_state(
         return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glue":
         return glue_hydrate_payload(endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"codeconnections", "codestarconnections"}:
+        return codeconnections_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "codecommit":
+        return codecommit_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "codestarnotifications":
+        return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "scheduler":
         return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "efs":

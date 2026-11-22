@@ -329,6 +329,22 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/codeartifact/docker-compose.yml"
   },
   {
+    id: "codeconnections",
+    name: "CodeConnections",
+    category: "integration",
+    summary: "Emulate source-provider connections, self-managed hosts, repository links and CloudFormation Git sync configurations.",
+    docsHref: "../../../index.html#codeconnections",
+    exampleHref: "../../../../examples/aws/codeconnections/docker-compose.yml"
+  },
+  {
+    id: "codestarconnections",
+    name: "CodeStar Connections",
+    category: "integration",
+    summary: "Emulate source-provider connections, self-managed hosts, repository links and CloudFormation Git sync configurations (shared store with CodeConnections).",
+    docsHref: "../../../index.html#codestarconnections",
+    exampleHref: "../../../../examples/aws/codeconnections/docker-compose.yml"
+  },
+  {
     id: "codebuild",
     name: "CodeBuild",
     category: "integration",
@@ -577,12 +593,28 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/devops-guru/docker-compose.yml"
   },
   {
+    id: "codecommit",
+    name: "CodeCommit",
+    category: "integration",
+    summary: "Emulate Git repositories with branches, commits, files, diffs, merges with conflict detection, pull requests, approval rules, comments, and triggers.",
+    docsHref: "../../../index.html#codecommit",
+    exampleHref: "../../../../examples/aws/codecommit/docker-compose.yml"
+  },
+  {
     id: "codepipeline",
     name: "CodePipeline",
     category: "integration",
     summary: "Stage and validate pipeline, execution, action type, job, and webhook API flows.",
     docsHref: "../../../index.html#codepipeline",
     exampleHref: "../../../../examples/aws/codepipeline/docker-compose.yml"
+  },
+  {
+    id: "codestarnotifications",
+    name: "CodeStar Notifications",
+    category: "integration",
+    summary: "Notification rules on CodeBuild, CodeDeploy, CodePipeline and CodeCommit resources with SNS and AWS Chatbot targets.",
+    docsHref: "../../../index.html#codestarnotifications",
+    exampleHref: "../../../../examples/aws/codestar-notifications/docker-compose.yml"
   },
   {
     id: "organizations",
