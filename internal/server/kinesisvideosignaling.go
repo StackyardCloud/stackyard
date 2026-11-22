@@ -69,7 +69,12 @@ func (s *Server) handleKinesisVideoSignalingRouter(w http.ResponseWriter, r *htt
 	if hint := strings.TrimSpace(sigV4ServiceHint(r)); hint != "" && hint != "kinesisvideo" {
 		return false
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, kvsSignalingMaxBody)
+	// A declared length bounds the body (net/http stops reading there), so
+	// require one: chunked bodies of unknown length are refused.
+	if r.ContentLength < 0 || r.ContentLength > kvsSignalingMaxBody {
+		respondKinesisVideoStreamsError(w, http.StatusBadRequest, "InvalidArgumentException", "request body must declare a Content-Length of at most 64 KiB")
+		return true
+	}
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "kinesisvideo"); !ok {
 		respondKinesisVideoStreamsError(w, status, code, msg)
 		return true

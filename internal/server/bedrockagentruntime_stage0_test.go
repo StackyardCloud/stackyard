@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -111,5 +112,28 @@ func TestBedrockAgentRuntimeStage0RejectsWrongSigningService(t *testing.T) {
 	req.Host = "bedrock-agent-runtime.us-east-1.amazonaws.com"
 	if srv.handleBedrockAgentRESTRouter(httptest.NewRecorder(), req) {
 		t.Fatal("bedrock-agent must not claim a bedrock-agent-runtime host")
+	}
+}
+
+func TestBedrockAgentRuntimeStage0RefusesBodiesWithoutDeclaredLength(t *testing.T) {
+	ts := newBedrockAgentTestServer(t)
+	// A plain io.Reader (not *bytes.Reader) gives an unknown length, so the
+	// client sends it chunked. The length check runs before signing.
+	req, err := http.NewRequest(http.MethodPost, ts.URL+"/knowledgebases/KB12345678/retrieve", io.MultiReader(strings.NewReader(`{"retrievalQuery":{"text":"hi"}}`)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	// Scoped to bedrock so the runtime router claims it; the length check
+	// runs before the signature is verified.
+	req.Header.Set("Authorization", "AWS4-HMAC-SHA256 Credential="+testAccessKey+"/20260101/"+testRegion+"/bedrock/aws4_request, SignedHeaders=host, Signature=00")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(string(body), "Content-Length") {
+		t.Fatalf("chunked body: %d %s", resp.StatusCode, body)
 	}
 }
