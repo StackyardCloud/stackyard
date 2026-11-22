@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -161,6 +162,21 @@ func TestApplicationAutoScalingStage2PredictiveForecast(t *testing.T) {
 	if code := aasErrorCode(t, ts, "GetPredictiveScalingForecast", `{`+key+`,"PolicyName":"nope",`+window+`}`); code != "ValidationException" {
 		t.Fatalf("unknown policy: %s", code)
 	}
+	// At 1e20 seconds, ts += 3600 can't change a float64; the forecast must
+	// still finish with at most a day of hourly points.
+	huge := `"StartTime":1e20,"EndTime":100000000000000086400`
+	done := make(chan map[string]any, 1)
+	go func() {
+		done <- aasCall(t, ts, http.StatusOK, "GetPredictiveScalingForecast", `{`+key+`,"PolicyName":"p",`+huge+`}`)
+	}()
+	select {
+	case fc := <-done:
+		if n := len(fc["CapacityForecast"].(map[string]any)["Timestamps"].([]any)); n > 25 {
+			t.Fatalf("huge-timestamp forecast: %d points", n)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("forecast at huge timestamps did not finish")
+	}
 	tooLong := fmt.Sprintf(`"StartTime":%v,"EndTime":%v`, start, start+31*24*3600)
 	if code := aasErrorCode(t, ts, "GetPredictiveScalingForecast", `{`+key+`,"PolicyName":"p",`+tooLong+`}`); code != "ValidationException" {
 		t.Fatalf("31-day window: %s", code)
@@ -178,5 +194,22 @@ func TestApplicationAutoScalingStage2RefusesBodiesWithoutDeclaredLength(t *testi
 	}
 	if body := string(mustBody(t, resp)); resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, "Content-Length") {
 		t.Fatalf("chunked body: %d %s", resp.StatusCode, body)
+	}
+}
+
+func TestApplicationAutoScalingDeregisterDropsActivities(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	t.Cleanup(ts.Close)
+	key := `"ServiceNamespace":"custom-resource","ResourceId":"https://example.com/r","ScalableDimension":"custom-resource:ResourceType:Property"`
+	for i := 0; i < 3; i++ {
+		aasCall(t, ts, http.StatusOK, "RegisterScalableTarget", `{`+key+`,"MinCapacity":1,"MaxCapacity":4}`)
+		aasCall(t, ts, http.StatusOK, "DeregisterScalableTarget", `{`+key+`}`)
+	}
+	srv.appAutoScaling.mu.Lock()
+	n := len(srv.appAutoScaling.activities)
+	srv.appAutoScaling.mu.Unlock()
+	if n != 0 {
+		t.Fatalf("register/deregister left %d activities behind", n)
 	}
 }

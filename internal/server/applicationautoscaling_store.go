@@ -347,6 +347,15 @@ func (st *applicationAutoScalingStore) deregister(k aasTargetKey) (any, *aasErr)
 		}
 	}
 	st.targets = keptTargets
+	// Activities belong to the target too; keeping them would let repeated
+	// register/deregister grow the list without bound.
+	keptActivities := st.activities[:0]
+	for _, a := range st.activities {
+		if a.target != k {
+			keptActivities = append(keptActivities, a)
+		}
+	}
+	st.activities = keptActivities
 	return map[string]any{}, nil
 }
 

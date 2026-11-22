@@ -537,7 +537,16 @@ func (st *applicationAutoScalingStore) forecast(in aasForecastInput) (any, *aasE
 	spec := p.out.PredictiveScalingPolicyConfiguration.MetricSpecifications[0]
 	capacity := float64(min(max(t.min+1, t.min), t.max))
 	var stamps, load, capacities []float64
-	for ts := math.Ceil(start/3600) * 3600; ts < end; ts += 3600 {
+	// Count hours with an integer: at huge timestamps ts += 3600 can't change
+	// a float64, so a float loop would never end. The span check above keeps
+	// n within 30 days of hours; the cap is belt and braces.
+	base := math.Ceil(start/3600) * 3600
+	n := 0
+	if end > base {
+		n = int(min(math.Ceil((end-base)/3600), aasMaxForecastSpan.Hours()+1))
+	}
+	for i := 0; i < n; i++ {
+		ts := base + float64(i)*3600
 		stamps = append(stamps, ts)
 		load = append(load, *spec.TargetValue)
 		capacities = append(capacities, capacity)
