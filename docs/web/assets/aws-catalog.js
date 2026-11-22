@@ -737,6 +737,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/eventbridge/docker-compose.yml"
   },
   {
+    id: "scheduler",
+    name: "EventBridge Scheduler",
+    category: "integration",
+    summary: "Emulate at(), rate() and cron() schedules with timezones, schedule groups, templated and universal targets, retry and dead-letter settings, plus on-demand delivery to SQS, SNS and EventBridge.",
+    docsHref: "../../../index.html#scheduler",
+    exampleHref: "../../../../examples/aws/scheduler/docker-compose.yml"
+  },
+  {
     id: "iot",
     name: "IoT",
     category: "integration",

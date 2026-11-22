@@ -170,6 +170,7 @@
         <a href="#elemental-inference">Elemental Inference</a>
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
+        <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
         <a href="#mpa">Multi-party Approval</a>
@@ -12178,6 +12179,46 @@
         <ul>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="scheduler" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EventBridge Scheduler</h2>
+        <p>SigV4 signed with service <code>scheduler</code>. REST JSON API under <code>/schedules</code>, <code>/schedule-groups</code> and <code>/tags</code> for schedules (validated <code>at()</code>, <code>rate()</code> and <code>cron()</code> expressions with IANA timezones, flexible time windows, start and end dates, client-token idempotency, ActionAfterCompletion), schedule groups (the default group, cascading asynchronous deletion), templated targets (SQS, SNS, Lambda, Step Functions, EventBridge, Kinesis, ECS, SageMaker and more) and universal <code>aws-sdk</code> targets, retry policies, dead-letter queues and group tagging. Stackyard adds <code>POST /_stackyard/scheduler/schedules/{group}/{name}/fire</code>, which delivers a schedule's input to its SQS, SNS or EventBridge target immediately; no background timers run. All 12 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: scheduler</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateSchedule</code></td></tr>
+        <tr><td><code>CreateScheduleGroup</code></td></tr>
+        <tr><td><code>DeleteSchedule</code></td></tr>
+        <tr><td><code>DeleteScheduleGroup</code></td></tr>
+        <tr><td><code>GetSchedule</code></td></tr>
+        <tr><td><code>GetScheduleGroup</code></td></tr>
+        <tr><td><code>ListScheduleGroups</code></td></tr>
+        <tr><td><code>ListSchedules</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateSchedule</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>scheduler</code>: <code>docker compose -f examples/aws/scheduler/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
