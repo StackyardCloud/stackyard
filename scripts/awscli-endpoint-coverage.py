@@ -50500,10 +50500,7 @@ def run_appconfigdata_outfile_operation(
         except OSError:
             extra_output = ""
     finally:
-        try:
-            os.unlink(out_path)
-        except OSError:
-            pass
+        Path(out_path).unlink(missing_ok=True)
 
     return cp, cmd, extra_output
 
