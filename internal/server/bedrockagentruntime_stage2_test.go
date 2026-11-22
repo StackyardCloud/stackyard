@@ -155,3 +155,16 @@ func TestBedrockAgentRuntimeStage2Flows(t *testing.T) {
 	}
 	barJSON(t, ts, http.StatusNotFound, http.MethodGet, start+"/missing", nil)
 }
+
+func TestBedrockAgentRuntimeStage2PromptNodeBoundsOutputBeforeSubstituting(t *testing.T) {
+	s := &Server{}
+	node := map[string]any{"type": "Prompt", "configuration": map[string]any{"prompt": map[string]any{"sourceConfiguration": map[string]any{
+		"inline": map[string]any{"templateConfiguration": map[string]any{"text": map[string]any{"text": strings.Repeat("{{v}}", 1000)}}},
+	}}}}
+	if _, _, err := s.barRunNode(node, strings.Repeat("x", 10<<10)); err == nil || err.status != http.StatusBadRequest {
+		t.Fatalf("1000 placeholders x 10 KiB should be rejected before substitution, got %v", err)
+	}
+	if out, _, err := s.barRunNode(node, "ab"); err != nil || len(out.(string)) != 2000 {
+		t.Fatalf("small substitution: %v %v", out, err)
+	}
+}

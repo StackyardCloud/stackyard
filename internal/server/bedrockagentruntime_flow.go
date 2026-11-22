@@ -175,6 +175,12 @@ func (s *Server) barRunNode(node map[string]any, value any) (any, string, *bedro
 		if tmpl == "" {
 			return text, "", nil
 		}
+		// Bound the result before building it: every placeholder copies the
+		// whole input, so many placeholders times a large input is huge.
+		if n := len(barTemplateVar.FindAllStringIndex(tmpl, -1)); n > 0 &&
+			(len(tmpl) > barMaxFlowOutputBytes || len(text) > (barMaxFlowOutputBytes-len(tmpl))/n) {
+			return nil, "", baValidation(fmt.Sprintf("the Prompt node output would exceed %d bytes", barMaxFlowOutputBytes))
+		}
 		return barTemplateVar.ReplaceAllLiteralString(tmpl, text), "", nil
 	case "KnowledgeBase":
 		kb := barMap(cfg, "knowledgeBase")
