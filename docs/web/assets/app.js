@@ -56,6 +56,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/athena/docker-compose.yml"
   },
   {
+    id: "glue",
+    name: "AWS Glue",
+    category: "database",
+    summary: "Emulate the Glue Data Catalog (databases, tables with versions, partitions, statistics), crawlers, jobs and runs, triggers, workflows, Schema Registry, sessions and Data Quality.",
+    docsHref: "../../../index.html#glue",
+    exampleHref: "../../../../examples/aws/glue/docker-compose.yml"
+  },
+  {
     id: "aurora-dsql",
     name: "Aurora DSQL",
     category: "database",
@@ -848,6 +856,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/license-manager-user-subscriptions/docker-compose.yml"
   },
   {
+    id: "docdb",
+    name: "DocumentDB",
+    category: "database",
+    summary: "Run DocumentDB clusters, instances, cluster parameter groups, cluster snapshots and global clusters on the shared RDS control plane.",
+    docsHref: "../../../index.html#docdb",
+    exampleHref: "../../../../examples/aws/docdb/docker-compose.yml"
+  },
+  {
     id: "neptune",
     name: "Neptune",
     category: "database",
@@ -1022,6 +1038,14 @@ const SERVICE_CATALOG = [
     summary: "Emulate EFS file systems, mount targets in EC2 subnets, access points, policies, lifecycle, backup and replication.",
     docsHref: "../../../index.html#efs",
     exampleHref: "../../../../examples/aws/efs/docker-compose.yml"
+  },
+  {
+    id: "backup",
+    name: "AWS Backup",
+    category: "storage",
+    summary: "Emulate backup vaults (standard, logically air-gapped, restore access) with locks and policies, backup plans and selections, backup/copy/restore/scan jobs over real DynamoDB tables, legal holds, audit frameworks and reports, and restore testing.",
+    docsHref: "../../../index.html#backup",
+    exampleHref: "../../../../examples/aws/backup/docker-compose.yml"
   },
   {
     id: "s3",

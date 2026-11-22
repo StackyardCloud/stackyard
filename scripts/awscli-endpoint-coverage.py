@@ -233,6 +233,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "bedrock-agentcore",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
+    "backup": {"cli": "backup", "ops_file": REPO_ROOT / "internal/server/backup_ops.go"},
     "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
     "bedrockagentruntime": {
         "cli": "bedrock-agent-runtime",
@@ -332,8 +333,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
+    "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
+    "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
     "snowball": {"cli": "snowball", "ops_file": REPO_ROOT / "internal/server/snowball_ops.go"},
     "storagegateway": {
         "cli": "storagegateway",
@@ -1261,6 +1264,9 @@ SERVICE_ALIASES = {
     "agentcoredata": "bedrockagentcoredata",
     "agentcore-data": "bedrockagentcoredata",
     "amazonbedrockagentcoredata": "bedrockagentcoredata",
+    "backup": "backup",
+    "awsbackup": "backup",
+    "aws backup": "backup",
     "bedrockagent": "bedrockagent",
     "bedrock-agent": "bedrockagent",
     "agents for amazon bedrock": "bedrockagent",
@@ -1441,6 +1447,11 @@ SERVICE_ALIASES = {
     "amazon inspector v2": "inspectorv2",
     "aws inspector v2": "inspectorv2",
     "dms": "dms",
+    "docdb": "docdb",
+    "documentdb": "docdb",
+    "amazondocdb": "docdb",
+    "amazon-documentdb": "docdb",
+    "amazondocumentdb": "docdb",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -1537,6 +1548,10 @@ SERVICE_ALIASES = {
     "amazonelasticdisasterrecovery": "drs",
     "fsx": "fsx",
     "amazonfsx": "fsx",
+    "glue": "glue",
+    "awsglue": "glue",
+    "aws-glue": "glue",
+    "aws glue": "glue",
     "amazon-fsx": "fsx",
     "amazon fsx": "fsx",
     "awsfsx": "fsx",
@@ -3046,6 +3061,8 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
+    "docdb": {},
+    "glue": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -3111,6 +3128,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "redshiftdata": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
+    "backup": {},
     "bedrockagent": {},
     "bedrockagentruntime": {},
     "bedrockagentcorecontrol": {},
@@ -13977,7 +13995,35 @@ def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
     return (endpoint.service, endpoint.operation) in allowed
 
 
+# Where the AWS CLI's bundled Glue model and pip botocore (1.44.9) disagree on
+# output members. The emulator answers with the CLI's model, so the older
+# validator reports these; nothing else is exempt. Paths use [] for any list
+# index or map key.
+GLUE_CLI_MODEL_DRIFT: dict[str, set[str]] = {
+    "AssociateGlossaryTerms": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "DisassociateGlossaryTerms": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "DeleteAttachment": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "PutAttachment": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "PutAsset": {"$.AssetTypeId: missing required field"},
+    "GetAssetType": {"$.Forms[].FormTypeIdentifier: unknown field"},
+    "GetDataCatalogExportConfiguration": {
+        "$.ExportSetting: unknown field",
+        "$.Status: unknown field",
+        "$.EncryptionConfiguration: unknown field",
+        "$.S3TableBucketArn: unknown field",
+    },
+    "PutDataCatalogExportConfiguration": {"$.ExportSetting: unknown field", "$.EncryptionConfiguration: unknown field"},
+    "SearchAssets": {"$.Items[].AssetName: unknown field", "$.Items[].AssetDescription: unknown field"},
+}
+
+
+def glue_is_cli_model_drift(operation: str, err: str) -> bool:
+    return re.sub(r"\[[^\]]*\]", "[]", err) in GLUE_CLI_MODEL_DRIFT.get(operation, set())
+
+
 def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[str]:
+    if endpoint.service == "glue" and endpoint.operation in GLUE_CLI_MODEL_DRIFT:
+        return [err for err in errors if not glue_is_cli_model_drift(endpoint.operation, err)]
     if endpoint.service == "sqs" and endpoint.operation == "SendMessageBatch":
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
@@ -31814,6 +31860,1024 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+GLUE_FIXTURE = "stackyard"
+GLUE_ROLE = "arn:aws:iam::123456789012:role/stackyard-glue"
+GLUE_JOB_ARN = "arn:aws:glue:us-east-1:123456789012:job/stackyard"
+GLUE_JSON_SCHEMA = '{"type":"object","properties":{"id":{"type":"string"}}}'
+
+
+def glue_raw(endpoint_url: str, region: str, env: dict[str, str], operation: str, payload: dict) -> dict:
+    """Signed AWSGlue.<operation> call used to seed coverage state; returns the
+    decoded body (error bodies carry "__type")."""
+    url = endpoint_url.rstrip("/") + "/"
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=body,
+        service="glue",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers={"Content-Type": "application/x-amz-json-1.1", "X-Amz-Target": f"AWSGlue.{operation}"},
+    )
+    req = urlrequest.Request(url=url, method="POST", data=body, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            text = resp.read().decode("utf-8", errors="replace")
+    except urlerror.HTTPError as err:
+        text = err.read().decode("utf-8", errors="replace")
+    except (urlerror.URLError, OSError) as err:
+        return {"__type": "TransportError", "Message": str(err)}
+    try:
+        data = json.loads(text or "{}")
+    except json.JSONDecodeError:
+        return {"__type": "SerializationException", "Message": text[:200]}
+    return data if isinstance(data, dict) else {}
+
+
+# Fixture creators, all named "stackyard" so they line up with the contract
+# placeholders. Each entry is (operation, payload); dependencies come first.
+GLUE_FIXTURES: dict[str, list[tuple[str, dict]]] = {
+    "database": [("CreateDatabase", {"DatabaseInput": {"Name": GLUE_FIXTURE}})],
+    "table": [
+        (
+            "CreateTable",
+            {
+                "DatabaseName": GLUE_FIXTURE,
+                "TableInput": {
+                    "Name": GLUE_FIXTURE,
+                    "StorageDescriptor": {"Location": "s3://stackyard/table/", "Columns": [{"Name": GLUE_FIXTURE, "Type": "string"}]},
+                    "PartitionKeys": [{"Name": GLUE_FIXTURE, "Type": "string"}],
+                },
+            },
+        )
+    ],
+    "partition": [("CreatePartition", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "PartitionInput": {"Values": [GLUE_FIXTURE]}})],
+    "udf": [("CreateUserDefinedFunction", {"DatabaseName": GLUE_FIXTURE, "FunctionInput": {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}})],
+    "connection": [("CreateConnection", {"ConnectionInput": {"Name": GLUE_FIXTURE, "ConnectionType": "JDBC", "ConnectionProperties": {"JDBC_CONNECTION_URL": "jdbc:postgresql://db/x"}}})],
+    "catalog": [("CreateCatalog", {"Name": GLUE_FIXTURE, "CatalogInput": {}})],
+    "classifier": [("CreateClassifier", {"GrokClassifier": {"Name": GLUE_FIXTURE, "Classification": "logs", "GrokPattern": "%{WORD:w}"}})],
+    "crawler": [("CreateCrawler", {"Name": GLUE_FIXTURE, "Role": GLUE_ROLE, "Targets": {"S3Targets": [{"Path": "s3://stackyard/crawl/"}]}, "Schedule": "cron(0 1 * * ? *)"})],
+    "job": [("CreateJob", {"Name": GLUE_FIXTURE, "Role": GLUE_ROLE, "Command": {"Name": "glueetl"}})],
+    "trigger": [("CreateTrigger", {"Name": GLUE_FIXTURE, "Type": "SCHEDULED", "Schedule": "cron(0 2 * * ? *)", "Actions": [{"JobName": GLUE_FIXTURE}]})],
+    "workflow": [("CreateWorkflow", {"Name": GLUE_FIXTURE})],
+    "blueprint": [("CreateBlueprint", {"Name": GLUE_FIXTURE, "BlueprintLocation": "s3://stackyard/bp.zip"})],
+    "devendpoint": [("CreateDevEndpoint", {"EndpointName": GLUE_FIXTURE, "RoleArn": GLUE_ROLE})],
+    "secconfig": [("CreateSecurityConfiguration", {"Name": GLUE_FIXTURE, "EncryptionConfiguration": {}})],
+    "session": [("CreateSession", {"Id": GLUE_FIXTURE, "Role": GLUE_ROLE, "Command": {"Name": "glueetl"}})],
+    "dqruleset": [("CreateDataQualityRuleset", {"Name": GLUE_FIXTURE, "Ruleset": "Rules = [ RowCount > 0 ]"})],
+    "dqevalconfig": [("CreateDataQualityEvaluationConfig", {"Name": GLUE_FIXTURE, "Level": "TABLE", "Role": GLUE_ROLE, "DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}}})],
+    "customentitytype": [("CreateCustomEntityType", {"Name": GLUE_FIXTURE, "RegexString": "[a-z]+"})],
+    "usageprofile": [("CreateUsageProfile", {"Name": GLUE_FIXTURE, "Configuration": {}})],
+    "colstatsettings": [("CreateColumnStatisticsTaskSettings", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Role": GLUE_ROLE, "Schedule": "cron(0 3 * * ? *)"})],
+    "integration": [("CreateIntegration", {"IntegrationName": GLUE_FIXTURE, "SourceArn": GLUE_FIXTURE, "TargetArn": GLUE_FIXTURE})],
+    "intresprop": [("CreateIntegrationResourceProperty", {"ResourceArn": GLUE_FIXTURE})],
+    "inttableprop": [("CreateIntegrationTableProperties", {"ResourceArn": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})],
+    "assettype": [("PutAssetType", {"Name": GLUE_FIXTURE, "Forms": {GLUE_FIXTURE: {"FormTypeIdentifier": GLUE_FIXTURE}}})],
+    "formtype": [("PutFormType", {"Name": GLUE_FIXTURE, "Schema": "{}"})],
+    "asset": [("PutAsset", {"AssetTypeId": GLUE_FIXTURE, "Identifier": GLUE_FIXTURE, "Name": GLUE_FIXTURE, "Forms": {}})],
+    "attachment": [("PutAttachment", {"AssetIdentifier": GLUE_FIXTURE, "AttachmentName": GLUE_FIXTURE, "Content": "e30=", "FormTypeId": GLUE_FIXTURE})],
+    "connectiontype": [("RegisterConnectionType", {"ConnectionType": GLUE_FIXTURE, "IntegrationType": "REST", "ConnectionProperties": {}, "ConnectorAuthenticationConfiguration": {"AuthenticationTypes": ["BASIC"]}, "RestConfiguration": {}})],
+    "registry": [("CreateRegistry", {"RegistryName": GLUE_FIXTURE})],
+    "schema": [("CreateSchema", {"SchemaName": GLUE_FIXTURE, "DataFormat": "JSON", "Compatibility": "NONE", "SchemaDefinition": GLUE_JSON_SCHEMA})],
+    "policy": [("PutResourcePolicy", {"PolicyInJson": '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"glue:*","Resource":"*"}]}'})],
+    "identitycenter": [("CreateGlueIdentityCenterConfiguration", {"InstanceArn": "arn:aws:sso:::instance/ssoins-stackyard"})],
+    "export": [("PutDataCatalogExportConfiguration", {"ExportSetting": "ENABLED"})],
+}
+GLUE_FIXTURE_DEPS = {
+    "table": ["database"],
+    "partition": ["table"],
+    "udf": ["database"],
+    "trigger": ["job"],
+    "colstatsettings": ["table"],
+    "dqevalconfig": ["table"],
+    "asset": ["assettype"],
+    "attachment": ["asset", "formtype"],
+}
+GLUE_FIXTURE_DELETE = {
+    "database": ("DeleteDatabase", {"Name": GLUE_FIXTURE}),
+    "table": ("DeleteTable", {"DatabaseName": GLUE_FIXTURE, "Name": GLUE_FIXTURE}),
+    "partition": ("DeletePartition", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "PartitionValues": [GLUE_FIXTURE]}),
+    "udf": ("DeleteUserDefinedFunction", {"DatabaseName": GLUE_FIXTURE, "FunctionName": GLUE_FIXTURE}),
+    "connection": ("DeleteConnection", {"ConnectionName": GLUE_FIXTURE}),
+    "catalog": ("DeleteCatalog", {"CatalogId": GLUE_FIXTURE}),
+    "classifier": ("DeleteClassifier", {"Name": GLUE_FIXTURE}),
+    "crawler": ("DeleteCrawler", {"Name": GLUE_FIXTURE}),
+    "job": ("DeleteJob", {"JobName": GLUE_FIXTURE}),
+    "trigger": ("DeleteTrigger", {"Name": GLUE_FIXTURE}),
+    "workflow": ("DeleteWorkflow", {"Name": GLUE_FIXTURE}),
+    "blueprint": ("DeleteBlueprint", {"Name": GLUE_FIXTURE}),
+    "devendpoint": ("DeleteDevEndpoint", {"EndpointName": GLUE_FIXTURE}),
+    "secconfig": ("DeleteSecurityConfiguration", {"Name": GLUE_FIXTURE}),
+    "session": ("DeleteSession", {"Id": GLUE_FIXTURE}),
+    "dqruleset": ("DeleteDataQualityRuleset", {"Name": GLUE_FIXTURE}),
+    "dqevalconfig": ("DeleteDataQualityEvaluationConfig", {"Name": GLUE_FIXTURE}),
+    "customentitytype": ("DeleteCustomEntityType", {"Name": GLUE_FIXTURE}),
+    "usageprofile": ("DeleteUsageProfile", {"Name": GLUE_FIXTURE}),
+    "colstatsettings": ("DeleteColumnStatisticsTaskSettings", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}),
+    "integration": ("DeleteIntegration", {"IntegrationIdentifier": GLUE_FIXTURE}),
+    "intresprop": ("DeleteIntegrationResourceProperty", {"ResourceArn": GLUE_FIXTURE}),
+    "inttableprop": ("DeleteIntegrationTableProperties", {"ResourceArn": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}),
+    "assettype": ("DeleteAssetType", {"Identifier": GLUE_FIXTURE}),
+    "formtype": ("DeleteFormType", {"Identifier": GLUE_FIXTURE}),
+    "asset": ("DeleteAsset", {"Identifier": GLUE_FIXTURE}),
+    "attachment": ("DeleteAttachment", {"AssetIdentifier": GLUE_FIXTURE, "AttachmentName": GLUE_FIXTURE}),
+    "connectiontype": ("DeleteConnectionType", {"ConnectionType": GLUE_FIXTURE}),
+    "registry": ("DeleteRegistry", {"RegistryId": {"RegistryName": GLUE_FIXTURE}}),
+    "schema": ("DeleteSchema", {"SchemaId": {"SchemaName": GLUE_FIXTURE}}),
+    "policy": ("DeleteResourcePolicy", {}),
+    "identitycenter": ("DeleteGlueIdentityCenterConfiguration", {}),
+}
+
+
+def glue_ensure(ctx: tuple, *names: str) -> None:
+    for name in names:
+        for dep in GLUE_FIXTURE_DEPS.get(name, []):
+            glue_ensure(ctx, dep)
+        for operation, payload in GLUE_FIXTURES[name]:
+            glue_raw(*ctx, operation, payload)
+
+
+def glue_idle_crawler(ctx: tuple) -> None:
+    """A running crawler can't be deleted or updated: stop it and let it settle."""
+    glue_raw(*ctx, "StopCrawler", {"Name": GLUE_FIXTURE})
+    glue_settle(ctx, "GetCrawler", {"Name": GLUE_FIXTURE})
+
+
+def glue_reset(ctx: tuple, *names: str) -> None:
+    """Recreate fixtures from scratch (fresh state, no runs)."""
+    for name in names:
+        if name == "crawler":
+            glue_idle_crawler(ctx)
+        if name in GLUE_FIXTURE_DELETE:
+            operation, payload = GLUE_FIXTURE_DELETE[name]
+            glue_raw(*ctx, operation, payload)
+        glue_ensure(ctx, name)
+
+
+def glue_absent(ctx: tuple, *names: str) -> None:
+    for name in names:
+        if name == "crawler":
+            glue_idle_crawler(ctx)
+        operation, payload = GLUE_FIXTURE_DELETE[name]
+        glue_raw(*ctx, operation, payload)
+
+
+def glue_settle(ctx: tuple, operation: str, payload: dict) -> None:
+    """Runs report their in-flight state once, then settle on the next read."""
+    glue_raw(*ctx, operation, payload)
+    glue_raw(*ctx, operation, payload)
+
+
+# Fixtures each operation reads, by the kind its op name targets.
+GLUE_OP_FIXTURES: dict[str, tuple[str, ...]] = {}
+for _kind, _ops in {
+    "database": ("GetDatabase", "UpdateDatabase", "DeleteDatabase", "GetTables", "ListEntities"),
+    "table": ("GetTable", "DeleteTable", "UpdateTable", "GetTableVersion", "GetTableVersions", "BatchDeleteTableVersion",
+              "GetPartitions", "BatchCreatePartition", "BatchDeletePartition", "BatchGetPartition", "BatchUpdatePartition",
+              "GetPartitionIndexes", "UpdateColumnStatisticsForTable", "GetColumnStatisticsForTable", "GetUnfilteredTableMetadata",
+              "GetUnfilteredPartitionsMetadata", "CreatePartitionIndex", "GetMapping", "StartMaterializedViewRefreshTaskRun",
+              "CreateTableOptimizer", "GetColumnStatisticsTaskRuns", "StartColumnStatisticsTaskRun", "CreateColumnStatisticsTaskSettings",
+              "ListMaterializedViewRefreshTaskRuns", "BatchDeleteTable", "CreatePartition"),
+    "partition": ("GetPartition", "UpdatePartition", "DeletePartition", "GetUnfilteredPartitionMetadata",
+                  "UpdateColumnStatisticsForPartition", "GetColumnStatisticsForPartition"),
+    "udf": ("GetUserDefinedFunction", "UpdateUserDefinedFunction", "DeleteUserDefinedFunction", "GetUserDefinedFunctions"),
+    "connection": ("GetConnection", "UpdateConnection", "DeleteConnection", "TestConnection", "DescribeEntity", "GetEntityRecords"),
+    "catalog": ("GetCatalog", "UpdateCatalog", "DeleteCatalog"),
+    "classifier": ("GetClassifier", "DeleteClassifier", "UpdateClassifier"),
+    "crawler": ("GetCrawler", "UpdateCrawler", "DeleteCrawler", "ListCrawls", "UpdateCrawlerSchedule"),
+    "job": ("GetJob", "UpdateJob", "DeleteJob", "GetJobRuns", "GetJobBookmark", "ResetJobBookmark", "StartJobUpgradeAnalysis",
+            "UpdateJobFromSourceControl", "UpdateSourceControlFromJob", "TagResource", "UntagResource", "GetTags"),
+    "trigger": ("GetTrigger", "UpdateTrigger", "DeleteTrigger", "StartTrigger"),
+    "workflow": ("GetWorkflow", "UpdateWorkflow", "DeleteWorkflow", "GetWorkflowRuns"),
+    "blueprint": ("GetBlueprint", "UpdateBlueprint", "DeleteBlueprint", "StartBlueprintRun", "GetBlueprintRuns"),
+    "devendpoint": ("GetDevEndpoint", "UpdateDevEndpoint", "DeleteDevEndpoint"),
+    "secconfig": ("GetSecurityConfiguration", "DeleteSecurityConfiguration"),
+    "session": ("GetSession", "DeleteSession", "ListStatements", "GetSystemLogsForSession"),
+    "dqruleset": ("GetDataQualityRuleset", "UpdateDataQualityRuleset", "DeleteDataQualityRuleset", "StartDataQualityRulesetEvaluationRun"),
+    "dqevalconfig": ("GetDataQualityEvaluationConfig", "UpdateDataQualityEvaluationConfig", "DeleteDataQualityEvaluationConfig"),
+    "customentitytype": ("GetCustomEntityType", "DeleteCustomEntityType"),
+    "usageprofile": ("GetUsageProfile", "UpdateUsageProfile", "DeleteUsageProfile"),
+    "colstatsettings": ("GetColumnStatisticsTaskSettings", "UpdateColumnStatisticsTaskSettings", "DeleteColumnStatisticsTaskSettings"),
+    "integration": ("ModifyIntegration", "DeleteIntegration"),
+    "intresprop": ("GetIntegrationResourceProperty", "UpdateIntegrationResourceProperty", "DeleteIntegrationResourceProperty"),
+    "inttableprop": ("GetIntegrationTableProperties", "UpdateIntegrationTableProperties", "DeleteIntegrationTableProperties"),
+    "assettype": ("GetAssetType", "DeleteAssetType", "PutAsset"),
+    "formtype": ("GetFormType", "DeleteFormType", "PutAttachment"),
+    "asset": ("GetAsset", "UpdateAsset", "DeleteAsset", "ListIterableForms", "BatchGetIterableForms"),
+    "attachment": ("DeleteAttachment",),
+    "connectiontype": ("DescribeConnectionType", "DeleteConnectionType"),
+    "registry": ("GetRegistry", "UpdateRegistry", "DeleteRegistry"),
+    "schema": ("GetSchema", "UpdateSchema", "DeleteSchema", "RegisterSchemaVersion", "ListSchemaVersions", "GetSchemaByDefinition",
+               "GetSchemaVersion", "GetSchemaVersionsDiff", "DeleteSchemaVersions", "PutSchemaVersionMetadata",
+               "RemoveSchemaVersionMetadata", "QuerySchemaVersionMetadata"),
+    "policy": ("GetResourcePolicy", "DeleteResourcePolicy"),
+    "identitycenter": ("GetGlueIdentityCenterConfiguration", "UpdateGlueIdentityCenterConfiguration", "DeleteGlueIdentityCenterConfiguration"),
+    "export": ("GetDataCatalogExportConfiguration",),
+}.items():
+    for _op in _ops:
+        GLUE_OP_FIXTURES[_op] = GLUE_OP_FIXTURES.get(_op, ()) + (_kind,)
+
+# Create/register operations start from a missing fixture.
+GLUE_CREATE_RESETS = {
+    "CreateDatabase": "database", "CreateTable": "table", "CreatePartition": "partition", "CreateUserDefinedFunction": "udf",
+    "CreateConnection": "connection", "CreateCatalog": "catalog", "CreateClassifier": "classifier", "CreateCrawler": "crawler",
+    "CreateJob": "job", "CreateTrigger": "trigger", "CreateWorkflow": "workflow", "CreateBlueprint": "blueprint",
+    "CreateDevEndpoint": "devendpoint", "CreateSecurityConfiguration": "secconfig", "CreateSession": "session",
+    "CreateDataQualityRuleset": "dqruleset", "CreateDataQualityEvaluationConfig": "dqevalconfig",
+    "CreateCustomEntityType": "customentitytype", "CreateUsageProfile": "usageprofile",
+    "CreateColumnStatisticsTaskSettings": "colstatsettings", "CreateIntegration": "integration",
+    "CreateIntegrationResourceProperty": "intresprop", "CreateIntegrationTableProperties": "inttableprop",
+    "RegisterConnectionType": "connectiontype", "CreateRegistry": "registry", "CreateSchema": "schema",
+    "CreateGlueIdentityCenterConfiguration": "identitycenter",
+}
+
+
+def glue_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    ctx = (endpoint_url, region, env)
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    # Pagination placeholders aren't tokens this server issued.
+    for key in ("NextToken", "Marker"):
+        hydrated.pop(key, None)
+    if op in ("GetMLTransforms", "ListMLTransforms", "GetMLTaskRuns"):
+        hydrated.pop("Filter", None)
+    if op in ("CreateConnection", "UpdateConnection"):
+        hydrated["ConnectionInput"] = dict(GLUE_FIXTURES["connection"][0][1]["ConnectionInput"])
+    if op in ("CreateUserDefinedFunction", "UpdateUserDefinedFunction"):
+        hydrated["FunctionInput"] = {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}
+    # Members the CLI's (newer) model requires that the botocore skeleton lacks.
+    if op == "PutAsset":
+        hydrated.update({"AssetTypeId": GLUE_FIXTURE, "Forms": {}})
+    if op == "PutAttachment":
+        hydrated.update({"FormTypeId": GLUE_FIXTURE, "Content": "e30="})
+        glue_ensure(ctx, "asset", "formtype")
+    if op == "PutDataCatalogExportConfiguration":
+        hydrated["ExportSetting"] = "ENABLED"
+
+    if op in GLUE_CREATE_RESETS:
+        kind = GLUE_CREATE_RESETS[op]
+        for dep in GLUE_FIXTURE_DEPS.get(kind, []):
+            glue_ensure(ctx, dep)
+        if kind == "table":
+            glue_ensure(ctx, "database")
+        glue_absent(ctx, kind)
+    glue_ensure(ctx, *GLUE_OP_FIXTURES.get(op, ()))
+
+    # Operations whose contract placeholders aren't valid requests on their own.
+    create_payload = {name: dict(spec[0][1]) for name, spec in GLUE_FIXTURES.items()}
+    if op == "CreateTable":
+        hydrated["TableInput"] = create_payload["table"]["TableInput"]
+    elif op == "UpdateTable":
+        hydrated["TableInput"] = {"Name": GLUE_FIXTURE, "Description": "updated"}
+    elif op == "CreateCrawler":
+        hydrated["Targets"] = {"S3Targets": [{"Path": "s3://stackyard/crawl/"}]}
+        hydrated["Role"] = GLUE_ROLE
+    elif op == "CreateTrigger":
+        hydrated.update({"Type": "SCHEDULED", "Schedule": "cron(0 2 * * ? *)", "Actions": [{"JobName": GLUE_FIXTURE}]})
+        glue_ensure(ctx, "job")
+    elif op == "CreateClassifier" or op == "UpdateClassifier":
+        hydrated["GrokClassifier"] = create_payload["classifier"]["GrokClassifier"]
+    elif op == "CreateDataQualityRuleset":
+        hydrated["Ruleset"] = "Rules = [ RowCount > 0 ]"
+    elif op in ("CreateSession", "CreateDevEndpoint", "CreateColumnStatisticsTaskSettings", "StartColumnStatisticsTaskRun",
+                "CreateDataQualityEvaluationConfig", "StartDataQualityRulesetEvaluationRun", "StartDataQualityRuleRecommendationRun",
+                "StartBlueprintRun", "CreateMLTransform"):
+        for key in ("Role", "RoleArn"):
+            if key in hydrated:
+                hydrated[key] = GLUE_ROLE
+    if op in ("TestConnection", "UpdateJobFromSourceControl", "UpdateSourceControlFromJob"):
+        hydrated.setdefault("ConnectionName" if op == "TestConnection" else "JobName", GLUE_FIXTURE)
+    if op in ("TagResource", "UntagResource", "GetTags"):
+        hydrated["ResourceArn"] = GLUE_JOB_ARN
+    if op == "PutResourcePolicy":
+        hydrated["PolicyInJson"] = create_payload["policy"]["PolicyInJson"]
+        hydrated.pop("PolicyExistsCondition", None)
+        hydrated.pop("PolicyHashCondition", None)
+
+    if op == "CreatePartition":
+        hydrated["PartitionInput"] = {"Values": [GLUE_FIXTURE]}
+
+    # Crawler states and schedules.
+    if op in ("StartCrawler", "UpdateCrawler", "DeleteCrawler"):
+        glue_reset(ctx, "crawler")
+    elif op == "StopCrawler":
+        glue_reset(ctx, "crawler")
+        glue_raw(*ctx, "StartCrawler", {"Name": GLUE_FIXTURE})
+    elif op == "StartCrawlerSchedule":
+        glue_reset(ctx, "crawler")
+        glue_raw(*ctx, "StopCrawlerSchedule", {"CrawlerName": GLUE_FIXTURE})
+    elif op == "StopCrawlerSchedule":
+        glue_reset(ctx, "crawler")
+    elif op in ("GetCrawlerMetrics", "BatchGetCrawlers"):
+        glue_ensure(ctx, "crawler")
+
+    # Job runs.
+    if op in ("StartJobRun", "GetJobRun", "BatchStopJobRun", "GetSystemLogsForJobRun", "StartJobUpgradeAnalysis"):
+        glue_reset(ctx, "job")
+        if op != "StartJobRun" and op != "StartJobUpgradeAnalysis":
+            run_id = glue_raw(*ctx, "StartJobRun", {"JobName": GLUE_FIXTURE}).get("JobRunId", GLUE_FIXTURE)
+            if op == "BatchStopJobRun":
+                hydrated["JobRunIds"] = [run_id]
+            else:
+                hydrated["RunId"] = run_id
+    if op in ("GetJobUpgradeAnalysis", "StopJobUpgradeAnalysis"):
+        glue_reset(ctx, "job")
+        started = glue_raw(*ctx, "StartJobUpgradeAnalysis", {"jobName": GLUE_FIXTURE})
+        hydrated["analysisId"] = started.get("analysisId", GLUE_FIXTURE)
+
+    # Triggers and workflow runs.
+    if op == "StopTrigger":
+        glue_reset(ctx, "trigger")
+    if op in ("GetWorkflowRun", "StopWorkflowRun", "ResumeWorkflowRun", "GetWorkflowRunProperties", "PutWorkflowRunProperties"):
+        glue_reset(ctx, "workflow")
+        run_id = glue_raw(*ctx, "StartWorkflowRun", {"Name": GLUE_FIXTURE}).get("RunId", GLUE_FIXTURE)
+        hydrated["RunId"] = run_id
+        if op == "ResumeWorkflowRun":
+            glue_raw(*ctx, "StopWorkflowRun", {"Name": GLUE_FIXTURE, "RunId": run_id})
+            glue_settle(ctx, "GetWorkflowRun", {"Name": GLUE_FIXTURE, "RunId": run_id})
+    if op == "StartWorkflowRun":
+        glue_reset(ctx, "workflow")
+    if op == "GetBlueprintRun":
+        glue_ensure(ctx, "blueprint")
+        hydrated["RunId"] = glue_raw(*ctx, "StartBlueprintRun", {"BlueprintName": GLUE_FIXTURE, "RoleArn": GLUE_ROLE}).get("RunId", GLUE_FIXTURE)
+
+    # ML transforms and their task runs (ids are generated).
+    if op in ("GetMLTransform", "UpdateMLTransform", "DeleteMLTransform", "GetMLTaskRun", "GetMLTaskRuns", "CancelMLTaskRun",
+              "StartMLEvaluationTaskRun", "StartMLLabelingSetGenerationTaskRun", "StartImportLabelsTaskRun", "StartExportLabelsTaskRun"):
+        transform = glue_raw(*ctx, "CreateMLTransform", {"Name": f"stackyard-{time.time_ns()}", "Role": GLUE_ROLE,
+                                                          "InputRecordTables": [{"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}],
+                                                          "Parameters": {"TransformType": "FIND_MATCHES"}})
+        hydrated["TransformId"] = transform.get("TransformId", GLUE_FIXTURE)
+        if op in ("GetMLTaskRun", "CancelMLTaskRun"):
+            hydrated["TaskRunId"] = glue_raw(*ctx, "StartMLEvaluationTaskRun", {"TransformId": hydrated["TransformId"]}).get("TaskRunId", GLUE_FIXTURE)
+    if op == "CreateMLTransform":
+        hydrated["Name"] = f"stackyard-{time.time_ns()}"
+
+    # Sessions and statements.
+    if op in ("RunStatement", "StopSession", "GetSessionEndpoint"):
+        glue_reset(ctx, "session")
+    if op in ("GetStatement", "CancelStatement"):
+        glue_reset(ctx, "session")
+        hydrated["Id"] = glue_raw(*ctx, "RunStatement", {"SessionId": GLUE_FIXTURE, "Code": "1"}).get("Id", 0)
+
+    # Data Quality runs and results.
+    if op in ("GetDataQualityRulesetEvaluationRun", "CancelDataQualityRulesetEvaluationRun", "BatchGetDataQualityRulesetEvaluationRun",
+              "GetDataQualityResult", "GetDataQualityResultV2", "BatchGetDataQualityResult", "BatchGetDataQualityResultV2"):
+        glue_ensure(ctx, "dqruleset")
+        run_id = glue_raw(*ctx, "StartDataQualityRulesetEvaluationRun", {"DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}},
+                                                                          "Role": GLUE_ROLE, "RulesetNames": [GLUE_FIXTURE]}).get("RunId", GLUE_FIXTURE)
+        if op == "BatchGetDataQualityRulesetEvaluationRun":
+            hydrated["RunIds"] = [run_id]
+        elif op.startswith("Get") and "Result" in op or op.startswith("BatchGetDataQualityResult"):
+            glue_settle(ctx, "GetDataQualityRulesetEvaluationRun", {"RunId": run_id})
+            result_ids = glue_raw(*ctx, "GetDataQualityRulesetEvaluationRun", {"RunId": run_id}).get("ResultIds") or [GLUE_FIXTURE]
+            if op.startswith("Batch"):
+                hydrated["ResultIds"] = result_ids
+            else:
+                hydrated["ResultId"] = result_ids[0]
+        else:
+            hydrated["RunId"] = run_id
+    if op in ("GetDataQualityRuleRecommendationRun", "CancelDataQualityRuleRecommendationRun"):
+        hydrated["RunId"] = glue_raw(*ctx, "StartDataQualityRuleRecommendationRun", {"DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}},
+                                                                                     "Role": GLUE_ROLE}).get("RunId", GLUE_FIXTURE)
+    if op == "StartDataQualityRuleRecommendationRun":
+        hydrated.pop("CreatedRulesetName", None)
+
+    # Catalog details.
+    if op == "DeleteTableVersion":
+        glue_reset(ctx, "table")
+        glue_raw(*ctx, "UpdateTable", {"DatabaseName": GLUE_FIXTURE, "TableInput": {"Name": GLUE_FIXTURE}})
+        hydrated["VersionId"] = "1"
+    if op == "CreatePartitionIndex":
+        glue_raw(*ctx, "DeletePartitionIndex", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "IndexName": GLUE_FIXTURE})
+        hydrated["PartitionIndex"] = {"IndexName": GLUE_FIXTURE, "Keys": [GLUE_FIXTURE]}
+    if op == "DeletePartitionIndex":
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "CreatePartitionIndex", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE,
+                                                "PartitionIndex": {"IndexName": GLUE_FIXTURE, "Keys": [GLUE_FIXTURE]}})
+    if op in ("DeleteColumnStatisticsForTable", "DeleteColumnStatisticsForPartition"):
+        partition = op.endswith("Partition")
+        glue_ensure(ctx, "partition" if partition else "table")
+        stats = {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "ColumnStatisticsList": [
+            {"ColumnName": GLUE_FIXTURE, "ColumnType": "string", "AnalyzedTime": 1700000000,
+             "StatisticsData": {"Type": "STRING", "StringColumnStatisticsData": {"MaximumLength": 1, "AverageLength": 1.0, "NumberOfNulls": 0, "NumberOfDistinctValues": 1}}}]}
+        if partition:
+            stats["PartitionValues"] = [GLUE_FIXTURE]
+        glue_raw(*ctx, "UpdateColumnStatisticsFor" + ("Partition" if partition else "Table"), stats)
+    if op in ("StopColumnStatisticsTaskRun", "GetColumnStatisticsTaskRun"):
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "StopColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        run = glue_raw(*ctx, "StartColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Role": GLUE_ROLE})
+        if op == "GetColumnStatisticsTaskRun":
+            hydrated["ColumnStatisticsTaskRunId"] = run.get("ColumnStatisticsTaskRunId", GLUE_FIXTURE)
+    if op == "StartColumnStatisticsTaskRun":
+        glue_raw(*ctx, "StopColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+    if op in ("StartColumnStatisticsTaskRunSchedule", "StopColumnStatisticsTaskRunSchedule"):
+        glue_reset(ctx, "colstatsettings")
+    if op in ("GetMaterializedViewRefreshTaskRun", "StopMaterializedViewRefreshTaskRun"):
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "StopMaterializedViewRefreshTaskRun", {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        run = glue_raw(*ctx, "StartMaterializedViewRefreshTaskRun", {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        if op.startswith("Get"):
+            hydrated["MaterializedViewRefreshTaskRunId"] = run.get("MaterializedViewRefreshTaskRunId", GLUE_FIXTURE)
+    if op in ("GetTableOptimizer", "UpdateTableOptimizer", "DeleteTableOptimizer", "ListTableOptimizerRuns", "BatchGetTableOptimizer", "CreateTableOptimizer"):
+        glue_ensure(ctx, "table")
+        opt_type = str(hydrated.get("Type") or "compaction")
+        delete = {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Type": opt_type}
+        glue_raw(*ctx, "DeleteTableOptimizer", delete)
+        if op != "CreateTableOptimizer":
+            glue_raw(*ctx, "CreateTableOptimizer", {**delete, "TableOptimizerConfiguration": {"roleArn": GLUE_ROLE, "enabled": True}})
+        if op == "BatchGetTableOptimizer":
+            hydrated["Entries"] = [{"catalogId": GLUE_FIXTURE, "databaseName": GLUE_FIXTURE, "tableName": GLUE_FIXTURE, "type": opt_type}]
+        for key in ("TableOptimizerConfiguration",):
+            if isinstance(hydrated.get(key), dict):
+                hydrated[key]["roleArn"] = GLUE_ROLE
+
+    # Schema Registry: ids are structures the contract prunes to {}.
+    if isinstance(hydrated.get("RegistryId"), dict) and not hydrated["RegistryId"]:
+        hydrated["RegistryId"] = {"RegistryName": GLUE_FIXTURE}
+        glue_ensure(ctx, "registry")
+    if isinstance(hydrated.get("SchemaId"), dict) and not hydrated["SchemaId"]:
+        hydrated["SchemaId"] = {"SchemaName": GLUE_FIXTURE}
+    if op in ("GetSchemaVersion", "PutSchemaVersionMetadata", "RemoveSchemaVersionMetadata", "QuerySchemaVersionMetadata"):
+        glue_reset(ctx, "schema")
+        version = glue_raw(*ctx, "GetSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaVersionNumber": {"LatestVersion": True}})
+        hydrated["SchemaVersionId"] = version.get("SchemaVersionId", GLUE_FIXTURE)
+        if op == "RemoveSchemaVersionMetadata":
+            glue_raw(*ctx, "PutSchemaVersionMetadata", {"SchemaVersionId": hydrated["SchemaVersionId"], "MetadataKeyValue": hydrated.get("MetadataKeyValue") or {}})
+    if op == "UpdateSchema":
+        hydrated["Description"] = "updated"
+    if op in ("RegisterSchemaVersion", "GetSchemaByDefinition"):
+        hydrated["SchemaDefinition"] = GLUE_JSON_SCHEMA
+    if op == "GetSchemaVersionsDiff":
+        glue_reset(ctx, "schema")
+        glue_raw(*ctx, "RegisterSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaDefinition": '{"type":"object"}'})
+        hydrated["FirstSchemaVersionNumber"] = {"VersionNumber": 1}
+        hydrated["SecondSchemaVersionNumber"] = {"VersionNumber": 2}
+    if op == "DeleteSchemaVersions":
+        glue_reset(ctx, "schema")
+        glue_raw(*ctx, "RegisterSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaDefinition": '{"type":"object"}'})
+        hydrated["Versions"] = "2"
+
+    # Glossaries (ids are generated).
+    if op in ("GetGlossary", "UpdateGlossary", "DeleteGlossary", "CreateGlossaryTerm", "ListGlossaryTerms",
+              "GetGlossaryTerm", "UpdateGlossaryTerm", "DeleteGlossaryTerm", "AssociateGlossaryTerms", "DisassociateGlossaryTerms"):
+        glossary = glue_raw(*ctx, "CreateGlossary", {"Name": GLUE_FIXTURE}).get("Id", GLUE_FIXTURE)
+        if op in ("GetGlossary", "UpdateGlossary", "DeleteGlossary"):
+            hydrated["Identifier"] = glossary
+        else:
+            hydrated["GlossaryIdentifier"] = glossary
+            term = glue_raw(*ctx, "CreateGlossaryTerm", {"GlossaryIdentifier": glossary, "Name": GLUE_FIXTURE}).get("Id", GLUE_FIXTURE)
+            if op in ("GetGlossaryTerm", "UpdateGlossaryTerm", "DeleteGlossaryTerm"):
+                hydrated.pop("GlossaryIdentifier", None)
+                hydrated["Identifier"] = term
+            if op in ("AssociateGlossaryTerms", "DisassociateGlossaryTerms"):
+                hydrated.pop("GlossaryIdentifier", None)
+                glue_ensure(ctx, "asset")
+                hydrated["GlossaryTermIdentifiers"] = [term]
+    if op == "PutAssetType":
+        glue_absent(ctx, "asset")
+    return hydrated
+
+
+BACKUP_ROLE_ARN = "arn:aws:iam::123456789012:role/backup"
+BACKUP_MPA_TEAM_ARN = "arn:aws:mpa:us-east-1:123456789012:approval-team/syteam"
+BACKUP_TEMPLATE_ID = "87c0c1ef-254d-4180-8fef-2e76a2c38aaa"
+
+
+def backup_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns()}"
+
+
+def backup_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "backup", operation, env, ["--cli-input-json", json.dumps(body, separators=(",", ":"))]
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def backup_new_vault(ctx: tuple) -> dict:
+    name = backup_unique("syv")
+    out = backup_cli(ctx, "create-backup-vault", {"BackupVaultName": name})
+    return {"name": name, "arn": out.get("BackupVaultArn", "")}
+
+
+def backup_new_recovery_point(ctx: tuple, vault: str, resource_arn: str) -> str:
+    # Each read advances a job one step, so two reads complete it.
+    job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault, "ResourceArn": resource_arn, "IamRoleArn": BACKUP_ROLE_ARN})
+    for _ in range(2):
+        backup_cli(ctx, "describe-backup-job", {"BackupJobId": job.get("BackupJobId", "")})
+    return str(job.get("RecoveryPointArn", ""))
+
+
+def backup_plan_input(name: str, vault: str) -> dict:
+    return {"BackupPlanName": name, "Rules": [{"RuleName": "daily", "TargetBackupVaultName": vault}]}
+
+
+def backup_new_plan(ctx: tuple, vault: str) -> dict:
+    name = backup_unique("syplan")
+    out = backup_cli(ctx, "create-backup-plan", {"BackupPlan": backup_plan_input(name, vault)})
+    return {"id": out.get("BackupPlanId", ""), "name": name}
+
+
+def backup_new_selection(ctx: tuple, plan_id: str) -> str:
+    body = {"BackupPlanId": plan_id, "BackupSelection": {"SelectionName": backup_unique("sysel"), "IamRoleArn": BACKUP_ROLE_ARN, "Resources": ["*"]}}
+    return str(backup_cli(ctx, "create-backup-selection", body).get("SelectionId", ""))
+
+
+def backup_framework_controls() -> list:
+    return [{"ControlName": "BACKUP_RECOVERY_POINT_ENCRYPTED"}]
+
+
+def backup_report_plan_body(name: str) -> dict:
+    return {
+        "ReportPlanName": name,
+        "ReportDeliveryChannel": {"S3BucketName": "syreports", "Formats": ["CSV"]},
+        "ReportSetting": {"ReportTemplate": "BACKUP_JOB_REPORT"},
+    }
+
+
+def backup_testing_plan_body(name: str) -> dict:
+    return {
+        "RestoreTestingPlanName": name,
+        "ScheduleExpression": "cron(0 1 ? * * *)",
+        "RecoveryPointSelection": {"Algorithm": "LATEST_WITHIN_WINDOW", "IncludeVaults": ["*"], "RecoveryPointTypes": ["SNAPSHOT"]},
+    }
+
+
+def backup_testing_selection_body(name: str) -> dict:
+    return {"RestoreTestingSelectionName": name, "ProtectedResourceType": "DynamoDB", "IamRoleArn": BACKUP_ROLE_ARN, "ProtectedResourceArns": ["*"]}
+
+
+def backup_tiering_body(name: str, vault: str) -> dict:
+    return {
+        "TieringConfigurationName": name,
+        "BackupVaultName": vault,
+        "ResourceSelection": [{"ResourceType": "S3", "Resources": ["*"], "TieringDownSettingsInDays": 60}],
+    }
+
+
+def backup_fixture(ctx: tuple) -> dict:
+    # Shared resources the read and update operations point at, created once.
+    state = RUNTIME_STATE.setdefault("backup", {})
+    if state.get("vault"):
+        return state
+    aws_bin, endpoint_url, region, env = ctx
+    table = backup_unique("sytable")
+    created = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "dynamodb",
+        "create-table",
+        env,
+        [
+            "--table-name", table,
+            "--attribute-definitions", "AttributeName=id,AttributeType=S",
+            "--key-schema", "AttributeName=id,KeyType=HASH",
+            "--billing-mode", "PAY_PER_REQUEST",
+        ],
+    ) or {}
+    table_arn = str((created.get("TableDescription") or {}).get("TableArn", ""))
+    vault = backup_new_vault(ctx)
+    vault2 = backup_new_vault(ctx)
+    if not (table_arn and vault["arn"] and vault2["arn"]):
+        return state
+    lag_name = backup_unique("sylag")
+    lag = backup_cli(ctx, "create-logically-air-gapped-backup-vault", {"BackupVaultName": lag_name, "MinRetentionDays": 7, "MaxRetentionDays": 30})
+    backup_cli(ctx, "put-backup-vault-access-policy", {"BackupVaultName": vault["name"], "Policy": '{"Version":"2012-10-17","Statement":[]}'})
+    backup_cli(
+        ctx,
+        "put-backup-vault-notifications",
+        {"BackupVaultName": vault["name"], "SNSTopicArn": "arn:aws:sns:us-east-1:123456789012:sybackup", "BackupVaultEvents": ["BACKUP_JOB_COMPLETED"]},
+    )
+    rp = backup_new_recovery_point(ctx, vault["name"], table_arn)
+    s3_arn = f"arn:aws:s3:::{backup_unique('sybucket')}"
+    rp_s3 = backup_new_recovery_point(ctx, vault["name"], s3_arn)
+    backup_cli(ctx, "update-recovery-point-index-settings", {"BackupVaultName": vault["name"], "RecoveryPointArn": rp_s3, "Index": "ENABLED"})
+    plan = backup_new_plan(ctx, vault["name"])
+    selection = backup_new_selection(ctx, plan["id"])
+    copy_job = backup_cli(
+        ctx,
+        "start-copy-job",
+        {"RecoveryPointArn": rp, "SourceBackupVaultName": vault["name"], "DestinationBackupVaultArn": vault2["arn"], "IamRoleArn": BACKUP_ROLE_ARN},
+    )
+    restore = backup_cli(ctx, "start-restore-job", {"RecoveryPointArn": rp, "IamRoleArn": BACKUP_ROLE_ARN, "Metadata": {"targetTableName": backup_unique("syrestored")}})
+    for _ in range(2):
+        backup_cli(ctx, "describe-restore-job", {"RestoreJobId": restore.get("RestoreJobId", "")})
+    scan = backup_cli(
+        ctx,
+        "start-scan-job",
+        {
+            "BackupVaultName": vault["name"], "IamRoleArn": BACKUP_ROLE_ARN, "ScannerRoleArn": BACKUP_ROLE_ARN,
+            "MalwareScanner": "GUARDDUTY", "RecoveryPointArn": rp_s3, "ScanMode": "FULL_SCAN",
+        },
+    )
+    for _ in range(2):
+        backup_cli(ctx, "describe-scan-job", {"ScanJobId": scan.get("ScanJobId", "")})
+    hold = backup_cli(ctx, "create-legal-hold", {"Title": "syhold", "Description": "coverage"})
+    framework = backup_unique("syfw")
+    backup_cli(ctx, "create-framework", {"FrameworkName": framework, "FrameworkControls": backup_framework_controls()})
+    report_plan = backup_unique("syrp")
+    backup_cli(ctx, "create-report-plan", backup_report_plan_body(report_plan))
+    report_job = backup_cli(ctx, "start-report-job", {"ReportPlanName": report_plan})
+    testing_plan = backup_unique("syrtp")
+    backup_cli(ctx, "create-restore-testing-plan", {"RestoreTestingPlan": backup_testing_plan_body(testing_plan)})
+    testing_selection = backup_unique("syrts")
+    backup_cli(
+        ctx,
+        "create-restore-testing-selection",
+        {"RestoreTestingPlanName": testing_plan, "RestoreTestingSelection": backup_testing_selection_body(testing_selection)},
+    )
+    tiering = backup_unique("sytier")
+    backup_cli(ctx, "create-tiering-configuration", {"TieringConfiguration": backup_tiering_body(tiering, vault["name"])})
+    access_point = backup_cli(ctx, "create-backup-access-point", {"Name": backup_unique("syap"), "RecoveryPointArn": rp})
+    state.update(
+        {
+            "vault": vault["name"], "vaultArn": vault["arn"], "vault2Arn": vault2["arn"],
+            "lag": lag_name, "lagArn": str(lag.get("BackupVaultArn", "")),
+            "tableArn": table_arn, "s3Arn": s3_arn, "rp": rp, "rpS3": rp_s3,
+            "planId": plan["id"], "planName": plan["name"], "selectionId": selection,
+            "copyJobId": copy_job.get("CopyJobId", ""), "restoreJobId": restore.get("RestoreJobId", ""),
+            "scanJobId": scan.get("ScanJobId", ""), "legalHoldId": hold.get("LegalHoldId", ""),
+            "framework": framework, "reportPlan": report_plan, "reportJobId": report_job.get("ReportJobId", ""),
+            "testingPlan": testing_plan, "testingSelection": testing_selection, "tiering": tiering,
+            "accessPointArn": access_point.get("AccessPointArn", ""),
+            "backupJobId": "",
+        }
+    )
+    job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault["name"], "ResourceArn": table_arn, "IamRoleArn": BACKUP_ROLE_ARN})
+    state["backupJobId"] = job.get("BackupJobId", "")
+    return state
+
+
+def backup_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = backup_fixture(ctx)
+    if not state.get("vault"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    ids = {
+        "BackupVaultName": state["vault"], "RecoveryPointArn": state["rp"], "BackupPlanId": state["planId"],
+        "SelectionId": state["selectionId"], "BackupJobId": state["backupJobId"], "CopyJobId": state["copyJobId"],
+        "RestoreJobId": state["restoreJobId"], "ScanJobId": state["scanJobId"], "ReportJobId": state["reportJobId"],
+        "ReportPlanName": state["reportPlan"], "FrameworkName": state["framework"], "LegalHoldId": state["legalHoldId"],
+        "RestoreTestingPlanName": state["testingPlan"], "RestoreTestingSelectionName": state["testingSelection"],
+        "TieringConfigurationName": state["tiering"], "AccessPointArn": state["accessPointArn"],
+        "ResourceArn": state["tableArn"], "IamRoleArn": BACKUP_ROLE_ARN, "ScannerRoleArn": BACKUP_ROLE_ARN,
+    }
+    for key, value in ids.items():
+        if key in hydrated:
+            hydrated[key] = value
+    vault = state["vault"]
+
+    if op == "CreateBackupVault":
+        hydrated["BackupVaultName"] = backup_unique("syv")
+    elif op == "CreateLogicallyAirGappedBackupVault":
+        hydrated.update({"BackupVaultName": backup_unique("sylag"), "MinRetentionDays": 7, "MaxRetentionDays": 30})
+    elif op == "CreateRestoreAccessBackupVault":
+        hydrated.update({"SourceBackupVaultArn": state["lagArn"], "BackupVaultName": backup_unique("syra")})
+    elif op == "DeleteBackupVault":
+        hydrated["BackupVaultName"] = backup_new_vault(ctx)["name"]
+    elif op in {"ListRestoreAccessBackupVaults", "AssociateBackupVaultMpaApprovalTeam", "DisassociateBackupVaultMpaApprovalTeam"}:
+        hydrated["BackupVaultName"] = state["lag"]
+        if op == "AssociateBackupVaultMpaApprovalTeam":
+            hydrated["MpaApprovalTeamArn"] = BACKUP_MPA_TEAM_ARN
+        if op == "DisassociateBackupVaultMpaApprovalTeam":
+            backup_cli(ctx, "associate-backup-vault-mpa-approval-team", {"BackupVaultName": state["lag"], "MpaApprovalTeamArn": BACKUP_MPA_TEAM_ARN})
+    elif op == "RevokeRestoreAccessBackupVault":
+        ra = backup_cli(ctx, "create-restore-access-backup-vault", {"SourceBackupVaultArn": state["lagArn"], "BackupVaultName": backup_unique("syra")})
+        hydrated.update({"BackupVaultName": state["lag"], "RestoreAccessBackupVaultArn": ra.get("RestoreAccessBackupVaultArn", "")})
+    elif op == "PutBackupVaultAccessPolicy":
+        hydrated["Policy"] = '{"Version":"2012-10-17","Statement":[]}'
+    elif op == "PutBackupVaultNotifications":
+        hydrated.update({"SNSTopicArn": "arn:aws:sns:us-east-1:123456789012:sybackup", "BackupVaultEvents": ["BACKUP_JOB_COMPLETED"]})
+    elif op in {"PutBackupVaultLockConfiguration", "DeleteBackupVaultLockConfiguration"}:
+        fresh = backup_new_vault(ctx)["name"]
+        hydrated["BackupVaultName"] = fresh
+        if op == "PutBackupVaultLockConfiguration":
+            hydrated.update({"MinRetentionDays": 1, "MaxRetentionDays": 30})
+        else:
+            backup_cli(ctx, "put-backup-vault-lock-configuration", {"BackupVaultName": fresh, "MinRetentionDays": 1})
+    elif op == "CreateBackupPlan":
+        hydrated["BackupPlan"] = backup_plan_input(backup_unique("syplan"), vault)
+    elif op == "UpdateBackupPlan":
+        hydrated["BackupPlan"] = backup_plan_input(state["planName"], vault)
+    elif op == "DeleteBackupPlan":
+        hydrated["BackupPlanId"] = backup_new_plan(ctx, vault)["id"]
+    elif op == "GetBackupPlanFromJSON":
+        exported = backup_cli(ctx, "export-backup-plan-template", {"BackupPlanId": state["planId"]})
+        hydrated["BackupPlanTemplateJson"] = exported.get("BackupPlanTemplateJson", "{}")
+    elif op == "GetBackupPlanFromTemplate":
+        hydrated["BackupPlanTemplateId"] = BACKUP_TEMPLATE_ID
+    elif op == "CreateBackupSelection":
+        hydrated["BackupSelection"] = {"SelectionName": backup_unique("sysel"), "IamRoleArn": BACKUP_ROLE_ARN, "Resources": ["*"]}
+    elif op == "DeleteBackupSelection":
+        hydrated["SelectionId"] = backup_new_selection(ctx, state["planId"])
+    elif op == "StopBackupJob":
+        job = backup_cli(ctx, "start-backup-job", {"BackupVaultName": vault, "ResourceArn": state["tableArn"], "IamRoleArn": BACKUP_ROLE_ARN})
+        hydrated["BackupJobId"] = job.get("BackupJobId", "")
+    elif op == "StartCopyJob":
+        hydrated.update({"SourceBackupVaultName": vault, "DestinationBackupVaultArn": state["vault2Arn"]})
+    elif op == "StartRestoreJob":
+        hydrated["Metadata"] = {"targetTableName": backup_unique("syrestored")}
+    elif op == "PutRestoreValidationResult":
+        hydrated["ValidationStatus"] = "SUCCESSFUL"
+    elif op == "StartScanJob":
+        hydrated.update({"RecoveryPointArn": state["rpS3"], "MalwareScanner": "GUARDDUTY", "ScanMode": "FULL_SCAN"})
+    elif op == "GetPITRMalwareScanResults":
+        hydrated.update({"RecoveryPointArn": state["rpS3"], "MalwareScanner": "GUARDDUTY", "ScanEndTime": "2100-01-01T00:00:00Z"})
+    elif op in {"DeleteRecoveryPoint", "DisassociateRecoveryPoint"}:
+        hydrated["RecoveryPointArn"] = backup_new_recovery_point(ctx, vault, state["tableArn"])
+    elif op == "UpdateRecoveryPointLifecycle":
+        hydrated["Lifecycle"] = {"DeleteAfterDays": 30}
+    elif op in {"UpdateRecoveryPointIndexSettings", "GetRecoveryPointIndexDetails"}:
+        hydrated["RecoveryPointArn"] = state["rpS3"]
+        if op == "UpdateRecoveryPointIndexSettings":
+            hydrated["Index"] = "ENABLED"
+    elif op in {"TagResource", "UntagResource", "ListTags"}:
+        hydrated["ResourceArn"] = state["vaultArn"]
+        if op == "TagResource":
+            hydrated["Tags"] = {"sykey": "syvalue"}
+        if op == "UntagResource":
+            hydrated["TagKeyList"] = ["sykey"]
+    elif op == "ListBackupAccessPointsByResource":
+        hydrated["ResourceArn"] = state["tableArn"]
+    elif op == "CreateLegalHold":
+        hydrated.update({"Title": "syhold", "Description": "coverage"})
+    elif op == "CancelLegalHold":
+        hold = backup_cli(ctx, "create-legal-hold", {"Title": "syhold", "Description": "coverage"})
+        hydrated.update({"LegalHoldId": hold.get("LegalHoldId", ""), "CancelDescription": "coverage"})
+    elif op == "CreateFramework":
+        hydrated.update({"FrameworkName": backup_unique("syfw"), "FrameworkControls": backup_framework_controls()})
+    elif op == "UpdateFramework":
+        hydrated["FrameworkControls"] = backup_framework_controls()
+    elif op == "DeleteFramework":
+        name = backup_unique("syfw")
+        backup_cli(ctx, "create-framework", {"FrameworkName": name, "FrameworkControls": backup_framework_controls()})
+        hydrated["FrameworkName"] = name
+    elif op == "CreateReportPlan":
+        hydrated.update(backup_report_plan_body(backup_unique("syrp")))
+    elif op == "UpdateReportPlan":
+        body = backup_report_plan_body(state["reportPlan"])
+        hydrated.update({"ReportDeliveryChannel": body["ReportDeliveryChannel"], "ReportSetting": body["ReportSetting"]})
+    elif op == "DeleteReportPlan":
+        name = backup_unique("syrp")
+        backup_cli(ctx, "create-report-plan", backup_report_plan_body(name))
+        hydrated["ReportPlanName"] = name
+    elif op == "CreateRestoreTestingPlan":
+        hydrated["RestoreTestingPlan"] = backup_testing_plan_body(backup_unique("syrtp"))
+    elif op == "UpdateRestoreTestingPlan":
+        hydrated["RestoreTestingPlan"] = {"ScheduleExpression": "cron(0 2 ? * * *)"}
+    elif op == "DeleteRestoreTestingPlan":
+        name = backup_unique("syrtp")
+        backup_cli(ctx, "create-restore-testing-plan", {"RestoreTestingPlan": backup_testing_plan_body(name)})
+        hydrated["RestoreTestingPlanName"] = name
+    elif op == "CreateRestoreTestingSelection":
+        hydrated["RestoreTestingSelection"] = backup_testing_selection_body(backup_unique("syrts"))
+    elif op == "UpdateRestoreTestingSelection":
+        hydrated["RestoreTestingSelection"] = {"ValidationWindowHours": 1}
+    elif op == "DeleteRestoreTestingSelection":
+        name = backup_unique("syrts")
+        backup_cli(
+            ctx,
+            "create-restore-testing-selection",
+            {"RestoreTestingPlanName": state["testingPlan"], "RestoreTestingSelection": backup_testing_selection_body(name)},
+        )
+        hydrated["RestoreTestingSelectionName"] = name
+    elif op == "CreateTieringConfiguration":
+        hydrated["TieringConfiguration"] = backup_tiering_body(backup_unique("sytier"), vault)
+    elif op == "UpdateTieringConfiguration":
+        hydrated["TieringConfiguration"] = {"BackupVaultName": vault, "ResourceSelection": backup_tiering_body("x", vault)["ResourceSelection"]}
+    elif op == "DeleteTieringConfiguration":
+        name = backup_unique("sytier")
+        backup_cli(ctx, "create-tiering-configuration", {"TieringConfiguration": backup_tiering_body(name, vault)})
+        hydrated["TieringConfigurationName"] = name
+    elif op == "CreateBackupAccessPoint":
+        hydrated.update({"Name": backup_unique("syap"), "RecoveryPointArn": state["rp"]})
+    elif op == "DeleteBackupAccessPoint":
+        ap = backup_cli(ctx, "create-backup-access-point", {"Name": backup_unique("syap"), "RecoveryPointArn": state["rp"]})
+        hydrated["AccessPointArn"] = ap.get("AccessPointArn", "")
+    elif op == "UpdateGlobalSettings":
+        hydrated["GlobalSettings"] = {"isCrossAccountBackupEnabled": "false"}
+    return hydrated
+
+
+DOCDB_PASSWORD = "Passw0rd-stackyard"
+
+
+def docdb_unique(prefix: str) -> str:
+    return f"{prefix}-{time.time_ns() % 10**12}"
+
+
+def docdb_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "docdb", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def docdb_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], extra: list[str] | None = None) -> str:
+    cluster_id = docdb_unique("stackyard-docdb")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster", [
+        "--db-cluster-identifier", cluster_id, "--engine", "docdb",
+        "--master-username", "stackyard", "--master-user-password", DOCDB_PASSWORD, *(extra or []),
+    ])
+    return cluster_id
+
+
+def docdb_create_instance(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cluster_id: str) -> str:
+    instance_id = docdb_unique("stackyard-docdb-inst")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-instance", [
+        "--db-instance-identifier", instance_id, "--db-instance-class", "db.r6g.large",
+        "--engine", "docdb", "--db-cluster-identifier", cluster_id,
+    ])
+    return instance_id
+
+
+def docdb_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict[str, str]:
+    """Shared, long-lived resources the non-destructive operations point at."""
+    state = RUNTIME_STATE.setdefault("docdb", {})
+    if state.get("cluster"):
+        return state  # type: ignore[return-value]
+    cluster_id = docdb_create_cluster(aws_bin, endpoint_url, region, env)
+    instance_id = docdb_create_instance(aws_bin, endpoint_url, region, env, cluster_id)
+    pg = docdb_unique("stackyard-docdb-pg")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster-parameter-group", [
+        "--db-cluster-parameter-group-name", pg, "--db-parameter-group-family", "docdb5.0", "--description", "stackyard coverage",
+    ])
+    snapshot = docdb_unique("stackyard-docdb-snap")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster-snapshot", [
+        "--db-cluster-snapshot-identifier", snapshot, "--db-cluster-identifier", cluster_id,
+    ])
+    global_id = docdb_unique("stackyard-docdb-global")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-global-cluster", ["--global-cluster-identifier", global_id])
+    subnet_group = docdb_unique("stackyard-docdb-subnets")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-subnet-group", [
+        "--db-subnet-group-name", subnet_group, "--db-subnet-group-description", "stackyard coverage",
+        "--subnet-ids", "subnet-0a1b2c3d", "subnet-1a2b3c4d",
+    ])
+    subscription = docdb_unique("stackyard-docdb-sub")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-event-subscription", [
+        "--subscription-name", subscription, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:stackyard-docdb",
+    ])
+    state.update({
+        "cluster": cluster_id, "cluster_arn": f"arn:aws:rds:{region}:123456789012:cluster:{cluster_id}",
+        "instance": instance_id, "pg": pg, "snapshot": snapshot, "global": global_id,
+        "subnet_group": subnet_group, "subscription": subscription,
+    })
+    return state  # type: ignore[return-value]
+
+
+def docdb_global_pair(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> tuple[str, str]:
+    """A fresh global cluster with a primary and a secondary; returns (global id, secondary id)."""
+    primary = docdb_create_cluster(aws_bin, endpoint_url, region, env)
+    global_id = docdb_unique("stackyard-docdb-global")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-global-cluster", [
+        "--global-cluster-identifier", global_id, "--source-db-cluster-identifier", primary,
+    ])
+    secondary = docdb_unique("stackyard-docdb")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster", [
+        "--db-cluster-identifier", secondary, "--engine", "docdb", "--global-cluster-identifier", global_id,
+    ])
+    return global_id, secondary
+
+
+def docdb_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    op = endpoint.operation
+    fx = docdb_fixture(aws_bin, endpoint_url, region, env)
+    args = (aws_bin, endpoint_url, region, env)
+    cluster, instance, pg, snapshot = fx["cluster"], fx["instance"], fx["pg"], fx["snapshot"]
+    if op == "CreateDBCluster":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "Engine": "docdb",
+                "MasterUsername": "stackyard", "MasterUserPassword": DOCDB_PASSWORD}
+    if op in {"ModifyDBCluster", "FailoverDBCluster"}:
+        return {"DBClusterIdentifier": cluster}
+    if op == "DeleteDBCluster":
+        return {"DBClusterIdentifier": docdb_create_cluster(*args), "SkipFinalSnapshot": True}
+    if op == "StopDBCluster":
+        return {"DBClusterIdentifier": docdb_create_cluster(*args)}
+    if op == "StartDBCluster":
+        stopped = docdb_create_cluster(*args)
+        docdb_cli(*args, "stop-db-cluster", ["--db-cluster-identifier", stopped])
+        return {"DBClusterIdentifier": stopped}
+    if op == "CreateDBInstance":
+        return {"DBInstanceIdentifier": docdb_unique("stackyard-docdb-inst"), "DBInstanceClass": "db.r6g.large",
+                "Engine": "docdb", "DBClusterIdentifier": cluster}
+    if op in {"ModifyDBInstance", "RebootDBInstance"}:
+        return {"DBInstanceIdentifier": instance}
+    if op == "DeleteDBInstance":
+        return {"DBInstanceIdentifier": docdb_create_instance(*args, cluster)}
+    if op == "CreateDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": docdb_unique("stackyard-docdb-pg"), "DBParameterGroupFamily": "docdb5.0", "Description": "stackyard coverage"}
+    if op == "CopyDBClusterParameterGroup":
+        return {"SourceDBClusterParameterGroupIdentifier": pg, "TargetDBClusterParameterGroupIdentifier": docdb_unique("stackyard-docdb-pg"),
+                "TargetDBClusterParameterGroupDescription": "stackyard coverage copy"}
+    if op == "DeleteDBClusterParameterGroup":
+        doomed = docdb_unique("stackyard-docdb-pg")
+        docdb_cli(*args, "create-db-cluster-parameter-group", [
+            "--db-cluster-parameter-group-name", doomed, "--db-parameter-group-family", "docdb5.0", "--description", "doomed"])
+        return {"DBClusterParameterGroupName": doomed}
+    if op == "DescribeDBClusterParameters":
+        return {"DBClusterParameterGroupName": pg}
+    if op == "ModifyDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": pg, "Parameters": [{"ParameterName": "ttl_monitor", "ParameterValue": "disabled", "ApplyMethod": "immediate"}]}
+    if op == "ResetDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": pg, "ResetAllParameters": True}
+    if op == "DescribeEngineDefaultClusterParameters":
+        return {"DBParameterGroupFamily": "docdb5.0"}
+    if op == "CreateDBClusterSnapshot":
+        return {"DBClusterSnapshotIdentifier": docdb_unique("stackyard-docdb-snap"), "DBClusterIdentifier": cluster}
+    if op == "CopyDBClusterSnapshot":
+        return {"SourceDBClusterSnapshotIdentifier": snapshot, "TargetDBClusterSnapshotIdentifier": docdb_unique("stackyard-docdb-snap")}
+    if op == "DeleteDBClusterSnapshot":
+        doomed = docdb_unique("stackyard-docdb-snap")
+        docdb_cli(*args, "create-db-cluster-snapshot", ["--db-cluster-snapshot-identifier", doomed, "--db-cluster-identifier", cluster])
+        return {"DBClusterSnapshotIdentifier": doomed}
+    if op == "DescribeDBClusterSnapshotAttributes":
+        return {"DBClusterSnapshotIdentifier": snapshot}
+    if op == "ModifyDBClusterSnapshotAttribute":
+        return {"DBClusterSnapshotIdentifier": snapshot, "AttributeName": "restore", "ValuesToAdd": ["210987654321"]}
+    if op == "RestoreDBClusterFromSnapshot":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "SnapshotIdentifier": snapshot, "Engine": "docdb"}
+    if op == "RestoreDBClusterToPointInTime":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "SourceDBClusterIdentifier": cluster, "UseLatestRestorableTime": True}
+    if op == "CreateGlobalCluster":
+        return {"GlobalClusterIdentifier": docdb_unique("stackyard-docdb-global")}
+    if op == "ModifyGlobalCluster":
+        return {"GlobalClusterIdentifier": fx["global"]}
+    if op == "DeleteGlobalCluster":
+        doomed = docdb_unique("stackyard-docdb-global")
+        docdb_cli(*args, "create-global-cluster", ["--global-cluster-identifier", doomed])
+        return {"GlobalClusterIdentifier": doomed}
+    if op in {"FailoverGlobalCluster", "SwitchoverGlobalCluster", "RemoveFromGlobalCluster"}:
+        global_id, secondary = docdb_global_pair(*args)
+        arn = f"arn:aws:rds:{region}:123456789012:cluster:{secondary}"
+        if op == "RemoveFromGlobalCluster":
+            return {"GlobalClusterIdentifier": global_id, "DbClusterIdentifier": arn}
+        return {"GlobalClusterIdentifier": global_id, "TargetDbClusterIdentifier": arn}
+    if op == "CreateDBSubnetGroup":
+        return {"DBSubnetGroupName": docdb_unique("stackyard-docdb-subnets"), "DBSubnetGroupDescription": "stackyard coverage",
+                "SubnetIds": ["subnet-0a1b2c3d", "subnet-1a2b3c4d"]}
+    if op == "ModifyDBSubnetGroup":
+        return {"DBSubnetGroupName": fx["subnet_group"], "SubnetIds": ["subnet-0a1b2c3d", "subnet-2a2b3c4d"]}
+    if op == "DeleteDBSubnetGroup":
+        doomed = docdb_unique("stackyard-docdb-subnets")
+        docdb_cli(*args, "create-db-subnet-group", ["--db-subnet-group-name", doomed, "--db-subnet-group-description", "doomed",
+                                                  "--subnet-ids", "subnet-0a1b2c3d"])
+        return {"DBSubnetGroupName": doomed}
+    if op == "CreateEventSubscription":
+        return {"SubscriptionName": docdb_unique("stackyard-docdb-sub"), "SnsTopicArn": f"arn:aws:sns:{region}:123456789012:stackyard-docdb"}
+    if op == "ModifyEventSubscription":
+        return {"SubscriptionName": fx["subscription"], "Enabled": True}
+    if op == "DeleteEventSubscription":
+        doomed = docdb_unique("stackyard-docdb-sub")
+        docdb_cli(*args, "create-event-subscription", ["--subscription-name", doomed, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:doomed"])
+        return {"SubscriptionName": doomed}
+    if op == "AddSourceIdentifierToSubscription":
+        return {"SubscriptionName": fx["subscription"], "SourceIdentifier": cluster}
+    if op == "RemoveSourceIdentifierFromSubscription":
+        sub = docdb_unique("stackyard-docdb-sub")
+        docdb_cli(*args, "create-event-subscription", ["--subscription-name", sub, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:stackyard-docdb",
+                                                     "--source-ids", cluster])
+        return {"SubscriptionName": sub, "SourceIdentifier": cluster}
+    if op == "AddTagsToResource":
+        return {"ResourceName": fx["cluster_arn"], "Tags": [{"Key": "team", "Value": "stackyard"}]}
+    if op == "ListTagsForResource":
+        return {"ResourceName": fx["cluster_arn"]}
+    if op == "RemoveTagsFromResource":
+        return {"ResourceName": fx["cluster_arn"], "TagKeys": ["team"]}
+    if op == "ApplyPendingMaintenanceAction":
+        return {"ResourceIdentifier": fx["cluster_arn"], "ApplyAction": "system-update", "OptInType": "immediate"}
+    if op == "DescribeOrderableDBInstanceOptions":
+        return {"Engine": "docdb"}
+    # Read operations: the skeleton fills every optional member with
+    # placeholders (including MaxRecords=1, below the API minimum of 20), so
+    # send a realistic filter instead.
+    reads = {
+        "DescribeDBClusters": {"DBClusterIdentifier": cluster},
+        "DescribeDBInstances": {"Filters": [{"Name": "db-cluster-id", "Values": [cluster]}]},
+        "DescribeDBClusterParameterGroups": {"DBClusterParameterGroupName": pg},
+        "DescribeDBClusterSnapshots": {"DBClusterIdentifier": cluster, "SnapshotType": "manual"},
+        "DescribeDBEngineVersions": {"Engine": "docdb"},
+        "DescribeGlobalClusters": {"GlobalClusterIdentifier": fx["global"]},
+        "DescribeDBSubnetGroups": {"DBSubnetGroupName": fx["subnet_group"]},
+        "DescribeEventSubscriptions": {"SubscriptionName": fx["subscription"]},
+        "DescribeEventCategories": {"SourceType": "db-cluster"},
+        "DescribeServerlessV2PlatformVersions": {"Engine": "docdb"},
+    }
+    if op in reads:
+        return reads[op]
+    if op.startswith("Describe"):
+        return {}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -31825,6 +32889,10 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "docdb":
+        return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "glue":
+        return glue_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:
@@ -31847,6 +32915,8 @@ def hydrate_payload_with_service_state(
         return hydrated
     if endpoint.service == "bedrockagentruntime":
         return bedrockagentruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "backup":
+        return backup_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bedrockagent":
         return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
