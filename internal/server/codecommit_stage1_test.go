@@ -155,3 +155,15 @@ func TestCodeCommitStage1ContentIsBoundedAcrossRepositories(t *testing.T) {
 		t.Fatalf("delete should release content bytes: %d", st.blobBytes)
 	}
 }
+
+// Paths are stored per commit, so their length is capped and their bytes count
+// against the repository's content budget along with messages and authors.
+func TestCodeCommitStage1CapsPathLength(t *testing.T) {
+	ts := newCodeCommitTestServer(t)
+	ccOK(t, ts, "CreateRepository", `{"repositoryName":"paths"}`)
+	long := strings.Repeat("d/", 2100) + "f.txt"
+	if code := ccFail(t, ts, "PutFile", fmt.Sprintf(`{"repositoryName":"paths","branchName":"main","filePath":%q,"fileContent":%q}`, long, ccB64s("x"))); code != "InvalidPathException" {
+		t.Fatalf("over-long path: %s", code)
+	}
+	ccOK(t, ts, "PutFile", fmt.Sprintf(`{"repositoryName":"paths","branchName":"main","filePath":"ok.txt","fileContent":%q}`, ccB64s("x")))
+}

@@ -24,6 +24,7 @@ const (
 	ccMaxRepos           = 1000
 	ccMaxCommitsPerRepo  = 10000
 	ccMaxFilesPerTree    = 10000
+	ccMaxPathBytes       = 4096
 	ccMaxBranchesPerRepo = 1000
 	ccMaxAncestry        = 10000 // commits walked when searching history
 	ccMaxPullRequests    = 5000
@@ -360,7 +361,21 @@ func (r *ccRepo) newCommit(files map[string]ccEntry, parents []string, author cc
 	if r.entries+len(files) > ccMaxRepoEntries {
 		return nil, ccError("RepositoryLimitExceededException", "the repository has reached its history size limit")
 	}
+	// Messages, authors and paths are stored per commit too, so count them
+	// against the same byte budgets as blob content.
+	meta := len(message) + len(author.name) + len(author.email)
+	for p := range files {
+		if len(p) > ccMaxPathBytes {
+			return nil, ccError("InvalidPathException", fmt.Sprintf("file paths can be at most %d bytes", ccMaxPathBytes))
+		}
+		meta += len(p)
+	}
+	if r.blobBytes+meta > ccMaxRepoBytes || r.store.blobBytes+meta > ccMaxStoreBytes {
+		return nil, ccError("RepositoryLimitExceededException", "the repository has reached its content size limit")
+	}
 	r.entries += len(files)
+	r.blobBytes += meta
+	r.store.blobBytes += meta
 	tree := ccTreeID(files)
 	c := &ccCommit{tree: tree, parents: parents, files: files, author: author, message: message}
 	c.id = ccSHA("commit", tree, strings.Join(parents, ","), author.name, author.email, message, author.when.Format(time.RFC3339Nano), ccRandomSHA())
