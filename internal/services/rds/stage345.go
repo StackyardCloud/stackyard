@@ -169,6 +169,30 @@ type DBCluster struct {
 	HTTPEndpointEnabled     bool
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
+
+	// Cluster-family fields filled in by the DocumentDB-style operations in
+	// docdb.go. RDS-created clusters leave them at their zero values.
+	EngineVersion              string
+	Port                       int
+	StorageEncrypted           bool
+	KmsKeyID                   string
+	DeletionProtection         bool
+	AvailabilityZones          []string
+	PreferredBackupWindow      string
+	PreferredMaintenanceWindow string
+	LogExports                 []string
+	StorageType                string
+	ResourceID                 string
+	GlobalClusterID            string
+	CopyTagsToSnapshot         bool
+	Members                    []ClusterMember
+}
+
+// ClusterMember is an instance's membership in a cluster.
+type ClusterMember struct {
+	InstanceID    string
+	IsWriter      bool
+	PromotionTier int
 }
 
 type CreateDBClusterInput struct {
@@ -253,6 +277,11 @@ type GlobalCluster struct {
 	EngineVersion      string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+
+	Engine           string
+	DatabaseName     string
+	StorageEncrypted bool
+	FailoverState    string
 }
 
 type CreateGlobalClusterInput struct {
@@ -1907,6 +1936,9 @@ func cloneDBCluster(cluster *DBCluster) DBCluster {
 	}
 	out := *cluster
 	out.VpcSecurityGroupIDs = append([]string{}, cluster.VpcSecurityGroupIDs...)
+	out.AvailabilityZones = append([]string(nil), cluster.AvailabilityZones...)
+	out.LogExports = append([]string(nil), cluster.LogExports...)
+	out.Members = append([]ClusterMember(nil), cluster.Members...)
 	return out
 }
 
