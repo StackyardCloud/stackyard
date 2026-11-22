@@ -736,6 +736,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/eks/docker-compose.yml"
   },
   {
+    id: "eksauth",
+    name: "EKS Auth",
+    category: "compute",
+    summary: "Exchange EKS Pod Identity service-account tokens for temporary role credentials in local integration tests.",
+    docsHref: "../../../index.html#eksauth",
+    exampleHref: "../../../../examples/aws/eks-auth/docker-compose.yml"
+  },
+  {
     id: "elasticbeanstalk",
     name: "Elastic Beanstalk",
     category: "compute",

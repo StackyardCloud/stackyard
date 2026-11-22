@@ -560,6 +560,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "ecr": {"cli": "ecr", "ops_file": REPO_ROOT / "internal/server/ecr_ops.go"},
     "ecs": {"cli": "ecs", "ops_file": REPO_ROOT / "internal/server/ecs_ops.go"},
     "eks": {"cli": "eks", "ops_file": REPO_ROOT / "internal/server/eks_ops.go"},
+    "eksauth": {"cli": "eks-auth", "ops_file": REPO_ROOT / "internal/server/eksauth_ops.go"},
     "elasticbeanstalk": {
         "cli": "elasticbeanstalk",
         "ops_file": REPO_ROOT / "internal/server/elasticbeanstalk_ops.go",
@@ -2178,6 +2179,9 @@ SERVICE_ALIASES = {
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
+    "eksauth": "eksauth",
+    "eks-auth": "eksauth",
+    "amazoneksauth": "eksauth",
     "pipes": "pipes",
     "eventbridgepipes": "pipes",
     "amazoneventbridgepipes": "pipes",
@@ -3244,6 +3248,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "ecr": {},
     "ecs": {},
     "eks": {},
+    "eksauth": {},
     "dynamodb": {},
     "dynamodbstreams": {},
     "keyspaces": {},
@@ -33130,6 +33135,50 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+EKSAUTH_NAMESPACE = "stackyard-eksauth"
+EKSAUTH_SERVICE_ACCOUNT = "stackyard-eksauth-sa"
+
+
+def eksauth_hydrate_payload(aws_bin: str, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """AssumeRoleForPodIdentity needs a cluster, a pod identity association for
+    the token's service account, and an (unsigned) projected service-account
+    token naming it; Stackyard checks claims, not signatures."""
+    state = RUNTIME_STATE.setdefault("eksauth", {})
+    cluster_name = eks_ensure_cluster(aws_bin, endpoint_url, region, env)
+    if state.get("cluster_name") != cluster_name:
+        create_payload = {
+            "clusterName": cluster_name,
+            "namespace": EKSAUTH_NAMESPACE,
+            "serviceAccount": EKSAUTH_SERVICE_ACCOUNT,
+            "roleArn": EKS_DEFAULT_ROLE_ARN,
+        }
+        # An association left by an earlier run on the same server is fine.
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "eks",
+            "create-pod-identity-association",
+            env,
+            ["--cli-input-json", json.dumps(create_payload, separators=(",", ":"))],
+        )
+        state["cluster_name"] = cluster_name
+
+    def b64(value: dict) -> str:
+        return base64.urlsafe_b64encode(json.dumps(value).encode()).decode().rstrip("=")
+
+    claims = {
+        "aud": ["pods.eks.amazonaws.com"],
+        "exp": int(time.time()) + 3600,
+        "sub": f"system:serviceaccount:{EKSAUTH_NAMESPACE}:{EKSAUTH_SERVICE_ACCOUNT}",
+        "kubernetes.io": {"pod": {"name": "stackyard-coverage"}},
+    }
+    hydrated = copy.deepcopy(payload)
+    hydrated["clusterName"] = cluster_name
+    hydrated["token"] = b64({"alg": "RS256", "typ": "JWT"}) + "." + b64(claims) + ".c2lnbmF0dXJl"
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33141,6 +33190,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "eksauth":
+        return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdb":

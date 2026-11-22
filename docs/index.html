@@ -168,6 +168,7 @@
         <a href="#ecr">ECR</a>
         <a href="#ecs">ECS</a>
         <a href="#eks">EKS</a>
+        <a href="#eksauth">EKS Auth</a>
         <a href="#elasticbeanstalk">Elastic Beanstalk</a>
         <a href="#elemental-inference">Elemental Inference</a>
         <a href="#entity-resolution">Entity Resolution</a>
@@ -12400,6 +12401,40 @@
         <ul>
                 <li><code>eks</code>: <code>docker compose -f examples/aws/eks/docker-compose.yml up --build</code></li>
                 <li><code>eks</code>: <code>docker compose -f examples/aws/eks/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+        <section id="eksauth" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EKS Auth</h2>
+        <p>SigV4 signed with service <code>eks-auth</code>. REST JSON API at <code>POST /clusters/{clusterName}/assume-role-for-pod-identity</code>. The cluster must exist in the EKS store, and the projected service-account token must name a service account with a pod identity association. Token claims are checked (audience <code>pods.eks.amazonaws.com</code>, expiry, <code>system:serviceaccount:&lt;namespace&gt;:&lt;name&gt;</code> subject); signatures are not, since Stackyard has no cluster signing keys. Returned credentials are STS-shaped but are not accepted for signing.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: eks-auth</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AssumeRoleForPodIdentity</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>eks-auth</code>: <code>docker compose -f examples/aws/eks-auth/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
