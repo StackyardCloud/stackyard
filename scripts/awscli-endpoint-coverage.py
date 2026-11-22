@@ -211,6 +211,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "bedrock-agentcore",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
+    "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
     "bedrockagentcorecontrol": {
         "cli": "bedrock-agentcore-control",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcorecontrol_ops.go",
@@ -1191,6 +1192,10 @@ SERVICE_ALIASES = {
     "agentcoredata": "bedrockagentcoredata",
     "agentcore-data": "bedrockagentcoredata",
     "amazonbedrockagentcoredata": "bedrockagentcoredata",
+    "bedrockagent": "bedrockagent",
+    "bedrock-agent": "bedrockagent",
+    "agents for amazon bedrock": "bedrockagent",
+    "amazonbedrockagent": "bedrockagent",
     "bedrockagentcorecontrol": "bedrockagentcorecontrol",
     "bedrock-agentcore-control": "bedrockagentcorecontrol",
     "bedrock agentcore control": "bedrockagentcorecontrol",
@@ -3003,6 +3008,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "redshiftserverless": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
+    "bedrockagent": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
@@ -30197,6 +30203,406 @@ def appconfigdata_seed_session(
     }
 
 
+BEDROCKAGENT_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-bedrock-agent"
+BEDROCKAGENT_INSTRUCTION = "You are a Stackyard coverage agent that answers questions about the emulator."
+BEDROCKAGENT_FLOW_DEFINITION = {
+    "nodes": [{"name": "in", "type": "Input"}, {"name": "out", "type": "Output"}],
+    "connections": [{"name": "c", "type": "Data", "source": "in", "target": "out"}],
+}
+BEDROCKAGENT_KB_CONFIG = {
+    "type": "VECTOR",
+    "vectorKnowledgeBaseConfiguration": {
+        "embeddingModelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
+    },
+}
+BEDROCKAGENT_KB_STORAGE = {"type": "S3_VECTORS"}
+BEDROCKAGENT_DATA_SOURCE_CONFIG = {"type": "CUSTOM"}
+
+
+def bedrockagent_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns()}"
+
+
+def bedrockagent_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "bedrock-agent",
+        operation,
+        env,
+        ["--cli-input-json", json.dumps(body, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def bedrockagent_new_agent(ctx: tuple, collaboration: str = "DISABLED", prepare: bool = True) -> str:
+    agent = bedrockagent_cli(
+        ctx,
+        "create-agent",
+        {
+            "agentName": bedrockagent_unique("syagent"),
+            "foundationModel": "anthropic.claude-v2",
+            "agentResourceRoleArn": BEDROCKAGENT_ROLE_ARN,
+            "instruction": BEDROCKAGENT_INSTRUCTION,
+            "agentCollaboration": collaboration,
+        },
+    ).get("agent", {})
+    agent_id = str(agent.get("agentId") or "")
+    if agent_id and prepare:
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": agent_id})
+    return agent_id
+
+
+def bedrockagent_new_alias(ctx: tuple, agent_id: str) -> dict:
+    # A new alias without routing snapshots a version, which needs a prepared draft.
+    bedrockagent_cli(ctx, "prepare-agent", {"agentId": agent_id})
+    return bedrockagent_cli(
+        ctx, "create-agent-alias", {"agentId": agent_id, "agentAliasName": bedrockagent_unique("syalias")}
+    ).get("agentAlias", {})
+
+
+def bedrockagent_new_kb(ctx: tuple) -> str:
+    kb = bedrockagent_cli(
+        ctx,
+        "create-knowledge-base",
+        {
+            "name": bedrockagent_unique("sykb"),
+            "roleArn": BEDROCKAGENT_ROLE_ARN,
+            "knowledgeBaseConfiguration": BEDROCKAGENT_KB_CONFIG,
+            "storageConfiguration": BEDROCKAGENT_KB_STORAGE,
+        },
+    ).get("knowledgeBase", {})
+    return str(kb.get("knowledgeBaseId") or "")
+
+
+def bedrockagent_new_data_source(ctx: tuple, kb_id: str) -> str:
+    ds = bedrockagent_cli(
+        ctx,
+        "create-data-source",
+        {"knowledgeBaseId": kb_id, "name": bedrockagent_unique("syds"), "dataSourceConfiguration": BEDROCKAGENT_DATA_SOURCE_CONFIG},
+    ).get("dataSource", {})
+    return str(ds.get("dataSourceId") or "")
+
+
+def bedrockagent_document(doc_id: str) -> dict:
+    return {
+        "content": {
+            "dataSourceType": "CUSTOM",
+            "custom": {
+                "customDocumentIdentifier": {"id": doc_id},
+                "sourceType": "IN_LINE",
+                "inlineContent": {"type": "TEXT", "textContent": {"data": "Stackyard emulates AWS locally."}},
+            },
+        }
+    }
+
+
+def bedrockagent_document_id(doc_id: str) -> dict:
+    return {"dataSourceType": "CUSTOM", "custom": {"id": doc_id}}
+
+
+def bedrockagent_new_flow(ctx: tuple) -> dict:
+    flow = bedrockagent_cli(
+        ctx,
+        "create-flow",
+        {"name": bedrockagent_unique("syflow"), "executionRoleArn": BEDROCKAGENT_ROLE_ARN, "definition": BEDROCKAGENT_FLOW_DEFINITION},
+    )
+    if flow.get("id"):
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": flow["id"]})
+    return flow
+
+
+def bedrockagent_new_prompt(ctx: tuple) -> dict:
+    return bedrockagent_cli(ctx, "create-prompt", {"name": bedrockagent_unique("syprompt")})
+
+
+def bedrockagent_new_instruction(ctx: tuple) -> dict:
+    return bedrockagent_cli(
+        ctx,
+        "create-retrieval-instruction",
+        {"name": bedrockagent_unique("syri"), "instruction": {"answerFormat": "Answer in two sentences."}},
+    )
+
+
+def bedrockagent_fixture(ctx: tuple) -> dict:
+    # Shared resources the read and update operations point at, created once.
+    state = RUNTIME_STATE.setdefault("bedrockagent", {})
+    if state.get("agentId"):
+        return state
+    helper = bedrockagent_new_agent(ctx)
+    agent_id = bedrockagent_new_agent(ctx, collaboration="SUPERVISOR")
+    kb_id = bedrockagent_new_kb(ctx)
+    if not (helper and agent_id and kb_id):
+        return state
+    draft = {"agentId": agent_id, "agentVersion": "DRAFT"}
+    state["helperAliasArn"] = f"arn:aws:bedrock:us-east-1:123456789012:agent-alias/{helper}/TSTALIASID"
+    group = bedrockagent_cli(
+        ctx, "create-agent-action-group", {**draft, "actionGroupName": "syactions", "parentActionGroupSignature": "AMAZON.UserInput"}
+    ).get("agentActionGroup", {})
+    bedrockagent_cli(ctx, "associate-agent-knowledge-base", {**draft, "knowledgeBaseId": kb_id, "description": "coverage"})
+    collaborator = bedrockagent_cli(
+        ctx,
+        "associate-agent-collaborator",
+        {
+            **draft,
+            "agentDescriptor": {"aliasArn": state["helperAliasArn"]},
+            "collaboratorName": "syhelper",
+            "collaborationInstruction": "Ask the helper.",
+        },
+    ).get("agentCollaborator", {})
+    alias = bedrockagent_new_alias(ctx, agent_id)
+    ds_id = bedrockagent_new_data_source(ctx, kb_id)
+    ds = {"knowledgeBaseId": kb_id, "dataSourceId": ds_id}
+    job = bedrockagent_cli(ctx, "start-ingestion-job", ds).get("ingestionJob", {})
+    bedrockagent_cli(ctx, "ingest-knowledge-base-documents", {**ds, "documents": [bedrockagent_document("sydoc")]})
+    vpc = bedrockagent_cli(
+        ctx,
+        "create-vpc-configuration",
+        {
+            "knowledgeBaseId": kb_id,
+            "vpcId": "vpc-0123456789abcdef0",
+            "subnetIds": ["subnet-0123456789abcdef0"],
+            "resourceTarget": "kb.internal",
+            "port": 443,
+            "protocol": "HTTPS",
+            "resolutionMode": "IN_VPC",
+        },
+    )
+    flow = bedrockagent_new_flow(ctx)
+    flow_alias = {}
+    if flow.get("id"):
+        bedrockagent_cli(ctx, "create-flow-version", {"flowIdentifier": flow["id"]})
+        flow_alias = bedrockagent_cli(
+            ctx, "create-flow-alias", {"flowIdentifier": flow["id"], "name": "syflowalias", "routingConfiguration": [{"flowVersion": "1"}]}
+        )
+    prompt = bedrockagent_new_prompt(ctx)
+    if prompt.get("id"):
+        bedrockagent_cli(ctx, "create-prompt-version", {"promptIdentifier": prompt["id"]})
+        bedrockagent_cli(ctx, "put-resource-policy", {"resourceArn": prompt["arn"], "policy": '{"Version":"2012-10-17"}'})
+    instruction = bedrockagent_new_instruction(ctx)
+    if instruction.get("retrievalInstructionId"):
+        bedrockagent_cli(ctx, "create-retrieval-instruction-version", {"retrievalInstructionId": instruction["retrievalInstructionId"]})
+    state.update(
+        {
+            "agentId": agent_id,
+            "agentAliasId": alias.get("agentAliasId", ""),
+            "agentAliasName": alias.get("agentAliasName", ""),
+            "actionGroupId": group.get("actionGroupId", ""),
+            "collaboratorId": collaborator.get("collaboratorId", ""),
+            "knowledgeBaseId": kb_id,
+            "dataSourceId": ds_id,
+            "ingestionJobId": job.get("ingestionJobId", ""),
+            "vpcConfigurationId": vpc.get("vpcConfigurationId", ""),
+            "flowId": flow.get("id", ""),
+            "flowName": flow.get("name", ""),
+            "flowAliasId": flow_alias.get("id", ""),
+            "promptId": prompt.get("id", ""),
+            "promptName": prompt.get("name", ""),
+            "promptArn": prompt.get("arn", ""),
+            "retrievalInstructionId": instruction.get("retrievalInstructionId", ""),
+        }
+    )
+    # Names of the shared resources, so updates keep them (names are unique).
+    agent = bedrockagent_cli(ctx, "get-agent", {"agentId": agent_id}).get("agent", {})
+    kb = bedrockagent_cli(ctx, "get-knowledge-base", {"knowledgeBaseId": kb_id}).get("knowledgeBase", {})
+    data_source = bedrockagent_cli(ctx, "get-data-source", ds).get("dataSource", {})
+    state.update({"agentName": agent.get("agentName", ""), "kbName": kb.get("name", ""), "dataSourceName": data_source.get("name", "")})
+    return state
+
+
+def bedrockagent_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = bedrockagent_fixture(ctx)
+    if not state.get("agentId"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    ids = {
+        "agentId": state["agentId"],
+        "agentVersion": "DRAFT",
+        "agentAliasId": state["agentAliasId"],
+        "actionGroupId": state["actionGroupId"],
+        "collaboratorId": state["collaboratorId"],
+        "knowledgeBaseId": state["knowledgeBaseId"],
+        "dataSourceId": state["dataSourceId"],
+        "ingestionJobId": state["ingestionJobId"],
+        "vpcConfigurationId": state["vpcConfigurationId"],
+        "flowIdentifier": state["flowId"],
+        "aliasIdentifier": state["flowAliasId"],
+        "flowVersion": "1",
+        "promptIdentifier": state["promptId"],
+        "retrievalInstructionId": state["retrievalInstructionId"],
+        "resourceArn": state["promptArn"],
+    }
+    for key, value in ids.items():
+        if key in hydrated:
+            hydrated[key] = value
+    kb_ds = {"knowledgeBaseId": state["knowledgeBaseId"], "dataSourceId": state["dataSourceId"]}
+    agent_fields = {"foundationModel": "anthropic.claude-v2", "agentResourceRoleArn": BEDROCKAGENT_ROLE_ARN}
+
+    if op == "CreateAgent":
+        hydrated["agentName"] = bedrockagent_unique("syagent")
+    elif op in {"UpdateAgent", "DeleteAgent"}:
+        hydrated["agentId"] = bedrockagent_new_agent(ctx, prepare=False)
+        if op == "UpdateAgent":
+            hydrated.update({"agentName": bedrockagent_unique("syagent"), **agent_fields})
+    elif op == "PrepareAgent":
+        hydrated["agentId"] = bedrockagent_new_agent(ctx, prepare=False)
+    elif op in {"GetAgentVersion", "DeleteAgentVersion"}:
+        fresh = bedrockagent_new_agent(ctx) if op == "DeleteAgentVersion" else state["agentId"]
+        if op == "DeleteAgentVersion":
+            bedrockagent_new_alias(ctx, fresh)
+            hydrated["skipResourceInUseCheck"] = True
+        hydrated.update({"agentId": fresh, "agentVersion": "1"})
+    elif op == "CreateAgentAlias":
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": state["agentId"]})
+        hydrated["agentAliasName"] = bedrockagent_unique("syalias")
+    elif op == "UpdateAgentAlias":
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": state["agentId"]})
+        hydrated["agentAliasName"] = state["agentAliasName"]
+    elif op == "DeleteAgentAlias":
+        hydrated["agentAliasId"] = bedrockagent_new_alias(ctx, state["agentId"]).get("agentAliasId", "")
+    elif op == "CreateAgentActionGroup":
+        hydrated.update({"actionGroupName": bedrockagent_unique("syactions"), "parentActionGroupSignature": "AMAZON.UserInput"})
+    elif op == "UpdateAgentActionGroup":
+        hydrated["actionGroupName"] = "syactions"
+    elif op == "DeleteAgentActionGroup":
+        group = bedrockagent_cli(
+            ctx,
+            "create-agent-action-group",
+            {"agentId": state["agentId"], "agentVersion": "DRAFT", "actionGroupName": bedrockagent_unique("syactions")},
+        ).get("agentActionGroup", {})
+        hydrated["actionGroupId"] = group.get("actionGroupId", "")
+    elif op in {"AssociateAgentKnowledgeBase", "DisassociateAgentKnowledgeBase"}:
+        kb_id = bedrockagent_new_kb(ctx)
+        hydrated["knowledgeBaseId"] = kb_id
+        if op == "DisassociateAgentKnowledgeBase":
+            bedrockagent_cli(
+                ctx, "associate-agent-knowledge-base", {"agentId": state["agentId"], "agentVersion": "DRAFT", "knowledgeBaseId": kb_id, "description": "coverage"}
+            )
+    elif op in {"AssociateAgentCollaborator", "UpdateAgentCollaborator"}:
+        hydrated["agentDescriptor"] = {"aliasArn": state["helperAliasArn"]}
+        hydrated["collaboratorName"] = bedrockagent_unique("syhelper") if op.startswith("Associate") else "syhelper"
+    elif op == "DisassociateAgentCollaborator":
+        collaborator = bedrockagent_cli(
+            ctx,
+            "associate-agent-collaborator",
+            {
+                "agentId": state["agentId"],
+                "agentVersion": "DRAFT",
+                "agentDescriptor": {"aliasArn": state["helperAliasArn"]},
+                "collaboratorName": bedrockagent_unique("syhelper"),
+                "collaborationInstruction": "Ask the helper.",
+            },
+        ).get("agentCollaborator", {})
+        hydrated["collaboratorId"] = collaborator.get("collaboratorId", "")
+    elif op in {"CreateKnowledgeBase", "UpdateKnowledgeBase"}:
+        hydrated.update(
+            {
+                "name": bedrockagent_unique("sykb") if op == "CreateKnowledgeBase" else state["kbName"],
+                "roleArn": BEDROCKAGENT_ROLE_ARN,
+                "knowledgeBaseConfiguration": BEDROCKAGENT_KB_CONFIG,
+                "storageConfiguration": BEDROCKAGENT_KB_STORAGE,
+            }
+        )
+    elif op == "DeleteKnowledgeBase":
+        hydrated["knowledgeBaseId"] = bedrockagent_new_kb(ctx)
+    elif op in {"CreateDataSource", "UpdateDataSource"}:
+        hydrated["name"] = bedrockagent_unique("syds") if op == "CreateDataSource" else state["dataSourceName"]
+        hydrated["dataSourceConfiguration"] = BEDROCKAGENT_DATA_SOURCE_CONFIG
+    elif op == "DeleteDataSource":
+        hydrated["dataSourceId"] = bedrockagent_new_data_source(ctx, state["knowledgeBaseId"])
+    elif op == "StopIngestionJob":
+        hydrated["ingestionJobId"] = bedrockagent_cli(ctx, "start-ingestion-job", kb_ds).get("ingestionJob", {}).get("ingestionJobId", "")
+    elif op == "IngestKnowledgeBaseDocuments":
+        hydrated["documents"] = [bedrockagent_document("sydoc")]
+    elif op == "GetKnowledgeBaseDocuments":
+        hydrated["documentIdentifiers"] = [bedrockagent_document_id("sydoc")]
+    elif op == "DeleteKnowledgeBaseDocuments":
+        doc_id = bedrockagent_unique("sydoc")
+        bedrockagent_cli(ctx, "ingest-knowledge-base-documents", {**kb_ds, "documents": [bedrockagent_document(doc_id)]})
+        hydrated["documentIdentifiers"] = [bedrockagent_document_id(doc_id)]
+    elif op == "CreateVpcConfiguration":
+        hydrated.update(
+            {
+                "vpcId": "vpc-0123456789abcdef0",
+                "subnetIds": ["subnet-0123456789abcdef0"],
+                "resourceTarget": "kb.internal",
+                "port": 443,
+                "protocol": "HTTPS",
+                "resolutionMode": "IN_VPC",
+            }
+        )
+    elif op == "DeleteVpcConfiguration":
+        vpc = bedrockagent_cli(
+            ctx,
+            "create-vpc-configuration",
+            {
+                "knowledgeBaseId": state["knowledgeBaseId"],
+                "vpcId": "vpc-0123456789abcdef0",
+                "subnetIds": ["subnet-0123456789abcdef0"],
+                "resourceTarget": "kb.internal",
+                "port": 443,
+                "protocol": "HTTPS",
+                "resolutionMode": "IN_VPC",
+            },
+        )
+        hydrated["vpcConfigurationId"] = vpc.get("vpcConfigurationId", "")
+    elif op == "CreateFlow":
+        hydrated["name"] = bedrockagent_unique("syflow")
+    elif op == "UpdateFlow":
+        hydrated.update({"name": state["flowName"], "definition": BEDROCKAGENT_FLOW_DEFINITION})
+    elif op == "DeleteFlow":
+        hydrated["flowIdentifier"] = bedrockagent_new_flow(ctx).get("id", "")
+    elif op == "CreateFlowVersion":
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": state["flowId"]})
+    elif op == "DeleteFlowVersion":
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": state["flowId"]})
+        version = bedrockagent_cli(ctx, "create-flow-version", {"flowIdentifier": state["flowId"]})
+        hydrated["flowVersion"] = version.get("version", "")
+    elif op in {"CreateFlowAlias", "UpdateFlowAlias"}:
+        hydrated["name"] = bedrockagent_unique("syflowalias") if op == "CreateFlowAlias" else "syflowalias"
+        hydrated["routingConfiguration"] = [{"flowVersion": "1"}]
+    elif op == "DeleteFlowAlias":
+        alias = bedrockagent_cli(
+            ctx,
+            "create-flow-alias",
+            {"flowIdentifier": state["flowId"], "name": bedrockagent_unique("syflowalias"), "routingConfiguration": [{"flowVersion": "1"}]},
+        )
+        hydrated["aliasIdentifier"] = alias.get("id", "")
+    elif op == "ValidateFlowDefinition":
+        hydrated["definition"] = BEDROCKAGENT_FLOW_DEFINITION
+    elif op == "CreatePrompt":
+        hydrated["name"] = bedrockagent_unique("syprompt")
+    elif op == "UpdatePrompt":
+        hydrated["name"] = state["promptName"]
+    elif op == "DeletePrompt":
+        hydrated["promptIdentifier"] = bedrockagent_new_prompt(ctx).get("id", "")
+    elif op == "CreateRetrievalInstruction":
+        hydrated.update({"name": bedrockagent_unique("syri"), "instruction": {"answerFormat": "Answer in two sentences."}})
+    elif op == "UpdateRetrievalInstruction":
+        hydrated["instruction"] = {"persona": "A concise assistant."}
+    elif op == "DeleteRetrievalInstruction":
+        hydrated["retrievalInstructionId"] = bedrockagent_new_instruction(ctx).get("retrievalInstructionId", "")
+    elif op == "TagResource":
+        hydrated["tags"] = {"stackyard": "coverage"}
+    elif op == "UntagResource":
+        hydrated["tagKeys"] = ["stackyard"]
+    elif op == "PutResourcePolicy":
+        hydrated["policy"] = '{"Version":"2012-10-17"}'
+        delete_key_if_present_case_insensitive(hydrated, "expectedRevisionId")
+    elif op == "DeleteResourcePolicy":
+        prompt = bedrockagent_new_prompt(ctx)
+        bedrockagent_cli(ctx, "put-resource-policy", {"resourceArn": prompt.get("arn", ""), "policy": "{}"})
+        hydrated["resourceArn"] = prompt.get("arn", "")
+        delete_key_if_present_case_insensitive(hydrated, "expectedRevisionId")
+    return hydrated
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30208,6 +30614,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "bedrockagent":
+        return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "appconfigdata":

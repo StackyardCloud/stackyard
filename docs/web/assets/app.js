@@ -88,6 +88,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bedrock/docker-compose.yml"
   },
   {
+    id: "bedrockagent",
+    name: "Agents for Amazon Bedrock",
+    category: "integration",
+    summary: "Emulate Bedrock agents, aliases and versions, knowledge bases with data sources and ingestion, flows, prompts and retrieval instructions.",
+    docsHref: "../../../index.html#bedrockagent",
+    exampleHref: "../../../../examples/aws/bedrock-agent/docker-compose.yml"
+  },
+  {
     id: "cloudcontrolapi",
     name: "Cloud Control API",
     category: "integration",
