@@ -31607,7 +31607,6 @@ def efs_hydrate_payload(
     """Point each EFS operation at real resources. Destructive operations get
     resources of their own so the shared ones stay valid for the rest."""
     op = endpoint.operation
-    hydrated = copy.deepcopy(payload)
     unique = f"stackyard-coverage-{time.time_ns()}"
     if op == "CreateFileSystem":
         return {"CreationToken": unique}
