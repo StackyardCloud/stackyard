@@ -549,6 +549,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
+    "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2158,6 +2159,9 @@ SERVICE_ALIASES = {
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "efs": "efs",
+    "scheduler": "scheduler",
+    "eventbridgescheduler": "scheduler",
+    "amazoneventbridgescheduler": "scheduler",
     "elasticfilesystem": "efs",
     "applicationautoscaling": "applicationautoscaling",
     "application-autoscaling": "applicationautoscaling",
@@ -3051,6 +3055,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "applicationautoscaling": {},
     "efs": {},
+    "scheduler": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31566,6 +31571,67 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+SCHEDULER_COVERAGE_ROLE = "arn:aws:iam::123456789012:role/stackyard-scheduler"
+SCHEDULER_COVERAGE_TARGET = {
+    "Arn": "arn:aws:sqs:us-east-1:123456789012:stackyard-scheduler-coverage",
+    "RoleArn": SCHEDULER_COVERAGE_ROLE,
+}
+
+
+def scheduler_schedule_payload(name: str) -> dict:
+    return {
+        "Name": name,
+        "ScheduleExpression": "rate(5 minutes)",
+        "FlexibleTimeWindow": {"Mode": "OFF"},
+        "Target": dict(SCHEDULER_COVERAGE_TARGET),
+    }
+
+
+def scheduler_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> None:
+    run_aws_json(
+        aws_bin, endpoint_url, region, "scheduler", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+
+
+def scheduler_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each Scheduler operation real resources: one shared schedule and
+    group, plus fresh ones for the deletes."""
+    op = endpoint.operation
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    state = RUNTIME_STATE.setdefault("scheduler", {})
+    if not state.get("schedule"):
+        state["schedule"], state["group"] = f"{unique}-schedule", f"{unique}-group"
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule", scheduler_schedule_payload(state["schedule"]))
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule-group", {"Name": state["group"]})
+    group_arn = f"arn:aws:scheduler:{region}:123456789012:schedule-group/{state['group']}"
+    if op in {"ListSchedules", "ListScheduleGroups"}:
+        return {}
+    if op == "CreateSchedule":
+        return scheduler_schedule_payload(unique)
+    if op == "UpdateSchedule":
+        return scheduler_schedule_payload(state["schedule"])
+    if op == "GetSchedule":
+        return {"Name": state["schedule"]}
+    if op == "DeleteSchedule":
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule", scheduler_schedule_payload(unique))
+        return {"Name": unique}
+    if op == "CreateScheduleGroup":
+        return {"Name": unique}
+    if op == "GetScheduleGroup":
+        return {"Name": state["group"]}
+    if op == "DeleteScheduleGroup":
+        scheduler_create(aws_bin, endpoint_url, region, env, "create-schedule-group", {"Name": unique})
+        return {"Name": unique}
+    if op == "TagResource":
+        return {"ResourceArn": group_arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": group_arn, "TagKeys": ["stackyard"]}
+    return {"ResourceArn": group_arn}
+
+
 AAS_TABLE = "stackyard-aas-coverage"
 AAS_TABLE_KEY = {
     "ServiceNamespace": "dynamodb",
@@ -31954,6 +32020,8 @@ def hydrate_payload_with_service_state(
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "scheduler":
+        return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationautoscaling":
