@@ -347,16 +347,32 @@ func newGlueStore(ath *athena.Service) *glueStore {
 }
 
 // handle runs one operation. The input has already passed model validation.
-func (st *glueStore) handle(op string, in glueRecord) (glueRecord, *glueError) {
+// handle runs op and shapes its result to outShape while still holding the
+// lock: handler results can alias stored records, so they must not be read
+// after unlock (a concurrent write would be a fatal map race).
+func (st *glueStore) handle(op, outShape string, in glueRecord) (any, *glueError) {
+	// Request members never start with "_"; those names are the store's own
+	// bookkeeping (_next, _reads, _indexes, ...), so a caller can't set them.
+	for k := range in {
+		if strings.HasPrefix(k, "_") {
+			delete(in, k)
+		}
+	}
 	st.mu.Lock()
 	defer st.mu.Unlock()
+	var out glueRecord
+	var err *glueError
 	if h, ok := glueHandlers[op]; ok {
-		return h(st, in)
+		out, err = h(st, in)
+	} else if spec, ok := glueOps[op]; ok {
+		out, err = st.generic(spec, in)
+	} else {
+		return nil, glueErr("InternalFailure", "operation %s has no handler", op)
 	}
-	if spec, ok := glueOps[op]; ok {
-		return st.generic(spec, in)
+	if err != nil || outShape == "" {
+		return glueRecord{}, err
 	}
-	return nil, glueErr("InternalFailure", "operation %s has no handler", op)
+	return glueConform(outShape, out), nil
 }
 
 func (st *glueStore) generic(spec glueOp, in glueRecord) (glueRecord, *glueError) {

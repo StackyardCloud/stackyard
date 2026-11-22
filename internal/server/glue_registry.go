@@ -545,11 +545,15 @@ func glueSchemaVersionMetadata(put bool) glueHandler {
 		}
 		kv, _ := in["MetadataKeyValue"].(map[string]any)
 		key, value := glueStr(kv, "MetadataKey"), glueStr(kv, "MetadataValue")
-		meta := v["_metadata"].(map[string]any)
+		meta, ok := v["_metadata"].(map[string]any)
+		if !ok {
+			meta = map[string]any{}
+			v["_metadata"] = meta
+		}
 		values, _ := meta[key].([]any)
 		if put {
 			for _, existing := range values {
-				if existing.(glueRecord)["MetadataValue"] == value {
+				if rec, _ := existing.(glueRecord); rec["MetadataValue"] == value {
 					return nil, glueErr("AlreadyExistsException", "metadata %s=%s already exists", key, value)
 				}
 			}

@@ -462,7 +462,8 @@ func (st *glueStore) advanceCrawlersAny(glueRecord) {
 			last := crawls[len(crawls)-1].(glueRecord)
 			last["State"], last["EndTime"] = history, now
 		}
-		runtime := now - c["_started"].(float64)
+		started, _ := c["_started"].(float64)
+		runtime := now - started
 		c["_lastRuntime"] = runtime
 	}
 }

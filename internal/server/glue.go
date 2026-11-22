@@ -55,16 +55,12 @@ func (s *Server) handleGlueJSONRouter(w http.ResponseWriter, r *http.Request) bo
 		respondGlueError(w, http.StatusBadRequest, "InvalidInputException", msg)
 		return true
 	}
-	out, gerr := s.glue.handle(op, in)
+	out, gerr := s.glue.handle(op, model.Output, in)
 	if gerr != nil {
 		respondGlueError(w, http.StatusBadRequest, gerr.code, gerr.msg)
 		return true
 	}
-	if model.Output == "" {
-		respondGlueJSON(w, glueRecord{})
-		return true
-	}
-	respondGlueJSON(w, glueConform(model.Output, out))
+	respondGlueJSON(w, out)
 	return true
 }
 

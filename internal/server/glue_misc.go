@@ -174,7 +174,7 @@ func glueRunStatement(st *glueStore, in glueRecord) (glueRecord, *glueError) {
 	if session["Status"] != "READY" {
 		return nil, glueErr("IllegalSessionStateException", "session %v is %v, not READY", in["SessionId"], session["Status"])
 	}
-	next := session["_next"].(float64)
+	next, _ := session["_next"].(float64)
 	if next >= glueMaxStatementsPerSession {
 		return nil, glueErr("ResourceNumberLimitExceededException", "session %v has run %d statements", in["SessionId"], glueMaxStatementsPerSession)
 	}
