@@ -824,6 +824,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/keyspaces/docker-compose.yml"
   },
   {
+    id: "inspector",
+    name: "Inspector Classic",
+    category: "security",
+    summary: "Run Inspector Classic assessments over tagged EC2 instances: resource groups, targets, templates, runs that settle into findings, exclusions, reports and SNS event subscriptions.",
+    docsHref: "../../../index.html#inspector",
+    exampleHref: "../../../../examples/aws/inspector/docker-compose.yml"
+  },
+  {
+    id: "inspectorscan",
+    name: "Inspector Scan",
+    category: "security",
+    summary: "Scan CycloneDX 1.4/1.5 and SPDX 2.3 SBOMs against an embedded sample advisory list and return a CycloneDX or Inspector-format vulnerability report.",
+    docsHref: "../../../index.html#inspectorscan",
+    exampleHref: "../../../../examples/aws/inspector/docker-compose.yml"
+  },
+  {
     id: "kms",
     name: "KMS",
     category: "security",

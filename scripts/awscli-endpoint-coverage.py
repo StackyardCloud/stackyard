@@ -332,6 +332,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/paymentcryptographydata_ops.go",
     },
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
+    "inspector": {"cli": "inspector", "ops_file": REPO_ROOT / "internal/server/inspector_ops.go"},
+    "inspectorscan": {"cli": "inspector-scan", "ops_file": REPO_ROOT / "internal/server/inspectorscan_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
@@ -1442,6 +1444,12 @@ SERVICE_ALIASES = {
     "awspaymentcryptographydata": "paymentcryptographydata",
     "amazonpaymentcryptographydata": "paymentcryptographydata",
     "inspectorv2": "inspectorv2",
+    "inspector": "inspector",
+    "inspectorclassic": "inspector",
+    "amazoninspector": "inspector",
+    "inspectorscan": "inspectorscan",
+    "inspector-scan": "inspectorscan",
+    "amazoninspectorscan": "inspectorscan",
     "inspector-v2": "inspectorv2",
     "inspector v2": "inspectorv2",
     "inspector2": "inspectorv2",
@@ -3072,6 +3080,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "inspector": {},
     "applicationautoscaling": {},
     "efs": {},
     "scheduler": {},
@@ -33130,6 +33139,187 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+INSPECTOR_CVE_PACKAGE = "arn:aws:inspector:us-east-1:316112463485:rulespackage/0-gEjTy7T7"
+INSPECTOR_SAMPLE_SBOM = {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "components": [
+        {
+            "bom-ref": "log4j",
+            "type": "library",
+            "name": "log4j-core",
+            "version": "2.14.1",
+            "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+        }
+    ],
+}
+
+
+def inspector_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "inspector", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def inspector_instance(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], tag: str, stop: bool = False) -> str:
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "ec2",
+        "run-instances",
+        env,
+        [
+            "--image-id",
+            "ami-12345678",
+            "--instance-type",
+            "t3.micro",
+            "--count",
+            "1",
+            "--tag-specifications",
+            f"ResourceType=instance,Tags=[{{Key=stackyard-inspector,Value={tag}}}]",
+        ],
+    )
+    instances = data.get("Instances") if isinstance(data, dict) else None
+    instance_id = str(instances[0].get("InstanceId") or "") if isinstance(instances, list) and instances else ""
+    if stop and instance_id:
+        run_aws_json(aws_bin, endpoint_url, region, "ec2", "stop-instances", env, ["--instance-ids", instance_id])
+    return instance_id
+
+
+def inspector_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], tag: str) -> str:
+    group = inspector_call(
+        aws_bin, endpoint_url, region, env, "create-resource-group",
+        {"resourceGroupTags": [{"key": "stackyard-inspector", "value": tag}]},
+    ).get("resourceGroupArn", "")
+    return str(
+        inspector_call(
+            aws_bin, endpoint_url, region, env, "create-assessment-target",
+            {"assessmentTargetName": f"stackyard-{tag}-{time.time_ns()}", "resourceGroupArn": group},
+        ).get("assessmentTargetArn", "")
+    )
+
+
+def inspector_template(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], target: str) -> str:
+    return str(
+        inspector_call(
+            aws_bin, endpoint_url, region, env, "create-assessment-template",
+            {
+                "assessmentTargetArn": target,
+                "assessmentTemplateName": f"stackyard-template-{time.time_ns()}",
+                "durationInSeconds": 3600,
+                "rulesPackageArns": [INSPECTOR_CVE_PACKAGE],
+            },
+        ).get("assessmentTemplateArn", "")
+    )
+
+
+def inspector_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One completed run over a running and a stopped instance (so it has a
+    finding and an exclusion), plus an "empty" template whose target matches
+    no instance, for runs that must not collide with busy agents."""
+    state = RUNTIME_STATE.setdefault("inspector", {})
+    if state.get("run"):
+        return state
+    inspector_instance(aws_bin, endpoint_url, region, env, "coverage")
+    inspector_instance(aws_bin, endpoint_url, region, env, "coverage", stop=True)
+    state["target"] = inspector_target(aws_bin, endpoint_url, region, env, "coverage")
+    state["template"] = inspector_template(aws_bin, endpoint_url, region, env, state["target"])
+    state["empty_template"] = inspector_template(
+        aws_bin, endpoint_url, region, env, inspector_target(aws_bin, endpoint_url, region, env, "nothing")
+    )
+    run = str(
+        inspector_call(aws_bin, endpoint_url, region, env, "start-assessment-run", {"assessmentTemplateArn": state["template"]}).get(
+            "assessmentRunArn", ""
+        )
+    )
+    inspector_call(aws_bin, endpoint_url, region, env, "stop-assessment-run", {"assessmentRunArn": run})
+    state["run"] = run
+    findings = inspector_call(aws_bin, endpoint_url, region, env, "list-findings", {"assessmentRunArns": [run]}).get("findingArns") or [""]
+    state["finding"] = findings[0]
+    exclusions = inspector_call(aws_bin, endpoint_url, region, env, "list-exclusions", {"assessmentRunArn": run}).get("exclusionArns") or [""]
+    state["exclusion"] = exclusions[0]
+    state["preview"] = inspector_call(
+        aws_bin, endpoint_url, region, env, "create-exclusions-preview", {"assessmentTemplateArn": state["template"]}
+    ).get("previewToken", "")
+    state["topic"] = sns_ensure_topic(aws_bin, endpoint_url, region, env)
+    return state
+
+
+def inspector_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Inspector Classic operation at fixture resources. Deletes,
+    starts and stops get resources of their own."""
+    op = endpoint.operation
+    fx = inspector_fixture(aws_bin, endpoint_url, region, env)
+    unique = f"stackyard-{time.time_ns()}"
+    event = {"resourceArn": fx["template"], "event": "ASSESSMENT_RUN_COMPLETED", "topicArn": fx["topic"]}
+    if op == "CreateResourceGroup":
+        return {"resourceGroupTags": [{"key": "stackyard-inspector", "value": "coverage"}]}
+    if op == "CreateAssessmentTarget":
+        return {"assessmentTargetName": unique}
+    if op == "DeleteAssessmentTarget":
+        return {"assessmentTargetArn": inspector_target(aws_bin, endpoint_url, region, env, "nothing")}
+    if op == "UpdateAssessmentTarget":
+        return {"assessmentTargetArn": inspector_target(aws_bin, endpoint_url, region, env, "nothing"), "assessmentTargetName": unique}
+    if op == "CreateAssessmentTemplate":
+        return {"assessmentTargetArn": fx["target"], "assessmentTemplateName": unique, "durationInSeconds": 3600, "rulesPackageArns": [INSPECTOR_CVE_PACKAGE]}
+    if op == "DeleteAssessmentTemplate":
+        return {"assessmentTemplateArn": inspector_template(aws_bin, endpoint_url, region, env, fx["target"])}
+    if op == "StartAssessmentRun":
+        return {"assessmentTemplateArn": fx["empty_template"]}
+    if op in {"StopAssessmentRun", "DeleteAssessmentRun"}:
+        run = str(
+            inspector_call(aws_bin, endpoint_url, region, env, "start-assessment-run", {"assessmentTemplateArn": fx["empty_template"]}).get(
+                "assessmentRunArn", ""
+            )
+        )
+        if op == "DeleteAssessmentRun":
+            inspector_call(aws_bin, endpoint_url, region, env, "stop-assessment-run", {"assessmentRunArn": run})
+        return {"assessmentRunArn": run}
+    if op in {"GetTelemetryMetadata", "ListAssessmentRunAgents", "ListExclusions"}:
+        return {"assessmentRunArn": fx["run"]}
+    if op == "GetAssessmentReport":
+        return {"assessmentRunArn": fx["run"], "reportFileFormat": "HTML", "reportType": "FULL"}
+    if op == "DescribeAssessmentRuns":
+        return {"assessmentRunArns": [fx["run"]]}
+    if op == "DescribeAssessmentTargets":
+        return {"assessmentTargetArns": [fx["target"]]}
+    if op == "DescribeAssessmentTemplates":
+        return {"assessmentTemplateArns": [fx["template"]]}
+    if op == "DescribeResourceGroups":
+        groups = inspector_call(aws_bin, endpoint_url, region, env, "describe-assessment-targets", {"assessmentTargetArns": [fx["target"]]})
+        target = (groups.get("assessmentTargets") or [{}])[0]
+        return {"resourceGroupArns": [target.get("resourceGroupArn", "")]}
+    if op == "DescribeFindings":
+        return {"findingArns": [fx["finding"]]}
+    if op == "AddAttributesToFindings":
+        return {"findingArns": [fx["finding"]], "attributes": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "RemoveAttributesFromFindings":
+        return {"findingArns": [fx["finding"]], "attributeKeys": ["stackyard"]}
+    if op == "DescribeExclusions":
+        return {"exclusionArns": [fx["exclusion"]]}
+    if op == "CreateExclusionsPreview":
+        return {"assessmentTemplateArn": fx["template"]}
+    if op == "GetExclusionsPreview":
+        return {"assessmentTemplateArn": fx["template"], "previewToken": fx["preview"]}
+    if op == "PreviewAgents":
+        return {"previewAgentsArn": fx["target"]}
+    if op == "DescribeRulesPackages":
+        return {"rulesPackageArns": [INSPECTOR_CVE_PACKAGE]}
+    if op == "RegisterCrossAccountAccessRole":
+        return {"roleArn": "arn:aws:iam::123456789012:role/inspector"}
+    if op == "SetTagsForResource":
+        return {"resourceArn": fx["template"], "tags": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": fx["template"]}
+    if op in {"SubscribeToEvent", "UnsubscribeFromEvent"}:
+        if op == "UnsubscribeFromEvent":
+            inspector_call(aws_bin, endpoint_url, region, env, "subscribe-to-event", event)
+        return event
+    return {}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33141,6 +33331,10 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "inspector":
+        return inspector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "inspectorscan":
+        return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdb":
