@@ -14,7 +14,8 @@ KEEP = ("type", "required", "min", "max", "pattern", "enum", "sensitive")
 MEMBER_KEEP = ("shape", "location", "locationName")
 
 src, out = sys.argv[1], sys.argv[2]
-model = json.load(open(src))
+with open(src) as fh:
+    model = json.load(fh)
 shapes = {}
 for name, shape in model["shapes"].items():
     slim = {k: shape[k] for k in KEEP if k in shape}
