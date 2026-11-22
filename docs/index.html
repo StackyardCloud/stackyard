@@ -118,6 +118,8 @@
         <a href="#cognito-user-pools">Cognito User Pools</a>
         <a href="#cognito">Cognito Federated Identities</a>
         <a href="#codeartifact">CodeArtifact</a>
+        <a href="#codeconnections">CodeConnections</a>
+        <a href="#codestarconnections">CodeStar Connections</a>
         <a href="#codebuild">CodeBuild</a>
         <a href="#codecatalyst">CodeCatalyst</a>
         <a href="#codeguru">CodeGuru Reviewer</a>
@@ -5925,6 +5927,120 @@
         <ul>
         <li><code>codeartifact</code>: <code>docker compose -f examples/aws/codeartifact/docker-compose.yml up --build</code></li>
         <li><code>codeartifact</code>: <code>docker compose -f examples/aws/codeartifact/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="codeconnections" class="service">
+
+        <div class="service-header">
+        <h2>AWS CodeConnections</h2>
+        <p>SigV4 signed with service <code>codeconnections</code>. JSON 1.0 API with <code>X-Amz-Target: CodeConnections_20231201.*</code>. CodeConnections and CodeStar Connections share one store: each API shows resources with its own ARN prefix and accepts either. Connections and hosts start <code>PENDING</code>; the Stackyard-only, SigV4-signed <code>POST /_stackyard/codeconnections/connections/{id}/activate</code> and <code>/hosts/{id}/activate</code> stand in for the provider handshake, and <code>POST /_stackyard/codeconnections/sync-configurations/{SyncType}/{ResourceName}/blockers</code> records a sync blocker.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: codeconnections</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConnection</code></td></tr>
+        <tr><td><code>CreateHost</code></td></tr>
+        <tr><td><code>CreateRepositoryLink</code></td></tr>
+        <tr><td><code>CreateSyncConfiguration</code></td></tr>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteHost</code></td></tr>
+        <tr><td><code>DeleteRepositoryLink</code></td></tr>
+        <tr><td><code>DeleteSyncConfiguration</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetHost</code></td></tr>
+        <tr><td><code>GetRepositoryLink</code></td></tr>
+        <tr><td><code>GetRepositorySyncStatus</code></td></tr>
+        <tr><td><code>GetResourceSyncStatus</code></td></tr>
+        <tr><td><code>GetSyncBlockerSummary</code></td></tr>
+        <tr><td><code>GetSyncConfiguration</code></td></tr>
+        <tr><td><code>ListConnections</code></td></tr>
+        <tr><td><code>ListHosts</code></td></tr>
+        <tr><td><code>ListRepositoryLinks</code></td></tr>
+        <tr><td><code>ListRepositorySyncDefinitions</code></td></tr>
+        <tr><td><code>ListSyncConfigurations</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateHost</code></td></tr>
+        <tr><td><code>UpdateRepositoryLink</code></td></tr>
+        <tr><td><code>UpdateSyncBlocker</code></td></tr>
+        <tr><td><code>UpdateSyncConfiguration</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>codeconnections</code>: <code>docker compose -f examples/aws/codeconnections/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="codestarconnections" class="service">
+
+        <div class="service-header">
+        <h2>AWS CodeStar Connections</h2>
+        <p>SigV4 signed with service <code>codestar-connections</code>. JSON 1.0 API with <code>X-Amz-Target: CodeStar_connections_20191201.*</code>. CodeConnections and CodeStar Connections share one store: each API shows resources with its own ARN prefix and accepts either. Connections and hosts start <code>PENDING</code>; the Stackyard-only, SigV4-signed <code>POST /_stackyard/codeconnections/connections/{id}/activate</code> and <code>/hosts/{id}/activate</code> stand in for the provider handshake, and <code>POST /_stackyard/codeconnections/sync-configurations/{SyncType}/{ResourceName}/blockers</code> records a sync blocker.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: codestar-connections</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConnection</code></td></tr>
+        <tr><td><code>CreateHost</code></td></tr>
+        <tr><td><code>CreateRepositoryLink</code></td></tr>
+        <tr><td><code>CreateSyncConfiguration</code></td></tr>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteHost</code></td></tr>
+        <tr><td><code>DeleteRepositoryLink</code></td></tr>
+        <tr><td><code>DeleteSyncConfiguration</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetHost</code></td></tr>
+        <tr><td><code>GetRepositoryLink</code></td></tr>
+        <tr><td><code>GetRepositorySyncStatus</code></td></tr>
+        <tr><td><code>GetResourceSyncStatus</code></td></tr>
+        <tr><td><code>GetSyncBlockerSummary</code></td></tr>
+        <tr><td><code>GetSyncConfiguration</code></td></tr>
+        <tr><td><code>ListConnections</code></td></tr>
+        <tr><td><code>ListHosts</code></td></tr>
+        <tr><td><code>ListRepositoryLinks</code></td></tr>
+        <tr><td><code>ListRepositorySyncDefinitions</code></td></tr>
+        <tr><td><code>ListSyncConfigurations</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateHost</code></td></tr>
+        <tr><td><code>UpdateRepositoryLink</code></td></tr>
+        <tr><td><code>UpdateSyncBlocker</code></td></tr>
+        <tr><td><code>UpdateSyncConfiguration</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>codeconnections</code>: <code>docker compose -f examples/aws/codeconnections/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
