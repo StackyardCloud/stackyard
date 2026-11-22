@@ -237,6 +237,8 @@
         <a href="#shield">Shield Advanced</a>
         <a href="#payment-cryptography">Payment Cryptography</a>
         <a href="#payment-cryptography-data">Payment Cryptography Data Plane</a>
+        <a href="#inspector">Inspector Classic</a>
+        <a href="#inspectorscan">Inspector Scan</a>
         <a href="#inspectorv2">Inspector V2</a>
         <a href="#clouddirectory">Cloud Directory</a>
         <a href="#directoryservicedata">Directory Service Data</a>
@@ -25063,6 +25065,102 @@
         <ul>
         <li><code>detective</code>: <code>docker compose -f examples/aws/detective/docker-compose.yml up --build</code></li>
         <li><code>detective</code>: <code>docker compose -f examples/aws/detective/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="inspector" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Inspector Classic</h2>
+        <p>SigV4 signed with service <code>inspector</code>. JSON 1.1 API (<code>X-Amz-Target: InspectorService.*</code>). Assessment targets select EC2 instances from the EC2 store by resource-group tags; runs settle CREATED &rarr; COLLECTING_DATA &rarr; EVALUATING_RULES &rarr; COMPLETED as they are described and report one sample finding per scanned instance and rules package. Stopped instances become exclusions. Reports are served from <code>/_stackyard/inspector/reports/</code>; SNS notifications are recorded, not published.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: inspector</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AddAttributesToFindings</code></td></tr>
+        <tr><td><code>CreateAssessmentTarget</code></td></tr>
+        <tr><td><code>CreateAssessmentTemplate</code></td></tr>
+        <tr><td><code>CreateExclusionsPreview</code></td></tr>
+        <tr><td><code>CreateResourceGroup</code></td></tr>
+        <tr><td><code>DeleteAssessmentRun</code></td></tr>
+        <tr><td><code>DeleteAssessmentTarget</code></td></tr>
+        <tr><td><code>DeleteAssessmentTemplate</code></td></tr>
+        <tr><td><code>DescribeAssessmentRuns</code></td></tr>
+        <tr><td><code>DescribeAssessmentTargets</code></td></tr>
+        <tr><td><code>DescribeAssessmentTemplates</code></td></tr>
+        <tr><td><code>DescribeCrossAccountAccessRole</code></td></tr>
+        <tr><td><code>DescribeExclusions</code></td></tr>
+        <tr><td><code>DescribeFindings</code></td></tr>
+        <tr><td><code>DescribeResourceGroups</code></td></tr>
+        <tr><td><code>DescribeRulesPackages</code></td></tr>
+        <tr><td><code>GetAssessmentReport</code></td></tr>
+        <tr><td><code>GetExclusionsPreview</code></td></tr>
+        <tr><td><code>GetTelemetryMetadata</code></td></tr>
+        <tr><td><code>ListAssessmentRunAgents</code></td></tr>
+        <tr><td><code>ListAssessmentRuns</code></td></tr>
+        <tr><td><code>ListAssessmentTargets</code></td></tr>
+        <tr><td><code>ListAssessmentTemplates</code></td></tr>
+        <tr><td><code>ListEventSubscriptions</code></td></tr>
+        <tr><td><code>ListExclusions</code></td></tr>
+        <tr><td><code>ListFindings</code></td></tr>
+        <tr><td><code>ListRulesPackages</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PreviewAgents</code></td></tr>
+        <tr><td><code>RegisterCrossAccountAccessRole</code></td></tr>
+        <tr><td><code>RemoveAttributesFromFindings</code></td></tr>
+        <tr><td><code>SetTagsForResource</code></td></tr>
+        <tr><td><code>StartAssessmentRun</code></td></tr>
+        <tr><td><code>StopAssessmentRun</code></td></tr>
+        <tr><td><code>SubscribeToEvent</code></td></tr>
+        <tr><td><code>UnsubscribeFromEvent</code></td></tr>
+        <tr><td><code>UpdateAssessmentTarget</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>inspector</code>: <code>docker compose -f examples/aws/inspector/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="inspectorscan" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Inspector Scan</h2>
+        <p>SigV4 signed with service <code>inspector-scan</code>. REST JSON <code>POST /scan/sbom</code>. Accepts CycloneDX 1.4/1.5 and SPDX 2.3 JSON SBOMs (up to 2,000 components) and matches components by purl or name against a small embedded sample advisory list labelled <code>STACKYARD_SAMPLE_ADVISORIES</code>; there is no vulnerability database and no network access.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: inspector-scan</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ScanSbom</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>inspector</code>: <code>docker compose -f examples/aws/inspector/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
