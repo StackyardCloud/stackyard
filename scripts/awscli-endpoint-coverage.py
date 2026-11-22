@@ -551,6 +551,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2172,6 +2173,9 @@ SERVICE_ALIASES = {
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "efs": "efs",
+    "dax": "dax",
+    "amazondax": "dax",
+    "dynamodbaccelerator": "dax",
     "elasticfilesystem": "efs",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
@@ -3061,6 +3065,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
+    "dax": {},
     "docdb": {},
     "glue": {},
     "appconfig": {},
@@ -31607,6 +31612,123 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+DAX_COVERAGE_ROLE = "arn:aws:iam::123456789012:role/DAXServiceRole"
+DAX_COVERAGE_SUBNET = "subnet-00000001"
+DAX_STATELESS_OPERATIONS = {
+    "DescribeClusters",
+    "DescribeDefaultParameters",
+    "DescribeEvents",
+    "DescribeParameterGroups",
+    "DescribeSubnetGroups",
+}
+
+
+def dax_unique_name(prefix: str) -> str:
+    # DAX cluster names are at most 20 characters.
+    return f"{prefix}{time.time_ns() % 10**10}"
+
+
+def dax_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str, replicas: int) -> None:
+    run_aws_json(
+        aws_bin, endpoint_url, region, "dax", "create-cluster", env,
+        ["--cluster-name", name, "--node-type", "dax.t3.small", "--replication-factor", str(replicas),
+         "--iam-role-arn", DAX_COVERAGE_ROLE],
+    )
+
+
+def dax_settled_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> dict:
+    """Describe the cluster, which completes its pending transitions so the
+    next change is accepted."""
+    data = run_aws_json(aws_bin, endpoint_url, region, "dax", "describe-clusters", env, ["--cluster-names", name])
+    clusters = data.get("Clusters") if isinstance(data, dict) else None
+    return clusters[0] if isinstance(clusters, list) and clusters and isinstance(clusters[0], dict) else {}
+
+
+def dax_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cluster, parameter group and subnet group shared by the
+    non-destructive operations."""
+    state = RUNTIME_STATE.setdefault("dax", {})
+    if not state.get("cluster"):
+        state["cluster"] = dax_unique_name("syc")
+        dax_create_cluster(aws_bin, endpoint_url, region, env, state["cluster"], 2)
+        state["param_group"] = dax_unique_name("sypg")
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "create-parameter-group", env, ["--parameter-group-name", state["param_group"]])
+        state["subnet_group"] = dax_unique_name("sysn")
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dax", "create-subnet-group", env,
+            ["--subnet-group-name", state["subnet_group"], "--subnet-ids", DAX_COVERAGE_SUBNET],
+        )
+    return state
+
+
+def dax_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DAX operation at real resources; destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    if op in DAX_STATELESS_OPERATIONS:
+        return {}
+    if op == "CreateCluster":
+        return {"ClusterName": dax_unique_name("syc"), "NodeType": "dax.t3.small", "ReplicationFactor": 1, "IamRoleArn": DAX_COVERAGE_ROLE}
+    if op == "CreateParameterGroup":
+        return {"ParameterGroupName": dax_unique_name("sypg")}
+    if op == "CreateSubnetGroup":
+        return {"SubnetGroupName": dax_unique_name("sysn"), "SubnetIds": [DAX_COVERAGE_SUBNET]}
+    if op == "DeleteCluster":
+        name = dax_unique_name("syd")
+        dax_create_cluster(aws_bin, endpoint_url, region, env, name, 1)
+        return {"ClusterName": name}
+    if op == "DeleteParameterGroup":
+        name = dax_unique_name("sypg")
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "create-parameter-group", env, ["--parameter-group-name", name])
+        return {"ParameterGroupName": name}
+    if op == "DeleteSubnetGroup":
+        name = dax_unique_name("sysn")
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dax", "create-subnet-group", env,
+            ["--subnet-group-name", name, "--subnet-ids", DAX_COVERAGE_SUBNET],
+        )
+        return {"SubnetGroupName": name}
+    state = dax_shared_state(aws_bin, endpoint_url, region, env)
+    if op == "DescribeParameters":
+        return {"ParameterGroupName": state["param_group"]}
+    if op == "UpdateParameterGroup":
+        return {
+            "ParameterGroupName": state["param_group"],
+            "ParameterNameValues": [{"ParameterName": "query-ttl-millis", "ParameterValue": "600000"}],
+        }
+    if op == "UpdateSubnetGroup":
+        return {"SubnetGroupName": state["subnet_group"], "Description": "stackyard coverage"}
+    name = state["cluster"]
+    cluster = dax_settled_cluster(aws_bin, endpoint_url, region, env, name)
+    arn = str(cluster.get("ClusterArn") or f"arn:aws:dax:{region}:123456789012:cache/{name}")
+    total = int(cluster.get("TotalNodes") or 1)
+    if op == "UpdateCluster":
+        return {"ClusterName": name, "Description": "stackyard coverage"}
+    if op == "IncreaseReplicationFactor":
+        if total >= 11:
+            run_aws_json(aws_bin, endpoint_url, region, "dax", "decrease-replication-factor", env, ["--cluster-name", name, "--new-replication-factor", "2"])
+            total = int(dax_settled_cluster(aws_bin, endpoint_url, region, env, name).get("TotalNodes") or 2)
+        return {"ClusterName": name, "NewReplicationFactor": total + 1}
+    if op == "DecreaseReplicationFactor":
+        if total <= 1:
+            run_aws_json(aws_bin, endpoint_url, region, "dax", "increase-replication-factor", env, ["--cluster-name", name, "--new-replication-factor", "2"])
+            total = int(dax_settled_cluster(aws_bin, endpoint_url, region, env, name).get("TotalNodes") or 2)
+        return {"ClusterName": name, "NewReplicationFactor": total - 1}
+    if op == "RebootNode":
+        nodes = cluster.get("Nodes") or [{}]
+        return {"ClusterName": name, "NodeId": str(nodes[0].get("NodeId") or f"{name}-a")}
+    if op == "TagResource":
+        return {"ResourceName": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "tag-resource", env, ["--resource-name", arn, "--tags", "Key=stackyard,Value=coverage"])
+        return {"ResourceName": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTags":
+        return {"ResourceName": arn}
+    return payload
+
+
 def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
     created = run_aws_json(
         aws_bin, endpoint_url, region, "efs", "create-file-system", env,
@@ -32899,6 +33021,8 @@ def hydrate_payload_with_service_state(
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "dax":
+        return dax_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":

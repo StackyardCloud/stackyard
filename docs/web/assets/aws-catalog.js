@@ -641,6 +641,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "dax",
+    name: "DynamoDB Accelerator (DAX)",
+    category: "database",
+    summary: "Manage DAX clusters, node replication, parameter groups, subnet groups, events and tags (control plane only).",
+    docsHref: "../../../index.html#dax",
+    exampleHref: "../../../../examples/aws/dax/docker-compose.yml"
+  },
+  {
     id: "dynamodbstreams",
     name: "DynamoDB Streams",
     category: "database",
