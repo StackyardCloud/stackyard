@@ -200,6 +200,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/directconnect/docker-compose.yml"
   },
   {
+    id: "route53profiles",
+    name: "Route 53 Profiles",
+    category: "integration",
+    summary: "Bundle private hosted zones, Resolver rules and DNS Firewall rule groups into Profiles and associate them with VPCs, one Profile per VPC.",
+    docsHref: "../../../index.html#route53profiles",
+    exampleHref: "../../../../examples/aws/route53profiles/docker-compose.yml"
+  },
+  {
     id: "config",
     name: "AWS Config",
     category: "integration",

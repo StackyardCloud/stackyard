@@ -277,6 +277,7 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
         <a href="#global-accelerator">Global Accelerator</a>
@@ -24012,6 +24013,52 @@
         <ul>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="route53profiles" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Profiles</h2>
+        <p>SigV4 signed with service <code>route53profiles</code>. REST JSON API under <code>/profile</code>, <code>/profileassociation</code>, <code>/profileresourceassociation</code> and <code>/tags/</code>. Requests are validated against the service model. CreateProfile is idempotent on ClientToken. A Profile associates with VPCs that exist in Stackyard's EC2 store, one Profile per VPC, and can't be deleted while associated. Resources are private hosted zones, Resolver rules and query log configurations, DNS Firewall rule groups (which need a <code>priority</code> of 100–9900 in ResourceProperties) and interface VPC endpoints; they are recognised by ARN, because Stackyard's Route 53 store keeps no hosted zones and Route 53 Resolver isn't emulated here. Profiles and associations report CREATING or UPDATING once, then COMPLETE. All 17 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53profiles</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateProfile</code></td></tr>
+        <tr><td><code>AssociateResourceToProfile</code></td></tr>
+        <tr><td><code>CreateProfile</code></td></tr>
+        <tr><td><code>DeleteProfile</code></td></tr>
+        <tr><td><code>DisassociateProfile</code></td></tr>
+        <tr><td><code>DisassociateResourceFromProfile</code></td></tr>
+        <tr><td><code>GetProfile</code></td></tr>
+        <tr><td><code>GetProfileAssociation</code></td></tr>
+        <tr><td><code>GetProfileResourceAssociation</code></td></tr>
+        <tr><td><code>ListProfileAssociations</code></td></tr>
+        <tr><td><code>ListProfileResourceAssociations</code></td></tr>
+        <tr><td><code>ListProfiles</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateProfileAssociation</code></td></tr>
+        <tr><td><code>UpdateProfileResourceAssociation</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>route53profiles</code>: <code>docker compose -f examples/aws/route53profiles/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
