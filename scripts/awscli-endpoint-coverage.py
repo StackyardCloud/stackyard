@@ -154,6 +154,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
     },
     "lexv2": {"cli": "lexv2-models", "ops_file": REPO_ROOT / "internal/server/lexv2_ops.go"},
+    "lexruntimev2": {"cli": "lexv2-runtime", "ops_file": REPO_ROOT / "internal/server/lexruntimev2_ops.go"},
     "pinpoint": {"cli": "pinpoint", "ops_file": REPO_ROOT / "internal/server/pinpoint_ops.go"},
     "smsvoicev2": {
         "cli": "pinpoint-sms-voice-v2",
@@ -1047,6 +1048,13 @@ SERVICE_ALIASES = {
     "aws lex": "lexv2",
     "awslexv2": "lexv2",
     "aws lex v2": "lexv2",
+    "lexruntimev2": "lexruntimev2",
+    "lexv2-runtime": "lexruntimev2",
+    "lexv2runtime": "lexruntimev2",
+    "lex runtime v2": "lexruntimev2",
+    "lexruntime": "lexruntimev2",
+    "amazonlexruntimev2": "lexruntimev2",
+    "amazon lex runtime v2": "lexruntimev2",
     "pinpoint": "pinpoint",
     "amazonpinpoint": "pinpoint",
     "amazon pinpoint": "pinpoint",
@@ -2980,6 +2988,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "tnb": {},
     "savingsplans": {},
     "lexv2": {},
+    "lexruntimev2": {},
     "pinpoint": {},
     "smsvoicev2": {},
     "socialmessaging": {},
@@ -3959,6 +3968,9 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return kinesisvideostreams_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "lexv2":
         return lexv2_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "lexruntimev2" and endpoint.operation == "StartConversation":
+        # The CLI has no start-conversation (bidirectional event stream).
+        return ("POST", "/bots/{botId}/botAliases/{botAliasId}/botLocales/{localeId}/sessions/{sessionId}/conversation")
     if endpoint.service == "pinpoint":
         return pinpoint_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "smsvoicev2":
@@ -6136,6 +6148,9 @@ def invoke_raw_endpoint(
                 _flatten(str(key), value)
         body = urlparse.urlencode(params, doseq=True).encode("utf-8")
         extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+    elif endpoint.service == "lexruntimev2":
+        body = lexruntimev2_conversation_body()
+        extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7039,7 +7054,7 @@ def invoke_raw_endpoint(
         signing_service = "kinesisvideo"
     elif endpoint.service == "redshiftserverless":
         signing_service = "redshift-serverless"
-    elif endpoint.service == "lexv2":
+    elif endpoint.service in {"lexv2", "lexruntimev2"}:
         signing_service = "lex"
     elif endpoint.service == "awscostmanagement":
         signing_service = "ce"
@@ -7267,6 +7282,9 @@ def invoke_raw_endpoint(
 
 
 def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
+    if endpoint.service == "lexruntimev2":
+        # Path members only; hydration points them at the seeded bot.
+        return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}
     if endpoint.service == "acm":
         if endpoint.operation == "RevokeCertificate":
             return {}
@@ -13109,6 +13127,10 @@ def generate_cli_input_payload(
             "apiId": "api-0123456789abcdef0123456789abcdef0123456789abcdef",
             "format": "SDL",
         }, None
+    if endpoint.service == "lexruntimev2" and endpoint.operation in LEXRUNTIMEV2_OUTFILE_OPERATIONS:
+        # recognize-utterance and put-session stream an audio body, so the CLI
+        # needs explicit flags and an outfile even to print a skeleton.
+        return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
     if endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         # aws appconfigdata get-latest-configuration needs --configuration-token and an outfile even
         # to print a skeleton; hydration swaps in a token from a fresh session.
@@ -30197,6 +30219,141 @@ def appconfigdata_seed_session(
     }
 
 
+LEXRUNTIMEV2_OUTFILE_OPERATIONS = {"RecognizeUtterance", "PutSession"}
+LEXRUNTIMEV2_UTTERANCE = "hello stackyard"
+
+
+def lexruntimev2_seed_bot(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict | None:
+    """Create (once) a bot with an en_US locale and one intent through the Lex V2
+    models CLI, so runtime calls have something to recognize."""
+    state = RUNTIME_STATE.setdefault("lexruntimev2", {})
+    if state.get("botId"):
+        return state
+    bot = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "lexv2-models",
+        "create-bot",
+        env,
+        [
+            "--bot-name",
+            f"stackyard-runtime-{time.time_ns()}",
+            "--role-arn",
+            "arn:aws:iam::123456789012:role/stackyard-lex",
+            "--data-privacy",
+            "childDirected=false",
+            "--idle-session-ttl-in-seconds",
+            "300",
+        ],
+    )
+    bot_id = str(bot.get("botId") or "") if isinstance(bot, dict) else ""
+    if not bot_id:
+        return None
+    common = ["--bot-id", bot_id, "--bot-version", "DRAFT", "--locale-id", "en_US"]
+    run_aws_json(aws_bin, endpoint_url, region, "lexv2-models", "create-bot-locale", env, [*common, "--nlu-intent-confidence-threshold", "0.4"])
+    run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "lexv2-models",
+        "create-intent",
+        env,
+        [*common, "--intent-name", "Greeting", "--sample-utterances", json.dumps([{"utterance": LEXRUNTIMEV2_UTTERANCE}])],
+    )
+    state.update({"botId": bot_id, "botAliasId": "TSTALIASID", "localeId": "en_US"})
+    return state
+
+
+def lexruntimev2_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    bot = lexruntimev2_seed_bot(aws_bin, endpoint_url, region, env)
+    if bot is None:
+        return payload
+    hydrated = copy.deepcopy(payload)
+    hydrated.update({k: bot[k] for k in ("botId", "botAliasId", "localeId")})
+    hydrated["sessionId"] = f"stackyard-{endpoint.operation.lower()}-{time.time_ns()}"
+    op = endpoint.operation
+    if op == "RecognizeText":
+        hydrated["text"] = LEXRUNTIMEV2_UTTERANCE
+    if op in {"GetSession", "DeleteSession"}:
+        # These need a live session: start one with a turn.
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "lexv2-runtime",
+            "recognize-text",
+            env,
+            [
+                "--bot-id", str(bot["botId"]),
+                "--bot-alias-id", str(bot["botAliasId"]),
+                "--locale-id", str(bot["localeId"]),
+                "--session-id", hydrated["sessionId"],
+                "--text", LEXRUNTIMEV2_UTTERANCE,
+            ],
+        )
+    return hydrated
+
+
+def run_lexruntimev2_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """recognize-utterance and put-session return an audio stream, so the CLI
+    takes explicit flags and a positional outfile."""
+    cmd = list(base_cmd)
+    for flag, key in (("--bot-id", "botId"), ("--bot-alias-id", "botAliasId"), ("--locale-id", "localeId"), ("--session-id", "sessionId")):
+        cmd.extend([flag, str(payload_value_case_insensitive(payload, key, "") or "")])
+    with tempfile.TemporaryDirectory(prefix="stackyard-awscli-lexruntimev2-") as tmp:
+        if endpoint.operation == "RecognizeUtterance":
+            input_path = Path(tmp) / "input.txt"
+            input_path.write_text(LEXRUNTIMEV2_UTTERANCE, encoding="utf-8")
+            cmd.extend(
+                [
+                    "--request-content-type",
+                    "text/plain; charset=utf-8",
+                    "--response-content-type",
+                    "text/plain; charset=utf-8",
+                    "--input-stream",
+                    str(input_path),
+                ]
+            )
+        else:
+            cmd.extend(["--session-state", json.dumps({"sessionAttributes": {"source": "coverage"}})])
+        out_path = Path(tmp) / "audio.out"
+        cmd.append(str(out_path))
+        cp = run_subprocess(cmd, env)
+        extra_output = out_path.read_text(encoding="utf-8", errors="replace") if out_path.exists() else ""
+    return cp, cmd, extra_output
+
+
+def lexruntimev2_conversation_body() -> bytes:
+    """A whole StartConversation request stream: configure, one text turn,
+    disconnect. Stackyard answers each turn as its frame arrives."""
+
+    def frame(event_type: str, payload: dict) -> bytes:
+        import zlib
+
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", "application/json")):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
+        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
+        message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
+        return message + zlib.crc32(message).to_bytes(4, "big")
+
+    return (
+        frame("ConfigurationEvent", {"responseContentType": "text/plain; charset=utf-8"})
+        + frame("TextInputEvent", {"text": LEXRUNTIMEV2_UTTERANCE})
+        + frame("DisconnectionEvent", {})
+    )
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30210,6 +30367,8 @@ def hydrate_payload_with_service_state(
 
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "lexruntimev2":
+        return lexruntimev2_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "appconfigdata":
         session = appconfigdata_seed_session(aws_bin, endpoint_url, region, env)
         if session is None:
@@ -51852,6 +52011,17 @@ def run_endpoint(
                 payload["queryId"] = query_id
         status_code, response_text = invoke_raw_endpoint(endpoint, endpoint_url, region, env, payload)
         duration_ms = int((time.time() - started) * 1000)
+        if 200 <= status_code < 300 and endpoint.service == "lexruntimev2" and "IntentResultEvent" not in response_text:
+            # The event stream answers 200 even when it then sends an
+            # exception frame; a real turn must produce an IntentResultEvent.
+            return Result(
+                endpoint=endpoint,
+                status="contract_error",
+                returncode=1,
+                duration_ms=duration_ms,
+                detail="StartConversation returned no IntentResultEvent",
+                command=f"raw:{endpoint.service}.{endpoint.operation}",
+            )
         if 200 <= status_code < 300:
             not_impl = extract_not_implemented_marker(response_text)
             if not_impl:
@@ -52238,6 +52408,9 @@ def run_endpoint(
     elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         cp, cmd, extra_output_text = run_appconfigdata_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "lexruntimev2" and endpoint.operation in LEXRUNTIMEV2_OUTFILE_OPERATIONS:
+        cp, cmd, extra_output_text = run_lexruntimev2_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()

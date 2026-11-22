@@ -144,6 +144,9 @@ func shouldCaptureStateRequest(r *http.Request) bool {
 	if strings.HasPrefix(r.URL.Path, "/_stackyard/") {
 		return false
 	}
+	if r.Header.Get("x-amz-content-sha256") == sigV4StreamingEventsPayload {
+		return false // event streams stay open; there is no body to journal
+	}
 	switch r.Method {
 	case http.MethodGet, http.MethodHead, http.MethodOptions:
 		return false
@@ -455,6 +458,8 @@ func (w *stateCaptureWriter) WriteHeader(status int) {
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
 }
+
+func (w *stateCaptureWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 func (s *Server) Close() error {
 	var errOut error

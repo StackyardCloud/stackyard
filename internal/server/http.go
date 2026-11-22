@@ -1344,7 +1344,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		"status":    "ok",
 		"timestamp": time.Now().UTC(),
 		"providers": s.enabledProviders,
-		"services":  []string{"acm", "apigateway", "apigatewayv2", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "awscostmanagement", "billingconductor", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "devicefarm", "fis", "firehose", "flink", "kinesis", "kendra", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "transcribe", "xray", "wellarchitected", "wickr", "translate", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "simspaceweaver", "savingsplans", "tnb", "pinpoint", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "lexv2", "location", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "route53", "directconnect", "cloudmap", "cloudhsm", "cloudtrail", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codebuild", "config", "detective", "dms", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspectorv2", "m2", "mgn", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codedeploy", "codepipeline", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ecs", "ecr", "eks", "elasticbeanstalk", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "organizations", "quicksetup", "ram", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "rds", "redshiftserverless", "s3", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf"},
+		"services":  []string{"acm", "apigateway", "apigatewayv2", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "awscostmanagement", "billingconductor", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "devicefarm", "fis", "firehose", "flink", "kinesis", "kendra", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "transcribe", "xray", "wellarchitected", "wickr", "translate", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "simspaceweaver", "savingsplans", "tnb", "pinpoint", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "lexv2", "lexruntimev2", "location", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "route53", "directconnect", "cloudmap", "cloudhsm", "cloudtrail", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codebuild", "config", "detective", "dms", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspectorv2", "m2", "mgn", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codedeploy", "codepipeline", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ecs", "ecr", "eks", "elasticbeanstalk", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "organizations", "quicksetup", "ram", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "rds", "redshiftserverless", "s3", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf"},
 	})
 }
 
@@ -2879,6 +2879,11 @@ func isGCPFoundationSuccessMode() bool {
 
 func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	if s.handleNonAWSMethodNotAllowed(w, r) {
+		return
+	}
+	// Lex Runtime V2 goes first: StartConversation streams its request body,
+	// so no router that sniffs the body may see it before this one.
+	if s.handleLexRuntimeV2RESTRouter(w, r) {
 		return
 	}
 	if s.handleRedshiftServerlessJSONRouter(w, r) {
@@ -31443,12 +31448,18 @@ func (s *Server) validateSigV4WithServiceCore(r *http.Request, requiredService s
 		return false, http.StatusForbidden, "SignatureDoesNotMatch", "credential scope region mismatch", authPresent
 	}
 
-	bodyBytes, err := readBodyBytes(r)
-	if err != nil {
-		return false, http.StatusBadRequest, "InvalidRequest", "unable to read request body", authPresent
-	}
-
 	payloadHash := r.Header.Get("x-amz-content-sha256")
+	// Event-stream requests (e.g. Lex StartConversation) sign each frame
+	// separately and keep the body open, so the body is neither read nor hashed
+	// here; the handler reads it frame by frame.
+	streamingEvents := payloadHash == sigV4StreamingEventsPayload
+	var bodyBytes []byte
+	if !streamingEvents {
+		var err error
+		if bodyBytes, err = readBodyBytes(r); err != nil {
+			return false, http.StatusBadRequest, "InvalidRequest", "unable to read request body", authPresent
+		}
+	}
 	if payloadHash == "" {
 		if req.QueryAuth {
 			payloadHash = "UNSIGNED-PAYLOAD"
@@ -31457,7 +31468,7 @@ func (s *Server) validateSigV4WithServiceCore(r *http.Request, requiredService s
 		}
 	}
 
-	if payloadHash != "UNSIGNED-PAYLOAD" && payloadHash != sha256Hex(bodyBytes) {
+	if !streamingEvents && payloadHash != "UNSIGNED-PAYLOAD" && payloadHash != sha256Hex(bodyBytes) {
 		return false, http.StatusForbidden, "SignatureDoesNotMatch", "payload hash mismatch", authPresent
 	}
 
@@ -31493,6 +31504,8 @@ func (s *Server) validateSigV4WithServiceCore(r *http.Request, requiredService s
 
 	return false, http.StatusForbidden, "SignatureDoesNotMatch", "signature mismatch", authPresent
 }
+
+const sigV4StreamingEventsPayload = "STREAMING-AWS4-HMAC-SHA256-EVENTS"
 
 func readBodyBytes(r *http.Request) ([]byte, error) {
 	if r.Body == nil {
@@ -33859,3 +33872,7 @@ func (w *statusWriter) Write(p []byte) (int, error) {
 	w.bytes += n
 	return n, err
 }
+
+// Unwrap lets http.ResponseController reach Flush and full-duplex support on
+// the underlying writer (streaming responses).
+func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }

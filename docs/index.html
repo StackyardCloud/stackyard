@@ -86,6 +86,7 @@
         <a href="#kinesis">Kinesis</a>
         <a href="#kinesis-video-streams">Kinesis Video Streams</a>
         <a href="#lexv2">Lex V2</a>
+        <a href="#lexruntimev2">Lex Runtime V2</a>
         <a href="#pinpoint">Pinpoint</a>
         <a href="#pcs">PCS</a>
         <a href="#smsvoicev2">End User Messaging SMS</a>
@@ -3181,6 +3182,40 @@
         <ul>
         <li><code>lexv2</code>: <code>docker compose -f examples/aws/lexv2/docker-compose.yml up --build</code></li>
         <li><code>lexv2</code>: <code>docker compose -f examples/aws/lexv2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="lexruntimev2" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Lex Runtime V2</h2>
+        <p>SigV4 signed with service <code>lex</code>. REST JSON runtime on <code>/bots/{botId}/botAliases/{botAliasId}/botLocales/{localeId}/sessions/{sessionId}</code>: <code>RecognizeText</code> and <code>RecognizeUtterance</code> match intents by their sample utterances (exact match, with <code>{Slot}</code> references filling slots, or word overlap against the locale's confidence threshold, else <code>FallbackIntent</code>), elicit required slots with their prompts, and close <code>ReadyForFulfillment</code>. Sessions honour the bot's idle TTL. <code>StartConversation</code> is a full-duplex event stream (including <code>STREAMING-AWS4-HMAC-SHA256-EVENTS</code> signing). Bots, locales, aliases (plus <code>TSTALIASID</code>), intents and slots come from the Lex V2 models API. Audio input is accepted but not transcribed, and no speech is synthesized.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: lex</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteSession</code></td></tr>
+        <tr><td><code>GetSession</code></td></tr>
+        <tr><td><code>PutSession</code></td></tr>
+        <tr><td><code>RecognizeText</code></td></tr>
+        <tr><td><code>RecognizeUtterance</code></td></tr>
+        <tr><td><code>StartConversation</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>lex-runtime-v2</code>: <code>docker compose -f examples/aws/lex-runtime-v2/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
