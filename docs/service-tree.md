@@ -1077,6 +1077,8 @@
         - endpoint: [Action:UpdateNodegroupConfig](https://docs.aws.amazon.com/eks/latest/APIReference/API_Operations.html)
         - endpoint: [Action:UpdateNodegroupVersion](https://docs.aws.amazon.com/eks/latest/APIReference/API_Operations.html)
         - endpoint: [Action:UpdatePodIdentityAssociation](https://docs.aws.amazon.com/eks/latest/APIReference/API_Operations.html)
+      - service: EKS Auth (eksauth)
+        - endpoint: [Action:AssumeRoleForPodIdentity](https://docs.aws.amazon.com/eks/latest/APIReference/API_auth_AssumeRoleForPodIdentity.html)
       - service: Elastic Beanstalk (elasticbeanstalk)
         - endpoint: [Action:AbortEnvironmentUpdate](https://docs.aws.amazon.com/elasticbeanstalk/latest/api/API_Types.html)
         - endpoint: [Action:ApplyEnvironmentManagedAction](https://docs.aws.amazon.com/elasticbeanstalk/latest/api/API_Types.html)
