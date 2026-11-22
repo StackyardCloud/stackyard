@@ -39,6 +39,16 @@ func (s *Server) handleKinesisVideoStreamsRESTRouter(w http.ResponseWriter, r *h
 		return true
 	}
 
+	var signalingEndpoints []any
+	if action == "GetSignalingChannelEndpoint" {
+		endpoints, fault := kvsSignalingEndpoints(r, payload)
+		if fault != nil {
+			respondKinesisVideoStreamsError(w, fault.status, fault.code, fault.msg)
+			return true
+		}
+		signalingEndpoints = endpoints
+	}
+
 	response := s.kinesisvideostreams.Handle(action, payload)
 	if response == nil {
 		response = map[string]any{}
@@ -46,6 +56,10 @@ func (s *Server) handleKinesisVideoStreamsRESTRouter(w http.ResponseWriter, r *h
 	if action == "GetDataEndpoint" {
 		// The media and archived-media APIs are served by this same server.
 		response["DataEndpoint"] = kvsRequestBaseURL(r)
+	}
+	if signalingEndpoints != nil {
+		// Signaling (HTTPS), the WSS relay and WebRTC storage are served here too.
+		response["ResourceEndpointList"] = signalingEndpoints
 	}
 	respondKinesisVideoStreamsJSON(w, http.StatusOK, response)
 	return true

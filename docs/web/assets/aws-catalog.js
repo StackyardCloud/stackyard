@@ -465,6 +465,22 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
   },
   {
+    id: "kinesisvideosignaling",
+    name: "Kinesis Video Signaling Channels",
+    category: "integration",
+    summary: "GetIceServerConfig with deterministic TURN credentials, SendAlexaOfferToMaster, and a WSS signaling relay between a channel's master and viewers.",
+    docsHref: "../../../index.html#kinesisvideosignaling",
+    exampleHref: "../../../../examples/aws/kinesis-video-signaling/docker-compose.yml"
+  },
+  {
+    id: "kinesisvideowebrtcstorage",
+    name: "Kinesis Video WebRTC Storage",
+    category: "integration",
+    summary: "JoinStorageSession and JoinStorageSessionAsViewer for channels with media storage linked to an active stream.",
+    docsHref: "../../../index.html#kinesisvideowebrtcstorage",
+    exampleHref: "../../../../examples/aws/kinesis-video-signaling/docker-compose.yml"
+  },
+  {
     id: "mq",
     name: "Amazon MQ",
     category: "integration",

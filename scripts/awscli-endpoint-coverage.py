@@ -166,6 +166,14 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "kinesis-video-archived-media",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideoarchivedmedia_ops.go",
     },
+    "kinesisvideosignaling": {
+        "cli": "kinesis-video-signaling",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideosignaling_ops.go",
+    },
+    "kinesisvideowebrtcstorage": {
+        "cli": "kinesis-video-webrtc-storage",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideowebrtcstorage_ops.go",
+    },
     "lexv2": {"cli": "lexv2-models", "ops_file": REPO_ROOT / "internal/server/lexv2_ops.go"},
     "lexruntimev2": {"cli": "lexv2-runtime", "ops_file": REPO_ROOT / "internal/server/lexruntimev2_ops.go"},
     "pinpoint": {"cli": "pinpoint", "ops_file": REPO_ROOT / "internal/server/pinpoint_ops.go"},
@@ -1137,6 +1145,14 @@ SERVICE_ALIASES = {
     "kinesis-video-archived-media": "kinesisvideoarchivedmedia",
     "kinesis video archived media": "kinesisvideoarchivedmedia",
     "amazonkinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
+    "kinesisvideosignaling": "kinesisvideosignaling",
+    "kinesis-video-signaling": "kinesisvideosignaling",
+    "kinesis video signaling": "kinesisvideosignaling",
+    "amazonkinesisvideosignalingchannels": "kinesisvideosignaling",
+    "kinesisvideowebrtcstorage": "kinesisvideowebrtcstorage",
+    "kinesis-video-webrtc-storage": "kinesisvideowebrtcstorage",
+    "kinesis video webrtc storage": "kinesisvideowebrtcstorage",
+    "amazonkinesisvideowebrtcstorage": "kinesisvideowebrtcstorage",
     "emr": "emr",
     "amazonemr": "emr",
     "amazon emr": "emr",
@@ -3071,6 +3087,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kinesisvideostreams": {},
     "kinesisvideomedia": {},
     "kinesisvideoarchivedmedia": {},
+    "kinesisvideosignaling": {},
     "finspace": {},
     "finspacemanagement": {},
     "gameliftstreams": {},
@@ -30469,6 +30486,63 @@ def kvs_media_seed(endpoint_url: str, region: str, env: dict[str, str]) -> dict[
     return state
 
 
+KVS_SIGNALING_CHANNEL_NAME = f"stackyard-coverage-signaling-{os.getpid()}-{int(time.time())}"
+
+
+def kvs_signaling_seed(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create the coverage signaling channel once, with media storage linked to
+    the coverage stream so WebRTC storage sessions can join."""
+    state = RUNTIME_STATE.setdefault("kinesisvideosignaling", {})
+    if state.get("channel_arn"):
+        return str(state["channel_arn"])
+    json_headers = {"Content-Type": "application/json"}
+    status, text = kvs_media_signed_post(
+        endpoint_url, region, env, "/createSignalingChannel", json.dumps({"ChannelName": KVS_SIGNALING_CHANNEL_NAME}).encode(), json_headers
+    )
+    try:
+        channel_arn = str(json.loads(text).get("ChannelARN") or "") if status == 200 else ""
+    except json.JSONDecodeError:
+        channel_arn = ""
+    if not channel_arn:
+        return ""
+    stream = json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME, "DataRetentionInHours": 24, "MediaType": "video/h264"}).encode()
+    status, text = kvs_media_signed_post(endpoint_url, region, env, "/createStream", stream, json_headers)
+    try:
+        stream_arn = str(json.loads(text).get("StreamARN") or "") if status == 200 else ""
+    except json.JSONDecodeError:
+        stream_arn = ""
+    if not stream_arn:
+        # The media coverage run may already have created the stream.
+        status, text = kvs_media_signed_post(
+            endpoint_url, region, env, "/describeStream", json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME}).encode(), json_headers
+        )
+        try:
+            stream_arn = str((json.loads(text).get("StreamInfo") or {}).get("StreamARN") or "") if status == 200 else ""
+        except (json.JSONDecodeError, AttributeError):
+            stream_arn = ""
+    storage = {"ChannelARN": channel_arn, "MediaStorageConfiguration": {"StreamARN": stream_arn, "Status": "ENABLED"}}
+    kvs_media_signed_post(endpoint_url, region, env, "/updateMediaStorageConfiguration", json.dumps(storage).encode(), json_headers)
+    state["channel_arn"] = channel_arn
+    return channel_arn
+
+
+def kvs_signaling_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    channel_arn = kvs_signaling_seed(endpoint_url, region, env)
+    if not channel_arn:
+        return payload
+    op = endpoint.operation
+    if op == "GetIceServerConfig":
+        return {"ChannelARN": channel_arn, "ClientId": "stackyard-viewer", "Service": "TURN"}
+    if op == "SendAlexaOfferToMaster":
+        offer = base64.b64encode(b"v=0\r\ns=stackyard-coverage\r\n").decode("ascii")
+        return {"ChannelARN": channel_arn, "SenderClientId": "stackyard-alexa", "MessagePayload": offer}
+    if op == "JoinStorageSession":
+        return {"channelArn": channel_arn}
+    if op == "JoinStorageSessionAsViewer":
+        return {"channelArn": channel_arn, "clientId": "stackyard-viewer"}
+    return payload
+
+
 def kvs_media_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
     state = kvs_media_seed(endpoint_url, region, env)
     seeded_at = float(state.get("seeded_at") or time.time())
@@ -31647,6 +31721,8 @@ def hydrate_payload_with_service_state(
         return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
         return kvs_media_hydrate_payload(endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"kinesisvideosignaling", "kinesisvideowebrtcstorage"}:
+        return kvs_signaling_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "lexruntimev2":

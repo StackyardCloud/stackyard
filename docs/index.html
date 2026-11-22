@@ -88,6 +88,8 @@
         <a href="#kinesis-video-streams">Kinesis Video Streams</a>
         <a href="#kinesisvideomedia">Kinesis Video Streams Media</a>
         <a href="#kinesisvideoarchivedmedia">Kinesis Video Streams Archived Media</a>
+        <a href="#kinesisvideosignaling">Kinesis Video Signaling Channels</a>
+        <a href="#kinesisvideowebrtcstorage">Kinesis Video WebRTC Storage</a>
         <a href="#lexv2">Lex V2</a>
         <a href="#lexruntimev2">Lex Runtime V2</a>
         <a href="#pinpoint">Pinpoint</a>
@@ -3252,6 +3254,70 @@
         <summary>Examples</summary>
         <ul>
         <li><code>kinesis-video-media</code>: <code>docker compose -f examples/aws/kinesis-video-media/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideosignaling" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Signaling Channels</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. GetIceServerConfig returns deterministic TURN credentials (Ttl 300) for an existing signaling channel, and SendAlexaOfferToMaster relays the offer to a master connected to the WSS endpoint, returning its answer (or a fixed recvonly SDP when no master answers). GetSignalingChannelEndpoint hands out Stackyard URLs: HTTPS and WEBRTC are this server, and WSS is a signaling relay at <code>/_stackyard/kinesisvideosignaling</code> that forwards SDP_OFFER, SDP_ANSWER and ICE_CANDIDATE messages between the master and viewers by client ID (SigV4-presigned upgrade with <code>X-Amz-ChannelARN</code> and, for viewers, <code>X-Amz-ClientId</code>). There is no TURN server behind the credentials.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideosignaling_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-signaling</code>: <code>docker compose -f examples/aws/kinesis-video-signaling/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideowebrtcstorage" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video WebRTC Storage</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. JoinStorageSession and JoinStorageSessionAsViewer require an existing signaling channel whose media storage configuration is ENABLED with an active linked stream, and record the master and up to three viewers. Stackyard does not open a WebRTC peer or ingest the call into the stream.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideowebrtcstorage_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-signaling</code>: <code>docker compose -f examples/aws/kinesis-video-signaling/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

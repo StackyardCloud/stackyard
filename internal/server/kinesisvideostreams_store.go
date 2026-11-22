@@ -34,6 +34,9 @@ type kinesisVideoStreamsStore struct {
 	// media holds ingested fragments per stream ARN (kinesisvideomedia_store.go).
 	media    map[string]*kvsStreamMedia
 	sessions map[string]kvsPlaybackSession // HLS/DASH session tokens
+	// storageSessions holds WebRTC storage sessions per channel ARN
+	// (kinesisvideowebrtcstorage.go).
+	storageSessions map[string]*kvsStorageSession
 }
 
 func newKinesisVideoStreamsStore() *kinesisVideoStreamsStore {
@@ -53,6 +56,7 @@ func newKinesisVideoStreamsStore() *kinesisVideoStreamsStore {
 		tags:                  map[string]map[string]string{},
 		media:                 map[string]*kvsStreamMedia{},
 		sessions:              map[string]kvsPlaybackSession{},
+		storageSessions:       map[string]*kvsStorageSession{},
 	}
 	now := time.Now().UTC()
 	s.ensureStreamLocked("stackyard-kvs-stream", "", now)
@@ -226,6 +230,7 @@ func (s *kinesisVideoStreamsStore) applyOperationMutationsLocked(
 		delete(s.edgeConfigs, channelARN)
 		delete(s.mediaStorageConfigs, channelARN)
 		delete(s.mappedResourceConfig, channelARN)
+		delete(s.storageSessions, channelARN)
 	case "UpdateStream":
 		if mediaType := kinesisVideoStreamsPayloadString(payload, []string{"MediaType", "mediaType"}, ""); mediaType != "" {
 			stream["MediaType"] = mediaType
@@ -275,8 +280,18 @@ func (s *kinesisVideoStreamsStore) applyOperationMutationsLocked(
 		}
 	case "UpdateMediaStorageConfiguration":
 		cfg := s.ensureMediaStorageConfigLocked(channelARN)
-		cfg["Status"] = "ENABLED"
-		if streamArn := kinesisVideoStreamsPayloadString(payload, []string{"StreamARN", "StreamArn"}, ""); streamArn != "" {
+		// The API nests the settings under MediaStorageConfiguration; the
+		// flat form is still accepted.
+		src := payload
+		if nested, ok := payload["MediaStorageConfiguration"].(map[string]any); ok {
+			src = nested
+		}
+		status := strings.ToUpper(kinesisVideoStreamsPayloadString(src, []string{"Status"}, "ENABLED"))
+		if status != "DISABLED" {
+			status = "ENABLED"
+		}
+		cfg["Status"] = status
+		if streamArn := kinesisVideoStreamsPayloadString(src, []string{"StreamARN", "StreamArn"}, ""); streamArn != "" {
 			cfg["StreamARN"] = streamArn
 		}
 	case "UpdateImageGenerationConfiguration":
@@ -453,10 +468,10 @@ func (s *kinesisVideoStreamsStore) ensureMediaStorageConfigLocked(channelARN str
 	if cfg := s.mediaStorageConfigs[channelARN]; cfg != nil {
 		return cfg
 	}
+	// Media storage is off until UpdateMediaStorageConfiguration links a stream.
 	cfg := map[string]any{
 		"ChannelARN": channelARN,
-		"Status":     "ENABLED",
-		"StreamARN":  kinesisVideoStreamsStreamARN("stackyard-kvs-stream", 1),
+		"Status":     "DISABLED",
 	}
 	s.mediaStorageConfigs[channelARN] = cfg
 	return cfg
