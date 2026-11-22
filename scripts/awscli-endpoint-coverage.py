@@ -548,6 +548,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
+    "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2157,6 +2159,11 @@ SERVICE_ALIASES = {
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "efs": "efs",
+    "codeconnections": "codeconnections",
+    "awscodeconnections": "codeconnections",
+    "codestarconnections": "codestarconnections",
+    "codestar-connections": "codestarconnections",
+    "awscodestarconnections": "codestarconnections",
     "elasticfilesystem": "efs",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
@@ -3046,6 +3053,8 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
+    "codeconnections": {},
+    "codestarconnections": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31814,6 +31823,135 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+CODECONNECTIONS_CLI = {"codeconnections": "codeconnections", "codestarconnections": "codestar-connections"}
+CODECONNECTIONS_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-coverage-sync"
+
+
+def codeconnections_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def codeconnections_stackyard_post(service: str, endpoint_url: str, region: str, env: dict[str, str], path: str, body: dict) -> dict:
+    """Call a Stackyard-only codeconnections endpoint (connection activation,
+    sync blockers): steps AWS completes outside the API."""
+    url = endpoint_url.rstrip("/") + "/_stackyard/codeconnections/" + path
+    raw = json.dumps(body).encode()
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=raw,
+        service=CODECONNECTIONS_CLI[service],
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers={"Content-Type": "application/json"},
+    )
+    req = urlrequest.Request(url=url, method="POST", data=raw, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace") or "{}")
+    except (urlerror.URLError, OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def codeconnections_create(service: str, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, **ids: str) -> str:
+    """Create one resource through the real CLI and return its ARN, ID or name."""
+    cli = CODECONNECTIONS_CLI[service]
+    if kind == "connection":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-connection", env, ["--provider-type", "GitHub", "--connection-name", codeconnections_unique("cov-")])
+        arn = str((data or {}).get("ConnectionArn") or "")
+        if arn:
+            codeconnections_stackyard_post(service, endpoint_url, region, env, "connections/" + arn.rsplit("/", 1)[-1] + "/activate", {})
+        return arn
+    if kind == "host":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-host", env, ["--name", codeconnections_unique("cov-host-"), "--provider-type", "GitHubEnterpriseServer", "--provider-endpoint", "https://ghe.example.com"])
+        return str((data or {}).get("HostArn") or "")
+    if kind == "link":
+        data = run_aws_json(aws_bin, endpoint_url, region, cli, "create-repository-link", env, ["--connection-arn", ids["connection"], "--owner-id", "stackyard", "--repository-name", codeconnections_unique("repo-")])
+        return str(((data or {}).get("RepositoryLinkInfo") or {}).get("RepositoryLinkId") or "")
+    if kind == "sync":
+        name = codeconnections_unique("covstack")
+        run_aws_json(aws_bin, endpoint_url, region, cli, "create-sync-configuration", env, [
+            "--branch", "main", "--config-file", "deploy/stack.yaml", "--repository-link-id", ids["link"],
+            "--resource-name", name, "--role-arn", CODECONNECTIONS_ROLE_ARN, "--sync-type", "CFN_STACK_SYNC",
+        ])
+        return name
+    raise ValueError(kind)
+
+
+def codeconnections_fixture(service: str, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault(service, {})
+    if not state.get("sync"):
+        state["connection"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "connection")
+        state["host"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "host")
+        state["link"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "link", connection=state["connection"])
+        state["sync"] = codeconnections_create(service, aws_bin, endpoint_url, region, env, "sync", link=state["link"])
+    return state
+
+
+def codeconnections_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point CodeConnections / CodeStar Connections operations at real
+    resources; deletes and blocker resolution get resources of their own."""
+    svc, op = endpoint.service, endpoint.operation
+    fx = codeconnections_fixture(svc, aws_bin, endpoint_url, region, env)
+
+    def make(kind: str, **ids: str) -> str:
+        return codeconnections_create(svc, aws_bin, endpoint_url, region, env, kind, **ids)
+
+    sync_key = {"SyncType": "CFN_STACK_SYNC", "ResourceName": fx["sync"]}
+    if op == "CreateConnection":
+        return {"ProviderType": "GitHub", "ConnectionName": codeconnections_unique("cov-")}
+    if op == "CreateHost":
+        return {"Name": codeconnections_unique("cov-host-"), "ProviderType": "GitHubEnterpriseServer", "ProviderEndpoint": "https://ghe.example.com"}
+    if op == "CreateRepositoryLink":
+        return {"ConnectionArn": fx["connection"], "OwnerId": "stackyard", "RepositoryName": codeconnections_unique("repo-")}
+    if op == "CreateSyncConfiguration":
+        return {
+            "Branch": "main", "ConfigFile": "deploy/stack.yaml", "RepositoryLinkId": fx["link"],
+            "ResourceName": codeconnections_unique("covstack"), "RoleArn": CODECONNECTIONS_ROLE_ARN, "SyncType": "CFN_STACK_SYNC",
+        }
+    if op == "DeleteConnection":
+        return {"ConnectionArn": make("connection")}
+    if op == "DeleteHost":
+        return {"HostArn": make("host")}
+    if op == "DeleteRepositoryLink":
+        return {"RepositoryLinkId": make("link", connection=fx["connection"])}
+    if op == "DeleteSyncConfiguration":
+        return {"SyncType": "CFN_STACK_SYNC", "ResourceName": make("sync", link=fx["link"])}
+    if op == "GetConnection":
+        return {"ConnectionArn": fx["connection"]}
+    if op == "GetHost":
+        return {"HostArn": fx["host"]}
+    if op == "UpdateHost":
+        return {"HostArn": fx["host"], "ProviderEndpoint": "https://ghe2.example.com"}
+    if op in {"GetRepositoryLink", "UpdateRepositoryLink"}:
+        return {"RepositoryLinkId": fx["link"]}
+    if op == "GetRepositorySyncStatus":
+        return {"Branch": "main", "RepositoryLinkId": fx["link"], "SyncType": "CFN_STACK_SYNC"}
+    if op in {"GetResourceSyncStatus", "GetSyncBlockerSummary", "GetSyncConfiguration"}:
+        return dict(sync_key)
+    if op == "UpdateSyncConfiguration":
+        return {**sync_key, "Branch": "main"}
+    if op == "UpdateSyncBlocker":
+        blocker = codeconnections_stackyard_post(svc, endpoint_url, region, env, f"sync-configurations/CFN_STACK_SYNC/{fx['sync']}/blockers", {})
+        return {**sync_key, "Id": str(blocker.get("Id") or "missing"), "ResolvedReason": "fixed by coverage"}
+    if op in {"ListRepositorySyncDefinitions", "ListSyncConfigurations"}:
+        return {"RepositoryLinkId": fx["link"], "SyncType": "CFN_STACK_SYNC"}
+    if op in {"ListConnections", "ListHosts", "ListRepositoryLinks"}:
+        return {}
+    if op == "TagResource":
+        return {"ResourceArn": fx["connection"], "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["connection"], "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["connection"]}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -31825,6 +31963,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service in {"codeconnections", "codestarconnections"}:
+        return codeconnections_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:

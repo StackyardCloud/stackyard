@@ -320,6 +320,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/codeartifact/docker-compose.yml"
   },
   {
+    id: "codeconnections",
+    name: "CodeConnections",
+    category: "integration",
+    summary: "Emulate source-provider connections, self-managed hosts, repository links and CloudFormation Git sync configurations.",
+    docsHref: "../../../index.html#codeconnections",
+    exampleHref: "../../../../examples/aws/codeconnections/docker-compose.yml"
+  },
+  {
+    id: "codestarconnections",
+    name: "CodeStar Connections",
+    category: "integration",
+    summary: "Emulate source-provider connections, self-managed hosts, repository links and CloudFormation Git sync configurations (shared store with CodeConnections).",
+    docsHref: "../../../index.html#codestarconnections",
+    exampleHref: "../../../../examples/aws/codeconnections/docker-compose.yml"
+  },
+  {
     id: "codebuild",
     name: "CodeBuild",
     category: "integration",
