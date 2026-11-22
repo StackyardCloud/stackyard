@@ -728,6 +728,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/kms/docker-compose.yml"
   },
   {
+    id: "lexruntimev2",
+    name: "Lex Runtime V2",
+    category: "integration",
+    summary: "Converse with Lex V2 bots: recognize text and utterances, elicit slots, manage sessions, and stream StartConversation events.",
+    docsHref: "../../../index.html#lexruntimev2",
+    exampleHref: "../../../../examples/aws/lex-runtime-v2/docker-compose.yml"
+  },
+  {
     id: "lambda",
     name: "Lambda",
     category: "compute",

@@ -22,6 +22,11 @@ type lexV2Store struct {
 	bots             map[string]map[string]any
 	tags             map[string]map[string]string
 	resourcePolicies map[string]map[string]any
+
+	// Runtime model and sessions (lexv2_model.go, lexruntimev2_dialog.go).
+	locales  map[string]map[string]*lexV2Locale // botId -> localeId
+	aliases  map[string]map[string]string       // botId -> aliasId -> name
+	sessions map[string]*lexRuntimeSession
 }
 
 func newLexV2Store() *lexV2Store {
@@ -46,8 +51,12 @@ func newLexV2Store() *lexV2Store {
 		},
 		tags:             map[string]map[string]string{},
 		resourcePolicies: map[string]map[string]any{},
+		locales:          map[string]map[string]*lexV2Locale{},
+		aliases:          map[string]map[string]string{},
+		sessions:         map[string]*lexRuntimeSession{},
 	}
 	s.tags[lexV2BotARN(seedBotID)] = map[string]string{"stackyard": "true", "env": "coverage"}
+	s.ensureLexV2LocaleLocked(seedBotID, "en_US")
 	return s
 }
 
@@ -67,6 +76,7 @@ func (s *lexV2Store) Handle(action string, payload map[string]any, pathParams ma
 		merged[k] = vals[len(vals)-1]
 	}
 
+	s.assignLexV2CreatedIDLocked(action, merged)
 	botID := lexV2String(merged, []string{"botId"}, "A1B2C3D4E5")
 	botName := lexV2String(merged, []string{"botName", "name"}, "stackyard-lex-bot")
 	botVersion := lexV2String(merged, []string{"botVersion"}, "DRAFT")
@@ -79,6 +89,7 @@ func (s *lexV2Store) Handle(action string, payload map[string]any, pathParams ma
 
 	bot := s.ensureBotLocked(botID, botName, now)
 	s.ensureTagMapLocked(resourceARN)
+	s.recordLexV2ModelLocked(action, merged)
 
 	s.applyTagMutationsLocked(action, merged, resourceARN)
 	s.applyPolicyMutationsLocked(action, merged, resourceARN, statementID, now)
@@ -94,11 +105,12 @@ func (s *lexV2Store) Handle(action string, payload map[string]any, pathParams ma
 
 	switch action {
 	case "CreateBot":
-		createdID := fmt.Sprintf("BOT%08d", s.nextID)
+		createdID := fmt.Sprintf("BOT%07d", s.nextID) // bot IDs are exactly 10 characters
 		s.nextID++
 		createdName := lexV2String(merged, []string{"botName", "name"}, "stackyard-lex-bot")
 		created := s.ensureBotLocked(createdID, createdName, now)
 		created["description"] = lexV2String(merged, []string{"description"}, "stackyard lexv2 bot")
+		setLexV2BotTTL(created, merged)
 		created["botStatus"] = "Creating"
 		created["lastUpdatedDateTime"] = now
 		return map[string]any{"botId": createdID, "botName": created["botName"], "botStatus": created["botStatus"], "creationDateTime": now}
