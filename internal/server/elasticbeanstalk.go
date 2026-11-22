@@ -730,6 +730,9 @@ func sigV4ServiceHint(r *http.Request) string {
 	if req, err := parseSigV4Authorization(r.Header.Get("Authorization")); err == nil {
 		return strings.TrimSpace(req.Service)
 	}
+	if req, err := parseSigV4AAuthorization(r.Header.Get("Authorization")); err == nil {
+		return strings.TrimSpace(req.Service)
+	}
 	if req, err := parseSigV4Query(r.URL.Query()); err == nil {
 		return strings.TrimSpace(req.Service)
 	}

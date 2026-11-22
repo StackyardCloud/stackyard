@@ -24,6 +24,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/apigatewayv2/docker-compose.yml"
   },
   {
+    id: "apigatewaymanagementapi",
+    name: "API Gateway Management API",
+    category: "integration",
+    summary: "Push messages to, inspect, and disconnect WebSocket API client connections through the @connections callback API.",
+    docsHref: "../../../index.html#apigatewaymanagementapi",
+    exampleHref: "../../../../examples/aws/apigatewaymanagementapi/docker-compose.yml"
+  },
+  {
     id: "appconfig",
     name: "AppConfig",
     category: "integration",
@@ -152,6 +160,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/cloudfront/docker-compose.yml"
   },
   {
+    id: "cloudfrontkeyvaluestore",
+    name: "CloudFront KeyValueStore",
+    category: "integration",
+    summary: "Read and write keys in CloudFront KeyValueStores with ETag concurrency, atomic batch updates, size quotas, and SigV4A signing.",
+    docsHref: "../../../index.html#cloudfrontkeyvaluestore",
+    exampleHref: "../../../../examples/aws/cloudfront-keyvaluestore/docker-compose.yml"
+  },
+  {
     id: "directconnect",
     name: "Direct Connect",
     category: "integration",
@@ -174,6 +190,14 @@ const SERVICE_CATALOG = [
     summary: "Plan and validate trail lifecycle, event data stores, channels, import/query, and policy APIs.",
     docsHref: "../../../index.html#cloudtrail",
     exampleHref: "../../../../examples/aws/cloudtrail/docker-compose.yml"
+  },
+  {
+    id: "cloudtraildata",
+    name: "CloudTrail Data",
+    category: "integration",
+    summary: "Ingest external audit events into CloudTrail Lake channels with PutAuditEvents and query them back.",
+    docsHref: "../../../index.html#cloudtraildata",
+    exampleHref: "../../../../examples/aws/cloudtrail-data/docker-compose.yml"
   },
   {
     id: "cloudwatch",

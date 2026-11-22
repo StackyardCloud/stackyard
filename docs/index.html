@@ -46,6 +46,7 @@
         <a href="#acm">ACM</a>
         <a href="#apigateway">API Gateway</a>
         <a href="#apigatewayv2">API Gateway v2</a>
+        <a href="#apigatewaymanagementapi">API Gateway Management API</a>
         <a href="#appconfig">AppConfig</a>
         <a href="#appconfigdata">AppConfig Data</a>
         <a href="#appflow">AppFlow</a>
@@ -123,6 +124,7 @@
         <a href="#controltower">Control Tower</a>
         <a href="#cloudformation">CloudFormation</a>
         <a href="#cloudtrail">CloudTrail</a>
+        <a href="#cloudtraildata">CloudTrail Data</a>
         <a href="#cloudwatch">CloudWatch</a>
         <a href="#cloudwatchlogs">CloudWatch Logs</a>
         <a href="#cloudwatchrum">CloudWatch RUM</a>
@@ -705,6 +707,37 @@
         <ul>
         <li><code>apigatewayv2</code>: <code>docker compose -f examples/aws/apigatewayv2/docker-compose.yml up --build</code></li>
         <li><code>apigatewayv2</code>: <code>docker compose -f examples/aws/apigatewayv2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="apigatewaymanagementapi" class="service">
+
+        <div class="service-header">
+        <h2>Amazon API Gateway Management API</h2>
+        <p>SigV4 signed with service <code>execute-api</code>. REST JSON over <code>/@connections/{connectionId}</code> or <code>/{stage}/@connections/{connectionId}</code>, scoped to the API ID in an <code>{apiId}.execute-api.*</code> host when one is present. Stackyard has no WebSocket runtime: register a client with <code>POST /_stackyard/apigatewaymanagementapi/connections</code> (optional <code>apiId</code> of a <code>WEBSOCKET</code> API, <code>stage</code>, <code>sourceIp</code>, <code>userAgent</code>) and read what the backend posted with <code>GET /_stackyard/apigatewaymanagementapi/connections/{connectionId}/messages</code>. Unknown or deleted connections return <code>410 GoneException</code>, and data over 128 KB returns <code>413 PayloadTooLargeException</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: execute-api</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>PostToConnection</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>apigatewaymanagementapi</code>: <code>docker compose -f examples/aws/apigatewaymanagementapi/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -5979,6 +6012,36 @@
 <ul>
 <li><code>cloudtrail</code>: <code>docker compose -f examples/aws/cloudtrail/docker-compose.yml up --build</code></li>
 <li><code>cloudtrail</code>: <code>docker compose -f examples/aws/cloudtrail/docker-compose.yml up --build</code></li>
+</ul>
+</details>
+</section>
+
+<section id="cloudtraildata" class="service">
+
+<div class="service-header">
+<h2>AWS CloudTrail Data</h2>
+<p>SigV4 signed with service <code>cloudtrail-data</code>. REST JSON API: <code>POST /PutAuditEvents?channelArn=&lt;arn-or-id&gt;[&amp;externalId=&lt;id&gt;]</code>. Events are validated against the CloudTrail Lake integration schema (checksum, required fields, recipient account) and delivered to the channel's event data stores, where <code>StartQuery</code>/<code>GetQueryResults</code> can read them with a <code>SELECT ... FROM &lt;event-data-store&gt; [WHERE col = 'v'] [LIMIT n]</code> subset.</p>
+</div>
+<div class="service-meta">
+<span class="meta-pill">SigV4: cloudtrail-data</span>
+<span class="meta-pill">API: REST JSON</span>
+</div><details class="details">
+<summary>Supported Actions</summary>
+<p class="note">Action Type: SDK action</p>
+<table class="table">
+<thead>
+<tr>
+<th>Action Name</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><code>PutAuditEvents</code></td></tr>
+</tbody>
+</table>
+</details><details class="details">
+<summary>Examples</summary>
+<ul>
+<li><code>cloudtrail-data</code>: <code>docker compose -f examples/aws/cloudtrail-data/docker-compose.yml up --build</code></li>
 </ul>
 </details>
 </section>
@@ -21328,6 +21391,40 @@
         <ul>
         <li><code>cloudfront</code>: <code>docker compose -f examples/aws/cloudfront/docker-compose.yml up --build</code></li>
         <li><code>cloudfront</code>: <code>docker compose -f examples/aws/cloudfront/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="cloudfrontkeyvaluestore" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudFront KeyValueStore</h2>
+        <p>Data plane for key value stores created with the CloudFront <code>CreateKeyValueStore</code> API. REST JSON over <code>/key-value-stores/{KvsARN}</code>. Clients sign with SigV4A (<code>AWS4-ECDSA-P256-SHA256</code>) or SigV4; mutations require the current <code>ETag</code> in <code>If-Match</code>. The AWS CLI prepends the account ID to the endpoint host, so point it at Stackyard as an HTTP proxy: <code>HTTP_PROXY=http://localhost:4566 aws cloudfront-keyvaluestore list-keys --kvs-arn ARN --endpoint-url http://localhost:4566</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudfront-keyvaluestore</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteKey</code></td></tr>
+        <tr><td><code>DescribeKeyValueStore</code></td></tr>
+        <tr><td><code>GetKey</code></td></tr>
+        <tr><td><code>ListKeys</code></td></tr>
+        <tr><td><code>PutKey</code></td></tr>
+        <tr><td><code>UpdateKeys</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>cloudfront-keyvaluestore</code>: <code>docker compose -f examples/aws/cloudfront-keyvaluestore/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

@@ -48,6 +48,11 @@ func (s *Server) handleCloudFrontRESTRouter(w http.ResponseWriter, r *http.Reque
 		return true
 	}
 
+	if cloudFrontKVSOperations[action] {
+		s.handleCloudFrontKVSOperation(w, r, action, payload)
+		return true
+	}
+
 	pathParams := cloudFrontPathParams(rawRequestPath(r))
 	result := s.cloudfront.Handle(action, payload, pathParams)
 	if result.Status == 0 {
@@ -108,6 +113,9 @@ func parseCloudFrontOperation(r *http.Request) string {
 	method := strings.ToUpper(strings.TrimSpace(r.Method))
 	path = strings.TrimSuffix(path, "/")
 
+	if action, _ := cloudFrontKVSRoute(method, path); action != "" {
+		return action
+	}
 	if path == "/2020-05-31/distribution" {
 		switch method {
 		case http.MethodGet:
