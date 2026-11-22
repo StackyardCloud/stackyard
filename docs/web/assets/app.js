@@ -576,6 +576,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/devops-guru/docker-compose.yml"
   },
   {
+    id: "codecommit",
+    name: "CodeCommit",
+    category: "integration",
+    summary: "Emulate Git repositories with branches, commits, files, diffs, merges with conflict detection, pull requests, approval rules, comments, and triggers.",
+    docsHref: "../../../index.html#codecommit",
+    exampleHref: "../../../../examples/aws/codecommit/docker-compose.yml"
+  },
+  {
     id: "codepipeline",
     name: "CodePipeline",
     category: "integration",
