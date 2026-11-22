@@ -15,6 +15,10 @@ type openSearchStore struct {
 	defaultVPCEndpoint string
 	defaultPackageID   string
 	defaultConnection  string
+
+	// Shared with the legacy es API (opensearch_domains.go, elasticsearchservice_store.go).
+	domains map[string]*osDomain
+	esl     eslState
 }
 
 func newOpenSearchStore() *openSearchStore {
@@ -33,6 +37,9 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 
 	domainName := s.resolveDomainName(payload, pathParams)
 	principal := s.resolvePrincipal(payload)
+	if out, ok := s.osHandleDomainAction(action, domainName, payload); ok {
+		return out
+	}
 
 	switch action {
 	case "AcceptInboundConnection", "DeleteInboundConnection", "DeleteOutboundConnection", "RejectInboundConnection":
