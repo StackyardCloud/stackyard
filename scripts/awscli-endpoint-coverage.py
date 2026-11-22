@@ -387,6 +387,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/cloudfrontkeyvaluestore_ops.go",
     },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
+    "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
         "cli": "globalaccelerator",
@@ -1905,6 +1906,9 @@ SERVICE_ALIASES = {
     "awsram": "ram",
     "amazonram": "ram",
     "route53": "route53",
+    "route53profiles": "route53profiles",
+    "route53-profiles": "route53profiles",
+    "amazonroute53profiles": "route53profiles",
     "route-53": "route53",
     "route 53": "route53",
     "amazonroute53": "route53",
@@ -3125,6 +3129,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "efs": {},
     "scheduler": {},
     "pipes": {},
+    "route53profiles": {},
     "datasync": {},
     "dax": {},
     "route53resolver": {},
@@ -34323,6 +34328,99 @@ def pipes_shared_queues(aws_bin: str, endpoint_url: str, region: str, env: dict[
     return state
 
 
+R53P_ACCOUNT = "123456789012"
+
+
+def r53p_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "route53profiles", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def r53p_new_profile(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    token = f"stackyard-{time.time_ns()}"
+    data = r53p_cli(aws_bin, endpoint_url, region, env, "create-profile", ["--name", token, "--client-token", token])
+    profile_id = str((data.get("Profile") or {}).get("Id") or "")
+    if profile_id:
+        r53p_cli(aws_bin, endpoint_url, region, env, "get-profile", ["--profile-id", profile_id])
+    return profile_id
+
+
+def r53p_new_vpc(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "ec2", "create-vpc", env, ["--cidr-block", "10.77.0.0/16"])
+    return str(((data or {}).get("Vpc") or {}).get("VpcId") or "") if isinstance(data, dict) else ""
+
+
+def r53p_new_association(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], profile_id: str) -> dict:
+    vpc_id = r53p_new_vpc(aws_bin, endpoint_url, region, env)
+    data = r53p_cli(aws_bin, endpoint_url, region, env, "associate-profile", ["--profile-id", profile_id, "--resource-id", vpc_id, "--name", "stackyard"])
+    assoc_id = str((data.get("ProfileAssociation") or {}).get("Id") or "")
+    if assoc_id:
+        r53p_cli(aws_bin, endpoint_url, region, env, "get-profile-association", ["--profile-association-id", assoc_id])
+    return {"id": assoc_id, "vpc": vpc_id}
+
+
+def r53p_new_resource(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], profile_id: str) -> dict:
+    arn = f"arn:aws:route53:::hostedzone/Z{time.time_ns() % 10**12:012d}"
+    data = r53p_cli(aws_bin, endpoint_url, region, env, "associate-resource-to-profile", ["--profile-id", profile_id, "--resource-arn", arn, "--name", "stackyard"])
+    ra_id = str((data.get("ProfileResourceAssociation") or {}).get("Id") or "")
+    if ra_id:
+        r53p_cli(aws_bin, endpoint_url, region, env, "get-profile-resource-association", ["--profile-resource-association-id", ra_id])
+    return {"id": ra_id, "arn": arn}
+
+
+def route53profiles_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Route 53 Profiles operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("route53profiles", {})
+    if not state.get("profile"):
+        state["profile"] = r53p_new_profile(aws_bin, endpoint_url, region, env)
+        state["assoc"] = r53p_new_association(aws_bin, endpoint_url, region, env, str(state["profile"]))
+        state["resource"] = r53p_new_resource(aws_bin, endpoint_url, region, env, str(state["profile"]))
+    profile = str(state["profile"])
+    assoc, resource = dict(state["assoc"]), dict(state["resource"])
+    unique = f"stackyard-{time.time_ns()}"
+    profile_arn = f"arn:aws:route53profiles:{region}:{R53P_ACCOUNT}:profile/{profile}"
+    if op == "CreateProfile":
+        return {"Name": unique, "ClientToken": unique}
+    if op in {"ListProfiles", "ListProfileAssociations"}:
+        return {}
+    if op == "GetProfile":
+        return {"ProfileId": profile}
+    if op == "DeleteProfile":
+        return {"ProfileId": r53p_new_profile(aws_bin, endpoint_url, region, env)}
+    if op == "AssociateProfile":
+        return {"ProfileId": r53p_new_profile(aws_bin, endpoint_url, region, env), "ResourceId": r53p_new_vpc(aws_bin, endpoint_url, region, env), "Name": "stackyard"}
+    if op == "DisassociateProfile":
+        own = r53p_new_profile(aws_bin, endpoint_url, region, env)
+        return {"ProfileId": own, "ResourceId": r53p_new_association(aws_bin, endpoint_url, region, env, own)["vpc"]}
+    if op == "GetProfileAssociation":
+        return {"ProfileAssociationId": assoc["id"]}
+    if op == "UpdateProfileAssociation":
+        r53p_cli(aws_bin, endpoint_url, region, env, "get-profile-association", ["--profile-association-id", assoc["id"]])
+        return {"ProfileAssociationId": assoc["id"], "Name": "stackyard-updated"}
+    if op == "AssociateResourceToProfile":
+        return {"ProfileId": profile, "ResourceArn": f"arn:aws:route53:::hostedzone/Z{time.time_ns() % 10**12:012d}", "Name": "stackyard"}
+    if op == "GetProfileResourceAssociation":
+        return {"ProfileResourceAssociationId": resource["id"]}
+    if op == "UpdateProfileResourceAssociation":
+        r53p_cli(aws_bin, endpoint_url, region, env, "get-profile-resource-association", ["--profile-resource-association-id", resource["id"]])
+        return {"ProfileResourceAssociationId": resource["id"], "Name": "stackyard-updated"}
+    if op == "DisassociateResourceFromProfile":
+        return {"ProfileId": profile, "ResourceArn": r53p_new_resource(aws_bin, endpoint_url, region, env, profile)["arn"]}
+    if op == "ListProfileResourceAssociations":
+        return {"ProfileId": profile}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": profile_arn}
+    if op == "TagResource":
+        return {"ResourceArn": profile_arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": profile_arn, "TagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 def pipes_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -34499,6 +34597,8 @@ def hydrate_payload_with_service_state(
         return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "route53domains":
         return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "route53profiles":
+        return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":
