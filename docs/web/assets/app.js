@@ -1056,6 +1056,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/resilience-hub/docker-compose.yml"
   },
   {
+    id: "datasync",
+    name: "AWS DataSync",
+    category: "storage",
+    summary: "Emulate DataSync agents, every location type, tasks with filters and schedules, and executions that really copy S3-to-S3 objects.",
+    docsHref: "../../../index.html#datasync",
+    exampleHref: "../../../../examples/aws/datasync/docker-compose.yml"
+  },
+  {
     id: "efs",
     name: "Elastic File System",
     category: "storage",

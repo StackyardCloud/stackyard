@@ -11,21 +11,34 @@ import (
 	"github.com/stackyard/stackyard/internal/awsmodels"
 )
 
-// Glue requests are validated and responses shaped against the embedded
-// botocore model (internal/awsmodels/glue/model.json), so every one of the
-// ~300 operations checks required members, types, enums and min/max bounds,
-// and every response carries exactly the model's members with the right types.
+// Requests are validated and responses shaped against an embedded, trimmed
+// botocore model (internal/awsmodels/<svc>/model.json), so every operation
+// checks required members, types, enums and min/max bounds, and every
+// response carries exactly the model's members with the right types. Glue
+// and DataSync use it.
 
-func glueShape(name string) *awsmodels.Shape {
+func modelShape(m *awsmodels.ServiceModel, name string) *awsmodels.Shape {
 	if name == "" {
 		return nil
 	}
-	return awsmodels.GlueModel().Shapes[name]
+	return m.Shapes[name]
 }
 
-// glueValidate returns "" or a message describing the first invalid member.
+func glueShape(name string) *awsmodels.Shape { return modelShape(awsmodels.GlueModel(), name) }
+
+// glueValidate validates against the Glue model; see modelValidate.
 func glueValidate(shapeName string, value any, path string) string {
-	sh := glueShape(shapeName)
+	return modelValidate(awsmodels.GlueModel(), shapeName, value, path)
+}
+
+// glueConform shapes value to a Glue shape; see modelConform.
+func glueConform(shapeName string, value any) any {
+	return modelConform(awsmodels.GlueModel(), shapeName, value)
+}
+
+// modelValidate returns "" or a message describing the first invalid member.
+func modelValidate(m *awsmodels.ServiceModel, shapeName string, value any, path string) string {
+	sh := modelShape(m, shapeName)
 	if sh == nil || sh.Document {
 		return ""
 	}
@@ -35,30 +48,30 @@ func glueValidate(shapeName string, value any, path string) string {
 	}
 	switch sh.Type {
 	case "structure":
-		m, ok := value.(map[string]any)
+		obj, ok := value.(map[string]any)
 		if !ok {
 			if value == nil && path == "" {
-				m = map[string]any{}
+				obj = map[string]any{}
 			} else {
 				return label + " must be an object"
 			}
 		}
 		for _, req := range sh.Required {
-			if v, ok := m[req]; !ok || v == nil {
+			if v, ok := obj[req]; !ok || v == nil {
 				return fmt.Sprintf("%s is required", glueJoinPath(path, req))
 			}
 		}
-		names := make([]string, 0, len(m))
-		for k := range m {
+		names := make([]string, 0, len(obj))
+		for k := range obj {
 			names = append(names, k)
 		}
 		sort.Strings(names)
 		for _, k := range names {
 			member, known := sh.Members[k]
-			if !known || m[k] == nil {
+			if !known || obj[k] == nil {
 				continue // newer SDKs may send members this model predates
 			}
-			if msg := glueValidate(member, m[k], glueJoinPath(path, k)); msg != "" {
+			if msg := modelValidate(m, member, obj[k], glueJoinPath(path, k)); msg != "" {
 				return msg
 			}
 		}
@@ -71,7 +84,7 @@ func glueValidate(shapeName string, value any, path string) string {
 			return msg
 		}
 		for i, item := range l {
-			if msg := glueValidate(sh.Member, item, fmt.Sprintf("%s[%d]", label, i)); msg != "" {
+			if msg := modelValidate(m, sh.Member, item, fmt.Sprintf("%s[%d]", label, i)); msg != "" {
 				return msg
 			}
 		}
@@ -89,10 +102,10 @@ func glueValidate(shapeName string, value any, path string) string {
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			if msg := glueValidate(sh.Key, k, label+" key"); msg != "" {
+			if msg := modelValidate(m, sh.Key, k, label+" key"); msg != "" {
 				return msg
 			}
-			if msg := glueValidate(sh.Value, mm[k], label+"."+k); msg != "" {
+			if msg := modelValidate(m, sh.Value, mm[k], label+"."+k); msg != "" {
 				return msg
 			}
 		}
@@ -145,11 +158,11 @@ func glueBound(sh *awsmodels.Shape, n float64, label string) string {
 	return ""
 }
 
-// glueConform shapes value to the named shape: model members only, values
+// modelConform shapes value to the named shape: model members only, values
 // converted to the member's wire type, and required members filled with a
 // zero value when the source lacks them.
-func glueConform(shapeName string, value any) any {
-	sh := glueShape(shapeName)
+func modelConform(m *awsmodels.ServiceModel, shapeName string, value any) any {
+	sh := modelShape(m, shapeName)
 	if sh == nil || sh.Document {
 		return value
 	}
@@ -159,14 +172,14 @@ func glueConform(shapeName string, value any) any {
 		out := map[string]any{}
 		for name, member := range sh.Members {
 			if v, ok := src[name]; ok && v != nil {
-				if c := glueConform(member, v); c != nil {
+				if c := modelConform(m, member, v); c != nil {
 					out[name] = c
 				}
 			}
 		}
 		for _, req := range sh.Required {
 			if _, ok := out[req]; !ok {
-				out[req] = glueConform(sh.Members[req], nil)
+				out[req] = modelConform(m, sh.Members[req], nil)
 			}
 		}
 		return out
@@ -180,7 +193,7 @@ func glueConform(shapeName string, value any) any {
 		}
 		out := make([]any, 0, len(src))
 		for _, item := range src {
-			if c := glueConform(sh.Member, item); c != nil {
+			if c := modelConform(m, sh.Member, item); c != nil {
 				out = append(out, c)
 			}
 		}
@@ -195,7 +208,7 @@ func glueConform(shapeName string, value any) any {
 		}
 		out := make(map[string]any, len(src))
 		for k, v := range src {
-			if c := glueConform(sh.Value, v); c != nil {
+			if c := modelConform(m, sh.Value, v); c != nil {
 				out[k] = c
 			}
 		}
