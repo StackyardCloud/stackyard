@@ -280,6 +280,7 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#route53domains">Route 53 Domains</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
@@ -24169,6 +24170,66 @@
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="route53domains" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Domains</h2>
+        <p>SigV4 signed with service <code>route53domains</code>. JSON 1.1 API with <code>X-Amz-Target: Route53Domains_v20140515.*</code>. Registration creates a Route 53 hosted zone and uses its name servers; operations report SUBMITTED, IN_PROGRESS, then SUCCESSFUL as they are read. Prices come from a fixed TLD list; transfers to another account need the returned password; DNSSEC keys get RFC 4034 key tags and SHA-256 DS digests.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53domains</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Route 53 Domains API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptDomainTransferFromAnotherAwsAccount</code></td></tr>
+        <tr><td><code>AssociateDelegationSignerToDomain</code></td></tr>
+        <tr><td><code>CancelDomainTransferToAnotherAwsAccount</code></td></tr>
+        <tr><td><code>CheckDomainAvailability</code></td></tr>
+        <tr><td><code>CheckDomainTransferability</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteTagsForDomain</code></td></tr>
+        <tr><td><code>DisableDomainAutoRenew</code></td></tr>
+        <tr><td><code>DisableDomainTransferLock</code></td></tr>
+        <tr><td><code>DisassociateDelegationSignerFromDomain</code></td></tr>
+        <tr><td><code>EnableDomainAutoRenew</code></td></tr>
+        <tr><td><code>EnableDomainTransferLock</code></td></tr>
+        <tr><td><code>GetContactReachabilityStatus</code></td></tr>
+        <tr><td><code>GetDomainDetail</code></td></tr>
+        <tr><td><code>GetDomainPrices</code></td></tr>
+        <tr><td><code>GetDomainSuggestions</code></td></tr>
+        <tr><td><code>GetOperationDetail</code></td></tr>
+        <tr><td><code>ListDomains</code></td></tr>
+        <tr><td><code>ListOperations</code></td></tr>
+        <tr><td><code>ListPrices</code></td></tr>
+        <tr><td><code>ListTagsForDomain</code></td></tr>
+        <tr><td><code>PushDomain</code></td></tr>
+        <tr><td><code>RegisterDomain</code></td></tr>
+        <tr><td><code>RejectDomainTransferFromAnotherAwsAccount</code></td></tr>
+        <tr><td><code>RenewDomain</code></td></tr>
+        <tr><td><code>ResendContactReachabilityEmail</code></td></tr>
+        <tr><td><code>ResendOperationAuthorization</code></td></tr>
+        <tr><td><code>RestoreDomain</code></td></tr>
+        <tr><td><code>RetrieveDomainAuthCode</code></td></tr>
+        <tr><td><code>TransferDomain</code></td></tr>
+        <tr><td><code>TransferDomainToAnotherAwsAccount</code></td></tr>
+        <tr><td><code>UpdateDomainContact</code></td></tr>
+        <tr><td><code>UpdateDomainContactPrivacy</code></td></tr>
+        <tr><td><code>UpdateDomainNameservers</code></td></tr>
+        <tr><td><code>UpdateTagsForDomain</code></td></tr>
+        <tr><td><code>ViewBilling</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 

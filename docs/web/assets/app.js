@@ -176,6 +176,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/cloud-map/docker-compose.yml"
   },
   {
+    id: "route53domains",
+    name: "Route 53 Domains",
+    category: "integration",
+    summary: "Emulate domain registration, renewal, transfers, contacts and privacy, name servers, DNSSEC keys, operations tracking, billing and tags.",
+    docsHref: "../../../index.html#route53domains",
+    exampleHref: "../../../../examples/aws/route53domains/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",
