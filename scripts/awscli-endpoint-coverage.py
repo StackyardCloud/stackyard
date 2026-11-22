@@ -552,6 +552,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
+    "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
@@ -2185,6 +2186,9 @@ SERVICE_ALIASES = {
     "applicationautoscaling": "applicationautoscaling",
     "application-autoscaling": "applicationautoscaling",
     "awsapplicationautoscaling": "applicationautoscaling",
+    "ec2instanceconnect": "ec2instanceconnect",
+    "ec2-instance-connect": "ec2instanceconnect",
+    "awsec2instanceconnect": "ec2instanceconnect",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
@@ -3073,6 +3077,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "applicationautoscaling": {},
+    "ec2instanceconnect": {},
     "efs": {},
     "scheduler": {},
     "pipes": {},
@@ -31751,6 +31756,38 @@ def aas_ensure_ecs_target(aws_bin: str, endpoint_url: str, region: str, env: dic
     })
 
 
+# A well-formed ssh-ed25519 public key (the key body names its own type).
+EC2INSTANCECONNECT_PUBLIC_KEY = (
+    "ssh-ed25519 "
+    + base64.b64encode(
+        len(b"ssh-ed25519").to_bytes(4, "big") + b"ssh-ed25519" + (32).to_bytes(4, "big") + bytes(range(32))
+    ).decode("ascii")
+    + " coverage@stackyard"
+)
+
+
+def ec2instanceconnect_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Push keys to a running instance of the coverage server's EC2 store. The
+    serial console variant also needs account-level serial console access."""
+    state = RUNTIME_STATE.setdefault("ec2instanceconnect", {})
+    if not state.get("instance_id"):
+        data = run_aws_json(
+            aws_bin, endpoint_url, region, "ec2", "run-instances", env, ["--image-id", "ami-12345678", "--count", "1"]
+        )
+        instances = data.get("Instances") if isinstance(data, dict) else None
+        if isinstance(instances, list) and instances and isinstance(instances[0], dict):
+            state["instance_id"] = str(instances[0].get("InstanceId") or "")
+    instance_id = str(state.get("instance_id") or "i-0123456789abcdef0")
+    if endpoint.operation == "SendSerialConsoleSSHPublicKey":
+        if not state.get("serial_enabled"):
+            run_aws_json(aws_bin, endpoint_url, region, "ec2", "enable-serial-console-access", env)
+            state["serial_enabled"] = True
+        return {"InstanceId": instance_id, "SSHPublicKey": EC2INSTANCECONNECT_PUBLIC_KEY, "SerialPort": 0}
+    return {"InstanceId": instance_id, "InstanceOSUser": "ec2-user", "SSHPublicKey": EC2INSTANCECONNECT_PUBLIC_KEY}
+
+
 def applicationautoscaling_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -33159,6 +33196,8 @@ def hydrate_payload_with_service_state(
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationautoscaling":
         return applicationautoscaling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "ec2instanceconnect":
+        return ec2instanceconnect_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":
