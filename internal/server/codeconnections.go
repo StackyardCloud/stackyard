@@ -15,19 +15,19 @@ import (
 // API renders ARNs with its own service prefix and accepts either prefix.
 
 const (
-	ccMaxBody      = 256 << 10
-	ccStackyardAPI = "/_stackyard/codeconnections/"
+	cxnMaxBody      = 256 << 10
+	cxnStackyardAPI = "/_stackyard/codeconnections/"
 )
 
-// ccAPI is one of the two names the service is reachable under.
-type ccAPI struct {
+// cxnAPI is one of the two names the service is reachable under.
+type cxnAPI struct {
 	service  string   // ARN service prefix and SigV4 signing name
 	targets  []string // X-Amz-Target prefixes, including the trailing dot
 	model    func() *awsmodels.Model
 	knownOps map[string]bool
 }
 
-var codeConnectionsAPI = &ccAPI{
+var codeConnectionsAPI = &cxnAPI{
 	service: "codeconnections",
 	targets: []string{"com.amazonaws.codeconnections.CodeConnections_20231201.", "CodeConnections_20231201."},
 	model:   awsmodels.CodeConnectionsModel,
@@ -40,7 +40,7 @@ var codeConnectionsAPI = &ccAPI{
 	}(),
 }
 
-func (api *ccAPI) action(r *http.Request) (string, bool) {
+func (api *cxnAPI) action(r *http.Request) (string, bool) {
 	target := strings.TrimSpace(r.Header.Get("X-Amz-Target"))
 	for _, prefix := range api.targets {
 		if op, ok := strings.CutPrefix(target, prefix); ok {
@@ -51,13 +51,13 @@ func (api *ccAPI) action(r *http.Request) (string, bool) {
 }
 
 func (s *Server) handleCodeConnectionsJSONRouter(w http.ResponseWriter, r *http.Request) bool {
-	if r.Method == http.MethodPost && strings.HasPrefix(rawRequestPath(r), ccStackyardAPI) {
+	if r.Method == http.MethodPost && strings.HasPrefix(rawRequestPath(r), cxnStackyardAPI) {
 		return s.handleCodeConnectionsStackyard(w, r)
 	}
 	if r.Method != http.MethodPost {
 		return false
 	}
-	for _, api := range []*ccAPI{codeConnectionsAPI, codeStarConnectionsAPI} {
+	for _, api := range []*cxnAPI{codeConnectionsAPI, codeStarConnectionsAPI} {
 		if op, ok := api.action(r); ok {
 			s.serveCodeConnections(w, r, api, op)
 			return true
@@ -66,9 +66,9 @@ func (s *Server) handleCodeConnectionsJSONRouter(w http.ResponseWriter, r *http.
 	return false
 }
 
-func (s *Server) serveCodeConnections(w http.ResponseWriter, r *http.Request, api *ccAPI, op string) {
+func (s *Server) serveCodeConnections(w http.ResponseWriter, r *http.Request, api *cxnAPI, op string) {
 	// A declared length bounds what net/http reads; refuse chunked bodies.
-	if r.ContentLength < 0 || r.ContentLength > ccMaxBody {
+	if r.ContentLength < 0 || r.ContentLength > cxnMaxBody {
 		respondCodeConnectionsError(w, http.StatusBadRequest, "ValidationException", "request body must declare a Content-Length of at most 256 KiB")
 		return
 	}
@@ -134,7 +134,7 @@ func respondCodeConnectionsError(w http.ResponseWriter, status int, code, msg st
 //	POST /_stackyard/codeconnections/sync-configurations/{SyncType}/{ResourceName}/blockers
 //	                                                             a sync failed -> new ACTIVE blocker
 func (s *Server) handleCodeConnectionsStackyard(w http.ResponseWriter, r *http.Request) bool {
-	if r.ContentLength < 0 || r.ContentLength > ccMaxBody {
+	if r.ContentLength < 0 || r.ContentLength > cxnMaxBody {
 		respondCodeConnectionsError(w, http.StatusBadRequest, "ValidationException", "request body must declare a Content-Length of at most 256 KiB")
 		return true
 	}
@@ -146,7 +146,7 @@ func (s *Server) handleCodeConnectionsStackyard(w http.ResponseWriter, r *http.R
 		respondCodeConnectionsError(w, status, code, msg)
 		return true
 	}
-	parts := strings.Split(strings.TrimPrefix(rawRequestPath(r), ccStackyardAPI), "/")
+	parts := strings.Split(strings.TrimPrefix(rawRequestPath(r), cxnStackyardAPI), "/")
 	for i, p := range parts {
 		unescaped, err := url.PathUnescape(p)
 		if err != nil {
@@ -156,7 +156,7 @@ func (s *Server) handleCodeConnectionsStackyard(w http.ResponseWriter, r *http.R
 		parts[i] = unescaped
 	}
 	var out map[string]any
-	var cerr *ccError
+	var cerr *cxnError
 	switch {
 	case len(parts) == 3 && parts[0] == "connections" && parts[2] == "activate":
 		out, cerr = s.codeConnections.activateConnection(api, parts[1])

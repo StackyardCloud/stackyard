@@ -17,120 +17,120 @@ import (
 )
 
 const (
-	ccAccountID = "123456789012"
-	ccRegion    = "us-east-1"
+	cxnAccountID = "123456789012"
+	cxnRegion    = "us-east-1"
 	// ponytail: per-kind caps well above AWS quotas (250 connections, 50
 	// hosts) so repeated coverage runs against one server don't hit them.
-	ccMaxResources      = 1000
-	ccMaxTags           = 200
-	ccMaxBlockersPerCfg = 20
-	ccDefaultPageSize   = 100
+	cxnMaxResources      = 1000
+	cxnMaxTags           = 200
+	cxnMaxBlockersPerCfg = 20
+	cxnDefaultPageSize   = 100
 )
 
-type ccError struct {
+type cxnError struct {
 	status    int
 	code, msg string
 }
 
-func ccErr(status int, code, format string, args ...any) *ccError {
-	return &ccError{status: status, code: code, msg: fmt.Sprintf(format, args...)}
+func cxnErr(status int, code, format string, args ...any) *cxnError {
+	return &cxnError{status: status, code: code, msg: fmt.Sprintf(format, args...)}
 }
 
-func ccNotFound(format string, args ...any) *ccError {
-	return ccErr(http.StatusBadRequest, "ResourceNotFoundException", format, args...)
+func cxnNotFound(format string, args ...any) *cxnError {
+	return cxnErr(http.StatusBadRequest, "ResourceNotFoundException", format, args...)
 }
 
-func ccInvalid(format string, args ...any) *ccError {
-	return ccErr(http.StatusBadRequest, "InvalidInputException", format, args...)
+func cxnInvalid(format string, args ...any) *cxnError {
+	return cxnErr(http.StatusBadRequest, "InvalidInputException", format, args...)
 }
 
-func ccValidation(format string, args ...any) *ccError {
-	return ccErr(http.StatusBadRequest, "ValidationException", format, args...)
+func cxnValidation(format string, args ...any) *cxnError {
+	return cxnErr(http.StatusBadRequest, "ValidationException", format, args...)
 }
 
-type ccTag struct{ Key, Value string }
+type cxnTag struct{ Key, Value string }
 
-type ccConnection struct {
+type cxnConnection struct {
 	id, name, providerType, hostID, status string
 	seq                                    int
 }
 
-type ccHost struct {
+type cxnHost struct {
 	id, name, providerType, endpoint, status string
 	vpc                                      map[string]any
 	seq                                      int
 }
 
-type ccLink struct {
+type cxnLink struct {
 	id, connectionID, ownerID, repo, providerType, kmsKey string
 	seq                                                   int
 }
 
-type ccBlocker struct {
+type cxnBlocker struct {
 	id, reason, resolvedReason string
 	created, resolved          time.Time
 }
 
-type ccSync struct {
+type cxnSync struct {
 	syncType, resourceName, linkID, branch, configFile, roleARN string
 	publish, trigger, prComment                                 string
 	updated                                                     time.Time
-	blockers                                                    []*ccBlocker
+	blockers                                                    []*cxnBlocker
 	seq                                                         int
 }
 
 type codeConnectionsStore struct {
 	mu          sync.Mutex
 	seq         int
-	connections map[string]*ccConnection
-	hosts       map[string]*ccHost
-	links       map[string]*ccLink
-	syncs       map[string]*ccSync // syncType + "/" + resourceName
-	tags        map[string][]ccTag // kind + "/" + id
+	connections map[string]*cxnConnection
+	hosts       map[string]*cxnHost
+	links       map[string]*cxnLink
+	syncs       map[string]*cxnSync // syncType + "/" + resourceName
+	tags        map[string][]cxnTag // kind + "/" + id
 }
 
 func newCodeConnectionsStore() *codeConnectionsStore {
 	return &codeConnectionsStore{
-		connections: map[string]*ccConnection{},
-		hosts:       map[string]*ccHost{},
-		links:       map[string]*ccLink{},
-		syncs:       map[string]*ccSync{},
-		tags:        map[string][]ccTag{},
+		connections: map[string]*cxnConnection{},
+		hosts:       map[string]*cxnHost{},
+		links:       map[string]*cxnLink{},
+		syncs:       map[string]*cxnSync{},
+		tags:        map[string][]cxnTag{},
 	}
 }
 
 func (st *codeConnectionsStore) nextSeq() int { st.seq++; return st.seq }
 
-func (api *ccAPI) arn(kind, id string) string {
-	return "arn:aws:" + api.service + ":" + ccRegion + ":" + ccAccountID + ":" + kind + "/" + id
+func (api *cxnAPI) arn(kind, id string) string {
+	return "arn:aws:" + api.service + ":" + cxnRegion + ":" + cxnAccountID + ":" + kind + "/" + id
 }
 
-// ccParseARN accepts either service prefix and returns kind and id.
-func ccParseARN(arn string) (kind, id string, ok bool) {
+// cxnParseARN accepts either service prefix and returns kind and id.
+func cxnParseARN(arn string) (kind, id string, ok bool) {
 	parts := strings.SplitN(arn, ":", 6)
-	if len(parts) != 6 || parts[0] != "arn" || (parts[2] != "codeconnections" && parts[2] != "codestar-connections") || parts[4] != ccAccountID {
+	if len(parts) != 6 || parts[0] != "arn" || (parts[2] != "codeconnections" && parts[2] != "codestar-connections") || parts[4] != cxnAccountID {
 		return "", "", false
 	}
 	kind, id, ok = strings.Cut(parts[5], "/")
 	return kind, id, ok && id != "" && !strings.Contains(id, "/")
 }
 
-func ccStr(in map[string]any, key string) string {
+func cxnStr(in map[string]any, key string) string {
 	s, _ := in[key].(string)
 	return s
 }
 
-func ccTagsIn(v any) []ccTag {
+func cxnTagsIn(v any) []cxnTag {
 	items, _ := v.([]any)
-	out := make([]ccTag, 0, len(items))
+	out := make([]cxnTag, 0, len(items))
 	for _, item := range items {
 		m, _ := item.(map[string]any)
-		out = append(out, ccTag{ccStr(m, "Key"), ccStr(m, "Value")})
+		out = append(out, cxnTag{cxnStr(m, "Key"), cxnStr(m, "Value")})
 	}
 	return out
 }
 
-func ccTagsOut(tags []ccTag) []any {
+func cxnTagsOut(tags []cxnTag) []any {
 	out := make([]any, 0, len(tags))
 	for _, t := range tags {
 		out = append(out, map[string]any{"Key": t.Key, "Value": t.Value})
@@ -140,11 +140,11 @@ func ccTagsOut(tags []ccTag) []any {
 
 // mergeTagsLocked applies tags to a resource, replacing values of existing
 // keys, within the per-resource cap.
-func (st *codeConnectionsStore) mergeTagsLocked(key string, add []ccTag) *ccError {
-	merged := append([]ccTag(nil), st.tags[key]...)
+func (st *codeConnectionsStore) mergeTagsLocked(key string, add []cxnTag) *cxnError {
+	merged := append([]cxnTag(nil), st.tags[key]...)
 	for _, t := range add {
 		if strings.HasPrefix(strings.ToLower(t.Key), "aws:") {
-			return ccValidation("tag keys may not start with aws:")
+			return cxnValidation("tag keys may not start with aws:")
 		}
 		replaced := false
 		for i := range merged {
@@ -156,24 +156,24 @@ func (st *codeConnectionsStore) mergeTagsLocked(key string, add []ccTag) *ccErro
 			merged = append(merged, t)
 		}
 	}
-	if len(merged) > ccMaxTags {
-		return ccErr(http.StatusBadRequest, "LimitExceededException", "a resource can have at most %d tags", ccMaxTags)
+	if len(merged) > cxnMaxTags {
+		return cxnErr(http.StatusBadRequest, "LimitExceededException", "a resource can have at most %d tags", cxnMaxTags)
 	}
 	st.tags[key] = merged
 	return nil
 }
 
-// ccPage slices sorted items for MaxResults/NextToken (an offset).
-func ccPage[T any](items []T, in map[string]any) ([]T, string, *ccError) {
-	size := ccDefaultPageSize
+// cxnPage slices sorted items for MaxResults/NextToken (an offset).
+func cxnPage[T any](items []T, in map[string]any) ([]T, string, *cxnError) {
+	size := cxnDefaultPageSize
 	if n, ok := in["MaxResults"].(float64); ok && n > 0 {
 		size = int(n) // the model bounds MaxResults to 0..100
 	}
 	start := 0
-	if tok := ccStr(in, "NextToken"); tok != "" {
+	if tok := cxnStr(in, "NextToken"); tok != "" {
 		n, err := strconv.Atoi(tok)
 		if err != nil || n < 0 || n > len(items) {
-			return nil, "", ccInvalid("invalid NextToken")
+			return nil, "", cxnInvalid("invalid NextToken")
 		}
 		start = n
 	}
@@ -185,19 +185,19 @@ func ccPage[T any](items []T, in map[string]any) ([]T, string, *ccError) {
 	return items[start:end], next, nil
 }
 
-func ccRandHex(n int) string {
+func cxnRandHex(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
 }
 
-func ccEpoch(t time.Time) float64 { return float64(t.UnixMilli()) / 1000 }
+func cxnEpoch(t time.Time) float64 { return float64(t.UnixMilli()) / 1000 }
 
-var ccSelfManaged = map[string]bool{"GitHubEnterpriseServer": true, "GitLabSelfManaged": true}
+var cxnSelfManaged = map[string]bool{"GitHubEnterpriseServer": true, "GitLabSelfManaged": true}
 
 // handle runs op and shapes its result to the API's output shape while still
 // holding the lock, so the response never aliases stored state.
-func (st *codeConnectionsStore) handle(api *ccAPI, op string, in map[string]any) (any, *ccError) {
+func (st *codeConnectionsStore) handle(api *cxnAPI, op string, in map[string]any) (any, *cxnError) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	out, err := st.dispatchLocked(api, op, in)
@@ -210,12 +210,12 @@ func (st *codeConnectionsStore) handle(api *ccAPI, op string, in map[string]any)
 	return api.model().Conform(api.model().Operations[op].Output, out), nil
 }
 
-func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[string]any) (map[string]any, *ccError) {
+func (st *codeConnectionsStore) dispatchLocked(api *cxnAPI, op string, in map[string]any) (map[string]any, *cxnError) {
 	switch op {
 	case "CreateConnection":
 		return st.createConnection(api, in)
 	case "GetConnection", "DeleteConnection":
-		c, err := st.connectionByARN(ccStr(in, "ConnectionArn"))
+		c, err := st.connectionByARN(cxnStr(in, "ConnectionArn"))
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +230,7 @@ func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[str
 	case "CreateHost":
 		return st.createHost(api, in)
 	case "GetHost":
-		h, err := st.hostByARN(ccStr(in, "HostArn"))
+		h, err := st.hostByARN(cxnStr(in, "HostArn"))
 		if err != nil {
 			return nil, err
 		}
@@ -239,24 +239,24 @@ func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[str
 		delete(out, "StatusMessage")
 		return out, nil
 	case "DeleteHost":
-		h, err := st.hostByARN(ccStr(in, "HostArn"))
+		h, err := st.hostByARN(cxnStr(in, "HostArn"))
 		if err != nil {
 			return nil, err
 		}
 		for _, c := range st.connections {
 			if c.hostID == h.id {
-				return nil, ccErr(http.StatusBadRequest, "ResourceUnavailableException", "host %s still has connections; delete them first", h.id)
+				return nil, cxnErr(http.StatusBadRequest, "ResourceUnavailableException", "host %s still has connections; delete them first", h.id)
 			}
 		}
 		delete(st.hosts, h.id)
 		delete(st.tags, "host/"+h.id)
 		return map[string]any{}, nil
 	case "UpdateHost":
-		h, err := st.hostByARN(ccStr(in, "HostArn"))
+		h, err := st.hostByARN(cxnStr(in, "HostArn"))
 		if err != nil {
 			return nil, err
 		}
-		if v := ccStr(in, "ProviderEndpoint"); v != "" {
+		if v := cxnStr(in, "ProviderEndpoint"); v != "" {
 			h.endpoint = v
 		}
 		if vpc, ok := in["VpcConfiguration"].(map[string]any); ok {
@@ -264,12 +264,12 @@ func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[str
 		}
 		return map[string]any{}, nil
 	case "ListHosts":
-		hosts := make([]*ccHost, 0, len(st.hosts))
+		hosts := make([]*cxnHost, 0, len(st.hosts))
 		for _, h := range st.hosts {
 			hosts = append(hosts, h)
 		}
 		sort.Slice(hosts, func(i, j int) bool { return hosts[i].seq < hosts[j].seq })
-		page, next, err := ccPage(hosts, in)
+		page, next, err := cxnPage(hosts, in)
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +284,7 @@ func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[str
 		return st.repositoryLinkOp(api, op, in)
 	case "ListRepositoryLinks":
 		links := st.sortedLinks()
-		page, next, err := ccPage(links, in)
+		page, next, err := cxnPage(links, in)
 		if err != nil {
 			return nil, err
 		}
@@ -308,14 +308,14 @@ func (st *codeConnectionsStore) dispatchLocked(api *ccAPI, op string, in map[str
 	case "TagResource", "UntagResource", "ListTagsForResource":
 		return st.tagOp(op, in)
 	}
-	return nil, ccErr(http.StatusBadRequest, "UnknownOperationException", "unknown operation %s", op)
+	return nil, cxnErr(http.StatusBadRequest, "UnknownOperationException", "unknown operation %s", op)
 }
 
 // --- connections and hosts ---
 
-func (st *codeConnectionsStore) createConnection(api *ccAPI, in map[string]any) (map[string]any, *ccError) {
-	provider, hostARN := ccStr(in, "ProviderType"), ccStr(in, "HostArn")
-	c := &ccConnection{id: uuid.NewString(), name: ccStr(in, "ConnectionName"), providerType: provider, status: "PENDING"}
+func (st *codeConnectionsStore) createConnection(api *cxnAPI, in map[string]any) (map[string]any, *cxnError) {
+	provider, hostARN := cxnStr(in, "ProviderType"), cxnStr(in, "HostArn")
+	c := &cxnConnection{id: uuid.NewString(), name: cxnStr(in, "ConnectionName"), providerType: provider, status: "PENDING"}
 	switch {
 	case hostARN != "":
 		h, err := st.hostByARN(hostARN)
@@ -323,42 +323,42 @@ func (st *codeConnectionsStore) createConnection(api *ccAPI, in map[string]any) 
 			return nil, err
 		}
 		if h.status != "AVAILABLE" {
-			return nil, ccErr(http.StatusBadRequest, "ResourceUnavailableException", "host %s is %s, not AVAILABLE", h.id, h.status)
+			return nil, cxnErr(http.StatusBadRequest, "ResourceUnavailableException", "host %s is %s, not AVAILABLE", h.id, h.status)
 		}
 		if provider != "" && provider != h.providerType {
-			return nil, ccValidation("ProviderType %s does not match the host's %s", provider, h.providerType)
+			return nil, cxnValidation("ProviderType %s does not match the host's %s", provider, h.providerType)
 		}
 		c.hostID, c.providerType = h.id, h.providerType
 	case provider == "":
-		return nil, ccValidation("one of ProviderType or HostArn is required")
-	case ccSelfManaged[provider]:
-		return nil, ccValidation("a %s connection needs a HostArn", provider)
+		return nil, cxnValidation("one of ProviderType or HostArn is required")
+	case cxnSelfManaged[provider]:
+		return nil, cxnValidation("a %s connection needs a HostArn", provider)
 	}
-	if len(st.connections) >= ccMaxResources {
-		return nil, ccErr(http.StatusBadRequest, "LimitExceededException", "connection limit of %d reached", ccMaxResources)
+	if len(st.connections) >= cxnMaxResources {
+		return nil, cxnErr(http.StatusBadRequest, "LimitExceededException", "connection limit of %d reached", cxnMaxResources)
 	}
-	tags := ccTagsIn(in["Tags"])
+	tags := cxnTagsIn(in["Tags"])
 	if err := st.mergeTagsLocked("connection/"+c.id, tags); err != nil {
 		return nil, err
 	}
 	c.seq = st.nextSeq()
 	st.connections[c.id] = c
-	return map[string]any{"ConnectionArn": api.arn("connection", c.id), "Tags": ccTagsOut(st.tags["connection/"+c.id])}, nil
+	return map[string]any{"ConnectionArn": api.arn("connection", c.id), "Tags": cxnTagsOut(st.tags["connection/"+c.id])}, nil
 }
 
-func (st *codeConnectionsStore) connectionByARN(arn string) (*ccConnection, *ccError) {
-	kind, id, ok := ccParseARN(arn)
+func (st *codeConnectionsStore) connectionByARN(arn string) (*cxnConnection, *cxnError) {
+	kind, id, ok := cxnParseARN(arn)
 	c := st.connections[id]
 	if !ok || kind != "connection" || c == nil {
-		return nil, ccNotFound("connection %s not found", arn)
+		return nil, cxnNotFound("connection %s not found", arn)
 	}
 	return c, nil
 }
 
-func (st *codeConnectionsStore) connectionOut(api *ccAPI, c *ccConnection) map[string]any {
+func (st *codeConnectionsStore) connectionOut(api *cxnAPI, c *cxnConnection) map[string]any {
 	out := map[string]any{
 		"ConnectionName": c.name, "ConnectionArn": api.arn("connection", c.id), "ProviderType": c.providerType,
-		"OwnerAccountId": ccAccountID, "ConnectionStatus": c.status,
+		"OwnerAccountId": cxnAccountID, "ConnectionStatus": c.status,
 	}
 	if c.hostID != "" {
 		out["HostArn"] = api.arn("host", c.hostID)
@@ -366,24 +366,24 @@ func (st *codeConnectionsStore) connectionOut(api *ccAPI, c *ccConnection) map[s
 	return out
 }
 
-func (st *codeConnectionsStore) listConnections(api *ccAPI, in map[string]any) (map[string]any, *ccError) {
+func (st *codeConnectionsStore) listConnections(api *cxnAPI, in map[string]any) (map[string]any, *cxnError) {
 	hostFilter := ""
-	if arn := ccStr(in, "HostArnFilter"); arn != "" {
+	if arn := cxnStr(in, "HostArnFilter"); arn != "" {
 		h, err := st.hostByARN(arn)
 		if err != nil {
 			return nil, err
 		}
 		hostFilter = h.id
 	}
-	provider := ccStr(in, "ProviderTypeFilter")
-	conns := make([]*ccConnection, 0, len(st.connections))
+	provider := cxnStr(in, "ProviderTypeFilter")
+	conns := make([]*cxnConnection, 0, len(st.connections))
 	for _, c := range st.connections {
 		if (provider == "" || c.providerType == provider) && (hostFilter == "" || c.hostID == hostFilter) {
 			conns = append(conns, c)
 		}
 	}
 	sort.Slice(conns, func(i, j int) bool { return conns[i].seq < conns[j].seq })
-	page, next, err := ccPage(conns, in)
+	page, next, err := cxnPage(conns, in)
 	if err != nil {
 		return nil, err
 	}
@@ -394,28 +394,28 @@ func (st *codeConnectionsStore) listConnections(api *ccAPI, in map[string]any) (
 	return map[string]any{"Connections": out, "NextToken": next}, nil
 }
 
-func (st *codeConnectionsStore) createHost(api *ccAPI, in map[string]any) (map[string]any, *ccError) {
-	provider := ccStr(in, "ProviderType")
-	if !ccSelfManaged[provider] {
-		return nil, ccValidation("hosts are only for GitHubEnterpriseServer or GitLabSelfManaged, not %s", provider)
+func (st *codeConnectionsStore) createHost(api *cxnAPI, in map[string]any) (map[string]any, *cxnError) {
+	provider := cxnStr(in, "ProviderType")
+	if !cxnSelfManaged[provider] {
+		return nil, cxnValidation("hosts are only for GitHubEnterpriseServer or GitLabSelfManaged, not %s", provider)
 	}
-	if len(st.hosts) >= ccMaxResources {
-		return nil, ccErr(http.StatusBadRequest, "LimitExceededException", "host limit of %d reached", ccMaxResources)
+	if len(st.hosts) >= cxnMaxResources {
+		return nil, cxnErr(http.StatusBadRequest, "LimitExceededException", "host limit of %d reached", cxnMaxResources)
 	}
-	h := &ccHost{id: ccHostIDPrefix(ccStr(in, "Name")) + "-" + ccRandHex(4), name: ccStr(in, "Name"), providerType: provider, endpoint: ccStr(in, "ProviderEndpoint"), status: "PENDING"}
+	h := &cxnHost{id: cxnHostIDPrefix(cxnStr(in, "Name")) + "-" + cxnRandHex(4), name: cxnStr(in, "Name"), providerType: provider, endpoint: cxnStr(in, "ProviderEndpoint"), status: "PENDING"}
 	if vpc, ok := in["VpcConfiguration"].(map[string]any); ok {
 		h.vpc = vpc
 	}
-	if err := st.mergeTagsLocked("host/"+h.id, ccTagsIn(in["Tags"])); err != nil {
+	if err := st.mergeTagsLocked("host/"+h.id, cxnTagsIn(in["Tags"])); err != nil {
 		return nil, err
 	}
 	h.seq = st.nextSeq()
 	st.hosts[h.id] = h
-	return map[string]any{"HostArn": api.arn("host", h.id), "Tags": ccTagsOut(st.tags["host/"+h.id])}, nil
+	return map[string]any{"HostArn": api.arn("host", h.id), "Tags": cxnTagsOut(st.tags["host/"+h.id])}, nil
 }
 
-// ccHostIDPrefix keeps a host ID ARN-safe: the name may hold any character.
-func ccHostIDPrefix(name string) string {
+// cxnHostIDPrefix keeps a host ID ARN-safe: the name may hold any character.
+func cxnHostIDPrefix(name string) string {
 	return strings.Map(func(r rune) rune {
 		if r == '-' || r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
 			return r
@@ -424,16 +424,16 @@ func ccHostIDPrefix(name string) string {
 	}, name)
 }
 
-func (st *codeConnectionsStore) hostByARN(arn string) (*ccHost, *ccError) {
-	kind, id, ok := ccParseARN(arn)
+func (st *codeConnectionsStore) hostByARN(arn string) (*cxnHost, *cxnError) {
+	kind, id, ok := cxnParseARN(arn)
 	h := st.hosts[id]
 	if !ok || kind != "host" || h == nil {
-		return nil, ccNotFound("host %s not found", arn)
+		return nil, cxnNotFound("host %s not found", arn)
 	}
 	return h, nil
 }
 
-func (st *codeConnectionsStore) hostOut(api *ccAPI, h *ccHost) map[string]any {
+func (st *codeConnectionsStore) hostOut(api *cxnAPI, h *cxnHost) map[string]any {
 	out := map[string]any{
 		"Name": h.name, "HostArn": api.arn("host", h.id), "ProviderType": h.providerType,
 		"ProviderEndpoint": h.endpoint, "Status": h.status,
@@ -444,29 +444,29 @@ func (st *codeConnectionsStore) hostOut(api *ccAPI, h *ccHost) map[string]any {
 	return out
 }
 
-func (st *codeConnectionsStore) activateConnection(api *ccAPI, id string) (map[string]any, *ccError) {
+func (st *codeConnectionsStore) activateConnection(api *cxnAPI, id string) (map[string]any, *cxnError) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	if _, arnID, ok := ccParseARN(id); ok {
+	if _, arnID, ok := cxnParseARN(id); ok {
 		id = arnID
 	}
 	c := st.connections[id]
 	if c == nil {
-		return nil, ccNotFound("connection %s not found", id)
+		return nil, cxnNotFound("connection %s not found", id)
 	}
 	c.status = "AVAILABLE"
 	return st.connectionOut(api, c), nil
 }
 
-func (st *codeConnectionsStore) activateHost(api *ccAPI, id string) (map[string]any, *ccError) {
+func (st *codeConnectionsStore) activateHost(api *cxnAPI, id string) (map[string]any, *cxnError) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
-	if _, arnID, ok := ccParseARN(id); ok {
+	if _, arnID, ok := cxnParseARN(id); ok {
 		id = arnID
 	}
 	h := st.hosts[id]
 	if h == nil {
-		return nil, ccNotFound("host %s not found", id)
+		return nil, cxnNotFound("host %s not found", id)
 	}
 	h.status = "AVAILABLE"
 	out := st.hostOut(api, h)
@@ -476,34 +476,34 @@ func (st *codeConnectionsStore) activateHost(api *ccAPI, id string) (map[string]
 
 // --- repository links ---
 
-func (st *codeConnectionsStore) availableConnection(arn string) (*ccConnection, *ccError) {
-	kind, id, ok := ccParseARN(arn)
+func (st *codeConnectionsStore) availableConnection(arn string) (*cxnConnection, *cxnError) {
+	kind, id, ok := cxnParseARN(arn)
 	c := st.connections[id]
 	if !ok || kind != "connection" || c == nil {
-		return nil, ccInvalid("connection %s not found", arn)
+		return nil, cxnInvalid("connection %s not found", arn)
 	}
 	if c.status != "AVAILABLE" {
-		return nil, ccInvalid("connection %s is %s, not AVAILABLE", arn, c.status)
+		return nil, cxnInvalid("connection %s is %s, not AVAILABLE", arn, c.status)
 	}
 	return c, nil
 }
 
-func (st *codeConnectionsStore) createRepositoryLink(api *ccAPI, in map[string]any) (map[string]any, *ccError) {
-	c, err := st.availableConnection(ccStr(in, "ConnectionArn"))
+func (st *codeConnectionsStore) createRepositoryLink(api *cxnAPI, in map[string]any) (map[string]any, *cxnError) {
+	c, err := st.availableConnection(cxnStr(in, "ConnectionArn"))
 	if err != nil {
 		return nil, err
 	}
-	owner, repo := ccStr(in, "OwnerId"), ccStr(in, "RepositoryName")
+	owner, repo := cxnStr(in, "OwnerId"), cxnStr(in, "RepositoryName")
 	for _, l := range st.links {
 		if l.connectionID == c.id && l.ownerID == owner && l.repo == repo {
-			return nil, ccErr(http.StatusBadRequest, "ResourceAlreadyExistsException", "repository %s/%s is already linked through this connection", owner, repo)
+			return nil, cxnErr(http.StatusBadRequest, "ResourceAlreadyExistsException", "repository %s/%s is already linked through this connection", owner, repo)
 		}
 	}
-	if len(st.links) >= ccMaxResources {
-		return nil, ccErr(http.StatusBadRequest, "LimitExceededException", "repository link limit of %d reached", ccMaxResources)
+	if len(st.links) >= cxnMaxResources {
+		return nil, cxnErr(http.StatusBadRequest, "LimitExceededException", "repository link limit of %d reached", cxnMaxResources)
 	}
-	l := &ccLink{id: uuid.NewString(), connectionID: c.id, ownerID: owner, repo: repo, providerType: c.providerType, kmsKey: ccStr(in, "EncryptionKeyArn")}
-	if err := st.mergeTagsLocked("repository-link/"+l.id, ccTagsIn(in["Tags"])); err != nil {
+	l := &cxnLink{id: uuid.NewString(), connectionID: c.id, ownerID: owner, repo: repo, providerType: c.providerType, kmsKey: cxnStr(in, "EncryptionKeyArn")}
+	if err := st.mergeTagsLocked("repository-link/"+l.id, cxnTagsIn(in["Tags"])); err != nil {
 		return nil, err
 	}
 	l.seq = st.nextSeq()
@@ -511,7 +511,7 @@ func (st *codeConnectionsStore) createRepositoryLink(api *ccAPI, in map[string]a
 	return map[string]any{"RepositoryLinkInfo": st.linkOut(api, l)}, nil
 }
 
-func (st *codeConnectionsStore) linkOut(api *ccAPI, l *ccLink) map[string]any {
+func (st *codeConnectionsStore) linkOut(api *cxnAPI, l *cxnLink) map[string]any {
 	out := map[string]any{
 		"ConnectionArn": api.arn("connection", l.connectionID), "OwnerId": l.ownerID, "ProviderType": l.providerType,
 		"RepositoryLinkArn": api.arn("repository-link", l.id), "RepositoryLinkId": l.id, "RepositoryName": l.repo,
@@ -522,8 +522,8 @@ func (st *codeConnectionsStore) linkOut(api *ccAPI, l *ccLink) map[string]any {
 	return out
 }
 
-func (st *codeConnectionsStore) sortedLinks() []*ccLink {
-	links := make([]*ccLink, 0, len(st.links))
+func (st *codeConnectionsStore) sortedLinks() []*cxnLink {
+	links := make([]*cxnLink, 0, len(st.links))
 	for _, l := range st.links {
 		links = append(links, l)
 	}
@@ -531,16 +531,16 @@ func (st *codeConnectionsStore) sortedLinks() []*ccLink {
 	return links
 }
 
-func (st *codeConnectionsStore) linkByID(id string) (*ccLink, *ccError) {
+func (st *codeConnectionsStore) linkByID(id string) (*cxnLink, *cxnError) {
 	l := st.links[id]
 	if l == nil {
-		return nil, ccNotFound("repository link %s not found", id)
+		return nil, cxnNotFound("repository link %s not found", id)
 	}
 	return l, nil
 }
 
-func (st *codeConnectionsStore) repositoryLinkOp(api *ccAPI, op string, in map[string]any) (map[string]any, *ccError) {
-	l, err := st.linkByID(ccStr(in, "RepositoryLinkId"))
+func (st *codeConnectionsStore) repositoryLinkOp(api *cxnAPI, op string, in map[string]any) (map[string]any, *cxnError) {
+	l, err := st.linkByID(cxnStr(in, "RepositoryLinkId"))
 	if err != nil {
 		return nil, err
 	}
@@ -548,24 +548,24 @@ func (st *codeConnectionsStore) repositoryLinkOp(api *ccAPI, op string, in map[s
 	case "DeleteRepositoryLink":
 		for _, s := range st.syncs {
 			if s.linkID == l.id {
-				return nil, ccErr(http.StatusBadRequest, "SyncConfigurationStillExistsException", "repository link %s still has sync configuration %s", l.id, s.resourceName)
+				return nil, cxnErr(http.StatusBadRequest, "SyncConfigurationStillExistsException", "repository link %s still has sync configuration %s", l.id, s.resourceName)
 			}
 		}
 		delete(st.links, l.id)
 		delete(st.tags, "repository-link/"+l.id)
 		return map[string]any{}, nil
 	case "UpdateRepositoryLink":
-		if arn := ccStr(in, "ConnectionArn"); arn != "" {
+		if arn := cxnStr(in, "ConnectionArn"); arn != "" {
 			c, err := st.availableConnection(arn)
 			if err != nil {
 				return nil, err
 			}
 			if c.providerType != l.providerType {
-				return nil, ccInvalid("connection %s is %s, the repository is %s", arn, c.providerType, l.providerType)
+				return nil, cxnInvalid("connection %s is %s, the repository is %s", arn, c.providerType, l.providerType)
 			}
 			l.connectionID = c.id
 		}
-		if key := ccStr(in, "EncryptionKeyArn"); key != "" {
+		if key := cxnStr(in, "EncryptionKeyArn"); key != "" {
 			l.kmsKey = key
 		}
 	}
@@ -574,17 +574,17 @@ func (st *codeConnectionsStore) repositoryLinkOp(api *ccAPI, op string, in map[s
 
 // --- sync configurations ---
 
-func ccSyncKey(syncType, resource string) string { return syncType + "/" + resource }
+func cxnSyncKey(syncType, resource string) string { return syncType + "/" + resource }
 
-func (st *codeConnectionsStore) syncByKey(syncType, resource string) (*ccSync, *ccError) {
-	s := st.syncs[ccSyncKey(syncType, resource)]
+func (st *codeConnectionsStore) syncByKey(syncType, resource string) (*cxnSync, *cxnError) {
+	s := st.syncs[cxnSyncKey(syncType, resource)]
 	if s == nil {
-		return nil, ccNotFound("no %s sync configuration for resource %s", syncType, resource)
+		return nil, cxnNotFound("no %s sync configuration for resource %s", syncType, resource)
 	}
 	return s, nil
 }
 
-func (st *codeConnectionsStore) syncOut(s *ccSync) map[string]any {
+func (st *codeConnectionsStore) syncOut(s *cxnSync) map[string]any {
 	l := st.links[s.linkID]
 	out := map[string]any{
 		"Branch": s.branch, "ConfigFile": s.configFile, "RepositoryLinkId": s.linkID, "ResourceName": s.resourceName,
@@ -601,44 +601,44 @@ func (st *codeConnectionsStore) syncOut(s *ccSync) map[string]any {
 	return out
 }
 
-func (st *codeConnectionsStore) createSyncConfiguration(in map[string]any) (map[string]any, *ccError) {
-	key := ccSyncKey(ccStr(in, "SyncType"), ccStr(in, "ResourceName"))
+func (st *codeConnectionsStore) createSyncConfiguration(in map[string]any) (map[string]any, *cxnError) {
+	key := cxnSyncKey(cxnStr(in, "SyncType"), cxnStr(in, "ResourceName"))
 	if st.syncs[key] != nil {
-		return nil, ccErr(http.StatusBadRequest, "ResourceAlreadyExistsException", "resource %s already has a %s sync configuration", ccStr(in, "ResourceName"), ccStr(in, "SyncType"))
+		return nil, cxnErr(http.StatusBadRequest, "ResourceAlreadyExistsException", "resource %s already has a %s sync configuration", cxnStr(in, "ResourceName"), cxnStr(in, "SyncType"))
 	}
-	if st.links[ccStr(in, "RepositoryLinkId")] == nil {
-		return nil, ccInvalid("repository link %s not found", ccStr(in, "RepositoryLinkId"))
+	if st.links[cxnStr(in, "RepositoryLinkId")] == nil {
+		return nil, cxnInvalid("repository link %s not found", cxnStr(in, "RepositoryLinkId"))
 	}
-	if len(st.syncs) >= ccMaxResources {
-		return nil, ccErr(http.StatusBadRequest, "LimitExceededException", "sync configuration limit of %d reached", ccMaxResources)
+	if len(st.syncs) >= cxnMaxResources {
+		return nil, cxnErr(http.StatusBadRequest, "LimitExceededException", "sync configuration limit of %d reached", cxnMaxResources)
 	}
-	s := &ccSync{
-		syncType: ccStr(in, "SyncType"), resourceName: ccStr(in, "ResourceName"), linkID: ccStr(in, "RepositoryLinkId"),
-		branch: ccStr(in, "Branch"), configFile: ccStr(in, "ConfigFile"), roleARN: ccStr(in, "RoleArn"),
-		publish: ccStr(in, "PublishDeploymentStatus"), trigger: ccStr(in, "TriggerResourceUpdateOn"), prComment: ccStr(in, "PullRequestComment"),
+	s := &cxnSync{
+		syncType: cxnStr(in, "SyncType"), resourceName: cxnStr(in, "ResourceName"), linkID: cxnStr(in, "RepositoryLinkId"),
+		branch: cxnStr(in, "Branch"), configFile: cxnStr(in, "ConfigFile"), roleARN: cxnStr(in, "RoleArn"),
+		publish: cxnStr(in, "PublishDeploymentStatus"), trigger: cxnStr(in, "TriggerResourceUpdateOn"), prComment: cxnStr(in, "PullRequestComment"),
 		updated: time.Now().UTC(), seq: st.nextSeq(),
 	}
 	st.syncs[key] = s
 	return map[string]any{"SyncConfiguration": st.syncOut(s)}, nil
 }
 
-func (st *codeConnectionsStore) syncConfigurationOp(op string, in map[string]any) (map[string]any, *ccError) {
-	syncType, resource := ccStr(in, "SyncType"), ccStr(in, "ResourceName")
-	s := st.syncs[ccSyncKey(syncType, resource)]
+func (st *codeConnectionsStore) syncConfigurationOp(op string, in map[string]any) (map[string]any, *cxnError) {
+	syncType, resource := cxnStr(in, "SyncType"), cxnStr(in, "ResourceName")
+	s := st.syncs[cxnSyncKey(syncType, resource)]
 	if s == nil {
 		if op == "DeleteSyncConfiguration" { // the model lists no ResourceNotFoundException here
-			return nil, ccInvalid("no %s sync configuration for resource %s", syncType, resource)
+			return nil, cxnInvalid("no %s sync configuration for resource %s", syncType, resource)
 		}
-		return nil, ccNotFound("no %s sync configuration for resource %s", syncType, resource)
+		return nil, cxnNotFound("no %s sync configuration for resource %s", syncType, resource)
 	}
 	switch op {
 	case "DeleteSyncConfiguration":
-		delete(st.syncs, ccSyncKey(syncType, resource))
+		delete(st.syncs, cxnSyncKey(syncType, resource))
 		return map[string]any{}, nil
 	case "UpdateSyncConfiguration":
-		if id := ccStr(in, "RepositoryLinkId"); id != "" {
+		if id := cxnStr(in, "RepositoryLinkId"); id != "" {
 			if st.links[id] == nil {
-				return nil, ccNotFound("repository link %s not found", id)
+				return nil, cxnNotFound("repository link %s not found", id)
 			}
 			s.linkID = id
 		}
@@ -646,7 +646,7 @@ func (st *codeConnectionsStore) syncConfigurationOp(op string, in map[string]any
 			"Branch": &s.branch, "ConfigFile": &s.configFile, "RoleArn": &s.roleARN, "PublishDeploymentStatus": &s.publish,
 			"TriggerResourceUpdateOn": &s.trigger, "PullRequestComment": &s.prComment,
 		} {
-			if v := ccStr(in, key); v != "" {
+			if v := cxnStr(in, key); v != "" {
 				*field = v
 			}
 		}
@@ -655,19 +655,19 @@ func (st *codeConnectionsStore) syncConfigurationOp(op string, in map[string]any
 	return map[string]any{"SyncConfiguration": st.syncOut(s)}, nil
 }
 
-func (st *codeConnectionsStore) listSyncs(op string, in map[string]any) (map[string]any, *ccError) {
-	l, err := st.linkByID(ccStr(in, "RepositoryLinkId"))
+func (st *codeConnectionsStore) listSyncs(op string, in map[string]any) (map[string]any, *cxnError) {
+	l, err := st.linkByID(cxnStr(in, "RepositoryLinkId"))
 	if err != nil {
 		return nil, err
 	}
-	syncs := []*ccSync{}
+	syncs := []*cxnSync{}
 	for _, s := range st.syncs {
-		if s.linkID == l.id && s.syncType == ccStr(in, "SyncType") {
+		if s.linkID == l.id && s.syncType == cxnStr(in, "SyncType") {
 			syncs = append(syncs, s)
 		}
 	}
 	sort.Slice(syncs, func(i, j int) bool { return syncs[i].seq < syncs[j].seq })
-	page, next, perr := ccPage(syncs, in)
+	page, next, perr := cxnPage(syncs, in)
 	if perr != nil {
 		return nil, perr
 	}
@@ -689,115 +689,115 @@ func (st *codeConnectionsStore) listSyncs(op string, in map[string]any) (map[str
 
 // --- sync status and blockers ---
 
-// ccSha is a stable stand-in commit for a sync configuration's current state.
-func ccSha(s *ccSync) string {
+// cxnSha is a stable stand-in commit for a sync configuration's current state.
+func cxnSha(s *cxnSync) string {
 	sum := sha1.Sum([]byte(s.linkID + "\x00" + s.branch + "\x00" + s.configFile + "\x00" + s.updated.String()))
 	return hex.EncodeToString(sum[:])
 }
 
-func ccSyncEvents(s *ccSync) []any {
-	t := ccEpoch(s.updated)
+func cxnSyncEvents(s *cxnSync) []any {
+	t := cxnEpoch(s.updated)
 	return []any{
 		map[string]any{"Event": "Sync initiated for branch " + s.branch, "Time": t, "Type": "INFO"},
 		map[string]any{"Event": "Sync succeeded", "Time": t, "Type": "INFO"},
 	}
 }
 
-func (st *codeConnectionsStore) repositorySyncStatus(in map[string]any) (map[string]any, *ccError) {
-	l, err := st.linkByID(ccStr(in, "RepositoryLinkId"))
+func (st *codeConnectionsStore) repositorySyncStatus(in map[string]any) (map[string]any, *cxnError) {
+	l, err := st.linkByID(cxnStr(in, "RepositoryLinkId"))
 	if err != nil {
 		return nil, err
 	}
-	var latest *ccSync
+	var latest *cxnSync
 	for _, s := range st.syncs {
-		if s.linkID == l.id && s.branch == ccStr(in, "Branch") && s.syncType == ccStr(in, "SyncType") && (latest == nil || s.updated.After(latest.updated)) {
+		if s.linkID == l.id && s.branch == cxnStr(in, "Branch") && s.syncType == cxnStr(in, "SyncType") && (latest == nil || s.updated.After(latest.updated)) {
 			latest = s
 		}
 	}
 	if latest == nil {
-		return nil, ccNotFound("no sync has run for branch %s of repository link %s", ccStr(in, "Branch"), l.id)
+		return nil, cxnNotFound("no sync has run for branch %s of repository link %s", cxnStr(in, "Branch"), l.id)
 	}
-	return map[string]any{"LatestSync": map[string]any{"StartedAt": ccEpoch(latest.updated), "Status": "SUCCEEDED", "Events": ccSyncEvents(latest)}}, nil
+	return map[string]any{"LatestSync": map[string]any{"StartedAt": cxnEpoch(latest.updated), "Status": "SUCCEEDED", "Events": cxnSyncEvents(latest)}}, nil
 }
 
-func (st *codeConnectionsStore) resourceSyncStatus(in map[string]any) (map[string]any, *ccError) {
-	s, err := st.syncByKey(ccStr(in, "SyncType"), ccStr(in, "ResourceName"))
+func (st *codeConnectionsStore) resourceSyncStatus(in map[string]any) (map[string]any, *cxnError) {
+	s, err := st.syncByKey(cxnStr(in, "SyncType"), cxnStr(in, "ResourceName"))
 	if err != nil {
 		return nil, err
 	}
 	l := st.links[s.linkID]
-	revision := map[string]any{"Branch": s.branch, "Directory": s.configFile, "Sha": ccSha(s)}
+	revision := map[string]any{"Branch": s.branch, "Directory": s.configFile, "Sha": cxnSha(s)}
 	if l != nil {
 		revision["OwnerId"], revision["RepositoryName"], revision["ProviderType"] = l.ownerID, l.repo, l.providerType
 	}
 	attempt := func() map[string]any {
 		return map[string]any{
-			"Events": ccSyncEvents(s), "InitialRevision": revision, "StartedAt": ccEpoch(s.updated),
+			"Events": cxnSyncEvents(s), "InitialRevision": revision, "StartedAt": cxnEpoch(s.updated),
 			"Status": "SUCCEEDED", "TargetRevision": revision, "Target": s.resourceName,
 		}
 	}
 	return map[string]any{"DesiredState": revision, "LatestSync": attempt(), "LatestSuccessfulSync": attempt()}, nil
 }
 
-func ccBlockerOut(b *ccBlocker) map[string]any {
-	out := map[string]any{"Id": b.id, "Type": "AUTOMATED", "Status": "ACTIVE", "CreatedReason": b.reason, "CreatedAt": ccEpoch(b.created)}
+func cxnBlockerOut(b *cxnBlocker) map[string]any {
+	out := map[string]any{"Id": b.id, "Type": "AUTOMATED", "Status": "ACTIVE", "CreatedReason": b.reason, "CreatedAt": cxnEpoch(b.created)}
 	if !b.resolved.IsZero() {
-		out["Status"], out["ResolvedReason"], out["ResolvedAt"] = "RESOLVED", b.resolvedReason, ccEpoch(b.resolved)
+		out["Status"], out["ResolvedReason"], out["ResolvedAt"] = "RESOLVED", b.resolvedReason, cxnEpoch(b.resolved)
 	}
 	return out
 }
 
-func (st *codeConnectionsStore) syncBlockerOp(op string, in map[string]any) (map[string]any, *ccError) {
-	s, err := st.syncByKey(ccStr(in, "SyncType"), ccStr(in, "ResourceName"))
+func (st *codeConnectionsStore) syncBlockerOp(op string, in map[string]any) (map[string]any, *cxnError) {
+	s, err := st.syncByKey(cxnStr(in, "SyncType"), cxnStr(in, "ResourceName"))
 	if err != nil {
 		return nil, err
 	}
 	if op == "GetSyncBlockerSummary" {
 		blockers := make([]any, 0, len(s.blockers))
 		for _, b := range s.blockers {
-			blockers = append(blockers, ccBlockerOut(b))
+			blockers = append(blockers, cxnBlockerOut(b))
 		}
 		return map[string]any{"SyncBlockerSummary": map[string]any{"ResourceName": s.resourceName, "LatestBlockers": blockers}}, nil
 	}
 	for _, b := range s.blockers {
-		if b.id != ccStr(in, "Id") {
+		if b.id != cxnStr(in, "Id") {
 			continue
 		}
 		if !b.resolved.IsZero() {
-			return nil, ccInvalid("sync blocker %s is already resolved", b.id)
+			return nil, cxnInvalid("sync blocker %s is already resolved", b.id)
 		}
-		b.resolved, b.resolvedReason = time.Now().UTC(), ccStr(in, "ResolvedReason")
-		return map[string]any{"ResourceName": s.resourceName, "SyncBlocker": ccBlockerOut(b)}, nil
+		b.resolved, b.resolvedReason = time.Now().UTC(), cxnStr(in, "ResolvedReason")
+		return map[string]any{"ResourceName": s.resourceName, "SyncBlocker": cxnBlockerOut(b)}, nil
 	}
-	return nil, ccErr(http.StatusBadRequest, "SyncBlockerDoesNotExistException", "sync blocker %s does not exist", ccStr(in, "Id"))
+	return nil, cxnErr(http.StatusBadRequest, "SyncBlockerDoesNotExistException", "sync blocker %s does not exist", cxnStr(in, "Id"))
 }
 
-func (st *codeConnectionsStore) addSyncBlocker(syncType, resource, reason string) (map[string]any, *ccError) {
+func (st *codeConnectionsStore) addSyncBlocker(syncType, resource, reason string) (map[string]any, *cxnError) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	s, err := st.syncByKey(syncType, resource)
 	if err != nil {
 		return nil, err
 	}
-	if len(s.blockers) >= ccMaxBlockersPerCfg {
-		return nil, ccErr(http.StatusBadRequest, "LimitExceededException", "a sync configuration can have at most %d blockers", ccMaxBlockersPerCfg)
+	if len(s.blockers) >= cxnMaxBlockersPerCfg {
+		return nil, cxnErr(http.StatusBadRequest, "LimitExceededException", "a sync configuration can have at most %d blockers", cxnMaxBlockersPerCfg)
 	}
 	if reason == "" {
 		reason = "Stackyard: sync failed"
 	}
 	if len(reason) > 1024 {
-		return nil, ccValidation("CreatedReason must be at most 1024 characters")
+		return nil, cxnValidation("CreatedReason must be at most 1024 characters")
 	}
-	b := &ccBlocker{id: ccRandHex(8), reason: reason, created: time.Now().UTC()}
+	b := &cxnBlocker{id: cxnRandHex(8), reason: reason, created: time.Now().UTC()}
 	s.blockers = append(s.blockers, b)
-	return ccBlockerOut(b), nil
+	return cxnBlockerOut(b), nil
 }
 
 // --- tagging ---
 
-func (st *codeConnectionsStore) tagOp(op string, in map[string]any) (map[string]any, *ccError) {
-	arn := ccStr(in, "ResourceArn")
-	kind, id, ok := ccParseARN(arn)
+func (st *codeConnectionsStore) tagOp(op string, in map[string]any) (map[string]any, *cxnError) {
+	arn := cxnStr(in, "ResourceArn")
+	kind, id, ok := cxnParseARN(arn)
 	exists := false
 	switch kind {
 	case "connection":
@@ -808,20 +808,20 @@ func (st *codeConnectionsStore) tagOp(op string, in map[string]any) (map[string]
 		exists = st.links[id] != nil
 	}
 	if !ok || !exists {
-		return nil, ccNotFound("resource %s not found", arn)
+		return nil, cxnNotFound("resource %s not found", arn)
 	}
 	key := kind + "/" + id
 	switch op {
 	case "TagResource":
-		if err := st.mergeTagsLocked(key, ccTagsIn(in["Tags"])); err != nil {
+		if err := st.mergeTagsLocked(key, cxnTagsIn(in["Tags"])); err != nil {
 			return nil, err
 		}
 	case "UntagResource":
 		drop := map[string]bool{}
-		for _, k := range ccListStrings(in["TagKeys"]) {
+		for _, k := range cxnListStrings(in["TagKeys"]) {
 			drop[k] = true
 		}
-		kept := []ccTag{}
+		kept := []cxnTag{}
 		for _, t := range st.tags[key] {
 			if !drop[t.Key] {
 				kept = append(kept, t)
@@ -829,12 +829,12 @@ func (st *codeConnectionsStore) tagOp(op string, in map[string]any) (map[string]
 		}
 		st.tags[key] = kept
 	case "ListTagsForResource":
-		return map[string]any{"Tags": ccTagsOut(st.tags[key])}, nil
+		return map[string]any{"Tags": cxnTagsOut(st.tags[key])}, nil
 	}
 	return map[string]any{}, nil
 }
 
-func ccListStrings(v any) []string {
+func cxnListStrings(v any) []string {
 	items, _ := v.([]any)
 	out := make([]string, 0, len(items))
 	for _, item := range items {

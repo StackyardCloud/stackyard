@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	ccTestTarget = "com.amazonaws.codeconnections.CodeConnections_20231201."
-	csTestTarget = "com.amazonaws.codestar.connections.CodeStar_connections_20191201."
+	cxnTestTarget = "com.amazonaws.codeconnections.CodeConnections_20231201."
+	csTestTarget  = "com.amazonaws.codestar.connections.CodeStar_connections_20191201."
 )
 
 func newCodeConnectionsTestServer(t *testing.T) (*Server, *httptest.Server) {
@@ -22,8 +22,8 @@ func newCodeConnectionsTestServer(t *testing.T) (*Server, *httptest.Server) {
 	return srv, ts
 }
 
-// ccCall sends one awsJson1_0 call signed for service and decodes the reply.
-func ccCall(t *testing.T, ts *httptest.Server, service, target, op, body string) (int, map[string]any) {
+// cxnCall sends one awsJson1_0 call signed for service and decodes the reply.
+func cxnCall(t *testing.T, ts *httptest.Server, service, target, op, body string) (int, map[string]any) {
 	t.Helper()
 	resp := signedRequestWithService(t, http.MethodPost, ts.URL+"/", []byte(body), map[string]string{
 		"Content-Type": "application/x-amz-json-1.0", "X-Amz-Target": target + op,
@@ -38,18 +38,18 @@ func ccCall(t *testing.T, ts *httptest.Server, service, target, op, body string)
 	return resp.StatusCode, out
 }
 
-func ccOK(t *testing.T, ts *httptest.Server, op, body string) map[string]any {
+func cxnOK(t *testing.T, ts *httptest.Server, op, body string) map[string]any {
 	t.Helper()
-	status, out := ccCall(t, ts, "codeconnections", ccTestTarget, op, body)
+	status, out := cxnCall(t, ts, "codeconnections", cxnTestTarget, op, body)
 	if status != http.StatusOK {
 		t.Fatalf("%s: %d %v", op, status, out)
 	}
 	return out
 }
 
-func ccErrCode(t *testing.T, ts *httptest.Server, op, body string) string {
+func cxnErrCode(t *testing.T, ts *httptest.Server, op, body string) string {
 	t.Helper()
-	status, out := ccCall(t, ts, "codeconnections", ccTestTarget, op, body)
+	status, out := cxnCall(t, ts, "codeconnections", cxnTestTarget, op, body)
 	if status != http.StatusBadRequest {
 		t.Fatalf("%s: want 400, got %d %v", op, status, out)
 	}
@@ -61,7 +61,7 @@ func TestCodeConnectionsStage0Catalog(t *testing.T) {
 	if len(codeconnectionsOperations) != 27 || len(codestarconnectionsOperations) != 27 {
 		t.Fatalf("operation counts: %d %d", len(codeconnectionsOperations), len(codestarconnectionsOperations))
 	}
-	for _, api := range []*ccAPI{codeConnectionsAPI, codeStarConnectionsAPI} {
+	for _, api := range []*cxnAPI{codeConnectionsAPI, codeStarConnectionsAPI} {
 		model := api.model()
 		for op := range api.knownOps {
 			if _, ok := model.Operations[op]; !ok {
@@ -77,28 +77,28 @@ func TestCodeConnectionsStage0Catalog(t *testing.T) {
 func TestCodeConnectionsStage0Routing(t *testing.T) {
 	_, ts := newCodeConnectionsTestServer(t)
 	// Short (SDK v1 style) target prefixes are accepted too.
-	if status, out := ccCall(t, ts, "codeconnections", "CodeConnections_20231201.", "ListConnections", `{}`); status != http.StatusOK {
+	if status, out := cxnCall(t, ts, "codeconnections", "CodeConnections_20231201.", "ListConnections", `{}`); status != http.StatusOK {
 		t.Fatalf("short target: %d %v", status, out)
 	}
-	if code := ccErrCode(t, ts, "NoSuchOperation", `{}`); code != "UnknownOperationException" {
+	if code := cxnErrCode(t, ts, "NoSuchOperation", `{}`); code != "UnknownOperationException" {
 		t.Fatalf("unknown op: %s", code)
 	}
 	// Signed for the other name: SigV4 rejects the service mismatch.
-	if status, _ := ccCall(t, ts, "codestar-connections", ccTestTarget, "ListConnections", `{}`); status != http.StatusForbidden {
+	if status, _ := cxnCall(t, ts, "codestar-connections", cxnTestTarget, "ListConnections", `{}`); status != http.StatusForbidden {
 		t.Fatalf("wrong signing service: %d", status)
 	}
-	if code := ccErrCode(t, ts, "ListConnections", `{"MaxResults":"x"}`); code != "ValidationException" {
+	if code := cxnErrCode(t, ts, "ListConnections", `{"MaxResults":"x"}`); code != "ValidationException" {
 		t.Fatalf("bad MaxResults type: %s", code)
 	}
-	if code := ccErrCode(t, ts, "ListConnections", `{"Bogus":1}`); code != "ValidationException" {
+	if code := cxnErrCode(t, ts, "ListConnections", `{"Bogus":1}`); code != "ValidationException" {
 		t.Fatalf("unknown member: %s", code)
 	}
-	if code := ccErrCode(t, ts, "ListConnections", `{`); code != "SerializationException" {
+	if code := cxnErrCode(t, ts, "ListConnections", `{`); code != "SerializationException" {
 		t.Fatalf("bad JSON: %s", code)
 	}
 	// Bodies of unknown length are refused before anything reads them.
 	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/", io.MultiReader(strings.NewReader(`{}`)))
-	req.Header.Set("X-Amz-Target", ccTestTarget+"ListConnections")
+	req.Header.Set("X-Amz-Target", cxnTestTarget+"ListConnections")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
