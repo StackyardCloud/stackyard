@@ -680,6 +680,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dax/docker-compose.yml"
   },
   {
+    id: "route53resolver",
+    name: "Route 53 Resolver",
+    category: "integration",
+    summary: "Emulate Resolver endpoints, forwarding rules, query logging, DNSSEC and resolver settings, and DNS Firewall domain lists, rule groups and VPC associations.",
+    docsHref: "../../../index.html#route53resolver",
+    exampleHref: "../../../../examples/aws/route53resolver/docker-compose.yml"
+  },
+  {
     id: "dynamodbstreams",
     name: "DynamoDB Streams",
     category: "database",

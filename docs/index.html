@@ -280,6 +280,7 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
         <a href="#global-accelerator">Global Accelerator</a>
@@ -24167,6 +24168,254 @@
         <ul>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="route53resolver" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Resolver</h2>
+        <p>SigV4 signed with service <code>route53resolver</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: Route53Resolver.&lt;Action&gt;</code>. Inbound and outbound Resolver endpoints (IP addresses checked against EC2 subnets, CIDRs and security groups), FORWARD/SYSTEM/DELEGATE rules and their VPC associations, query logging to S3/CloudWatch Logs/Firehose, per-VPC autodefined-reverse, DNSSEC and firewall fail-open settings, Outposts resolvers, resource policies, and DNS Firewall domain lists (including imports from S3), rule groups, rules and VPC associations. Control plane only: no DNS queries are answered.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53resolver</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AssociateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverEndpointIpAddress</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchCreateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchDeleteFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchUpdateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverEndpointIpAddress</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroupAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroupPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverDnssecConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfigAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfigPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRuleAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRulePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>ImportFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallDomainLists</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleGroupAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleTypes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListOutpostResolvers</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverDnssecConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverEndpointIpAddresses</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverQueryLogConfigAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverQueryLogConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverRuleAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverRules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutFirewallRuleGroupPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResolverQueryLogConfigPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResolverRulePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallRuleGroupAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverDnssecConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverRule</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>route53resolver</code>: <code>docker compose -f examples/aws/route53resolver/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
