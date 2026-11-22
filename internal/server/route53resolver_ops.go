@@ -1,0 +1,88 @@
+package server
+
+type route53resolverOperation struct{ Name string }
+
+// Amazon Route 53 Resolver operations sourced from:
+// https://docs.aws.amazon.com/Route53/latest/APIReference/API_Operations_Amazon_Route_53_Resolver.html
+var route53resolverOperations = []route53resolverOperation{
+	{Name: "AssociateFirewallRuleGroup"},
+	{Name: "AssociateResolverEndpointIpAddress"},
+	{Name: "AssociateResolverQueryLogConfig"},
+	{Name: "AssociateResolverRule"},
+	{Name: "BatchCreateFirewallRule"},
+	{Name: "BatchDeleteFirewallRule"},
+	{Name: "BatchUpdateFirewallRule"},
+	{Name: "CreateFirewallDomainList"},
+	{Name: "CreateFirewallRule"},
+	{Name: "CreateFirewallRuleGroup"},
+	{Name: "CreateOutpostResolver"},
+	{Name: "CreateResolverEndpoint"},
+	{Name: "CreateResolverQueryLogConfig"},
+	{Name: "CreateResolverRule"},
+	{Name: "DeleteFirewallDomainList"},
+	{Name: "DeleteFirewallRule"},
+	{Name: "DeleteFirewallRuleGroup"},
+	{Name: "DeleteOutpostResolver"},
+	{Name: "DeleteResolverEndpoint"},
+	{Name: "DeleteResolverQueryLogConfig"},
+	{Name: "DeleteResolverRule"},
+	{Name: "DisassociateFirewallRuleGroup"},
+	{Name: "DisassociateResolverEndpointIpAddress"},
+	{Name: "DisassociateResolverQueryLogConfig"},
+	{Name: "DisassociateResolverRule"},
+	{Name: "GetFirewallConfig"},
+	{Name: "GetFirewallDomainList"},
+	{Name: "GetFirewallRuleGroup"},
+	{Name: "GetFirewallRuleGroupAssociation"},
+	{Name: "GetFirewallRuleGroupPolicy"},
+	{Name: "GetOutpostResolver"},
+	{Name: "GetResolverConfig"},
+	{Name: "GetResolverDnssecConfig"},
+	{Name: "GetResolverEndpoint"},
+	{Name: "GetResolverQueryLogConfig"},
+	{Name: "GetResolverQueryLogConfigAssociation"},
+	{Name: "GetResolverQueryLogConfigPolicy"},
+	{Name: "GetResolverRule"},
+	{Name: "GetResolverRuleAssociation"},
+	{Name: "GetResolverRulePolicy"},
+	{Name: "ImportFirewallDomains"},
+	{Name: "ListFirewallConfigs"},
+	{Name: "ListFirewallDomainLists"},
+	{Name: "ListFirewallDomains"},
+	{Name: "ListFirewallRuleGroupAssociations"},
+	{Name: "ListFirewallRuleGroups"},
+	{Name: "ListFirewallRuleTypes"},
+	{Name: "ListFirewallRules"},
+	{Name: "ListOutpostResolvers"},
+	{Name: "ListResolverConfigs"},
+	{Name: "ListResolverDnssecConfigs"},
+	{Name: "ListResolverEndpointIpAddresses"},
+	{Name: "ListResolverEndpoints"},
+	{Name: "ListResolverQueryLogConfigAssociations"},
+	{Name: "ListResolverQueryLogConfigs"},
+	{Name: "ListResolverRuleAssociations"},
+	{Name: "ListResolverRules"},
+	{Name: "ListTagsForResource"},
+	{Name: "PutFirewallRuleGroupPolicy"},
+	{Name: "PutResolverQueryLogConfigPolicy"},
+	{Name: "PutResolverRulePolicy"},
+	{Name: "TagResource"},
+	{Name: "UntagResource"},
+	{Name: "UpdateFirewallConfig"},
+	{Name: "UpdateFirewallDomains"},
+	{Name: "UpdateFirewallRule"},
+	{Name: "UpdateFirewallRuleGroupAssociation"},
+	{Name: "UpdateOutpostResolver"},
+	{Name: "UpdateResolverConfig"},
+	{Name: "UpdateResolverDnssecConfig"},
+	{Name: "UpdateResolverEndpoint"},
+	{Name: "UpdateResolverRule"},
+}
+
+var route53resolverOperationByName = func() map[string]route53resolverOperation {
+	out := make(map[string]route53resolverOperation, len(route53resolverOperations))
+	for _, op := range route53resolverOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

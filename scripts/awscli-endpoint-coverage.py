@@ -560,6 +560,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
     "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
+    "route53resolver": {"cli": "route53resolver", "ops_file": REPO_ROOT / "internal/server/route53resolver_ops.go"},
     "ecrpublic": {"cli": "ecr-public", "ops_file": REPO_ROOT / "internal/server/ecrpublic_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
@@ -2202,6 +2203,9 @@ SERVICE_ALIASES = {
     "datasync": "datasync",
     "awsdatasync": "datasync",
     "dax": "dax",
+    "route53resolver": "route53resolver",
+    "route53-resolver": "route53resolver",
+    "amazonroute53resolver": "route53resolver",
     "amazondax": "dax",
     "dynamodbaccelerator": "dax",
     "ecrpublic": "ecrpublic",
@@ -3105,6 +3109,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pipes": {},
     "datasync": {},
     "dax": {},
+    "route53resolver": {},
     "ecrpublic": {},
     "docdb": {},
     "glue": {},
@@ -31779,6 +31784,250 @@ DAX_STATELESS_OPERATIONS = {
 }
 
 
+R53R_VPC = "vpc-00000001"
+R53R_SUBNET = "subnet-00000001"
+R53R_SG = "sg-00000000"
+R53R_LOG_GROUP = "arn:aws:logs:us-east-1:123456789012:log-group:stackyard-resolver-queries"
+R53R_OUTPOST = "arn:aws:outposts:us-east-1:123456789012:outpost/op-0123456789abcdef0"
+R53R_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "123456789012"}, "Action": "route53resolver:*", "Resource": "*"}]})
+R53R_LIST_BUCKET = "stackyard-r53r-domain-lists"
+
+
+def r53r_unique(prefix: str) -> str:
+    return f"{prefix}-{time.time_ns()}"
+
+
+def r53r_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], operation: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "route53resolver", operation, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def r53r_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], direction: str, ips: int = 2) -> dict:
+    data = r53r_call(aws_bin, endpoint_url, region, env, "create-resolver-endpoint", {
+        "CreatorRequestId": r53r_unique("sy-ep"), "Direction": direction, "SecurityGroupIds": [R53R_SG],
+        "IpAddresses": [{"SubnetId": R53R_SUBNET} for _ in range(ips)],
+    })
+    return data.get("ResolverEndpoint") or {}
+
+
+def r53r_rule(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    data = r53r_call(aws_bin, endpoint_url, region, env, "create-resolver-rule", {
+        "CreatorRequestId": r53r_unique("sy-rr"), "RuleType": "SYSTEM", "DomainName": f"{r53r_unique('sy')}.example",
+    })
+    return data.get("ResolverRule") or {}
+
+
+def r53r_qlc(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    data = r53r_call(aws_bin, endpoint_url, region, env, "create-resolver-query-log-config", {
+        "Name": "stackyard", "DestinationArn": R53R_LOG_GROUP, "CreatorRequestId": r53r_unique("sy-qlc"),
+    })
+    return data.get("ResolverQueryLogConfig") or {}
+
+
+def r53r_domain_list(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = r53r_call(aws_bin, endpoint_url, region, env, "create-firewall-domain-list", {"CreatorRequestId": r53r_unique("sy-fdl"), "Name": "stackyard"})
+    return str((data.get("FirewallDomainList") or {}).get("Id") or "")
+
+
+def r53r_rule_group(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    data = r53r_call(aws_bin, endpoint_url, region, env, "create-firewall-rule-group", {"CreatorRequestId": r53r_unique("sy-frg"), "Name": "stackyard"})
+    return data.get("FirewallRuleGroup") or {}
+
+
+def r53r_firewall_rule(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> tuple[str, str]:
+    """A fresh rule group holding one ALLOW rule on a fresh domain list."""
+    group = str(r53r_rule_group(aws_bin, endpoint_url, region, env).get("Id") or "")
+    dl = r53r_domain_list(aws_bin, endpoint_url, region, env)
+    r53r_call(aws_bin, endpoint_url, region, env, "create-firewall-rule", {
+        "CreatorRequestId": r53r_unique("sy-fr"), "FirewallRuleGroupId": group, "FirewallDomainListId": dl,
+        "Priority": 100, "Action": "ALLOW", "Name": "stackyard",
+    })
+    return group, dl
+
+
+def r53r_vpc(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """A fresh VPC, so firewall associations never hit the per-VPC limit."""
+    data = run_aws_json(aws_bin, endpoint_url, region, "ec2", "create-vpc", env, ["--cidr-block", "10.200.0.0/16"])
+    vpc = (data or {}).get("Vpc") if isinstance(data, dict) else None
+    return str((vpc or {}).get("VpcId") or R53R_VPC)
+
+
+def r53r_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("route53resolver", {})
+    if state.get("endpoint"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, R53R_LIST_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, R53R_LIST_BUCKET, "domains.txt", b"blocked.example\n*.evil.example\n")
+    endpoint = r53r_endpoint(aws_bin, endpoint_url, region, env, "OUTBOUND")
+    rule = r53r_call(aws_bin, endpoint_url, region, env, "create-resolver-rule", {
+        "CreatorRequestId": r53r_unique("sy-rr"), "RuleType": "FORWARD", "DomainName": f"{r53r_unique('corp')}.stackyard.example",
+        "TargetIps": [{"Ip": "192.0.2.10"}], "ResolverEndpointId": endpoint.get("Id"),
+    }).get("ResolverRule") or {}
+    assoc = r53r_call(aws_bin, endpoint_url, region, env, "associate-resolver-rule", {"ResolverRuleId": rule.get("Id"), "VPCId": R53R_VPC})
+    qlc = r53r_qlc(aws_bin, endpoint_url, region, env)
+    qassoc = r53r_call(aws_bin, endpoint_url, region, env, "associate-resolver-query-log-config", {"ResolverQueryLogConfigId": qlc.get("Id"), "ResourceId": R53R_VPC})
+    group, dl = r53r_firewall_rule(aws_bin, endpoint_url, region, env)
+    fassoc = r53r_call(aws_bin, endpoint_url, region, env, "associate-firewall-rule-group", {
+        "CreatorRequestId": r53r_unique("sy-fa"), "FirewallRuleGroupId": group, "VpcId": r53r_vpc(aws_bin, endpoint_url, region, env),
+        "Priority": 101, "Name": "stackyard",
+    })
+    outpost = r53r_call(aws_bin, endpoint_url, region, env, "create-outpost-resolver", {
+        "CreatorRequestId": r53r_unique("sy-or"), "Name": "stackyard", "PreferredInstanceType": "m5.large", "OutpostArn": R53R_OUTPOST,
+    }).get("OutpostResolver") or {}
+    group_arn = str(r53r_call(aws_bin, endpoint_url, region, env, "get-firewall-rule-group", {"FirewallRuleGroupId": group}).get("FirewallRuleGroup", {}).get("Arn") or "")
+    state.update({
+        "endpoint": endpoint.get("Id"), "endpoint_arn": endpoint.get("Arn"), "rule": rule.get("Id"), "rule_arn": rule.get("Arn"),
+        "rule_assoc": (assoc.get("ResolverRuleAssociation") or {}).get("Id"), "qlc": qlc.get("Id"), "qlc_arn": qlc.get("Arn"),
+        "qlc_assoc": (qassoc.get("ResolverQueryLogConfigAssociation") or {}).get("Id"), "group": group, "group_arn": group_arn,
+        "domain_list": dl, "fw_assoc": (fassoc.get("FirewallRuleGroupAssociation") or {}).get("Id"), "outpost": outpost.get("Id"),
+    })
+    return state
+
+
+R53R_STATELESS_OPERATIONS = {
+    "ListFirewallConfigs", "ListFirewallDomainLists", "ListFirewallRuleGroupAssociations", "ListFirewallRuleGroups",
+    "ListFirewallRuleTypes", "ListOutpostResolvers", "ListResolverConfigs", "ListResolverDnssecConfigs",
+    "ListResolverEndpoints", "ListResolverQueryLogConfigAssociations", "ListResolverQueryLogConfigs",
+    "ListResolverRuleAssociations", "ListResolverRules",
+}
+
+
+def route53resolver_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Route 53 Resolver operation at real resources. Operations
+    that consume or destroy a resource get one of their own."""
+    op = endpoint.operation
+    if op in R53R_STATELESS_OPERATIONS:
+        return {}
+    args = (aws_bin, endpoint_url, region, env)
+    if op == "CreateResolverEndpoint":
+        return {"CreatorRequestId": r53r_unique("sy-ep"), "Direction": "OUTBOUND", "SecurityGroupIds": [R53R_SG],
+                "IpAddresses": [{"SubnetId": R53R_SUBNET}, {"SubnetId": R53R_SUBNET}]}
+    if op == "DeleteResolverEndpoint":
+        return {"ResolverEndpointId": r53r_endpoint(*args, "INBOUND").get("Id")}
+    if op == "AssociateResolverEndpointIpAddress":
+        return {"ResolverEndpointId": r53r_endpoint(*args, "INBOUND").get("Id"), "IpAddress": {"SubnetId": R53R_SUBNET}}
+    if op == "DisassociateResolverEndpointIpAddress":
+        ep = r53r_endpoint(*args, "INBOUND", 3)
+        ips = r53r_call(*args, "list-resolver-endpoint-ip-addresses", {"ResolverEndpointId": ep.get("Id")}).get("IpAddresses") or [{}]
+        return {"ResolverEndpointId": ep.get("Id"), "IpAddress": {"IpId": ips[-1].get("IpId"), "SubnetId": R53R_SUBNET}}
+    if op == "CreateResolverRule":
+        return {"CreatorRequestId": r53r_unique("sy-rr"), "RuleType": "SYSTEM", "DomainName": f"{r53r_unique('sy')}.example"}
+    if op == "DeleteResolverRule":
+        return {"ResolverRuleId": r53r_rule(*args).get("Id")}
+    if op == "AssociateResolverRule":
+        return {"ResolverRuleId": r53r_rule(*args).get("Id"), "VPCId": R53R_VPC}
+    if op == "DisassociateResolverRule":
+        rule = r53r_rule(*args).get("Id")
+        r53r_call(*args, "associate-resolver-rule", {"ResolverRuleId": rule, "VPCId": R53R_VPC})
+        return {"ResolverRuleId": rule, "VPCId": R53R_VPC}
+    if op == "CreateResolverQueryLogConfig":
+        return {"Name": "stackyard", "DestinationArn": R53R_LOG_GROUP, "CreatorRequestId": r53r_unique("sy-qlc")}
+    if op == "DeleteResolverQueryLogConfig":
+        return {"ResolverQueryLogConfigId": r53r_qlc(*args).get("Id")}
+    if op == "AssociateResolverQueryLogConfig":
+        return {"ResolverQueryLogConfigId": r53r_qlc(*args).get("Id"), "ResourceId": R53R_VPC}
+    if op == "DisassociateResolverQueryLogConfig":
+        qlc = r53r_qlc(*args).get("Id")
+        r53r_call(*args, "associate-resolver-query-log-config", {"ResolverQueryLogConfigId": qlc, "ResourceId": R53R_VPC})
+        return {"ResolverQueryLogConfigId": qlc, "ResourceId": R53R_VPC}
+    if op == "CreateOutpostResolver":
+        return {"CreatorRequestId": r53r_unique("sy-or"), "Name": "stackyard", "PreferredInstanceType": "m5.large", "OutpostArn": R53R_OUTPOST}
+    if op == "DeleteOutpostResolver":
+        created = r53r_call(*args, "create-outpost-resolver", {
+            "CreatorRequestId": r53r_unique("sy-or"), "Name": "gone", "PreferredInstanceType": "m5.large", "OutpostArn": R53R_OUTPOST,
+        })
+        return {"Id": (created.get("OutpostResolver") or {}).get("Id")}
+    if op == "CreateFirewallDomainList":
+        return {"CreatorRequestId": r53r_unique("sy-fdl"), "Name": "stackyard"}
+    if op == "DeleteFirewallDomainList":
+        return {"FirewallDomainListId": r53r_domain_list(*args)}
+    if op == "CreateFirewallRuleGroup":
+        return {"CreatorRequestId": r53r_unique("sy-frg"), "Name": "stackyard"}
+    if op == "DeleteFirewallRuleGroup":
+        return {"FirewallRuleGroupId": r53r_rule_group(*args).get("Id")}
+    if op in {"CreateFirewallRule", "BatchCreateFirewallRule"}:
+        entry = {"CreatorRequestId": r53r_unique("sy-fr"), "FirewallRuleGroupId": r53r_rule_group(*args).get("Id"),
+                 "FirewallDomainListId": r53r_domain_list(*args), "Priority": 100, "Action": "BLOCK", "BlockResponse": "NODATA", "Name": "stackyard"}
+        return entry if op == "CreateFirewallRule" else {"CreateFirewallRuleEntries": [entry]}
+    if op in {"DeleteFirewallRule", "BatchDeleteFirewallRule"}:
+        group, dl = r53r_firewall_rule(*args)
+        entry = {"FirewallRuleGroupId": group, "FirewallDomainListId": dl}
+        return entry if op == "DeleteFirewallRule" else {"DeleteFirewallRuleEntries": [entry]}
+    if op == "AssociateFirewallRuleGroup":
+        return {"CreatorRequestId": r53r_unique("sy-fa"), "FirewallRuleGroupId": r53r_rule_group(*args).get("Id"),
+                "VpcId": r53r_vpc(*args), "Priority": 101, "Name": "stackyard"}
+    if op == "DisassociateFirewallRuleGroup":
+        created = r53r_call(*args, "associate-firewall-rule-group", {
+            "CreatorRequestId": r53r_unique("sy-fa"), "FirewallRuleGroupId": r53r_rule_group(*args).get("Id"),
+            "VpcId": r53r_vpc(*args), "Priority": 101, "Name": "gone",
+        })
+        return {"FirewallRuleGroupAssociationId": (created.get("FirewallRuleGroupAssociation") or {}).get("Id")}
+    state = r53r_fixture(*args)
+    if op in {"GetResolverEndpoint", "ListResolverEndpointIpAddresses"}:
+        return {"ResolverEndpointId": state["endpoint"]}
+    if op == "UpdateResolverEndpoint":
+        return {"ResolverEndpointId": state["endpoint"], "Name": "stackyard"}
+    if op == "GetResolverRule":
+        return {"ResolverRuleId": state["rule"]}
+    if op == "UpdateResolverRule":
+        return {"ResolverRuleId": state["rule"], "Config": {"Name": "stackyard"}}
+    if op == "GetResolverRuleAssociation":
+        return {"ResolverRuleAssociationId": state["rule_assoc"]}
+    if op == "GetResolverRulePolicy":
+        return {"Arn": state["rule_arn"]}
+    if op == "PutResolverRulePolicy":
+        return {"Arn": state["rule_arn"], "ResolverRulePolicy": R53R_POLICY}
+    if op == "GetResolverQueryLogConfig":
+        return {"ResolverQueryLogConfigId": state["qlc"]}
+    if op == "GetResolverQueryLogConfigAssociation":
+        return {"ResolverQueryLogConfigAssociationId": state["qlc_assoc"]}
+    if op == "GetResolverQueryLogConfigPolicy":
+        return {"Arn": state["qlc_arn"]}
+    if op == "PutResolverQueryLogConfigPolicy":
+        return {"Arn": state["qlc_arn"], "ResolverQueryLogConfigPolicy": R53R_POLICY}
+    if op in {"GetResolverConfig", "GetResolverDnssecConfig", "GetFirewallConfig"}:
+        return {"ResourceId": R53R_VPC}
+    if op == "UpdateResolverConfig":
+        return {"ResourceId": R53R_VPC, "AutodefinedReverseFlag": "ENABLE"}
+    if op == "UpdateResolverDnssecConfig":
+        return {"ResourceId": R53R_VPC, "Validation": "ENABLE"}
+    if op == "UpdateFirewallConfig":
+        return {"ResourceId": R53R_VPC, "FirewallFailOpen": "DISABLED"}
+    if op == "GetOutpostResolver":
+        return {"Id": state["outpost"]}
+    if op == "UpdateOutpostResolver":
+        return {"Id": state["outpost"], "Name": "stackyard"}
+    if op in {"GetFirewallDomainList", "ListFirewallDomains"}:
+        return {"FirewallDomainListId": state["domain_list"]}
+    if op == "UpdateFirewallDomains":
+        return {"FirewallDomainListId": state["domain_list"], "Operation": "ADD", "Domains": ["coverage.stackyard.example"]}
+    if op == "ImportFirewallDomains":
+        return {"FirewallDomainListId": state["domain_list"], "Operation": "REPLACE", "DomainFileUrl": f"s3://{R53R_LIST_BUCKET}/domains.txt"}
+    if op in {"GetFirewallRuleGroup", "ListFirewallRules"}:
+        return {"FirewallRuleGroupId": state["group"]}
+    if op == "UpdateFirewallRule":
+        return {"FirewallRuleGroupId": state["group"], "FirewallDomainListId": state["domain_list"], "Name": "stackyard"}
+    if op == "BatchUpdateFirewallRule":
+        return {"UpdateFirewallRuleEntries": [{"FirewallRuleGroupId": state["group"], "FirewallDomainListId": state["domain_list"], "Name": "stackyard"}]}
+    if op == "GetFirewallRuleGroupPolicy":
+        return {"Arn": state["group_arn"]}
+    if op == "PutFirewallRuleGroupPolicy":
+        return {"Arn": state["group_arn"], "FirewallRuleGroupPolicy": R53R_POLICY}
+    if op == "GetFirewallRuleGroupAssociation":
+        return {"FirewallRuleGroupAssociationId": state["fw_assoc"]}
+    if op == "UpdateFirewallRuleGroupAssociation":
+        return {"FirewallRuleGroupAssociationId": state["fw_assoc"], "Name": "stackyard"}
+    if op == "TagResource":
+        return {"ResourceArn": state["endpoint_arn"], "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": state["endpoint_arn"], "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": state["endpoint_arn"]}
+    return payload
+
+
 def dax_unique_name(prefix: str) -> str:
     # DAX cluster names are at most 20 characters.
     return f"{prefix}{time.time_ns() % 10**10}"
@@ -33979,6 +34228,8 @@ def hydrate_payload_with_service_state(
         return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "scheduler":
         return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
+    if endpoint.service == "route53resolver":
+        return route53resolver_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dax":
         return dax_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "ecrpublic":
