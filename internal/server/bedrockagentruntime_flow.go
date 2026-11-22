@@ -19,6 +19,18 @@ import (
 
 const barMaxFlowSteps = 200
 
+// barMaxFlowOutputBytes bounds the total node output of one flow run.
+const barMaxFlowOutputBytes = 4 << 20
+
+// barValueSize is the JSON size of a node value (0 if it can't be encoded).
+func barValueSize(v any) int {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return 0
+	}
+	return len(b)
+}
+
 var barNodeTypes = map[string]string{
 	"Input": "FlowInputNode", "Output": "FlowOutputNode", "Prompt": "PromptNode", "KnowledgeBase": "KnowledgeBaseNode",
 	"Condition": "ConditionNode", "LambdaFunction": "LambdaFunctionNode", "Lex": "LexNode",
@@ -75,6 +87,7 @@ func (s *Server) barRunFlow(flow map[string]any, inputs []any) (*barFlowRun, *be
 		value any
 	}
 	queue := []item{{baStr(start, "name"), content["document"]}}
+	produced := 0
 	for steps := 0; len(queue) > 0; steps++ {
 		if steps >= barMaxFlowSteps {
 			return nil, baValidation(fmt.Sprintf("the flow ran more than %d node steps", barMaxFlowSteps))
@@ -92,6 +105,12 @@ func (s *Server) barRunFlow(flow map[string]any, inputs []any) (*barFlowRun, *be
 		out, branch, err := s.barRunNode(node, cur.value)
 		if err != nil {
 			return nil, err
+		}
+		// The step cap alone doesn't bound memory: a Prompt template that
+		// repeats its input grows the value every step, and every value is
+		// copied into the trace and events. Cap the total produced.
+		if produced += barValueSize(out); produced > barMaxFlowOutputBytes {
+			return nil, baValidation(fmt.Sprintf("the flow produced more than %d bytes of node output", barMaxFlowOutputBytes))
 		}
 		if kind == "Output" {
 			run.outputs = append(run.outputs, map[string]any{"nodeName": cur.node, "nodeType": "FlowOutputNode", "content": map[string]any{"document": out}})

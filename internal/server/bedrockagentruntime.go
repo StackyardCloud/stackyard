@@ -91,6 +91,9 @@ func (s *Server) handleBedrockAgentRuntimeRESTRouter(w http.ResponseWriter, r *h
 		respondBedrockAgentError(w, baValidation("request body exceeds the maximum size"))
 		return true
 	}
+	// ContentLength is absent for chunked bodies, so also bound the bytes
+	// actually read (by the SigV4 check and the decoder).
+	r.Body = http.MaxBytesReader(w, r.Body, barMaxBody)
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, "bedrock"); !ok {
 		respondBedrockAgentError(w, &bedrockAgentError{status: status, code: code, msg: msg})
 		return true

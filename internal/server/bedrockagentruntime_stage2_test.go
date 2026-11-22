@@ -117,6 +117,9 @@ func TestBedrockAgentRuntimeStage2Flows(t *testing.T) {
 	}
 	barJSON(t, ts, http.StatusBadRequest, http.MethodPost, invoke, map[string]any{"inputs": []any{map[string]any{"nodeName": "say", "content": map[string]any{"document": 1}}}})
 	barJSON(t, ts, http.StatusNotFound, http.MethodPost, "/flows/"+flowID+"/aliases/NOPE000000", input(1))
+	// Node output is capped in total, not just per step: a 3 MiB document
+	// passed through two nodes exceeds the 4 MiB budget.
+	barJSON(t, ts, http.StatusBadRequest, http.MethodPost, invoke, input(strings.Repeat("x", 3<<20)))
 
 	// Asynchronous executions.
 	start := invoke + "/executions"
