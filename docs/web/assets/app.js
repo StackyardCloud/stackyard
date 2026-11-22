@@ -56,6 +56,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/athena/docker-compose.yml"
   },
   {
+    id: "glue",
+    name: "AWS Glue",
+    category: "database",
+    summary: "Emulate the Glue Data Catalog (databases, tables with versions, partitions, statistics), crawlers, jobs and runs, triggers, workflows, Schema Registry, sessions and Data Quality.",
+    docsHref: "../../../index.html#glue",
+    exampleHref: "../../../../examples/aws/glue/docker-compose.yml"
+  },
+  {
     id: "aurora-dsql",
     name: "Aurora DSQL",
     category: "database",
