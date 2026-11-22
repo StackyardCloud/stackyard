@@ -18,6 +18,7 @@ type cloudTrailStore struct {
 	queries        map[string]map[string]any
 	imports        map[string]map[string]any
 	resourcePolicy string
+	auditEvents    map[string][]cloudtraildataRecord // event data store name -> PutAuditEvents records
 }
 
 func newCloudTrailStore() *cloudTrailStore {
@@ -132,7 +133,7 @@ func (s *cloudTrailStore) Handle(action string, payload map[string]any) map[stri
 
 	switch action {
 	case "AddTags", "RemoveTags",
-		"DeleteChannel", "DeleteDashboard", "DeleteEventDataStore", "DeleteTrail", "DeleteResourcePolicy",
+		"DeleteDashboard", "DeleteEventDataStore", "DeleteTrail", "DeleteResourcePolicy",
 		"DeregisterOrganizationDelegatedAdmin", "DisableFederation", "EnableFederation",
 		"PutEventConfiguration", "PutEventSelectors", "PutInsightSelectors", "RegisterOrganizationDelegatedAdmin",
 		"StartEventDataStoreIngestion", "StopEventDataStoreIngestion", "StartLogging", "StopLogging",
@@ -198,7 +199,16 @@ func (s *cloudTrailStore) Handle(action string, payload map[string]any) map[stri
 	case "CreateChannel", "UpdateChannel":
 		name := cloudTrailDefaultString(payload, "Name", "stackyard-channel")
 		channel := s.ensureChannelLocked(name)
+		if destinations, ok := payload["Destinations"].([]any); ok && len(destinations) > 0 {
+			channel["Destinations"] = cloudTrailCloneSlice(destinations)
+		}
+		if source := cloudTrailPayloadString(payload, "Source"); source != "" {
+			channel["Source"] = source
+		}
 		return map[string]any{"ChannelArn": channel["ChannelArn"]}
+	case "DeleteChannel":
+		delete(s.channels, cloudTrailNameFromARN(cloudTrailPayloadString(payload, "Channel")))
+		return map[string]any{}
 	case "GetChannel":
 		name := cloudTrailNameFromARN(cloudTrailPayloadString(payload, "Channel"))
 		return map[string]any{"Channel": cloudTrailCloneMap(s.ensureChannelLocked(name))}
@@ -270,10 +280,26 @@ func (s *cloudTrailStore) Handle(action string, payload map[string]any) map[stri
 		queryID := cloudTrailDefaultString(payload, "QueryId", s.firstQueryIDLocked())
 		query := s.ensureQueryLocked(queryID)
 		query["QueryStatus"] = "FINISHED"
+		rows, matched, errMsg := s.runAuditQueryLocked(fmt.Sprint(query["QueryString"]))
+		if errMsg != "" {
+			query["QueryStatus"] = "FAILED"
+			query["ErrorMessage"] = errMsg
+			return map[string]any{
+				"QueryStatus":     query["QueryStatus"],
+				"QueryStatistics": query["QueryStatistics"],
+				"QueryResultRows": []any{},
+				"ErrorMessage":    errMsg,
+			}
+		}
+		if !matched {
+			rows = []any{}
+		} else {
+			query["QueryStatistics"] = map[string]any{"ResultsCount": len(rows), "TotalResultsCount": len(rows), "BytesScanned": 0}
+		}
 		return map[string]any{
 			"QueryStatus":     query["QueryStatus"],
 			"QueryStatistics": query["QueryStatistics"],
-			"QueryResultRows": []any{},
+			"QueryResultRows": rows,
 			"NextToken":       "",
 		}
 	case "ListQueries":
