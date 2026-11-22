@@ -608,6 +608,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/codepipeline/docker-compose.yml"
   },
   {
+    id: "codestarnotifications",
+    name: "CodeStar Notifications",
+    category: "integration",
+    summary: "Notification rules on CodeBuild, CodeDeploy, CodePipeline and CodeCommit resources with SNS and AWS Chatbot targets.",
+    docsHref: "../../../index.html#codestarnotifications",
+    exampleHref: "../../../../examples/aws/codestar-notifications/docker-compose.yml"
+  },
+  {
     id: "organizations",
     name: "Organizations",
     category: "integration",

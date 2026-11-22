@@ -554,6 +554,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
+    "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2183,6 +2184,9 @@ SERVICE_ALIASES = {
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
     "awscodestarconnections": "codestarconnections",
+    "codestarnotifications": "codestarnotifications",
+    "codestar-notifications": "codestarnotifications",
+    "awscodestarnotifications": "codestarnotifications",
     "elasticfilesystem": "efs",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
@@ -3077,6 +3081,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glue": {},
     "codeconnections": {},
     "codestarconnections": {},
+    "codestarnotifications": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31621,6 +31626,74 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+CODESTARNOTIFICATIONS_RESOURCE = "arn:aws:codebuild:us-east-1:123456789012:project/stackyard-codebuild-project"
+CODESTARNOTIFICATIONS_EVENT = "codebuild-project-build-state-failed"
+
+
+def codestarnotifications_topic(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    created = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", name])
+    return str(created.get("TopicArn") or "") if isinstance(created, dict) else ""
+
+
+def codestarnotifications_rule(
+    aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str, topic_arn: str
+) -> str:
+    payload = {
+        "Name": name,
+        "EventTypeIds": [CODESTARNOTIFICATIONS_EVENT],
+        "Resource": CODESTARNOTIFICATIONS_RESOURCE,
+        "Targets": [{"TargetType": "SNS", "TargetAddress": topic_arn}],
+        "DetailType": "BASIC",
+    }
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "codestar-notifications", "create-notification-rule", env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return str(created.get("Arn") or "") if isinstance(created, dict) else ""
+
+
+def codestarnotifications_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each CodeStar Notifications operation a real rule on the seeded
+    CodeBuild project with an SNS target; deletes get resources of their own."""
+    op = endpoint.operation
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    state = RUNTIME_STATE.setdefault("codestarnotifications", {})
+    if not state.get("rule"):
+        state["topic"] = codestarnotifications_topic(aws_bin, endpoint_url, region, env, f"{unique}-topic")
+        state["extra_topic"] = codestarnotifications_topic(aws_bin, endpoint_url, region, env, f"{unique}-extra")
+        state["rule"] = codestarnotifications_rule(aws_bin, endpoint_url, region, env, f"{unique}-rule", state["topic"])
+    rule, topic, extra = state["rule"], state["topic"], state["extra_topic"]
+    if op in {"ListEventTypes", "ListNotificationRules", "ListTargets"}:
+        return {}
+    if op == "CreateNotificationRule":
+        return {
+            "Name": unique,
+            "EventTypeIds": [CODESTARNOTIFICATIONS_EVENT],
+            "Resource": CODESTARNOTIFICATIONS_RESOURCE,
+            "Targets": [{"TargetType": "SNS", "TargetAddress": topic}],
+            "DetailType": "FULL",
+        }
+    if op == "UpdateNotificationRule":
+        return {"Arn": rule, "Status": "ENABLED", "DetailType": "FULL"}
+    if op == "DeleteNotificationRule":
+        return {"Arn": codestarnotifications_rule(aws_bin, endpoint_url, region, env, unique, topic)}
+    if op == "Subscribe":
+        return {"Arn": rule, "Target": {"TargetType": "SNS", "TargetAddress": extra}}
+    if op == "Unsubscribe":
+        return {"Arn": rule, "TargetAddress": extra}
+    if op == "DeleteTarget":
+        doomed = codestarnotifications_topic(aws_bin, endpoint_url, region, env, unique)
+        codestarnotifications_rule(aws_bin, endpoint_url, region, env, unique, doomed)
+        return {"TargetAddress": doomed, "ForceUnsubscribeAll": True}
+    if op == "TagResource":
+        return {"Arn": rule, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"Arn": rule, "TagKeys": ["stackyard"]}
+    return {"Arn": rule}
+
+
 def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
     created = run_aws_json(
         aws_bin, endpoint_url, region, "efs", "create-file-system", env,
@@ -33286,6 +33359,8 @@ def hydrate_payload_with_service_state(
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "codecommit":
         return codecommit_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "codestarnotifications":
+        return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
