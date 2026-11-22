@@ -50,6 +50,9 @@ type Service struct {
 	integrations      map[string]*Integration
 	reservedOfferings map[string]*ReservedDBInstancesOffering
 	reservedInstances map[string]*ReservedDBInstance
+
+	clusterParamGroups map[string]*DBClusterParameterGroup
+	clusterSnapshots   map[string]*DBClusterSnapshot
 }
 
 type DBInstance struct {
@@ -72,6 +75,15 @@ type DBInstance struct {
 	ReadReplica           bool
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
+
+	// Cluster-family fields (DocumentDB-style instances, docdb.go).
+	DBClusterIdentifier        string
+	PromotionTier              int
+	AvailabilityZone           string
+	EngineVersion              string
+	CACertificateIdentifier    string
+	AutoMinorVersionUpgrade    bool
+	PreferredMaintenanceWindow string
 }
 
 type CreateDBInstanceInput struct {
@@ -241,6 +253,9 @@ func NewService() *Service {
 		integrations:      map[string]*Integration{},
 		reservedOfferings: map[string]*ReservedDBInstancesOffering{},
 		reservedInstances: map[string]*ReservedDBInstance{},
+
+		clusterParamGroups: map[string]*DBClusterParameterGroup{},
+		clusterSnapshots:   map[string]*DBClusterSnapshot{},
 	}
 	svc.ensureCertificatesLocked()
 	svc.ensureReservedOfferingsLocked()

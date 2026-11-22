@@ -190,6 +190,7 @@
         <a href="#license-manager-user-subscriptions">License Manager User Subscriptions</a>
         <a href="#lightsail">Lightsail</a>
         <a href="#memorydb">MemoryDB</a>
+        <a href="#docdb">DocumentDB</a>
         <a href="#neptune">Neptune</a>
         <a href="#neptunedata">Neptune Data API</a>
         <a href="#neptuneanalytics">Neptune Analytics API</a>
@@ -15327,6 +15328,205 @@
         <ul>
                 <li><code>memorydb</code>: <code>docker compose -f examples/aws/memorydb/docker-compose.yml up --build</code></li>
                 <li><code>memorydb</code>: <code>docker compose -f examples/aws/memorydb/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+
+        <section id="docdb" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DocumentDB (with MongoDB compatibility)</h2>
+        <p>SigV4 signed with service <code>rds</code>. Query API over <code>GET/POST</code> using <code>Action</code> and <code>Version=2014-10-31</code> request parameters, told apart from RDS and Neptune by the client's User-Agent (<code>command#docdb.</code> or <code>api/docdb#</code>), a <code>/docdb</code> path or a <code>.docdb.</code> host. Clusters, instances, subnet groups, event subscriptions and tags share the RDS store, so the rds API lists DocumentDB clusters too, as in AWS. All 56 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: rds</span>
+        <span class="meta-pill">API: Query</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AddSourceIdentifierToSubscription</code></td>
+        </tr>
+        <tr>
+        <td><code>AddTagsToResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ApplyPendingMaintenanceAction</code></td>
+        </tr>
+        <tr>
+        <td><code>CopyDBClusterParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CopyDBClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDBClusterParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDBClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDBInstance</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDBSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateEventSubscription</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateGlobalCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDBClusterParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDBClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDBInstance</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDBSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteEventSubscription</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteGlobalCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeCertificates</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBClusterParameterGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBClusterParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBClusterSnapshotAttributes</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBClusterSnapshots</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBEngineVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBInstances</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDBSubnetGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEngineDefaultClusterParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEventCategories</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEventSubscriptions</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEvents</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeGlobalClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeOrderableDBInstanceOptions</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribePendingMaintenanceActions</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeServerlessV2PlatformVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>FailoverDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>FailoverGlobalCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyDBClusterParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyDBClusterSnapshotAttribute</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyDBInstance</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyDBSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyEventSubscription</code></td>
+        </tr>
+        <tr>
+        <td><code>ModifyGlobalCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>RebootDBInstance</code></td>
+        </tr>
+        <tr>
+        <td><code>RemoveFromGlobalCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>RemoveSourceIdentifierFromSubscription</code></td>
+        </tr>
+        <tr>
+        <td><code>RemoveTagsFromResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ResetDBClusterParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>RestoreDBClusterFromSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>RestoreDBClusterToPointInTime</code></td>
+        </tr>
+        <tr>
+        <td><code>StartDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>StopDBCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>SwitchoverGlobalCluster</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>docdb</code>: <code>docker compose -f examples/aws/docdb/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>

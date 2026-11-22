@@ -320,6 +320,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
+    "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "snowball": {"cli": "snowball", "ops_file": REPO_ROOT / "internal/server/snowball_ops.go"},
@@ -1416,6 +1417,11 @@ SERVICE_ALIASES = {
     "amazon inspector v2": "inspectorv2",
     "aws inspector v2": "inspectorv2",
     "dms": "dms",
+    "docdb": "docdb",
+    "documentdb": "docdb",
+    "amazondocdb": "docdb",
+    "amazon-documentdb": "docdb",
+    "amazondocumentdb": "docdb",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -3016,6 +3022,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "docdb": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31409,6 +31416,214 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+DOCDB_PASSWORD = "Passw0rd-stackyard"
+
+
+def docdb_unique(prefix: str) -> str:
+    return f"{prefix}-{time.time_ns() % 10**12}"
+
+
+def docdb_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "docdb", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def docdb_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], extra: list[str] | None = None) -> str:
+    cluster_id = docdb_unique("stackyard-docdb")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster", [
+        "--db-cluster-identifier", cluster_id, "--engine", "docdb",
+        "--master-username", "stackyard", "--master-user-password", DOCDB_PASSWORD, *(extra or []),
+    ])
+    return cluster_id
+
+
+def docdb_create_instance(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cluster_id: str) -> str:
+    instance_id = docdb_unique("stackyard-docdb-inst")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-instance", [
+        "--db-instance-identifier", instance_id, "--db-instance-class", "db.r6g.large",
+        "--engine", "docdb", "--db-cluster-identifier", cluster_id,
+    ])
+    return instance_id
+
+
+def docdb_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict[str, str]:
+    """Shared, long-lived resources the non-destructive operations point at."""
+    state = RUNTIME_STATE.setdefault("docdb", {})
+    if state.get("cluster"):
+        return state  # type: ignore[return-value]
+    cluster_id = docdb_create_cluster(aws_bin, endpoint_url, region, env)
+    instance_id = docdb_create_instance(aws_bin, endpoint_url, region, env, cluster_id)
+    pg = docdb_unique("stackyard-docdb-pg")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster-parameter-group", [
+        "--db-cluster-parameter-group-name", pg, "--db-parameter-group-family", "docdb5.0", "--description", "stackyard coverage",
+    ])
+    snapshot = docdb_unique("stackyard-docdb-snap")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster-snapshot", [
+        "--db-cluster-snapshot-identifier", snapshot, "--db-cluster-identifier", cluster_id,
+    ])
+    global_id = docdb_unique("stackyard-docdb-global")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-global-cluster", ["--global-cluster-identifier", global_id])
+    subnet_group = docdb_unique("stackyard-docdb-subnets")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-subnet-group", [
+        "--db-subnet-group-name", subnet_group, "--db-subnet-group-description", "stackyard coverage",
+        "--subnet-ids", "subnet-0a1b2c3d", "subnet-1a2b3c4d",
+    ])
+    subscription = docdb_unique("stackyard-docdb-sub")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-event-subscription", [
+        "--subscription-name", subscription, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:stackyard-docdb",
+    ])
+    state.update({
+        "cluster": cluster_id, "cluster_arn": f"arn:aws:rds:{region}:123456789012:cluster:{cluster_id}",
+        "instance": instance_id, "pg": pg, "snapshot": snapshot, "global": global_id,
+        "subnet_group": subnet_group, "subscription": subscription,
+    })
+    return state  # type: ignore[return-value]
+
+
+def docdb_global_pair(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> tuple[str, str]:
+    """A fresh global cluster with a primary and a secondary; returns (global id, secondary id)."""
+    primary = docdb_create_cluster(aws_bin, endpoint_url, region, env)
+    global_id = docdb_unique("stackyard-docdb-global")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-global-cluster", [
+        "--global-cluster-identifier", global_id, "--source-db-cluster-identifier", primary,
+    ])
+    secondary = docdb_unique("stackyard-docdb")
+    docdb_cli(aws_bin, endpoint_url, region, env, "create-db-cluster", [
+        "--db-cluster-identifier", secondary, "--engine", "docdb", "--global-cluster-identifier", global_id,
+    ])
+    return global_id, secondary
+
+
+def docdb_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    op = endpoint.operation
+    fx = docdb_fixture(aws_bin, endpoint_url, region, env)
+    args = (aws_bin, endpoint_url, region, env)
+    cluster, instance, pg, snapshot = fx["cluster"], fx["instance"], fx["pg"], fx["snapshot"]
+    if op == "CreateDBCluster":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "Engine": "docdb",
+                "MasterUsername": "stackyard", "MasterUserPassword": DOCDB_PASSWORD}
+    if op in {"ModifyDBCluster", "FailoverDBCluster"}:
+        return {"DBClusterIdentifier": cluster}
+    if op == "DeleteDBCluster":
+        return {"DBClusterIdentifier": docdb_create_cluster(*args), "SkipFinalSnapshot": True}
+    if op == "StopDBCluster":
+        return {"DBClusterIdentifier": docdb_create_cluster(*args)}
+    if op == "StartDBCluster":
+        stopped = docdb_create_cluster(*args)
+        docdb_cli(*args, "stop-db-cluster", ["--db-cluster-identifier", stopped])
+        return {"DBClusterIdentifier": stopped}
+    if op == "CreateDBInstance":
+        return {"DBInstanceIdentifier": docdb_unique("stackyard-docdb-inst"), "DBInstanceClass": "db.r6g.large",
+                "Engine": "docdb", "DBClusterIdentifier": cluster}
+    if op in {"ModifyDBInstance", "RebootDBInstance"}:
+        return {"DBInstanceIdentifier": instance}
+    if op == "DeleteDBInstance":
+        return {"DBInstanceIdentifier": docdb_create_instance(*args, cluster)}
+    if op == "CreateDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": docdb_unique("stackyard-docdb-pg"), "DBParameterGroupFamily": "docdb5.0", "Description": "stackyard coverage"}
+    if op == "CopyDBClusterParameterGroup":
+        return {"SourceDBClusterParameterGroupIdentifier": pg, "TargetDBClusterParameterGroupIdentifier": docdb_unique("stackyard-docdb-pg"),
+                "TargetDBClusterParameterGroupDescription": "stackyard coverage copy"}
+    if op == "DeleteDBClusterParameterGroup":
+        doomed = docdb_unique("stackyard-docdb-pg")
+        docdb_cli(*args, "create-db-cluster-parameter-group", [
+            "--db-cluster-parameter-group-name", doomed, "--db-parameter-group-family", "docdb5.0", "--description", "doomed"])
+        return {"DBClusterParameterGroupName": doomed}
+    if op == "DescribeDBClusterParameters":
+        return {"DBClusterParameterGroupName": pg}
+    if op == "ModifyDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": pg, "Parameters": [{"ParameterName": "ttl_monitor", "ParameterValue": "disabled", "ApplyMethod": "immediate"}]}
+    if op == "ResetDBClusterParameterGroup":
+        return {"DBClusterParameterGroupName": pg, "ResetAllParameters": True}
+    if op == "DescribeEngineDefaultClusterParameters":
+        return {"DBParameterGroupFamily": "docdb5.0"}
+    if op == "CreateDBClusterSnapshot":
+        return {"DBClusterSnapshotIdentifier": docdb_unique("stackyard-docdb-snap"), "DBClusterIdentifier": cluster}
+    if op == "CopyDBClusterSnapshot":
+        return {"SourceDBClusterSnapshotIdentifier": snapshot, "TargetDBClusterSnapshotIdentifier": docdb_unique("stackyard-docdb-snap")}
+    if op == "DeleteDBClusterSnapshot":
+        doomed = docdb_unique("stackyard-docdb-snap")
+        docdb_cli(*args, "create-db-cluster-snapshot", ["--db-cluster-snapshot-identifier", doomed, "--db-cluster-identifier", cluster])
+        return {"DBClusterSnapshotIdentifier": doomed}
+    if op == "DescribeDBClusterSnapshotAttributes":
+        return {"DBClusterSnapshotIdentifier": snapshot}
+    if op == "ModifyDBClusterSnapshotAttribute":
+        return {"DBClusterSnapshotIdentifier": snapshot, "AttributeName": "restore", "ValuesToAdd": ["210987654321"]}
+    if op == "RestoreDBClusterFromSnapshot":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "SnapshotIdentifier": snapshot, "Engine": "docdb"}
+    if op == "RestoreDBClusterToPointInTime":
+        return {"DBClusterIdentifier": docdb_unique("stackyard-docdb"), "SourceDBClusterIdentifier": cluster, "UseLatestRestorableTime": True}
+    if op == "CreateGlobalCluster":
+        return {"GlobalClusterIdentifier": docdb_unique("stackyard-docdb-global")}
+    if op == "ModifyGlobalCluster":
+        return {"GlobalClusterIdentifier": fx["global"]}
+    if op == "DeleteGlobalCluster":
+        doomed = docdb_unique("stackyard-docdb-global")
+        docdb_cli(*args, "create-global-cluster", ["--global-cluster-identifier", doomed])
+        return {"GlobalClusterIdentifier": doomed}
+    if op in {"FailoverGlobalCluster", "SwitchoverGlobalCluster", "RemoveFromGlobalCluster"}:
+        global_id, secondary = docdb_global_pair(*args)
+        arn = f"arn:aws:rds:{region}:123456789012:cluster:{secondary}"
+        if op == "RemoveFromGlobalCluster":
+            return {"GlobalClusterIdentifier": global_id, "DbClusterIdentifier": arn}
+        return {"GlobalClusterIdentifier": global_id, "TargetDbClusterIdentifier": arn}
+    if op == "CreateDBSubnetGroup":
+        return {"DBSubnetGroupName": docdb_unique("stackyard-docdb-subnets"), "DBSubnetGroupDescription": "stackyard coverage",
+                "SubnetIds": ["subnet-0a1b2c3d", "subnet-1a2b3c4d"]}
+    if op == "ModifyDBSubnetGroup":
+        return {"DBSubnetGroupName": fx["subnet_group"], "SubnetIds": ["subnet-0a1b2c3d", "subnet-2a2b3c4d"]}
+    if op == "DeleteDBSubnetGroup":
+        doomed = docdb_unique("stackyard-docdb-subnets")
+        docdb_cli(*args, "create-db-subnet-group", ["--db-subnet-group-name", doomed, "--db-subnet-group-description", "doomed",
+                                                  "--subnet-ids", "subnet-0a1b2c3d"])
+        return {"DBSubnetGroupName": doomed}
+    if op == "CreateEventSubscription":
+        return {"SubscriptionName": docdb_unique("stackyard-docdb-sub"), "SnsTopicArn": f"arn:aws:sns:{region}:123456789012:stackyard-docdb"}
+    if op == "ModifyEventSubscription":
+        return {"SubscriptionName": fx["subscription"], "Enabled": True}
+    if op == "DeleteEventSubscription":
+        doomed = docdb_unique("stackyard-docdb-sub")
+        docdb_cli(*args, "create-event-subscription", ["--subscription-name", doomed, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:doomed"])
+        return {"SubscriptionName": doomed}
+    if op == "AddSourceIdentifierToSubscription":
+        return {"SubscriptionName": fx["subscription"], "SourceIdentifier": cluster}
+    if op == "RemoveSourceIdentifierFromSubscription":
+        sub = docdb_unique("stackyard-docdb-sub")
+        docdb_cli(*args, "create-event-subscription", ["--subscription-name", sub, "--sns-topic-arn", f"arn:aws:sns:{region}:123456789012:stackyard-docdb",
+                                                     "--source-ids", cluster])
+        return {"SubscriptionName": sub, "SourceIdentifier": cluster}
+    if op == "AddTagsToResource":
+        return {"ResourceName": fx["cluster_arn"], "Tags": [{"Key": "team", "Value": "stackyard"}]}
+    if op == "ListTagsForResource":
+        return {"ResourceName": fx["cluster_arn"]}
+    if op == "RemoveTagsFromResource":
+        return {"ResourceName": fx["cluster_arn"], "TagKeys": ["team"]}
+    if op == "ApplyPendingMaintenanceAction":
+        return {"ResourceIdentifier": fx["cluster_arn"], "ApplyAction": "system-update", "OptInType": "immediate"}
+    if op == "DescribeOrderableDBInstanceOptions":
+        return {"Engine": "docdb"}
+    # Read operations: the skeleton fills every optional member with
+    # placeholders (including MaxRecords=1, below the API minimum of 20), so
+    # send a realistic filter instead.
+    reads = {
+        "DescribeDBClusters": {"DBClusterIdentifier": cluster},
+        "DescribeDBInstances": {"Filters": [{"Name": "db-cluster-id", "Values": [cluster]}]},
+        "DescribeDBClusterParameterGroups": {"DBClusterParameterGroupName": pg},
+        "DescribeDBClusterSnapshots": {"DBClusterIdentifier": cluster, "SnapshotType": "manual"},
+        "DescribeDBEngineVersions": {"Engine": "docdb"},
+        "DescribeGlobalClusters": {"GlobalClusterIdentifier": fx["global"]},
+        "DescribeDBSubnetGroups": {"DBSubnetGroupName": fx["subnet_group"]},
+        "DescribeEventSubscriptions": {"SubscriptionName": fx["subscription"]},
+        "DescribeEventCategories": {"SourceType": "db-cluster"},
+        "DescribeServerlessV2PlatformVersions": {"Engine": "docdb"},
+    }
+    if op in reads:
+        return reads[op]
+    if op.startswith("Describe"):
+        return {}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -31420,6 +31635,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "docdb":
+        return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:

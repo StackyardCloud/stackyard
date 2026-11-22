@@ -825,6 +825,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/license-manager-user-subscriptions/docker-compose.yml"
   },
   {
+    id: "docdb",
+    name: "DocumentDB",
+    category: "database",
+    summary: "Run DocumentDB clusters, instances, cluster parameter groups, cluster snapshots and global clusters on the shared RDS control plane.",
+    docsHref: "../../../index.html#docdb",
+    exampleHref: "../../../../examples/aws/docdb/docker-compose.yml"
+  },
+  {
     id: "neptune",
     name: "Neptune",
     category: "database",
