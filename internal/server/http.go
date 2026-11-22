@@ -2939,6 +2939,8 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleGlueJSONRouter(w, r) {
+		return
+	}
 	if s.handleCodeConnectionsJSONRouter(w, r) {
 		return
 	}
