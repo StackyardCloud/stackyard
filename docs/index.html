@@ -165,6 +165,7 @@
         <a href="#aws-autoscaling">AWS Auto Scaling</a>
         <a href="#compute-optimizer">Compute Optimizer</a>
         <a href="#ecr">ECR</a>
+        <a href="#ecrpublic">ECR Public</a>
         <a href="#ecs">ECS</a>
         <a href="#eks">EKS</a>
         <a href="#elasticbeanstalk">Elastic Beanstalk</a>
@@ -11889,6 +11890,107 @@
         <ul>
         <li><code>ecr</code>: <code>docker compose -f examples/aws/ecr/docker-compose.yml up --build</code></li>
         <li><code>ecr</code>: <code>docker compose -f examples/aws/ecr/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="ecrpublic" class="service">
+
+        <div class="service-header">
+        <h2>ECR Public</h2>
+        <p>SigV4 signed with service <code>ecr-public</code> in <code>us-east-1</code> only. Use <code>POST /</code> JSON with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SpencerFrontendService.&lt;Action&gt;</code>. Repositories live under the registry alias <code>public.ecr.aws/stackyard</code>, separate from private ECR repositories.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ecr-public</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchCheckLayerAvailability</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchDeleteImage</code></td>
+        </tr>
+        <tr>
+        <td><code>CompleteLayerUpload</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRepository</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRepository</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeImageTags</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeImages</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRegistries</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRepositories</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAuthorizationToken</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRegistryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRepositoryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>InitiateLayerUpload</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutImage</code></td>
+        </tr>
+        <tr>
+        <td><code>PutRegistryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>PutRepositoryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>SetRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UploadLayerPart</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>ecr-public</code>: <code>docker compose -f examples/aws/ecr-public/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

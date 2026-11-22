@@ -551,6 +551,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "ecrpublic": {"cli": "ecr-public", "ops_file": REPO_ROOT / "internal/server/ecrpublic_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2172,6 +2173,9 @@ SERVICE_ALIASES = {
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "efs": "efs",
+    "ecrpublic": "ecrpublic",
+    "ecr-public": "ecrpublic",
+    "amazonecrpublic": "ecrpublic",
     "elasticfilesystem": "efs",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
@@ -3061,6 +3065,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
+    "ecrpublic": {},
     "docdb": {},
     "glue": {},
     "appconfig": {},
@@ -31607,6 +31612,119 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+ECRPUBLIC_REPOSITORY = "stackyard-ecrp"
+ECRPUBLIC_POLICY = json.dumps(
+    {"Version": "2012-10-17", "Statement": [{"Sid": "pull", "Effect": "Allow", "Principal": "*", "Action": ["ecr-public:DescribeImages"]}]},
+    separators=(",", ":"),
+)
+
+
+def ecrpublic_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "ecr-public", command, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def ecrpublic_create_repository(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "create-repository", {"repositoryName": name, "catalogData": {"description": "stackyard coverage"}})
+    return name
+
+
+def ecrpublic_push_layer(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], repo: str, data: bytes) -> str:
+    """Upload data as one layer (initiate, one part, complete) and return its digest."""
+    upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+    upload_id = str(upload.get("uploadId") or "")
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "upload-layer-part", {
+        "repositoryName": repo, "uploadId": upload_id, "partFirstByte": 0, "partLastByte": len(data) - 1,
+        "layerPartBlob": base64.b64encode(data).decode("ascii"),
+    })
+    digest = f"sha256:{hashlib.sha256(data).hexdigest()}"
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "complete-layer-upload", {"repositoryName": repo, "uploadId": upload_id, "layerDigests": [digest]})
+    return digest
+
+
+def ecrpublic_manifest(config: str, layer: str, note: str = "") -> str:
+    manifest = {
+        "schemaVersion": 2,
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "config": {"mediaType": "application/vnd.docker.container.image.v1+json", "size": 2, "digest": config},
+        "layers": [{"mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip", "size": 8, "digest": layer}],
+    }
+    if note:
+        manifest["annotations"] = {"stackyard": note}
+    return json.dumps(manifest, separators=(",", ":"))
+
+
+def ecrpublic_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One repository with a config blob, a layer and a tagged image that the
+    non-destructive operations share."""
+    state = RUNTIME_STATE.setdefault("ecrpublic", {})
+    if not state.get("layer"):
+        repo = ecrpublic_create_repository(aws_bin, endpoint_url, region, env, ECRPUBLIC_REPOSITORY)
+        config = ecrpublic_push_layer(aws_bin, endpoint_url, region, env, repo, b"{}")
+        layer = ecrpublic_push_layer(aws_bin, endpoint_url, region, env, repo, f"layer-{time.time_ns()}".encode())
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "put-image", {"repositoryName": repo, "imageManifest": ecrpublic_manifest(config, layer), "imageTag": "latest"})
+        state.update({"repo": repo, "config": config, "layer": layer})
+    return state
+
+
+def ecrpublic_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each ECR Public operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid for the rest."""
+    op = endpoint.operation
+    unique = f"stackyard-ecrp-{time.time_ns()}"
+    if op in {"GetAuthorizationToken", "GetRegistryCatalogData", "DescribeRegistries"}:
+        return {}
+    if op == "PutRegistryCatalogData":
+        return {"displayName": "Stackyard"}
+    if op == "CreateRepository":
+        return {"repositoryName": unique}
+    if op == "DeleteRepository":
+        return {"repositoryName": ecrpublic_create_repository(aws_bin, endpoint_url, region, env, unique), "force": True}
+    state = ecrpublic_shared_state(aws_bin, endpoint_url, region, env)
+    repo = str(state["repo"])
+    if op == "DescribeRepositories":
+        return {"repositoryNames": [repo]}
+    if op in {"ListTagsForResource", "TagResource", "UntagResource"}:
+        hydrated = {"resourceArn": f"arn:aws:ecr-public::123456789012:repository/{repo}"}
+        if op == "TagResource":
+            hydrated["tags"] = [{"Key": "stackyard", "Value": "coverage"}]
+        if op == "UntagResource":
+            hydrated["tagKeys"] = ["stackyard"]
+        return hydrated
+    if op in {"GetRepositoryPolicy", "DeleteRepositoryPolicy"}:
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "set-repository-policy", {"repositoryName": repo, "policyText": ECRPUBLIC_POLICY})
+        return {"repositoryName": repo}
+    if op == "SetRepositoryPolicy":
+        return {"repositoryName": repo, "policyText": ECRPUBLIC_POLICY}
+    if op == "PutRepositoryCatalogData":
+        return {"repositoryName": repo, "catalogData": {"description": "stackyard coverage", "architectures": ["x86-64"], "operatingSystems": ["Linux"]}}
+    if op == "UploadLayerPart":
+        upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+        data = b"stackyard part"
+        return {"repositoryName": repo, "uploadId": str(upload.get("uploadId") or ""), "partFirstByte": 0,
+                "partLastByte": len(data) - 1, "layerPartBlob": base64.b64encode(data).decode("ascii")}
+    if op == "CompleteLayerUpload":
+        upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+        upload_id = str(upload.get("uploadId") or "")
+        data = unique.encode()
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "upload-layer-part", {
+            "repositoryName": repo, "uploadId": upload_id, "partFirstByte": 0, "partLastByte": len(data) - 1,
+            "layerPartBlob": base64.b64encode(data).decode("ascii"),
+        })
+        return {"repositoryName": repo, "uploadId": upload_id, "layerDigests": [f"sha256:{hashlib.sha256(data).hexdigest()}"]}
+    if op == "BatchCheckLayerAvailability":
+        return {"repositoryName": repo, "layerDigests": [str(state["layer"])]}
+    if op == "PutImage":
+        return {"repositoryName": repo, "imageManifest": ecrpublic_manifest(str(state["config"]), str(state["layer"])), "imageTag": unique}
+    if op == "BatchDeleteImage":
+        manifest = ecrpublic_manifest(str(state["config"]), str(state["layer"]), unique)
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "put-image", {"repositoryName": repo, "imageManifest": manifest})
+        return {"repositoryName": repo, "imageIds": [{"imageDigest": f"sha256:{hashlib.sha256(manifest.encode()).hexdigest()}"}]}
+    return {"repositoryName": repo}
+
+
 def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
     created = run_aws_json(
         aws_bin, endpoint_url, region, "efs", "create-file-system", env,
@@ -32899,6 +33017,8 @@ def hydrate_payload_with_service_state(
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "ecrpublic":
+        return ecrpublic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":

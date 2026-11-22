@@ -713,6 +713,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/ecr/docker-compose.yml"
   },
   {
+    id: "ecrpublic",
+    name: "ECR Public",
+    category: "compute",
+    summary: "Run a public container registry: repositories with gallery catalog data, layer uploads, image manifests, tags and the registry alias.",
+    docsHref: "../../../index.html#ecrpublic",
+    exampleHref: "../../../../examples/aws/ecr-public/docker-compose.yml"
+  },
+  {
     id: "ecs",
     name: "ECS",
     category: "compute",
