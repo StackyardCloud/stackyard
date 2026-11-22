@@ -672,6 +672,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "dax",
+    name: "DynamoDB Accelerator (DAX)",
+    category: "database",
+    summary: "Manage DAX clusters, node replication, parameter groups, subnet groups, events and tags (control plane only).",
+    docsHref: "../../../index.html#dax",
+    exampleHref: "../../../../examples/aws/dax/docker-compose.yml"
+  },
+  {
     id: "dynamodbstreams",
     name: "DynamoDB Streams",
     category: "database",
@@ -750,6 +758,14 @@ const SERVICE_CATALOG = [
     summary: "Work with repositories, image metadata, and container registry APIs.",
     docsHref: "../../../index.html#ecr",
     exampleHref: "../../../../examples/aws/ecr/docker-compose.yml"
+  },
+  {
+    id: "ecrpublic",
+    name: "ECR Public",
+    category: "compute",
+    summary: "Run a public container registry: repositories with gallery catalog data, layer uploads, image manifests, tags and the registry alias.",
+    docsHref: "../../../index.html#ecrpublic",
+    exampleHref: "../../../../examples/aws/ecr-public/docker-compose.yml"
   },
   {
     id: "ecs",
@@ -1086,6 +1102,14 @@ const SERVICE_CATALOG = [
     summary: "Plan staged emulation for app lifecycle, resiliency policy workflows, assessments, recommendations, and tagging APIs.",
     docsHref: "../../../index.html#resilience-hub",
     exampleHref: "../../../../examples/aws/resilience-hub/docker-compose.yml"
+  },
+  {
+    id: "datasync",
+    name: "AWS DataSync",
+    category: "storage",
+    summary: "Emulate DataSync agents, every location type, tasks with filters and schedules, and executions that really copy S3-to-S3 objects.",
+    docsHref: "../../../index.html#datasync",
+    exampleHref: "../../../../examples/aws/datasync/docker-compose.yml"
   },
   {
     id: "efs",

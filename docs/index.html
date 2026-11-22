@@ -161,6 +161,7 @@
         <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
         <a href="#dynamodbstreams">DynamoDB Streams</a>
+        <a href="#dax">DynamoDB Accelerator (DAX)</a>
         <a href="#ec2">EC2</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
@@ -170,6 +171,7 @@
         <a href="#aws-autoscaling">AWS Auto Scaling</a>
         <a href="#compute-optimizer">Compute Optimizer</a>
         <a href="#ecr">ECR</a>
+        <a href="#ecrpublic">ECR Public</a>
         <a href="#ecs">ECS</a>
         <a href="#eks">EKS</a>
         <a href="#elasticbeanstalk">Elastic Beanstalk</a>
@@ -241,6 +243,7 @@
         <a href="#dms">DMS</a>
         <a href="#evs">EVS</a>
         <a href="#fms">Firewall Manager (FMS)</a>
+        <a href="#datasync">AWS DataSync</a>
         <a href="#efs">Amazon EFS</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
@@ -12201,6 +12204,107 @@
         </ul>
         </details>
         </section>
+
+        <section id="ecrpublic" class="service">
+
+        <div class="service-header">
+        <h2>ECR Public</h2>
+        <p>SigV4 signed with service <code>ecr-public</code> in <code>us-east-1</code> only. Use <code>POST /</code> JSON with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SpencerFrontendService.&lt;Action&gt;</code>. Repositories live under the registry alias <code>public.ecr.aws/stackyard</code>, separate from private ECR repositories.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ecr-public</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchCheckLayerAvailability</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchDeleteImage</code></td>
+        </tr>
+        <tr>
+        <td><code>CompleteLayerUpload</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRepository</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRepository</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeImageTags</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeImages</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRegistries</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRepositories</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAuthorizationToken</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRegistryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRepositoryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>InitiateLayerUpload</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutImage</code></td>
+        </tr>
+        <tr>
+        <td><code>PutRegistryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>PutRepositoryCatalogData</code></td>
+        </tr>
+        <tr>
+        <td><code>SetRepositoryPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UploadLayerPart</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>ecr-public</code>: <code>docker compose -f examples/aws/ecr-public/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="ecs" class="service">
 
         <div class="service-header">
@@ -17824,6 +17928,102 @@
         </ul>
         </details>
         </section>
+        <section id="dax" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DynamoDB Accelerator (DAX)</h2>
+        <p>SigV4 signed with service <code>dax</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: AmazonDAXV3.&lt;Action&gt;</code>. Control plane only: clusters (node types, replication factor up to 11 nodes, subnet groups and security groups checked against the EC2 store, SSE, TLS endpoints) move from creating or modifying to available when next described; parameter groups carry the DAX TTL parameters; events, subnet groups and cluster tags are kept. The DAX data-plane protocol is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: dax</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>CreateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DecreaseReplicationFactor</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDefaultParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEvents</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeParameterGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeSubnetGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>IncreaseReplicationFactor</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTags</code></td>
+        </tr>
+        <tr>
+        <td><code>RebootNode</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSubnetGroup</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>dax</code>: <code>docker compose -f examples/aws/dax/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
         <section id="dynamodbstreams" class="service">
 
         <div class="service-header">
@@ -25298,6 +25498,87 @@
         </section>
 
 
+        <section id="datasync" class="service">
+
+        <div class="service-header">
+        <h2>AWS DataSync</h2>
+        <p>SigV4 signed with service <code>datasync</code>. JSON 1.1 API (<code>X-Amz-Target: FmrsService.*</code>) for agents (single-use activation keys, public or VPC endpoints), locations of every type (S3 buckets and EFS file systems checked against Stackyard's stores, FSx, NFS, SMB, HDFS, object storage and Azure Blob validated by shape, on-premises agents required), tasks (options, include/exclude filters, schedules, manifests and reports) and task executions that move LAUNCHING &rarr; PREPARING &rarr; TRANSFERRING &rarr; VERIFYING &rarr; SUCCESS as they are read, with queueing and cancellation. S3-to-S3 executions really copy objects between Stackyard buckets, honouring filters and the overwrite, transfer-mode and delete options; other location pairs are simulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: datasync</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTaskExecution</code></td></tr>
+        <tr><td><code>CreateAgent</code></td></tr>
+        <tr><td><code>CreateLocationAzureBlob</code></td></tr>
+        <tr><td><code>CreateLocationEfs</code></td></tr>
+        <tr><td><code>CreateLocationFsxLustre</code></td></tr>
+        <tr><td><code>CreateLocationFsxOntap</code></td></tr>
+        <tr><td><code>CreateLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>CreateLocationFsxWindows</code></td></tr>
+        <tr><td><code>CreateLocationHdfs</code></td></tr>
+        <tr><td><code>CreateLocationNfs</code></td></tr>
+        <tr><td><code>CreateLocationObjectStorage</code></td></tr>
+        <tr><td><code>CreateLocationS3</code></td></tr>
+        <tr><td><code>CreateLocationSmb</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DeleteAgent</code></td></tr>
+        <tr><td><code>DeleteLocation</code></td></tr>
+        <tr><td><code>DeleteTask</code></td></tr>
+        <tr><td><code>DescribeAgent</code></td></tr>
+        <tr><td><code>DescribeLocationAzureBlob</code></td></tr>
+        <tr><td><code>DescribeLocationEfs</code></td></tr>
+        <tr><td><code>DescribeLocationFsxLustre</code></td></tr>
+        <tr><td><code>DescribeLocationFsxOntap</code></td></tr>
+        <tr><td><code>DescribeLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>DescribeLocationFsxWindows</code></td></tr>
+        <tr><td><code>DescribeLocationHdfs</code></td></tr>
+        <tr><td><code>DescribeLocationNfs</code></td></tr>
+        <tr><td><code>DescribeLocationObjectStorage</code></td></tr>
+        <tr><td><code>DescribeLocationS3</code></td></tr>
+        <tr><td><code>DescribeLocationSmb</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>DescribeTaskExecution</code></td></tr>
+        <tr><td><code>ListAgents</code></td></tr>
+        <tr><td><code>ListLocations</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTaskExecutions</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>StartTaskExecution</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAgent</code></td></tr>
+        <tr><td><code>UpdateLocationAzureBlob</code></td></tr>
+        <tr><td><code>UpdateLocationEfs</code></td></tr>
+        <tr><td><code>UpdateLocationFsxLustre</code></td></tr>
+        <tr><td><code>UpdateLocationFsxOntap</code></td></tr>
+        <tr><td><code>UpdateLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>UpdateLocationFsxWindows</code></td></tr>
+        <tr><td><code>UpdateLocationHdfs</code></td></tr>
+        <tr><td><code>UpdateLocationNfs</code></td></tr>
+        <tr><td><code>UpdateLocationObjectStorage</code></td></tr>
+        <tr><td><code>UpdateLocationS3</code></td></tr>
+        <tr><td><code>UpdateLocationSmb</code></td></tr>
+        <tr><td><code>UpdateTask</code></td></tr>
+        <tr><td><code>UpdateTaskExecution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>datasync</code>: <code>docker compose -f examples/aws/datasync/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="efs" class="service">
 
         <div class="service-header">
