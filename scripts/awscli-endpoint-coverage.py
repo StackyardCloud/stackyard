@@ -553,6 +553,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codecommit": {"cli": "codecommit", "ops_file": REPO_ROOT / "internal/server/codecommit_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
+    "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
@@ -2186,6 +2187,9 @@ SERVICE_ALIASES = {
     "awscodecommit": "codecommit",
     "efs": "efs",
     "codeconnections": "codeconnections",
+    "route53domains": "route53domains",
+    "route53-domains": "route53domains",
+    "amazonroute53domains": "route53domains",
     "awscodeconnections": "codeconnections",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
@@ -3109,6 +3113,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "docdb": {},
     "glue": {},
     "codeconnections": {},
+    "route53domains": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -32453,6 +32458,111 @@ def codeconnections_fixture(service: str, aws_bin: str, endpoint_url: str, regio
     return state
 
 
+ROUTE53DOMAINS_CONTACT = {
+    "FirstName": "Ada", "LastName": "Lovelace", "ContactType": "PERSON", "AddressLine1": "1 Main St",
+    "City": "Seattle", "State": "WA", "CountryCode": "US", "ZipCode": "98101",
+    "PhoneNumber": "+1.2065550100", "Email": "ada@example.com",
+}
+# RFC 6605 example KSK (ECDSA P-256), a real public key for DNSSEC operations.
+ROUTE53DOMAINS_DNSKEY = "GojIhhXUN/u4v54ZQqGSnyhWJwaubCvTmeexv7bR6edbkrSqQpF64cYbcB7wNcP+e+MAnLr+Wi9xMWyQLc8NAA=="
+
+
+def route53domains_register(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], tld: str = "com") -> tuple[str, str]:
+    """Register a fresh domain; returns (domain, operation id)."""
+    name = f"cov-{time.time_ns()}.{tld}"
+    contact = json.dumps(ROUTE53DOMAINS_CONTACT, separators=(",", ":"))
+    data = run_aws_json(aws_bin, endpoint_url, region, "route53domains", "register-domain", env, [
+        "--domain-name", name, "--duration-in-years", "1",
+        "--admin-contact", contact, "--registrant-contact", contact, "--tech-contact", contact,
+    ])
+    return name, str((data or {}).get("OperationId") or "")
+
+
+def route53domains_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("route53domains", {})
+    if not state.get("domain"):
+        state["domain"], state["operation"] = route53domains_register(aws_bin, endpoint_url, region, env)
+    return state
+
+
+def route53domains_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Route 53 Domains operations at a registered domain; destructive and
+    transfer operations get a domain of their own."""
+    op = endpoint.operation
+    fx = route53domains_fixture(aws_bin, endpoint_url, region, env)
+    domain = fx["domain"]
+
+    def fresh(tld: str = "com") -> str:
+        return route53domains_register(aws_bin, endpoint_url, region, env, tld)[0]
+
+    def pending_transfer() -> tuple[str, str]:
+        name = fresh()
+        data = run_aws_json(aws_bin, endpoint_url, region, "route53domains", "transfer-domain-to-another-aws-account", env, [
+            "--domain-name", name, "--account-id", "210987654321",
+        ])
+        return name, str((data or {}).get("Password") or "")
+
+    contacts = {"AdminContact": ROUTE53DOMAINS_CONTACT, "RegistrantContact": ROUTE53DOMAINS_CONTACT, "TechContact": ROUTE53DOMAINS_CONTACT}
+    if op == "RegisterDomain":
+        return {"DomainName": f"cov-{time.time_ns()}.com", "DurationInYears": 1, **contacts}
+    if op == "TransferDomain":
+        return {"DomainName": f"cov-in-{time.time_ns()}.com", "DurationInYears": 1, "AuthCode": "stackyard", **contacts}
+    if op in {"CheckDomainAvailability", "CheckDomainTransferability"}:
+        return {"DomainName": f"cov-free-{time.time_ns()}.com"}
+    if op == "GetDomainSuggestions":
+        return {"DomainName": domain, "SuggestionCount": 5, "OnlyAvailable": True}
+    if op in {"GetOperationDetail", "ResendOperationAuthorization"}:
+        return {"OperationId": fx["operation"]}
+    if op in {"ListDomains", "ListOperations", "ViewBilling"}:
+        return {}
+    if op == "ListPrices":
+        return {"Tld": "com"}
+    if op in {"GetContactReachabilityStatus", "ResendContactReachabilityEmail"}:
+        return {"domainName": domain}
+    if op == "RenewDomain":
+        detail = run_aws_json(aws_bin, endpoint_url, region, "route53domains", "get-domain-detail", env, ["--domain-name", domain]) or {}
+        year = int(str(detail.get("ExpirationDate", "2027"))[:4])
+        return {"DomainName": domain, "DurationInYears": 1, "CurrentExpiryYear": year}
+    if op == "DeleteDomain":
+        return {"DomainName": fresh()}
+    if op == "RestoreDomain":
+        name = fresh()
+        run_aws_json(aws_bin, endpoint_url, region, "route53domains", "delete-domain", env, ["--domain-name", name])
+        return {"DomainName": name}
+    if op == "PushDomain":
+        return {"DomainName": fresh("co.uk"), "Target": "STACKYARD-TAG"}
+    if op == "TransferDomainToAnotherAwsAccount":
+        return {"DomainName": fresh(), "AccountId": "210987654321"}
+    if op == "AcceptDomainTransferFromAnotherAwsAccount":
+        name, password = pending_transfer()
+        return {"DomainName": name, "Password": password}
+    if op in {"RejectDomainTransferFromAnotherAwsAccount", "CancelDomainTransferToAnotherAwsAccount"}:
+        return {"DomainName": pending_transfer()[0]}
+    if op == "AssociateDelegationSignerToDomain":
+        return {"DomainName": fresh(), "SigningAttributes": {"Algorithm": 13, "Flags": 257, "PublicKey": ROUTE53DOMAINS_DNSKEY}}
+    if op == "DisassociateDelegationSignerFromDomain":
+        name = fresh()
+        run_aws_json(aws_bin, endpoint_url, region, "route53domains", "associate-delegation-signer-to-domain", env, [
+            "--domain-name", name, "--signing-attributes", json.dumps({"Algorithm": 13, "Flags": 257, "PublicKey": ROUTE53DOMAINS_DNSKEY}),
+        ])
+        detail = run_aws_json(aws_bin, endpoint_url, region, "route53domains", "get-domain-detail", env, ["--domain-name", name]) or {}
+        keys = detail.get("DnssecKeys") or [{}]
+        return {"DomainName": name, "Id": str(keys[0].get("Id") or "")}
+    if op == "UpdateDomainContact":
+        return {"DomainName": domain, "AdminContact": ROUTE53DOMAINS_CONTACT}
+    if op == "UpdateDomainContactPrivacy":
+        return {"DomainName": domain, "AdminPrivacy": True}
+    if op == "UpdateDomainNameservers":
+        return {"DomainName": domain, "Nameservers": [{"Name": "ns1.example.net"}, {"Name": "ns2.example.net"}]}
+    if op == "UpdateTagsForDomain":
+        return {"DomainName": domain, "TagsToUpdate": [{"Key": "team", "Value": "stackyard"}]}
+    if op == "DeleteTagsForDomain":
+        return {"DomainName": domain, "TagsToDelete": ["team"]}
+    return {"DomainName": domain}
+
+
 def codeconnections_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -33956,6 +34066,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "route53domains":
+        return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":
