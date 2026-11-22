@@ -456,6 +456,11 @@ func (s *Server) handleRDSCreateDBCluster(w http.ResponseWriter, r *http.Request
 		respondRDSErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "BackupRetentionPeriod is invalid")
 		return
 	}
+	enableHTTP, err := parseOptionalRDSBoolPtr(r.Form.Get("EnableHttpEndpoint"))
+	if err != nil {
+		respondRDSErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "EnableHttpEndpoint is invalid")
+		return
+	}
 	cluster, err := s.rds.CreateDBCluster(rdssvc.CreateDBClusterInput{
 		Identifier:              strings.TrimSpace(r.Form.Get("DBClusterIdentifier")),
 		Engine:                  strings.TrimSpace(r.Form.Get("Engine")),
@@ -466,6 +471,7 @@ func (s *Server) handleRDSCreateDBCluster(w http.ResponseWriter, r *http.Request
 		DBClusterParameterGroup: strings.TrimSpace(r.Form.Get("DBClusterParameterGroupName")),
 		VpcSecurityGroupIDs:     parseRDSListMembers(r.Form, "VpcSecurityGroupIds.member"),
 		BackupRetentionPeriod:   backupRetention,
+		EnableHTTPEndpoint:      enableHTTP != nil && *enableHTTP,
 	})
 	if err != nil {
 		respondRDSServiceError(w, "CreateDBCluster", err)
@@ -514,10 +520,16 @@ func (s *Server) handleRDSModifyDBCluster(w http.ResponseWriter, r *http.Request
 		respondRDSErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "BackupRetentionPeriod is invalid")
 		return
 	}
+	enableHTTP, err := parseOptionalRDSBoolPtr(r.Form.Get("EnableHttpEndpoint"))
+	if err != nil {
+		respondRDSErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "EnableHttpEndpoint is invalid")
+		return
+	}
 	cluster, err := s.rds.ModifyDBCluster(rdssvc.ModifyDBClusterInput{
 		Identifier:              strings.TrimSpace(r.Form.Get("DBClusterIdentifier")),
 		BackupRetentionPeriod:   backupRetention,
 		DBClusterParameterGroup: strings.TrimSpace(r.Form.Get("DBClusterParameterGroupName")),
+		EnableHTTPEndpoint:      enableHTTP,
 	})
 	if err != nil {
 		respondRDSServiceError(w, "ModifyDBCluster", err)
@@ -546,6 +558,7 @@ func (s *Server) handleRDSDeleteDBCluster(w http.ResponseWriter, r *http.Request
 		respondRDSServiceError(w, "DeleteDBCluster", err)
 		return
 	}
+	s.rdsData.dropCluster(cluster.ARN)
 	respondRDSXML(w, "DeleteDBCluster", struct {
 		XMLName   xml.Name        `xml:"DeleteDBClusterResult"`
 		DBCluster rdsDBClusterXML `xml:"DBCluster"`
@@ -1274,6 +1287,7 @@ func rdsDBClusterToXML(in rdssvc.DBCluster) rdsDBClusterXML {
 		Endpoint:                in.Endpoint,
 		ReaderEndpoint:          in.ReaderEndpoint,
 		BackupRetentionPeriod:   in.BackupRetentionPeriod,
+		HttpEndpointEnabled:     in.HTTPEndpointEnabled,
 		ClusterCreateTime:       formatRDSTime(in.CreatedAt),
 	}
 	for _, secGroup := range in.VpcSecurityGroupIDs {
@@ -1412,6 +1426,7 @@ type rdsDBClusterXML struct {
 	ReaderEndpoint          string                             `xml:"ReaderEndpoint,omitempty"`
 	BackupRetentionPeriod   int                                `xml:"BackupRetentionPeriod,omitempty"`
 	VpcSecurityGroups       []rdsVpcSecurityGroupMembershipXML `xml:"VpcSecurityGroups>VpcSecurityGroupMembership,omitempty"`
+	HttpEndpointEnabled     bool                               `xml:"HttpEndpointEnabled"`
 	ClusterCreateTime       string                             `xml:"ClusterCreateTime,omitempty"`
 }
 
