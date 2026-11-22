@@ -89,7 +89,7 @@ func (s *Server) handleBedrockAgentRuntimeRESTRouter(w http.ResponseWriter, r *h
 	}
 	// A declared length bounds the body (net/http stops reading there), so
 	// require one: chunked bodies of unknown length are refused.
-	if r.ContentLength > barMaxBody || (r.ContentLength < 0 && r.Method != http.MethodGet && r.Method != http.MethodDelete) {
+	if r.ContentLength < 0 || r.ContentLength > barMaxBody {
 		respondBedrockAgentError(w, baValidation("request body must declare a Content-Length of at most 8 MiB"))
 		return true
 	}
