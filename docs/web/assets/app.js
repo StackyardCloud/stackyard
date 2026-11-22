@@ -888,6 +888,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/keyspaces/docker-compose.yml"
   },
   {
+    id: "inspector",
+    name: "Inspector Classic",
+    category: "security",
+    summary: "Run Inspector Classic assessments over tagged EC2 instances: resource groups, targets, templates, runs that settle into findings, exclusions, reports and SNS event subscriptions.",
+    docsHref: "../../../index.html#inspector",
+    exampleHref: "../../../../examples/aws/inspector/docker-compose.yml"
+  },
+  {
+    id: "inspectorscan",
+    name: "Inspector Scan",
+    category: "security",
+    summary: "Scan CycloneDX 1.4/1.5 and SPDX 2.3 SBOMs against an embedded sample advisory list and return a CycloneDX or Inspector-format vulnerability report.",
+    docsHref: "../../../index.html#inspectorscan",
+    exampleHref: "../../../../examples/aws/inspector/docker-compose.yml"
+  },
+  {
     id: "kms",
     name: "KMS",
     category: "security",
@@ -1056,6 +1072,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/opensearch/docker-compose.yml"
   },
   {
+    id: "elasticsearchservice",
+    name: "Elasticsearch Service",
+    category: "database",
+    summary: "Legacy es 2015-01-01 API over the OpenSearch domain store: domains, config, upgrades, packages, VPC endpoints and cross-cluster connections.",
+    docsHref: "../../../index.html#elasticsearchservice",
+    exampleHref: "../../../../examples/aws/elasticsearch/docker-compose.yml"
+  },
+  {
     id: "privateca",
     name: "Private CA",
     category: "security",
@@ -1142,6 +1166,14 @@ const SERVICE_CATALOG = [
     summary: "Emulate EFS file systems, mount targets in EC2 subnets, access points, policies, lifecycle, backup and replication.",
     docsHref: "../../../index.html#efs",
     exampleHref: "../../../../examples/aws/efs/docker-compose.yml"
+  },
+  {
+    id: "glacier",
+    name: "S3 Glacier",
+    category: "storage",
+    summary: "Emulate Glacier vaults, tree-hash-checked archive and multipart uploads, retrieval and inventory jobs, vault locks, policies and notifications.",
+    docsHref: "../../../index.html#glacier",
+    exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
   },
   {
     id: "backup",

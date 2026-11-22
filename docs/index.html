@@ -213,6 +213,7 @@
         <a href="#neptuneanalytics">Neptune Analytics API</a>
         <a href="#omics">HealthOmics</a>
         <a href="#opensearch">OpenSearch Service</a>
+        <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
         <a href="#servicequotas">Service Quotas</a>
@@ -239,6 +240,8 @@
         <a href="#shield">Shield Advanced</a>
         <a href="#payment-cryptography">Payment Cryptography</a>
         <a href="#payment-cryptography-data">Payment Cryptography Data Plane</a>
+        <a href="#inspector">Inspector Classic</a>
+        <a href="#inspectorscan">Inspector Scan</a>
         <a href="#inspectorv2">Inspector V2</a>
         <a href="#clouddirectory">Cloud Directory</a>
         <a href="#directoryservicedata">Directory Service Data</a>
@@ -248,6 +251,7 @@
         <a href="#fms">Firewall Manager (FMS)</a>
         <a href="#datasync">AWS DataSync</a>
         <a href="#efs">Amazon EFS</a>
+        <a href="#glacier">Amazon S3 Glacier</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
         <a href="#storagegateway">AWS Storage Gateway</a>
@@ -17762,6 +17766,188 @@
         </details>
         </section>
 
+        <section id="elasticsearchservice" class="service">
+
+        <div class="service-header">
+        <h2>Elasticsearch Service</h2>
+        <p>SigV4 signed with service <code>es</code>. The legacy REST JSON API under <code>/2015-01-01/*</code>, served over the same domains as OpenSearch Service: a domain created with either API is visible through the other (<code>ElasticsearchVersion</code> 7.10 is <code>EngineVersion</code> Elasticsearch_7.10, and <code>.elasticsearch</code> instance types map to <code>.search</code>). Domains, configuration, tags, upgrades, packages, VPC endpoints, cross-cluster search connections and reserved instances keep real state; the domain data plane is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: es</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <pre><code>aws es create-elasticsearch-domain --domain-name logs --elasticsearch-version 7.10 --endpoint-url http://localhost:4566</code></pre>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AcceptInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>AddTags</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>AuthorizeVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>CancelDomainConfigChange</code></td>
+        </tr>
+        <tr>
+        <td><code>CancelElasticsearchServiceSoftwareUpdate</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateOutboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteElasticsearchServiceRole</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteOutboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDomainAutoTunes</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDomainChangeProgress</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomainConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeElasticsearchInstanceTypeLimits</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeInboundCrossClusterSearchConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeOutboundCrossClusterSearchConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribePackages</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeReservedElasticsearchInstanceOfferings</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeReservedElasticsearchInstances</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeVpcEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>DissociatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>GetCompatibleElasticsearchVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPackageVersionHistory</code></td>
+        </tr>
+        <tr>
+        <td><code>GetUpgradeHistory</code></td>
+        </tr>
+        <tr>
+        <td><code>GetUpgradeStatus</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDomainNames</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDomainsForPackage</code></td>
+        </tr>
+        <tr>
+        <td><code>ListElasticsearchInstanceTypes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListElasticsearchVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPackagesForDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTags</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpointsForDomain</code></td>
+        </tr>
+        <tr>
+        <td><code>PurchaseReservedElasticsearchInstanceOffering</code></td>
+        </tr>
+        <tr>
+        <td><code>RejectInboundCrossClusterSearchConnection</code></td>
+        </tr>
+        <tr>
+        <td><code>RemoveTags</code></td>
+        </tr>
+        <tr>
+        <td><code>RevokeVpcEndpointAccess</code></td>
+        </tr>
+        <tr>
+        <td><code>StartElasticsearchServiceSoftwareUpdate</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateClone</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateElasticsearchDomainConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePackage</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>UpgradeElasticsearchDomain</code></td>
+        </tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
         <section id="aurora-dsql" class="service">
 
         <div class="service-header">
@@ -25038,6 +25224,102 @@
         </details>
         </section>
 
+        <section id="inspector" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Inspector Classic</h2>
+        <p>SigV4 signed with service <code>inspector</code>. JSON 1.1 API (<code>X-Amz-Target: InspectorService.*</code>). Assessment targets select EC2 instances from the EC2 store by resource-group tags; runs settle CREATED &rarr; COLLECTING_DATA &rarr; EVALUATING_RULES &rarr; COMPLETED as they are described and report one sample finding per scanned instance and rules package. Stopped instances become exclusions. Reports are served from <code>/_stackyard/inspector/reports/</code>; SNS notifications are recorded, not published.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: inspector</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AddAttributesToFindings</code></td></tr>
+        <tr><td><code>CreateAssessmentTarget</code></td></tr>
+        <tr><td><code>CreateAssessmentTemplate</code></td></tr>
+        <tr><td><code>CreateExclusionsPreview</code></td></tr>
+        <tr><td><code>CreateResourceGroup</code></td></tr>
+        <tr><td><code>DeleteAssessmentRun</code></td></tr>
+        <tr><td><code>DeleteAssessmentTarget</code></td></tr>
+        <tr><td><code>DeleteAssessmentTemplate</code></td></tr>
+        <tr><td><code>DescribeAssessmentRuns</code></td></tr>
+        <tr><td><code>DescribeAssessmentTargets</code></td></tr>
+        <tr><td><code>DescribeAssessmentTemplates</code></td></tr>
+        <tr><td><code>DescribeCrossAccountAccessRole</code></td></tr>
+        <tr><td><code>DescribeExclusions</code></td></tr>
+        <tr><td><code>DescribeFindings</code></td></tr>
+        <tr><td><code>DescribeResourceGroups</code></td></tr>
+        <tr><td><code>DescribeRulesPackages</code></td></tr>
+        <tr><td><code>GetAssessmentReport</code></td></tr>
+        <tr><td><code>GetExclusionsPreview</code></td></tr>
+        <tr><td><code>GetTelemetryMetadata</code></td></tr>
+        <tr><td><code>ListAssessmentRunAgents</code></td></tr>
+        <tr><td><code>ListAssessmentRuns</code></td></tr>
+        <tr><td><code>ListAssessmentTargets</code></td></tr>
+        <tr><td><code>ListAssessmentTemplates</code></td></tr>
+        <tr><td><code>ListEventSubscriptions</code></td></tr>
+        <tr><td><code>ListExclusions</code></td></tr>
+        <tr><td><code>ListFindings</code></td></tr>
+        <tr><td><code>ListRulesPackages</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PreviewAgents</code></td></tr>
+        <tr><td><code>RegisterCrossAccountAccessRole</code></td></tr>
+        <tr><td><code>RemoveAttributesFromFindings</code></td></tr>
+        <tr><td><code>SetTagsForResource</code></td></tr>
+        <tr><td><code>StartAssessmentRun</code></td></tr>
+        <tr><td><code>StopAssessmentRun</code></td></tr>
+        <tr><td><code>SubscribeToEvent</code></td></tr>
+        <tr><td><code>UnsubscribeFromEvent</code></td></tr>
+        <tr><td><code>UpdateAssessmentTarget</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>inspector</code>: <code>docker compose -f examples/aws/inspector/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="inspectorscan" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Inspector Scan</h2>
+        <p>SigV4 signed with service <code>inspector-scan</code>. REST JSON <code>POST /scan/sbom</code>. Accepts CycloneDX 1.4/1.5 and SPDX 2.3 JSON SBOMs (up to 2,000 components) and matches components by purl or name against a small embedded sample advisory list labelled <code>STACKYARD_SAMPLE_ADVISORIES</code>; there is no vulnerability database and no network access.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: inspector-scan</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ScanSbom</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>inspector</code>: <code>docker compose -f examples/aws/inspector/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="inspectorv2" class="service">
 
         <div class="service-header">
@@ -25790,6 +26072,68 @@
         <summary>Examples</summary>
         <ul>
         <li><code>efs</code>: <code>docker compose -f examples/aws/efs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="glacier" class="service">
+
+        <div class="service-header">
+        <h2>Amazon S3 Glacier</h2>
+        <p>SigV4 signed with service <code>glacier</code>. REST JSON API under <code>/{accountId}/vaults</code>, <code>/{accountId}/policies/data-retrieval</code> and <code>/{accountId}/provisioned-capacity</code>; the account id may be <code>-</code>. Archives and multipart parts are checked against their <code>x-amz-sha256-tree-hash</code> (the Glacier SHA-256 tree hash over 1 MiB chunks); parts must start on part-size boundaries and complete as one contiguous archive. Archive-retrieval, inventory-retrieval and select jobs report InProgress on their first read and Succeeded on the next; GetJobOutput returns the retrieved bytes (with Range support) or the inventory as JSON or CSV. DescribeVault counts come from the last completed inventory, as in AWS. Vault locks stay InProgress for 24 hours until completed, notifications need an existing SNS topic, and a BytesPerHour data retrieval policy refuses larger retrievals with PolicyEnforcedException. Select results and job-completion notifications are not delivered. Bodies are limited to 64 MiB and stored archives to 1 GiB in total. All 33 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: glacier</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AbortMultipartUpload</code></td></tr>
+        <tr><td><code>AbortVaultLock</code></td></tr>
+        <tr><td><code>AddTagsToVault</code></td></tr>
+        <tr><td><code>CompleteMultipartUpload</code></td></tr>
+        <tr><td><code>CompleteVaultLock</code></td></tr>
+        <tr><td><code>CreateVault</code></td></tr>
+        <tr><td><code>DeleteArchive</code></td></tr>
+        <tr><td><code>DeleteVault</code></td></tr>
+        <tr><td><code>DeleteVaultAccessPolicy</code></td></tr>
+        <tr><td><code>DeleteVaultNotifications</code></td></tr>
+        <tr><td><code>DescribeJob</code></td></tr>
+        <tr><td><code>DescribeVault</code></td></tr>
+        <tr><td><code>GetDataRetrievalPolicy</code></td></tr>
+        <tr><td><code>GetJobOutput</code></td></tr>
+        <tr><td><code>GetVaultAccessPolicy</code></td></tr>
+        <tr><td><code>GetVaultLock</code></td></tr>
+        <tr><td><code>GetVaultNotifications</code></td></tr>
+        <tr><td><code>InitiateJob</code></td></tr>
+        <tr><td><code>InitiateMultipartUpload</code></td></tr>
+        <tr><td><code>InitiateVaultLock</code></td></tr>
+        <tr><td><code>ListJobs</code></td></tr>
+        <tr><td><code>ListMultipartUploads</code></td></tr>
+        <tr><td><code>ListParts</code></td></tr>
+        <tr><td><code>ListProvisionedCapacity</code></td></tr>
+        <tr><td><code>ListTagsForVault</code></td></tr>
+        <tr><td><code>ListVaults</code></td></tr>
+        <tr><td><code>PurchaseProvisionedCapacity</code></td></tr>
+        <tr><td><code>RemoveTagsFromVault</code></td></tr>
+        <tr><td><code>SetDataRetrievalPolicy</code></td></tr>
+        <tr><td><code>SetVaultAccessPolicy</code></td></tr>
+        <tr><td><code>SetVaultNotifications</code></td></tr>
+        <tr><td><code>UploadArchive</code></td></tr>
+        <tr><td><code>UploadMultipartPart</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>glacier</code>: <code>docker compose -f examples/aws/glacier/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

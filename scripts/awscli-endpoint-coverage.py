@@ -332,6 +332,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/paymentcryptographydata_ops.go",
     },
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
+    "inspector": {"cli": "inspector", "ops_file": REPO_ROOT / "internal/server/inspector_ops.go"},
+    "inspectorscan": {"cli": "inspector-scan", "ops_file": REPO_ROOT / "internal/server/inspectorscan_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
@@ -556,6 +558,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
+    "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
@@ -563,6 +566,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
     "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
     "ecrpublic": {"cli": "ecr-public", "ops_file": REPO_ROOT / "internal/server/ecrpublic_ops.go"},
+    "glacier": {"cli": "glacier", "ops_file": REPO_ROOT / "internal/server/glacier_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -1452,6 +1456,12 @@ SERVICE_ALIASES = {
     "awspaymentcryptographydata": "paymentcryptographydata",
     "amazonpaymentcryptographydata": "paymentcryptographydata",
     "inspectorv2": "inspectorv2",
+    "inspector": "inspector",
+    "inspectorclassic": "inspector",
+    "amazoninspector": "inspector",
+    "inspectorscan": "inspectorscan",
+    "inspector-scan": "inspectorscan",
+    "amazoninspectorscan": "inspectorscan",
     "inspector-v2": "inspectorv2",
     "inspector v2": "inspectorv2",
     "inspector2": "inspectorv2",
@@ -2207,6 +2217,10 @@ SERVICE_ALIASES = {
     "eks-auth": "eksauth",
     "amazoneksauth": "eksauth",
     "pipes": "pipes",
+    "glacier": "glacier",
+    "s3glacier": "glacier",
+    "amazonglacier": "glacier",
+    "amazons3glacier": "glacier",
     "eventbridgepipes": "pipes",
     "amazoneventbridgepipes": "pipes",
     "datasync": "datasync",
@@ -2268,7 +2282,10 @@ SERVICE_ALIASES = {
     "aws elemental inference": "elementalinference",
     "amazonelementalinference": "elementalinference",
     "amazon elemental inference": "elementalinference",
-    "es": "opensearch",
+    "es": "elasticsearchservice",
+    "elasticsearchservice": "elasticsearchservice",
+    "elasticsearch": "elasticsearchservice",
+    "amazonelasticsearchservice": "elasticsearchservice",
     "kms": "kms",
     "keymanagementservice": "kms",
     "key-management-service": "kms",
@@ -3112,14 +3129,17 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "codecommit": {},
+    "inspector": {},
     "applicationautoscaling": {},
     "ec2instanceconnect": {},
     "efs": {},
+    "elasticsearchservice": {},
     "scheduler": {},
     "pipes": {},
     "datasync": {},
     "dax": {},
     "ecrpublic": {},
+    "glacier": {},
     "docdb": {},
     "docdbelastic": {},
     "glue": {},
@@ -13364,6 +13384,10 @@ def generate_cli_input_payload(
         # recognize-utterance and put-session stream an audio body, so the CLI
         # needs explicit flags and an outfile even to print a skeleton.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+        # get-job-output needs its ids as flags plus an outfile even to print a
+        # skeleton; hydration fills in a completed job.
+        return {"accountId": "-", "vaultName": "", "jobId": ""}, None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -34123,6 +34147,476 @@ def docdbelastic_hydrate_payload(
     return {"resourceArn": shared["cluster"]}
 
 
+INSPECTOR_CVE_PACKAGE = "arn:aws:inspector:us-east-1:316112463485:rulespackage/0-gEjTy7T7"
+INSPECTOR_SAMPLE_SBOM = {
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.5",
+    "components": [
+        {
+            "bom-ref": "log4j",
+            "type": "library",
+            "name": "log4j-core",
+            "version": "2.14.1",
+            "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+        }
+    ],
+}
+
+
+def inspector_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "inspector", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def inspector_instance(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], tag: str, stop: bool = False) -> str:
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "ec2",
+        "run-instances",
+        env,
+        [
+            "--image-id",
+            "ami-12345678",
+            "--instance-type",
+            "t3.micro",
+            "--count",
+            "1",
+            "--tag-specifications",
+            f"ResourceType=instance,Tags=[{{Key=stackyard-inspector,Value={tag}}}]",
+        ],
+    )
+    instances = data.get("Instances") if isinstance(data, dict) else None
+    instance_id = str(instances[0].get("InstanceId") or "") if isinstance(instances, list) and instances else ""
+    if stop and instance_id:
+        run_aws_json(aws_bin, endpoint_url, region, "ec2", "stop-instances", env, ["--instance-ids", instance_id])
+    return instance_id
+
+
+def inspector_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], tag: str) -> str:
+    group = inspector_call(
+        aws_bin, endpoint_url, region, env, "create-resource-group",
+        {"resourceGroupTags": [{"key": "stackyard-inspector", "value": tag}]},
+    ).get("resourceGroupArn", "")
+    return str(
+        inspector_call(
+            aws_bin, endpoint_url, region, env, "create-assessment-target",
+            {"assessmentTargetName": f"stackyard-{tag}-{time.time_ns()}", "resourceGroupArn": group},
+        ).get("assessmentTargetArn", "")
+    )
+
+
+def inspector_template(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], target: str) -> str:
+    return str(
+        inspector_call(
+            aws_bin, endpoint_url, region, env, "create-assessment-template",
+            {
+                "assessmentTargetArn": target,
+                "assessmentTemplateName": f"stackyard-template-{time.time_ns()}",
+                "durationInSeconds": 3600,
+                "rulesPackageArns": [INSPECTOR_CVE_PACKAGE],
+            },
+        ).get("assessmentTemplateArn", "")
+    )
+
+
+def inspector_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One completed run over a running and a stopped instance (so it has a
+    finding and an exclusion), plus an "empty" template whose target matches
+    no instance, for runs that must not collide with busy agents."""
+    state = RUNTIME_STATE.setdefault("inspector", {})
+    if state.get("run"):
+        return state
+    inspector_instance(aws_bin, endpoint_url, region, env, "coverage")
+    inspector_instance(aws_bin, endpoint_url, region, env, "coverage", stop=True)
+    state["target"] = inspector_target(aws_bin, endpoint_url, region, env, "coverage")
+    state["template"] = inspector_template(aws_bin, endpoint_url, region, env, state["target"])
+    state["empty_template"] = inspector_template(
+        aws_bin, endpoint_url, region, env, inspector_target(aws_bin, endpoint_url, region, env, "nothing")
+    )
+    run = str(
+        inspector_call(aws_bin, endpoint_url, region, env, "start-assessment-run", {"assessmentTemplateArn": state["template"]}).get(
+            "assessmentRunArn", ""
+        )
+    )
+    inspector_call(aws_bin, endpoint_url, region, env, "stop-assessment-run", {"assessmentRunArn": run})
+    state["run"] = run
+    findings = inspector_call(aws_bin, endpoint_url, region, env, "list-findings", {"assessmentRunArns": [run]}).get("findingArns") or [""]
+    state["finding"] = findings[0]
+    exclusions = inspector_call(aws_bin, endpoint_url, region, env, "list-exclusions", {"assessmentRunArn": run}).get("exclusionArns") or [""]
+    state["exclusion"] = exclusions[0]
+    state["preview"] = inspector_call(
+        aws_bin, endpoint_url, region, env, "create-exclusions-preview", {"assessmentTemplateArn": state["template"]}
+    ).get("previewToken", "")
+    state["topic"] = sns_ensure_topic(aws_bin, endpoint_url, region, env)
+    return state
+
+
+def inspector_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Inspector Classic operation at fixture resources. Deletes,
+    starts and stops get resources of their own."""
+    op = endpoint.operation
+    fx = inspector_fixture(aws_bin, endpoint_url, region, env)
+    unique = f"stackyard-{time.time_ns()}"
+    event = {"resourceArn": fx["template"], "event": "ASSESSMENT_RUN_COMPLETED", "topicArn": fx["topic"]}
+    if op == "CreateResourceGroup":
+        return {"resourceGroupTags": [{"key": "stackyard-inspector", "value": "coverage"}]}
+    if op == "CreateAssessmentTarget":
+        return {"assessmentTargetName": unique}
+    if op == "DeleteAssessmentTarget":
+        return {"assessmentTargetArn": inspector_target(aws_bin, endpoint_url, region, env, "nothing")}
+    if op == "UpdateAssessmentTarget":
+        return {"assessmentTargetArn": inspector_target(aws_bin, endpoint_url, region, env, "nothing"), "assessmentTargetName": unique}
+    if op == "CreateAssessmentTemplate":
+        return {"assessmentTargetArn": fx["target"], "assessmentTemplateName": unique, "durationInSeconds": 3600, "rulesPackageArns": [INSPECTOR_CVE_PACKAGE]}
+    if op == "DeleteAssessmentTemplate":
+        return {"assessmentTemplateArn": inspector_template(aws_bin, endpoint_url, region, env, fx["target"])}
+    if op == "StartAssessmentRun":
+        return {"assessmentTemplateArn": fx["empty_template"]}
+    if op in {"StopAssessmentRun", "DeleteAssessmentRun"}:
+        run = str(
+            inspector_call(aws_bin, endpoint_url, region, env, "start-assessment-run", {"assessmentTemplateArn": fx["empty_template"]}).get(
+                "assessmentRunArn", ""
+            )
+        )
+        if op == "DeleteAssessmentRun":
+            inspector_call(aws_bin, endpoint_url, region, env, "stop-assessment-run", {"assessmentRunArn": run})
+        return {"assessmentRunArn": run}
+    if op in {"GetTelemetryMetadata", "ListAssessmentRunAgents", "ListExclusions"}:
+        return {"assessmentRunArn": fx["run"]}
+    if op == "GetAssessmentReport":
+        return {"assessmentRunArn": fx["run"], "reportFileFormat": "HTML", "reportType": "FULL"}
+    if op == "DescribeAssessmentRuns":
+        return {"assessmentRunArns": [fx["run"]]}
+    if op == "DescribeAssessmentTargets":
+        return {"assessmentTargetArns": [fx["target"]]}
+    if op == "DescribeAssessmentTemplates":
+        return {"assessmentTemplateArns": [fx["template"]]}
+    if op == "DescribeResourceGroups":
+        groups = inspector_call(aws_bin, endpoint_url, region, env, "describe-assessment-targets", {"assessmentTargetArns": [fx["target"]]})
+        target = (groups.get("assessmentTargets") or [{}])[0]
+        return {"resourceGroupArns": [target.get("resourceGroupArn", "")]}
+    if op == "DescribeFindings":
+        return {"findingArns": [fx["finding"]]}
+    if op == "AddAttributesToFindings":
+        return {"findingArns": [fx["finding"]], "attributes": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "RemoveAttributesFromFindings":
+        return {"findingArns": [fx["finding"]], "attributeKeys": ["stackyard"]}
+    if op == "DescribeExclusions":
+        return {"exclusionArns": [fx["exclusion"]]}
+    if op == "CreateExclusionsPreview":
+        return {"assessmentTemplateArn": fx["template"]}
+    if op == "GetExclusionsPreview":
+        return {"assessmentTemplateArn": fx["template"], "previewToken": fx["preview"]}
+    if op == "PreviewAgents":
+        return {"previewAgentsArn": fx["target"]}
+    if op == "DescribeRulesPackages":
+        return {"rulesPackageArns": [INSPECTOR_CVE_PACKAGE]}
+    if op == "RegisterCrossAccountAccessRole":
+        return {"roleArn": "arn:aws:iam::123456789012:role/inspector"}
+    if op == "SetTagsForResource":
+        return {"resourceArn": fx["template"], "tags": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": fx["template"]}
+    if op in {"SubscribeToEvent", "UnsubscribeFromEvent"}:
+        if op == "UnsubscribeFromEvent":
+            inspector_call(aws_bin, endpoint_url, region, env, "subscribe-to-event", event)
+        return event
+    return {}
+
+
+GLACIER_COVERAGE_POLICY = json.dumps(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Sid": "stackyard", "Effect": "Deny", "Principal": "*", "Action": "glacier:DeleteArchive", "Resource": "*"}
+        ],
+    }
+)
+GLACIER_PART_SIZE = 1 << 20
+
+
+def glacier_tree_hash(data: bytes) -> str:
+    """The Glacier SHA-256 tree hash over 1 MiB chunks."""
+    level = [hashlib.sha256(data[i : i + GLACIER_PART_SIZE]).digest() for i in range(0, len(data), GLACIER_PART_SIZE)]
+    if not level:
+        return hashlib.sha256(b"").hexdigest()
+    while len(level) > 1:
+        level = [hashlib.sha256(b"".join(level[i : i + 2])).digest() if i + 1 < len(level) else level[i] for i in range(0, len(level), 2)]
+    return level[0].hex()
+
+
+def glacier_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, "glacier", op, env, ["--account-id", "-", *args]) or {}
+
+
+def glacier_vault(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], prefix: str = "stackyard-glacier") -> str:
+    name = f"{prefix}-{time.time_ns()}"
+    glacier_cli(aws_bin, endpoint_url, region, env, "create-vault", ["--vault-name", name])
+    return name
+
+
+def glacier_archive(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    with tempfile.NamedTemporaryFile(prefix="stackyard-glacier-", suffix=".bin", delete=False) as tmp:
+        tmp.write(b"stackyard glacier coverage archive")
+        path = tmp.name
+    try:
+        out = glacier_cli(aws_bin, endpoint_url, region, env, "upload-archive", ["--vault-name", vault, "--body", path])
+    finally:
+        Path(path).unlink(missing_ok=True)
+    return str(out.get("archiveId") or "")
+
+
+def glacier_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    out = glacier_cli(aws_bin, endpoint_url, region, env, "initiate-multipart-upload", ["--vault-name", vault, "--part-size", str(GLACIER_PART_SIZE)])
+    return str(out.get("uploadId") or "")
+
+
+def glacier_lock(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    out = glacier_cli(
+        aws_bin, endpoint_url, region, env, "initiate-vault-lock", ["--vault-name", vault, "--policy", json.dumps({"Policy": GLACIER_COVERAGE_POLICY})]
+    )
+    return str(out.get("lockId") or "")
+
+
+def glacier_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared vault with an archive, an open multipart upload, a settled
+    archive-retrieval job, an access policy, notifications, a lock and a tag."""
+    state = RUNTIME_STATE.setdefault("glacier", {})
+    if state.get("vault"):
+        return state
+    vault = glacier_vault(aws_bin, endpoint_url, region, env)
+    archive = glacier_archive(aws_bin, endpoint_url, region, env, vault)
+    job = glacier_cli(
+        aws_bin, endpoint_url, region, env, "initiate-job", ["--vault-name", vault, "--job-parameters", json.dumps({"Type": "archive-retrieval", "ArchiveId": archive})]
+    ).get("jobId", "")
+    for _ in range(2):  # jobs settle on read: InProgress, then Succeeded
+        glacier_cli(aws_bin, endpoint_url, region, env, "describe-job", ["--vault-name", vault, "--job-id", str(job)])
+    topic = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", "stackyard-glacier-events"]) or {}
+    state.update(
+        vault=vault,
+        archive=archive,
+        job=str(job),
+        upload=glacier_upload(aws_bin, endpoint_url, region, env, vault),
+        topic=str(topic.get("TopicArn") or ""),
+    )
+    glacier_cli(aws_bin, endpoint_url, region, env, "set-vault-access-policy", ["--vault-name", vault, "--policy", json.dumps({"Policy": GLACIER_COVERAGE_POLICY})])
+    glacier_cli(
+        aws_bin,
+        endpoint_url,
+        region,
+        env,
+        "set-vault-notifications",
+        ["--vault-name", vault, "--vault-notification-config", json.dumps({"SNSTopic": state["topic"], "Events": ["ArchiveRetrievalCompleted"]})],
+    )
+    glacier_lock(aws_bin, endpoint_url, region, env, vault)
+    glacier_cli(aws_bin, endpoint_url, region, env, "add-tags-to-vault", ["--vault-name", vault, "--tags", "stackyard=coverage"])
+    return state
+
+
+def glacier_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Glacier operation at real vaults, archives, uploads and jobs.
+    Destructive operations get resources of their own."""
+    op = endpoint.operation
+    if op in {"ListVaults", "GetDataRetrievalPolicy", "ListProvisionedCapacity", "PurchaseProvisionedCapacity"}:
+        return {"accountId": "-"}
+    if op == "SetDataRetrievalPolicy":
+        return {"accountId": "-", "Policy": {"Rules": [{"Strategy": "FreeTier"}]}}
+    if op == "CreateVault":
+        return {"accountId": "-", "vaultName": f"stackyard-glacier-new-{time.time_ns()}"}
+    if op == "DeleteVault":
+        return {"accountId": "-", "vaultName": glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-del")}
+    fx = glacier_fixture(aws_bin, endpoint_url, region, env)
+    vault = fx["vault"]
+    base = {"accountId": "-", "vaultName": vault}
+    body = b"stackyard glacier part"
+    if op == "UploadArchive":
+        return {**base, "body": base64.b64encode(b"stackyard glacier archive").decode("ascii")}
+    if op == "DeleteArchive":
+        return {**base, "archiveId": glacier_archive(aws_bin, endpoint_url, region, env, vault)}
+    if op == "InitiateMultipartUpload":
+        return {**base, "partSize": str(GLACIER_PART_SIZE)}
+    if op in {"UploadMultipartPart", "CompleteMultipartUpload", "AbortMultipartUpload"}:
+        upload = glacier_upload(aws_bin, endpoint_url, region, env, vault)
+        if op == "AbortMultipartUpload":
+            return {**base, "uploadId": upload}
+        part = {**base, "uploadId": upload, "range": f"bytes 0-{len(body) - 1}/*", "body": base64.b64encode(body).decode("ascii")}
+        if op == "UploadMultipartPart":
+            return part
+        glacier_cli(
+            aws_bin,
+            endpoint_url,
+            region,
+            env,
+            "upload-multipart-part",
+            ["--vault-name", vault, "--upload-id", upload, "--range", part["range"], "--cli-input-json", json.dumps({"body": part["body"]})],
+        )
+        return {**base, "uploadId": upload, "archiveSize": str(len(body)), "checksum": glacier_tree_hash(body)}
+    if op == "ListParts":
+        return {**base, "uploadId": fx["upload"]}
+    if op == "InitiateJob":
+        return {**base, "jobParameters": {"Type": "inventory-retrieval", "Format": "JSON"}}
+    if op in {"DescribeJob", "GetJobOutput"}:
+        return {**base, "jobId": fx["job"]}
+    if op == "SetVaultAccessPolicy" or op == "InitiateVaultLock":
+        target = vault if op == "SetVaultAccessPolicy" else glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-lock")
+        return {"accountId": "-", "vaultName": target, "policy": {"Policy": GLACIER_COVERAGE_POLICY}}
+    if op in {"CompleteVaultLock", "AbortVaultLock"}:
+        target = glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-lock")
+        lock = glacier_lock(aws_bin, endpoint_url, region, env, target)
+        return {"accountId": "-", "vaultName": target, **({"lockId": lock} if op == "CompleteVaultLock" else {})}
+    if op == "SetVaultNotifications":
+        return {**base, "vaultNotificationConfig": {"SNSTopic": fx["topic"], "Events": ["InventoryRetrievalCompleted"]}}
+    if op in {"DeleteVaultAccessPolicy", "DeleteVaultNotifications"}:
+        return {"accountId": "-", "vaultName": glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-del")}
+    if op == "AddTagsToVault":
+        return {**base, "Tags": {"stackyard": "coverage"}}
+    if op == "RemoveTagsFromVault":
+        return {**base, "TagKeys": ["stackyard-removed"]}
+    return base
+
+
+ESL_COVERAGE_ACCOUNT = "123456789012"
+ESL_COVERAGE_SUBNET = "subnet-0123456789abcdef0"
+
+
+def esl_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def esl_create_domain(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], version: str = "7.10") -> str:
+    name = esl_unique("esc")
+    run_aws_json(aws_bin, endpoint_url, region, "es", "create-elasticsearch-domain", env,
+                 ["--domain-name", name, "--elasticsearch-version", version])
+    return name
+
+
+def esl_create_package(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-package", env,
+        ["--package-name", esl_unique("pkg-"), "--package-type", "TXT-DICTIONARY",
+         "--package-source", "S3BucketName=stackyard-coverage,S3Key=dictionary.txt"],
+    )
+    details = created.get("PackageDetails") if isinstance(created, dict) else None
+    return str(details.get("PackageID") or "") if isinstance(details, dict) else ""
+
+
+def esl_create_connection(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str) -> str:
+    info = f"OwnerId={ESL_COVERAGE_ACCOUNT},DomainName={domain},Region={region}"
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-outbound-cross-cluster-search-connection", env,
+        ["--source-domain-info", info, "--destination-domain-info", info, "--connection-alias", esl_unique("ccs")],
+    )
+    return str(created.get("CrossClusterSearchConnectionId") or "") if isinstance(created, dict) else ""
+
+
+def esl_create_vpc_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-vpc-endpoint", env,
+        ["--domain-arn", f"arn:aws:es:{region}:{ESL_COVERAGE_ACCOUNT}:domain/{domain}",
+         "--vpc-options", f"SubnetIds={ESL_COVERAGE_SUBNET}"],
+    )
+    endpoint = created.get("VpcEndpoint") if isinstance(created, dict) else None
+    return str(endpoint.get("VpcEndpointId") or "") if isinstance(endpoint, dict) else ""
+
+
+def esl_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One domain, package and VPC endpoint shared by the non-destructive ops."""
+    state = RUNTIME_STATE.setdefault("elasticsearchservice", {})
+    if not state.get("domain"):
+        state["domain"] = esl_create_domain(aws_bin, endpoint_url, region, env)
+        state["package"] = esl_create_package(aws_bin, endpoint_url, region, env)
+        state["endpoint"] = esl_create_vpc_endpoint(aws_bin, endpoint_url, region, env, state["domain"])
+    return state
+
+
+def elasticsearchservice_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each legacy es operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = esl_shared_state(aws_bin, endpoint_url, region, env)
+    domain, package = state["domain"], state["package"]
+    arn = f"arn:aws:es:{region}:{ESL_COVERAGE_ACCOUNT}:domain/{domain}"
+    vpc = {"SubnetIds": [ESL_COVERAGE_SUBNET]}
+    if op == "CreateElasticsearchDomain":
+        return {"DomainName": esl_unique("esc"), "ElasticsearchVersion": "7.10"}
+    if op == "DeleteElasticsearchDomain":
+        return {"DomainName": esl_create_domain(aws_bin, endpoint_url, region, env)}
+    if op == "UpgradeElasticsearchDomain":
+        return {"DomainName": esl_create_domain(aws_bin, endpoint_url, region, env, "7.9"), "TargetVersion": "7.10"}
+    if op == "DescribeElasticsearchDomains":
+        return {"DomainNames": [domain]}
+    if op == "DescribeElasticsearchInstanceTypeLimits":
+        return {"InstanceType": "m5.large.elasticsearch", "ElasticsearchVersion": "7.10"}
+    if op == "ListElasticsearchInstanceTypes":
+        return {"ElasticsearchVersion": "7.10"}
+    if op in {"AddTags", "ListTags", "RemoveTags"}:
+        out = {"ARN": arn}
+        if op == "AddTags":
+            out["TagList"] = [{"Key": "env", "Value": "coverage"}]
+        if op == "RemoveTags":
+            out["TagKeys"] = ["env"]
+        return out
+    if op in {"AuthorizeVpcEndpointAccess", "RevokeVpcEndpointAccess"}:
+        if op == "RevokeVpcEndpointAccess":
+            run_aws_json(aws_bin, endpoint_url, region, "es", "authorize-vpc-endpoint-access", env,
+                         ["--domain-name", domain, "--account", "111122223333"])
+        return {"DomainName": domain, "Account": "111122223333"}
+    if op == "CreatePackage":
+        return {"PackageName": esl_unique("pkg-"), "PackageType": "TXT-DICTIONARY",
+                "PackageSource": {"S3BucketName": "stackyard-coverage", "S3Key": "dictionary.txt"}}
+    if op in {"AssociatePackage", "DissociatePackage", "DeletePackage"}:
+        fresh = esl_create_package(aws_bin, endpoint_url, region, env)
+        if op == "DeletePackage":
+            return {"PackageID": fresh}
+        if op == "DissociatePackage":
+            run_aws_json(aws_bin, endpoint_url, region, "es", "associate-package", env,
+                         ["--package-id", fresh, "--domain-name", domain])
+        return {"PackageID": fresh, "DomainName": domain}
+    if op == "UpdatePackage":
+        return {"PackageID": package, "PackageSource": {"S3BucketName": "stackyard-coverage", "S3Key": "dictionary-v2.txt"}}
+    if op in {"GetPackageVersionHistory", "ListDomainsForPackage"}:
+        return {"PackageID": package}
+    if op == "DescribePackages":
+        return {}
+    if op == "CreateVpcEndpoint":
+        return {"DomainArn": arn, "VpcOptions": vpc}
+    if op == "DescribeVpcEndpoints":
+        return {"VpcEndpointIds": [state["endpoint"]]}
+    if op in {"UpdateVpcEndpoint", "DeleteVpcEndpoint"}:
+        fresh = esl_create_vpc_endpoint(aws_bin, endpoint_url, region, env, domain)
+        return {"VpcEndpointId": fresh, "VpcOptions": vpc} if op == "UpdateVpcEndpoint" else {"VpcEndpointId": fresh}
+    if op == "CreateOutboundCrossClusterSearchConnection":
+        info = {"OwnerId": ESL_COVERAGE_ACCOUNT, "DomainName": domain, "Region": region}
+        return {"SourceDomainInfo": info, "DestinationDomainInfo": info, "ConnectionAlias": esl_unique("ccs")}
+    if op in {"AcceptInboundCrossClusterSearchConnection", "RejectInboundCrossClusterSearchConnection",
+              "DeleteInboundCrossClusterSearchConnection", "DeleteOutboundCrossClusterSearchConnection"}:
+        return {"CrossClusterSearchConnectionId": esl_create_connection(aws_bin, endpoint_url, region, env, domain)}
+    if op == "PurchaseReservedElasticsearchInstanceOffering":
+        offers = run_aws_json(aws_bin, endpoint_url, region, "es", "describe-reserved-elasticsearch-instance-offerings", env)
+        offer_list = offers.get("ReservedElasticsearchInstanceOfferings") if isinstance(offers, dict) else None
+        offer_id = str(offer_list[0].get("ReservedElasticsearchInstanceOfferingId") or "") if offer_list else ""
+        return {"ReservedElasticsearchInstanceOfferingId": offer_id, "ReservationName": esl_unique("reservation-")}
+    if op in {"DescribeReservedElasticsearchInstanceOfferings", "DescribeReservedElasticsearchInstances",
+              "DescribeInboundCrossClusterSearchConnections", "DescribeOutboundCrossClusterSearchConnections",
+              "ListDomainNames", "ListElasticsearchVersions", "ListVpcEndpoints", "DeleteElasticsearchServiceRole",
+              "GetCompatibleElasticsearchVersions"}:
+        return {}
+    if op == "GetUpgradeStatus":
+        # Status needs an upgrade on record; a check-only run leaves the version alone.
+        run_aws_json(aws_bin, endpoint_url, region, "es", "upgrade-elasticsearch-domain", env,
+                     ["--domain-name", domain, "--target-version", "OpenSearch_1.0", "--perform-check-only"])
+    # The remaining operations act on the shared domain.
+    return {"DomainName": domain}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -34134,6 +34628,14 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "elasticsearchservice":
+        return elasticsearchservice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "glacier":
+        return glacier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "inspector":
+        return inspector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "inspectorscan":
+        return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
     if endpoint.service == "docdbelastic":
         return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "eksauth":
@@ -56381,7 +56883,8 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+        # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
