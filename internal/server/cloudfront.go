@@ -58,8 +58,10 @@ func (s *Server) handleCloudFrontRESTRouter(w http.ResponseWriter, r *http.Reque
 	if result.Status == 0 {
 		result.Status = http.StatusOK
 	}
-	for key, value := range result.Headers {
-		w.Header().Set(key, value)
+	// Headers are set by constant name (the store only sets Location), so the
+	// response content type is visibly fixed where the body is written.
+	if location := result.Headers["Location"]; location != "" {
+		w.Header().Set("Location", location)
 	}
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(result.Status)

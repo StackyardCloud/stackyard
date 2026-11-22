@@ -120,6 +120,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bedrock-agent/docker-compose.yml"
   },
   {
+    id: "bedrockagentruntime",
+    name: "Agents for Amazon Bedrock Runtime",
+    category: "integration",
+    summary: "Emulate InvokeAgent, inline agents, knowledge-base Retrieve and RetrieveAndGenerate, InvokeFlow and flow executions, Bedrock sessions, rerank and agent memory.",
+    docsHref: "../../../index.html#bedrockagentruntime",
+    exampleHref: "../../../../examples/aws/bedrock-agent-runtime/docker-compose.yml"
+  },
+  {
     id: "cloudcontrolapi",
     name: "Cloud Control API",
     category: "integration",
@@ -454,6 +462,22 @@ const SERVICE_CATALOG = [
     summary: "ListFragments, GetMediaForFragmentList, GetClip, GetImages and HLS/DASH session URLs that serve playlists of the stored fragments.",
     docsHref: "../../../index.html#kinesisvideoarchivedmedia",
     exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
+  },
+  {
+    id: "kinesisvideosignaling",
+    name: "Kinesis Video Signaling Channels",
+    category: "integration",
+    summary: "GetIceServerConfig with deterministic TURN credentials, SendAlexaOfferToMaster, and a WSS signaling relay between a channel's master and viewers.",
+    docsHref: "../../../index.html#kinesisvideosignaling",
+    exampleHref: "../../../../examples/aws/kinesis-video-signaling/docker-compose.yml"
+  },
+  {
+    id: "kinesisvideowebrtcstorage",
+    name: "Kinesis Video WebRTC Storage",
+    category: "integration",
+    summary: "JoinStorageSession and JoinStorageSessionAsViewer for channels with media storage linked to an active stream.",
+    docsHref: "../../../index.html#kinesisvideowebrtcstorage",
+    exampleHref: "../../../../examples/aws/kinesis-video-signaling/docker-compose.yml"
   },
   {
     id: "mq",
@@ -990,6 +1014,14 @@ const SERVICE_CATALOG = [
     summary: "Plan staged emulation for app lifecycle, resiliency policy workflows, assessments, recommendations, and tagging APIs.",
     docsHref: "../../../index.html#resilience-hub",
     exampleHref: "../../../../examples/aws/resilience-hub/docker-compose.yml"
+  },
+  {
+    id: "efs",
+    name: "Elastic File System",
+    category: "storage",
+    summary: "Emulate EFS file systems, mount targets in EC2 subnets, access points, policies, lifecycle, backup and replication.",
+    docsHref: "../../../index.html#efs",
+    exampleHref: "../../../../examples/aws/efs/docker-compose.yml"
   },
   {
     id: "s3",

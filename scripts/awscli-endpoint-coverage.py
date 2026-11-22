@@ -166,6 +166,14 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "kinesis-video-archived-media",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideoarchivedmedia_ops.go",
     },
+    "kinesisvideosignaling": {
+        "cli": "kinesis-video-signaling",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideosignaling_ops.go",
+    },
+    "kinesisvideowebrtcstorage": {
+        "cli": "kinesis-video-webrtc-storage",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideowebrtcstorage_ops.go",
+    },
     "lexv2": {"cli": "lexv2-models", "ops_file": REPO_ROOT / "internal/server/lexv2_ops.go"},
     "lexruntimev2": {"cli": "lexv2-runtime", "ops_file": REPO_ROOT / "internal/server/lexruntimev2_ops.go"},
     "pinpoint": {"cli": "pinpoint", "ops_file": REPO_ROOT / "internal/server/pinpoint_ops.go"},
@@ -226,6 +234,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
     "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
+    "bedrockagentruntime": {
+        "cli": "bedrock-agent-runtime",
+        "ops_file": REPO_ROOT / "internal/server/bedrockagentruntime_ops.go",
+    },
     "bedrockagentcorecontrol": {
         "cli": "bedrock-agentcore-control",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcorecontrol_ops.go",
@@ -535,6 +547,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
+    "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -1133,6 +1146,14 @@ SERVICE_ALIASES = {
     "kinesis-video-archived-media": "kinesisvideoarchivedmedia",
     "kinesis video archived media": "kinesisvideoarchivedmedia",
     "amazonkinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
+    "kinesisvideosignaling": "kinesisvideosignaling",
+    "kinesis-video-signaling": "kinesisvideosignaling",
+    "kinesis video signaling": "kinesisvideosignaling",
+    "amazonkinesisvideosignalingchannels": "kinesisvideosignaling",
+    "kinesisvideowebrtcstorage": "kinesisvideowebrtcstorage",
+    "kinesis-video-webrtc-storage": "kinesisvideowebrtcstorage",
+    "kinesis video webrtc storage": "kinesisvideowebrtcstorage",
+    "amazonkinesisvideowebrtcstorage": "kinesisvideowebrtcstorage",
     "emr": "emr",
     "amazonemr": "emr",
     "amazon emr": "emr",
@@ -1244,6 +1265,10 @@ SERVICE_ALIASES = {
     "bedrock-agent": "bedrockagent",
     "agents for amazon bedrock": "bedrockagent",
     "amazonbedrockagent": "bedrockagent",
+    "bedrockagentruntime": "bedrockagentruntime",
+    "bedrock-agent-runtime": "bedrockagentruntime",
+    "agents for amazon bedrock runtime": "bedrockagentruntime",
+    "amazonbedrockagentruntime": "bedrockagentruntime",
     "bedrockagentcorecontrol": "bedrockagentcorecontrol",
     "bedrock-agentcore-control": "bedrockagentcorecontrol",
     "bedrock agentcore control": "bedrockagentcorecontrol",
@@ -2131,6 +2156,10 @@ SERVICE_ALIASES = {
     "dynamodb-streams": "dynamodbstreams",
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
+    "efs": "efs",
+    "elasticfilesystem": "efs",
+    "amazonefs": "efs",
+    "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
     "aurora-dsql": "dsql",
     "amazonauroradsql": "dsql",
@@ -3016,6 +3045,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "efs": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -3063,6 +3093,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kinesisvideostreams": {},
     "kinesisvideomedia": {},
     "kinesisvideoarchivedmedia": {},
+    "kinesisvideosignaling": {},
     "finspace": {},
     "finspacemanagement": {},
     "gameliftstreams": {},
@@ -3081,6 +3112,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codecatalyst": {},
     "bedrockagentcoredata": {},
     "bedrockagent": {},
+    "bedrockagentruntime": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
@@ -3429,6 +3461,15 @@ BEDROCKRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
     "InvokeModelWithBidirectionalStream": ("POST", "/model/{modelId}/invoke-with-bidirectional-stream"),
 }
 BEDROCKRUNTIME_COVERAGE_BUCKET = "stackyard-bedrockruntime-coverage"
+# Event-stream operations the AWS CLI doesn't ship; sent as signed raw calls.
+BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "AgenticRetrieveStream": ("POST", "/agenticRetrieveStream"),
+    "InvokeAgent": ("POST", "/agents/{agentId}/agentAliases/{agentAliasId}/sessions/{sessionId}/text"),
+    "InvokeFlow": ("POST", "/flows/{flowIdentifier}/aliases/{flowAliasIdentifier}"),
+    "InvokeInlineAgent": ("POST", "/agents/{sessionId}"),
+    "OptimizePrompt": ("POST", "/optimize-prompt"),
+    "RetrieveAndGenerateStream": ("POST", "/retrieveAndGenerateStream"),
+}
 _BEDROCKAGENTCOREDATA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _BEDROCKAGENTCORECONTROL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _APPMESH_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -4382,6 +4423,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockruntime":
         return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "bedrockagentruntime":
+        return BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
         return ("POST", "/")
     if endpoint.service == "devopsguru":
@@ -6243,6 +6286,9 @@ def invoke_raw_endpoint(
         else:
             body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
             extra_headers = {"Content-Type": "application/json"}
+    elif endpoint.service == "bedrockagentruntime":
+        body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
+        extra_headers = {"Content-Type": "application/json"}
     elif endpoint.service == "lexruntimev2":
         body = lexruntimev2_conversation_body()
         extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
@@ -7276,7 +7322,7 @@ def invoke_raw_endpoint(
             signing_service = "ssm-incidents"
     elif endpoint.service == "applicationsignals":
         signing_service = "application-signals"
-    elif endpoint.service == "bedrockruntime":
+    elif endpoint.service in {"bedrockruntime", "bedrockagentruntime"}:
         signing_service = "bedrock"
     elif endpoint.service == "bedrockagentcoredata":
         signing_service = "bedrock-agentcore"
@@ -9475,6 +9521,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
     if endpoint.service == "codeguruprofiler":
         return {}
     if endpoint.service == "bedrockruntime":
+        return {}
+    if endpoint.service == "bedrockagentruntime":
         return {}
     if endpoint.service == "bedrock":
         return {}
@@ -30444,6 +30492,63 @@ def kvs_media_seed(endpoint_url: str, region: str, env: dict[str, str]) -> dict[
     return state
 
 
+KVS_SIGNALING_CHANNEL_NAME = f"stackyard-coverage-signaling-{os.getpid()}-{int(time.time())}"
+
+
+def kvs_signaling_seed(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create the coverage signaling channel once, with media storage linked to
+    the coverage stream so WebRTC storage sessions can join."""
+    state = RUNTIME_STATE.setdefault("kinesisvideosignaling", {})
+    if state.get("channel_arn"):
+        return str(state["channel_arn"])
+    json_headers = {"Content-Type": "application/json"}
+    status, text = kvs_media_signed_post(
+        endpoint_url, region, env, "/createSignalingChannel", json.dumps({"ChannelName": KVS_SIGNALING_CHANNEL_NAME}).encode(), json_headers
+    )
+    try:
+        channel_arn = str(json.loads(text).get("ChannelARN") or "") if status == 200 else ""
+    except json.JSONDecodeError:
+        channel_arn = ""
+    if not channel_arn:
+        return ""
+    stream = json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME, "DataRetentionInHours": 24, "MediaType": "video/h264"}).encode()
+    status, text = kvs_media_signed_post(endpoint_url, region, env, "/createStream", stream, json_headers)
+    try:
+        stream_arn = str(json.loads(text).get("StreamARN") or "") if status == 200 else ""
+    except json.JSONDecodeError:
+        stream_arn = ""
+    if not stream_arn:
+        # The media coverage run may already have created the stream.
+        status, text = kvs_media_signed_post(
+            endpoint_url, region, env, "/describeStream", json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME}).encode(), json_headers
+        )
+        try:
+            stream_arn = str((json.loads(text).get("StreamInfo") or {}).get("StreamARN") or "") if status == 200 else ""
+        except (json.JSONDecodeError, AttributeError):
+            stream_arn = ""
+    storage = {"ChannelARN": channel_arn, "MediaStorageConfiguration": {"StreamARN": stream_arn, "Status": "ENABLED"}}
+    kvs_media_signed_post(endpoint_url, region, env, "/updateMediaStorageConfiguration", json.dumps(storage).encode(), json_headers)
+    state["channel_arn"] = channel_arn
+    return channel_arn
+
+
+def kvs_signaling_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    channel_arn = kvs_signaling_seed(endpoint_url, region, env)
+    if not channel_arn:
+        return payload
+    op = endpoint.operation
+    if op == "GetIceServerConfig":
+        return {"ChannelARN": channel_arn, "ClientId": "stackyard-viewer", "Service": "TURN"}
+    if op == "SendAlexaOfferToMaster":
+        offer = base64.b64encode(b"v=0\r\ns=stackyard-coverage\r\n").decode("ascii")
+        return {"ChannelARN": channel_arn, "SenderClientId": "stackyard-alexa", "MessagePayload": offer}
+    if op == "JoinStorageSession":
+        return {"channelArn": channel_arn}
+    if op == "JoinStorageSessionAsViewer":
+        return {"channelArn": channel_arn, "clientId": "stackyard-viewer"}
+    return payload
+
+
 def kvs_media_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
     state = kvs_media_seed(endpoint_url, region, env)
     seeded_at = float(state.get("seeded_at") or time.time())
@@ -30672,6 +30777,184 @@ def bedrockagent_fixture(ctx: tuple) -> dict:
     data_source = bedrockagent_cli(ctx, "get-data-source", ds).get("dataSource", {})
     state.update({"agentName": agent.get("agentName", ""), "kbName": kb.get("name", ""), "dataSourceName": data_source.get("name", "")})
     return state
+
+
+BEDROCKAGENTRUNTIME_MODEL_ARN = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-v2"
+
+
+def bedrockagentruntime_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "bedrock-agent-runtime",
+        operation,
+        env,
+        ["--cli-input-json", json.dumps(body, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def bedrockagentruntime_session(ctx: tuple, ended: bool = False) -> dict:
+    session = bedrockagentruntime_cli(ctx, "create-session", {})
+    if ended and session.get("sessionId"):
+        bedrockagentruntime_cli(ctx, "end-session", {"sessionIdentifier": session["sessionId"]})
+    return session
+
+
+def bedrockagentruntime_flow_inputs() -> list:
+    return [{"nodeName": "in", "nodeOutputName": "document", "content": {"document": "Stackyard coverage"}}]
+
+
+def bedrockagentruntime_fixture(ctx: tuple) -> dict:
+    # The bedrock-agent fixture (prepared agent + alias, knowledge base with one
+    # ingested document, prepared flow + alias) plus a session with an
+    # invocation and step, and a flow execution.
+    state = RUNTIME_STATE.setdefault("bedrockagentruntime", {})
+    if state.get("sessionId"):
+        return state
+    agent = bedrockagent_fixture(ctx)
+    if not agent.get("agentId"):
+        return state
+    state.update(agent)
+    session = bedrockagentruntime_session(ctx)
+    session_id = str(session.get("sessionId") or "")
+    invocation = bedrockagentruntime_cli(ctx, "create-invocation", {"sessionIdentifier": session_id}).get("invocationId", "")
+    step = bedrockagentruntime_cli(
+        ctx,
+        "put-invocation-step",
+        {
+            "sessionIdentifier": session_id,
+            "invocationIdentifier": invocation,
+            "invocationStepTime": "2025-01-01T00:00:00Z",
+            "payload": {"contentBlocks": [{"text": "Stackyard coverage step"}]},
+        },
+    ).get("invocationStepId", "")
+    execution = bedrockagentruntime_cli(
+        ctx,
+        "start-flow-execution",
+        {"flowIdentifier": agent["flowId"], "flowAliasIdentifier": agent["flowAliasId"], "inputs": bedrockagentruntime_flow_inputs()},
+    ).get("executionArn", "")
+    state.update(
+        {
+            "sessionId": session_id,
+            "sessionArn": str(session.get("sessionArn") or ""),
+            "invocationId": invocation,
+            "invocationStepId": step,
+            "executionArn": execution,
+        }
+    )
+    return state
+
+
+def bedrockagentruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = bedrockagentruntime_fixture(ctx)
+    if not state.get("sessionId"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    kb_config = {
+        "type": "KNOWLEDGE_BASE",
+        "knowledgeBaseConfiguration": {"knowledgeBaseId": state["knowledgeBaseId"], "modelArn": BEDROCKAGENTRUNTIME_MODEL_ARN},
+    }
+    flow = {"flowIdentifier": state["flowId"], "flowAliasIdentifier": state["flowAliasId"]}
+    document = {"knowledgeBaseId": state["knowledgeBaseId"], "dataSourceId": state["dataSourceId"], "documentId": "sydoc"}
+    session = {"sessionIdentifier": state["sessionId"]}
+    bodies = {
+        "AgenticRetrieveStream": {
+            "messages": [{"role": "user", "content": {"text": "What does Stackyard emulate?"}}],
+            "retrievers": [{"configuration": {"knowledgeBase": {"knowledgeBaseId": state["knowledgeBaseId"]}}}],
+            "agenticRetrieveConfiguration": {},
+            "generateResponse": True,
+        },
+        "CheckIngestedDocumentAcl": {**document, "userContext": {"userId": "stackyard-user"}},
+        "CreateInvocation": session,
+        "CreateSession": {"sessionMetadata": {"source": "coverage"}},
+        "DeleteAgentMemory": {"agentId": state["agentId"], "agentAliasId": state["agentAliasId"]},
+        "GenerateQuery": {
+            "queryGenerationInput": {"type": "TEXT", "text": "How many documents are there?"},
+            "transformationConfiguration": {
+                "mode": "TEXT_TO_SQL",
+                "textToSqlConfiguration": {
+                    "type": "KNOWLEDGE_BASE",
+                    "knowledgeBaseConfiguration": {
+                        "knowledgeBaseArn": f"arn:aws:bedrock:us-east-1:123456789012:knowledge-base/{state['knowledgeBaseId']}"
+                    },
+                },
+            },
+        },
+        "GetAgentMemory": {
+            "agentId": state["agentId"],
+            "agentAliasId": state["agentAliasId"],
+            "memoryId": "symemory",
+            "memoryType": "SESSION_SUMMARY",
+        },
+        "GetDocumentContent": document,
+        "GetExecutionFlowSnapshot": {**flow, "executionIdentifier": state["executionArn"]},
+        "GetFlowExecution": {**flow, "executionIdentifier": state["executionArn"]},
+        "GetIngestedDocumentAcl": document,
+        "GetInvocationStep": {**session, "invocationIdentifier": state["invocationId"], "invocationStepId": state["invocationStepId"]},
+        "GetSession": session,
+        "InvokeAgent": {
+            "agentId": state["agentId"],
+            "agentAliasId": state["agentAliasId"],
+            "sessionId": "stackyard-coverage",
+            "inputText": "What does Stackyard emulate?",
+        },
+        "InvokeFlow": {**flow, "inputs": bedrockagentruntime_flow_inputs()},
+        "InvokeInlineAgent": {
+            "sessionId": "stackyard-inline-coverage",
+            "foundationModel": "anthropic.claude-v2",
+            "instruction": BEDROCKAGENT_INSTRUCTION,
+            "inputText": "Hello",
+        },
+        "ListFlowExecutionEvents": {**flow, "executionIdentifier": state["executionArn"], "eventType": "Flow"},
+        "ListFlowExecutions": {"flowIdentifier": state["flowId"]},
+        "ListInvocationSteps": {**session, "invocationIdentifier": state["invocationId"]},
+        "ListInvocations": session,
+        "ListSessions": {},
+        "ListTagsForResource": {"resourceArn": state["sessionArn"]},
+        "OptimizePrompt": {"input": {"textPrompt": {"text": "Summarize the document."}}, "targetModelId": "anthropic.claude-v2"},
+        "PutInvocationStep": {
+            **session,
+            "invocationIdentifier": state["invocationId"],
+            "invocationStepTime": "2025-01-01T00:00:01Z",
+            "payload": {"contentBlocks": [{"text": "Another coverage step"}]},
+        },
+        "Rerank": {
+            "queries": [{"type": "TEXT", "textQuery": {"text": "Stackyard"}}],
+            "sources": [{"type": "INLINE", "inlineDocumentSource": {"type": "TEXT", "textDocument": {"text": "Stackyard emulates AWS."}}}],
+            "rerankingConfiguration": {
+                "type": "BEDROCK_RERANKING_MODEL",
+                "bedrockRerankingConfiguration": {
+                    "modelConfiguration": {"modelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.rerank-v1:0"}
+                },
+            },
+        },
+        "Retrieve": {"knowledgeBaseId": state["knowledgeBaseId"], "retrievalQuery": {"text": "What does Stackyard emulate?"}},
+        "RetrieveAndGenerate": {"input": {"text": "What does Stackyard emulate?"}, "retrieveAndGenerateConfiguration": kb_config},
+        "RetrieveAndGenerateStream": {"input": {"text": "What does Stackyard emulate?"}, "retrieveAndGenerateConfiguration": kb_config},
+        "StartFlowExecution": {**flow, "inputs": bedrockagentruntime_flow_inputs()},
+        "TagResource": {"resourceArn": state["sessionArn"], "tags": {"env": "coverage"}},
+        "UntagResource": {"resourceArn": state["sessionArn"], "tagKeys": ["env"]},
+        "UpdateSession": {**session, "sessionMetadata": {"source": "coverage-updated"}},
+    }
+    if op in {"DeleteSession", "EndSession"}:
+        # Each gets its own session: DeleteSession needs an ENDED one.
+        fresh_session = bedrockagentruntime_session(ctx, ended=op == "DeleteSession")
+        bodies[op] = {"sessionIdentifier": fresh_session.get("sessionId", "")}
+    if op == "StopFlowExecution":
+        fresh = bedrockagentruntime_cli(ctx, "start-flow-execution", {**flow, "inputs": bedrockagentruntime_flow_inputs()})
+        bodies[op] = {**flow, "executionIdentifier": fresh.get("executionArn", "")}
+    if op not in bodies:
+        return payload
+    hydrated.clear()
+    hydrated.update(bodies[op])
+    return hydrated
 
 
 def bedrockagent_hydrate_payload(
@@ -31266,6 +31549,128 @@ def redshiftdata_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+EFS_DEFAULT_SUBNET = "subnet-00000001"
+EFS_DEFAULT_SECURITY_GROUP = "sg-00000000"
+EFS_COVERAGE_POLICY = json.dumps(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Effect": "Allow", "Principal": {"AWS": "*"}, "Action": "elasticfilesystem:ClientMount", "Resource": "*"}
+        ],
+    }
+)
+
+
+def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-file-system", env,
+        ["--creation-token", f"stackyard-coverage-{time.time_ns()}", "--backup"],
+    )
+    return str(created.get("FileSystemId") or "") if isinstance(created, dict) else ""
+
+
+def efs_create_mount_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fs_id: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-mount-target", env,
+        ["--file-system-id", fs_id, "--subnet-id", EFS_DEFAULT_SUBNET],
+    )
+    return str(created.get("MountTargetId") or "") if isinstance(created, dict) else ""
+
+
+def efs_create_access_point(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fs_id: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-access-point", env,
+        ["--file-system-id", fs_id, "--client-token", f"stackyard-coverage-{time.time_ns()}"],
+    )
+    return str(created.get("AccessPointId") or "") if isinstance(created, dict) else ""
+
+
+def efs_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One file system with a policy, a mount target and an access point that
+    the non-destructive operations share."""
+    state = RUNTIME_STATE.setdefault("efs", {})
+    if not state.get("fs_id"):
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        state["fs_id"] = fs_id
+        state["mt_id"] = efs_create_mount_target(aws_bin, endpoint_url, region, env, fs_id)
+        state["ap_id"] = efs_create_access_point(aws_bin, endpoint_url, region, env, fs_id)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "efs", "put-file-system-policy", env,
+            ["--file-system-id", fs_id, "--policy", EFS_COVERAGE_POLICY],
+        )
+    return state
+
+
+def efs_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each EFS operation at real resources. Destructive operations get
+    resources of their own so the shared ones stay valid for the rest."""
+    op = endpoint.operation
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    if op == "CreateFileSystem":
+        return {"CreationToken": unique}
+    if op == "DescribeFileSystems" or op == "DescribeAccountPreferences" or op == "DescribeReplicationConfigurations":
+        return {}
+    if op == "PutAccountPreferences":
+        return {"ResourceIdType": "LONG_ID"}
+    if op in {"DeleteFileSystem", "DeleteFileSystemPolicy"}:
+        return {"FileSystemId": efs_create_file_system(aws_bin, endpoint_url, region, env)}
+    if op == "CreateMountTarget":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"FileSystemId": fs_id, "SubnetId": EFS_DEFAULT_SUBNET}
+    if op == "DeleteMountTarget":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"MountTargetId": efs_create_mount_target(aws_bin, endpoint_url, region, env, fs_id)}
+    if op == "CreateReplicationConfiguration":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"SourceFileSystemId": fs_id, "Destinations": [{"Region": region}]}
+    if op == "DeleteReplicationConfiguration":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "efs", "create-replication-configuration", env,
+            ["--source-file-system-id", fs_id, "--destinations", f"Region={region}"],
+        )
+        return {"SourceFileSystemId": fs_id}
+    state = efs_shared_state(aws_bin, endpoint_url, region, env)
+    fs_id, mt_id, ap_id = state["fs_id"], state["mt_id"], state["ap_id"]
+    if op == "CreateAccessPoint":
+        return {"FileSystemId": fs_id, "ClientToken": unique}
+    if op == "DeleteAccessPoint":
+        return {"AccessPointId": efs_create_access_point(aws_bin, endpoint_url, region, env, fs_id)}
+    if op == "DescribeAccessPoints":
+        return {"FileSystemId": fs_id}
+    if op == "DescribeMountTargets":
+        return {"FileSystemId": fs_id}
+    if op == "DescribeMountTargetSecurityGroups":
+        return {"MountTargetId": mt_id}
+    if op == "ModifyMountTargetSecurityGroups":
+        return {"MountTargetId": mt_id, "SecurityGroups": [EFS_DEFAULT_SECURITY_GROUP]}
+    if op in {"TagResource", "ListTagsForResource", "UntagResource"}:
+        hydrated = {"ResourceId": ap_id if op == "ListTagsForResource" else fs_id}
+        if op == "TagResource":
+            hydrated["Tags"] = [{"Key": "stackyard", "Value": "coverage"}]
+        if op == "UntagResource":
+            hydrated["TagKeys"] = ["stackyard"]
+        return hydrated
+    hydrated = {"FileSystemId": fs_id}
+    if op == "CreateTags":
+        hydrated["Tags"] = [{"Key": "stackyard-legacy", "Value": "coverage"}]
+    elif op == "DeleteTags":
+        hydrated["TagKeys"] = ["stackyard-legacy"]
+    elif op == "PutLifecycleConfiguration":
+        hydrated["LifecyclePolicies"] = [{"TransitionToIA": "AFTER_30_DAYS"}]
+    elif op == "PutBackupPolicy":
+        hydrated["BackupPolicy"] = {"Status": "ENABLED"}
+    elif op == "PutFileSystemPolicy":
+        hydrated["Policy"] = EFS_COVERAGE_POLICY
+    elif op == "UpdateFileSystem":
+        hydrated["ThroughputMode"] = "elastic"
+    elif op == "UpdateFileSystemProtection":
+        hydrated["ReplicationOverwriteProtection"] = "ENABLED"
+    return hydrated
+
+
 def apigatewaymanagementapi_connect(endpoint_url: str) -> str:
     """Register a client connection through Stackyard's stand-in for a WebSocket
     connect, since there is no CLI call that opens one."""
@@ -31426,6 +31831,8 @@ def hydrate_payload_with_service_state(
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "efs":
+        return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":
@@ -31438,10 +31845,14 @@ def hydrate_payload_with_service_state(
         hydrated = copy.deepcopy(payload)
         hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
         return hydrated
+    if endpoint.service == "bedrockagentruntime":
+        return bedrockagentruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bedrockagent":
         return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
         return kvs_media_hydrate_payload(endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"kinesisvideosignaling", "kinesisvideowebrtcstorage"}:
+        return kvs_signaling_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "lexruntimev2":

@@ -88,6 +88,8 @@
         <a href="#kinesis-video-streams">Kinesis Video Streams</a>
         <a href="#kinesisvideomedia">Kinesis Video Streams Media</a>
         <a href="#kinesisvideoarchivedmedia">Kinesis Video Streams Archived Media</a>
+        <a href="#kinesisvideosignaling">Kinesis Video Signaling Channels</a>
+        <a href="#kinesisvideowebrtcstorage">Kinesis Video WebRTC Storage</a>
         <a href="#lexv2">Lex V2</a>
         <a href="#lexruntimev2">Lex Runtime V2</a>
         <a href="#pinpoint">Pinpoint</a>
@@ -106,6 +108,7 @@
         <a href="#bedrock">Bedrock</a>
         <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrockagent">Agents for Amazon Bedrock</a>
+        <a href="#bedrockagentruntime">Agents for Amazon Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
         <a href="#comprehend">Comprehend</a>
@@ -228,6 +231,7 @@
         <a href="#dms">DMS</a>
         <a href="#evs">EVS</a>
         <a href="#fms">Firewall Manager (FMS)</a>
+        <a href="#efs">Amazon EFS</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
         <a href="#storagegateway">AWS Storage Gateway</a>
@@ -3255,6 +3259,70 @@
         </details>
         </section>
 
+        <section id="kinesisvideosignaling" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Signaling Channels</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. GetIceServerConfig returns deterministic TURN credentials (Ttl 300) for an existing signaling channel, and SendAlexaOfferToMaster relays the offer to a master connected to the WSS endpoint, returning its answer (or a fixed recvonly SDP when no master answers). GetSignalingChannelEndpoint hands out Stackyard URLs: HTTPS and WEBRTC are this server, and WSS is a signaling relay at <code>/_stackyard/kinesisvideosignaling</code> that forwards SDP_OFFER, SDP_ANSWER and ICE_CANDIDATE messages between the master and viewers by client ID (SigV4-presigned upgrade with <code>X-Amz-ChannelARN</code> and, for viewers, <code>X-Amz-ClientId</code>). There is no TURN server behind the credentials.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideosignaling_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-signaling</code>: <code>docker compose -f examples/aws/kinesis-video-signaling/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideowebrtcstorage" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video WebRTC Storage</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. JoinStorageSession and JoinStorageSessionAsViewer require an existing signaling channel whose media storage configuration is ENABLED with an active linked stream, and record the master and up to three viewers. Stackyard does not open a WebRTC peer or ingest the call into the stream.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideowebrtcstorage_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-signaling</code>: <code>docker compose -f examples/aws/kinesis-video-signaling/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="lexv2" class="service">
 
         <div class="service-header">
@@ -4474,6 +4542,142 @@
         <summary>Examples</summary>
         <ul>
                 <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="bedrockagentruntime" class="service">
+
+        <div class="service-header">
+        <h2>Agents for Amazon Bedrock Runtime</h2>
+        <p>SigV4 signed with service <code>bedrock</code>. REST JSON API under <code>/agents/</code>, <code>/knowledgebases/</code>, <code>/flows/</code>, <code>/sessions/</code>, <code>/tags/</code>, <code>/retrieveAndGenerate</code>, <code>/retrieveAndGenerateStream</code>, <code>/rerank</code>, <code>/generateQuery</code>, <code>/optimize-prompt</code> and <code>/agenticRetrieveStream</code>, reading agents, knowledge bases, flows and prompts from the bedrock-agent control plane. <code>InvokeAgent</code> streams a deterministic answer: it returns control for a <code>RETURN_CONTROL</code> function named in the input, otherwise answers from the best-matching knowledge-base passage with a citation. Retrieval scores documents by query-term overlap (no embeddings) and supports metadata filters. <code>InvokeFlow</code> walks the flow from its Input node through Prompt, KnowledgeBase and Condition nodes to its Output nodes. Bedrock sessions must be ended before they can be deleted.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bedrock</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AgenticRetrieveStream</code></td>
+        </tr>
+        <tr>
+        <td><code>CheckIngestedDocumentAcl</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateInvocation</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSession</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAgentMemory</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSession</code></td>
+        </tr>
+        <tr>
+        <td><code>EndSession</code></td>
+        </tr>
+        <tr>
+        <td><code>GenerateQuery</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentMemory</code></td>
+        </tr>
+        <tr>
+        <td><code>GetDocumentContent</code></td>
+        </tr>
+        <tr>
+        <td><code>GetExecutionFlowSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFlowExecution</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIngestedDocumentAcl</code></td>
+        </tr>
+        <tr>
+        <td><code>GetInvocationStep</code></td>
+        </tr>
+        <tr>
+        <td><code>GetSession</code></td>
+        </tr>
+        <tr>
+        <td><code>InvokeAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>InvokeFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>InvokeInlineAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFlowExecutionEvents</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFlowExecutions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListInvocationSteps</code></td>
+        </tr>
+        <tr>
+        <td><code>ListInvocations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListSessions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>OptimizePrompt</code></td>
+        </tr>
+        <tr>
+        <td><code>PutInvocationStep</code></td>
+        </tr>
+        <tr>
+        <td><code>Rerank</code></td>
+        </tr>
+        <tr>
+        <td><code>Retrieve</code></td>
+        </tr>
+        <tr>
+        <td><code>RetrieveAndGenerate</code></td>
+        </tr>
+        <tr>
+        <td><code>RetrieveAndGenerateStream</code></td>
+        </tr>
+        <tr>
+        <td><code>StartFlowExecution</code></td>
+        </tr>
+        <tr>
+        <td><code>StopFlowExecution</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSession</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>bedrockagentruntime</code>: <code>docker compose -f examples/aws/bedrock-agent-runtime/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -23785,6 +23989,65 @@
         </section>
 
 
+        <section id="efs" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Elastic File System (EFS)</h2>
+        <p>SigV4 signed with service <code>elasticfilesystem</code>. REST JSON API under <code>/2015-02-01/</code> for file systems (creation-token idempotency, performance and throughput modes, encryption, One Zone), mount targets placed in EC2 store subnets and security groups, access points, file system and backup policies, lifecycle configuration, replication, account preferences, and both resource and legacy tagging. All 31 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: elasticfilesystem</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateAccessPoint</code></td></tr>
+        <tr><td><code>CreateFileSystem</code></td></tr>
+        <tr><td><code>CreateMountTarget</code></td></tr>
+        <tr><td><code>CreateReplicationConfiguration</code></td></tr>
+        <tr><td><code>CreateTags</code></td></tr>
+        <tr><td><code>DeleteAccessPoint</code></td></tr>
+        <tr><td><code>DeleteFileSystem</code></td></tr>
+        <tr><td><code>DeleteFileSystemPolicy</code></td></tr>
+        <tr><td><code>DeleteMountTarget</code></td></tr>
+        <tr><td><code>DeleteReplicationConfiguration</code></td></tr>
+        <tr><td><code>DeleteTags</code></td></tr>
+        <tr><td><code>DescribeAccessPoints</code></td></tr>
+        <tr><td><code>DescribeAccountPreferences</code></td></tr>
+        <tr><td><code>DescribeBackupPolicy</code></td></tr>
+        <tr><td><code>DescribeFileSystemPolicy</code></td></tr>
+        <tr><td><code>DescribeFileSystems</code></td></tr>
+        <tr><td><code>DescribeLifecycleConfiguration</code></td></tr>
+        <tr><td><code>DescribeMountTargetSecurityGroups</code></td></tr>
+        <tr><td><code>DescribeMountTargets</code></td></tr>
+        <tr><td><code>DescribeReplicationConfigurations</code></td></tr>
+        <tr><td><code>DescribeTags</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ModifyMountTargetSecurityGroups</code></td></tr>
+        <tr><td><code>PutAccountPreferences</code></td></tr>
+        <tr><td><code>PutBackupPolicy</code></td></tr>
+        <tr><td><code>PutFileSystemPolicy</code></td></tr>
+        <tr><td><code>PutLifecycleConfiguration</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateFileSystem</code></td></tr>
+        <tr><td><code>UpdateFileSystemProtection</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>efs</code>: <code>docker compose -f examples/aws/efs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="fsx" class="service">
 
         <div class="service-header">
