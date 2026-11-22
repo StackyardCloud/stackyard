@@ -171,12 +171,14 @@ func (s *Server) handleKinesisVideoPlayback(w http.ResponseWriter, r *http.Reque
 	case kvsDASHPath:
 		kvsWritePlaylist(w, "application/dash+xml", kvsDASHManifest(session, session.fragments(all), query))
 	default:
-		idx := kvsFragmentIndex(all, r.URL.Query().Get("FragmentNumber"))
+		// Only fragments inside this session's window are reachable.
+		visible := session.fragments(all)
+		idx := kvsFragmentIndex(visible, r.URL.Query().Get("FragmentNumber"))
 		if idx < 0 {
 			respondKinesisVideoStreamsError(w, http.StatusNotFound, "ResourceNotFoundException", "The fragment was not found in the stream.")
 			return true
 		}
-		kvsWriteFragments(w, all[idx:idx+1])
+		kvsWriteFragments(w, visible[idx:idx+1])
 	}
 	return true
 }

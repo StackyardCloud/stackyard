@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -185,6 +186,21 @@ func TestKinesisVideoArchivedMediaStage1Playback(t *testing.T) {
 	status, ctype, mpd := kvsGetURL(t, dash.DASHStreamingSessionURL)
 	if status != http.StatusOK || ctype != "application/dash+xml" || strings.Count(mpd, "<SegmentURL") != 4 {
 		t.Fatalf("DASH manifest: %d %s %q", status, ctype, mpd)
+	}
+	// A session only serves fragments inside its own window: the DASH session
+	// (whole stream) lists a fragment the HLS session's range excludes.
+	outside := ""
+	for _, m := range regexp.MustCompile(`FragmentNumber=(\d+)`).FindAllStringSubmatch(mpd, -1) {
+		if !strings.Contains(media, "FragmentNumber="+m[1]) {
+			outside = m[1]
+		}
+	}
+	if outside == "" {
+		t.Fatalf("expected a fragment outside the HLS window")
+	}
+	status, _, _ = kvsGetURL(t, ts.URL+kvsHLSFragmentPath+"?"+base.RawQuery+"&FragmentNumber="+outside)
+	if status != http.StatusNotFound {
+		t.Fatalf("fragment outside session window: %d", status)
 	}
 	// An HLS token can't open the DASH manifest.
 	status, _, _ = kvsGetURL(t, ts.URL+kvsDASHPath+"?"+base.RawQuery)

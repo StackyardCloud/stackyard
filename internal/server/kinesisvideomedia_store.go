@@ -16,6 +16,9 @@ const (
 	// fragments stay this long only so live GetMedia readers can catch up.
 	kvsLiveOnlyWindow   = 5 * time.Minute
 	kvsMaxFragmentBytes = 50 << 20
+	// kvsMaxHeaderBytes caps the EBML+Info+Tracks headers copied into each
+	// fragment (real producer headers are a few KiB).
+	kvsMaxHeaderBytes = 1 << 20
 )
 
 type kvsFault struct {
@@ -146,6 +149,13 @@ func (s *kinesisVideoStreamsStore) putMedia(req kvsPutMediaRequest, now time.Tim
 		}
 		if producer.Before(m.lastProducer) {
 			fail(c.timecode, 4004) // FRAGMENT_TIMECODE_LESSER_THAN_PREVIOUS
+			break
+		}
+		// Every fragment repeats the EBML/Info/Tracks headers, so cap them:
+		// otherwise one large header plus many tiny clusters multiplies the
+		// stored bytes far past the request body size.
+		if len(c.ebml)+len(c.info)+len(c.tracks) > kvsMaxHeaderBytes {
+			fail(c.timecode, 4006) // INVALID_MKV_DATA
 			break
 		}
 		if len(c.content) > kvsMaxFragmentBytes {
