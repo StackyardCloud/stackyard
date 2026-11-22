@@ -132,6 +132,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "workspacesweb": {"cli": "workspaces-web", "ops_file": REPO_ROOT / "internal/server/workspacesweb_ops.go"},
     "sagemaker": {"cli": "sagemaker", "ops_file": REPO_ROOT / "internal/server/sagemaker_ops.go"},
+    "sagemakerruntime": {"cli": "sagemaker-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerruntime_ops.go"},
     "simspaceweaver": {
         "cli": "simspaceweaver",
         "ops_file": REPO_ROOT / "internal/server/simspaceweaver_ops.go",
@@ -244,6 +245,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "athena": {"cli": "athena", "ops_file": None},
     "batch": {"cli": "batch", "ops_file": REPO_ROOT / "internal/server/batch_ops.go"},
     "bedrock": {"cli": "bedrock", "ops_file": REPO_ROOT / "internal/server/bedrock_ops.go"},
+    "bedrockruntime": {"cli": "bedrock-runtime", "ops_file": REPO_ROOT / "internal/server/bedrockruntime_ops.go"},
     "devopsguru": {"cli": "devops-guru", "ops_file": REPO_ROOT / "internal/server/devopsguru_ops.go"},
     "directoryservice": {
         "cli": "ds",
@@ -555,6 +557,10 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "redshiftserverless": {
         "cli": "redshift-serverless",
         "ops_file": REPO_ROOT / "internal/server/redshiftserverless_ops.go",
+    },
+    "redshiftdata": {
+        "cli": "redshift-data",
+        "ops_file": REPO_ROOT / "internal/server/redshiftdata_ops.go",
     },
     "s3": {"cli": "s3api", "ops_file": None},
     "s3control": {"cli": "s3control", "ops_file": None},
@@ -1002,6 +1008,11 @@ SERVICE_ALIASES = {
     "amazonsagemaker": "sagemaker",
     "aws sagemaker": "sagemaker",
     "awssagemaker": "sagemaker",
+    "sagemakerruntime": "sagemakerruntime",
+    "sagemaker-runtime": "sagemakerruntime",
+    "runtime.sagemaker": "sagemakerruntime",
+    "amazonsagemakerruntime": "sagemakerruntime",
+    "amazon sagemaker runtime": "sagemakerruntime",
     "simspaceweaver": "simspaceweaver",
     "simspace-weaver": "simspaceweaver",
     "simspace weaver": "simspaceweaver",
@@ -1987,6 +1998,11 @@ SERVICE_ALIASES = {
     "sagemakera2iruntime": "augmentedai",
     "bedrock": "bedrock",
     "amazonbedrock": "bedrock",
+    "bedrockruntime": "bedrockruntime",
+    "bedrock-runtime": "bedrockruntime",
+    "bedrock runtime": "bedrockruntime",
+    "amazonbedrockruntime": "bedrockruntime",
+    "awsbedrockruntime": "bedrockruntime",
     "awsbedrock": "bedrock",
     "devopsguru": "devopsguru",
     "devops-guru": "devopsguru",
@@ -2137,6 +2153,12 @@ SERVICE_ALIASES = {
     "amazon redshift serverless": "redshiftserverless",
     "awsredshiftserverless": "redshiftserverless",
     "aws redshift serverless": "redshiftserverless",
+    "redshiftdata": "redshiftdata",
+    "redshift-data": "redshiftdata",
+    "redshift data": "redshiftdata",
+    "redshift data api": "redshiftdata",
+    "amazonredshiftdata": "redshiftdata",
+    "amazon redshift data api": "redshiftdata",
     "secretsmanager": "secretsmanager",
     "secrets-manager": "secretsmanager",
     "signer": "signer",
@@ -2975,6 +2997,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "rekognition": {},
     "transcribe": {},
     "sagemaker": {},
+    "sagemakerruntime": {},
     "simspaceweaver": {},
     "supplychain": {},
     "tnb": {},
@@ -3001,11 +3024,13 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "mwaa": {},
     "mwaaserverless": {},
     "redshiftserverless": {},
+    "redshiftdata": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
+    "bedrockruntime": {},
     "devopsguru": {},
     "cloudcontrolapi": {},
     "controlcatalog": {},
@@ -3340,6 +3365,13 @@ _MSKCONNECT_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _MQ_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _MWAA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _CODECATALYST_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
+# The AWS CLI has no commands for Bedrock Runtime's event-stream operations.
+BEDROCKRUNTIME_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "ConverseStream": ("POST", "/model/{modelId}/converse-stream"),
+    "InvokeModelWithResponseStream": ("POST", "/model/{modelId}/invoke-with-response-stream"),
+    "InvokeModelWithBidirectionalStream": ("POST", "/model/{modelId}/invoke-with-bidirectional-stream"),
+}
+BEDROCKRUNTIME_COVERAGE_BUCKET = "stackyard-bedrockruntime-coverage"
 _BEDROCKAGENTCOREDATA_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _BEDROCKAGENTCORECONTROL_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _APPMESH_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -4261,6 +4293,11 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return healthimaging_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "omics":
         return omics_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "sagemakerruntime":
+        # The awscli has no invoke-endpoint-with-response-stream command.
+        return {"InvokeEndpointWithResponseStream": ("POST", "/endpoints/{EndpointName}/invocations-response-stream")}.get(
+            endpoint.operation
+        )
     if endpoint.service == "augmentedai":
         return augmentedai_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "iotmi":
@@ -4283,6 +4320,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return ("POST", "/")
     if endpoint.service == "batch":
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "bedrockruntime":
+        return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
         return ("POST", "/")
     if endpoint.service == "devopsguru":
@@ -6136,6 +6175,14 @@ def invoke_raw_endpoint(
                 _flatten(str(key), value)
         body = urlparse.urlencode(params, doseq=True).encode("utf-8")
         extra_headers = {"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+    elif endpoint.service == "bedrockruntime":
+        # Path parameters were already moved into the URL; the rest is the body.
+        if endpoint.operation == "InvokeModelWithBidirectionalStream":
+            body = bedrockruntime_event_stream_body(payload_for_transport)
+            extra_headers = {"Content-Type": "application/vnd.amazon.eventstream"}
+        else:
+            body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
+            extra_headers = {"Content-Type": "application/json"}
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7125,6 +7172,8 @@ def invoke_raw_endpoint(
         signing_service = "chatbot"
     elif endpoint.service == "iotgreengrass":
         signing_service = "greengrass"
+    elif endpoint.service == "sagemakerruntime":
+        signing_service = "sagemaker"
     elif endpoint.service == "augmentedai":
         signing_service = "sagemaker"
     elif endpoint.service == "healthimaging":
@@ -7164,6 +7213,8 @@ def invoke_raw_endpoint(
             signing_service = "ssm-incidents"
     elif endpoint.service == "applicationsignals":
         signing_service = "application-signals"
+    elif endpoint.service == "bedrockruntime":
+        signing_service = "bedrock"
     elif endpoint.service == "bedrockagentcoredata":
         signing_service = "bedrock-agentcore"
     elif endpoint.service == "bedrockagentcorecontrol":
@@ -9357,6 +9408,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
         return {}
     if endpoint.service == "codeguruprofiler":
         return {}
+    if endpoint.service == "bedrockruntime":
+        return {}
     if endpoint.service == "bedrock":
         return {}
     if endpoint.service == "devopsguru":
@@ -9459,6 +9512,8 @@ def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
         return {}
     if endpoint.service == "healthimaging":
         return {}
+    if endpoint.service == "sagemakerruntime":
+        return {"EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME, "inputs": "coverage"}
     if endpoint.service == "augmentedai":
         return {}
     if endpoint.service == "iotmi":
@@ -13116,6 +13171,10 @@ def generate_cli_input_payload(
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
         # aws lambda invoke does not support --generate-cli-skeleton input without --function-name.
         return {"FunctionName": LAMBDA_DEFAULT_FUNCTION_NAME, "Payload": "e30="}, None
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        # aws sagemaker-runtime invoke-endpoint requires --endpoint-name/--body even for
+        # skeleton generation; the payload is filled in by sagemakerruntime_hydrate_payload.
+        return {"EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME, "Body": "e30="}, None
     if endpoint.service == "s3" and endpoint.operation in {"GetObject", "GetObjectTorrent"}:
         # aws s3api get-object/get-object-torrent require explicit --bucket/--key args and do not
         # reliably support skeleton generation.
@@ -13155,6 +13214,10 @@ def generate_cli_input_payload(
             "PartNumber": 1,
             "CopySource": f"{S3_DEFAULT_BUCKET_NAME}/coverage-copy-source.txt",
         }, None
+    if endpoint.service == "bedrockruntime" and endpoint.operation == "InvokeModel":
+        # aws bedrock-runtime invoke-model requires --model-id and an outfile even for
+        # skeleton generation; hydrate_payload_with_service_state builds the request.
+        return {}, None
     if endpoint.service == "s3" and endpoint.operation == "SelectObjectContent":
         # aws s3api select-object-content requires explicit stream arguments and does not
         # reliably support skeleton generation.
@@ -13797,6 +13860,9 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
         return [err for err in errors if err != "$.ChecksumType: unknown field"]
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        # The awscli writes the Body payload to the outfile, not stdout.
+        return [err for err in errors if err != "$.Body: missing required field"]
     if endpoint.service == "cognitouserpools" and endpoint.operation in {"CreateUserPoolDomain", "UpdateUserPoolDomain"}:
         return [err for err in errors if err != "$.ManagedLoginVersion: unknown field"]
     if endpoint.service == "controltower" and endpoint.operation == "GetControlOperation":
@@ -13804,6 +13870,21 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
     if endpoint.service == "controltower" and endpoint.operation == "GetLandingZoneOperation":
         return [err for err in errors if err != "$.operationDetails.operationIdentifier: unknown field"]
     return errors
+
+
+def output_payload_exempt_member(output_shape) -> str | None:
+    """Return the output's HTTP payload member when it is a blob or event
+    stream: the CLI writes those to an outfile (or streams them), so they never
+    appear on stdout even when required. Other payload members must appear."""
+    name = (getattr(output_shape, "serialization", None) or {}).get("payload")
+    member = (getattr(output_shape, "members", {}) or {}).get(name) if name else None
+    if member is None:
+        return None
+    if str(getattr(member, "type_name", "")).lower() == "blob":
+        return name
+    if (getattr(member, "serialization", None) or {}).get("eventstream"):
+        return name
+    return None
 
 
 def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
@@ -13828,6 +13909,7 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
         return f"non-json output: {err}"
 
     errors: list[str] = []
+    payload_member = output_payload_exempt_member(output_shape)
 
     def _validate(shape, value, path: str) -> None:
         if shape is None:
@@ -13844,7 +13926,7 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
             members = getattr(shape, "members", {}) or {}
             required = set(getattr(shape, "required_members", []) or [])
             for name in required:
-                if name not in value:
+                if name not in value and not (not path and name == payload_member):
                     errors.append(f"{label}.{name}: missing required field")
             for key, item in value.items():
                 member_shape = members.get(key)
@@ -30197,6 +30279,272 @@ def appconfigdata_seed_session(
     }
 
 
+def bedrockruntime_event_stream_body(payload: dict) -> bytes:
+    """Encode payload["events"] as AWS event-stream chunk frames."""
+    import struct
+    import zlib
+
+    out = b""
+    for event in payload.get("events") or []:
+        inner = json.dumps({"event": event}, separators=(",", ":")).encode("utf-8")
+        body = json.dumps({"bytes": base64.b64encode(inner).decode("ascii")}).encode("utf-8")
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", "chunk")):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("utf-8") + b"\x07" + struct.pack(">H", len(raw)) + raw
+        prelude = struct.pack(">II", 16 + len(headers) + len(body), len(headers))
+        frame = prelude + struct.pack(">I", zlib.crc32(prelude)) + headers + body
+        out += frame + struct.pack(">I", zlib.crc32(frame))
+    return out
+
+
+BEDROCK_GUARDRAIL_OPERATIONS = {"GetGuardrail", "UpdateGuardrail", "DeleteGuardrail", "CreateGuardrailVersion"}
+
+
+def bedrock_create_coverage_guardrail(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a guardrail through the control plane and return its ID."""
+    create = Endpoint(
+        service="bedrock",
+        cli_service="bedrock",
+        operation="CreateGuardrail",
+        cli_operation="create-guardrail",
+        source="runtime-state",
+    )
+    _, text = invoke_raw_endpoint(
+        create,
+        endpoint_url,
+        region,
+        env,
+        {
+            "name": "stackyard-coverage",
+            "blockedInputMessaging": "Blocked.",
+            "blockedOutputsMessaging": "Blocked.",
+            "wordPolicyConfig": {"wordsConfig": [{"text": "forbidden"}]},
+        },
+    )
+    try:
+        return str(json.loads(text).get("guardrailId") or "")
+    except (json.JSONDecodeError, AttributeError):
+        return ""
+
+
+def bedrockruntime_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Build a working Bedrock Runtime request, seeding the guardrail and S3
+    bucket the guardrail and async-invoke operations need."""
+    state = RUNTIME_STATE.setdefault("bedrockruntime", {})
+    user = [{"role": "user", "content": [{"text": "Hello from Stackyard coverage"}]}]
+    anthropic = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 64,
+        "messages": [{"role": "user", "content": "Hello from Stackyard coverage"}],
+    }
+    claude = "anthropic.claude-3-haiku-20240307-v1:0"
+    op = endpoint.operation
+    if op == "InvokeModel":
+        body = base64.b64encode(json.dumps(anthropic).encode("utf-8")).decode("ascii")
+        return {"modelId": claude, "contentType": "application/json", "accept": "application/json", "body": body}
+    if op == "InvokeModelWithResponseStream":
+        return {"modelId": claude, **anthropic}
+    if op in {"Converse", "ConverseStream"}:
+        return {"modelId": "amazon.nova-lite-v1:0", "messages": user}
+    if op == "CountTokens":
+        return {"modelId": "anthropic.claude-3-5-haiku-20241022-v1:0", "input": {"converse": {"messages": user}}}
+    if op == "InvokeGuardrailChecks":
+        return {"messages": user, "checks": {"contentFilter": {"categories": [{"category": "VIOLENCE"}]}}}
+    if op == "InvokeModelWithBidirectionalStream":
+        return {
+            "modelId": "amazon.nova-sonic-v1:0",
+            "events": [
+                {"sessionStart": {}},
+                {"promptStart": {"promptName": "coverage"}},
+                {"textInput": {"promptName": "coverage", "content": "Hello from Stackyard coverage"}},
+                {"sessionEnd": {}},
+            ],
+        }
+    if op == "ApplyGuardrail":
+        guardrail_id = str(state.get("guardrail_id") or "")
+        if not guardrail_id:
+            guardrail_id = bedrock_create_coverage_guardrail(endpoint_url, region, env)
+            state["guardrail_id"] = guardrail_id
+        return {
+            "guardrailIdentifier": guardrail_id,
+            "guardrailVersion": "DRAFT",
+            "source": "INPUT",
+            "content": [{"text": {"text": "Hello from Stackyard coverage"}}],
+        }
+    if op in {"StartAsyncInvoke", "GetAsyncInvoke"}:
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", BEDROCKRUNTIME_COVERAGE_BUCKET])
+        start = {
+            "modelId": "amazon.nova-reel-v1:0",
+            "modelInput": {"taskType": "TEXT_VIDEO", "textToVideoParams": {"text": "A lighthouse at dawn"}},
+            "outputDataConfig": {"s3OutputDataConfig": {"s3Uri": f"s3://{BEDROCKRUNTIME_COVERAGE_BUCKET}/videos"}},
+        }
+        if op == "StartAsyncInvoke":
+            return start
+        started = run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "bedrock-runtime",
+            "start-async-invoke",
+            env,
+            ["--cli-input-json", json.dumps(start, separators=(",", ":"))],
+        )
+        return {"invocationArn": str((started or {}).get("invocationArn") or "")}
+    if op == "ListAsyncInvokes":
+        return {}
+    return payload
+
+
+SAGEMAKERRUNTIME_ENDPOINT_NAME = "stackyard-runtime-endpoint"
+SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME = "stackyard-runtime-async-endpoint"
+SAGEMAKERRUNTIME_BUCKET = "stackyard-sagemakerruntime-coverage"
+
+
+def sagemakerruntime_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a real-time and an asynchronous SageMaker endpoint plus an S3 input
+    object once, then point each SageMaker Runtime payload at them."""
+    state = RUNTIME_STATE.setdefault("sagemakerruntime", {})
+    if not state.get("seeded"):
+
+        def _sagemaker(op: str, args: list[str]) -> dict | None:
+            return run_aws_json(aws_bin, endpoint_url, region, "sagemaker", op, env, args)
+
+        variants = "VariantName=AllTraffic,ModelName=stackyard-runtime-model,InitialInstanceCount=1,InstanceType=ml.m5.large"
+        async_config = json.dumps(
+            {
+                "OutputConfig": {
+                    "S3OutputPath": f"s3://{SAGEMAKERRUNTIME_BUCKET}/output",
+                    "S3FailurePath": f"s3://{SAGEMAKERRUNTIME_BUCKET}/failures",
+                }
+            }
+        )
+        _sagemaker(
+            "create-model",
+            [
+                "--model-name",
+                "stackyard-runtime-model",
+                "--execution-role-arn",
+                "arn:aws:iam::123456789012:role/stackyard-sagemaker",
+                "--primary-container",
+                "Image=123456789012.dkr.ecr.us-east-1.amazonaws.com/model:latest",
+            ],
+        )
+        for name, extra in (
+            (SAGEMAKERRUNTIME_ENDPOINT_NAME, []),
+            (SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME, ["--async-inference-config", async_config]),
+        ):
+            _sagemaker(
+                "create-endpoint-config",
+                ["--endpoint-config-name", f"{name}-config", "--production-variants", variants, *extra],
+            )
+            _sagemaker("create-endpoint", ["--endpoint-name", name, "--endpoint-config-name", f"{name}-config"])
+            _sagemaker("describe-endpoint", ["--endpoint-name", name])
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", SAGEMAKERRUNTIME_BUCKET])
+        with tempfile.TemporaryDirectory(prefix="stackyard-sagemakerruntime-") as tmp:
+            body = Path(tmp) / "input.json"
+            body.write_text('{"inputs":"coverage"}', encoding="utf-8")
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "s3api",
+                "put-object",
+                env,
+                ["--bucket", SAGEMAKERRUNTIME_BUCKET, "--key", "input.json", "--body", str(body)],
+            )
+        state["seeded"] = True
+
+    op = endpoint.operation
+    if op == "InvokeEndpoint":
+        # cli-input-json blobs are base64 under awscli v2's default binary format.
+        return {
+            "EndpointName": SAGEMAKERRUNTIME_ENDPOINT_NAME,
+            "Body": base64.b64encode(b'{"inputs":"coverage"}').decode("ascii"),
+            "ContentType": "application/json",
+            "Accept": "application/json",
+        }
+    if op == "InvokeEndpointAsync":
+        return {
+            "EndpointName": SAGEMAKERRUNTIME_ASYNC_ENDPOINT_NAME,
+            "InputLocation": f"s3://{SAGEMAKERRUNTIME_BUCKET}/input.json",
+            "ContentType": "application/json",
+        }
+    if op == "InvokeEndpointWithResponseStream":
+        hydrated = copy.deepcopy(payload)
+        hydrated["EndpointName"] = SAGEMAKERRUNTIME_ENDPOINT_NAME
+        return hydrated
+    return copy.deepcopy(payload)
+
+
+REDSHIFTDATA_WORKGROUP = "stackyard-redshiftdata"  # created below so other shards deleting the seed workgroup don't matter
+REDSHIFTDATA_TABLE = "stackyard_coverage"
+
+
+def redshiftdata_hydrate_payload(
+    aws_bin: str,
+    endpoint: Endpoint,
+    payload: dict,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> dict:
+    """Seed a workgroup, a secret and a table, then fill each
+    Redshift Data payload with a live target or a fresh statement Id."""
+    state = RUNTIME_STATE.setdefault("redshiftdata", {})
+    conn = {"Database": "dev", "WorkgroupName": REDSHIFTDATA_WORKGROUP}
+
+    def _execute(sql: str, *extra: str) -> str:
+        out = run_aws_json(
+            aws_bin, endpoint_url, region, "redshift-data", "execute-statement", env,
+            ["--database", "dev", "--workgroup-name", REDSHIFTDATA_WORKGROUP, "--sql", sql, *extra],
+        )
+        return str((out or {}).get("Id") or "")
+
+    if not state.get("secret_arn"):
+        run_aws_json(
+            aws_bin, endpoint_url, region, "redshift-serverless", "create-workgroup", env,
+            ["--workgroup-name", REDSHIFTDATA_WORKGROUP, "--namespace-name", "stackyard-namespace"],
+        )
+        name = "stackyard-redshiftdata-coverage"
+        secret = run_aws_json(aws_bin, endpoint_url, region, "secretsmanager", "describe-secret", env, ["--secret-id", name])
+        if not secret:
+            secret = run_aws_json(
+                aws_bin, endpoint_url, region, "secretsmanager", "create-secret", env,
+                ["--name", name, "--secret-string", '{"username":"awsuser","password":"stackyard"}'],
+            )
+        state["secret_arn"] = str((secret or {}).get("ARN") or "")
+        _execute(f"CREATE TABLE IF NOT EXISTS {REDSHIFTDATA_TABLE} (id INT, name VARCHAR(20))", "--wait-time-seconds", "1")
+    op = endpoint.operation
+    if op == "ExecuteStatement":
+        return {**conn, "Sql": f"SELECT * FROM {REDSHIFTDATA_TABLE}", "SecretArn": state["secret_arn"]}
+    if op == "BatchExecuteStatement":
+        return {**conn, "Sqls": [f"INSERT INTO {REDSHIFTDATA_TABLE} VALUES (1, 'a')", f"SELECT * FROM {REDSHIFTDATA_TABLE}"]}
+    if op in ("DescribeStatement", "GetStatementResult", "CancelStatement"):
+        return {"Id": _execute(f"SELECT * FROM {REDSHIFTDATA_TABLE}")}
+    if op == "GetStatementResultV2":
+        return {"Id": _execute(f"SELECT * FROM {REDSHIFTDATA_TABLE}", "--result-format", "CSV")}
+    if op in ("ListDatabases", "ListSchemas", "ListTables"):
+        return dict(conn)
+    if op == "DescribeTable":
+        return {**conn, "Table": REDSHIFTDATA_TABLE}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -30208,6 +30556,18 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "sagemakerruntime":
+        return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "redshiftdata":
+        return redshiftdata_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bedrockruntime":
+        return bedrockruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+
+    if endpoint.service == "bedrock" and endpoint.operation in BEDROCK_GUARDRAIL_OPERATIONS:
+        # The control plane stores guardrails, so these need a real identifier.
+        hydrated = copy.deepcopy(payload)
+        hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
+        return hydrated
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "appconfigdata":
@@ -50505,6 +50865,65 @@ def run_appconfigdata_outfile_operation(
     return cp, cmd, extra_output
 
 
+def run_bedrockruntime_invoke_model(
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """aws bedrock-runtime invoke-model needs --model-id on the command line and
+    writes the response body to an outfile."""
+    cmd = list(base_cmd)
+    for flag, key in (("--model-id", "modelId"), ("--content-type", "contentType"), ("--accept", "accept"), ("--body", "body")):
+        value = str(payload_value_case_insensitive(payload, key, "") or "").strip()
+        if value:
+            cmd.extend([flag, value])
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-bedrockruntime-", suffix=".out", delete=False) as tmp:
+        out_path = tmp.name
+    try:
+        cmd.append(out_path)
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = Path(out_path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    finally:
+        Path(out_path).unlink(missing_ok=True)
+    return cp, cmd, extra_output
+
+
+def run_sagemakerruntime_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """aws sagemaker-runtime invoke-endpoint ignores --cli-input-json for its
+    required args, so pass them explicitly plus the positional outfile."""
+    cmd = list(base_cmd)
+    endpoint_name = str(payload_value_case_insensitive(payload, "EndpointName", SAGEMAKERRUNTIME_ENDPOINT_NAME))
+    raw_body = str(payload_value_case_insensitive(payload, "Body", ""))
+    try:
+        body_bytes = base64.b64decode(raw_body, validate=True) if raw_body else b"{}"
+    except (ValueError, TypeError):
+        body_bytes = raw_body.encode("utf-8")
+    with tempfile.TemporaryDirectory(prefix="stackyard-awscli-sagemakerruntime-") as tmp:
+        body_path = Path(tmp) / "body.bin"
+        body_path.write_bytes(body_bytes)
+        out_path = Path(tmp) / "invoke.out"
+        cmd.extend(["--endpoint-name", endpoint_name, "--body", f"fileb://{body_path}"])
+        for key, flag in (("ContentType", "--content-type"), ("Accept", "--accept")):
+            value = str(payload_value_case_insensitive(payload, key, "")).strip()
+            if value:
+                cmd.extend([flag, value])
+        cmd.append(str(out_path))
+        cp = run_subprocess(cmd, env)
+        try:
+            extra_output = out_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            extra_output = ""
+    return cp, cmd, extra_output
+
+
 def run_ebs_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -52220,7 +52639,10 @@ def run_endpoint(
     neptuneanalytics_outfile_ops = {"ExecuteQuery"}
     appsync_outfile_ops = {"GetIntrospectionSchema"}
     ebs_outfile_ops = {"GetSnapshotBlock"}
-    if endpoint.service == "s3" and endpoint.operation in s3_manual_arg_ops:
+    if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
+        cp, cmd, extra_output_text = run_sagemakerruntime_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "s3" and endpoint.operation in s3_manual_arg_ops:
         cp, cmd, extra_output_text = run_s3_manual_arg_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "s3" and endpoint.operation in s3_outfile_ops:
@@ -52240,6 +52662,9 @@ def run_endpoint(
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "bedrockruntime" and endpoint.operation == "InvokeModel":
+        cp, cmd, extra_output_text = run_bedrockruntime_invoke_model(base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
     else:
         for _ in range(4):
@@ -53429,5 +53854,7 @@ def main() -> int:
                 print(f"Removed Stackyard container: {detail}")
 
 
+if __name__ == "__main__":
+    sys.exit(main())
 if __name__ == "__main__":
     sys.exit(main())
