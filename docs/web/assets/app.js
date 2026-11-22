@@ -688,6 +688,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/elasticloadbalancingv2/docker-compose.yml"
   },
   {
+    id: "applicationautoscaling",
+    name: "Application Auto Scaling",
+    category: "compute",
+    summary: "Emulate scalable targets checked against ECS, DynamoDB and Lambda, step, target tracking and predictive policies with CloudWatch alarms, scheduled actions, activities and tags.",
+    docsHref: "../../../index.html#applicationautoscaling",
+    exampleHref: "../../../../examples/aws/application-autoscaling/docker-compose.yml"
+  },
+  {
     id: "aws-autoscaling",
     name: "AWS Auto Scaling",
     category: "compute",
@@ -742,6 +750,22 @@ const SERVICE_CATALOG = [
     summary: "Create rules, buses, and event targets for routing workflows.",
     docsHref: "../../../index.html#eventbridge",
     exampleHref: "../../../../examples/aws/eventbridge/docker-compose.yml"
+  },
+  {
+    id: "scheduler",
+    name: "EventBridge Scheduler",
+    category: "integration",
+    summary: "Emulate at(), rate() and cron() schedules with timezones, schedule groups, templated and universal targets, retry and dead-letter settings, plus on-demand delivery to SQS, SNS and EventBridge.",
+    docsHref: "../../../index.html#scheduler",
+    exampleHref: "../../../../examples/aws/scheduler/docker-compose.yml"
+  },
+  {
+    id: "pipes",
+    name: "EventBridge Pipes",
+    category: "integration",
+    summary: "Create point-to-point pipes from SQS, Kinesis, DynamoDB streams, MQ and Kafka sources to targets, with filters, enrichment and start/stop state.",
+    docsHref: "../../../index.html#pipes",
+    exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
     id: "iot",

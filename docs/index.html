@@ -162,6 +162,7 @@
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
         <a href="#elasticloadbalancing">Elastic Load Balancing (ELB)</a>
         <a href="#elasticloadbalancingv2">Elastic Load Balancing (ELB Classic)</a>
+        <a href="#applicationautoscaling">Application Auto Scaling</a>
         <a href="#aws-autoscaling">AWS Auto Scaling</a>
         <a href="#compute-optimizer">Compute Optimizer</a>
         <a href="#ecr">ECR</a>
@@ -171,6 +172,8 @@
         <a href="#elemental-inference">Elemental Inference</a>
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
+        <a href="#pipes">EventBridge Pipes</a>
+        <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
         <a href="#mpa">Multi-party Approval</a>
@@ -11569,6 +11572,48 @@
         </details>
         </section>
 
+        <section id="applicationautoscaling" class="service">
+
+        <div class="service-header">
+        <h2>Application Auto Scaling</h2>
+        <p>SigV4 signed with service <code>application-autoscaling</code>. AWS JSON 1.1 API (<code>X-Amz-Target: AnyScaleFrontendService.*</code>) for scalable targets (namespace, dimension and resource ID formats validated; ECS services, DynamoDB tables and Lambda aliases/versions must exist), step, target tracking (with CloudWatch alarms) and predictive scaling policies, scheduled actions with at/rate/cron schedules and time zones, scaling activities, suspended state, predictive forecasts and tagging. All 14 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: application-autoscaling</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteScalingPolicy</code></td></tr>
+        <tr><td><code>DeleteScheduledAction</code></td></tr>
+        <tr><td><code>DeregisterScalableTarget</code></td></tr>
+        <tr><td><code>DescribeScalableTargets</code></td></tr>
+        <tr><td><code>DescribeScalingActivities</code></td></tr>
+        <tr><td><code>DescribeScalingPolicies</code></td></tr>
+        <tr><td><code>DescribeScheduledActions</code></td></tr>
+        <tr><td><code>GetPredictiveScalingForecast</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutScalingPolicy</code></td></tr>
+        <tr><td><code>PutScheduledAction</code></td></tr>
+        <tr><td><code>RegisterScalableTarget</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>application-autoscaling</code>: <code>docker compose -f examples/aws/application-autoscaling/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="aws-autoscaling" class="service">
 
         <div class="service-header">
@@ -12558,6 +12603,85 @@
         <ul>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="pipes" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EventBridge Pipes</h2>
+        <p>SigV4 signed with service <code>pipes</code>. REST JSON API under <code>/v1/pipes</code> and <code>/tags/</code>. Pipes connect an SQS queue, Kinesis stream, DynamoDB stream, Amazon MQ broker, Amazon MSK cluster or self-managed Kafka source to a target, with an optional enrichment. Requests are validated against the service model, source and target parameters must match the resource type, and filter patterns must be JSON. Pipes move through CREATING, UPDATING, STARTING and STOPPING on reads, and a change made mid-transition is a ConflictException. A source, enrichment or target that Stackyard knows is missing (SQS, SNS, Lambda, Kinesis, DynamoDB streams, Step Functions) leaves the pipe CREATE_FAILED or UPDATE_FAILED with a StateReason. Events are not polled or delivered. All 10 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pipes</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreatePipe</code></td></tr>
+        <tr><td><code>DeletePipe</code></td></tr>
+        <tr><td><code>DescribePipe</code></td></tr>
+        <tr><td><code>ListPipes</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartPipe</code></td></tr>
+        <tr><td><code>StopPipe</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdatePipe</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pipes</code>: <code>docker compose -f examples/aws/pipes/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="scheduler" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EventBridge Scheduler</h2>
+        <p>SigV4 signed with service <code>scheduler</code>. REST JSON API under <code>/schedules</code>, <code>/schedule-groups</code> and <code>/tags</code> for schedules (validated <code>at()</code>, <code>rate()</code> and <code>cron()</code> expressions with IANA timezones, flexible time windows, start and end dates, client-token idempotency, ActionAfterCompletion), schedule groups (the default group, cascading asynchronous deletion), templated targets (SQS, SNS, Lambda, Step Functions, EventBridge, Kinesis, ECS, SageMaker and more) and universal <code>aws-sdk</code> targets, retry policies, dead-letter queues and group tagging. Stackyard adds <code>POST /_stackyard/scheduler/schedules/{group}/{name}/fire</code>, which delivers a schedule's input to its SQS, SNS or EventBridge target immediately; no background timers run. All 12 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: scheduler</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateSchedule</code></td></tr>
+        <tr><td><code>CreateScheduleGroup</code></td></tr>
+        <tr><td><code>DeleteSchedule</code></td></tr>
+        <tr><td><code>DeleteScheduleGroup</code></td></tr>
+        <tr><td><code>GetSchedule</code></td></tr>
+        <tr><td><code>GetScheduleGroup</code></td></tr>
+        <tr><td><code>ListScheduleGroups</code></td></tr>
+        <tr><td><code>ListSchedules</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateSchedule</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>scheduler</code>: <code>docker compose -f examples/aws/scheduler/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
