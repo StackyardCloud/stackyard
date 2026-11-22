@@ -697,6 +697,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/ec2/docker-compose.yml"
   },
   {
+    id: "ec2instanceconnect",
+    name: "EC2 Instance Connect",
+    category: "compute",
+    summary: "Emulate pushing SSH and serial console public keys to running EC2 instances, validated against the EC2 store, with 60-second key expiry.",
+    docsHref: "../../../index.html#ec2instanceconnect",
+    exampleHref: "../../../../examples/aws/ec2-instance-connect/docker-compose.yml"
+  },
+  {
     id: "ec2-autoscaling",
     name: "EC2 Auto Scaling",
     category: "compute",

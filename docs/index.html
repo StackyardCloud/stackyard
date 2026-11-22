@@ -162,6 +162,7 @@
         <a href="#dynamodb">DynamoDB</a>
         <a href="#dynamodbstreams">DynamoDB Streams</a>
         <a href="#ec2">EC2</a>
+        <a href="#ec2instanceconnect">EC2 Instance Connect</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
         <a href="#elasticloadbalancing">Elastic Load Balancing (ELB)</a>
@@ -11703,6 +11704,36 @@
         <ul>
         <li><code>ec2</code>: <code>docker compose -f examples/aws/ec2/docker-compose.yml up --build</code></li>
         <li><code>ec2</code>: <code>docker compose -f examples/aws/ec2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="ec2instanceconnect" class="service">
+
+        <div class="service-header">
+        <h2>EC2 Instance Connect</h2>
+        <p>SigV4 signed with service <code>ec2-instance-connect</code>. AWS JSON 1.1 API (<code>X-Amz-Target: AWSEC2InstanceConnectService.*</code>) that pushes SSH public keys to running EC2 instances. The instance must exist in the EC2 store and be running, and a given Availability Zone must match it. The OS user and the OpenSSH key format are validated (ssh-rsa, ssh-ed25519, ecdsa-sha2-nistp*). Serial console keys need port 0 and account-level serial console access (<code>EnableSerialConsoleAccess</code>). Keys expire after 60 seconds; the unexpired keys for an instance can be read with a signed <code>GET /_stackyard/ec2instanceconnect/instances/{id}/keys</code>. Both documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ec2-instance-connect</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>SendSerialConsoleSSHPublicKey</code></td></tr>
+        <tr><td><code>SendSSHPublicKey</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>ec2-instance-connect</code>: <code>docker compose -f examples/aws/ec2-instance-connect/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
