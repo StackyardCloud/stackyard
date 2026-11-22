@@ -1064,6 +1064,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/efs/docker-compose.yml"
   },
   {
+    id: "glacier",
+    name: "S3 Glacier",
+    category: "storage",
+    summary: "Emulate Glacier vaults, tree-hash-checked archive and multipart uploads, retrieval and inventory jobs, vault locks, policies and notifications.",
+    docsHref: "../../../index.html#glacier",
+    exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
+  },
+  {
     id: "backup",
     name: "AWS Backup",
     category: "storage",

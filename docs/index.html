@@ -238,6 +238,7 @@
         <a href="#evs">EVS</a>
         <a href="#fms">Firewall Manager (FMS)</a>
         <a href="#efs">Amazon EFS</a>
+        <a href="#glacier">Amazon S3 Glacier</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
         <a href="#storagegateway">AWS Storage Gateway</a>
@@ -25090,6 +25091,68 @@
         <summary>Examples</summary>
         <ul>
         <li><code>efs</code>: <code>docker compose -f examples/aws/efs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="glacier" class="service">
+
+        <div class="service-header">
+        <h2>Amazon S3 Glacier</h2>
+        <p>SigV4 signed with service <code>glacier</code>. REST JSON API under <code>/{accountId}/vaults</code>, <code>/{accountId}/policies/data-retrieval</code> and <code>/{accountId}/provisioned-capacity</code>; the account id may be <code>-</code>. Archives and multipart parts are checked against their <code>x-amz-sha256-tree-hash</code> (the Glacier SHA-256 tree hash over 1 MiB chunks); parts must start on part-size boundaries and complete as one contiguous archive. Archive-retrieval, inventory-retrieval and select jobs report InProgress on their first read and Succeeded on the next; GetJobOutput returns the retrieved bytes (with Range support) or the inventory as JSON or CSV. DescribeVault counts come from the last completed inventory, as in AWS. Vault locks stay InProgress for 24 hours until completed, notifications need an existing SNS topic, and a BytesPerHour data retrieval policy refuses larger retrievals with PolicyEnforcedException. Select results and job-completion notifications are not delivered. Bodies are limited to 64 MiB and stored archives to 1 GiB in total. All 33 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: glacier</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AbortMultipartUpload</code></td></tr>
+        <tr><td><code>AbortVaultLock</code></td></tr>
+        <tr><td><code>AddTagsToVault</code></td></tr>
+        <tr><td><code>CompleteMultipartUpload</code></td></tr>
+        <tr><td><code>CompleteVaultLock</code></td></tr>
+        <tr><td><code>CreateVault</code></td></tr>
+        <tr><td><code>DeleteArchive</code></td></tr>
+        <tr><td><code>DeleteVault</code></td></tr>
+        <tr><td><code>DeleteVaultAccessPolicy</code></td></tr>
+        <tr><td><code>DeleteVaultNotifications</code></td></tr>
+        <tr><td><code>DescribeJob</code></td></tr>
+        <tr><td><code>DescribeVault</code></td></tr>
+        <tr><td><code>GetDataRetrievalPolicy</code></td></tr>
+        <tr><td><code>GetJobOutput</code></td></tr>
+        <tr><td><code>GetVaultAccessPolicy</code></td></tr>
+        <tr><td><code>GetVaultLock</code></td></tr>
+        <tr><td><code>GetVaultNotifications</code></td></tr>
+        <tr><td><code>InitiateJob</code></td></tr>
+        <tr><td><code>InitiateMultipartUpload</code></td></tr>
+        <tr><td><code>InitiateVaultLock</code></td></tr>
+        <tr><td><code>ListJobs</code></td></tr>
+        <tr><td><code>ListMultipartUploads</code></td></tr>
+        <tr><td><code>ListParts</code></td></tr>
+        <tr><td><code>ListProvisionedCapacity</code></td></tr>
+        <tr><td><code>ListTagsForVault</code></td></tr>
+        <tr><td><code>ListVaults</code></td></tr>
+        <tr><td><code>PurchaseProvisionedCapacity</code></td></tr>
+        <tr><td><code>RemoveTagsFromVault</code></td></tr>
+        <tr><td><code>SetDataRetrievalPolicy</code></td></tr>
+        <tr><td><code>SetVaultAccessPolicy</code></td></tr>
+        <tr><td><code>SetVaultNotifications</code></td></tr>
+        <tr><td><code>UploadArchive</code></td></tr>
+        <tr><td><code>UploadMultipartPart</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>glacier</code>: <code>docker compose -f examples/aws/glacier/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

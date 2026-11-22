@@ -554,6 +554,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
+    "glacier": {"cli": "glacier", "ops_file": REPO_ROOT / "internal/server/glacier_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2179,6 +2180,10 @@ SERVICE_ALIASES = {
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
     "pipes": "pipes",
+    "glacier": "glacier",
+    "s3glacier": "glacier",
+    "amazonglacier": "glacier",
+    "amazons3glacier": "glacier",
     "eventbridgepipes": "pipes",
     "amazoneventbridgepipes": "pipes",
     "elasticfilesystem": "efs",
@@ -3076,6 +3081,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "efs": {},
     "scheduler": {},
     "pipes": {},
+    "glacier": {},
     "docdb": {},
     "glue": {},
     "appconfig": {},
@@ -13315,6 +13321,10 @@ def generate_cli_input_payload(
         # recognize-utterance and put-session stream an audio body, so the CLI
         # needs explicit flags and an outfile even to print a skeleton.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+        # get-job-output needs its ids as flags plus an outfile even to print a
+        # skeleton; hydration fills in a completed job.
+        return {"accountId": "-", "vaultName": "", "jobId": ""}, None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -33130,6 +33140,159 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+GLACIER_COVERAGE_POLICY = json.dumps(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Sid": "stackyard", "Effect": "Deny", "Principal": "*", "Action": "glacier:DeleteArchive", "Resource": "*"}
+        ],
+    }
+)
+GLACIER_PART_SIZE = 1 << 20
+
+
+def glacier_tree_hash(data: bytes) -> str:
+    """The Glacier SHA-256 tree hash over 1 MiB chunks."""
+    level = [hashlib.sha256(data[i : i + GLACIER_PART_SIZE]).digest() for i in range(0, len(data), GLACIER_PART_SIZE)]
+    if not level:
+        return hashlib.sha256(b"").hexdigest()
+    while len(level) > 1:
+        level = [hashlib.sha256(b"".join(level[i : i + 2])).digest() if i + 1 < len(level) else level[i] for i in range(0, len(level), 2)]
+    return level[0].hex()
+
+
+def glacier_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, "glacier", op, env, ["--account-id", "-", *args]) or {}
+
+
+def glacier_vault(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], prefix: str = "stackyard-glacier") -> str:
+    name = f"{prefix}-{time.time_ns()}"
+    glacier_cli(aws_bin, endpoint_url, region, env, "create-vault", ["--vault-name", name])
+    return name
+
+
+def glacier_archive(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    with tempfile.NamedTemporaryFile(prefix="stackyard-glacier-", suffix=".bin", delete=False) as tmp:
+        tmp.write(b"stackyard glacier coverage archive")
+        path = tmp.name
+    try:
+        out = glacier_cli(aws_bin, endpoint_url, region, env, "upload-archive", ["--vault-name", vault, "--body", path])
+    finally:
+        Path(path).unlink(missing_ok=True)
+    return str(out.get("archiveId") or "")
+
+
+def glacier_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    out = glacier_cli(aws_bin, endpoint_url, region, env, "initiate-multipart-upload", ["--vault-name", vault, "--part-size", str(GLACIER_PART_SIZE)])
+    return str(out.get("uploadId") or "")
+
+
+def glacier_lock(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], vault: str) -> str:
+    out = glacier_cli(
+        aws_bin, endpoint_url, region, env, "initiate-vault-lock", ["--vault-name", vault, "--policy", json.dumps({"Policy": GLACIER_COVERAGE_POLICY})]
+    )
+    return str(out.get("lockId") or "")
+
+
+def glacier_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared vault with an archive, an open multipart upload, a settled
+    archive-retrieval job, an access policy, notifications, a lock and a tag."""
+    state = RUNTIME_STATE.setdefault("glacier", {})
+    if state.get("vault"):
+        return state
+    vault = glacier_vault(aws_bin, endpoint_url, region, env)
+    archive = glacier_archive(aws_bin, endpoint_url, region, env, vault)
+    job = glacier_cli(
+        aws_bin, endpoint_url, region, env, "initiate-job", ["--vault-name", vault, "--job-parameters", json.dumps({"Type": "archive-retrieval", "ArchiveId": archive})]
+    ).get("jobId", "")
+    for _ in range(2):  # jobs settle on read: InProgress, then Succeeded
+        glacier_cli(aws_bin, endpoint_url, region, env, "describe-job", ["--vault-name", vault, "--job-id", str(job)])
+    topic = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", "stackyard-glacier-events"]) or {}
+    state.update(
+        vault=vault,
+        archive=archive,
+        job=str(job),
+        upload=glacier_upload(aws_bin, endpoint_url, region, env, vault),
+        topic=str(topic.get("TopicArn") or ""),
+    )
+    glacier_cli(aws_bin, endpoint_url, region, env, "set-vault-access-policy", ["--vault-name", vault, "--policy", json.dumps({"Policy": GLACIER_COVERAGE_POLICY})])
+    glacier_cli(
+        aws_bin,
+        endpoint_url,
+        region,
+        env,
+        "set-vault-notifications",
+        ["--vault-name", vault, "--vault-notification-config", json.dumps({"SNSTopic": state["topic"], "Events": ["ArchiveRetrievalCompleted"]})],
+    )
+    glacier_lock(aws_bin, endpoint_url, region, env, vault)
+    glacier_cli(aws_bin, endpoint_url, region, env, "add-tags-to-vault", ["--vault-name", vault, "--tags", "stackyard=coverage"])
+    return state
+
+
+def glacier_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Glacier operation at real vaults, archives, uploads and jobs.
+    Destructive operations get resources of their own."""
+    op = endpoint.operation
+    if op in {"ListVaults", "GetDataRetrievalPolicy", "ListProvisionedCapacity", "PurchaseProvisionedCapacity"}:
+        return {"accountId": "-"}
+    if op == "SetDataRetrievalPolicy":
+        return {"accountId": "-", "Policy": {"Rules": [{"Strategy": "FreeTier"}]}}
+    if op == "CreateVault":
+        return {"accountId": "-", "vaultName": f"stackyard-glacier-new-{time.time_ns()}"}
+    if op == "DeleteVault":
+        return {"accountId": "-", "vaultName": glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-del")}
+    fx = glacier_fixture(aws_bin, endpoint_url, region, env)
+    vault = fx["vault"]
+    base = {"accountId": "-", "vaultName": vault}
+    body = b"stackyard glacier part"
+    if op == "UploadArchive":
+        return {**base, "body": base64.b64encode(b"stackyard glacier archive").decode("ascii")}
+    if op == "DeleteArchive":
+        return {**base, "archiveId": glacier_archive(aws_bin, endpoint_url, region, env, vault)}
+    if op == "InitiateMultipartUpload":
+        return {**base, "partSize": str(GLACIER_PART_SIZE)}
+    if op in {"UploadMultipartPart", "CompleteMultipartUpload", "AbortMultipartUpload"}:
+        upload = glacier_upload(aws_bin, endpoint_url, region, env, vault)
+        if op == "AbortMultipartUpload":
+            return {**base, "uploadId": upload}
+        part = {**base, "uploadId": upload, "range": f"bytes 0-{len(body) - 1}/*", "body": base64.b64encode(body).decode("ascii")}
+        if op == "UploadMultipartPart":
+            return part
+        glacier_cli(
+            aws_bin,
+            endpoint_url,
+            region,
+            env,
+            "upload-multipart-part",
+            ["--vault-name", vault, "--upload-id", upload, "--range", part["range"], "--cli-input-json", json.dumps({"body": part["body"]})],
+        )
+        return {**base, "uploadId": upload, "archiveSize": str(len(body)), "checksum": glacier_tree_hash(body)}
+    if op == "ListParts":
+        return {**base, "uploadId": fx["upload"]}
+    if op == "InitiateJob":
+        return {**base, "jobParameters": {"Type": "inventory-retrieval", "Format": "JSON"}}
+    if op in {"DescribeJob", "GetJobOutput"}:
+        return {**base, "jobId": fx["job"]}
+    if op == "SetVaultAccessPolicy" or op == "InitiateVaultLock":
+        target = vault if op == "SetVaultAccessPolicy" else glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-lock")
+        return {"accountId": "-", "vaultName": target, "policy": {"Policy": GLACIER_COVERAGE_POLICY}}
+    if op in {"CompleteVaultLock", "AbortVaultLock"}:
+        target = glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-lock")
+        lock = glacier_lock(aws_bin, endpoint_url, region, env, target)
+        return {"accountId": "-", "vaultName": target, **({"lockId": lock} if op == "CompleteVaultLock" else {})}
+    if op == "SetVaultNotifications":
+        return {**base, "vaultNotificationConfig": {"SNSTopic": fx["topic"], "Events": ["InventoryRetrievalCompleted"]}}
+    if op in {"DeleteVaultAccessPolicy", "DeleteVaultNotifications"}:
+        return {"accountId": "-", "vaultName": glacier_vault(aws_bin, endpoint_url, region, env, "stackyard-glacier-del")}
+    if op == "AddTagsToVault":
+        return {**base, "Tags": {"stackyard": "coverage"}}
+    if op == "RemoveTagsFromVault":
+        return {**base, "TagKeys": ["stackyard-removed"]}
+    return base
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33141,6 +33304,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "glacier":
+        return glacier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdb":
@@ -55369,7 +55534,8 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+        # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
