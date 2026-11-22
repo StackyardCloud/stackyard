@@ -231,6 +231,7 @@
         <a href="#dms">DMS</a>
         <a href="#evs">EVS</a>
         <a href="#fms">Firewall Manager (FMS)</a>
+        <a href="#efs">Amazon EFS</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
         <a href="#storagegateway">AWS Storage Gateway</a>
@@ -23988,6 +23989,65 @@
         </section>
 
 
+        <section id="efs" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Elastic File System (EFS)</h2>
+        <p>SigV4 signed with service <code>elasticfilesystem</code>. REST JSON API under <code>/2015-02-01/</code> for file systems (creation-token idempotency, performance and throughput modes, encryption, One Zone), mount targets placed in EC2 store subnets and security groups, access points, file system and backup policies, lifecycle configuration, replication, account preferences, and both resource and legacy tagging. All 31 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: elasticfilesystem</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateAccessPoint</code></td></tr>
+        <tr><td><code>CreateFileSystem</code></td></tr>
+        <tr><td><code>CreateMountTarget</code></td></tr>
+        <tr><td><code>CreateReplicationConfiguration</code></td></tr>
+        <tr><td><code>CreateTags</code></td></tr>
+        <tr><td><code>DeleteAccessPoint</code></td></tr>
+        <tr><td><code>DeleteFileSystem</code></td></tr>
+        <tr><td><code>DeleteFileSystemPolicy</code></td></tr>
+        <tr><td><code>DeleteMountTarget</code></td></tr>
+        <tr><td><code>DeleteReplicationConfiguration</code></td></tr>
+        <tr><td><code>DeleteTags</code></td></tr>
+        <tr><td><code>DescribeAccessPoints</code></td></tr>
+        <tr><td><code>DescribeAccountPreferences</code></td></tr>
+        <tr><td><code>DescribeBackupPolicy</code></td></tr>
+        <tr><td><code>DescribeFileSystemPolicy</code></td></tr>
+        <tr><td><code>DescribeFileSystems</code></td></tr>
+        <tr><td><code>DescribeLifecycleConfiguration</code></td></tr>
+        <tr><td><code>DescribeMountTargetSecurityGroups</code></td></tr>
+        <tr><td><code>DescribeMountTargets</code></td></tr>
+        <tr><td><code>DescribeReplicationConfigurations</code></td></tr>
+        <tr><td><code>DescribeTags</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ModifyMountTargetSecurityGroups</code></td></tr>
+        <tr><td><code>PutAccountPreferences</code></td></tr>
+        <tr><td><code>PutBackupPolicy</code></td></tr>
+        <tr><td><code>PutFileSystemPolicy</code></td></tr>
+        <tr><td><code>PutLifecycleConfiguration</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateFileSystem</code></td></tr>
+        <tr><td><code>UpdateFileSystemProtection</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>efs</code>: <code>docker compose -f examples/aws/efs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="fsx" class="service">
 
         <div class="service-header">

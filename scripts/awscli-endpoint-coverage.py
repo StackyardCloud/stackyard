@@ -547,6 +547,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodb": {"cli": "dynamodb", "ops_file": REPO_ROOT / "internal/server/dynamodb_ops.go"},
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
+    "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2155,6 +2156,10 @@ SERVICE_ALIASES = {
     "dynamodb-streams": "dynamodbstreams",
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
+    "efs": "efs",
+    "elasticfilesystem": "efs",
+    "amazonefs": "efs",
+    "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
     "aurora-dsql": "dsql",
     "amazonauroradsql": "dsql",
@@ -3040,6 +3045,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
+    "efs": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -31543,6 +31549,129 @@ def redshiftdata_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+EFS_DEFAULT_SUBNET = "subnet-00000001"
+EFS_DEFAULT_SECURITY_GROUP = "sg-00000000"
+EFS_COVERAGE_POLICY = json.dumps(
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {"Effect": "Allow", "Principal": {"AWS": "*"}, "Action": "elasticfilesystem:ClientMount", "Resource": "*"}
+        ],
+    }
+)
+
+
+def efs_create_file_system(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-file-system", env,
+        ["--creation-token", f"stackyard-coverage-{time.time_ns()}", "--backup"],
+    )
+    return str(created.get("FileSystemId") or "") if isinstance(created, dict) else ""
+
+
+def efs_create_mount_target(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fs_id: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-mount-target", env,
+        ["--file-system-id", fs_id, "--subnet-id", EFS_DEFAULT_SUBNET],
+    )
+    return str(created.get("MountTargetId") or "") if isinstance(created, dict) else ""
+
+
+def efs_create_access_point(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fs_id: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "efs", "create-access-point", env,
+        ["--file-system-id", fs_id, "--client-token", f"stackyard-coverage-{time.time_ns()}"],
+    )
+    return str(created.get("AccessPointId") or "") if isinstance(created, dict) else ""
+
+
+def efs_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One file system with a policy, a mount target and an access point that
+    the non-destructive operations share."""
+    state = RUNTIME_STATE.setdefault("efs", {})
+    if not state.get("fs_id"):
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        state["fs_id"] = fs_id
+        state["mt_id"] = efs_create_mount_target(aws_bin, endpoint_url, region, env, fs_id)
+        state["ap_id"] = efs_create_access_point(aws_bin, endpoint_url, region, env, fs_id)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "efs", "put-file-system-policy", env,
+            ["--file-system-id", fs_id, "--policy", EFS_COVERAGE_POLICY],
+        )
+    return state
+
+
+def efs_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each EFS operation at real resources. Destructive operations get
+    resources of their own so the shared ones stay valid for the rest."""
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    unique = f"stackyard-coverage-{time.time_ns()}"
+    if op == "CreateFileSystem":
+        return {"CreationToken": unique}
+    if op == "DescribeFileSystems" or op == "DescribeAccountPreferences" or op == "DescribeReplicationConfigurations":
+        return {}
+    if op == "PutAccountPreferences":
+        return {"ResourceIdType": "LONG_ID"}
+    if op in {"DeleteFileSystem", "DeleteFileSystemPolicy"}:
+        return {"FileSystemId": efs_create_file_system(aws_bin, endpoint_url, region, env)}
+    if op == "CreateMountTarget":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"FileSystemId": fs_id, "SubnetId": EFS_DEFAULT_SUBNET}
+    if op == "DeleteMountTarget":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"MountTargetId": efs_create_mount_target(aws_bin, endpoint_url, region, env, fs_id)}
+    if op == "CreateReplicationConfiguration":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        return {"SourceFileSystemId": fs_id, "Destinations": [{"Region": region}]}
+    if op == "DeleteReplicationConfiguration":
+        fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "efs", "create-replication-configuration", env,
+            ["--source-file-system-id", fs_id, "--destinations", f"Region={region}"],
+        )
+        return {"SourceFileSystemId": fs_id}
+    state = efs_shared_state(aws_bin, endpoint_url, region, env)
+    fs_id, mt_id, ap_id = state["fs_id"], state["mt_id"], state["ap_id"]
+    if op == "CreateAccessPoint":
+        return {"FileSystemId": fs_id, "ClientToken": unique}
+    if op == "DeleteAccessPoint":
+        return {"AccessPointId": efs_create_access_point(aws_bin, endpoint_url, region, env, fs_id)}
+    if op == "DescribeAccessPoints":
+        return {"FileSystemId": fs_id}
+    if op == "DescribeMountTargets":
+        return {"FileSystemId": fs_id}
+    if op == "DescribeMountTargetSecurityGroups":
+        return {"MountTargetId": mt_id}
+    if op == "ModifyMountTargetSecurityGroups":
+        return {"MountTargetId": mt_id, "SecurityGroups": [EFS_DEFAULT_SECURITY_GROUP]}
+    if op in {"TagResource", "ListTagsForResource", "UntagResource"}:
+        hydrated = {"ResourceId": ap_id if op == "ListTagsForResource" else fs_id}
+        if op == "TagResource":
+            hydrated["Tags"] = [{"Key": "stackyard", "Value": "coverage"}]
+        if op == "UntagResource":
+            hydrated["TagKeys"] = ["stackyard"]
+        return hydrated
+    hydrated = {"FileSystemId": fs_id}
+    if op == "CreateTags":
+        hydrated["Tags"] = [{"Key": "stackyard-legacy", "Value": "coverage"}]
+    elif op == "DeleteTags":
+        hydrated["TagKeys"] = ["stackyard-legacy"]
+    elif op == "PutLifecycleConfiguration":
+        hydrated["LifecyclePolicies"] = [{"TransitionToIA": "AFTER_30_DAYS"}]
+    elif op == "PutBackupPolicy":
+        hydrated["BackupPolicy"] = {"Status": "ENABLED"}
+    elif op == "PutFileSystemPolicy":
+        hydrated["Policy"] = EFS_COVERAGE_POLICY
+    elif op == "UpdateFileSystem":
+        hydrated["ThroughputMode"] = "elastic"
+    elif op == "UpdateFileSystemProtection":
+        hydrated["ReplicationOverwriteProtection"] = "ENABLED"
+    return hydrated
+
+
 def apigatewaymanagementapi_connect(endpoint_url: str) -> str:
     """Register a client connection through Stackyard's stand-in for a WebSocket
     connect, since there is no CLI call that opens one."""
@@ -31703,6 +31832,8 @@ def hydrate_payload_with_service_state(
         return cloudfront_kvs_hydrate_control_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "cloudfrontkeyvaluestore":
         return cloudfrontkeyvaluestore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "efs":
+        return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":

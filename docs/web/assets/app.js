@@ -1016,6 +1016,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/resilience-hub/docker-compose.yml"
   },
   {
+    id: "efs",
+    name: "Elastic File System",
+    category: "storage",
+    summary: "Emulate EFS file systems, mount targets in EC2 subnets, access points, policies, lifecycle, backup and replication.",
+    docsHref: "../../../index.html#efs",
+    exampleHref: "../../../../examples/aws/efs/docker-compose.yml"
+  },
+  {
     id: "s3",
     name: "S3",
     category: "storage",
