@@ -555,6 +555,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
+    "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
@@ -2255,7 +2256,10 @@ SERVICE_ALIASES = {
     "aws elemental inference": "elementalinference",
     "amazonelementalinference": "elementalinference",
     "amazon elemental inference": "elementalinference",
-    "es": "opensearch",
+    "es": "elasticsearchservice",
+    "elasticsearchservice": "elasticsearchservice",
+    "elasticsearch": "elasticsearchservice",
+    "amazonelasticsearchservice": "elasticsearchservice",
     "kms": "kms",
     "keymanagementservice": "kms",
     "key-management-service": "kms",
@@ -3101,6 +3105,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codecommit": {},
     "applicationautoscaling": {},
     "efs": {},
+    "elasticsearchservice": {},
     "scheduler": {},
     "pipes": {},
     "datasync": {},
@@ -33945,6 +33950,142 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+ESL_COVERAGE_ACCOUNT = "123456789012"
+ESL_COVERAGE_SUBNET = "subnet-0123456789abcdef0"
+
+
+def esl_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def esl_create_domain(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], version: str = "7.10") -> str:
+    name = esl_unique("esc")
+    run_aws_json(aws_bin, endpoint_url, region, "es", "create-elasticsearch-domain", env,
+                 ["--domain-name", name, "--elasticsearch-version", version])
+    return name
+
+
+def esl_create_package(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-package", env,
+        ["--package-name", esl_unique("pkg-"), "--package-type", "TXT-DICTIONARY",
+         "--package-source", "S3BucketName=stackyard-coverage,S3Key=dictionary.txt"],
+    )
+    details = created.get("PackageDetails") if isinstance(created, dict) else None
+    return str(details.get("PackageID") or "") if isinstance(details, dict) else ""
+
+
+def esl_create_connection(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str) -> str:
+    info = f"OwnerId={ESL_COVERAGE_ACCOUNT},DomainName={domain},Region={region}"
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-outbound-cross-cluster-search-connection", env,
+        ["--source-domain-info", info, "--destination-domain-info", info, "--connection-alias", esl_unique("ccs")],
+    )
+    return str(created.get("CrossClusterSearchConnectionId") or "") if isinstance(created, dict) else ""
+
+
+def esl_create_vpc_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str) -> str:
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "es", "create-vpc-endpoint", env,
+        ["--domain-arn", f"arn:aws:es:{region}:{ESL_COVERAGE_ACCOUNT}:domain/{domain}",
+         "--vpc-options", f"SubnetIds={ESL_COVERAGE_SUBNET}"],
+    )
+    endpoint = created.get("VpcEndpoint") if isinstance(created, dict) else None
+    return str(endpoint.get("VpcEndpointId") or "") if isinstance(endpoint, dict) else ""
+
+
+def esl_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One domain, package and VPC endpoint shared by the non-destructive ops."""
+    state = RUNTIME_STATE.setdefault("elasticsearchservice", {})
+    if not state.get("domain"):
+        state["domain"] = esl_create_domain(aws_bin, endpoint_url, region, env)
+        state["package"] = esl_create_package(aws_bin, endpoint_url, region, env)
+        state["endpoint"] = esl_create_vpc_endpoint(aws_bin, endpoint_url, region, env, state["domain"])
+    return state
+
+
+def elasticsearchservice_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each legacy es operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = esl_shared_state(aws_bin, endpoint_url, region, env)
+    domain, package = state["domain"], state["package"]
+    arn = f"arn:aws:es:{region}:{ESL_COVERAGE_ACCOUNT}:domain/{domain}"
+    vpc = {"SubnetIds": [ESL_COVERAGE_SUBNET]}
+    if op == "CreateElasticsearchDomain":
+        return {"DomainName": esl_unique("esc"), "ElasticsearchVersion": "7.10"}
+    if op == "DeleteElasticsearchDomain":
+        return {"DomainName": esl_create_domain(aws_bin, endpoint_url, region, env)}
+    if op == "UpgradeElasticsearchDomain":
+        return {"DomainName": esl_create_domain(aws_bin, endpoint_url, region, env, "7.9"), "TargetVersion": "7.10"}
+    if op == "DescribeElasticsearchDomains":
+        return {"DomainNames": [domain]}
+    if op == "DescribeElasticsearchInstanceTypeLimits":
+        return {"InstanceType": "m5.large.elasticsearch", "ElasticsearchVersion": "7.10"}
+    if op == "ListElasticsearchInstanceTypes":
+        return {"ElasticsearchVersion": "7.10"}
+    if op in {"AddTags", "ListTags", "RemoveTags"}:
+        out = {"ARN": arn}
+        if op == "AddTags":
+            out["TagList"] = [{"Key": "env", "Value": "coverage"}]
+        if op == "RemoveTags":
+            out["TagKeys"] = ["env"]
+        return out
+    if op in {"AuthorizeVpcEndpointAccess", "RevokeVpcEndpointAccess"}:
+        if op == "RevokeVpcEndpointAccess":
+            run_aws_json(aws_bin, endpoint_url, region, "es", "authorize-vpc-endpoint-access", env,
+                         ["--domain-name", domain, "--account", "111122223333"])
+        return {"DomainName": domain, "Account": "111122223333"}
+    if op == "CreatePackage":
+        return {"PackageName": esl_unique("pkg-"), "PackageType": "TXT-DICTIONARY",
+                "PackageSource": {"S3BucketName": "stackyard-coverage", "S3Key": "dictionary.txt"}}
+    if op in {"AssociatePackage", "DissociatePackage", "DeletePackage"}:
+        fresh = esl_create_package(aws_bin, endpoint_url, region, env)
+        if op == "DeletePackage":
+            return {"PackageID": fresh}
+        if op == "DissociatePackage":
+            run_aws_json(aws_bin, endpoint_url, region, "es", "associate-package", env,
+                         ["--package-id", fresh, "--domain-name", domain])
+        return {"PackageID": fresh, "DomainName": domain}
+    if op == "UpdatePackage":
+        return {"PackageID": package, "PackageSource": {"S3BucketName": "stackyard-coverage", "S3Key": "dictionary-v2.txt"}}
+    if op in {"GetPackageVersionHistory", "ListDomainsForPackage"}:
+        return {"PackageID": package}
+    if op == "DescribePackages":
+        return {}
+    if op == "CreateVpcEndpoint":
+        return {"DomainArn": arn, "VpcOptions": vpc}
+    if op == "DescribeVpcEndpoints":
+        return {"VpcEndpointIds": [state["endpoint"]]}
+    if op in {"UpdateVpcEndpoint", "DeleteVpcEndpoint"}:
+        fresh = esl_create_vpc_endpoint(aws_bin, endpoint_url, region, env, domain)
+        return {"VpcEndpointId": fresh, "VpcOptions": vpc} if op == "UpdateVpcEndpoint" else {"VpcEndpointId": fresh}
+    if op == "CreateOutboundCrossClusterSearchConnection":
+        info = {"OwnerId": ESL_COVERAGE_ACCOUNT, "DomainName": domain, "Region": region}
+        return {"SourceDomainInfo": info, "DestinationDomainInfo": info, "ConnectionAlias": esl_unique("ccs")}
+    if op in {"AcceptInboundCrossClusterSearchConnection", "RejectInboundCrossClusterSearchConnection",
+              "DeleteInboundCrossClusterSearchConnection", "DeleteOutboundCrossClusterSearchConnection"}:
+        return {"CrossClusterSearchConnectionId": esl_create_connection(aws_bin, endpoint_url, region, env, domain)}
+    if op == "PurchaseReservedElasticsearchInstanceOffering":
+        offers = run_aws_json(aws_bin, endpoint_url, region, "es", "describe-reserved-elasticsearch-instance-offerings", env)
+        offer_list = offers.get("ReservedElasticsearchInstanceOfferings") if isinstance(offers, dict) else None
+        offer_id = str(offer_list[0].get("ReservedElasticsearchInstanceOfferingId") or "") if offer_list else ""
+        return {"ReservedElasticsearchInstanceOfferingId": offer_id, "ReservationName": esl_unique("reservation-")}
+    if op in {"DescribeReservedElasticsearchInstanceOfferings", "DescribeReservedElasticsearchInstances",
+              "DescribeInboundCrossClusterSearchConnections", "DescribeOutboundCrossClusterSearchConnections",
+              "ListDomainNames", "ListElasticsearchVersions", "ListVpcEndpoints", "DeleteElasticsearchServiceRole",
+              "GetCompatibleElasticsearchVersions"}:
+        return {}
+    if op == "GetUpgradeStatus":
+        # Status needs an upgrade on record; a check-only run leaves the version alone.
+        run_aws_json(aws_bin, endpoint_url, region, "es", "upgrade-elasticsearch-domain", env,
+                     ["--domain-name", domain, "--target-version", "OpenSearch_1.0", "--perform-check-only"])
+    # The remaining operations act on the shared domain.
+    return {"DomainName": domain}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33956,6 +34097,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "elasticsearchservice":
+        return elasticsearchservice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":
