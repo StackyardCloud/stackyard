@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
-"""Regenerate internal/awsmodels/glue/model.json from the installed botocore.
+"""Regenerate internal/awsmodels/<service>/model.json from the installed botocore.
 
 The emulator uses it to validate request shapes and to shape responses so
 they always match the model. Usage:
     python3 scripts/gen-glue-model.py [botocore-data-dir]
+    AWS_MODEL_SERVICE=datasync python3 scripts/gen-glue-model.py [botocore-data-dir]
 Pass the AWS CLI v2 bundled data dir (awscli/botocore/data) to match the CLI.
+The service defaults to glue.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
 import botocore.session
 
-OUT = Path(__file__).resolve().parent.parent / "internal/awsmodels/glue/model.json"
+SERVICE = os.environ.get("AWS_MODEL_SERVICE", "glue")
+OUT = Path(__file__).resolve().parent.parent / f"internal/awsmodels/{SERVICE}/model.json"
 
 
 def main() -> None:
     session = botocore.session.get_session()
     if len(sys.argv) > 1:
         session.get_component("data_loader").search_paths.insert(0, sys.argv[1])
-    model = session.get_service_model("glue")
+    model = session.get_service_model(SERVICE)
     shapes: dict[str, dict] = {}
 
     def visit(shape) -> str:

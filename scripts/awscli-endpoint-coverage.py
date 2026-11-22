@@ -551,6 +551,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dynamodbstreams": {"cli": "dynamodbstreams", "ops_file": REPO_ROOT / "internal/server/dynamodbstreams_ops.go"},
     "dsql": {"cli": "dsql", "ops_file": REPO_ROOT / "internal/server/dsql_ops.go"},
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
+    "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2172,6 +2173,8 @@ SERVICE_ALIASES = {
     "amazondynamodbstreams": "dynamodbstreams",
     "dsql": "dsql",
     "efs": "efs",
+    "datasync": "datasync",
+    "awsdatasync": "datasync",
     "elasticfilesystem": "efs",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
@@ -3061,6 +3064,7 @@ CLOUDCONTROLAPI_DEFAULT_PATCH_DOCUMENT = '[{"op":"replace","path":"/BucketName",
 RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
+    "datasync": {},
     "docdb": {},
     "glue": {},
     "appconfig": {},
@@ -32878,6 +32882,121 @@ def docdb_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpo
     return copy.deepcopy(payload)
 
 
+DATASYNC_ROLE = "arn:aws:iam::123456789012:role/stackyard-datasync"
+DATASYNC_SUBNET = "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0123456789abcdef0"
+DATASYNC_SG = "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0123456789abcdef0"
+DATASYNC_FSX = "arn:aws:fsx:us-east-1:123456789012:file-system/fs-0123456789abcdef0"
+DATASYNC_SVM = "arn:aws:fsx:us-east-1:123456789012:storage-virtual-machine/fs-0123456789abcdef0/svm-0123456789abcdef0"
+
+
+def datasync_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], operation: str, payload: dict) -> dict:
+    out = run_aws_json(aws_bin, endpoint_url, region, "datasync", operation, env, ["--cli-input-json", json.dumps(payload)])
+    return out if isinstance(out, dict) else {}
+
+
+def datasync_activation_key() -> str:
+    raw = f"{time.time_ns():025X}"[-25:]
+    return "-".join(raw[i : i + 5] for i in range(0, 25, 5))
+
+
+def datasync_location_payloads(fx: dict) -> dict[str, dict]:
+    """A valid create-location payload for every location type."""
+    agents = [fx["agent"]]
+    return {
+        "S3": {"S3BucketArn": f"arn:aws:s3:::{fx['src_bucket']}", "Subdirectory": "/in", "S3Config": {"BucketAccessRoleArn": DATASYNC_ROLE}},
+        "Efs": {"EfsFilesystemArn": fx["efs_arn"], "Ec2Config": {"SubnetArn": DATASYNC_SUBNET, "SecurityGroupArns": [DATASYNC_SG]}},
+        "FsxLustre": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG]},
+        "FsxWindows": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG], "User": "admin", "Password": "stackyard-coverage"},
+        "FsxOpenZfs": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG], "Protocol": {"NFS": {"MountOptions": {"Version": "AUTOMATIC"}}}},
+        "FsxOntap": {"StorageVirtualMachineArn": DATASYNC_SVM, "SecurityGroupArns": [DATASYNC_SG], "Protocol": {"NFS": {"MountOptions": {"Version": "NFS3"}}}},
+        "Nfs": {"ServerHostname": "nfs.example.com", "Subdirectory": "/exports", "OnPremConfig": {"AgentArns": agents}},
+        "Smb": {"ServerHostname": "smb.example.com", "Subdirectory": "/share", "User": "admin", "Password": "stackyard-coverage", "AgentArns": agents},
+        "Hdfs": {"NameNodes": [{"Hostname": "namenode.example.com", "Port": 8020}], "AuthenticationType": "SIMPLE", "SimpleUser": "hdfs", "AgentArns": agents},
+        "ObjectStorage": {"ServerHostname": "objects.example.com", "BucketName": "data", "AgentArns": agents},
+        "AzureBlob": {"ContainerUrl": "https://stackyardacct.blob.core.windows.net/data", "AuthenticationType": "SAS", "SasConfiguration": {"Token": "sp=r&sig=stackyard"}},
+    }
+
+
+def datasync_new_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fx: dict) -> str:
+    out = datasync_call(aws_bin, endpoint_url, region, env, "create-task", {"SourceLocationArn": fx["Nfs"], "DestinationLocationArn": fx["S3"]})
+    return str(out.get("TaskArn") or "")
+
+
+def datasync_new_execution(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fx: dict) -> str:
+    task = datasync_new_task(aws_bin, endpoint_url, region, env, fx)
+    out = datasync_call(aws_bin, endpoint_url, region, env, "start-task-execution", {"TaskArn": task})
+    return str(out.get("TaskExecutionArn") or "")
+
+
+def datasync_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An agent, buckets, an EFS file system, one location of every type, a
+    task and an execution, shared by the non-destructive operations."""
+    fx = RUNTIME_STATE.setdefault("datasync", {})
+    if fx.get("task"):
+        return fx
+    suffix = time.time_ns()
+    fx["src_bucket"] = f"stackyard-datasync-src-{suffix}"
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", fx["src_bucket"]])
+    fx["agent"] = str(datasync_call(aws_bin, endpoint_url, region, env, "create-agent", {"ActivationKey": datasync_activation_key(), "AgentName": "stackyard-coverage"}).get("AgentArn") or "")
+    fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+    fx["efs_arn"] = f"arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/{fs_id}"
+    for kind, payload in datasync_location_payloads(fx).items():
+        fx[kind] = str(datasync_call(aws_bin, endpoint_url, region, env, f"create-location-{datasync_kebab(kind)}", payload).get("LocationArn") or "")
+    fx["task"] = datasync_new_task(aws_bin, endpoint_url, region, env, fx)
+    fx["execution"] = str(datasync_call(aws_bin, endpoint_url, region, env, "start-task-execution", {"TaskArn": fx["task"]}).get("TaskExecutionArn") or "")
+    return fx
+
+
+def datasync_kebab(kind: str) -> str:
+    return {"FsxOpenZfs": "fsx-open-zfs", "FsxOntap": "fsx-ontap", "ObjectStorage": "object-storage", "AzureBlob": "azure-blob",
+            "FsxLustre": "fsx-lustre", "FsxWindows": "fsx-windows"}.get(kind, kind.lower())
+
+
+def datasync_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Point each DataSync operation at real resources; destructive ones get
+    resources of their own so the shared fixture stays valid."""
+    op = endpoint.operation
+    fx = datasync_fixture(aws_bin, endpoint_url, region, env)
+    if op == "CreateAgent":
+        return {"ActivationKey": datasync_activation_key(), "AgentName": "stackyard-coverage-new"}
+    if op in {"DescribeAgent", "UpdateAgent"}:
+        return {"AgentArn": fx["agent"], **({"Name": "renamed"} if op == "UpdateAgent" else {})}
+    if op == "DeleteAgent":
+        out = datasync_call(aws_bin, endpoint_url, region, env, "create-agent", {"ActivationKey": datasync_activation_key()})
+        return {"AgentArn": str(out.get("AgentArn") or "")}
+    if op.startswith("CreateLocation"):
+        return datasync_location_payloads(fx)[op.removeprefix("CreateLocation")]
+    if op.startswith("DescribeLocation") or op.startswith("UpdateLocation"):
+        kind = op.removeprefix("DescribeLocation").removeprefix("UpdateLocation")
+        return {"LocationArn": fx[kind]}
+    if op == "DeleteLocation":
+        out = datasync_call(aws_bin, endpoint_url, region, env, "create-location-nfs", datasync_location_payloads(fx)["Nfs"])
+        return {"LocationArn": str(out.get("LocationArn") or "")}
+    if op == "CreateTask":
+        return {"SourceLocationArn": fx["Nfs"], "DestinationLocationArn": fx["S3"], "Name": "stackyard-coverage"}
+    if op in {"DescribeTask", "StartTaskExecution"}:
+        return {"TaskArn": fx["task"]}
+    if op == "UpdateTask":
+        return {"TaskArn": fx["task"], "Name": "stackyard-coverage-updated"}
+    if op == "DeleteTask":
+        return {"TaskArn": datasync_new_task(aws_bin, endpoint_url, region, env, fx)}
+    if op == "ListTaskExecutions":
+        return {"TaskArn": fx["task"]}
+    if op == "DescribeTaskExecution":
+        return {"TaskExecutionArn": fx["execution"]}
+    if op == "UpdateTaskExecution":
+        return {"TaskExecutionArn": datasync_new_execution(aws_bin, endpoint_url, region, env, fx), "Options": {"BytesPerSecond": 1048576}}
+    if op == "CancelTaskExecution":
+        return {"TaskExecutionArn": datasync_new_execution(aws_bin, endpoint_url, region, env, fx)}
+    if op == "TagResource":
+        return {"ResourceArn": fx["task"], "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["task"], "Keys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["task"]}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -32888,6 +33007,9 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "datasync":
+        return datasync_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service == "docdb":
         return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)

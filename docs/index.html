@@ -234,6 +234,7 @@
         <a href="#dms">DMS</a>
         <a href="#evs">EVS</a>
         <a href="#fms">Firewall Manager (FMS)</a>
+        <a href="#datasync">AWS DataSync</a>
         <a href="#efs">Amazon EFS</a>
         <a href="#fsx">Amazon FSx</a>
         <a href="#snowball">AWS Snowball Edge</a>
@@ -24910,6 +24911,87 @@
         </section>
 
 
+        <section id="datasync" class="service">
+
+        <div class="service-header">
+        <h2>AWS DataSync</h2>
+        <p>SigV4 signed with service <code>datasync</code>. JSON 1.1 API (<code>X-Amz-Target: FmrsService.*</code>) for agents (single-use activation keys, public or VPC endpoints), locations of every type (S3 buckets and EFS file systems checked against Stackyard's stores, FSx, NFS, SMB, HDFS, object storage and Azure Blob validated by shape, on-premises agents required), tasks (options, include/exclude filters, schedules, manifests and reports) and task executions that move LAUNCHING &rarr; PREPARING &rarr; TRANSFERRING &rarr; VERIFYING &rarr; SUCCESS as they are read, with queueing and cancellation. S3-to-S3 executions really copy objects between Stackyard buckets, honouring filters and the overwrite, transfer-mode and delete options; other location pairs are simulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: datasync</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTaskExecution</code></td></tr>
+        <tr><td><code>CreateAgent</code></td></tr>
+        <tr><td><code>CreateLocationAzureBlob</code></td></tr>
+        <tr><td><code>CreateLocationEfs</code></td></tr>
+        <tr><td><code>CreateLocationFsxLustre</code></td></tr>
+        <tr><td><code>CreateLocationFsxOntap</code></td></tr>
+        <tr><td><code>CreateLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>CreateLocationFsxWindows</code></td></tr>
+        <tr><td><code>CreateLocationHdfs</code></td></tr>
+        <tr><td><code>CreateLocationNfs</code></td></tr>
+        <tr><td><code>CreateLocationObjectStorage</code></td></tr>
+        <tr><td><code>CreateLocationS3</code></td></tr>
+        <tr><td><code>CreateLocationSmb</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DeleteAgent</code></td></tr>
+        <tr><td><code>DeleteLocation</code></td></tr>
+        <tr><td><code>DeleteTask</code></td></tr>
+        <tr><td><code>DescribeAgent</code></td></tr>
+        <tr><td><code>DescribeLocationAzureBlob</code></td></tr>
+        <tr><td><code>DescribeLocationEfs</code></td></tr>
+        <tr><td><code>DescribeLocationFsxLustre</code></td></tr>
+        <tr><td><code>DescribeLocationFsxOntap</code></td></tr>
+        <tr><td><code>DescribeLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>DescribeLocationFsxWindows</code></td></tr>
+        <tr><td><code>DescribeLocationHdfs</code></td></tr>
+        <tr><td><code>DescribeLocationNfs</code></td></tr>
+        <tr><td><code>DescribeLocationObjectStorage</code></td></tr>
+        <tr><td><code>DescribeLocationS3</code></td></tr>
+        <tr><td><code>DescribeLocationSmb</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>DescribeTaskExecution</code></td></tr>
+        <tr><td><code>ListAgents</code></td></tr>
+        <tr><td><code>ListLocations</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTaskExecutions</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>StartTaskExecution</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAgent</code></td></tr>
+        <tr><td><code>UpdateLocationAzureBlob</code></td></tr>
+        <tr><td><code>UpdateLocationEfs</code></td></tr>
+        <tr><td><code>UpdateLocationFsxLustre</code></td></tr>
+        <tr><td><code>UpdateLocationFsxOntap</code></td></tr>
+        <tr><td><code>UpdateLocationFsxOpenZfs</code></td></tr>
+        <tr><td><code>UpdateLocationFsxWindows</code></td></tr>
+        <tr><td><code>UpdateLocationHdfs</code></td></tr>
+        <tr><td><code>UpdateLocationNfs</code></td></tr>
+        <tr><td><code>UpdateLocationObjectStorage</code></td></tr>
+        <tr><td><code>UpdateLocationS3</code></td></tr>
+        <tr><td><code>UpdateLocationSmb</code></td></tr>
+        <tr><td><code>UpdateTask</code></td></tr>
+        <tr><td><code>UpdateTaskExecution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>datasync</code>: <code>docker compose -f examples/aws/datasync/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="efs" class="service">
 
         <div class="service-header">
