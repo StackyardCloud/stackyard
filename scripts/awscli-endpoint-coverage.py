@@ -550,6 +550,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
+    "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2162,6 +2163,9 @@ SERVICE_ALIASES = {
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
+    "pipes": "pipes",
+    "eventbridgepipes": "pipes",
+    "amazoneventbridgepipes": "pipes",
     "elasticfilesystem": "efs",
     "applicationautoscaling": "applicationautoscaling",
     "application-autoscaling": "applicationautoscaling",
@@ -3056,6 +3060,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "applicationautoscaling": {},
     "efs": {},
     "scheduler": {},
+    "pipes": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -32003,6 +32008,64 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+PIPES_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-pipes"
+
+
+def pipes_queue_arn(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    run_aws_json(aws_bin, endpoint_url, region, "sqs", "create-queue", env, ["--queue-name", name])
+    return f"arn:aws:sqs:{region}:123456789012:{name}"
+
+
+def pipes_create_pipe(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], desired: str = "RUNNING") -> str:
+    """Create a pipe between two real queues and read it once so it has
+    settled out of CREATING (changes during a transition are a conflict)."""
+    state = pipes_shared_queues(aws_bin, endpoint_url, region, env)
+    name = f"stackyard-pipe-{time.time_ns()}"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "pipes", "create-pipe", env,
+        ["--name", name, "--source", state["source"], "--target", state["target"], "--role-arn", PIPES_ROLE_ARN, "--desired-state", desired],
+    )
+    run_aws_json(aws_bin, endpoint_url, region, "pipes", "describe-pipe", env, ["--name", name])
+    return name
+
+
+def pipes_shared_queues(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("pipes", {})
+    if not state.get("source"):
+        state["source"] = pipes_queue_arn(aws_bin, endpoint_url, region, env, "stackyard-pipes-source")
+        state["target"] = pipes_queue_arn(aws_bin, endpoint_url, region, env, "stackyard-pipes-target")
+    return state
+
+
+def pipes_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Pipes operation at real queues and a settled pipe. Changes
+    (update, start, stop, delete) each get a pipe of their own."""
+    op = endpoint.operation
+    queues = pipes_shared_queues(aws_bin, endpoint_url, region, env)
+    if op == "CreatePipe":
+        return {"Name": f"stackyard-pipe-{time.time_ns()}", "Source": queues["source"], "Target": queues["target"], "RoleArn": PIPES_ROLE_ARN}
+    if op == "ListPipes":
+        return {}
+    if op == "StartPipe":
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env, desired="STOPPED")}
+    if op in {"StopPipe", "DeletePipe"}:
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env)}
+    if op == "UpdatePipe":
+        return {"Name": pipes_create_pipe(aws_bin, endpoint_url, region, env), "RoleArn": PIPES_ROLE_ARN}
+    if not queues.get("pipe"):
+        queues["pipe"] = pipes_create_pipe(aws_bin, endpoint_url, region, env)
+    if op == "DescribePipe":
+        return {"Name": queues["pipe"]}
+    arn = f"arn:aws:pipes:{region}:123456789012:pipe/{queues['pipe']}"
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["stackyard"]}
+    return {"resourceArn": arn}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -32014,6 +32077,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "pipes":
+        return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:

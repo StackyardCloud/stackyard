@@ -171,6 +171,7 @@
         <a href="#elemental-inference">Elemental Inference</a>
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
+        <a href="#pipes">EventBridge Pipes</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
@@ -12222,6 +12223,45 @@
         <ul>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
         <li><code>eventbridge</code>: <code>docker compose -f examples/aws/eventbridge/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="pipes" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EventBridge Pipes</h2>
+        <p>SigV4 signed with service <code>pipes</code>. REST JSON API under <code>/v1/pipes</code> and <code>/tags/</code>. Pipes connect an SQS queue, Kinesis stream, DynamoDB stream, Amazon MQ broker, Amazon MSK cluster or self-managed Kafka source to a target, with an optional enrichment. Requests are validated against the service model, source and target parameters must match the resource type, and filter patterns must be JSON. Pipes move through CREATING, UPDATING, STARTING and STOPPING on reads, and a change made mid-transition is a ConflictException. A source, enrichment or target that Stackyard knows is missing (SQS, SNS, Lambda, Kinesis, DynamoDB streams, Step Functions) leaves the pipe CREATE_FAILED or UPDATE_FAILED with a StateReason. Events are not polled or delivered. All 10 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pipes</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreatePipe</code></td></tr>
+        <tr><td><code>DeletePipe</code></td></tr>
+        <tr><td><code>DescribePipe</code></td></tr>
+        <tr><td><code>ListPipes</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartPipe</code></td></tr>
+        <tr><td><code>StopPipe</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdatePipe</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pipes</code>: <code>docker compose -f examples/aws/pipes/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

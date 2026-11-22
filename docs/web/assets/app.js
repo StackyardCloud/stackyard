@@ -752,6 +752,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/scheduler/docker-compose.yml"
   },
   {
+    id: "pipes",
+    name: "EventBridge Pipes",
+    category: "integration",
+    summary: "Create point-to-point pipes from SQS, Kinesis, DynamoDB streams, MQ and Kafka sources to targets, with filters, enrichment and start/stop state.",
+    docsHref: "../../../index.html#pipes",
+    exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
+  },
+  {
     id: "iot",
     name: "IoT",
     category: "integration",
