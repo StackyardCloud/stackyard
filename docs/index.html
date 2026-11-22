@@ -157,6 +157,7 @@
         <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
         <a href="#dynamodbstreams">DynamoDB Streams</a>
+        <a href="#dax">DynamoDB Accelerator (DAX)</a>
         <a href="#ec2">EC2</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
@@ -17561,6 +17562,102 @@
         </ul>
         </details>
         </section>
+        <section id="dax" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DynamoDB Accelerator (DAX)</h2>
+        <p>SigV4 signed with service <code>dax</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: AmazonDAXV3.&lt;Action&gt;</code>. Control plane only: clusters (node types, replication factor up to 11 nodes, subnet groups and security groups checked against the EC2 store, SSE, TLS endpoints) move from creating or modifying to available when next described; parameter groups carry the DAX TTL parameters; events, subnet groups and cluster tags are kept. The DAX data-plane protocol is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: dax</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>CreateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DecreaseReplicationFactor</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSubnetGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDefaultParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeEvents</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeParameterGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeParameters</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeSubnetGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>IncreaseReplicationFactor</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTags</code></td>
+        </tr>
+        <tr>
+        <td><code>RebootNode</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateParameterGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSubnetGroup</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>dax</code>: <code>docker compose -f examples/aws/dax/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
         <section id="dynamodbstreams" class="service">
 
         <div class="service-header">
