@@ -112,6 +112,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bedrock-runtime/docker-compose.yml"
   },
   {
+    id: "bedrockagent",
+    name: "Agents for Amazon Bedrock",
+    category: "integration",
+    summary: "Emulate Bedrock agents, aliases and versions, knowledge bases with data sources and ingestion, flows, prompts and retrieval instructions.",
+    docsHref: "../../../index.html#bedrockagent",
+    exampleHref: "../../../../examples/aws/bedrock-agent/docker-compose.yml"
+  },
+  {
     id: "cloudcontrolapi",
     name: "Cloud Control API",
     category: "integration",
@@ -432,6 +440,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/kinesisvideostreams/docker-compose.yml"
   },
   {
+    id: "kinesisvideomedia",
+    name: "Kinesis Video Streams Media",
+    category: "integration",
+    summary: "PutMedia ingest of MKV fragments with acknowledgements, and GetMedia reads by fragment number, timestamp, continuation token, EARLIEST or NOW.",
+    docsHref: "../../../index.html#kinesisvideomedia",
+    exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
+  },
+  {
+    id: "kinesisvideoarchivedmedia",
+    name: "Kinesis Video Streams Archived Media",
+    category: "integration",
+    summary: "ListFragments, GetMediaForFragmentList, GetClip, GetImages and HLS/DASH session URLs that serve playlists of the stored fragments.",
+    docsHref: "../../../index.html#kinesisvideoarchivedmedia",
+    exampleHref: "../../../../examples/aws/kinesis-video-media/docker-compose.yml"
+  },
+  {
     id: "mq",
     name: "Amazon MQ",
     category: "integration",
@@ -750,6 +774,14 @@ const SERVICE_CATALOG = [
     summary: "Manage keys, aliases, policies, and cryptographic requests.",
     docsHref: "../../../index.html#kms",
     exampleHref: "../../../../examples/aws/kms/docker-compose.yml"
+  },
+  {
+    id: "lexruntimev2",
+    name: "Lex Runtime V2",
+    category: "integration",
+    summary: "Converse with Lex V2 bots: recognize text and utterances, elicit slots, manage sessions, and stream StartConversation events.",
+    docsHref: "../../../index.html#lexruntimev2",
+    exampleHref: "../../../../examples/aws/lex-runtime-v2/docker-compose.yml"
   },
   {
     id: "lambda",

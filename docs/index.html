@@ -86,7 +86,10 @@
         <a href="#kendra">Kendra</a>
         <a href="#kinesis">Kinesis</a>
         <a href="#kinesis-video-streams">Kinesis Video Streams</a>
+        <a href="#kinesisvideomedia">Kinesis Video Streams Media</a>
+        <a href="#kinesisvideoarchivedmedia">Kinesis Video Streams Archived Media</a>
         <a href="#lexv2">Lex V2</a>
+        <a href="#lexruntimev2">Lex Runtime V2</a>
         <a href="#pinpoint">Pinpoint</a>
         <a href="#pcs">PCS</a>
         <a href="#smsvoicev2">End User Messaging SMS</a>
@@ -102,6 +105,7 @@
         <a href="#augmented-ai">Amazon Augmented AI</a>
         <a href="#bedrock">Bedrock</a>
         <a href="#bedrockruntime">Bedrock Runtime</a>
+        <a href="#bedrockagent">Agents for Amazon Bedrock</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
         <a href="#comprehend">Comprehend</a>
@@ -3187,6 +3191,70 @@
         </details>
         </section>
 
+        <section id="kinesisvideomedia" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Streams Media</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>, sent to the endpoint from <code>GetDataEndpoint</code> (Stackyard returns its own URL). <code>POST /putMedia</code> takes a Matroska (MKV) body with <code>x-amzn-stream-name</code> or <code>x-amzn-stream-arn</code> and <code>x-amzn-fragment-timecode-type</code>; each cluster becomes a fragment and is acknowledged with BUFFERING, RECEIVED and PERSISTED events (one JSON object per line). Stackyard reads the whole body, so a call carries at most 25 MiB. <code>POST /getMedia</code> returns stored fragments as standalone MKV with the <code>AWS_KINESISVIDEO_*</code> tags; a NOW selector waits briefly for new fragments instead of holding the connection open.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideomedia_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-media</code>: <code>docker compose -f examples/aws/kinesis-video-media/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="kinesisvideoarchivedmedia" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kinesis Video Streams Archived Media</h2>
+        <p>SigV4 signed with service <code>kinesisvideo</code>. Reads fragments stored by PutMedia on streams with data retention: ListFragments, GetMediaForFragmentList, GetClip (returns the stored Matroska fragments rather than an MP4), GetImages (solid placeholder JPEG/PNG images where media exists, since Stackyard has no decoder) and Get{HLS,DASH}StreamingSessionURL. The session URLs are served by Stackyard: an HLS master and media playlist, or a DASH manifest, listing the stored fragments.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kinesisvideo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>6</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/kinesisvideoarchivedmedia_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>kinesis-video-media</code>: <code>docker compose -f examples/aws/kinesis-video-media/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="lexv2" class="service">
 
         <div class="service-header">
@@ -3217,6 +3285,40 @@
         <ul>
         <li><code>lexv2</code>: <code>docker compose -f examples/aws/lexv2/docker-compose.yml up --build</code></li>
         <li><code>lexv2</code>: <code>docker compose -f examples/aws/lexv2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="lexruntimev2" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Lex Runtime V2</h2>
+        <p>SigV4 signed with service <code>lex</code>. REST JSON runtime on <code>/bots/{botId}/botAliases/{botAliasId}/botLocales/{localeId}/sessions/{sessionId}</code>: <code>RecognizeText</code> and <code>RecognizeUtterance</code> match intents by their sample utterances (exact match, with <code>{Slot}</code> references filling slots, or word overlap against the locale's confidence threshold, else <code>FallbackIntent</code>), elicit required slots with their prompts, and close <code>ReadyForFulfillment</code>. Sessions honour the bot's idle TTL. <code>StartConversation</code> is a full-duplex event stream (including <code>STREAMING-AWS4-HMAC-SHA256-EVENTS</code> signing). Bots, locales, aliases (plus <code>TSTALIASID</code>), intents and slots come from the Lex V2 models API. Audio input is accepted but not transcribed, and no speech is synthesized.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: lex</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteSession</code></td></tr>
+        <tr><td><code>GetSession</code></td></tr>
+        <tr><td><code>PutSession</code></td></tr>
+        <tr><td><code>RecognizeText</code></td></tr>
+        <tr><td><code>RecognizeUtterance</code></td></tr>
+        <tr><td><code>StartConversation</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>lex-runtime-v2</code>: <code>docker compose -f examples/aws/lex-runtime-v2/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -4083,6 +4185,296 @@
         <ul>
                 <li><code>bedrock-runtime</code>: <code>docker compose -f examples/aws/bedrock-runtime/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="bedrockagent" class="service">
+
+        <div class="service-header">
+        <h2>Agents for Amazon Bedrock</h2>
+        <p>SigV4 signed with service <code>bedrock</code>. REST JSON API under <code>/agents/</code>, <code>/knowledgebases/</code>, <code>/flows/</code>, <code>/prompts/</code>, <code>/retrievalinstructions/</code>, <code>/resourcepolicy/</code> and <code>/tags/</code>. Agents start <code>NOT_PREPARED</code>; <code>PrepareAgent</code> makes the DRAFT <code>PREPARED</code>, and an alias created without routing snapshots the DRAFT (with its action groups, knowledge bases and collaborators) as the next numbered version. Every agent has the <code>TSTALIASID</code> test alias on DRAFT. Ingestion jobs run until they are next read, documents are kept per data source, and flows must pass definition validation before <code>PrepareFlow</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bedrock</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AssociateAgentCollaborator</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateAgentKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateAgentActionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateAgentAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDataSource</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFlowAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFlowVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePrompt</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePromptVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRetrievalInstruction</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRetrievalInstructionVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateVpcConfiguration</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAgentActionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAgentAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAgentVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDataSource</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFlowAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFlowVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteKnowledgeBaseDocuments</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePrompt</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRetrievalInstruction</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteVpcConfiguration</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateAgentCollaborator</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateAgentKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentActionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentCollaborator</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAgentVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>GetDataSource</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFlowAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFlowVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>GetKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>GetKnowledgeBaseDocuments</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPrompt</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetRetrievalInstruction</code></td>
+        </tr>
+        <tr>
+        <td><code>GetVpcConfiguration</code></td>
+        </tr>
+        <tr>
+        <td><code>IngestKnowledgeBaseDocuments</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgentActionGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgentAliases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgentCollaborators</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgentKnowledgeBases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgentVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAgents</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDataSources</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFlowAliases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFlowVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFlows</code></td>
+        </tr>
+        <tr>
+        <td><code>ListIngestionJobs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListKnowledgeBaseDocuments</code></td>
+        </tr>
+        <tr>
+        <td><code>ListKnowledgeBases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPrompts</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRetrievalInstructionVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRetrievalInstructions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcConfigurations</code></td>
+        </tr>
+        <tr>
+        <td><code>PrepareAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>PrepareFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>StartIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>StopIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAgent</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAgentActionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAgentAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAgentCollaborator</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAgentKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateDataSource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFlow</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFlowAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateKnowledgeBase</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePrompt</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRetrievalInstruction</code></td>
+        </tr>
+        <tr>
+        <td><code>ValidateFlowDefinition</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
+        </ul>
         </details>
         </section>
         <section id="comprehend" class="service">

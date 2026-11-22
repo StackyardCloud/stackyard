@@ -158,7 +158,16 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "kinesisvideo",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
     },
+    "kinesisvideomedia": {
+        "cli": "kinesis-video-media",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideomedia_ops.go",
+    },
+    "kinesisvideoarchivedmedia": {
+        "cli": "kinesis-video-archived-media",
+        "ops_file": REPO_ROOT / "internal/server/kinesisvideoarchivedmedia_ops.go",
+    },
     "lexv2": {"cli": "lexv2-models", "ops_file": REPO_ROOT / "internal/server/lexv2_ops.go"},
+    "lexruntimev2": {"cli": "lexv2-runtime", "ops_file": REPO_ROOT / "internal/server/lexruntimev2_ops.go"},
     "pinpoint": {"cli": "pinpoint", "ops_file": REPO_ROOT / "internal/server/pinpoint_ops.go"},
     "smsvoicev2": {
         "cli": "pinpoint-sms-voice-v2",
@@ -216,6 +225,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "cli": "bedrock-agentcore",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcoredata_ops.go",
     },
+    "bedrockagent": {"cli": "bedrock-agent", "ops_file": REPO_ROOT / "internal/server/bedrockagent_ops.go"},
     "bedrockagentcorecontrol": {
         "cli": "bedrock-agentcore-control",
         "ops_file": REPO_ROOT / "internal/server/bedrockagentcorecontrol_ops.go",
@@ -1071,6 +1081,13 @@ SERVICE_ALIASES = {
     "aws lex": "lexv2",
     "awslexv2": "lexv2",
     "aws lex v2": "lexv2",
+    "lexruntimev2": "lexruntimev2",
+    "lexv2-runtime": "lexruntimev2",
+    "lexv2runtime": "lexruntimev2",
+    "lex runtime v2": "lexruntimev2",
+    "lexruntime": "lexruntimev2",
+    "amazonlexruntimev2": "lexruntimev2",
+    "amazon lex runtime v2": "lexruntimev2",
     "pinpoint": "pinpoint",
     "amazonpinpoint": "pinpoint",
     "amazon pinpoint": "pinpoint",
@@ -1108,6 +1125,14 @@ SERVICE_ALIASES = {
     "amazon kinesis video streams": "kinesisvideostreams",
     "awskinesisvideostreams": "kinesisvideostreams",
     "aws kinesis video streams": "kinesisvideostreams",
+    "kinesisvideomedia": "kinesisvideomedia",
+    "kinesis-video-media": "kinesisvideomedia",
+    "kinesis video media": "kinesisvideomedia",
+    "amazonkinesisvideomedia": "kinesisvideomedia",
+    "kinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
+    "kinesis-video-archived-media": "kinesisvideoarchivedmedia",
+    "kinesis video archived media": "kinesisvideoarchivedmedia",
+    "amazonkinesisvideoarchivedmedia": "kinesisvideoarchivedmedia",
     "emr": "emr",
     "amazonemr": "emr",
     "amazon emr": "emr",
@@ -1215,6 +1240,10 @@ SERVICE_ALIASES = {
     "agentcoredata": "bedrockagentcoredata",
     "agentcore-data": "bedrockagentcoredata",
     "amazonbedrockagentcoredata": "bedrockagentcoredata",
+    "bedrockagent": "bedrockagent",
+    "bedrock-agent": "bedrockagent",
+    "agents for amazon bedrock": "bedrockagent",
+    "amazonbedrockagent": "bedrockagent",
     "bedrockagentcorecontrol": "bedrockagentcorecontrol",
     "bedrock-agentcore-control": "bedrockagentcorecontrol",
     "bedrock agentcore control": "bedrockagentcorecontrol",
@@ -3024,6 +3053,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "tnb": {},
     "savingsplans": {},
     "lexv2": {},
+    "lexruntimev2": {},
     "pinpoint": {},
     "smsvoicev2": {},
     "socialmessaging": {},
@@ -3031,6 +3061,8 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "workspacesthinclient": {},
     "workspacesweb": {},
     "kinesisvideostreams": {},
+    "kinesisvideomedia": {},
+    "kinesisvideoarchivedmedia": {},
     "finspace": {},
     "finspacemanagement": {},
     "gameliftstreams": {},
@@ -3048,6 +3080,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "redshiftdata": {},
     "codecatalyst": {},
     "bedrockagentcoredata": {},
+    "bedrockagent": {},
     "bedrockagentcorecontrol": {},
     "batch": {},
     "bedrock": {},
@@ -4015,6 +4048,9 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return kinesisvideostreams_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "lexv2":
         return lexv2_raw_fallback_routes().get(endpoint.operation)
+    if endpoint.service == "lexruntimev2" and endpoint.operation == "StartConversation":
+        # The CLI has no start-conversation (bidirectional event stream).
+        return ("POST", "/bots/{botId}/botAliases/{botAliasId}/botLocales/{localeId}/sessions/{sessionId}/conversation")
     if endpoint.service == "pinpoint":
         return pinpoint_raw_fallback_routes().get(endpoint.operation)
     if endpoint.service == "smsvoicev2":
@@ -6207,6 +6243,9 @@ def invoke_raw_endpoint(
         else:
             body = json.dumps(payload_for_transport, separators=(",", ":")).encode("utf-8")
             extra_headers = {"Content-Type": "application/json"}
+    elif endpoint.service == "lexruntimev2":
+        body = lexruntimev2_conversation_body()
+        extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7110,7 +7149,7 @@ def invoke_raw_endpoint(
         signing_service = "kinesisvideo"
     elif endpoint.service == "redshiftserverless":
         signing_service = "redshift-serverless"
-    elif endpoint.service == "lexv2":
+    elif endpoint.service in {"lexv2", "lexruntimev2"}:
         signing_service = "lex"
     elif endpoint.service == "awscostmanagement":
         signing_service = "ce"
@@ -7342,6 +7381,9 @@ def invoke_raw_endpoint(
 
 
 def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
+    if endpoint.service == "lexruntimev2":
+        # Path members only; hydration points them at the seeded bot.
+        return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}
     if endpoint.service == "acm":
         if endpoint.operation == "RevokeCertificate":
             return {}
@@ -13188,6 +13230,14 @@ def generate_cli_input_payload(
             "apiId": "api-0123456789abcdef0123456789abcdef0123456789abcdef",
             "format": "SDL",
         }, None
+    if endpoint.service == "lexruntimev2" and endpoint.operation in LEXRUNTIMEV2_OUTFILE_OPERATIONS:
+        # recognize-utterance and put-session stream an audio body, so the CLI
+        # needs explicit flags and an outfile even to print a skeleton.
+        return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
+    if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+        # These blob-output commands demand their required members as flags (plus
+        # an outfile) even to print a skeleton; hydration fills in real values.
+        return {"StreamName": KVS_MEDIA_STREAM_NAME}, None
     if endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         # aws appconfigdata get-latest-configuration needs --configuration-token and an outfile even
         # to print a skeleton; hydration swaps in a token from a fresh session.
@@ -30303,6 +30353,653 @@ def appconfigdata_seed_session(
     }
 
 
+# One stream per process: producer timestamps must increase per stream, so
+# a rerun against the same server must not reuse an earlier run's stream.
+KVS_MEDIA_STREAM_NAME = f"stackyard-coverage-media-{os.getpid()}-{int(time.time())}"
+
+
+def kvs_media_ebml(element_id: bytes, content: bytes) -> bytes:
+    # EBML element with an 8-byte size field (0x01 marker + 7 bytes).
+    return element_id + b"\x01" + len(content).to_bytes(7, "big") + content
+
+
+def kvs_media_test_mkv(cluster_millis: Sequence[int]) -> bytes:
+    """A minimal Matroska stream: one H.264 track, one SimpleBlock per cluster."""
+    header = kvs_media_ebml(b"\x1a\x45\xdf\xa3", kvs_media_ebml(b"\x42\x82", b"matroska"))
+    segment = b"\x18\x53\x80\x67\x01" + b"\xff" * 7  # unknown-size segment
+    info = kvs_media_ebml(b"\x15\x49\xa9\x66", kvs_media_ebml(b"\x2a\xd7\xb1", (1_000_000).to_bytes(3, "big")))
+    track = kvs_media_ebml(b"\xd7", b"\x01") + kvs_media_ebml(b"\x83", b"\x01") + kvs_media_ebml(b"\x86", b"V_MPEG4/ISO/AVC")
+    tracks = kvs_media_ebml(b"\x16\x54\xae\x6b", kvs_media_ebml(b"\xae", track))
+    out = header + segment + info + tracks
+    for millis in cluster_millis:
+        cluster = kvs_media_ebml(b"\xe7", int(millis).to_bytes(8, "big")) + kvs_media_ebml(b"\xa3", b"\x81\x00\x21\x80frame")
+        out += kvs_media_ebml(b"\x1f\x43\xb6\x75", cluster)
+    return out
+
+
+def kvs_media_signed_post(
+    endpoint_url: str, region: str, env: dict[str, str], path: str, body: bytes, headers: dict[str, str]
+) -> tuple[int, str]:
+    url = endpoint_url.rstrip("/") + path
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=body,
+        service="kinesisvideo",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers=headers,
+    )
+    req = urlrequest.Request(url=url, method="POST", data=body, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            return int(resp.status), resp.read().decode("utf-8", errors="replace")
+    except urlerror.HTTPError as err:
+        return int(err.code), err.read().decode("utf-8", errors="replace")
+    except (urlerror.URLError, OSError) as err:
+        return 0, str(err)
+
+
+def kvs_media_put(endpoint_url: str, region: str, env: dict[str, str], cluster_millis: Sequence[int]) -> tuple[int, str]:
+    """PutMedia a few fragments into the coverage stream (no CLI command exists)."""
+    # Producer timestamps must keep increasing across calls on one stream.
+    state = RUNTIME_STATE.setdefault("kinesisvideomedia", {})
+    start = max(time.time(), float(state.get("next_producer_start") or 0))
+    state["next_producer_start"] = start + max(cluster_millis, default=0) / 1000 + 1
+    return kvs_media_signed_post(
+        endpoint_url,
+        region,
+        env,
+        "/putMedia",
+        kvs_media_test_mkv(cluster_millis),
+        {
+            "x-amzn-stream-name": KVS_MEDIA_STREAM_NAME,
+            "x-amzn-fragment-timecode-type": "RELATIVE",
+            "x-amzn-producer-start-timestamp": f"{start:.3f}",
+        },
+    )
+
+
+def kvs_media_seed(endpoint_url: str, region: str, env: dict[str, str]) -> dict[str, object]:
+    """Create the coverage stream once and give it archived fragments."""
+    state = RUNTIME_STATE.setdefault("kinesisvideomedia", {})
+    if state.get("fragment_number"):
+        return state
+    create = json.dumps({"StreamName": KVS_MEDIA_STREAM_NAME, "DataRetentionInHours": 24, "MediaType": "video/h264"}).encode()
+    kvs_media_signed_post(endpoint_url, region, env, "/createStream", create, {"Content-Type": "application/json"})
+    status, text = kvs_media_put(endpoint_url, region, env, [0, 2000, 4000])
+    if status != 200:
+        return state
+    for line in text.splitlines():
+        try:
+            ack = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(ack, dict) and ack.get("FragmentNumber"):
+            state["fragment_number"] = str(ack["FragmentNumber"])
+            break
+    state["seeded_at"] = time.time()
+    return state
+
+
+def kvs_media_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = kvs_media_seed(endpoint_url, region, env)
+    seeded_at = float(state.get("seeded_at") or time.time())
+    window = {"StartTimestamp": int(seeded_at - 60), "EndTimestamp": int(seeded_at + 60)}
+    op = endpoint.operation
+    hydrated: dict = {"StreamName": KVS_MEDIA_STREAM_NAME}
+    if op == "GetMedia":
+        hydrated["StartSelector"] = {"StartSelectorType": "EARLIEST"}
+    elif op == "GetMediaForFragmentList":
+        hydrated["Fragments"] = [str(state.get("fragment_number") or "0")]
+    elif op == "GetClip":
+        hydrated["ClipFragmentSelector"] = {"FragmentSelectorType": "SERVER_TIMESTAMP", "TimestampRange": window}
+    elif op == "GetImages":
+        hydrated.update({"ImageSelectorType": "SERVER_TIMESTAMP", "Format": "PNG", "SamplingInterval": 3000, "MaxResults": 5, **window})
+    elif op in {"GetHLSStreamingSessionURL", "GetDASHStreamingSessionURL"}:
+        hydrated["PlaybackMode"] = "LIVE"
+    elif op != "ListFragments":
+        return payload
+    return hydrated
+
+
+BEDROCKAGENT_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-bedrock-agent"
+BEDROCKAGENT_INSTRUCTION = "You are a Stackyard coverage agent that answers questions about the emulator."
+BEDROCKAGENT_FLOW_DEFINITION = {
+    "nodes": [{"name": "in", "type": "Input"}, {"name": "out", "type": "Output"}],
+    "connections": [{"name": "c", "type": "Data", "source": "in", "target": "out"}],
+}
+BEDROCKAGENT_KB_CONFIG = {
+    "type": "VECTOR",
+    "vectorKnowledgeBaseConfiguration": {
+        "embeddingModelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
+    },
+}
+BEDROCKAGENT_KB_STORAGE = {"type": "S3_VECTORS"}
+BEDROCKAGENT_DATA_SOURCE_CONFIG = {"type": "CUSTOM"}
+
+
+def bedrockagent_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns()}"
+
+
+def bedrockagent_cli(ctx: tuple, operation: str, body: dict) -> dict:
+    aws_bin, endpoint_url, region, env = ctx
+    data = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "bedrock-agent",
+        operation,
+        env,
+        ["--cli-input-json", json.dumps(body, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def bedrockagent_new_agent(ctx: tuple, collaboration: str = "DISABLED", prepare: bool = True) -> str:
+    agent = bedrockagent_cli(
+        ctx,
+        "create-agent",
+        {
+            "agentName": bedrockagent_unique("syagent"),
+            "foundationModel": "anthropic.claude-v2",
+            "agentResourceRoleArn": BEDROCKAGENT_ROLE_ARN,
+            "instruction": BEDROCKAGENT_INSTRUCTION,
+            "agentCollaboration": collaboration,
+        },
+    ).get("agent", {})
+    agent_id = str(agent.get("agentId") or "")
+    if agent_id and prepare:
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": agent_id})
+    return agent_id
+
+
+def bedrockagent_new_alias(ctx: tuple, agent_id: str) -> dict:
+    # A new alias without routing snapshots a version, which needs a prepared draft.
+    bedrockagent_cli(ctx, "prepare-agent", {"agentId": agent_id})
+    return bedrockagent_cli(
+        ctx, "create-agent-alias", {"agentId": agent_id, "agentAliasName": bedrockagent_unique("syalias")}
+    ).get("agentAlias", {})
+
+
+def bedrockagent_new_kb(ctx: tuple) -> str:
+    kb = bedrockagent_cli(
+        ctx,
+        "create-knowledge-base",
+        {
+            "name": bedrockagent_unique("sykb"),
+            "roleArn": BEDROCKAGENT_ROLE_ARN,
+            "knowledgeBaseConfiguration": BEDROCKAGENT_KB_CONFIG,
+            "storageConfiguration": BEDROCKAGENT_KB_STORAGE,
+        },
+    ).get("knowledgeBase", {})
+    return str(kb.get("knowledgeBaseId") or "")
+
+
+def bedrockagent_new_data_source(ctx: tuple, kb_id: str) -> str:
+    ds = bedrockagent_cli(
+        ctx,
+        "create-data-source",
+        {"knowledgeBaseId": kb_id, "name": bedrockagent_unique("syds"), "dataSourceConfiguration": BEDROCKAGENT_DATA_SOURCE_CONFIG},
+    ).get("dataSource", {})
+    return str(ds.get("dataSourceId") or "")
+
+
+def bedrockagent_document(doc_id: str) -> dict:
+    return {
+        "content": {
+            "dataSourceType": "CUSTOM",
+            "custom": {
+                "customDocumentIdentifier": {"id": doc_id},
+                "sourceType": "IN_LINE",
+                "inlineContent": {"type": "TEXT", "textContent": {"data": "Stackyard emulates AWS locally."}},
+            },
+        }
+    }
+
+
+def bedrockagent_document_id(doc_id: str) -> dict:
+    return {"dataSourceType": "CUSTOM", "custom": {"id": doc_id}}
+
+
+def bedrockagent_new_flow(ctx: tuple) -> dict:
+    flow = bedrockagent_cli(
+        ctx,
+        "create-flow",
+        {"name": bedrockagent_unique("syflow"), "executionRoleArn": BEDROCKAGENT_ROLE_ARN, "definition": BEDROCKAGENT_FLOW_DEFINITION},
+    )
+    if flow.get("id"):
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": flow["id"]})
+    return flow
+
+
+def bedrockagent_new_prompt(ctx: tuple) -> dict:
+    return bedrockagent_cli(ctx, "create-prompt", {"name": bedrockagent_unique("syprompt")})
+
+
+def bedrockagent_new_instruction(ctx: tuple) -> dict:
+    return bedrockagent_cli(
+        ctx,
+        "create-retrieval-instruction",
+        {"name": bedrockagent_unique("syri"), "instruction": {"answerFormat": "Answer in two sentences."}},
+    )
+
+
+def bedrockagent_fixture(ctx: tuple) -> dict:
+    # Shared resources the read and update operations point at, created once.
+    state = RUNTIME_STATE.setdefault("bedrockagent", {})
+    if state.get("agentId"):
+        return state
+    helper = bedrockagent_new_agent(ctx)
+    agent_id = bedrockagent_new_agent(ctx, collaboration="SUPERVISOR")
+    kb_id = bedrockagent_new_kb(ctx)
+    if not (helper and agent_id and kb_id):
+        return state
+    draft = {"agentId": agent_id, "agentVersion": "DRAFT"}
+    state["helperAliasArn"] = f"arn:aws:bedrock:us-east-1:123456789012:agent-alias/{helper}/TSTALIASID"
+    group = bedrockagent_cli(
+        ctx, "create-agent-action-group", {**draft, "actionGroupName": "syactions", "parentActionGroupSignature": "AMAZON.UserInput"}
+    ).get("agentActionGroup", {})
+    bedrockagent_cli(ctx, "associate-agent-knowledge-base", {**draft, "knowledgeBaseId": kb_id, "description": "coverage"})
+    collaborator = bedrockagent_cli(
+        ctx,
+        "associate-agent-collaborator",
+        {
+            **draft,
+            "agentDescriptor": {"aliasArn": state["helperAliasArn"]},
+            "collaboratorName": "syhelper",
+            "collaborationInstruction": "Ask the helper.",
+        },
+    ).get("agentCollaborator", {})
+    alias = bedrockagent_new_alias(ctx, agent_id)
+    ds_id = bedrockagent_new_data_source(ctx, kb_id)
+    ds = {"knowledgeBaseId": kb_id, "dataSourceId": ds_id}
+    job = bedrockagent_cli(ctx, "start-ingestion-job", ds).get("ingestionJob", {})
+    bedrockagent_cli(ctx, "ingest-knowledge-base-documents", {**ds, "documents": [bedrockagent_document("sydoc")]})
+    vpc = bedrockagent_cli(
+        ctx,
+        "create-vpc-configuration",
+        {
+            "knowledgeBaseId": kb_id,
+            "vpcId": "vpc-0123456789abcdef0",
+            "subnetIds": ["subnet-0123456789abcdef0"],
+            "resourceTarget": "kb.internal",
+            "port": 443,
+            "protocol": "HTTPS",
+            "resolutionMode": "IN_VPC",
+        },
+    )
+    flow = bedrockagent_new_flow(ctx)
+    flow_alias = {}
+    if flow.get("id"):
+        bedrockagent_cli(ctx, "create-flow-version", {"flowIdentifier": flow["id"]})
+        flow_alias = bedrockagent_cli(
+            ctx, "create-flow-alias", {"flowIdentifier": flow["id"], "name": "syflowalias", "routingConfiguration": [{"flowVersion": "1"}]}
+        )
+    prompt = bedrockagent_new_prompt(ctx)
+    if prompt.get("id"):
+        bedrockagent_cli(ctx, "create-prompt-version", {"promptIdentifier": prompt["id"]})
+        bedrockagent_cli(ctx, "put-resource-policy", {"resourceArn": prompt["arn"], "policy": '{"Version":"2012-10-17"}'})
+    instruction = bedrockagent_new_instruction(ctx)
+    if instruction.get("retrievalInstructionId"):
+        bedrockagent_cli(ctx, "create-retrieval-instruction-version", {"retrievalInstructionId": instruction["retrievalInstructionId"]})
+    state.update(
+        {
+            "agentId": agent_id,
+            "agentAliasId": alias.get("agentAliasId", ""),
+            "agentAliasName": alias.get("agentAliasName", ""),
+            "actionGroupId": group.get("actionGroupId", ""),
+            "collaboratorId": collaborator.get("collaboratorId", ""),
+            "knowledgeBaseId": kb_id,
+            "dataSourceId": ds_id,
+            "ingestionJobId": job.get("ingestionJobId", ""),
+            "vpcConfigurationId": vpc.get("vpcConfigurationId", ""),
+            "flowId": flow.get("id", ""),
+            "flowName": flow.get("name", ""),
+            "flowAliasId": flow_alias.get("id", ""),
+            "promptId": prompt.get("id", ""),
+            "promptName": prompt.get("name", ""),
+            "promptArn": prompt.get("arn", ""),
+            "retrievalInstructionId": instruction.get("retrievalInstructionId", ""),
+        }
+    )
+    # Names of the shared resources, so updates keep them (names are unique).
+    agent = bedrockagent_cli(ctx, "get-agent", {"agentId": agent_id}).get("agent", {})
+    kb = bedrockagent_cli(ctx, "get-knowledge-base", {"knowledgeBaseId": kb_id}).get("knowledgeBase", {})
+    data_source = bedrockagent_cli(ctx, "get-data-source", ds).get("dataSource", {})
+    state.update({"agentName": agent.get("agentName", ""), "kbName": kb.get("name", ""), "dataSourceName": data_source.get("name", "")})
+    return state
+
+
+def bedrockagent_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    ctx = (aws_bin, endpoint_url, region, env)
+    state = bedrockagent_fixture(ctx)
+    if not state.get("agentId"):
+        return payload
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    ids = {
+        "agentId": state["agentId"],
+        "agentVersion": "DRAFT",
+        "agentAliasId": state["agentAliasId"],
+        "actionGroupId": state["actionGroupId"],
+        "collaboratorId": state["collaboratorId"],
+        "knowledgeBaseId": state["knowledgeBaseId"],
+        "dataSourceId": state["dataSourceId"],
+        "ingestionJobId": state["ingestionJobId"],
+        "vpcConfigurationId": state["vpcConfigurationId"],
+        "flowIdentifier": state["flowId"],
+        "aliasIdentifier": state["flowAliasId"],
+        "flowVersion": "1",
+        "promptIdentifier": state["promptId"],
+        "retrievalInstructionId": state["retrievalInstructionId"],
+        "resourceArn": state["promptArn"],
+    }
+    for key, value in ids.items():
+        if key in hydrated:
+            hydrated[key] = value
+    kb_ds = {"knowledgeBaseId": state["knowledgeBaseId"], "dataSourceId": state["dataSourceId"]}
+    agent_fields = {"foundationModel": "anthropic.claude-v2", "agentResourceRoleArn": BEDROCKAGENT_ROLE_ARN}
+
+    if op == "CreateAgent":
+        hydrated["agentName"] = bedrockagent_unique("syagent")
+    elif op in {"UpdateAgent", "DeleteAgent"}:
+        hydrated["agentId"] = bedrockagent_new_agent(ctx, prepare=False)
+        if op == "UpdateAgent":
+            hydrated.update({"agentName": bedrockagent_unique("syagent"), **agent_fields})
+    elif op == "PrepareAgent":
+        hydrated["agentId"] = bedrockagent_new_agent(ctx, prepare=False)
+    elif op in {"GetAgentVersion", "DeleteAgentVersion"}:
+        fresh = bedrockagent_new_agent(ctx) if op == "DeleteAgentVersion" else state["agentId"]
+        if op == "DeleteAgentVersion":
+            bedrockagent_new_alias(ctx, fresh)
+            hydrated["skipResourceInUseCheck"] = True
+        hydrated.update({"agentId": fresh, "agentVersion": "1"})
+    elif op == "CreateAgentAlias":
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": state["agentId"]})
+        hydrated["agentAliasName"] = bedrockagent_unique("syalias")
+    elif op == "UpdateAgentAlias":
+        bedrockagent_cli(ctx, "prepare-agent", {"agentId": state["agentId"]})
+        hydrated["agentAliasName"] = state["agentAliasName"]
+    elif op == "DeleteAgentAlias":
+        hydrated["agentAliasId"] = bedrockagent_new_alias(ctx, state["agentId"]).get("agentAliasId", "")
+    elif op == "CreateAgentActionGroup":
+        hydrated.update({"actionGroupName": bedrockagent_unique("syactions"), "parentActionGroupSignature": "AMAZON.UserInput"})
+    elif op == "UpdateAgentActionGroup":
+        hydrated["actionGroupName"] = "syactions"
+    elif op == "DeleteAgentActionGroup":
+        group = bedrockagent_cli(
+            ctx,
+            "create-agent-action-group",
+            {"agentId": state["agentId"], "agentVersion": "DRAFT", "actionGroupName": bedrockagent_unique("syactions")},
+        ).get("agentActionGroup", {})
+        hydrated["actionGroupId"] = group.get("actionGroupId", "")
+    elif op in {"AssociateAgentKnowledgeBase", "DisassociateAgentKnowledgeBase"}:
+        kb_id = bedrockagent_new_kb(ctx)
+        hydrated["knowledgeBaseId"] = kb_id
+        if op == "DisassociateAgentKnowledgeBase":
+            bedrockagent_cli(
+                ctx, "associate-agent-knowledge-base", {"agentId": state["agentId"], "agentVersion": "DRAFT", "knowledgeBaseId": kb_id, "description": "coverage"}
+            )
+    elif op in {"AssociateAgentCollaborator", "UpdateAgentCollaborator"}:
+        hydrated["agentDescriptor"] = {"aliasArn": state["helperAliasArn"]}
+        hydrated["collaboratorName"] = bedrockagent_unique("syhelper") if op.startswith("Associate") else "syhelper"
+    elif op == "DisassociateAgentCollaborator":
+        collaborator = bedrockagent_cli(
+            ctx,
+            "associate-agent-collaborator",
+            {
+                "agentId": state["agentId"],
+                "agentVersion": "DRAFT",
+                "agentDescriptor": {"aliasArn": state["helperAliasArn"]},
+                "collaboratorName": bedrockagent_unique("syhelper"),
+                "collaborationInstruction": "Ask the helper.",
+            },
+        ).get("agentCollaborator", {})
+        hydrated["collaboratorId"] = collaborator.get("collaboratorId", "")
+    elif op in {"CreateKnowledgeBase", "UpdateKnowledgeBase"}:
+        hydrated.update(
+            {
+                "name": bedrockagent_unique("sykb") if op == "CreateKnowledgeBase" else state["kbName"],
+                "roleArn": BEDROCKAGENT_ROLE_ARN,
+                "knowledgeBaseConfiguration": BEDROCKAGENT_KB_CONFIG,
+                "storageConfiguration": BEDROCKAGENT_KB_STORAGE,
+            }
+        )
+    elif op == "DeleteKnowledgeBase":
+        hydrated["knowledgeBaseId"] = bedrockagent_new_kb(ctx)
+    elif op in {"CreateDataSource", "UpdateDataSource"}:
+        hydrated["name"] = bedrockagent_unique("syds") if op == "CreateDataSource" else state["dataSourceName"]
+        hydrated["dataSourceConfiguration"] = BEDROCKAGENT_DATA_SOURCE_CONFIG
+    elif op == "DeleteDataSource":
+        hydrated["dataSourceId"] = bedrockagent_new_data_source(ctx, state["knowledgeBaseId"])
+    elif op == "StopIngestionJob":
+        hydrated["ingestionJobId"] = bedrockagent_cli(ctx, "start-ingestion-job", kb_ds).get("ingestionJob", {}).get("ingestionJobId", "")
+    elif op == "IngestKnowledgeBaseDocuments":
+        hydrated["documents"] = [bedrockagent_document("sydoc")]
+    elif op == "GetKnowledgeBaseDocuments":
+        hydrated["documentIdentifiers"] = [bedrockagent_document_id("sydoc")]
+    elif op == "DeleteKnowledgeBaseDocuments":
+        doc_id = bedrockagent_unique("sydoc")
+        bedrockagent_cli(ctx, "ingest-knowledge-base-documents", {**kb_ds, "documents": [bedrockagent_document(doc_id)]})
+        hydrated["documentIdentifiers"] = [bedrockagent_document_id(doc_id)]
+    elif op == "CreateVpcConfiguration":
+        hydrated.update(
+            {
+                "vpcId": "vpc-0123456789abcdef0",
+                "subnetIds": ["subnet-0123456789abcdef0"],
+                "resourceTarget": "kb.internal",
+                "port": 443,
+                "protocol": "HTTPS",
+                "resolutionMode": "IN_VPC",
+            }
+        )
+    elif op == "DeleteVpcConfiguration":
+        vpc = bedrockagent_cli(
+            ctx,
+            "create-vpc-configuration",
+            {
+                "knowledgeBaseId": state["knowledgeBaseId"],
+                "vpcId": "vpc-0123456789abcdef0",
+                "subnetIds": ["subnet-0123456789abcdef0"],
+                "resourceTarget": "kb.internal",
+                "port": 443,
+                "protocol": "HTTPS",
+                "resolutionMode": "IN_VPC",
+            },
+        )
+        hydrated["vpcConfigurationId"] = vpc.get("vpcConfigurationId", "")
+    elif op == "CreateFlow":
+        hydrated["name"] = bedrockagent_unique("syflow")
+    elif op == "UpdateFlow":
+        hydrated.update({"name": state["flowName"], "definition": BEDROCKAGENT_FLOW_DEFINITION})
+    elif op == "DeleteFlow":
+        hydrated["flowIdentifier"] = bedrockagent_new_flow(ctx).get("id", "")
+    elif op == "CreateFlowVersion":
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": state["flowId"]})
+    elif op == "DeleteFlowVersion":
+        bedrockagent_cli(ctx, "prepare-flow", {"flowIdentifier": state["flowId"]})
+        version = bedrockagent_cli(ctx, "create-flow-version", {"flowIdentifier": state["flowId"]})
+        hydrated["flowVersion"] = version.get("version", "")
+    elif op in {"CreateFlowAlias", "UpdateFlowAlias"}:
+        hydrated["name"] = bedrockagent_unique("syflowalias") if op == "CreateFlowAlias" else "syflowalias"
+        hydrated["routingConfiguration"] = [{"flowVersion": "1"}]
+    elif op == "DeleteFlowAlias":
+        alias = bedrockagent_cli(
+            ctx,
+            "create-flow-alias",
+            {"flowIdentifier": state["flowId"], "name": bedrockagent_unique("syflowalias"), "routingConfiguration": [{"flowVersion": "1"}]},
+        )
+        hydrated["aliasIdentifier"] = alias.get("id", "")
+    elif op == "ValidateFlowDefinition":
+        hydrated["definition"] = BEDROCKAGENT_FLOW_DEFINITION
+    elif op == "CreatePrompt":
+        hydrated["name"] = bedrockagent_unique("syprompt")
+    elif op == "UpdatePrompt":
+        hydrated["name"] = state["promptName"]
+    elif op == "DeletePrompt":
+        hydrated["promptIdentifier"] = bedrockagent_new_prompt(ctx).get("id", "")
+    elif op == "CreateRetrievalInstruction":
+        hydrated.update({"name": bedrockagent_unique("syri"), "instruction": {"answerFormat": "Answer in two sentences."}})
+    elif op == "UpdateRetrievalInstruction":
+        hydrated["instruction"] = {"persona": "A concise assistant."}
+    elif op == "DeleteRetrievalInstruction":
+        hydrated["retrievalInstructionId"] = bedrockagent_new_instruction(ctx).get("retrievalInstructionId", "")
+    elif op == "TagResource":
+        hydrated["tags"] = {"stackyard": "coverage"}
+    elif op == "UntagResource":
+        hydrated["tagKeys"] = ["stackyard"]
+    elif op == "PutResourcePolicy":
+        hydrated["policy"] = '{"Version":"2012-10-17"}'
+        delete_key_if_present_case_insensitive(hydrated, "expectedRevisionId")
+    elif op == "DeleteResourcePolicy":
+        prompt = bedrockagent_new_prompt(ctx)
+        bedrockagent_cli(ctx, "put-resource-policy", {"resourceArn": prompt.get("arn", ""), "policy": "{}"})
+        hydrated["resourceArn"] = prompt.get("arn", "")
+        delete_key_if_present_case_insensitive(hydrated, "expectedRevisionId")
+    return hydrated
+
+
+LEXRUNTIMEV2_OUTFILE_OPERATIONS = {"RecognizeUtterance", "PutSession"}
+LEXRUNTIMEV2_UTTERANCE = "hello stackyard"
+
+
+def lexruntimev2_seed_bot(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict | None:
+    """Create (once) a bot with an en_US locale and one intent through the Lex V2
+    models CLI, so runtime calls have something to recognize."""
+    state = RUNTIME_STATE.setdefault("lexruntimev2", {})
+    if state.get("botId"):
+        return state
+    bot = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "lexv2-models",
+        "create-bot",
+        env,
+        [
+            "--bot-name",
+            f"stackyard-runtime-{time.time_ns()}",
+            "--role-arn",
+            "arn:aws:iam::123456789012:role/stackyard-lex",
+            "--data-privacy",
+            "childDirected=false",
+            "--idle-session-ttl-in-seconds",
+            "300",
+        ],
+    )
+    bot_id = str(bot.get("botId") or "") if isinstance(bot, dict) else ""
+    if not bot_id:
+        return None
+    common = ["--bot-id", bot_id, "--bot-version", "DRAFT", "--locale-id", "en_US"]
+    run_aws_json(aws_bin, endpoint_url, region, "lexv2-models", "create-bot-locale", env, [*common, "--nlu-intent-confidence-threshold", "0.4"])
+    run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "lexv2-models",
+        "create-intent",
+        env,
+        [*common, "--intent-name", "Greeting", "--sample-utterances", json.dumps([{"utterance": LEXRUNTIMEV2_UTTERANCE}])],
+    )
+    state.update({"botId": bot_id, "botAliasId": "TSTALIASID", "localeId": "en_US"})
+    return state
+
+
+def lexruntimev2_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    bot = lexruntimev2_seed_bot(aws_bin, endpoint_url, region, env)
+    if bot is None:
+        return payload
+    hydrated = copy.deepcopy(payload)
+    hydrated.update({k: bot[k] for k in ("botId", "botAliasId", "localeId")})
+    hydrated["sessionId"] = f"stackyard-{endpoint.operation.lower()}-{time.time_ns()}"
+    op = endpoint.operation
+    if op == "RecognizeText":
+        hydrated["text"] = LEXRUNTIMEV2_UTTERANCE
+    if op in {"GetSession", "DeleteSession"}:
+        # These need a live session: start one with a turn.
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "lexv2-runtime",
+            "recognize-text",
+            env,
+            [
+                "--bot-id", str(bot["botId"]),
+                "--bot-alias-id", str(bot["botAliasId"]),
+                "--locale-id", str(bot["localeId"]),
+                "--session-id", hydrated["sessionId"],
+                "--text", LEXRUNTIMEV2_UTTERANCE,
+            ],
+        )
+    return hydrated
+
+
+def run_lexruntimev2_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    """recognize-utterance and put-session return an audio stream, so the CLI
+    takes explicit flags and a positional outfile."""
+    cmd = list(base_cmd)
+    for flag, key in (("--bot-id", "botId"), ("--bot-alias-id", "botAliasId"), ("--locale-id", "localeId"), ("--session-id", "sessionId")):
+        cmd.extend([flag, str(payload_value_case_insensitive(payload, key, "") or "")])
+    with tempfile.TemporaryDirectory(prefix="stackyard-awscli-lexruntimev2-") as tmp:
+        if endpoint.operation == "RecognizeUtterance":
+            input_path = Path(tmp) / "input.txt"
+            input_path.write_text(LEXRUNTIMEV2_UTTERANCE, encoding="utf-8")
+            cmd.extend(
+                [
+                    "--request-content-type",
+                    "text/plain; charset=utf-8",
+                    "--response-content-type",
+                    "text/plain; charset=utf-8",
+                    "--input-stream",
+                    str(input_path),
+                ]
+            )
+        else:
+            cmd.extend(["--session-state", json.dumps({"sessionAttributes": {"source": "coverage"}})])
+        out_path = Path(tmp) / "audio.out"
+        cmd.append(str(out_path))
+        cp = run_subprocess(cmd, env)
+        extra_output = out_path.read_text(encoding="utf-8", errors="replace") if out_path.exists() else ""
+    return cp, cmd, extra_output
+
+
+def lexruntimev2_conversation_body() -> bytes:
+    """A whole StartConversation request stream: configure, one text turn,
+    disconnect. Stackyard answers each turn as its frame arrives."""
+
+    def frame(event_type: str, payload: dict) -> bytes:
+        import zlib
+
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", "application/json")):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
+        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
+        message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
+        return message + zlib.crc32(message).to_bytes(4, "big")
+
+    return (
+        frame("ConfigurationEvent", {"responseContentType": "text/plain; charset=utf-8"})
+        + frame("TextInputEvent", {"text": LEXRUNTIMEV2_UTTERANCE})
+        + frame("DisconnectionEvent", {})
+    )
+
+
 def bedrockruntime_event_stream_body(payload: dict) -> bytes:
     """Encode payload["events"] as AWS event-stream chunk frames."""
     import struct
@@ -30741,8 +31438,14 @@ def hydrate_payload_with_service_state(
         hydrated = copy.deepcopy(payload)
         hydrated["guardrailIdentifier"] = bedrock_create_coverage_guardrail(endpoint_url, region, env)
         return hydrated
+    if endpoint.service == "bedrockagent":
+        return bedrockagent_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"kinesisvideomedia", "kinesisvideoarchivedmedia"}:
+        return kvs_media_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "dynamodbstreams":
         return dynamodbstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "lexruntimev2":
+        return lexruntimev2_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "appconfigdata":
         session = appconfigdata_seed_session(aws_bin, endpoint_url, region, env)
         if session is None:
@@ -51051,6 +51754,39 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+KVS_MEDIA_OUTFILE_OPERATIONS = {
+    ("kinesisvideomedia", "GetMedia"),
+    ("kinesisvideoarchivedmedia", "GetClip"),
+    ("kinesisvideoarchivedmedia", "GetMediaForFragmentList"),
+}
+
+
+def run_kvs_media_outfile_operation(
+    endpoint: Endpoint,
+    base_cmd: list[str],
+    payload: dict[str, object],
+    env: dict[str, str],
+) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+    # Pass every member as an explicit flag; the CLI won't take the required
+    # ones from --cli-input-json for these streaming-output commands.
+    with tempfile.NamedTemporaryFile(prefix="stackyard-awscli-kvs-", suffix=".mkv", delete=False) as tmp:
+        out_path = tmp.name
+    # The outfile goes first: a trailing positional would be swallowed by a
+    # list flag such as --fragments.
+    cmd = [*base_cmd, out_path]
+    for key, value in payload.items():
+        flag = "--" + re.sub(r"(?<!^)(?=[A-Z])", "-", key).lower()
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            cmd += [flag, *value]  # string lists are space-separated values
+        else:
+            cmd += [flag, value if isinstance(value, str) else json.dumps(value, separators=(",", ":"))]
+    try:
+        cp = run_subprocess(cmd, env)
+    finally:
+        Path(out_path).unlink(missing_ok=True)
+    return cp, cmd, ""
+
+
 def run_appconfigdata_outfile_operation(
     endpoint: Endpoint,
     base_cmd: list[str],
@@ -51580,6 +52316,19 @@ def run_endpoint(
 ) -> Result:
     started = time.time()
     extra_output_text = ""
+    if endpoint.service == "kinesisvideomedia" and endpoint.operation == "PutMedia":
+        # PutMedia is the producer API and has no CLI command; send real MKV.
+        kvs_media_seed(endpoint_url, region, env)
+        status_code, response_text = kvs_media_put(endpoint_url, region, env, [0, 1000])
+        ok = status_code == 200 and '"ERROR"' not in response_text
+        return Result(
+            endpoint=endpoint,
+            status="success" if ok else ("service_error" if status_code == 200 else classify_raw_http_failure(status_code, response_text)[0]),
+            returncode=0 if ok else 1,
+            duration_ms=int((time.time() - started) * 1000),
+            detail="ok(raw_put_media)" if ok else (response_text[:300] or f"http {status_code}"),
+            command="raw:kinesisvideomedia.PutMedia",
+        )
     if endpoint.service == "cloudfrontkeyvaluestore":
         env = cloudfrontkeyvaluestore_cli_env(env, endpoint_url)
     if endpoint.service == "lambda" and endpoint.operation == "Invoke":
@@ -52484,6 +53233,17 @@ def run_endpoint(
                 payload["queryId"] = query_id
         status_code, response_text = invoke_raw_endpoint(endpoint, endpoint_url, region, env, payload)
         duration_ms = int((time.time() - started) * 1000)
+        if 200 <= status_code < 300 and endpoint.service == "lexruntimev2" and "IntentResultEvent" not in response_text:
+            # The event stream answers 200 even when it then sends an
+            # exception frame; a real turn must produce an IntentResultEvent.
+            return Result(
+                endpoint=endpoint,
+                status="contract_error",
+                returncode=1,
+                duration_ms=duration_ms,
+                detail="StartConversation returned no IntentResultEvent",
+                command=f"raw:{endpoint.service}.{endpoint.operation}",
+            )
         if 200 <= status_code < 300:
             not_impl = extract_not_implemented_marker(response_text)
             if not_impl:
@@ -52870,9 +53630,15 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
+        cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "appconfigdata" and endpoint.operation == "GetLatestConfiguration":
         cp, cmd, extra_output_text = run_appconfigdata_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
+    elif endpoint.service == "lexruntimev2" and endpoint.operation in LEXRUNTIMEV2_OUTFILE_OPERATIONS:
+        cp, cmd, extra_output_text = run_lexruntimev2_outfile_operation(endpoint, base_cmd, payload, env)
+        text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
     elif endpoint.service == "ebs" and endpoint.operation in ebs_outfile_ops:
         cp, cmd, extra_output_text = run_ebs_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
@@ -54067,5 +54833,7 @@ def main() -> int:
                 print(f"Removed Stackyard container: {detail}")
 
 
+if __name__ == "__main__":
+    sys.exit(main())
 if __name__ == "__main__":
     sys.exit(main())

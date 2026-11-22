@@ -30,6 +30,10 @@ type kinesisVideoStreamsStore struct {
 	mappedResourceConfig  map[string]map[string]any
 	streamStorageConfig   map[string]map[string]any
 	tags                  map[string]map[string]string
+
+	// media holds ingested fragments per stream ARN (kinesisvideomedia_store.go).
+	media    map[string]*kvsStreamMedia
+	sessions map[string]kvsPlaybackSession // HLS/DASH session tokens
 }
 
 func newKinesisVideoStreamsStore() *kinesisVideoStreamsStore {
@@ -47,6 +51,8 @@ func newKinesisVideoStreamsStore() *kinesisVideoStreamsStore {
 		mappedResourceConfig:  map[string]map[string]any{},
 		streamStorageConfig:   map[string]map[string]any{},
 		tags:                  map[string]map[string]string{},
+		media:                 map[string]*kvsStreamMedia{},
+		sessions:              map[string]kvsPlaybackSession{},
 	}
 	now := time.Now().UTC()
 	s.ensureStreamLocked("stackyard-kvs-stream", "", now)
@@ -213,6 +219,7 @@ func (s *kinesisVideoStreamsStore) applyOperationMutationsLocked(
 		delete(s.notificationConfigs, streamARN)
 		delete(s.imageGenerationConfig, streamARN)
 		delete(s.streamStorageConfig, streamARN)
+		delete(s.media, streamARN)
 	case "DeleteSignalingChannel":
 		delete(s.channelsByARN, channelARN)
 		delete(s.channels, kinesisVideoStreamsString(channel, "ChannelName", ""))

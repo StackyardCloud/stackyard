@@ -43,6 +43,10 @@ func (s *Server) handleKinesisVideoStreamsRESTRouter(w http.ResponseWriter, r *h
 	if response == nil {
 		response = map[string]any{}
 	}
+	if action == "GetDataEndpoint" {
+		// The media and archived-media APIs are served by this same server.
+		response["DataEndpoint"] = kvsRequestBaseURL(r)
+	}
 	respondKinesisVideoStreamsJSON(w, http.StatusOK, response)
 	return true
 }
