@@ -560,6 +560,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
+    "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
+    "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
+    "ecrpublic": {"cli": "ecr-public", "ops_file": REPO_ROOT / "internal/server/ecrpublic_ops.go"},
     "rdsdata": {"cli": "rds-data", "ops_file": REPO_ROOT / "internal/server/rdsdata_ops.go"},
     "ec2": {"cli": "ec2", "ops_file": REPO_ROOT / "internal/server/ec2_ops.go"},
     "ebs": {"cli": "ebs", "ops_file": REPO_ROOT / "internal/server/ebs_ops.go"},
@@ -2206,6 +2209,14 @@ SERVICE_ALIASES = {
     "pipes": "pipes",
     "eventbridgepipes": "pipes",
     "amazoneventbridgepipes": "pipes",
+    "datasync": "datasync",
+    "awsdatasync": "datasync",
+    "dax": "dax",
+    "amazondax": "dax",
+    "dynamodbaccelerator": "dax",
+    "ecrpublic": "ecrpublic",
+    "ecr-public": "ecrpublic",
+    "amazonecrpublic": "ecrpublic",
     "elasticfilesystem": "efs",
     "applicationautoscaling": "applicationautoscaling",
     "application-autoscaling": "applicationautoscaling",
@@ -3106,6 +3117,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "efs": {},
     "scheduler": {},
     "pipes": {},
+    "datasync": {},
+    "dax": {},
+    "ecrpublic": {},
     "docdb": {},
     "docdbelastic": {},
     "glue": {},
@@ -31657,6 +31671,236 @@ EFS_COVERAGE_POLICY = json.dumps(
 )
 
 
+ECRPUBLIC_REPOSITORY = "stackyard-ecrp"
+ECRPUBLIC_POLICY = json.dumps(
+    {"Version": "2012-10-17", "Statement": [{"Sid": "pull", "Effect": "Allow", "Principal": "*", "Action": ["ecr-public:DescribeImages"]}]},
+    separators=(",", ":"),
+)
+
+
+def ecrpublic_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "ecr-public", command, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def ecrpublic_create_repository(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "create-repository", {"repositoryName": name, "catalogData": {"description": "stackyard coverage"}})
+    return name
+
+
+def ecrpublic_push_layer(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], repo: str, data: bytes) -> str:
+    """Upload data as one layer (initiate, one part, complete) and return its digest."""
+    upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+    upload_id = str(upload.get("uploadId") or "")
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "upload-layer-part", {
+        "repositoryName": repo, "uploadId": upload_id, "partFirstByte": 0, "partLastByte": len(data) - 1,
+        "layerPartBlob": base64.b64encode(data).decode("ascii"),
+    })
+    digest = f"sha256:{hashlib.sha256(data).hexdigest()}"
+    ecrpublic_call(aws_bin, endpoint_url, region, env, "complete-layer-upload", {"repositoryName": repo, "uploadId": upload_id, "layerDigests": [digest]})
+    return digest
+
+
+def ecrpublic_manifest(config: str, layer: str, note: str = "") -> str:
+    manifest = {
+        "schemaVersion": 2,
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "config": {"mediaType": "application/vnd.docker.container.image.v1+json", "size": 2, "digest": config},
+        "layers": [{"mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip", "size": 8, "digest": layer}],
+    }
+    if note:
+        manifest["annotations"] = {"stackyard": note}
+    return json.dumps(manifest, separators=(",", ":"))
+
+
+def ecrpublic_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One repository with a config blob, a layer and a tagged image that the
+    non-destructive operations share."""
+    state = RUNTIME_STATE.setdefault("ecrpublic", {})
+    if not state.get("layer"):
+        repo = ecrpublic_create_repository(aws_bin, endpoint_url, region, env, ECRPUBLIC_REPOSITORY)
+        config = ecrpublic_push_layer(aws_bin, endpoint_url, region, env, repo, b"{}")
+        layer = ecrpublic_push_layer(aws_bin, endpoint_url, region, env, repo, f"layer-{time.time_ns()}".encode())
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "put-image", {"repositoryName": repo, "imageManifest": ecrpublic_manifest(config, layer), "imageTag": "latest"})
+        state.update({"repo": repo, "config": config, "layer": layer})
+    return state
+
+
+def ecrpublic_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each ECR Public operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid for the rest."""
+    op = endpoint.operation
+    unique = f"stackyard-ecrp-{time.time_ns()}"
+    if op in {"GetAuthorizationToken", "GetRegistryCatalogData", "DescribeRegistries"}:
+        return {}
+    if op == "PutRegistryCatalogData":
+        return {"displayName": "Stackyard"}
+    if op == "CreateRepository":
+        return {"repositoryName": unique}
+    if op == "DeleteRepository":
+        return {"repositoryName": ecrpublic_create_repository(aws_bin, endpoint_url, region, env, unique), "force": True}
+    state = ecrpublic_shared_state(aws_bin, endpoint_url, region, env)
+    repo = str(state["repo"])
+    if op == "DescribeRepositories":
+        return {"repositoryNames": [repo]}
+    if op in {"ListTagsForResource", "TagResource", "UntagResource"}:
+        hydrated = {"resourceArn": f"arn:aws:ecr-public::123456789012:repository/{repo}"}
+        if op == "TagResource":
+            hydrated["tags"] = [{"Key": "stackyard", "Value": "coverage"}]
+        if op == "UntagResource":
+            hydrated["tagKeys"] = ["stackyard"]
+        return hydrated
+    if op in {"GetRepositoryPolicy", "DeleteRepositoryPolicy"}:
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "set-repository-policy", {"repositoryName": repo, "policyText": ECRPUBLIC_POLICY})
+        return {"repositoryName": repo}
+    if op == "SetRepositoryPolicy":
+        return {"repositoryName": repo, "policyText": ECRPUBLIC_POLICY}
+    if op == "PutRepositoryCatalogData":
+        return {"repositoryName": repo, "catalogData": {"description": "stackyard coverage", "architectures": ["x86-64"], "operatingSystems": ["Linux"]}}
+    if op == "UploadLayerPart":
+        upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+        data = b"stackyard part"
+        return {"repositoryName": repo, "uploadId": str(upload.get("uploadId") or ""), "partFirstByte": 0,
+                "partLastByte": len(data) - 1, "layerPartBlob": base64.b64encode(data).decode("ascii")}
+    if op == "CompleteLayerUpload":
+        upload = ecrpublic_call(aws_bin, endpoint_url, region, env, "initiate-layer-upload", {"repositoryName": repo})
+        upload_id = str(upload.get("uploadId") or "")
+        data = unique.encode()
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "upload-layer-part", {
+            "repositoryName": repo, "uploadId": upload_id, "partFirstByte": 0, "partLastByte": len(data) - 1,
+            "layerPartBlob": base64.b64encode(data).decode("ascii"),
+        })
+        return {"repositoryName": repo, "uploadId": upload_id, "layerDigests": [f"sha256:{hashlib.sha256(data).hexdigest()}"]}
+    if op == "BatchCheckLayerAvailability":
+        return {"repositoryName": repo, "layerDigests": [str(state["layer"])]}
+    if op == "PutImage":
+        return {"repositoryName": repo, "imageManifest": ecrpublic_manifest(str(state["config"]), str(state["layer"])), "imageTag": unique}
+    if op == "BatchDeleteImage":
+        manifest = ecrpublic_manifest(str(state["config"]), str(state["layer"]), unique)
+        ecrpublic_call(aws_bin, endpoint_url, region, env, "put-image", {"repositoryName": repo, "imageManifest": manifest})
+        return {"repositoryName": repo, "imageIds": [{"imageDigest": f"sha256:{hashlib.sha256(manifest.encode()).hexdigest()}"}]}
+    return {"repositoryName": repo}
+
+
+DAX_COVERAGE_ROLE = "arn:aws:iam::123456789012:role/DAXServiceRole"
+DAX_COVERAGE_SUBNET = "subnet-00000001"
+DAX_STATELESS_OPERATIONS = {
+    "DescribeClusters",
+    "DescribeDefaultParameters",
+    "DescribeEvents",
+    "DescribeParameterGroups",
+    "DescribeSubnetGroups",
+}
+
+
+def dax_unique_name(prefix: str) -> str:
+    # DAX cluster names are at most 20 characters.
+    return f"{prefix}{time.time_ns() % 10**10}"
+
+
+def dax_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str, replicas: int) -> None:
+    run_aws_json(
+        aws_bin, endpoint_url, region, "dax", "create-cluster", env,
+        ["--cluster-name", name, "--node-type", "dax.t3.small", "--replication-factor", str(replicas),
+         "--iam-role-arn", DAX_COVERAGE_ROLE],
+    )
+
+
+def dax_settled_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> dict:
+    """Describe the cluster, which completes its pending transitions so the
+    next change is accepted."""
+    data = run_aws_json(aws_bin, endpoint_url, region, "dax", "describe-clusters", env, ["--cluster-names", name])
+    clusters = data.get("Clusters") if isinstance(data, dict) else None
+    return clusters[0] if isinstance(clusters, list) and clusters and isinstance(clusters[0], dict) else {}
+
+
+def dax_shared_state(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cluster, parameter group and subnet group shared by the
+    non-destructive operations."""
+    state = RUNTIME_STATE.setdefault("dax", {})
+    if not state.get("cluster"):
+        state["cluster"] = dax_unique_name("syc")
+        dax_create_cluster(aws_bin, endpoint_url, region, env, state["cluster"], 2)
+        state["param_group"] = dax_unique_name("sypg")
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "create-parameter-group", env, ["--parameter-group-name", state["param_group"]])
+        state["subnet_group"] = dax_unique_name("sysn")
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dax", "create-subnet-group", env,
+            ["--subnet-group-name", state["subnet_group"], "--subnet-ids", DAX_COVERAGE_SUBNET],
+        )
+    return state
+
+
+def dax_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DAX operation at real resources; destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    if op in DAX_STATELESS_OPERATIONS:
+        return {}
+    if op == "CreateCluster":
+        return {"ClusterName": dax_unique_name("syc"), "NodeType": "dax.t3.small", "ReplicationFactor": 1, "IamRoleArn": DAX_COVERAGE_ROLE}
+    if op == "CreateParameterGroup":
+        return {"ParameterGroupName": dax_unique_name("sypg")}
+    if op == "CreateSubnetGroup":
+        return {"SubnetGroupName": dax_unique_name("sysn"), "SubnetIds": [DAX_COVERAGE_SUBNET]}
+    if op == "DeleteCluster":
+        name = dax_unique_name("syd")
+        dax_create_cluster(aws_bin, endpoint_url, region, env, name, 1)
+        return {"ClusterName": name}
+    if op == "DeleteParameterGroup":
+        name = dax_unique_name("sypg")
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "create-parameter-group", env, ["--parameter-group-name", name])
+        return {"ParameterGroupName": name}
+    if op == "DeleteSubnetGroup":
+        name = dax_unique_name("sysn")
+        run_aws_json(
+            aws_bin, endpoint_url, region, "dax", "create-subnet-group", env,
+            ["--subnet-group-name", name, "--subnet-ids", DAX_COVERAGE_SUBNET],
+        )
+        return {"SubnetGroupName": name}
+    state = dax_shared_state(aws_bin, endpoint_url, region, env)
+    if op == "DescribeParameters":
+        return {"ParameterGroupName": state["param_group"]}
+    if op == "UpdateParameterGroup":
+        return {
+            "ParameterGroupName": state["param_group"],
+            "ParameterNameValues": [{"ParameterName": "query-ttl-millis", "ParameterValue": "600000"}],
+        }
+    if op == "UpdateSubnetGroup":
+        return {"SubnetGroupName": state["subnet_group"], "Description": "stackyard coverage"}
+    name = state["cluster"]
+    cluster = dax_settled_cluster(aws_bin, endpoint_url, region, env, name)
+    arn = str(cluster.get("ClusterArn") or f"arn:aws:dax:{region}:123456789012:cache/{name}")
+    total = int(cluster.get("TotalNodes") or 1)
+    if op == "UpdateCluster":
+        return {"ClusterName": name, "Description": "stackyard coverage"}
+    if op == "IncreaseReplicationFactor":
+        if total >= 11:
+            run_aws_json(aws_bin, endpoint_url, region, "dax", "decrease-replication-factor", env, ["--cluster-name", name, "--new-replication-factor", "2"])
+            total = int(dax_settled_cluster(aws_bin, endpoint_url, region, env, name).get("TotalNodes") or 2)
+        return {"ClusterName": name, "NewReplicationFactor": total + 1}
+    if op == "DecreaseReplicationFactor":
+        if total <= 1:
+            run_aws_json(aws_bin, endpoint_url, region, "dax", "increase-replication-factor", env, ["--cluster-name", name, "--new-replication-factor", "2"])
+            total = int(dax_settled_cluster(aws_bin, endpoint_url, region, env, name).get("TotalNodes") or 2)
+        return {"ClusterName": name, "NewReplicationFactor": total - 1}
+    if op == "RebootNode":
+        nodes = cluster.get("Nodes") or [{}]
+        return {"ClusterName": name, "NodeId": str(nodes[0].get("NodeId") or f"{name}-a")}
+    if op == "TagResource":
+        return {"ResourceName": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        run_aws_json(aws_bin, endpoint_url, region, "dax", "tag-resource", env, ["--resource-name", arn, "--tags", "Key=stackyard,Value=coverage"])
+        return {"ResourceName": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTags":
+        return {"ResourceName": arn}
+    return payload
+
+
 SCHEDULER_COVERAGE_ROLE = "arn:aws:iam::123456789012:role/stackyard-scheduler"
 SCHEDULER_COVERAGE_TARGET = {
     "Arn": "arn:aws:sqs:us-east-1:123456789012:stackyard-scheduler-coverage",
@@ -33576,6 +33820,121 @@ def docdb_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpo
     return copy.deepcopy(payload)
 
 
+DATASYNC_ROLE = "arn:aws:iam::123456789012:role/stackyard-datasync"
+DATASYNC_SUBNET = "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0123456789abcdef0"
+DATASYNC_SG = "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0123456789abcdef0"
+DATASYNC_FSX = "arn:aws:fsx:us-east-1:123456789012:file-system/fs-0123456789abcdef0"
+DATASYNC_SVM = "arn:aws:fsx:us-east-1:123456789012:storage-virtual-machine/fs-0123456789abcdef0/svm-0123456789abcdef0"
+
+
+def datasync_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], operation: str, payload: dict) -> dict:
+    out = run_aws_json(aws_bin, endpoint_url, region, "datasync", operation, env, ["--cli-input-json", json.dumps(payload)])
+    return out if isinstance(out, dict) else {}
+
+
+def datasync_activation_key() -> str:
+    raw = f"{time.time_ns():025X}"[-25:]
+    return "-".join(raw[i : i + 5] for i in range(0, 25, 5))
+
+
+def datasync_location_payloads(fx: dict) -> dict[str, dict]:
+    """A valid create-location payload for every location type."""
+    agents = [fx["agent"]]
+    return {
+        "S3": {"S3BucketArn": f"arn:aws:s3:::{fx['src_bucket']}", "Subdirectory": "/in", "S3Config": {"BucketAccessRoleArn": DATASYNC_ROLE}},
+        "Efs": {"EfsFilesystemArn": fx["efs_arn"], "Ec2Config": {"SubnetArn": DATASYNC_SUBNET, "SecurityGroupArns": [DATASYNC_SG]}},
+        "FsxLustre": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG]},
+        "FsxWindows": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG], "User": "admin", "Password": "stackyard-coverage"},
+        "FsxOpenZfs": {"FsxFilesystemArn": DATASYNC_FSX, "SecurityGroupArns": [DATASYNC_SG], "Protocol": {"NFS": {"MountOptions": {"Version": "AUTOMATIC"}}}},
+        "FsxOntap": {"StorageVirtualMachineArn": DATASYNC_SVM, "SecurityGroupArns": [DATASYNC_SG], "Protocol": {"NFS": {"MountOptions": {"Version": "NFS3"}}}},
+        "Nfs": {"ServerHostname": "nfs.example.com", "Subdirectory": "/exports", "OnPremConfig": {"AgentArns": agents}},
+        "Smb": {"ServerHostname": "smb.example.com", "Subdirectory": "/share", "User": "admin", "Password": "stackyard-coverage", "AgentArns": agents},
+        "Hdfs": {"NameNodes": [{"Hostname": "namenode.example.com", "Port": 8020}], "AuthenticationType": "SIMPLE", "SimpleUser": "hdfs", "AgentArns": agents},
+        "ObjectStorage": {"ServerHostname": "objects.example.com", "BucketName": "data", "AgentArns": agents},
+        "AzureBlob": {"ContainerUrl": "https://stackyardacct.blob.core.windows.net/data", "AuthenticationType": "SAS", "SasConfiguration": {"Token": "sp=r&sig=stackyard"}},
+    }
+
+
+def datasync_new_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fx: dict) -> str:
+    out = datasync_call(aws_bin, endpoint_url, region, env, "create-task", {"SourceLocationArn": fx["Nfs"], "DestinationLocationArn": fx["S3"]})
+    return str(out.get("TaskArn") or "")
+
+
+def datasync_new_execution(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], fx: dict) -> str:
+    task = datasync_new_task(aws_bin, endpoint_url, region, env, fx)
+    out = datasync_call(aws_bin, endpoint_url, region, env, "start-task-execution", {"TaskArn": task})
+    return str(out.get("TaskExecutionArn") or "")
+
+
+def datasync_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An agent, buckets, an EFS file system, one location of every type, a
+    task and an execution, shared by the non-destructive operations."""
+    fx = RUNTIME_STATE.setdefault("datasync", {})
+    if fx.get("task"):
+        return fx
+    suffix = time.time_ns()
+    fx["src_bucket"] = f"stackyard-datasync-src-{suffix}"
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", fx["src_bucket"]])
+    fx["agent"] = str(datasync_call(aws_bin, endpoint_url, region, env, "create-agent", {"ActivationKey": datasync_activation_key(), "AgentName": "stackyard-coverage"}).get("AgentArn") or "")
+    fs_id = efs_create_file_system(aws_bin, endpoint_url, region, env)
+    fx["efs_arn"] = f"arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/{fs_id}"
+    for kind, payload in datasync_location_payloads(fx).items():
+        fx[kind] = str(datasync_call(aws_bin, endpoint_url, region, env, f"create-location-{datasync_kebab(kind)}", payload).get("LocationArn") or "")
+    fx["task"] = datasync_new_task(aws_bin, endpoint_url, region, env, fx)
+    fx["execution"] = str(datasync_call(aws_bin, endpoint_url, region, env, "start-task-execution", {"TaskArn": fx["task"]}).get("TaskExecutionArn") or "")
+    return fx
+
+
+def datasync_kebab(kind: str) -> str:
+    return {"FsxOpenZfs": "fsx-open-zfs", "FsxOntap": "fsx-ontap", "ObjectStorage": "object-storage", "AzureBlob": "azure-blob",
+            "FsxLustre": "fsx-lustre", "FsxWindows": "fsx-windows"}.get(kind, kind.lower())
+
+
+def datasync_hydrate_payload(aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Point each DataSync operation at real resources; destructive ones get
+    resources of their own so the shared fixture stays valid."""
+    op = endpoint.operation
+    fx = datasync_fixture(aws_bin, endpoint_url, region, env)
+    if op == "CreateAgent":
+        return {"ActivationKey": datasync_activation_key(), "AgentName": "stackyard-coverage-new"}
+    if op in {"DescribeAgent", "UpdateAgent"}:
+        return {"AgentArn": fx["agent"], **({"Name": "renamed"} if op == "UpdateAgent" else {})}
+    if op == "DeleteAgent":
+        out = datasync_call(aws_bin, endpoint_url, region, env, "create-agent", {"ActivationKey": datasync_activation_key()})
+        return {"AgentArn": str(out.get("AgentArn") or "")}
+    if op.startswith("CreateLocation"):
+        return datasync_location_payloads(fx)[op.removeprefix("CreateLocation")]
+    if op.startswith("DescribeLocation") or op.startswith("UpdateLocation"):
+        kind = op.removeprefix("DescribeLocation").removeprefix("UpdateLocation")
+        return {"LocationArn": fx[kind]}
+    if op == "DeleteLocation":
+        out = datasync_call(aws_bin, endpoint_url, region, env, "create-location-nfs", datasync_location_payloads(fx)["Nfs"])
+        return {"LocationArn": str(out.get("LocationArn") or "")}
+    if op == "CreateTask":
+        return {"SourceLocationArn": fx["Nfs"], "DestinationLocationArn": fx["S3"], "Name": "stackyard-coverage"}
+    if op in {"DescribeTask", "StartTaskExecution"}:
+        return {"TaskArn": fx["task"]}
+    if op == "UpdateTask":
+        return {"TaskArn": fx["task"], "Name": "stackyard-coverage-updated"}
+    if op == "DeleteTask":
+        return {"TaskArn": datasync_new_task(aws_bin, endpoint_url, region, env, fx)}
+    if op == "ListTaskExecutions":
+        return {"TaskArn": fx["task"]}
+    if op == "DescribeTaskExecution":
+        return {"TaskExecutionArn": fx["execution"]}
+    if op == "UpdateTaskExecution":
+        return {"TaskExecutionArn": datasync_new_execution(aws_bin, endpoint_url, region, env, fx), "Options": {"BytesPerSecond": 1048576}}
+    if op == "CancelTaskExecution":
+        return {"TaskExecutionArn": datasync_new_execution(aws_bin, endpoint_url, region, env, fx)}
+    if op == "TagResource":
+        return {"ResourceArn": fx["task"], "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["task"], "Keys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["task"]}
+    return copy.deepcopy(payload)
+
+
 PIPES_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-pipes"
 
 
@@ -33781,6 +34140,9 @@ def hydrate_payload_with_service_state(
         return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "datasync":
+        return datasync_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+
     if endpoint.service == "docdb":
         return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glue":
@@ -33799,6 +34161,10 @@ def hydrate_payload_with_service_state(
         return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "scheduler":
         return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
+    if endpoint.service == "dax":
+        return dax_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "ecrpublic":
+        return ecrpublic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "efs":
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationautoscaling":
