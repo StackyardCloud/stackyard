@@ -336,6 +336,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
+    "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
     "snowball": {"cli": "snowball", "ops_file": REPO_ROOT / "internal/server/snowball_ops.go"},
     "storagegateway": {
         "cli": "storagegateway",
@@ -1547,6 +1548,10 @@ SERVICE_ALIASES = {
     "amazonelasticdisasterrecovery": "drs",
     "fsx": "fsx",
     "amazonfsx": "fsx",
+    "glue": "glue",
+    "awsglue": "glue",
+    "aws-glue": "glue",
+    "aws glue": "glue",
     "amazon-fsx": "fsx",
     "amazon fsx": "fsx",
     "awsfsx": "fsx",
@@ -3057,6 +3062,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "efs": {},
     "docdb": {},
+    "glue": {},
     "appconfig": {},
     "amplify": {},
     "amplifyadminui": {},
@@ -13989,7 +13995,35 @@ def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
     return (endpoint.service, endpoint.operation) in allowed
 
 
+# Where the AWS CLI's bundled Glue model and pip botocore (1.44.9) disagree on
+# output members. The emulator answers with the CLI's model, so the older
+# validator reports these; nothing else is exempt. Paths use [] for any list
+# index or map key.
+GLUE_CLI_MODEL_DRIFT: dict[str, set[str]] = {
+    "AssociateGlossaryTerms": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "DisassociateGlossaryTerms": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "DeleteAttachment": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "PutAttachment": {"$.AssetIdentifier: unknown field", "$.ItemIdentifier: unknown field"},
+    "PutAsset": {"$.AssetTypeId: missing required field"},
+    "GetAssetType": {"$.Forms[].FormTypeIdentifier: unknown field"},
+    "GetDataCatalogExportConfiguration": {
+        "$.ExportSetting: unknown field",
+        "$.Status: unknown field",
+        "$.EncryptionConfiguration: unknown field",
+        "$.S3TableBucketArn: unknown field",
+    },
+    "PutDataCatalogExportConfiguration": {"$.ExportSetting: unknown field", "$.EncryptionConfiguration: unknown field"},
+    "SearchAssets": {"$.Items[].AssetName: unknown field", "$.Items[].AssetDescription: unknown field"},
+}
+
+
+def glue_is_cli_model_drift(operation: str, err: str) -> bool:
+    return re.sub(r"\[[^\]]*\]", "[]", err) in GLUE_CLI_MODEL_DRIFT.get(operation, set())
+
+
 def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[str]:
+    if endpoint.service == "glue" and endpoint.operation in GLUE_CLI_MODEL_DRIFT:
+        return [err for err in errors if not glue_is_cli_model_drift(endpoint.operation, err)]
     if endpoint.service == "sqs" and endpoint.operation == "SendMessageBatch":
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
@@ -31826,6 +31860,489 @@ def cloudfrontkeyvaluestore_hydrate_payload(
     return hydrated
 
 
+GLUE_FIXTURE = "stackyard"
+GLUE_ROLE = "arn:aws:iam::123456789012:role/stackyard-glue"
+GLUE_JOB_ARN = "arn:aws:glue:us-east-1:123456789012:job/stackyard"
+GLUE_JSON_SCHEMA = '{"type":"object","properties":{"id":{"type":"string"}}}'
+
+
+def glue_raw(endpoint_url: str, region: str, env: dict[str, str], operation: str, payload: dict) -> dict:
+    """Signed AWSGlue.<operation> call used to seed coverage state; returns the
+    decoded body (error bodies carry "__type")."""
+    url = endpoint_url.rstrip("/") + "/"
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    signed = sigv4_sign(
+        method="POST",
+        url=url,
+        body=body,
+        service="glue",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers={"Content-Type": "application/x-amz-json-1.1", "X-Amz-Target": f"AWSGlue.{operation}"},
+    )
+    req = urlrequest.Request(url=url, method="POST", data=body, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            text = resp.read().decode("utf-8", errors="replace")
+    except urlerror.HTTPError as err:
+        text = err.read().decode("utf-8", errors="replace")
+    except (urlerror.URLError, OSError) as err:
+        return {"__type": "TransportError", "Message": str(err)}
+    try:
+        data = json.loads(text or "{}")
+    except json.JSONDecodeError:
+        return {"__type": "SerializationException", "Message": text[:200]}
+    return data if isinstance(data, dict) else {}
+
+
+# Fixture creators, all named "stackyard" so they line up with the contract
+# placeholders. Each entry is (operation, payload); dependencies come first.
+GLUE_FIXTURES: dict[str, list[tuple[str, dict]]] = {
+    "database": [("CreateDatabase", {"DatabaseInput": {"Name": GLUE_FIXTURE}})],
+    "table": [
+        (
+            "CreateTable",
+            {
+                "DatabaseName": GLUE_FIXTURE,
+                "TableInput": {
+                    "Name": GLUE_FIXTURE,
+                    "StorageDescriptor": {"Location": "s3://stackyard/table/", "Columns": [{"Name": GLUE_FIXTURE, "Type": "string"}]},
+                    "PartitionKeys": [{"Name": GLUE_FIXTURE, "Type": "string"}],
+                },
+            },
+        )
+    ],
+    "partition": [("CreatePartition", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "PartitionInput": {"Values": [GLUE_FIXTURE]}})],
+    "udf": [("CreateUserDefinedFunction", {"DatabaseName": GLUE_FIXTURE, "FunctionInput": {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}})],
+    "connection": [("CreateConnection", {"ConnectionInput": {"Name": GLUE_FIXTURE, "ConnectionType": "JDBC", "ConnectionProperties": {"JDBC_CONNECTION_URL": "jdbc:postgresql://db/x"}}})],
+    "catalog": [("CreateCatalog", {"Name": GLUE_FIXTURE, "CatalogInput": {}})],
+    "classifier": [("CreateClassifier", {"GrokClassifier": {"Name": GLUE_FIXTURE, "Classification": "logs", "GrokPattern": "%{WORD:w}"}})],
+    "crawler": [("CreateCrawler", {"Name": GLUE_FIXTURE, "Role": GLUE_ROLE, "Targets": {"S3Targets": [{"Path": "s3://stackyard/crawl/"}]}, "Schedule": "cron(0 1 * * ? *)"})],
+    "job": [("CreateJob", {"Name": GLUE_FIXTURE, "Role": GLUE_ROLE, "Command": {"Name": "glueetl"}})],
+    "trigger": [("CreateTrigger", {"Name": GLUE_FIXTURE, "Type": "SCHEDULED", "Schedule": "cron(0 2 * * ? *)", "Actions": [{"JobName": GLUE_FIXTURE}]})],
+    "workflow": [("CreateWorkflow", {"Name": GLUE_FIXTURE})],
+    "blueprint": [("CreateBlueprint", {"Name": GLUE_FIXTURE, "BlueprintLocation": "s3://stackyard/bp.zip"})],
+    "devendpoint": [("CreateDevEndpoint", {"EndpointName": GLUE_FIXTURE, "RoleArn": GLUE_ROLE})],
+    "secconfig": [("CreateSecurityConfiguration", {"Name": GLUE_FIXTURE, "EncryptionConfiguration": {}})],
+    "session": [("CreateSession", {"Id": GLUE_FIXTURE, "Role": GLUE_ROLE, "Command": {"Name": "glueetl"}})],
+    "dqruleset": [("CreateDataQualityRuleset", {"Name": GLUE_FIXTURE, "Ruleset": "Rules = [ RowCount > 0 ]"})],
+    "dqevalconfig": [("CreateDataQualityEvaluationConfig", {"Name": GLUE_FIXTURE, "Level": "TABLE", "Role": GLUE_ROLE, "DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}}})],
+    "customentitytype": [("CreateCustomEntityType", {"Name": GLUE_FIXTURE, "RegexString": "[a-z]+"})],
+    "usageprofile": [("CreateUsageProfile", {"Name": GLUE_FIXTURE, "Configuration": {}})],
+    "colstatsettings": [("CreateColumnStatisticsTaskSettings", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Role": GLUE_ROLE, "Schedule": "cron(0 3 * * ? *)"})],
+    "integration": [("CreateIntegration", {"IntegrationName": GLUE_FIXTURE, "SourceArn": GLUE_FIXTURE, "TargetArn": GLUE_FIXTURE})],
+    "intresprop": [("CreateIntegrationResourceProperty", {"ResourceArn": GLUE_FIXTURE})],
+    "inttableprop": [("CreateIntegrationTableProperties", {"ResourceArn": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})],
+    "assettype": [("PutAssetType", {"Name": GLUE_FIXTURE, "Forms": {GLUE_FIXTURE: {"FormTypeIdentifier": GLUE_FIXTURE}}})],
+    "formtype": [("PutFormType", {"Name": GLUE_FIXTURE, "Schema": "{}"})],
+    "asset": [("PutAsset", {"AssetTypeId": GLUE_FIXTURE, "Identifier": GLUE_FIXTURE, "Name": GLUE_FIXTURE, "Forms": {}})],
+    "attachment": [("PutAttachment", {"AssetIdentifier": GLUE_FIXTURE, "AttachmentName": GLUE_FIXTURE, "Content": "e30=", "FormTypeId": GLUE_FIXTURE})],
+    "connectiontype": [("RegisterConnectionType", {"ConnectionType": GLUE_FIXTURE, "IntegrationType": "REST", "ConnectionProperties": {}, "ConnectorAuthenticationConfiguration": {"AuthenticationTypes": ["BASIC"]}, "RestConfiguration": {}})],
+    "registry": [("CreateRegistry", {"RegistryName": GLUE_FIXTURE})],
+    "schema": [("CreateSchema", {"SchemaName": GLUE_FIXTURE, "DataFormat": "JSON", "Compatibility": "NONE", "SchemaDefinition": GLUE_JSON_SCHEMA})],
+    "policy": [("PutResourcePolicy", {"PolicyInJson": '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"glue:*","Resource":"*"}]}'})],
+    "identitycenter": [("CreateGlueIdentityCenterConfiguration", {"InstanceArn": "arn:aws:sso:::instance/ssoins-stackyard"})],
+    "export": [("PutDataCatalogExportConfiguration", {"ExportSetting": "ENABLED"})],
+}
+GLUE_FIXTURE_DEPS = {
+    "table": ["database"],
+    "partition": ["table"],
+    "udf": ["database"],
+    "trigger": ["job"],
+    "colstatsettings": ["table"],
+    "dqevalconfig": ["table"],
+    "asset": ["assettype"],
+    "attachment": ["asset", "formtype"],
+}
+GLUE_FIXTURE_DELETE = {
+    "database": ("DeleteDatabase", {"Name": GLUE_FIXTURE}),
+    "table": ("DeleteTable", {"DatabaseName": GLUE_FIXTURE, "Name": GLUE_FIXTURE}),
+    "partition": ("DeletePartition", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "PartitionValues": [GLUE_FIXTURE]}),
+    "udf": ("DeleteUserDefinedFunction", {"DatabaseName": GLUE_FIXTURE, "FunctionName": GLUE_FIXTURE}),
+    "connection": ("DeleteConnection", {"ConnectionName": GLUE_FIXTURE}),
+    "catalog": ("DeleteCatalog", {"CatalogId": GLUE_FIXTURE}),
+    "classifier": ("DeleteClassifier", {"Name": GLUE_FIXTURE}),
+    "crawler": ("DeleteCrawler", {"Name": GLUE_FIXTURE}),
+    "job": ("DeleteJob", {"JobName": GLUE_FIXTURE}),
+    "trigger": ("DeleteTrigger", {"Name": GLUE_FIXTURE}),
+    "workflow": ("DeleteWorkflow", {"Name": GLUE_FIXTURE}),
+    "blueprint": ("DeleteBlueprint", {"Name": GLUE_FIXTURE}),
+    "devendpoint": ("DeleteDevEndpoint", {"EndpointName": GLUE_FIXTURE}),
+    "secconfig": ("DeleteSecurityConfiguration", {"Name": GLUE_FIXTURE}),
+    "session": ("DeleteSession", {"Id": GLUE_FIXTURE}),
+    "dqruleset": ("DeleteDataQualityRuleset", {"Name": GLUE_FIXTURE}),
+    "dqevalconfig": ("DeleteDataQualityEvaluationConfig", {"Name": GLUE_FIXTURE}),
+    "customentitytype": ("DeleteCustomEntityType", {"Name": GLUE_FIXTURE}),
+    "usageprofile": ("DeleteUsageProfile", {"Name": GLUE_FIXTURE}),
+    "colstatsettings": ("DeleteColumnStatisticsTaskSettings", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}),
+    "integration": ("DeleteIntegration", {"IntegrationIdentifier": GLUE_FIXTURE}),
+    "intresprop": ("DeleteIntegrationResourceProperty", {"ResourceArn": GLUE_FIXTURE}),
+    "inttableprop": ("DeleteIntegrationTableProperties", {"ResourceArn": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}),
+    "assettype": ("DeleteAssetType", {"Identifier": GLUE_FIXTURE}),
+    "formtype": ("DeleteFormType", {"Identifier": GLUE_FIXTURE}),
+    "asset": ("DeleteAsset", {"Identifier": GLUE_FIXTURE}),
+    "attachment": ("DeleteAttachment", {"AssetIdentifier": GLUE_FIXTURE, "AttachmentName": GLUE_FIXTURE}),
+    "connectiontype": ("DeleteConnectionType", {"ConnectionType": GLUE_FIXTURE}),
+    "registry": ("DeleteRegistry", {"RegistryId": {"RegistryName": GLUE_FIXTURE}}),
+    "schema": ("DeleteSchema", {"SchemaId": {"SchemaName": GLUE_FIXTURE}}),
+    "policy": ("DeleteResourcePolicy", {}),
+    "identitycenter": ("DeleteGlueIdentityCenterConfiguration", {}),
+}
+
+
+def glue_ensure(ctx: tuple, *names: str) -> None:
+    for name in names:
+        for dep in GLUE_FIXTURE_DEPS.get(name, []):
+            glue_ensure(ctx, dep)
+        for operation, payload in GLUE_FIXTURES[name]:
+            glue_raw(*ctx, operation, payload)
+
+
+def glue_idle_crawler(ctx: tuple) -> None:
+    """A running crawler can't be deleted or updated: stop it and let it settle."""
+    glue_raw(*ctx, "StopCrawler", {"Name": GLUE_FIXTURE})
+    glue_settle(ctx, "GetCrawler", {"Name": GLUE_FIXTURE})
+
+
+def glue_reset(ctx: tuple, *names: str) -> None:
+    """Recreate fixtures from scratch (fresh state, no runs)."""
+    for name in names:
+        if name == "crawler":
+            glue_idle_crawler(ctx)
+        if name in GLUE_FIXTURE_DELETE:
+            operation, payload = GLUE_FIXTURE_DELETE[name]
+            glue_raw(*ctx, operation, payload)
+        glue_ensure(ctx, name)
+
+
+def glue_absent(ctx: tuple, *names: str) -> None:
+    for name in names:
+        if name == "crawler":
+            glue_idle_crawler(ctx)
+        operation, payload = GLUE_FIXTURE_DELETE[name]
+        glue_raw(*ctx, operation, payload)
+
+
+def glue_settle(ctx: tuple, operation: str, payload: dict) -> None:
+    """Runs report their in-flight state once, then settle on the next read."""
+    glue_raw(*ctx, operation, payload)
+    glue_raw(*ctx, operation, payload)
+
+
+# Fixtures each operation reads, by the kind its op name targets.
+GLUE_OP_FIXTURES: dict[str, tuple[str, ...]] = {}
+for _kind, _ops in {
+    "database": ("GetDatabase", "UpdateDatabase", "DeleteDatabase", "GetTables", "ListEntities"),
+    "table": ("GetTable", "DeleteTable", "UpdateTable", "GetTableVersion", "GetTableVersions", "BatchDeleteTableVersion",
+              "GetPartitions", "BatchCreatePartition", "BatchDeletePartition", "BatchGetPartition", "BatchUpdatePartition",
+              "GetPartitionIndexes", "UpdateColumnStatisticsForTable", "GetColumnStatisticsForTable", "GetUnfilteredTableMetadata",
+              "GetUnfilteredPartitionsMetadata", "CreatePartitionIndex", "GetMapping", "StartMaterializedViewRefreshTaskRun",
+              "CreateTableOptimizer", "GetColumnStatisticsTaskRuns", "StartColumnStatisticsTaskRun", "CreateColumnStatisticsTaskSettings",
+              "ListMaterializedViewRefreshTaskRuns", "BatchDeleteTable", "CreatePartition"),
+    "partition": ("GetPartition", "UpdatePartition", "DeletePartition", "GetUnfilteredPartitionMetadata",
+                  "UpdateColumnStatisticsForPartition", "GetColumnStatisticsForPartition"),
+    "udf": ("GetUserDefinedFunction", "UpdateUserDefinedFunction", "DeleteUserDefinedFunction", "GetUserDefinedFunctions"),
+    "connection": ("GetConnection", "UpdateConnection", "DeleteConnection", "TestConnection", "DescribeEntity", "GetEntityRecords"),
+    "catalog": ("GetCatalog", "UpdateCatalog", "DeleteCatalog"),
+    "classifier": ("GetClassifier", "DeleteClassifier", "UpdateClassifier"),
+    "crawler": ("GetCrawler", "UpdateCrawler", "DeleteCrawler", "ListCrawls", "UpdateCrawlerSchedule"),
+    "job": ("GetJob", "UpdateJob", "DeleteJob", "GetJobRuns", "GetJobBookmark", "ResetJobBookmark", "StartJobUpgradeAnalysis",
+            "UpdateJobFromSourceControl", "UpdateSourceControlFromJob", "TagResource", "UntagResource", "GetTags"),
+    "trigger": ("GetTrigger", "UpdateTrigger", "DeleteTrigger", "StartTrigger"),
+    "workflow": ("GetWorkflow", "UpdateWorkflow", "DeleteWorkflow", "GetWorkflowRuns"),
+    "blueprint": ("GetBlueprint", "UpdateBlueprint", "DeleteBlueprint", "StartBlueprintRun", "GetBlueprintRuns"),
+    "devendpoint": ("GetDevEndpoint", "UpdateDevEndpoint", "DeleteDevEndpoint"),
+    "secconfig": ("GetSecurityConfiguration", "DeleteSecurityConfiguration"),
+    "session": ("GetSession", "DeleteSession", "ListStatements", "GetSystemLogsForSession"),
+    "dqruleset": ("GetDataQualityRuleset", "UpdateDataQualityRuleset", "DeleteDataQualityRuleset", "StartDataQualityRulesetEvaluationRun"),
+    "dqevalconfig": ("GetDataQualityEvaluationConfig", "UpdateDataQualityEvaluationConfig", "DeleteDataQualityEvaluationConfig"),
+    "customentitytype": ("GetCustomEntityType", "DeleteCustomEntityType"),
+    "usageprofile": ("GetUsageProfile", "UpdateUsageProfile", "DeleteUsageProfile"),
+    "colstatsettings": ("GetColumnStatisticsTaskSettings", "UpdateColumnStatisticsTaskSettings", "DeleteColumnStatisticsTaskSettings"),
+    "integration": ("ModifyIntegration", "DeleteIntegration"),
+    "intresprop": ("GetIntegrationResourceProperty", "UpdateIntegrationResourceProperty", "DeleteIntegrationResourceProperty"),
+    "inttableprop": ("GetIntegrationTableProperties", "UpdateIntegrationTableProperties", "DeleteIntegrationTableProperties"),
+    "assettype": ("GetAssetType", "DeleteAssetType", "PutAsset"),
+    "formtype": ("GetFormType", "DeleteFormType", "PutAttachment"),
+    "asset": ("GetAsset", "UpdateAsset", "DeleteAsset", "ListIterableForms", "BatchGetIterableForms"),
+    "attachment": ("DeleteAttachment",),
+    "connectiontype": ("DescribeConnectionType", "DeleteConnectionType"),
+    "registry": ("GetRegistry", "UpdateRegistry", "DeleteRegistry"),
+    "schema": ("GetSchema", "UpdateSchema", "DeleteSchema", "RegisterSchemaVersion", "ListSchemaVersions", "GetSchemaByDefinition",
+               "GetSchemaVersion", "GetSchemaVersionsDiff", "DeleteSchemaVersions", "PutSchemaVersionMetadata",
+               "RemoveSchemaVersionMetadata", "QuerySchemaVersionMetadata"),
+    "policy": ("GetResourcePolicy", "DeleteResourcePolicy"),
+    "identitycenter": ("GetGlueIdentityCenterConfiguration", "UpdateGlueIdentityCenterConfiguration", "DeleteGlueIdentityCenterConfiguration"),
+    "export": ("GetDataCatalogExportConfiguration",),
+}.items():
+    for _op in _ops:
+        GLUE_OP_FIXTURES[_op] = GLUE_OP_FIXTURES.get(_op, ()) + (_kind,)
+
+# Create/register operations start from a missing fixture.
+GLUE_CREATE_RESETS = {
+    "CreateDatabase": "database", "CreateTable": "table", "CreatePartition": "partition", "CreateUserDefinedFunction": "udf",
+    "CreateConnection": "connection", "CreateCatalog": "catalog", "CreateClassifier": "classifier", "CreateCrawler": "crawler",
+    "CreateJob": "job", "CreateTrigger": "trigger", "CreateWorkflow": "workflow", "CreateBlueprint": "blueprint",
+    "CreateDevEndpoint": "devendpoint", "CreateSecurityConfiguration": "secconfig", "CreateSession": "session",
+    "CreateDataQualityRuleset": "dqruleset", "CreateDataQualityEvaluationConfig": "dqevalconfig",
+    "CreateCustomEntityType": "customentitytype", "CreateUsageProfile": "usageprofile",
+    "CreateColumnStatisticsTaskSettings": "colstatsettings", "CreateIntegration": "integration",
+    "CreateIntegrationResourceProperty": "intresprop", "CreateIntegrationTableProperties": "inttableprop",
+    "RegisterConnectionType": "connectiontype", "CreateRegistry": "registry", "CreateSchema": "schema",
+    "CreateGlueIdentityCenterConfiguration": "identitycenter",
+}
+
+
+def glue_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    ctx = (endpoint_url, region, env)
+    op = endpoint.operation
+    hydrated = copy.deepcopy(payload)
+    # Pagination placeholders aren't tokens this server issued.
+    for key in ("NextToken", "Marker"):
+        hydrated.pop(key, None)
+    if op in ("GetMLTransforms", "ListMLTransforms", "GetMLTaskRuns"):
+        hydrated.pop("Filter", None)
+    if op in ("CreateConnection", "UpdateConnection"):
+        hydrated["ConnectionInput"] = dict(GLUE_FIXTURES["connection"][0][1]["ConnectionInput"])
+    if op in ("CreateUserDefinedFunction", "UpdateUserDefinedFunction"):
+        hydrated["FunctionInput"] = {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}
+    # Members the CLI's (newer) model requires that the botocore skeleton lacks.
+    if op == "PutAsset":
+        hydrated.update({"AssetTypeId": GLUE_FIXTURE, "Forms": {}})
+    if op == "PutAttachment":
+        hydrated.update({"FormTypeId": GLUE_FIXTURE, "Content": "e30="})
+        glue_ensure(ctx, "asset", "formtype")
+    if op == "PutDataCatalogExportConfiguration":
+        hydrated["ExportSetting"] = "ENABLED"
+
+    if op in GLUE_CREATE_RESETS:
+        kind = GLUE_CREATE_RESETS[op]
+        for dep in GLUE_FIXTURE_DEPS.get(kind, []):
+            glue_ensure(ctx, dep)
+        if kind == "table":
+            glue_ensure(ctx, "database")
+        glue_absent(ctx, kind)
+    glue_ensure(ctx, *GLUE_OP_FIXTURES.get(op, ()))
+
+    # Operations whose contract placeholders aren't valid requests on their own.
+    create_payload = {name: dict(spec[0][1]) for name, spec in GLUE_FIXTURES.items()}
+    if op == "CreateTable":
+        hydrated["TableInput"] = create_payload["table"]["TableInput"]
+    elif op == "UpdateTable":
+        hydrated["TableInput"] = {"Name": GLUE_FIXTURE, "Description": "updated"}
+    elif op == "CreateCrawler":
+        hydrated["Targets"] = {"S3Targets": [{"Path": "s3://stackyard/crawl/"}]}
+        hydrated["Role"] = GLUE_ROLE
+    elif op == "CreateTrigger":
+        hydrated.update({"Type": "SCHEDULED", "Schedule": "cron(0 2 * * ? *)", "Actions": [{"JobName": GLUE_FIXTURE}]})
+        glue_ensure(ctx, "job")
+    elif op == "CreateClassifier" or op == "UpdateClassifier":
+        hydrated["GrokClassifier"] = create_payload["classifier"]["GrokClassifier"]
+    elif op == "CreateDataQualityRuleset":
+        hydrated["Ruleset"] = "Rules = [ RowCount > 0 ]"
+    elif op in ("CreateSession", "CreateDevEndpoint", "CreateColumnStatisticsTaskSettings", "StartColumnStatisticsTaskRun",
+                "CreateDataQualityEvaluationConfig", "StartDataQualityRulesetEvaluationRun", "StartDataQualityRuleRecommendationRun",
+                "StartBlueprintRun", "CreateMLTransform"):
+        for key in ("Role", "RoleArn"):
+            if key in hydrated:
+                hydrated[key] = GLUE_ROLE
+    if op in ("TestConnection", "UpdateJobFromSourceControl", "UpdateSourceControlFromJob"):
+        hydrated.setdefault("ConnectionName" if op == "TestConnection" else "JobName", GLUE_FIXTURE)
+    if op in ("TagResource", "UntagResource", "GetTags"):
+        hydrated["ResourceArn"] = GLUE_JOB_ARN
+    if op == "PutResourcePolicy":
+        hydrated["PolicyInJson"] = create_payload["policy"]["PolicyInJson"]
+        hydrated.pop("PolicyExistsCondition", None)
+        hydrated.pop("PolicyHashCondition", None)
+
+    if op == "CreatePartition":
+        hydrated["PartitionInput"] = {"Values": [GLUE_FIXTURE]}
+
+    # Crawler states and schedules.
+    if op in ("StartCrawler", "UpdateCrawler", "DeleteCrawler"):
+        glue_reset(ctx, "crawler")
+    elif op == "StopCrawler":
+        glue_reset(ctx, "crawler")
+        glue_raw(*ctx, "StartCrawler", {"Name": GLUE_FIXTURE})
+    elif op == "StartCrawlerSchedule":
+        glue_reset(ctx, "crawler")
+        glue_raw(*ctx, "StopCrawlerSchedule", {"CrawlerName": GLUE_FIXTURE})
+    elif op == "StopCrawlerSchedule":
+        glue_reset(ctx, "crawler")
+    elif op in ("GetCrawlerMetrics", "BatchGetCrawlers"):
+        glue_ensure(ctx, "crawler")
+
+    # Job runs.
+    if op in ("StartJobRun", "GetJobRun", "BatchStopJobRun", "GetSystemLogsForJobRun", "StartJobUpgradeAnalysis"):
+        glue_reset(ctx, "job")
+        if op != "StartJobRun" and op != "StartJobUpgradeAnalysis":
+            run_id = glue_raw(*ctx, "StartJobRun", {"JobName": GLUE_FIXTURE}).get("JobRunId", GLUE_FIXTURE)
+            if op == "BatchStopJobRun":
+                hydrated["JobRunIds"] = [run_id]
+            else:
+                hydrated["RunId"] = run_id
+    if op in ("GetJobUpgradeAnalysis", "StopJobUpgradeAnalysis"):
+        glue_reset(ctx, "job")
+        started = glue_raw(*ctx, "StartJobUpgradeAnalysis", {"jobName": GLUE_FIXTURE})
+        hydrated["analysisId"] = started.get("analysisId", GLUE_FIXTURE)
+
+    # Triggers and workflow runs.
+    if op == "StopTrigger":
+        glue_reset(ctx, "trigger")
+    if op in ("GetWorkflowRun", "StopWorkflowRun", "ResumeWorkflowRun", "GetWorkflowRunProperties", "PutWorkflowRunProperties"):
+        glue_reset(ctx, "workflow")
+        run_id = glue_raw(*ctx, "StartWorkflowRun", {"Name": GLUE_FIXTURE}).get("RunId", GLUE_FIXTURE)
+        hydrated["RunId"] = run_id
+        if op == "ResumeWorkflowRun":
+            glue_raw(*ctx, "StopWorkflowRun", {"Name": GLUE_FIXTURE, "RunId": run_id})
+            glue_settle(ctx, "GetWorkflowRun", {"Name": GLUE_FIXTURE, "RunId": run_id})
+    if op == "StartWorkflowRun":
+        glue_reset(ctx, "workflow")
+    if op == "GetBlueprintRun":
+        glue_ensure(ctx, "blueprint")
+        hydrated["RunId"] = glue_raw(*ctx, "StartBlueprintRun", {"BlueprintName": GLUE_FIXTURE, "RoleArn": GLUE_ROLE}).get("RunId", GLUE_FIXTURE)
+
+    # ML transforms and their task runs (ids are generated).
+    if op in ("GetMLTransform", "UpdateMLTransform", "DeleteMLTransform", "GetMLTaskRun", "GetMLTaskRuns", "CancelMLTaskRun",
+              "StartMLEvaluationTaskRun", "StartMLLabelingSetGenerationTaskRun", "StartImportLabelsTaskRun", "StartExportLabelsTaskRun"):
+        transform = glue_raw(*ctx, "CreateMLTransform", {"Name": f"stackyard-{time.time_ns()}", "Role": GLUE_ROLE,
+                                                          "InputRecordTables": [{"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}],
+                                                          "Parameters": {"TransformType": "FIND_MATCHES"}})
+        hydrated["TransformId"] = transform.get("TransformId", GLUE_FIXTURE)
+        if op in ("GetMLTaskRun", "CancelMLTaskRun"):
+            hydrated["TaskRunId"] = glue_raw(*ctx, "StartMLEvaluationTaskRun", {"TransformId": hydrated["TransformId"]}).get("TaskRunId", GLUE_FIXTURE)
+    if op == "CreateMLTransform":
+        hydrated["Name"] = f"stackyard-{time.time_ns()}"
+
+    # Sessions and statements.
+    if op in ("RunStatement", "StopSession", "GetSessionEndpoint"):
+        glue_reset(ctx, "session")
+    if op in ("GetStatement", "CancelStatement"):
+        glue_reset(ctx, "session")
+        hydrated["Id"] = glue_raw(*ctx, "RunStatement", {"SessionId": GLUE_FIXTURE, "Code": "1"}).get("Id", 0)
+
+    # Data Quality runs and results.
+    if op in ("GetDataQualityRulesetEvaluationRun", "CancelDataQualityRulesetEvaluationRun", "BatchGetDataQualityRulesetEvaluationRun",
+              "GetDataQualityResult", "GetDataQualityResultV2", "BatchGetDataQualityResult", "BatchGetDataQualityResultV2"):
+        glue_ensure(ctx, "dqruleset")
+        run_id = glue_raw(*ctx, "StartDataQualityRulesetEvaluationRun", {"DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}},
+                                                                          "Role": GLUE_ROLE, "RulesetNames": [GLUE_FIXTURE]}).get("RunId", GLUE_FIXTURE)
+        if op == "BatchGetDataQualityRulesetEvaluationRun":
+            hydrated["RunIds"] = [run_id]
+        elif op.startswith("Get") and "Result" in op or op.startswith("BatchGetDataQualityResult"):
+            glue_settle(ctx, "GetDataQualityRulesetEvaluationRun", {"RunId": run_id})
+            result_ids = glue_raw(*ctx, "GetDataQualityRulesetEvaluationRun", {"RunId": run_id}).get("ResultIds") or [GLUE_FIXTURE]
+            if op.startswith("Batch"):
+                hydrated["ResultIds"] = result_ids
+            else:
+                hydrated["ResultId"] = result_ids[0]
+        else:
+            hydrated["RunId"] = run_id
+    if op in ("GetDataQualityRuleRecommendationRun", "CancelDataQualityRuleRecommendationRun"):
+        hydrated["RunId"] = glue_raw(*ctx, "StartDataQualityRuleRecommendationRun", {"DataSource": {"GlueTable": {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE}},
+                                                                                     "Role": GLUE_ROLE}).get("RunId", GLUE_FIXTURE)
+    if op == "StartDataQualityRuleRecommendationRun":
+        hydrated.pop("CreatedRulesetName", None)
+
+    # Catalog details.
+    if op == "DeleteTableVersion":
+        glue_reset(ctx, "table")
+        glue_raw(*ctx, "UpdateTable", {"DatabaseName": GLUE_FIXTURE, "TableInput": {"Name": GLUE_FIXTURE}})
+        hydrated["VersionId"] = "1"
+    if op == "CreatePartitionIndex":
+        glue_raw(*ctx, "DeletePartitionIndex", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "IndexName": GLUE_FIXTURE})
+        hydrated["PartitionIndex"] = {"IndexName": GLUE_FIXTURE, "Keys": [GLUE_FIXTURE]}
+    if op == "DeletePartitionIndex":
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "CreatePartitionIndex", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE,
+                                                "PartitionIndex": {"IndexName": GLUE_FIXTURE, "Keys": [GLUE_FIXTURE]}})
+    if op in ("DeleteColumnStatisticsForTable", "DeleteColumnStatisticsForPartition"):
+        partition = op.endswith("Partition")
+        glue_ensure(ctx, "partition" if partition else "table")
+        stats = {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "ColumnStatisticsList": [
+            {"ColumnName": GLUE_FIXTURE, "ColumnType": "string", "AnalyzedTime": 1700000000,
+             "StatisticsData": {"Type": "STRING", "StringColumnStatisticsData": {"MaximumLength": 1, "AverageLength": 1.0, "NumberOfNulls": 0, "NumberOfDistinctValues": 1}}}]}
+        if partition:
+            stats["PartitionValues"] = [GLUE_FIXTURE]
+        glue_raw(*ctx, "UpdateColumnStatisticsFor" + ("Partition" if partition else "Table"), stats)
+    if op in ("StopColumnStatisticsTaskRun", "GetColumnStatisticsTaskRun"):
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "StopColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        run = glue_raw(*ctx, "StartColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Role": GLUE_ROLE})
+        if op == "GetColumnStatisticsTaskRun":
+            hydrated["ColumnStatisticsTaskRunId"] = run.get("ColumnStatisticsTaskRunId", GLUE_FIXTURE)
+    if op == "StartColumnStatisticsTaskRun":
+        glue_raw(*ctx, "StopColumnStatisticsTaskRun", {"DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+    if op in ("StartColumnStatisticsTaskRunSchedule", "StopColumnStatisticsTaskRunSchedule"):
+        glue_reset(ctx, "colstatsettings")
+    if op in ("GetMaterializedViewRefreshTaskRun", "StopMaterializedViewRefreshTaskRun"):
+        glue_ensure(ctx, "table")
+        glue_raw(*ctx, "StopMaterializedViewRefreshTaskRun", {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        run = glue_raw(*ctx, "StartMaterializedViewRefreshTaskRun", {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE})
+        if op.startswith("Get"):
+            hydrated["MaterializedViewRefreshTaskRunId"] = run.get("MaterializedViewRefreshTaskRunId", GLUE_FIXTURE)
+    if op in ("GetTableOptimizer", "UpdateTableOptimizer", "DeleteTableOptimizer", "ListTableOptimizerRuns", "BatchGetTableOptimizer", "CreateTableOptimizer"):
+        glue_ensure(ctx, "table")
+        opt_type = str(hydrated.get("Type") or "compaction")
+        delete = {"CatalogId": GLUE_FIXTURE, "DatabaseName": GLUE_FIXTURE, "TableName": GLUE_FIXTURE, "Type": opt_type}
+        glue_raw(*ctx, "DeleteTableOptimizer", delete)
+        if op != "CreateTableOptimizer":
+            glue_raw(*ctx, "CreateTableOptimizer", {**delete, "TableOptimizerConfiguration": {"roleArn": GLUE_ROLE, "enabled": True}})
+        if op == "BatchGetTableOptimizer":
+            hydrated["Entries"] = [{"catalogId": GLUE_FIXTURE, "databaseName": GLUE_FIXTURE, "tableName": GLUE_FIXTURE, "type": opt_type}]
+        for key in ("TableOptimizerConfiguration",):
+            if isinstance(hydrated.get(key), dict):
+                hydrated[key]["roleArn"] = GLUE_ROLE
+
+    # Schema Registry: ids are structures the contract prunes to {}.
+    if isinstance(hydrated.get("RegistryId"), dict) and not hydrated["RegistryId"]:
+        hydrated["RegistryId"] = {"RegistryName": GLUE_FIXTURE}
+        glue_ensure(ctx, "registry")
+    if isinstance(hydrated.get("SchemaId"), dict) and not hydrated["SchemaId"]:
+        hydrated["SchemaId"] = {"SchemaName": GLUE_FIXTURE}
+    if op in ("GetSchemaVersion", "PutSchemaVersionMetadata", "RemoveSchemaVersionMetadata", "QuerySchemaVersionMetadata"):
+        glue_reset(ctx, "schema")
+        version = glue_raw(*ctx, "GetSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaVersionNumber": {"LatestVersion": True}})
+        hydrated["SchemaVersionId"] = version.get("SchemaVersionId", GLUE_FIXTURE)
+        if op == "RemoveSchemaVersionMetadata":
+            glue_raw(*ctx, "PutSchemaVersionMetadata", {"SchemaVersionId": hydrated["SchemaVersionId"], "MetadataKeyValue": hydrated.get("MetadataKeyValue") or {}})
+    if op == "UpdateSchema":
+        hydrated["Description"] = "updated"
+    if op in ("RegisterSchemaVersion", "GetSchemaByDefinition"):
+        hydrated["SchemaDefinition"] = GLUE_JSON_SCHEMA
+    if op == "GetSchemaVersionsDiff":
+        glue_reset(ctx, "schema")
+        glue_raw(*ctx, "RegisterSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaDefinition": '{"type":"object"}'})
+        hydrated["FirstSchemaVersionNumber"] = {"VersionNumber": 1}
+        hydrated["SecondSchemaVersionNumber"] = {"VersionNumber": 2}
+    if op == "DeleteSchemaVersions":
+        glue_reset(ctx, "schema")
+        glue_raw(*ctx, "RegisterSchemaVersion", {"SchemaId": {"SchemaName": GLUE_FIXTURE}, "SchemaDefinition": '{"type":"object"}'})
+        hydrated["Versions"] = "2"
+
+    # Glossaries (ids are generated).
+    if op in ("GetGlossary", "UpdateGlossary", "DeleteGlossary", "CreateGlossaryTerm", "ListGlossaryTerms",
+              "GetGlossaryTerm", "UpdateGlossaryTerm", "DeleteGlossaryTerm", "AssociateGlossaryTerms", "DisassociateGlossaryTerms"):
+        glossary = glue_raw(*ctx, "CreateGlossary", {"Name": GLUE_FIXTURE}).get("Id", GLUE_FIXTURE)
+        if op in ("GetGlossary", "UpdateGlossary", "DeleteGlossary"):
+            hydrated["Identifier"] = glossary
+        else:
+            hydrated["GlossaryIdentifier"] = glossary
+            term = glue_raw(*ctx, "CreateGlossaryTerm", {"GlossaryIdentifier": glossary, "Name": GLUE_FIXTURE}).get("Id", GLUE_FIXTURE)
+            if op in ("GetGlossaryTerm", "UpdateGlossaryTerm", "DeleteGlossaryTerm"):
+                hydrated.pop("GlossaryIdentifier", None)
+                hydrated["Identifier"] = term
+            if op in ("AssociateGlossaryTerms", "DisassociateGlossaryTerms"):
+                hydrated.pop("GlossaryIdentifier", None)
+                glue_ensure(ctx, "asset")
+                hydrated["GlossaryTermIdentifiers"] = [term]
+    if op == "PutAssetType":
+        glue_absent(ctx, "asset")
+    return hydrated
+
+
 BACKUP_ROLE_ARN = "arn:aws:iam::123456789012:role/backup"
 BACKUP_MPA_TEAM_ARN = "arn:aws:mpa:us-east-1:123456789012:approval-team/syteam"
 BACKUP_TEMPLATE_ID = "87c0c1ef-254d-4180-8fef-2e76a2c38aaa"
@@ -32374,6 +32891,8 @@ def hydrate_payload_with_service_state(
 
     if endpoint.service == "docdb":
         return docdb_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "glue":
+        return glue_hydrate_payload(endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "apigatewaymanagementapi":
         return apigatewaymanagementapi_hydrate_payload(endpoint, payload, endpoint_url)
     if endpoint.service == "cloudfront" and endpoint.operation in CLOUDFRONT_KVS_CONTROL_OPERATIONS:
