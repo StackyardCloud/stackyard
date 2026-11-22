@@ -704,6 +704,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/ec2/docker-compose.yml"
   },
   {
+    id: "ec2instanceconnect",
+    name: "EC2 Instance Connect",
+    category: "compute",
+    summary: "Emulate pushing SSH and serial console public keys to running EC2 instances, validated against the EC2 store, with 60-second key expiry.",
+    docsHref: "../../../index.html#ec2instanceconnect",
+    exampleHref: "../../../../examples/aws/ec2-instance-connect/docker-compose.yml"
+  },
+  {
     id: "ec2-autoscaling",
     name: "EC2 Auto Scaling",
     category: "compute",
@@ -782,6 +790,14 @@ const SERVICE_CATALOG = [
     summary: "Run Kubernetes cluster management scenarios in local integration tests.",
     docsHref: "../../../index.html#eks",
     exampleHref: "../../../../examples/aws/eks/docker-compose.yml"
+  },
+  {
+    id: "eksauth",
+    name: "EKS Auth",
+    category: "compute",
+    summary: "Exchange EKS Pod Identity service-account tokens for temporary role credentials in local integration tests.",
+    docsHref: "../../../index.html#eksauth",
+    exampleHref: "../../../../examples/aws/eks-auth/docker-compose.yml"
   },
   {
     id: "elasticbeanstalk",
@@ -934,6 +950,14 @@ const SERVICE_CATALOG = [
     summary: "Run DocumentDB clusters, instances, cluster parameter groups, cluster snapshots and global clusters on the shared RDS control plane.",
     docsHref: "../../../index.html#docdb",
     exampleHref: "../../../../examples/aws/docdb/docker-compose.yml"
+  },
+  {
+    id: "docdbelastic",
+    name: "DocumentDB Elastic Clusters",
+    category: "database",
+    summary: "Run sharded DocumentDB elastic clusters with settle-on-read lifecycles, manual and automated snapshots, copy and restore, maintenance opt-in and tags.",
+    docsHref: "../../../index.html#docdbelastic",
+    exampleHref: "../../../../examples/aws/docdb-elastic/docker-compose.yml"
   },
   {
     id: "neptune",

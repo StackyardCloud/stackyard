@@ -163,6 +163,7 @@
         <a href="#dynamodbstreams">DynamoDB Streams</a>
         <a href="#dax">DynamoDB Accelerator (DAX)</a>
         <a href="#ec2">EC2</a>
+        <a href="#ec2instanceconnect">EC2 Instance Connect</a>
         <a href="#ebs">Elastic Block Storage (EBS)</a>
         <a href="#ec2-autoscaling">EC2 Auto Scaling</a>
         <a href="#elasticloadbalancing">Elastic Load Balancing (ELB)</a>
@@ -174,6 +175,7 @@
         <a href="#ecrpublic">ECR Public</a>
         <a href="#ecs">ECS</a>
         <a href="#eks">EKS</a>
+        <a href="#eksauth">EKS Auth</a>
         <a href="#elasticbeanstalk">Elastic Beanstalk</a>
         <a href="#elemental-inference">Elemental Inference</a>
         <a href="#entity-resolution">Entity Resolution</a>
@@ -205,6 +207,7 @@
         <a href="#lightsail">Lightsail</a>
         <a href="#memorydb">MemoryDB</a>
         <a href="#docdb">DocumentDB</a>
+        <a href="#docdbelastic">DocumentDB Elastic Clusters</a>
         <a href="#neptune">Neptune</a>
         <a href="#neptunedata">Neptune Data API</a>
         <a href="#neptuneanalytics">Neptune Analytics API</a>
@@ -11708,6 +11711,36 @@
         </ul>
         </details>
         </section>
+        <section id="ec2instanceconnect" class="service">
+
+        <div class="service-header">
+        <h2>EC2 Instance Connect</h2>
+        <p>SigV4 signed with service <code>ec2-instance-connect</code>. AWS JSON 1.1 API (<code>X-Amz-Target: AWSEC2InstanceConnectService.*</code>) that pushes SSH public keys to running EC2 instances. The instance must exist in the EC2 store and be running, and a given Availability Zone must match it. The OS user and the OpenSSH key format are validated (ssh-rsa, ssh-ed25519, ecdsa-sha2-nistp*). Serial console keys need port 0 and account-level serial console access (<code>EnableSerialConsoleAccess</code>). Keys expire after 60 seconds; the unexpired keys for an instance can be read with a signed <code>GET /_stackyard/ec2instanceconnect/instances/{id}/keys</code>. Both documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ec2-instance-connect</span>
+        <span class="meta-pill">API: AWS JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>SendSerialConsoleSSHPublicKey</code></td></tr>
+        <tr><td><code>SendSSHPublicKey</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>ec2-instance-connect</code>: <code>docker compose -f examples/aws/ec2-instance-connect/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="ebs" class="service">
 
         <div class="service-header">
@@ -12768,6 +12801,40 @@
         <ul>
                 <li><code>eks</code>: <code>docker compose -f examples/aws/eks/docker-compose.yml up --build</code></li>
                 <li><code>eks</code>: <code>docker compose -f examples/aws/eks/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+        <section id="eksauth" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EKS Auth</h2>
+        <p>SigV4 signed with service <code>eks-auth</code>. REST JSON API at <code>POST /clusters/{clusterName}/assume-role-for-pod-identity</code>. The cluster must exist in the EKS store, and the projected service-account token must name a service account with a pod identity association. Token claims are checked (audience <code>pods.eks.amazonaws.com</code>, expiry, <code>system:serviceaccount:&lt;namespace&gt;:&lt;name&gt;</code> subject); signatures are not, since Stackyard has no cluster signing keys. Returned credentials are STS-shaped but are not accepted for signing.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: eks-auth</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AssumeRoleForPodIdentity</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>eks-auth</code>: <code>docker compose -f examples/aws/eks-auth/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
@@ -16944,6 +17011,94 @@
         <summary>Examples</summary>
         <ul>
                 <li><code>docdb</code>: <code>docker compose -f examples/aws/docdb/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+
+        <section id="docdbelastic" class="service">
+
+        <div class="service-header">
+        <h2>Amazon DocumentDB Elastic Clusters</h2>
+        <p>SigV4 signed with service <code>docdb-elastic</code>. REST JSON API under <code>/cluster</code>, <code>/clusters</code>, <code>/cluster-snapshot</code>, <code>/cluster-snapshots</code>, <code>/pending-action</code>, <code>/pending-actions</code> and <code>/tags/</code>. Clusters and snapshots settle out of CREATING, UPDATING, STOPPING and similar states on the next read; subnets and security groups are checked against the EC2 store (defaulting to the default VPC), and <code>SECRET_ARN</code> auth needs an existing Secrets Manager secret. Passwords are never returned. All 19 actions are implemented; the DocumentDB wire protocol is not.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: docdb-elastic</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>ApplyPendingMaintenanceAction</code></td>
+        </tr>
+        <tr>
+        <td><code>CopyClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>GetCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>GetClusterSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPendingMaintenanceAction</code></td>
+        </tr>
+        <tr>
+        <td><code>ListClusterSnapshots</code></td>
+        </tr>
+        <tr>
+        <td><code>ListClusters</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPendingMaintenanceActions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>RestoreClusterFromSnapshot</code></td>
+        </tr>
+        <tr>
+        <td><code>StartCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>StopCluster</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCluster</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>docdb-elastic</code>: <code>docker compose -f examples/aws/docdb-elastic/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>

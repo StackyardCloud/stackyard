@@ -334,6 +334,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "inspectorv2": {"cli": "inspector2", "ops_file": REPO_ROOT / "internal/server/inspectorv2_ops.go"},
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
+    "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -556,6 +557,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
+    "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
@@ -567,6 +569,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "ecr": {"cli": "ecr", "ops_file": REPO_ROOT / "internal/server/ecr_ops.go"},
     "ecs": {"cli": "ecs", "ops_file": REPO_ROOT / "internal/server/ecs_ops.go"},
     "eks": {"cli": "eks", "ops_file": REPO_ROOT / "internal/server/eks_ops.go"},
+    "eksauth": {"cli": "eks-auth", "ops_file": REPO_ROOT / "internal/server/eksauth_ops.go"},
     "elasticbeanstalk": {
         "cli": "elasticbeanstalk",
         "ops_file": REPO_ROOT / "internal/server/elasticbeanstalk_ops.go",
@@ -1462,6 +1465,10 @@ SERVICE_ALIASES = {
     "amazondocdb": "docdb",
     "amazon-documentdb": "docdb",
     "amazondocumentdb": "docdb",
+    "docdbelastic": "docdbelastic",
+    "docdb-elastic": "docdbelastic",
+    "amazondocdbelastic": "docdbelastic",
+    "documentdbelastic": "docdbelastic",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -2196,6 +2203,9 @@ SERVICE_ALIASES = {
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
+    "eksauth": "eksauth",
+    "eks-auth": "eksauth",
+    "amazoneksauth": "eksauth",
     "pipes": "pipes",
     "eventbridgepipes": "pipes",
     "amazoneventbridgepipes": "pipes",
@@ -2211,6 +2221,9 @@ SERVICE_ALIASES = {
     "applicationautoscaling": "applicationautoscaling",
     "application-autoscaling": "applicationautoscaling",
     "awsapplicationautoscaling": "applicationautoscaling",
+    "ec2instanceconnect": "ec2instanceconnect",
+    "ec2-instance-connect": "ec2instanceconnect",
+    "awsec2instanceconnect": "ec2instanceconnect",
     "amazonefs": "efs",
     "amazonelasticfilesystem": "efs",
     "auroradsql": "dsql",
@@ -3100,6 +3113,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "codecommit": {},
     "applicationautoscaling": {},
+    "ec2instanceconnect": {},
     "efs": {},
     "scheduler": {},
     "pipes": {},
@@ -3107,6 +3121,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "dax": {},
     "ecrpublic": {},
     "docdb": {},
+    "docdbelastic": {},
     "glue": {},
     "codeconnections": {},
     "codestarconnections": {},
@@ -3277,6 +3292,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "ecr": {},
     "ecs": {},
     "eks": {},
+    "eksauth": {},
     "dynamodb": {},
     "dynamodbstreams": {},
     "keyspaces": {},
@@ -32014,6 +32030,38 @@ def aas_ensure_ecs_target(aws_bin: str, endpoint_url: str, region: str, env: dic
     })
 
 
+# A well-formed ssh-ed25519 public key (the key body names its own type).
+EC2INSTANCECONNECT_PUBLIC_KEY = (
+    "ssh-ed25519 "
+    + base64.b64encode(
+        len(b"ssh-ed25519").to_bytes(4, "big") + b"ssh-ed25519" + (32).to_bytes(4, "big") + bytes(range(32))
+    ).decode("ascii")
+    + " coverage@stackyard"
+)
+
+
+def ec2instanceconnect_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Push keys to a running instance of the coverage server's EC2 store. The
+    serial console variant also needs account-level serial console access."""
+    state = RUNTIME_STATE.setdefault("ec2instanceconnect", {})
+    if not state.get("instance_id"):
+        data = run_aws_json(
+            aws_bin, endpoint_url, region, "ec2", "run-instances", env, ["--image-id", "ami-12345678", "--count", "1"]
+        )
+        instances = data.get("Instances") if isinstance(data, dict) else None
+        if isinstance(instances, list) and instances and isinstance(instances[0], dict):
+            state["instance_id"] = str(instances[0].get("InstanceId") or "")
+    instance_id = str(state.get("instance_id") or "i-0123456789abcdef0")
+    if endpoint.operation == "SendSerialConsoleSSHPublicKey":
+        if not state.get("serial_enabled"):
+            run_aws_json(aws_bin, endpoint_url, region, "ec2", "enable-serial-console-access", env)
+            state["serial_enabled"] = True
+        return {"InstanceId": instance_id, "SSHPublicKey": EC2INSTANCECONNECT_PUBLIC_KEY, "SerialPort": 0}
+    return {"InstanceId": instance_id, "InstanceOSUser": "ec2-user", "SSHPublicKey": EC2INSTANCECONNECT_PUBLIC_KEY}
+
+
 def applicationautoscaling_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -33945,6 +33993,136 @@ def pipes_hydrate_payload(
     return {"resourceArn": arn}
 
 
+EKSAUTH_NAMESPACE = "stackyard-eksauth"
+EKSAUTH_SERVICE_ACCOUNT = "stackyard-eksauth-sa"
+
+
+def eksauth_hydrate_payload(aws_bin: str, payload: dict, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """AssumeRoleForPodIdentity needs a cluster, a pod identity association for
+    the token's service account, and an (unsigned) projected service-account
+    token naming it; Stackyard checks claims, not signatures."""
+    state = RUNTIME_STATE.setdefault("eksauth", {})
+    cluster_name = eks_ensure_cluster(aws_bin, endpoint_url, region, env)
+    if state.get("cluster_name") != cluster_name:
+        create_payload = {
+            "clusterName": cluster_name,
+            "namespace": EKSAUTH_NAMESPACE,
+            "serviceAccount": EKSAUTH_SERVICE_ACCOUNT,
+            "roleArn": EKS_DEFAULT_ROLE_ARN,
+        }
+        # An association left by an earlier run on the same server is fine.
+        run_aws_json(
+            aws_bin,
+            endpoint_url,
+            region,
+            "eks",
+            "create-pod-identity-association",
+            env,
+            ["--cli-input-json", json.dumps(create_payload, separators=(",", ":"))],
+        )
+        state["cluster_name"] = cluster_name
+
+    def b64(value: dict) -> str:
+        return base64.urlsafe_b64encode(json.dumps(value).encode()).decode().rstrip("=")
+
+    claims = {
+        "aud": ["pods.eks.amazonaws.com"],
+        "exp": int(time.time()) + 3600,
+        "sub": f"system:serviceaccount:{EKSAUTH_NAMESPACE}:{EKSAUTH_SERVICE_ACCOUNT}",
+        "kubernetes.io": {"pod": {"name": "stackyard-coverage"}},
+    }
+    hydrated = copy.deepcopy(payload)
+    hydrated["clusterName"] = cluster_name
+    hydrated["token"] = b64({"alg": "RS256", "typ": "JWT"}) + "." + b64(claims) + ".c2lnbmF0dXJl"
+    return hydrated
+
+
+DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
+
+
+def docdbelastic_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "docdb-elastic", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def docdbelastic_create_cluster(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], stopped: bool = False) -> str:
+    """Create an elastic cluster and read it once so it settles to ACTIVE
+    (changes while CREATING are conflicts); optionally stop it too."""
+    name = f"stackyard-dbe-{time.time_ns()}"
+    created = docdbelastic_cli(
+        aws_bin, endpoint_url, region, env, "create-cluster",
+        ["--cluster-name", name, "--admin-user-name", "stackyard", "--admin-user-password", DOCDBELASTIC_PASSWORD,
+         "--auth-type", "PLAIN_TEXT", "--shard-capacity", "2", "--shard-count", "1"],
+    )
+    arn = str((created.get("cluster") or {}).get("clusterArn") or "")
+    docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster", ["--cluster-arn", arn])
+    if stopped:
+        docdbelastic_cli(aws_bin, endpoint_url, region, env, "stop-cluster", ["--cluster-arn", arn])
+        docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster", ["--cluster-arn", arn])
+    return arn
+
+
+def docdbelastic_create_snapshot(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cluster_arn: str) -> str:
+    created = docdbelastic_cli(
+        aws_bin, endpoint_url, region, env, "create-cluster-snapshot",
+        ["--cluster-arn", cluster_arn, "--snapshot-name", f"stackyard-dbe-snap-{time.time_ns()}"],
+    )
+    arn = str((created.get("snapshot") or {}).get("snapshotArn") or "")
+    docdbelastic_cli(aws_bin, endpoint_url, region, env, "get-cluster-snapshot", ["--snapshot-arn", arn])
+    return arn
+
+
+def docdbelastic_shared(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("docdbelastic", {})
+    if not state.get("cluster"):
+        state["cluster"] = docdbelastic_create_cluster(aws_bin, endpoint_url, region, env)
+        state["snapshot"] = docdbelastic_create_snapshot(aws_bin, endpoint_url, region, env, state["cluster"])
+    return state
+
+
+def docdbelastic_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DocumentDB Elastic operation at settled resources. Changes
+    (update, start, stop, delete, maintenance) each get resources of their own."""
+    op = endpoint.operation
+    unique = f"stackyard-dbe-{time.time_ns()}"
+    if op == "CreateCluster":
+        return {"clusterName": unique, "adminUserName": "stackyard", "adminUserPassword": DOCDBELASTIC_PASSWORD,
+                "authType": "PLAIN_TEXT", "shardCapacity": 2, "shardCount": 1}
+    if op in {"ListClusters", "ListClusterSnapshots", "ListPendingMaintenanceActions"}:
+        return {}
+    if op == "UpdateCluster":
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env), "backupRetentionPeriod": 2}
+    if op in {"DeleteCluster", "StopCluster"}:
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env)}
+    if op == "StartCluster":
+        return {"clusterArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env, stopped=True)}
+    if op == "ApplyPendingMaintenanceAction":
+        return {"resourceArn": docdbelastic_create_cluster(aws_bin, endpoint_url, region, env),
+                "applyAction": "SYSTEM_UPDATE", "optInType": "NEXT_MAINTENANCE"}
+    shared = docdbelastic_shared(aws_bin, endpoint_url, region, env)
+    if op == "DeleteClusterSnapshot":
+        return {"snapshotArn": docdbelastic_create_snapshot(aws_bin, endpoint_url, region, env, shared["cluster"])}
+    if op == "CreateClusterSnapshot":
+        return {"clusterArn": shared["cluster"], "snapshotName": unique}
+    if op == "GetClusterSnapshot":
+        return {"snapshotArn": shared["snapshot"]}
+    if op == "CopyClusterSnapshot":
+        return {"snapshotArn": shared["snapshot"], "targetSnapshotName": unique}
+    if op == "RestoreClusterFromSnapshot":
+        return {"snapshotArn": shared["snapshot"], "clusterName": unique}
+    if op == "GetCluster":
+        return {"clusterArn": shared["cluster"]}
+    if op == "GetPendingMaintenanceAction":
+        return {"resourceArn": shared["cluster"]}
+    if op == "TagResource":
+        return {"resourceArn": shared["cluster"], "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": shared["cluster"], "tagKeys": ["stackyard"]}
+    return {"resourceArn": shared["cluster"]}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -33956,6 +34134,10 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "docdbelastic":
+        return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "eksauth":
+        return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":
@@ -33987,6 +34169,8 @@ def hydrate_payload_with_service_state(
         return efs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationautoscaling":
         return applicationautoscaling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "ec2instanceconnect":
+        return ec2instanceconnect_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "sagemakerruntime":
         return sagemakerruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "redshiftdata":
