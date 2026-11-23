@@ -944,6 +944,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/lex-runtime-v2/docker-compose.yml"
   },
   {
+    id: "transcribestreaming",
+    name: "Transcribe Streaming",
+    category: "integration",
+    summary: "Stream audio over full-duplex event streams for live, medical, Call Analytics and Medical Scribe transcription with deterministic transcripts.",
+    docsHref: "../../../index.html#transcribestreaming",
+    exampleHref: "../../../../examples/aws/transcribe-streaming/docker-compose.yml"
+  },
+  {
     id: "lambda",
     name: "Lambda",
     category: "compute",

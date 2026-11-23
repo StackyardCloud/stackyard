@@ -92,6 +92,7 @@
         <a href="#kinesisvideowebrtcstorage">Kinesis Video WebRTC Storage</a>
         <a href="#lexv2">Lex V2</a>
         <a href="#lexruntimev2">Lex Runtime V2</a>
+        <a href="#transcribestreaming">Transcribe Streaming</a>
         <a href="#pinpoint">Pinpoint</a>
         <a href="#pcs">PCS</a>
         <a href="#smsvoicev2">End User Messaging SMS</a>
@@ -3410,6 +3411,40 @@
         <summary>Examples</summary>
         <ul>
         <li><code>lex-runtime-v2</code>: <code>docker compose -f examples/aws/lex-runtime-v2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="transcribestreaming" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Transcribe Streaming</h2>
+        <p>SigV4 signed with service <code>transcribe</code>. REST event streams on <code>/stream-transcription</code>, <code>/medical-stream-transcription</code>, <code>/call-analytics-stream-transcription</code> and <code>/medical-scribe-stream</code>: request headers (language or language identification, sample rate, encoding, vocabularies, filters, channels, stabilization, PII) are validated, then each <code>AudioEvent</code> frame is answered with a partial result while the request is still open, with a final result every 5 seconds of audio and when the client ends its stream. Vocabularies, filters and language models must exist in batch Transcribe. There is no speech engine: transcripts describe the audio window they cover (for example <code>[audio 0.00s-2.00s]</code>). Call Analytics streams return <code>UtteranceEvent</code> and <code>CategoryEvent</code> frames; Medical Scribe sessions store their configuration, pause when the stream drops and complete on <code>END_OF_SESSION</code>, readable through <code>GetMedicalScribeStream</code>. Errors mid-stream arrive as exception frames. The AWS CLI has no transcribe-streaming commands.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: transcribe</span>
+        <span class="meta-pill">API: REST event stream</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetMedicalScribeStream</code></td></tr>
+        <tr><td><code>StartCallAnalyticsStreamTranscription</code></td></tr>
+        <tr><td><code>StartMedicalScribeStream</code></td></tr>
+        <tr><td><code>StartMedicalStreamTranscription</code></td></tr>
+        <tr><td><code>StartStreamTranscription</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>transcribe-streaming</code>: <code>docker compose -f examples/aws/transcribe-streaming/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
