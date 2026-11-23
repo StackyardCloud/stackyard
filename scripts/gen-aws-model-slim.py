@@ -10,7 +10,7 @@ The Pipes copy came from the AWS CLI 2.41 model:
 import json
 import sys
 
-KEEP = ("type", "required", "min", "max", "pattern", "enum", "sensitive")
+KEEP = ("type", "required", "min", "max", "pattern", "enum", "sensitive", "document")
 MEMBER_KEEP = ("shape", "location", "locationName")
 
 src, out = sys.argv[1], sys.argv[2]
