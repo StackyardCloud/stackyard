@@ -564,6 +564,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
+    "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
+    "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
@@ -573,6 +575,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
+    "schemas": {"cli": "schemas", "ops_file": REPO_ROOT / "internal/server/schemas_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
     "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
@@ -2238,6 +2241,11 @@ SERVICE_ALIASES = {
     "amazonroute53domains": "route53domains",
     "textract": "textract",
     "amazontextract": "textract",
+    "wafregional": "wafregional",
+    "waf-regional": "wafregional",
+    "awswafregional": "wafregional",
+    "pi": "pi",
+    "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
@@ -2253,6 +2261,9 @@ SERVICE_ALIASES = {
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
+    "schemas": "schemas",
+    "eventbridgeschemas": "schemas",
+    "amazoneventbridgeschemas": "schemas",
     "eksauth": "eksauth",
     "eks-auth": "eksauth",
     "amazoneksauth": "eksauth",
@@ -3183,6 +3194,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "efs": {},
     "elasticsearchservice": {},
     "scheduler": {},
+    "schemas": {},
     "pipes": {},
     "route53profiles": {},
     "polly": {},
@@ -3199,6 +3211,8 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codeconnections": {},
     "route53domains": {},
     "textract": {},
+    "wafregional": {},
+    "pi": {},
     "servicecatalog": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
@@ -13464,6 +13478,10 @@ def generate_cli_input_payload(
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
         return {"accountId": "-", "vaultName": "", "jobId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("schemas", "GetCodeBindingSource"):
+        # get-code-binding-source streams a zip, so the CLI needs its members as
+        # flags plus an outfile even to print a skeleton.
+        return {"RegistryName": "", "SchemaName": "", "Language": "Python36"}, None
     if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
@@ -14233,10 +14251,13 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
     if not text:
         if output_schema_allows_empty_stdout(endpoint):
             return None
-        if (
-            str(getattr(output_shape, "type_name", "")).lower() == "structure"
-            and not (getattr(output_shape, "members", {}) or {})
-        ):
+        members = getattr(output_shape, "members", {}) or {}
+        if str(getattr(output_shape, "type_name", "")).lower() == "structure" and not members:
+            return None
+        # The only output is a blob or event-stream payload, which the CLI
+        # writes to the outfile, so nothing is printed.
+        payload = output_payload_exempt_member(output_shape)
+        if payload is not None and set(members) == {payload}:
             return None
         return "empty output"
     try:
@@ -32379,6 +32400,109 @@ def scheduler_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str
     )
 
 
+SCHEMAS_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "123456789012"}, "Action": "schemas:*", "Resource": "*"}]})
+
+
+def schemas_content(marker: str) -> str:
+    return json.dumps({
+        "openapi": "3.0.0", "info": {"version": "1.0.0", "title": "StackyardEvent"}, "paths": {},
+        "components": {"schemas": {"AWSEvent": {"type": "object", "properties": {"source": {"type": "string"}, "stackyard": {"type": "string", "description": marker}}}}},
+    })
+
+
+def schemas_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "schemas", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def schemas_new_schema(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], registry: str) -> str:
+    name = f"stackyard-{time.time_ns()}"
+    schemas_cli(aws_bin, endpoint_url, region, env, "create-schema", ["--registry-name", registry, "--schema-name", name, "--type", "OpenApi3", "--content", schemas_content(name)])
+    return name
+
+
+def schemas_new_discoverer(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    bus = run_aws_json(aws_bin, endpoint_url, region, "events", "create-event-bus", env, ["--name", f"stackyard-schemas-{time.time_ns()}"])
+    arn = str((bus or {}).get("EventBusArn") or "") if isinstance(bus, dict) else ""
+    return str(schemas_cli(aws_bin, endpoint_url, region, env, "create-discoverer", ["--source-arn", arn]).get("DiscovererId") or "")
+
+
+def schemas_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each EventBridge Schemas operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("schemas", {})
+    if not state.get("registry"):
+        registry = f"stackyard-schemas-{time.time_ns()}"
+        schemas_cli(aws_bin, endpoint_url, region, env, "create-registry", ["--registry-name", registry])
+        state["registry"] = registry
+        state["schema"] = schemas_new_schema(aws_bin, endpoint_url, region, env, registry)
+        state["discoverer"] = schemas_new_discoverer(aws_bin, endpoint_url, region, env)
+    registry, schema, discoverer = str(state["registry"]), str(state["schema"]), str(state["discoverer"])
+    unique = f"stackyard-{time.time_ns()}"
+    shared = {"RegistryName": registry, "SchemaName": schema}
+    if op == "CreateRegistry":
+        return {"RegistryName": unique}
+    if op in {"DescribeRegistry", "ListSchemas"}:
+        return {"RegistryName": registry}
+    if op == "UpdateRegistry":
+        return {"RegistryName": registry, "Description": "stackyard coverage"}
+    if op == "DeleteRegistry":
+        schemas_cli(aws_bin, endpoint_url, region, env, "create-registry", ["--registry-name", unique])
+        return {"RegistryName": unique}
+    if op in {"ListRegistries", "ListDiscoverers"}:
+        return {}
+    if op == "CreateSchema":
+        return {"RegistryName": registry, "SchemaName": unique, "Type": "OpenApi3", "Content": schemas_content(unique)}
+    if op in {"DescribeSchema", "ListSchemaVersions"}:
+        return dict(shared)
+    if op == "UpdateSchema":
+        return {**shared, "Content": schemas_content(unique)}
+    if op == "ExportSchema":
+        return {**shared, "Type": "JSONSchemaDraft4"}
+    if op == "SearchSchemas":
+        return {"RegistryName": registry, "Keywords": "stackyard"}
+    if op == "DeleteSchema":
+        return {"RegistryName": registry, "SchemaName": schemas_new_schema(aws_bin, endpoint_url, region, env, registry)}
+    if op == "DeleteSchemaVersion":
+        own = schemas_new_schema(aws_bin, endpoint_url, region, env, registry)
+        schemas_cli(aws_bin, endpoint_url, region, env, "update-schema", ["--registry-name", registry, "--schema-name", own, "--content", schemas_content(own + "-2")])
+        return {"RegistryName": registry, "SchemaName": own, "SchemaVersion": "1"}
+    if op == "PutCodeBinding":
+        return {**shared, "Language": "Python36"}
+    if op in {"DescribeCodeBinding", "GetCodeBindingSource"}:
+        args = ["--registry-name", registry, "--schema-name", schema, "--language", "Python36"]
+        schemas_cli(aws_bin, endpoint_url, region, env, "put-code-binding", args)
+        schemas_cli(aws_bin, endpoint_url, region, env, "describe-code-binding", args)
+        return {**shared, "Language": "Python36"}
+    if op == "GetDiscoveredSchema":
+        return {"Type": "OpenApi3", "Events": ['{"source":"stackyard","detail":{"id":1}}']}
+    if op == "CreateDiscoverer":
+        bus = run_aws_json(aws_bin, endpoint_url, region, "events", "create-event-bus", env, ["--name", unique])
+        return {"SourceArn": str((bus or {}).get("EventBusArn") or "") if isinstance(bus, dict) else ""}
+    if op in {"DescribeDiscoverer", "StartDiscoverer", "StopDiscoverer"}:
+        return {"DiscovererId": discoverer}
+    if op == "UpdateDiscoverer":
+        return {"DiscovererId": discoverer, "Description": "stackyard coverage"}
+    if op == "DeleteDiscoverer":
+        return {"DiscovererId": schemas_new_discoverer(aws_bin, endpoint_url, region, env)}
+    if op == "PutResourcePolicy":
+        return {"Policy": SCHEMAS_POLICY}
+    if op in {"GetResourcePolicy", "DeleteResourcePolicy"}:
+        schemas_cli(aws_bin, endpoint_url, region, env, "put-resource-policy", ["--policy", SCHEMAS_POLICY])
+        return {}
+    registry_arn = f"arn:aws:schemas:{region}:123456789012:registry/{registry}"
+    if op == "ListTagsForResource":
+        return {"ResourceArn": registry_arn}
+    if op == "TagResource":
+        return {"ResourceArn": registry_arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": registry_arn, "TagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 def scheduler_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -33012,6 +33136,77 @@ def textract_create_version(aws_bin: str, endpoint_url: str, region: str, env: d
         "--output-config", json.dumps({"S3Bucket": bucket, "S3Prefix": "adapter-output"}),
     ])
     return str((data or {}).get("AdapterVersion") or "")
+
+
+PI_START = 1767225600  # 2026-01-01T00:00:00Z
+
+
+def pi_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An RDS instance (its DbiResourceId) and one analysis report."""
+    state = RUNTIME_STATE.setdefault("pi", {})
+    if not state.get("identifier"):
+        name = f"stackyard-pi-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "rds", "create-db-instance", env, [
+            "--db-instance-identifier", name, "--engine", "postgres", "--db-instance-class", "db.t3.micro",
+            "--allocated-storage", "20", "--master-username", "admin", "--master-user-password", "stackyard123",
+        ])
+        # Stackyard derives DbiResourceId from the instance identifier.
+        state["identifier"] = "db-" + name.replace("-", "").upper()
+        state["report"] = pi_create_report(aws_bin, endpoint_url, region, env, state["identifier"])
+    return state
+
+
+def pi_create_report(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], identifier: str) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "pi", "create-performance-analysis-report", env, [
+        "--service-type", "RDS", "--identifier", identifier,
+        "--start-time", str(PI_START), "--end-time", str(PI_START + 3600),
+    ])
+    return str((data or {}).get("AnalysisReportId") or "")
+
+
+def pi_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Performance Insights operations at a real instance and report;
+    DeletePerformanceAnalysisReport gets a report of its own."""
+    op = endpoint.operation
+    fx = pi_fixture(aws_bin, endpoint_url, region, env)
+    base = {"ServiceType": "RDS", "Identifier": fx["identifier"]}
+    window = {"StartTime": PI_START, "EndTime": PI_START + 3600}
+    arn = f"arn:aws:pi:{region}:123456789012:perf-reports/RDS/{fx['identifier']}/{fx['report']}"
+    if op == "DescribeDimensionKeys":
+        return {**base, **window, "Metric": "db.load.avg", "GroupBy": {"Group": "db.wait_event", "Limit": 5},
+                "PartitionBy": {"Group": "db.user"}, "AdditionalMetrics": ["db.sql.stats.calls_per_sec.avg"]}
+    if op == "GetResourceMetrics":
+        return {**base, **window, "PeriodInSeconds": 60, "MetricQueries": [
+            {"Metric": "db.load.avg", "GroupBy": {"Group": "db.sql", "Limit": 3}},
+            {"Metric": "os.cpuUtilization.total.avg"},
+        ]}
+    if op == "GetDimensionKeyDetails":
+        return {**base, "Group": "db.sql", "GroupIdentifier": "A1B2C3D4E5F60718", "RequestedDimensions": ["db.sql.statement"]}
+    if op == "GetResourceMetadata":
+        return base
+    if op == "ListAvailableResourceDimensions":
+        return {**base, "Metrics": ["db.load"]}
+    if op == "ListAvailableResourceMetrics":
+        return {**base, "MetricTypes": ["os", "db"]}
+    if op == "CreatePerformanceAnalysisReport":
+        return {**base, **window, "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "GetPerformanceAnalysisReport":
+        return {**base, "AnalysisReportId": fx["report"], "TextFormat": "MARKDOWN", "AcceptLanguage": "EN_US"}
+    if op == "ListPerformanceAnalysisReports":
+        return {**base, "ListTags": True}
+    if op == "ListPerformanceAnalysisReportRecommendations":
+        return {**base, "AnalysisReportId": fx["report"]}
+    if op == "DeletePerformanceAnalysisReport":
+        return {**base, "AnalysisReportId": pi_create_report(aws_bin, endpoint_url, region, env, fx["identifier"])}
+    if op == "TagResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn}
+    return payload
 
 
 def textract_hydrate_payload(
@@ -36461,6 +36656,143 @@ def servicecatalog_hydrate_payload(
     return {}
 
 
+WAFR_ALB = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/stackyard-waf/50dc6c495c0c9188"
+WAFR_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": "111122223333"},
+                                          "Action": ["waf-regional:UpdateWebACL", "waf-regional:GetRuleGroup"]}]})
+# Create-operation extras per entity, and one valid item each Update inserts.
+WAFR_KINDS = {
+    "ByteMatchSet": ("ByteMatchSetId", "ByteMatchTuple", {"FieldToMatch": {"Type": "URI"}, "TargetString": base64.b64encode(b"admin").decode(), "TextTransformation": "NONE", "PositionalConstraint": "CONTAINS"}),
+    "GeoMatchSet": ("GeoMatchSetId", "GeoMatchConstraint", {"Type": "Country", "Value": "US"}),
+    "IPSet": ("IPSetId", "IPSetDescriptor", {"Type": "IPV4", "Value": "192.0.2.0/24"}),
+    "RegexMatchSet": ("RegexMatchSetId", "RegexMatchTuple", None),
+    "RegexPatternSet": ("RegexPatternSetId", "RegexPatternString", "^/admin"),
+    "SizeConstraintSet": ("SizeConstraintSetId", "SizeConstraint", {"FieldToMatch": {"Type": "BODY"}, "TextTransformation": "NONE", "ComparisonOperator": "GT", "Size": 8192}),
+    "SqlInjectionMatchSet": ("SqlInjectionMatchSetId", "SqlInjectionMatchTuple", {"FieldToMatch": {"Type": "QUERY_STRING"}, "TextTransformation": "URL_DECODE"}),
+    "XssMatchSet": ("XssMatchSetId", "XssMatchTuple", {"FieldToMatch": {"Type": "BODY"}, "TextTransformation": "HTML_ENTITY_DECODE"}),
+    "Rule": ("RuleId", "Predicate", None),
+    "RateBasedRule": ("RuleId", "Predicate", None),
+    "RuleGroup": ("RuleGroupId", "ActivatedRule", None),
+    "WebACL": ("WebACLId", "ActivatedRule", None),
+}
+
+
+def wafr_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "waf-regional", pascal_to_kebab(op), env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def wafr_token(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    return str(wafr_call(aws_bin, endpoint_url, region, env, "GetChangeToken", {}).get("ChangeToken") or "")
+
+
+def wafr_create_args(kind: str, token: str) -> dict:
+    unique = f"cov{time.time_ns()}"
+    args = {"Name": unique, "ChangeToken": token}
+    if kind in ("Rule", "RateBasedRule", "RuleGroup", "WebACL"):
+        args["MetricName"] = unique
+    if kind == "WebACL":
+        args["DefaultAction"] = {"Type": "ALLOW"}
+    if kind == "RateBasedRule":
+        args.update({"RateKey": "IP", "RateLimit": 2000})
+    return args
+
+
+def wafr_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str) -> str:
+    token = wafr_token(aws_bin, endpoint_url, region, env)
+    out = wafr_call(aws_bin, endpoint_url, region, env, "Create" + kind, wafr_create_args(kind, token))
+    obj = out.get("Rule" if kind == "RateBasedRule" else kind) or {}
+    return str(obj.get(WAFR_KINDS[kind][0]) or "")
+
+
+def wafr_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One entity of every kind, a web ACL with its arn, a rule group and a
+    migration bucket."""
+    state = RUNTIME_STATE.setdefault("wafregional", {})
+    if not state.get("WebACL"):
+        for kind in WAFR_KINDS:
+            state[kind] = wafr_create(aws_bin, endpoint_url, region, env, kind)
+        state["acl_arn"] = f"arn:aws:waf-regional:us-east-1:123456789012:webacl/{state['WebACL']}"
+        state["group_arn"] = f"arn:aws:waf-regional:us-east-1:123456789012:rulegroup/{state['RuleGroup']}"
+        state["bucket"] = s3_ensure_bucket(aws_bin, endpoint_url, region, env, "aws-waf-migration-stackyard-cov", track_as_primary=False)
+    return state
+
+
+def wafr_item(kind: str, fx: dict) -> object:
+    item = WAFR_KINDS[kind][2]
+    if kind == "RegexMatchSet":
+        item = {"FieldToMatch": {"Type": "URI"}, "TextTransformation": "NONE", "RegexPatternSetId": fx["RegexPatternSet"]}
+    if kind in ("Rule", "RateBasedRule"):
+        item = {"Negated": False, "Type": "IPMatch", "DataId": fx["IPSet"]}
+    if kind == "RuleGroup":
+        item = {"Priority": 1, "RuleId": fx["Rule"], "Action": {"Type": "BLOCK"}}
+    if kind == "WebACL":
+        item = {"Priority": 1, "RuleId": fx["Rule"], "Action": {"Type": "BLOCK"}}
+    return item
+
+
+def wafregional_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Every WAF Classic change needs a fresh change token; updates and deletes
+    get entities of their own so the shared fixture stays usable."""
+    op = endpoint.operation
+    fx = wafr_fixture(aws_bin, endpoint_url, region, env)
+    token = lambda: wafr_token(aws_bin, endpoint_url, region, env)
+    for prefix in ("Create", "Get", "Update", "Delete"):
+        kind = op[len(prefix):]
+        if not op.startswith(prefix) or kind not in WAFR_KINDS:
+            continue
+        id_key, upd_key = WAFR_KINDS[kind][0], WAFR_KINDS[kind][1]
+        if prefix == "Create":
+            return wafr_create_args(kind, token())
+        if prefix == "Get":
+            return {id_key: fx[kind]}
+        own = wafr_create(aws_bin, endpoint_url, region, env, kind)
+        if prefix == "Update":
+            args = {id_key: own, "ChangeToken": token(), "Updates": [{"Action": "INSERT", upd_key: wafr_item(kind, fx)}]}
+            if kind == "RateBasedRule":
+                args["RateLimit"] = 3000
+            return args
+        return {id_key: own, "ChangeToken": token()}
+    if op == "GetChangeTokenStatus":
+        return {"ChangeToken": token()}
+    if op in ("AssociateWebACL",):
+        return {"WebACLId": fx["WebACL"], "ResourceArn": WAFR_ALB}
+    if op in ("DisassociateWebACL", "GetWebACLForResource"):
+        return {"ResourceArn": WAFR_ALB}
+    if op == "ListResourcesForWebACL":
+        return {"WebACLId": fx["WebACL"], "ResourceType": "APPLICATION_LOAD_BALANCER"}
+    logging = {"ResourceArn": fx["acl_arn"], "LogDestinationConfigs": ["arn:aws:firehose:us-east-1:123456789012:deliverystream/aws-waf-logs-cov"]}
+    if op == "PutLoggingConfiguration":
+        return {"LoggingConfiguration": logging}
+    if op in ("GetLoggingConfiguration", "DeleteLoggingConfiguration"):
+        wafr_call(aws_bin, endpoint_url, region, env, "PutLoggingConfiguration", {"LoggingConfiguration": logging})
+        return {"ResourceArn": fx["acl_arn"]}
+    if op == "PutPermissionPolicy":
+        return {"ResourceArn": fx["group_arn"], "Policy": WAFR_POLICY}
+    if op in ("GetPermissionPolicy", "DeletePermissionPolicy"):
+        wafr_call(aws_bin, endpoint_url, region, env, "PutPermissionPolicy", {"ResourceArn": fx["group_arn"], "Policy": WAFR_POLICY})
+        return {"ResourceArn": fx["group_arn"]}
+    if op == "TagResource":
+        return {"ResourceARN": fx["acl_arn"], "Tags": [{"Key": "env", "Value": "cov"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": fx["acl_arn"], "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": fx["acl_arn"]}
+    if op == "GetSampledRequests":
+        now = int(time.time())
+        return {"WebAclId": fx["WebACL"], "RuleId": "Default_Action", "TimeWindow": {"StartTime": now - 3600, "EndTime": now}, "MaxItems": 100}
+    if op == "GetRateBasedRuleManagedKeys":
+        return {"RuleId": fx["RateBasedRule"]}
+    if op == "ListActivatedRulesInRuleGroup":
+        return {"RuleGroupId": fx["RuleGroup"]}
+    if op == "CreateWebACLMigrationStack":
+        return {"WebACLId": fx["WebACL"], "S3BucketName": fx["bucket"], "IgnoreUnsupportedType": True}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -36498,6 +36830,10 @@ def hydrate_payload_with_service_state(
         return polly_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "textract":
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "wafregional":
+        return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pi":
+        return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalog":
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
@@ -36525,6 +36861,8 @@ def hydrate_payload_with_service_state(
         return codecommit_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "codestarnotifications":
         return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
+    if endpoint.service == "schemas":
+        return schemas_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "scheduler":
         return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "route53resolver":
@@ -58760,7 +59098,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech")}:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
