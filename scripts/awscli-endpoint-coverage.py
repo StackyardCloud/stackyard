@@ -395,6 +395,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
+    "pcaconnectorscep": {"cli": "pca-connector-scep", "ops_file": REPO_ROOT / "internal/server/pcaconnectorscep_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
@@ -1944,6 +1945,9 @@ SERVICE_ALIASES = {
     "networkmanager": "networkmanager",
     "network-manager": "networkmanager",
     "cloudwan": "networkmanager",
+    "pcaconnectorscep": "pcaconnectorscep",
+    "pca-connector-scep": "pcaconnectorscep",
+    "privatecaconnectorforscep": "pcaconnectorscep",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
     "polly": "polly",
@@ -3202,6 +3206,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pipes": {},
     "route53profiles": {},
     "networkmanager": {},
+    "pcaconnectorscep": {},
     "polly": {},
     "servicecatalogappregistry": {},
     "datasync": {},
@@ -34967,6 +34972,83 @@ def polly_hydrate_payload(
     return payload
 
 
+def psc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "pca-connector-scep", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def psc_certificate_authority(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Reuse the Private CA checks' own CA, so running these first leaves no
+    extra CA behind for them; create a separate one only when that CA isn't
+    ACTIVE (a Private CA run may have disabled or deleted it)."""
+    state = RUNTIME_STATE.setdefault("pcaconnectorscep", {})
+    if state.get("ca"):
+        return str(state["ca"])
+    arn = privateca_ensure_certificate_authority_arn(aws_bin, endpoint_url, region, env)
+    described = run_aws_json(aws_bin, endpoint_url, region, "acm-pca", "describe-certificate-authority", env, ["--certificate-authority-arn", arn])
+    status = str(((described or {}).get("CertificateAuthority") or {}).get("Status") or "") if isinstance(described, dict) else ""
+    if status != "ACTIVE":
+        config = json.dumps({"KeyAlgorithm": "RSA_2048", "SigningAlgorithm": "SHA256WITHRSA", "Subject": {"CommonName": "stackyard-scep"}})
+        data = run_aws_json(
+            aws_bin, endpoint_url, region, "acm-pca", "create-certificate-authority", env,
+            ["--certificate-authority-configuration", config, "--certificate-authority-type", "ROOT",
+             "--idempotency-token", f"scep{time.time_ns() % 10**12}"],
+        )
+        arn = str((data or {}).get("CertificateAuthorityArn") or "") if isinstance(data, dict) else ""
+    state["ca"] = arn
+    return arn
+
+
+def psc_new_connector(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a connector and read it once so it settles to ACTIVE."""
+    ca = psc_certificate_authority(aws_bin, endpoint_url, region, env)
+    arn = str(psc_cli(aws_bin, endpoint_url, region, env, "create-connector", ["--certificate-authority-arn", ca]).get("ConnectorArn") or "")
+    if arn:
+        psc_cli(aws_bin, endpoint_url, region, env, "get-connector", ["--connector-arn", arn])
+    return arn
+
+
+def psc_new_challenge(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connector: str) -> str:
+    data = psc_cli(aws_bin, endpoint_url, region, env, "create-challenge", ["--connector-arn", connector])
+    return str((data.get("Challenge") or {}).get("Arn") or "")
+
+
+def pcaconnectorscep_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each SCEP connector operation at real resources. Deletes get
+    resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("pcaconnectorscep", {})
+    if not state.get("connector"):
+        state["connector"] = psc_new_connector(aws_bin, endpoint_url, region, env)
+        state["challenge"] = psc_new_challenge(aws_bin, endpoint_url, region, env, str(state["connector"]))
+    connector, challenge = str(state["connector"]), str(state["challenge"])
+    if op == "CreateConnector":
+        return {"CertificateAuthorityArn": psc_certificate_authority(aws_bin, endpoint_url, region, env), "ClientToken": f"stackyard-{time.time_ns()}"}
+    if op == "ListConnectors":
+        return {}
+    if op == "GetConnector":
+        return {"ConnectorArn": connector}
+    if op == "DeleteConnector":
+        return {"ConnectorArn": psc_new_connector(aws_bin, endpoint_url, region, env)}
+    if op == "CreateChallenge":
+        return {"ConnectorArn": connector, "ClientToken": f"stackyard-{time.time_ns()}"}
+    if op == "ListChallengeMetadata":
+        return {"ConnectorArn": connector}
+    if op in {"GetChallengeMetadata", "GetChallengePassword"}:
+        return {"ChallengeArn": challenge}
+    if op == "DeleteChallenge":
+        return {"ChallengeArn": psc_new_challenge(aws_bin, endpoint_url, region, env, connector)}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": connector}
+    if op == "TagResource":
+        return {"ResourceArn": connector, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": connector, "TagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 NM_ACCOUNT = "123456789012"
 NM_POLICY = json.dumps({
     "version": "2021.12",
@@ -37295,6 +37377,8 @@ def hydrate_payload_with_service_state(
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "migrationhub":
         return migrationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pcaconnectorscep":
+        return pcaconnectorscep_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalogappregistry":
