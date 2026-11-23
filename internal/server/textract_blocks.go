@@ -18,6 +18,8 @@ const (
 	txLineConfidence = 99.0
 	txKVConfidence   = 95.0
 	txMaxQueries     = 100
+	txMaxTableCols   = 100  // columns kept per table row
+	txMaxTableCells  = 5000 // cells (incl. padding) emitted per table
 )
 
 type txBox struct{ left, top, width, height float64 }
@@ -223,11 +225,20 @@ func txCells(l *txLine, delim rune) []txCell {
 			cells = cells[:len(cells)-1]
 		}
 	}
-	for ci := range cells {
-		for wi, w := range l.words {
-			if w.start >= cells[ci].start && w.end <= cells[ci].end {
-				cells[ci].words = append(cells[ci].words, wi)
-			}
+	if len(cells) > txMaxTableCols {
+		cells = cells[:txMaxTableCols]
+	}
+	// Words and cells are both in line order, so one linear pass assigns them.
+	ci := 0
+	for wi, w := range l.words {
+		for ci < len(cells) && cells[ci].end < w.end {
+			ci++
+		}
+		if ci == len(cells) {
+			break
+		}
+		if w.start >= cells[ci].start && w.end <= cells[ci].end {
+			cells[ci].words = append(cells[ci].words, wi)
 		}
 	}
 	return cells
@@ -410,6 +421,11 @@ func (a *txAnalysis) tableBlocks(p *txPageInfo, ti int, t *txTable) []any {
 	table["EntityTypes"] = []any{"STRUCTURED_TABLE"}
 	var cellIDs []string
 	var cells []any
+	// Short rows are padded with empty cells up to the widest row, so cap the
+	// table at txMaxTableCells (columns are already capped per row in txCells).
+	if maxRows := txMaxTableCells / max(cols, 1); len(rows) > maxRows {
+		rows = rows[:maxRows]
+	}
 	for ri, l := range rows {
 		for ci := 0; ci < cols; ci++ {
 			id := a.id("cell", txItoa(p.number), txItoa(ti), txItoa(ri), txItoa(ci))

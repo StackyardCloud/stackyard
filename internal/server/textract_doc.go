@@ -26,6 +26,7 @@ const (
 	txMaxWords        = 200000   // bounds blocks per document
 	txMaxPDFInflate   = 32 << 20 // decompressed bytes across all PDF streams (bomb guard)
 	txMaxPDFStreams   = 10000    // content streams scanned per PDF
+	txPDFDictWindow   = 4 << 10  // bytes searched back for a stream's dictionary
 	txSyncMaxBytes    = 10 << 20 // synchronous document limit (model ImageBlob max, AWS docs)
 	txAsyncMaxBytes   = 32 << 20 // ponytail: AWS allows 500 MB async; 32 MiB bounds memory here
 )
@@ -145,17 +146,28 @@ func txPDFPages(b []byte) ([][]string, *txErr) {
 	}
 	var streams [][]string
 	budget := txMaxPDFInflate
+	// One forward pass: each stream's data runs to the next "endstream", and
+	// matches inside data already consumed are skipped, so a crafted PDF can't
+	// make the scan quadratic. The stream dictionary is looked up only in a
+	// bounded window before the "stream" keyword.
 	locs := txPDFStreamRe.FindAllIndex(b, txMaxPDFStreams)
+	consumed := 0
 	for _, loc := range locs {
-		end := bytes.Index(b[loc[1]:], []byte("endstream"))
-		if end < 0 {
+		if loc[0] < consumed {
 			continue
 		}
+		end := bytes.Index(b[loc[1]:], []byte("endstream"))
+		if end < 0 {
+			break // no stream after this one can be terminated either
+		}
 		data := b[loc[1] : loc[1]+end]
-		dictStart := bytes.LastIndex(b[:loc[0]], []byte("obj"))
+		consumed = loc[1] + end
+		windowStart := max(0, loc[0]-txPDFDictWindow)
+		dictStart := bytes.LastIndex(b[windowStart:loc[0]], []byte("obj"))
 		if dictStart < 0 {
 			dictStart = 0
 		}
+		dictStart += windowStart
 		if bytes.Contains(b[dictStart:loc[0]], []byte("/FlateDecode")) {
 			zr, err := zlib.NewReader(bytes.NewReader(data))
 			if err != nil {

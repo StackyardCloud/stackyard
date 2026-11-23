@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 )
 
 const txInvoice = "Acme Supplies\nInvoice Number: INV-42\nDate: 2026-01-31\nTotal: $123.45\nItem\tQty\tPrice\nWidget\t2\t$10.00\nGadget\t1\t$103.45\n/s/ Jane Doe\n"
@@ -286,5 +288,36 @@ func TestTextractStage1JobStoreIsBounded(t *testing.T) {
 	st.addJob(&txJob{api: "StartDocumentTextDetection"}, &txResult{cost: 10}, "", "")
 	if st.jobs[first] != nil || st.jobs[second] == nil || st.storedBlocks > txMaxStoredBlocks {
 		t.Fatalf("budget: first kept=%v second kept=%v stored=%d", st.jobs[first] != nil, st.jobs[second] != nil, st.storedBlocks)
+	}
+}
+
+// One very wide row pads every other row with empty cells; columns and cells
+// per table are capped so a small document can't produce rows x cols blocks.
+func TestTextractStage1TableCellsAreBounded(t *testing.T) {
+	_, ts := newTextractTestServer(t)
+	var doc strings.Builder
+	doc.WriteString(strings.Repeat("x|", 5000) + "x\n")
+	for i := 0; i < 1500; i++ {
+		doc.WriteString("a|b\n")
+	}
+	body := fmt.Sprintf(`{"Document":{"Bytes":%q},"FeatureTypes":["TABLES"]}`, base64.StdEncoding.EncodeToString([]byte(doc.String())))
+	cells := txByType(txBlocksOf(txOK(t, ts, "AnalyzeDocument", body)), "CELL")
+	if len(cells) > txMaxTableCells {
+		t.Fatalf("table produced %d cells, cap is %d", len(cells), txMaxTableCells)
+	}
+}
+
+// Thousands of "stream" keywords with no "endstream" must not make the PDF
+// scan quadratic.
+func TestTextractStage1PDFScanIsLinear(t *testing.T) {
+	// ~8 MiB with 10,000 unterminated streams: a per-stream search to the end of
+	// the file would scan ~40 GB.
+	pdf := "%PDF-1.4\n1 0 obj << /Type /Page >> endobj\n" + strings.Repeat("obj << /Filter /FlateDecode >>\nstream\n"+strings.Repeat(" ", 800), 10000)
+	start := time.Now()
+	if _, err := txParseDocument([]byte(pdf)); err != nil {
+		t.Fatal(err.msg)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("PDF scan took %s", d)
 	}
 }
