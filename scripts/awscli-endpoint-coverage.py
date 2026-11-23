@@ -559,6 +559,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
+    "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
@@ -2215,6 +2216,8 @@ SERVICE_ALIASES = {
     "route53domains": "route53domains",
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
+    "textract": "textract",
+    "amazontextract": "textract",
     "awscodeconnections": "codeconnections",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
@@ -3163,6 +3166,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
+    "textract": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -32829,6 +32833,117 @@ def route53domains_register(aws_bin: str, endpoint_url: str, region: str, env: d
     return name, str((data or {}).get("OperationId") or "")
 
 
+TEXTRACT_SAMPLE = (
+    "Acme Supplies\nInvoice Number: INV-42\nDate: 2026-01-31\nTotal: $123.45\n"
+    "Item\tQty\tPrice\nWidget\t2\t$10.00\n/s/ Jane Doe\n"
+)
+TEXTRACT_ID_SAMPLE = "DRIVER LICENSE\nFirst Name: Ada\nLast Name: Lovelace\nDate of Birth: 1815-12-10\n"
+TEXTRACT_ROLE = "arn:aws:iam::123456789012:role/stackyard-textract"
+
+
+def textract_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A bucket holding a sample document and a training manifest, an SNS
+    topic, and one adapter with a version."""
+    state = RUNTIME_STATE.setdefault("textract", {})
+    if not state.get("adapter"):
+        bucket = s3_ensure_bucket(aws_bin, endpoint_url, region, env, "stackyard-textract-cov", track_as_primary=False)
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, bucket, "doc.txt", TEXTRACT_SAMPLE.encode())
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, bucket, "manifest.json", b"{}")
+        state["bucket"], state["topic"] = bucket, sns_ensure_topic(aws_bin, endpoint_url, region, env)
+        state["adapter"] = textract_create_adapter(aws_bin, endpoint_url, region, env)
+        state["version"] = textract_create_version(aws_bin, endpoint_url, region, env, state["adapter"], bucket)
+    return state
+
+
+def textract_create_adapter(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "textract", "create-adapter", env, [
+        "--adapter-name", f"cov-{time.time_ns()}", "--feature-types", "QUERIES",
+    ])
+    return str((data or {}).get("AdapterId") or "")
+
+
+def textract_create_version(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], adapter: str, bucket: str) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "textract", "create-adapter-version", env, [
+        "--adapter-id", adapter,
+        "--dataset-config", json.dumps({"ManifestS3Object": {"Bucket": bucket, "Name": "manifest.json"}}),
+        "--output-config", json.dumps({"S3Bucket": bucket, "S3Prefix": "adapter-output"}),
+    ])
+    return str((data or {}).get("AdapterVersion") or "")
+
+
+def textract_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give Textract operations a real document, job, adapter or ARN;
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    fx = textract_fixture(aws_bin, endpoint_url, region, env)
+    doc = {"Bytes": base64.b64encode(TEXTRACT_SAMPLE.encode()).decode()}
+    location = {"S3Object": {"Bucket": fx["bucket"], "Name": "doc.txt"}}
+    queries = {"Queries": [{"Text": "What is the total?", "Alias": "TOTAL"}]}
+    features = ["TABLES", "FORMS", "QUERIES", "SIGNATURES", "LAYOUT"]
+    starts = {
+        "StartDocumentTextDetection": {},
+        "StartDocumentAnalysis": {"FeatureTypes": features, "QueriesConfig": queries},
+        "StartExpenseAnalysis": {},
+        "StartLendingAnalysis": {},
+    }
+
+    def start(api: str) -> str:
+        args = {"DocumentLocation": location, **starts[api]}
+        cli = re.sub(r"(?<!^)(?=[A-Z])", "-", api).lower()
+        data = run_aws_json(aws_bin, endpoint_url, region, "textract", cli, env, ["--cli-input-json", json.dumps(args)])
+        return str((data or {}).get("JobId") or "")
+
+    if op == "DetectDocumentText" or op == "AnalyzeExpense":
+        return {"Document": doc}
+    if op == "AnalyzeDocument":
+        return {"Document": doc, "FeatureTypes": features, "QueriesConfig": queries}
+    if op == "AnalyzeID":
+        return {"DocumentPages": [{"Bytes": base64.b64encode(TEXTRACT_ID_SAMPLE.encode()).decode()}]}
+    if op in starts:
+        return {
+            "DocumentLocation": location, **starts[op], "JobTag": "coverage",
+            "NotificationChannel": {"SNSTopicArn": fx["topic"], "RoleArn": TEXTRACT_ROLE},
+            "OutputConfig": {"S3Bucket": fx["bucket"], "S3Prefix": "textract-output"},
+        }
+    gets = {
+        "GetDocumentTextDetection": "StartDocumentTextDetection", "GetDocumentAnalysis": "StartDocumentAnalysis",
+        "GetExpenseAnalysis": "StartExpenseAnalysis", "GetLendingAnalysis": "StartLendingAnalysis",
+        "GetLendingAnalysisSummary": "StartLendingAnalysis",
+    }
+    if op in gets:
+        return {"JobId": start(gets[op])}
+    if op == "CreateAdapter":
+        return {"AdapterName": f"cov-{time.time_ns()}", "FeatureTypes": ["QUERIES"], "Tags": {"team": "coverage"}}
+    if op == "CreateAdapterVersion":
+        return {
+            "AdapterId": fx["adapter"],
+            "DatasetConfig": {"ManifestS3Object": {"Bucket": fx["bucket"], "Name": "manifest.json"}},
+            "OutputConfig": {"S3Bucket": fx["bucket"], "S3Prefix": "adapter-output"},
+        }
+    if op in {"GetAdapter", "ListAdapterVersions"}:
+        return {"AdapterId": fx["adapter"]}
+    if op == "UpdateAdapter":
+        return {"AdapterId": fx["adapter"], "Description": "coverage adapter", "AutoUpdate": "DISABLED"}
+    if op == "GetAdapterVersion":
+        return {"AdapterId": fx["adapter"], "AdapterVersion": fx["version"]}
+    if op == "DeleteAdapter":
+        return {"AdapterId": textract_create_adapter(aws_bin, endpoint_url, region, env)}
+    if op == "DeleteAdapterVersion":
+        return {"AdapterId": fx["adapter"], "AdapterVersion": textract_create_version(aws_bin, endpoint_url, region, env, fx["adapter"], fx["bucket"])}
+    arn = f"arn:aws:textract:{region}:123456789012:/adapters/{fx['adapter']}"
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    if op == "ListAdapters":
+        return {}
+    return payload
+
+
 def route53domains_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
     state = RUNTIME_STATE.setdefault("route53domains", {})
     if not state.get("domain"):
@@ -35242,6 +35357,8 @@ def hydrate_payload_with_service_state(
         return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "polly":
         return polly_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "textract":
+        return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
