@@ -7,8 +7,10 @@ import (
 )
 
 type appSyncStore struct {
-	mu   sync.Mutex
-	tags map[string]map[string]string
+	mu         sync.Mutex
+	tags       map[string]map[string]string
+	eventAPIs  map[string]*appSyncEventAPI
+	namespaces map[string]map[string]*appSyncNamespace
 }
 
 func newAppSyncStore() *appSyncStore {

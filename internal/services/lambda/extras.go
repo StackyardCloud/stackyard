@@ -3,10 +3,13 @@ package lambda
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	googleuuid "github.com/google/uuid"
 )
 
 type extraState struct {
@@ -84,7 +87,7 @@ func (s *Service) CreateEventSourceMapping(functionRef string, payload map[strin
 	if err != nil {
 		return nil, err
 	}
-	uuid := "esm-" + strings.TrimPrefix(s.nextRevisionIDLocked(), "rev-")
+	uuid := googleuuid.NewString() // the model requires a 36-character UUID
 	now := time.Now().UTC()
 	mapping := map[string]any{
 		"UUID":                  uuid,
@@ -956,10 +959,64 @@ func (s *Service) RemoveLayerVersionPermission(layerName, version, statementID s
 	return nil
 }
 
+// capacityProviderPattern is the model's name pattern (ARN form is resolved
+// to the trailing name first).
+var capacityProviderPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,140}$`)
+
+const maxCapacityProviders = 1000
+
+func capacityProviderName(ref string) string {
+	ref = strings.TrimSpace(ref)
+	if i := strings.LastIndex(ref, ":capacity-provider:"); i >= 0 {
+		return ref[i+len(":capacity-provider:"):]
+	}
+	return ref
+}
+
+// capacityProviderStringList accepts a JSON list of 1..max non-empty strings
+// (min 0 when allowEmpty).
+func capacityProviderStringList(v any, maxLen int, allowEmpty bool) ([]any, bool) {
+	raw, ok := v.([]any)
+	if !ok || len(raw) > maxLen || (!allowEmpty && len(raw) == 0) {
+		return nil, false
+	}
+	out := make([]any, 0, len(raw))
+	for _, item := range raw {
+		text, ok := item.(string)
+		if !ok || strings.TrimSpace(text) == "" {
+			return nil, false
+		}
+		out = append(out, text)
+	}
+	return out, true
+}
+
+// capacityProviderOptional copies the optional configuration members the
+// caller may set; structures are kept as given and replaced, never mutated.
+func capacityProviderOptional(rec, payload map[string]any, fields ...string) {
+	for _, field := range fields {
+		if v, ok := payload[field]; ok && v != nil {
+			rec[field] = v
+		}
+	}
+}
+
 func (s *Service) CreateCapacityProvider(payload map[string]any) (map[string]any, error) {
-	name := firstNonEmpty(stringValue(payload["CapacityProviderName"]), stringValue(payload["Name"]))
-	name = strings.TrimSpace(name)
-	if name == "" {
+	name := strings.TrimSpace(stringValue(payload["CapacityProviderName"]))
+	if !capacityProviderPattern.MatchString(name) {
+		return nil, ErrInvalidParameter
+	}
+	vpc := mapValue(payload["VpcConfig"])
+	subnets, ok := capacityProviderStringList(vpc["SubnetIds"], 16, false)
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	groups, ok := capacityProviderStringList(vpc["SecurityGroupIds"], 5, true)
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	role := strings.TrimSpace(stringValue(mapValue(payload["PermissionsConfig"])["CapacityProviderOperatorRoleArn"]))
+	if !strings.HasPrefix(role, "arn:") || !strings.Contains(role, ":role/") {
 		return nil, ErrInvalidParameter
 	}
 	s.mu.Lock()
@@ -967,21 +1024,23 @@ func (s *Service) CreateCapacityProvider(payload map[string]any) (map[string]any
 	if s.extras.capacityProviders[name] != nil {
 		return nil, ErrAlreadyExists
 	}
+	if len(s.extras.capacityProviders) >= maxCapacityProviders {
+		return nil, ErrInvalidParameter
+	}
 	rec := map[string]any{
-		"CapacityProviderName": name,
-		"CapacityProviderArn":  capacityProviderARN(name),
-		"Status":               "ACTIVE",
-		"FunctionArns":         sliceValue(payload["FunctionArns"]),
+		"CapacityProviderArn": capacityProviderARN(name),
+		"State":               "Active",
+		"VpcConfig":           map[string]any{"SubnetIds": subnets, "SecurityGroupIds": groups},
+		"PermissionsConfig":   map[string]any{"CapacityProviderOperatorRoleArn": role},
+		"LastModified":        time.Now().UTC().Format("2006-01-02T15:04:05.000-0700"),
 	}
-	s.extras.capacityProviders[name] = cloneAnyMap(rec)
+	capacityProviderOptional(rec, payload, "InstanceRequirements", "CapacityProviderScalingConfig", "KmsKeyArn", "PropagateTags", "TelemetryConfig")
+	s.extras.capacityProviders[name] = rec
 	return cloneAnyMap(rec), nil
 }
 
-func (s *Service) GetCapacityProvider(name string) (map[string]any, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
+func (s *Service) GetCapacityProvider(ref string) (map[string]any, error) {
+	name := capacityProviderName(ref)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rec := s.extras.capacityProviders[name]
@@ -991,40 +1050,38 @@ func (s *Service) GetCapacityProvider(name string) (map[string]any, error) {
 	return cloneAnyMap(rec), nil
 }
 
-func (s *Service) UpdateCapacityProvider(name string, payload map[string]any) (map[string]any, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, ErrInvalidParameter
-	}
+func (s *Service) UpdateCapacityProvider(ref string, payload map[string]any) (map[string]any, error) {
+	name := capacityProviderName(ref)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rec := s.extras.capacityProviders[name]
 	if rec == nil {
 		return nil, ErrNotFound
 	}
-	for _, field := range []string{"Status", "FunctionArns"} {
-		if v, ok := payload[field]; ok {
-			rec[field] = v
-		}
-	}
-	return cloneAnyMap(rec), nil
+	next := cloneAnyMap(rec)
+	capacityProviderOptional(next, payload, "CapacityProviderScalingConfig", "PropagateTags", "TelemetryConfig")
+	next["LastModified"] = time.Now().UTC().Format("2006-01-02T15:04:05.000-0700")
+	s.extras.capacityProviders[name] = next
+	return cloneAnyMap(next), nil
 }
 
-func (s *Service) DeleteCapacityProvider(name string) error {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return ErrInvalidParameter
-	}
+// DeleteCapacityProvider removes the provider and returns its final
+// description in the Deleting state, as the API does.
+func (s *Service) DeleteCapacityProvider(ref string) (map[string]any, error) {
+	name := capacityProviderName(ref)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.extras.capacityProviders[name] == nil {
-		return ErrNotFound
+	rec := s.extras.capacityProviders[name]
+	if rec == nil {
+		return nil, ErrNotFound
 	}
 	delete(s.extras.capacityProviders, name)
-	return nil
+	out := cloneAnyMap(rec)
+	out["State"] = "Deleting"
+	return out, nil
 }
 
-func (s *Service) ListCapacityProviders(maxItems, marker int) ([]map[string]any, string) {
+func (s *Service) ListCapacityProviders(state string, maxItems, marker int) ([]map[string]any, string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	names := make([]string, 0, len(s.extras.capacityProviders))
@@ -1034,28 +1091,27 @@ func (s *Service) ListCapacityProviders(maxItems, marker int) ([]map[string]any,
 	sort.Strings(names)
 	out := make([]map[string]any, 0, len(names))
 	for _, name := range names {
-		out = append(out, cloneAnyMap(s.extras.capacityProviders[name]))
+		rec := s.extras.capacityProviders[name]
+		if state != "" && rec["State"] != state {
+			continue
+		}
+		out = append(out, cloneAnyMap(rec))
 	}
 	return paginateLambdaSlice(out, maxItems, marker)
 }
 
-func (s *Service) ListFunctionVersionsByCapacityProvider(name string, maxItems, marker int) ([]map[string]any, string, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, "", ErrInvalidParameter
-	}
+// ListFunctionVersionsByCapacityProvider reports no function versions:
+// functions do not attach to capacity providers in this emulator.
+func (s *Service) ListFunctionVersionsByCapacityProvider(ref string, maxItems, marker int) (string, []map[string]any, string, error) {
+	name := capacityProviderName(ref)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rec := s.extras.capacityProviders[name]
 	if rec == nil {
-		return nil, "", ErrNotFound
+		return "", nil, "", ErrNotFound
 	}
-	out := make([]map[string]any, 0)
-	for _, raw := range sliceValue(rec["FunctionArns"]) {
-		out = append(out, map[string]any{"FunctionArn": raw})
-	}
-	paged, next := paginateLambdaSlice(out, maxItems, marker)
-	return paged, next, nil
+	paged, next := paginateLambdaSlice([]map[string]any{}, maxItems, marker)
+	return stringValue(rec["CapacityProviderArn"]), paged, next, nil
 }
 
 func (s *Service) ListDurableExecutionsByFunction(ref string, maxItems, marker int) ([]map[string]any, string, error) {

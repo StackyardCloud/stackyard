@@ -931,7 +931,7 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 			respondLambdaErrorForErr(w, err)
 			return true
 		}
-		respondLambdaJSON(w, http.StatusCreated, map[string]any{"CapacityProvider": cfg})
+		respondLambdaJSON(w, http.StatusAccepted, map[string]any{"CapacityProvider": cfg})
 		return true
 	case "GetCapacityProvider":
 		cfg, err := s.lambda.GetCapacityProvider(lambdaParam(params, "CapacityProviderName", "capacityProviderName"))
@@ -950,19 +950,20 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 			respondLambdaErrorForErr(w, err)
 			return true
 		}
-		respondLambdaJSON(w, http.StatusOK, map[string]any{"CapacityProvider": cfg})
+		respondLambdaJSON(w, http.StatusAccepted, map[string]any{"CapacityProvider": cfg})
 		return true
 	case "DeleteCapacityProvider":
-		if err := s.lambda.DeleteCapacityProvider(lambdaParam(params, "CapacityProviderName", "capacityProviderName")); err != nil {
+		cfg, err := s.lambda.DeleteCapacityProvider(lambdaParam(params, "CapacityProviderName", "capacityProviderName"))
+		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true
 		}
-		w.WriteHeader(http.StatusNoContent)
+		respondLambdaJSON(w, http.StatusAccepted, map[string]any{"CapacityProvider": cfg})
 		return true
 	case "ListCapacityProviders":
 		maxItems := parseLambdaIntQuery(r.URL.Query(), "MaxItems")
 		marker := parseLambdaIntQuery(r.URL.Query(), "Marker")
-		items, nextMarker := s.lambda.ListCapacityProviders(maxItems, marker)
+		items, nextMarker := s.lambda.ListCapacityProviders(r.URL.Query().Get("State"), maxItems, marker)
 		resp := map[string]any{"CapacityProviders": items}
 		if nextMarker != "" {
 			resp["NextMarker"] = nextMarker
@@ -972,12 +973,12 @@ func (s *Server) handleLambdaAdditionalOperation(w http.ResponseWriter, r *http.
 	case "ListFunctionVersionsByCapacityProvider":
 		maxItems := parseLambdaIntQuery(r.URL.Query(), "MaxItems")
 		marker := parseLambdaIntQuery(r.URL.Query(), "Marker")
-		items, nextMarker, err := s.lambda.ListFunctionVersionsByCapacityProvider(lambdaParam(params, "CapacityProviderName", "capacityProviderName"), maxItems, marker)
+		arn, items, nextMarker, err := s.lambda.ListFunctionVersionsByCapacityProvider(lambdaParam(params, "CapacityProviderName", "capacityProviderName"), maxItems, marker)
 		if err != nil {
 			respondLambdaErrorForErr(w, err)
 			return true
 		}
-		resp := map[string]any{"FunctionVersions": items}
+		resp := map[string]any{"CapacityProviderArn": arn, "FunctionVersions": items}
 		if nextMarker != "" {
 			resp["NextMarker"] = nextMarker
 		}

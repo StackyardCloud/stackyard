@@ -840,6 +840,9 @@ func batchServiceJobPayload(job batchsvc.ServiceJob) map[string]any {
 	if latest := batchLatestServiceJobAttempt(job.Attempts); latest != nil {
 		out["latestAttempt"] = latest
 	}
+	// startedAt is required by the model; a job that has not started yet
+	// reports its creation time, as the summary payload does.
+	out["startedAt"] = batchTimeMillis(job.CreatedAt)
 	if job.StartedAt != nil {
 		out["startedAt"] = batchTimeMillis(*job.StartedAt)
 	}

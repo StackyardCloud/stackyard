@@ -13716,6 +13716,26 @@ def botocore_service_name(cli_service: str) -> str:
     return CLI_TO_BOTOCORE_SERVICE.get(cli_service, cli_service)
 
 
+def aws_cli_botocore_data_dir(aws_bin: str) -> Path | None:
+    """Return the service-model directory bundled with the AWS CLI being run.
+
+    The CLI v2 vendors its own botocore models, which can be newer or older
+    than the pip botocore this script imports. Skeleton pruning and output
+    validation must use the models the CLI actually sends and parses with.
+    """
+    found = shutil.which(aws_bin)
+    if not found:
+        return None
+    resolved = Path(found).resolve()
+    for parent in list(resolved.parents)[:3]:
+        bundled = parent / "awscli" / "botocore" / "data"  # installer: dist/awscli/...
+        if bundled.is_dir():
+            return bundled
+        for candidate in sorted(parent.glob("lib/python*/site-packages/awscli/botocore/data")):
+            return candidate
+    return None
+
+
 def get_operation_model(endpoint: Endpoint):
     global _BOTOCORE_SESSION  # noqa: PLW0603
 
@@ -13730,6 +13750,9 @@ def get_operation_model(endpoint: Endpoint):
     try:
         if _BOTOCORE_SESSION is None:
             _BOTOCORE_SESSION = botocore_session.get_session()
+            cli_data = aws_cli_botocore_data_dir(os.getenv("AWS_BIN", "aws"))
+            if cli_data is not None:
+                _BOTOCORE_SESSION.get_component("data_loader").search_paths.insert(0, str(cli_data))
         service_model = _BOTOCORE_SESSION.get_service_model(botocore_service_name(endpoint.cli_service))
         operation_name = kebab_to_pascal(endpoint.cli_operation)
         model = service_model.operation_model(operation_name)
@@ -18262,6 +18285,27 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
             set_key_if_present_case_insensitive(payload, "RemoveSupportedRegions", [])
 
     return payload
+
+
+def appsync_events_api_id(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    name: str,
+    event_config: str,
+) -> str | None:
+    """Return the id of the AppSync Events API called name, creating it if needed."""
+    listed = run_aws_json(aws_bin, endpoint_url, region, "appsync", "list-apis", env) or {}
+    for api in listed.get("apis") or []:
+        if isinstance(api, dict) and api.get("name") == name and api.get("apiId"):
+            return str(api["apiId"])
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "appsync", "create-api", env,
+        ["--name", name, "--event-config", event_config],
+    )
+    api = (created or {}).get("api") or {}
+    return str(api["apiId"]) if api.get("apiId") else None
 
 
 def run_aws_json(
@@ -40303,6 +40347,46 @@ def hydrate_payload_with_service_state(
             _replace_payload({"apiId": api_id, "definition": "c3RhY2t5YXJk"})
             return hydrated
 
+        # AppSync Events APIs are stateful: run against a real API and namespace.
+        events_ops = {
+            "CreateApi", "GetApi", "UpdateApi", "DeleteApi",
+            "CreateChannelNamespace", "GetChannelNamespace", "UpdateChannelNamespace",
+            "DeleteChannelNamespace", "ListChannelNamespaces",
+        }
+        if op in events_ops:
+            modes = [{"authType": "API_KEY"}]
+            event_config = {
+                "authProviders": [{"authType": "API_KEY"}],
+                "connectionAuthModes": modes,
+                "defaultPublishAuthModes": modes,
+                "defaultSubscribeAuthModes": modes,
+            }
+            config_arg = json.dumps(event_config)
+            if op == "CreateApi":
+                _replace_payload({"name": "stackyard-events-create", "eventConfig": event_config})
+                return hydrated
+            events_api_id = appsync_events_api_id(
+                aws_bin, endpoint_url, region, env, "stackyard-events-delete" if op == "DeleteApi" else "stackyard-events", config_arg
+            )
+            if not events_api_id:
+                return hydrated
+            if op in {"GetApi", "DeleteApi"}:
+                _replace_payload({"apiId": events_api_id})
+            elif op == "UpdateApi":
+                _replace_payload({"apiId": events_api_id, "name": "stackyard-events", "eventConfig": event_config})
+            elif op == "ListChannelNamespaces":
+                _replace_payload({"apiId": events_api_id})
+            elif op == "CreateChannelNamespace":
+                _replace_payload({"apiId": events_api_id, "name": "stackyard-create-ns"})
+            else:
+                ns = "stackyard-delete-ns" if op == "DeleteChannelNamespace" else "stackyard-ns"
+                run_aws_json(
+                    aws_bin, endpoint_url, region, "appsync", "create-channel-namespace", env,
+                    ["--api-id", events_api_id, "--name", ns],
+                )
+                _replace_payload({"apiId": events_api_id, "name": ns})
+            return hydrated
+
         if op == "TagResource":
             _replace_payload({"resourceArn": api_arn, "tags": {"env": "coverage", "seed": "true"}})
             return hydrated
@@ -47741,7 +47825,8 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "GetFunctionEventInvokeConfig":
-            _replace_payload({"FunctionName": function_name, "Qualifier": alias_name})
+            # The helper above puts an unqualified config; read that one back.
+            _replace_payload({"FunctionName": function_name})
             return hydrated
 
         if op == "GetFunctionRecursionConfig":
@@ -56891,6 +56976,11 @@ def hydrate_payload_with_service_state(
         if op in {"CreateJobQueue", "UpdateJobQueue"}:
             set_key_if_present_case_insensitive(payload, "SchedulingPolicyArn", "")
             order_key = find_key_case_insensitive(payload, "ComputeEnvironmentOrder")
+            if order_key is None and op == "CreateJobQueue":
+                # Optional in the model (pruned away), but a queue needs one
+                # compute or service environment.
+                order_key = "computeEnvironmentOrder"
+                payload[order_key] = [{"order": 1, "computeEnvironment": ""}]
             if order_key is not None and isinstance(payload.get(order_key), list):
                 order_list = payload[order_key]
                 if not order_list:
