@@ -235,6 +235,7 @@ type Server struct {
 	paymentcryptographydata                             *paymentCryptographyDataStore
 	inspectorv2                                         *inspectorV2Store
 	inspector                                           *iscStore
+	tsdb                                                *tsmStore
 	cloudwatchapplicationinsights                       *cloudWatchApplicationInsightsStore
 	cloudwatchinvestigations                            *cloudWatchInvestigationsStore
 	cloudwatchsynthetics                                *cloudWatchSyntheticsStore
@@ -790,6 +791,7 @@ func New(cfg Config) *Server {
 		paymentcryptographydata:       newPaymentCryptographyDataStore(),
 		inspectorv2:                   newInspectorV2Store(),
 		inspector:                     newInspectorStore(),
+		tsdb:                          newTimestreamStore(),
 		cloudwatchapplicationinsights: newCloudWatchApplicationInsightsStore(),
 		cloudwatchinvestigations:      newCloudWatchInvestigationsStore(),
 		cloudwatchsynthetics:          newCloudWatchSyntheticsStore(),
@@ -3686,6 +3688,9 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleInspectorJSONRouter(w, r) {
+		return
+	}
+	if s.handleTimestreamJSONRouter(w, r) {
 		return
 	}
 	if s.handleInspectorV2RESTRouter(w, r) {

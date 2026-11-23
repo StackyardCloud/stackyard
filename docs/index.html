@@ -333,6 +333,8 @@
         <a href="#sqs-simple">SQS Simple</a>
         <a href="#swf">SWF</a>
         <a href="#timestream-influxdb">Timestream for InfluxDB</a>
+        <a href="#timestream-write">Timestream Write</a>
+        <a href="#timestream-query">Timestream Query</a>
       </nav>
     </aside>
 
@@ -23868,6 +23870,98 @@
         <ul>
         <li><code>timestream</code>: <code>docker compose -f examples/aws/timestream/docker-compose.yml up --build</code></li>
         <li><code>timestream</code>: <code>docker compose -f examples/aws/timestream/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="timestream-write" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Timestream Write</h2>
+        <p>SigV4 signed with service <code>timestream</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.0</code> and <code>X-Amz-Target: Timestream_20181101.&lt;Action&gt;</code>. Shares one store with Timestream Query. Databases and tables with retention and magnetic-store write settings; WriteRecords validates types and the ingestion window, upserts by Version and returns RejectedRecords per record while still writing the valid ones; CSV batch loads read from the S3 store and write error reports back to it. DescribeEndpoints returns the Stackyard host.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: timestream</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateBatchLoadTask</code></td></tr>
+        <tr><td><code>CreateDatabase</code></td></tr>
+        <tr><td><code>CreateTable</code></td></tr>
+        <tr><td><code>DeleteDatabase</code></td></tr>
+        <tr><td><code>DeleteTable</code></td></tr>
+        <tr><td><code>DescribeBatchLoadTask</code></td></tr>
+        <tr><td><code>DescribeDatabase</code></td></tr>
+        <tr><td><code>DescribeEndpoints</code></td></tr>
+        <tr><td><code>DescribeTable</code></td></tr>
+        <tr><td><code>ListBatchLoadTasks</code></td></tr>
+        <tr><td><code>ListDatabases</code></td></tr>
+        <tr><td><code>ListTables</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ResumeBatchLoadTask</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDatabase</code></td></tr>
+        <tr><td><code>UpdateTable</code></td></tr>
+        <tr><td><code>WriteRecords</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>timestream-liveanalytics</code>: <code>docker compose -f examples/aws/timestream-liveanalytics/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="timestream-query" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Timestream Query</h2>
+        <p>SigV4 signed with service <code>timestream</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.0</code> and <code>X-Amz-Target: Timestream_20181101.&lt;Action&gt;</code>. Query runs a SQL subset over the stored records: column and measure_value::&lt;type&gt; selection, WHERE with ago(), now(), BETWEEN, IN and LIKE, bin(), count/avg/sum/min/max with GROUP BY, ORDER BY and LIMIT, paged with NextToken. Unsupported SQL is a ValidationException. Scheduled queries bind @scheduled_runtime, write results to a target table and report failures to S3 and SNS.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: timestream</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelQuery</code></td></tr>
+        <tr><td><code>CreateScheduledQuery</code></td></tr>
+        <tr><td><code>DeleteScheduledQuery</code></td></tr>
+        <tr><td><code>DescribeAccountSettings</code></td></tr>
+        <tr><td><code>DescribeEndpoints</code></td></tr>
+        <tr><td><code>DescribeScheduledQuery</code></td></tr>
+        <tr><td><code>ExecuteScheduledQuery</code></td></tr>
+        <tr><td><code>ListScheduledQueries</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PrepareQuery</code></td></tr>
+        <tr><td><code>Query</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAccountSettings</code></td></tr>
+        <tr><td><code>UpdateScheduledQuery</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>timestream-liveanalytics</code>: <code>docker compose -f examples/aws/timestream-liveanalytics/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

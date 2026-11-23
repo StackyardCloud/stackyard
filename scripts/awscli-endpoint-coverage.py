@@ -630,6 +630,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "sns": {"cli": "sns", "ops_file": None},
     "sqs": {"cli": "sqs", "ops_file": None},
     "swf": {"cli": "swf", "ops_file": None},
+    "timestreamwrite": {"cli": "timestream-write", "ops_file": REPO_ROOT / "internal/server/timestreamwrite_ops.go"},
+    "timestreamquery": {"cli": "timestream-query", "ops_file": REPO_ROOT / "internal/server/timestreamquery_ops.go"},
     "timestreaminfluxdb": {
         "cli": "timestream-influxdb",
         "ops_file": REPO_ROOT / "internal/server/timestreaminfluxdb_ops.go",
@@ -2349,6 +2351,10 @@ SERVICE_ALIASES = {
     "s3api": "s3",
     "timestream": "timestreaminfluxdb",
     "timestreaminfluxdb": "timestreaminfluxdb",
+    "timestreamwrite": "timestreamwrite",
+    "timestream-write": "timestreamwrite",
+    "timestreamquery": "timestreamquery",
+    "timestream-query": "timestreamquery",
     "timestream-influxdb": "timestreaminfluxdb",
     "ts-influxdb": "timestreaminfluxdb",
     "timestreamforinfluxdb": "timestreaminfluxdb",
@@ -3150,6 +3156,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "codecommit": {},
     "inspector": {},
+    "timestream": {},
     "applicationautoscaling": {},
     "ec2instanceconnect": {},
     "efs": {},
@@ -35177,6 +35184,206 @@ def elasticsearchservice_hydrate_payload(
     return {"DomainName": domain}
 
 
+TIMESTREAM_DATA_MODEL = {
+    "TimeColumn": "time",
+    "TimeUnit": "MILLISECONDS",
+    "DimensionMappings": [{"SourceColumn": "host", "DestinationColumn": "host"}],
+    "MultiMeasureMappings": {
+        "TargetMultiMeasureName": "metrics",
+        "MultiMeasureAttributeMappings": [{"SourceColumn": "cpu", "MeasureValueType": "DOUBLE"}],
+    },
+}
+
+
+def timestream_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], api: str, op: str, payload: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, api, op, env, ["--cli-input-json", json.dumps(payload)]) or {}
+
+
+def timestream_put_object(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str, key: str, body: str) -> None:
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+        fh.write(body)
+        path = fh.name
+    try:
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env, ["--bucket", bucket, "--key", key, "--body", path])
+    finally:
+        Path(path).unlink(missing_ok=True)
+
+
+def timestream_database(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard_ts_{time.time_ns()}"
+    timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-database", {"DatabaseName": name})
+    return name
+
+
+def timestream_batch_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict, prefix: str) -> str:
+    return str(
+        timestream_cli(
+            aws_bin,
+            endpoint_url,
+            region,
+            env,
+            "timestream-write",
+            "create-batch-load-task",
+            {
+                "TargetDatabaseName": state["db"],
+                "TargetTableName": state["table"],
+                "DataSourceConfiguration": {"DataSourceS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": prefix}, "DataFormat": "CSV"},
+                "ReportConfiguration": {"ReportS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "reports"}},
+                "DataModelConfiguration": {"DataModel": TIMESTREAM_DATA_MODEL},
+            },
+        ).get("TaskId")
+        or ""
+    )
+
+
+def timestream_stopped_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict) -> str:
+    """A batch load whose only row is outside the retention window settles at
+    PROGRESS_STOPPED, the one status ResumeBatchLoadTask accepts."""
+    prefix = f"stopped-{time.time_ns()}/"
+    timestream_put_object(aws_bin, endpoint_url, region, env, state["bucket"], prefix + "data.csv", "time,host,cpu\n1000,h1,1.5\n")
+    task = timestream_batch_task(aws_bin, endpoint_url, region, env, state, prefix)
+    for _ in range(2):  # tasks settle on read: IN_PROGRESS, then the final status
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "describe-batch-load-task", {"TaskId": task})
+    return task
+
+
+def timestream_scheduled_query_input(state: dict) -> dict:
+    return {
+        "Name": f"stackyard-sq-{time.time_ns()}",
+        "QueryString": f'SELECT host, bin(time, 1m) AS t, avg(measure_value::double) AS avg_value FROM "{state["db"]}"."{state["table"]}" WHERE time BETWEEN @scheduled_runtime - 1h AND @scheduled_runtime GROUP BY host, bin(time, 1m)',
+        "ScheduleConfiguration": {"ScheduleExpression": "rate(1 hour)"},
+        "NotificationConfiguration": {"SnsConfiguration": {"TopicArn": state["topic"]}},
+        "ScheduledQueryExecutionRoleArn": "arn:aws:iam::123456789012:role/stackyard-timestream",
+        "ErrorReportConfiguration": {"S3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "errors"}},
+        "TargetConfiguration": {
+            "TimestreamConfiguration": {
+                "DatabaseName": state["db"],
+                "TableName": state["table"],
+                "TimeColumn": "t",
+                "DimensionMappings": [{"Name": "host", "DimensionValueType": "VARCHAR"}],
+                "MultiMeasureMappings": {
+                    "TargetMultiMeasureName": "rollup",
+                    "MultiMeasureAttributeMappings": [{"SourceColumn": "avg_value", "MeasureValueType": "DOUBLE"}],
+                },
+            }
+        },
+    }
+
+
+def timestream_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared database and table holding records, a bucket with batch load
+    data, a settled batch load task, an SNS topic and a scheduled query."""
+    state = RUNTIME_STATE.setdefault("timestream", {})
+    if state.get("db"):
+        return state
+    db = timestream_database(aws_bin, endpoint_url, region, env)
+    table = "metrics"
+    timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-table", {"DatabaseName": db, "TableName": table})
+    now = str(int(time.time() * 1000))
+    timestream_cli(
+        aws_bin,
+        endpoint_url,
+        region,
+        env,
+        "timestream-write",
+        "write-records",
+        {
+            "DatabaseName": db,
+            "TableName": table,
+            "Records": [{"Dimensions": [{"Name": "host", "Value": "h1"}], "MeasureName": "cpu", "MeasureValue": "42.5", "MeasureValueType": "DOUBLE", "Time": now}],
+        },
+    )
+    bucket = f"stackyard-ts-{time.time_ns()}"
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+    timestream_put_object(aws_bin, endpoint_url, region, env, bucket, "load/data.csv", f"time,host,cpu\n{now},h2,12.5\n")
+    topic = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", "stackyard-timestream"]) or {}
+    state.update(db=db, table=table, bucket=bucket, topic=str(topic.get("TopicArn") or ""))
+    state["task"] = timestream_batch_task(aws_bin, endpoint_url, region, env, state, "load/")
+    state["scheduled"] = str(
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "create-scheduled-query", timestream_scheduled_query_input(state)).get("Arn") or ""
+    )
+    return state
+
+
+def timestream_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Timestream Write and Query operation at real databases,
+    tables, records, tasks and scheduled queries. Destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    if op in {"DescribeEndpoints", "ListDatabases", "ListBatchLoadTasks", "ListScheduledQueries", "DescribeAccountSettings"}:
+        return {}
+    if op == "UpdateAccountSettings":
+        return {"QueryPricingModel": "BYTES_SCANNED"}
+    state = timestream_fixture(aws_bin, endpoint_url, region, env)
+    db, table = state["db"], state["table"]
+    sql = f'SELECT host, measure_name, time, measure_value::double FROM "{db}"."{table}" WHERE time > ago(1d) ORDER BY time DESC LIMIT 10'
+    if op == "CreateDatabase":
+        return {"DatabaseName": f"stackyard_ts_new_{time.time_ns()}"}
+    if op == "DeleteDatabase":
+        return {"DatabaseName": timestream_database(aws_bin, endpoint_url, region, env)}
+    if op in {"DescribeDatabase"}:
+        return {"DatabaseName": db}
+    if op == "UpdateDatabase":
+        return {"DatabaseName": db, "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/stackyard-timestream"}
+    if op == "ListTables":
+        return {"DatabaseName": db}
+    if op == "CreateTable":
+        return {"DatabaseName": db, "TableName": f"t_{time.time_ns()}"}
+    if op == "DescribeTable":
+        return {"DatabaseName": db, "TableName": table}
+    if op == "UpdateTable":
+        return {"DatabaseName": db, "TableName": table, "RetentionProperties": {"MemoryStoreRetentionPeriodInHours": 24, "MagneticStoreRetentionPeriodInDays": 7}}
+    if op == "DeleteTable":
+        name = f"t_del_{time.time_ns()}"
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-table", {"DatabaseName": db, "TableName": name})
+        return {"DatabaseName": db, "TableName": name}
+    if op == "WriteRecords":
+        return {
+            "DatabaseName": db,
+            "TableName": table,
+            "CommonAttributes": {"Dimensions": [{"Name": "host", "Value": "h1"}], "MeasureValueType": "DOUBLE"},
+            "Records": [{"MeasureName": "cpu", "MeasureValue": "7.25", "Time": str(int(time.time() * 1000))}],
+        }
+    if op == "CreateBatchLoadTask":
+        return {
+            "TargetDatabaseName": db,
+            "TargetTableName": table,
+            "DataSourceConfiguration": {"DataSourceS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "load/"}, "DataFormat": "CSV"},
+            "ReportConfiguration": {"ReportS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "reports"}},
+            "DataModelConfiguration": {"DataModel": TIMESTREAM_DATA_MODEL},
+        }
+    if op == "DescribeBatchLoadTask":
+        return {"TaskId": state["task"]}
+    if op == "ResumeBatchLoadTask":
+        return {"TaskId": timestream_stopped_task(aws_bin, endpoint_url, region, env, state)}
+    if op in {"TagResource", "UntagResource", "ListTagsForResource"}:
+        arn = state["scheduled"] if endpoint.service == "timestreamquery" else f"arn:aws:timestream:us-east-1:123456789012:database/{db}"
+        if op == "TagResource":
+            return {"ResourceARN": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+        if op == "UntagResource":
+            return {"ResourceARN": arn, "TagKeys": ["stackyard"]}
+        return {"ResourceARN": arn}
+    if op in {"Query", "PrepareQuery"}:
+        return {"QueryString": sql}
+    if op == "CancelQuery":
+        started = timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "query", {"QueryString": sql})
+        return {"QueryId": str(started.get("QueryId") or "AAAAAAAAAAAAAAAAAAAAAAAAAA")}
+    if op == "CreateScheduledQuery":
+        return timestream_scheduled_query_input(state)
+    if op == "DeleteScheduledQuery":
+        created = timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "create-scheduled-query", timestream_scheduled_query_input(state))
+        return {"ScheduledQueryArn": str(created.get("Arn") or "")}
+    if op == "DescribeScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"]}
+    if op == "UpdateScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"], "State": "ENABLED"}
+    if op == "ExecuteScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"], "InvocationTime": int(time.time())}
+    return payload
+
+
 AOSS_CLI = "opensearchserverless"
 AOSS_ENCRYPTION_POLICY = json.dumps({"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AWSOwnedKey": True})
 AOSS_NETWORK_POLICY = json.dumps([{"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AllowFromPublic": True}])
@@ -35398,6 +35605,8 @@ def hydrate_payload_with_service_state(
 
     if endpoint.service == "opensearchserverless":
         return opensearchserverless_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"timestreamwrite", "timestreamquery"}:
+        return timestream_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "elasticsearchservice":
         return elasticsearchservice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glacier":

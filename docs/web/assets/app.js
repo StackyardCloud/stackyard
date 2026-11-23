@@ -1543,6 +1543,22 @@ const SERVICE_CATALOG = [
     summary: "Exercise DB cluster/instance control plane APIs for InfluxDB on Timestream.",
     docsHref: "../../../index.html#timestream-influxdb",
     exampleHref: "../../../../examples/aws/timestream/docker-compose.yml"
+  },
+  {
+    id: "timestream-write",
+    name: "Timestream Write",
+    category: "database",
+    summary: "Emulate Timestream for LiveAnalytics databases, tables, WriteRecords with version upserts and retention windows, and CSV batch loads from S3.",
+    docsHref: "../../../index.html#timestream-write",
+    exampleHref: "../../../../examples/aws/timestream-liveanalytics/docker-compose.yml"
+  },
+  {
+    id: "timestream-query",
+    name: "Timestream Query",
+    category: "database",
+    summary: "Run a practical Timestream SQL subset (filters, bin(), aggregates, ORDER BY, LIMIT) over written records, plus scheduled queries and account settings.",
+    docsHref: "../../../index.html#timestream-query",
+    exampleHref: "../../../../examples/aws/timestream-liveanalytics/docker-compose.yml"
   }
 ];
 
