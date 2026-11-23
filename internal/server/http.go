@@ -259,6 +259,7 @@ type Server struct {
 	s3control                                           *s3control.Service
 	s3outposts                                          *s3outposts.Service
 	s3tables                                            *s3tables.Service
+	s3Annotations                                       *s3AnnotationStore
 	s3vectors                                           *s3vectors.Service
 	sqs                                                 *sqs.Service
 	sns                                                 *sns.Service
@@ -829,6 +830,7 @@ func New(cfg Config) *Server {
 		s3control:                     s3control.NewService(),
 		s3outposts:                    s3outposts.NewService(),
 		s3tables:                      s3tables.NewService(),
+		s3Annotations:                 newS3AnnotationStore(),
 		s3vectors:                     s3vectors.NewService(),
 		sqs:                           sqs.NewService(),
 		sns:                           sns.NewService(),
@@ -3932,6 +3934,9 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		s.writeGetObjectResponseAWS(w, r)
 		return
 	}
+	if s.handleS3AnnotationRoutes(w, r) {
+		return
+	}
 	switch r.Method {
 	case http.MethodGet:
 		s.handleS3ListBucketsAWS(w, r)
@@ -4059,29 +4064,35 @@ func isS3TablesRequest(r *http.Request) bool {
 		return true
 	}
 	path := r.URL.Path
+	if _, ok := s3TablesMigrationPaths[path]; ok {
+		return true
+	}
 	return strings.HasPrefix(path, "/buckets") || strings.HasPrefix(path, "/namespaces") || strings.HasPrefix(path, "/tables") || strings.HasPrefix(path, "/tags") || strings.HasPrefix(path, "/iceberg/")
 }
 
 var s3VectorsOperations = map[string]struct{}{
-	"/CreateVectorBucket":       {},
-	"/DeleteVectorBucket":       {},
-	"/GetVectorBucket":          {},
-	"/ListVectorBuckets":        {},
-	"/CreateIndex":              {},
-	"/DeleteIndex":              {},
-	"/GetIndex":                 {},
-	"/ListIndexes":              {},
-	"/PutVectors":               {},
-	"/GetVectors":               {},
-	"/DeleteVectors":            {},
-	"/ListVectors":              {},
-	"/QueryVectors":             {},
-	"/TagResource":              {},
-	"/UntagResource":            {},
-	"/ListTagsForResource":      {},
-	"/PutVectorBucketPolicy":    {},
-	"/GetVectorBucketPolicy":    {},
-	"/DeleteVectorBucketPolicy": {},
+	"/CreateVectorBucket":              {},
+	"/DeleteVectorBucket":              {},
+	"/GetVectorBucket":                 {},
+	"/ListVectorBuckets":               {},
+	"/CreateIndex":                     {},
+	"/DeleteIndex":                     {},
+	"/GetIndex":                        {},
+	"/ListIndexes":                     {},
+	"/PutVectors":                      {},
+	"/GetVectors":                      {},
+	"/DeleteVectors":                   {},
+	"/ListVectors":                     {},
+	"/QueryVectors":                    {},
+	"/TagResource":                     {},
+	"/UntagResource":                   {},
+	"/ListTagsForResource":             {},
+	"/PutVectorBucketPolicy":           {},
+	"/GetVectorBucketPolicy":           {},
+	"/DeleteVectorBucketPolicy":        {},
+	"/PutVectorBucketDefaultIndexMode": {},
+	"/UpdateIndexMode":                 {},
+	"/UpdateMetadataConfiguration":     {},
 }
 
 var redshiftHandlers = func() map[string]func(*Server, http.ResponseWriter, *http.Request) {
@@ -12115,6 +12126,9 @@ func (s *Server) handleS3VectorsRouter(w http.ResponseWriter, r *http.Request) {
 	if !s.requireSigV4ServiceVectors(w, r, "s3vectors") {
 		return
 	}
+	if s.handleS3VectorsModeRoutes(w, r) {
+		return
+	}
 	switch r.URL.Path {
 	case "/CreateVectorBucket":
 		if r.Method != http.MethodPost {
@@ -13382,6 +13396,9 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 		s.handleS3TablesIcebergRouter(w, r)
 		return
 	}
+	if s.handleS3TablesMigrationRoutes(w, r, path) {
+		return
+	}
 	switch {
 	case strings.HasPrefix(path, "/tags/"):
 		arn, ok := decodeS3TablesARN(path, "/tags/")
@@ -13505,7 +13522,7 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 					respondS3TablesErrorJSON(w, http.StatusMethodNotAllowed, "MethodNotAllowedException", "unsupported method")
 					return
 				}
-				s.handleS3TablesPutTableBucketMaintenance(w, r, arn)
+				s.handleS3TablesPutTableBucketMaintenance(w, r, arn, rest[1])
 				return
 			}
 		}
@@ -13517,7 +13534,7 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 			}
 			switch r.Method {
 			case http.MethodPut:
-				s.handleS3TablesPutTableBucketMaintenance(w, r, arn)
+				s.handleS3TablesPutTableBucketMaintenance(w, r, arn, "")
 			case http.MethodGet:
 				s.handleS3TablesGetTableBucketMaintenance(w, r, arn)
 			default:
@@ -13699,7 +13716,7 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 				if ok && isS3TablesTableARN(arn) {
 					switch r.Method {
 					case http.MethodPut:
-						s.handleS3TablesPutTableMaintenance(w, r, arn)
+						s.handleS3TablesPutTableMaintenance(w, r, arn, "")
 					case http.MethodGet:
 						s.handleS3TablesGetTableMaintenance(w, r, arn)
 					default:
@@ -13842,7 +13859,7 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 				case http.MethodGet:
 					s.handleS3TablesGetTableMaintenance(w, r, tableARN)
 				case http.MethodPut:
-					s.handleS3TablesPutTableMaintenance(w, r, tableARN)
+					s.handleS3TablesPutTableMaintenance(w, r, tableARN, "")
 				default:
 					respondS3TablesErrorJSON(w, http.StatusMethodNotAllowed, "MethodNotAllowedException", "unsupported method")
 				}
@@ -13879,7 +13896,7 @@ func (s *Server) handleS3TablesRouter(w http.ResponseWriter, r *http.Request) {
 				respondS3TablesErrorJSON(w, http.StatusMethodNotAllowed, "MethodNotAllowedException", "unsupported method")
 				return
 			}
-			s.handleS3TablesPutTableMaintenance(w, r, tableARN)
+			s.handleS3TablesPutTableMaintenance(w, r, tableARN, rest[3])
 			return
 		}
 
@@ -15183,12 +15200,8 @@ func (s *Server) handleS3TablesCreateTable(
 	}
 	table, _ := s.s3tables.CreateTable(tableBucketARN, namespace, req.Name)
 	respondS3TablesJSON(w, http.StatusOK, s3TablesCreateTableResponse{
-		Name:             table.Name,
-		Namespace:        table.Namespace,
-		TableBucketARN:   table.TableBucketArn,
-		TableId:          table.TableId,
-		TableArn:         table.TableArn,
-		MetadataLocation: table.MetadataLocation,
+		TableArn:     table.TableArn,
+		VersionToken: table.VersionToken,
 	})
 }
 
@@ -15299,11 +15312,13 @@ func (s *Server) handleS3TablesListTables(
 	}
 	for _, table := range page {
 		resp.Tables = append(resp.Tables, s3TablesTableSummary{
-			Name:             table.Name,
-			Namespace:        table.Namespace,
-			TableArn:         table.TableArn,
-			TableId:          table.TableId,
-			MetadataLocation: table.MetadataLocation,
+			Name:          table.Name,
+			Namespace:     table.Namespace,
+			Type:          table.Type,
+			TableArn:      table.TableArn,
+			CreatedAt:     table.CreatedAt,
+			ModifiedAt:    table.ModifiedAt,
+			TableBucketId: table.TableBucketId,
 		})
 	}
 	respondS3TablesJSON(w, http.StatusOK, resp)
@@ -15385,13 +15400,15 @@ func (s *Server) handleS3TablesGetTableMetadataLocation(
 		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "name is required")
 		return
 	}
-	location, ok := s.s3tables.GetTableMetadataLocation(tableBucketARN, namespace, name)
+	table, ok := s.s3tables.GetTable(tableBucketARN, namespace, name)
 	if !ok {
 		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table not found")
 		return
 	}
 	respondS3TablesJSON(w, http.StatusOK, s3TablesGetTableMetadataLocationResponse{
-		MetadataLocation: location,
+		VersionToken:      table.VersionToken,
+		MetadataLocation:  table.MetadataLocation,
+		WarehouseLocation: table.WarehouseLocation(),
 	})
 }
 
@@ -15424,11 +15441,19 @@ func (s *Server) handleS3TablesUpdateTableMetadataLocation(
 		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "namespace, name, and metadataLocation are required")
 		return
 	}
-	if ok := s.s3tables.UpdateTableMetadataLocation(tableBucketARN, namespace, name, req.MetadataLocation); !ok {
+	// ponytail: versionToken is accepted but not compared; add a ConflictException check if clients rely on optimistic locking.
+	table, ok := s.s3tables.UpdateTableMetadataLocation(tableBucketARN, namespace, name, req.MetadataLocation)
+	if !ok {
 		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table not found")
 		return
 	}
-	respondS3TablesJSON(w, http.StatusOK, struct{}{})
+	respondS3TablesJSON(w, http.StatusOK, s3TablesUpdateTableMetadataLocationResponse{
+		Name:             table.Name,
+		TableArn:         table.TableArn,
+		Namespace:        table.Namespace,
+		VersionToken:     table.VersionToken,
+		MetadataLocation: table.MetadataLocation,
+	})
 }
 
 func (s *Server) handleS3TablesTagResource(w http.ResponseWriter, r *http.Request, arn string) {
@@ -15887,43 +15912,72 @@ func (s *Server) handleS3TablesDeleteTableBucketMetricsConfiguration(w http.Resp
 	respondS3TablesJSON(w, http.StatusOK, struct{}{})
 }
 
-func (s *Server) handleS3TablesPutTableMaintenance(w http.ResponseWriter, r *http.Request, tableArn string) {
-	body, err := readBodyBytes(r)
-	if err != nil {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid request body")
+func (s *Server) handleS3TablesPutTableMaintenance(w http.ResponseWriter, r *http.Request, tableArn, pathType string) {
+	typ, value, ok := s3TablesDecodeMaintenance(w, r, pathType, "icebergCompaction")
+	if !ok {
 		return
 	}
-	var req s3TablesPutMaintenanceRequest
-	if err := decodeS3TablesJSON(body, &req); err != nil {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid JSON")
-		return
-	}
-	value := strings.TrimSpace(req.Maintenance)
-	if value == "" {
-		value = strings.TrimSpace(req.Value.Status)
-	}
-	if value == "" {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is required")
-		return
-	}
-	if !isValidS3TablesMaintenance(value) {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is invalid")
-		return
-	}
-	if ok := s.s3tables.PutTableMaintenance(tableArn, value); !ok {
+	if ok := s.s3tables.PutTableMaintenance(tableArn, typ, value); !ok {
 		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table not found")
 		return
 	}
 	respondS3TablesJSON(w, http.StatusOK, struct{}{})
 }
 
+// s3TablesDecodeMaintenance reads a maintenance PUT: the type comes from the path, the body or
+// defaultType; the stored value is {"status":..., "settings":...}.
+func s3TablesDecodeMaintenance(w http.ResponseWriter, r *http.Request, pathType, defaultType string) (string, json.RawMessage, bool) {
+	body, err := readBodyBytes(r)
+	if err != nil {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid request body")
+		return "", nil, false
+	}
+	var req s3TablesPutMaintenanceRequest
+	if err := decodeS3TablesJSON(body, &req); err != nil {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid JSON")
+		return "", nil, false
+	}
+	status := strings.TrimSpace(req.Value.Status)
+	if status == "" {
+		status = strings.TrimSpace(req.Maintenance)
+	}
+	if status == "" {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is required")
+		return "", nil, false
+	}
+	if !isValidS3TablesMaintenance(status) {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is invalid")
+		return "", nil, false
+	}
+	typ := strings.TrimSpace(pathType)
+	if typ == "" {
+		typ = strings.TrimSpace(req.Type)
+	}
+	if typ == "" {
+		typ = defaultType
+	}
+	if !isValidS3TablesMaintenanceType(typ) {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance type is invalid")
+		return "", nil, false
+	}
+	value, err := json.Marshal(struct {
+		Status   string          `json:"status"`
+		Settings json.RawMessage `json:"settings,omitempty"`
+	}{status, req.Value.Settings})
+	if err != nil {
+		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance settings are invalid")
+		return "", nil, false
+	}
+	return typ, value, true
+}
+
 func (s *Server) handleS3TablesGetTableMaintenance(w http.ResponseWriter, r *http.Request, tableArn string) {
-	value, ok := s.s3tables.GetTableMaintenance(tableArn)
-	if !ok || strings.TrimSpace(value) == "" {
-		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "maintenance not found")
+	cfg, ok := s.s3tables.GetTableMaintenance(tableArn)
+	if !ok {
+		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table not found")
 		return
 	}
-	respondS3TablesJSON(w, http.StatusOK, s3TablesGetMaintenanceResponse{Maintenance: value})
+	respondS3TablesJSON(w, http.StatusOK, s3TablesGetMaintenanceResponse{TableARN: tableArn, Configuration: cfg})
 }
 
 func (s *Server) handleS3TablesGetTableMaintenanceStatus(w http.ResponseWriter, r *http.Request, tableArn string) {
@@ -15960,30 +16014,12 @@ func (s *Server) handleS3TablesGetTableMaintenanceJobStatus(w http.ResponseWrite
 	})
 }
 
-func (s *Server) handleS3TablesPutTableBucketMaintenance(w http.ResponseWriter, r *http.Request, bucketArn string) {
-	body, err := readBodyBytes(r)
-	if err != nil {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid request body")
+func (s *Server) handleS3TablesPutTableBucketMaintenance(w http.ResponseWriter, r *http.Request, bucketArn, pathType string) {
+	typ, value, ok := s3TablesDecodeMaintenance(w, r, pathType, "icebergUnreferencedFileRemoval")
+	if !ok {
 		return
 	}
-	var req s3TablesPutMaintenanceRequest
-	if err := decodeS3TablesJSON(body, &req); err != nil {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "invalid JSON")
-		return
-	}
-	value := strings.TrimSpace(req.Maintenance)
-	if value == "" {
-		value = strings.TrimSpace(req.Value.Status)
-	}
-	if value == "" {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is required")
-		return
-	}
-	if !isValidS3TablesMaintenance(value) {
-		respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "maintenance is invalid")
-		return
-	}
-	if ok := s.s3tables.PutTableBucketMaintenance(bucketArn, value); !ok {
+	if ok := s.s3tables.PutTableBucketMaintenance(bucketArn, typ, value); !ok {
 		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table bucket not found")
 		return
 	}
@@ -15991,12 +16027,12 @@ func (s *Server) handleS3TablesPutTableBucketMaintenance(w http.ResponseWriter, 
 }
 
 func (s *Server) handleS3TablesGetTableBucketMaintenance(w http.ResponseWriter, r *http.Request, bucketArn string) {
-	value, ok := s.s3tables.GetTableBucketMaintenance(bucketArn)
-	if !ok || strings.TrimSpace(value) == "" {
-		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "maintenance not found")
+	cfg, ok := s.s3tables.GetTableBucketMaintenance(bucketArn)
+	if !ok {
+		respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table bucket not found")
 		return
 	}
-	respondS3TablesJSON(w, http.StatusOK, s3TablesGetMaintenanceResponse{Maintenance: value})
+	respondS3TablesJSON(w, http.StatusOK, s3TablesGetMaintenanceResponse{TableBucketARN: bucketArn, Configuration: cfg})
 }
 
 func (s *Server) handleS3TablesPutTableRecordExpiration(w http.ResponseWriter, r *http.Request, tableArn string) {
@@ -16270,7 +16306,7 @@ func (s *Server) handleIcebergTables(w http.ResponseWriter, r *http.Request, tab
 			respondS3TablesErrorJSON(w, http.StatusBadRequest, "BadRequestException", "metadataLocation is required")
 			return
 		}
-		if ok := s.s3tables.UpdateTableMetadataLocation(tableBucketArn, namespace, tableName, location); !ok {
+		if _, ok := s.s3tables.UpdateTableMetadataLocation(tableBucketArn, namespace, tableName, location); !ok {
 			respondS3TablesErrorJSON(w, http.StatusNotFound, "NotFoundException", "table not found")
 			return
 		}
@@ -22561,12 +22597,8 @@ type s3TablesCreateTableRequest struct {
 }
 
 type s3TablesCreateTableResponse struct {
-	Name             string   `json:"name"`
-	Namespace        []string `json:"namespace"`
-	TableBucketARN   string   `json:"tableBucketARN"`
-	TableId          string   `json:"tableId"`
-	TableArn         string   `json:"tableArn"`
-	MetadataLocation string   `json:"metadataLocation"`
+	TableArn     string `json:"tableARN"`
+	VersionToken string `json:"versionToken"`
 }
 
 type s3TablesGetTableResponse struct {
@@ -22580,11 +22612,13 @@ type s3TablesGetTableResponse struct {
 }
 
 type s3TablesTableSummary struct {
-	Name             string   `json:"name"`
-	Namespace        []string `json:"namespace"`
-	TableArn         string   `json:"tableArn"`
-	TableId          string   `json:"tableId"`
-	MetadataLocation string   `json:"metadataLocation"`
+	Name          string   `json:"name"`
+	Namespace     []string `json:"namespace"`
+	Type          string   `json:"type"`
+	TableArn      string   `json:"tableARN"`
+	CreatedAt     string   `json:"createdAt"`
+	ModifiedAt    string   `json:"modifiedAt"`
+	TableBucketId string   `json:"tableBucketId,omitempty"`
 }
 
 type s3TablesListTablesResponse struct {
@@ -22644,15 +22678,18 @@ type s3TablesGetReplicationStatusResponse struct {
 }
 
 type s3TablesPutMaintenanceRequest struct {
-	Maintenance string `json:"maintenance"`
+	Maintenance string `json:"maintenance"` // legacy shorthand for value.status
+	Type        string `json:"type"`
 	Value       struct {
-		Status   string         `json:"status"`
-		Settings map[string]any `json:"settings"`
+		Status   string          `json:"status"`
+		Settings json.RawMessage `json:"settings,omitempty"`
 	} `json:"value"`
 }
 
 type s3TablesGetMaintenanceResponse struct {
-	Maintenance string `json:"maintenance"`
+	TableBucketARN string                     `json:"tableBucketARN,omitempty"`
+	TableARN       string                     `json:"tableARN,omitempty"`
+	Configuration  map[string]json.RawMessage `json:"configuration"`
 }
 
 type s3TablesGetMaintenanceStatusResponse struct {
@@ -22734,7 +22771,17 @@ type s3TablesRenameTableResponse struct {
 }
 
 type s3TablesGetTableMetadataLocationResponse struct {
-	MetadataLocation string `json:"metadataLocation"`
+	VersionToken      string `json:"versionToken"`
+	MetadataLocation  string `json:"metadataLocation,omitempty"`
+	WarehouseLocation string `json:"warehouseLocation"`
+}
+
+type s3TablesUpdateTableMetadataLocationResponse struct {
+	Name             string   `json:"name"`
+	TableArn         string   `json:"tableARN"`
+	Namespace        []string `json:"namespace"`
+	VersionToken     string   `json:"versionToken"`
+	MetadataLocation string   `json:"metadataLocation"`
 }
 
 type s3TablesUpdateTableMetadataLocationRequest struct {
@@ -26118,6 +26165,11 @@ func (s *Server) putBucketLifecycle(w http.ResponseWriter, r *http.Request, buck
 		}
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", err.Error())
 		return
+	}
+	if r.Header.Get("x-amz-transition-default-minimum-object-size") == "varies_by_storage_class" {
+		w.Header().Set("x-amz-transition-default-minimum-object-size", "varies_by_storage_class")
+	} else {
+		w.Header().Set("x-amz-transition-default-minimum-object-size", "all_storage_classes_128K")
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -31343,7 +31395,16 @@ func isValidS3TablesReplication(value string) bool {
 
 func isValidS3TablesMaintenance(value string) bool {
 	switch value {
-	case "enabled", "daily":
+	case "enabled", "disabled", "daily":
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidS3TablesMaintenanceType(value string) bool {
+	switch value {
+	case "icebergCompaction", "icebergSnapshotManagement", "icebergUnreferencedFileRemoval":
 		return true
 	default:
 		return false

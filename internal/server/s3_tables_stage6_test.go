@@ -41,8 +41,8 @@ func TestS3TablesStage6TableMaintenance(t *testing.T) {
 	if err := json.Unmarshal(mustBody(t, resp), &maintResp); err != nil {
 		t.Fatalf("parse maintenance: %v", err)
 	}
-	if maintResp.Maintenance != "enabled" {
-		t.Fatalf("unexpected maintenance %q", maintResp.Maintenance)
+	if got := string(maintResp.Configuration["icebergCompaction"]); got != `{"status":"enabled"}` || maintResp.TableARN != createResp.TableArn {
+		t.Fatalf("unexpected maintenance %+v", maintResp)
 	}
 
 	statusURL := ts.URL + "/tables/" + url.PathEscape(createResp.TableArn) + "/maintenance-status"
@@ -80,8 +80,8 @@ func TestS3TablesStage6BucketMaintenance(t *testing.T) {
 	if err := json.Unmarshal(mustBody(t, resp), &maintResp); err != nil {
 		t.Fatalf("parse maintenance: %v", err)
 	}
-	if maintResp.Maintenance != "daily" {
-		t.Fatalf("unexpected maintenance %q", maintResp.Maintenance)
+	if got := string(maintResp.Configuration["icebergUnreferencedFileRemoval"]); got != `{"status":"daily"}` || maintResp.TableBucketARN != bucketArn {
+		t.Fatalf("unexpected maintenance %+v", maintResp)
 	}
 }
 
