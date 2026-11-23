@@ -1449,6 +1449,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/migrationhub-refactor-spaces/docker-compose.yml"
   },
   {
+    id: "migrationhub",
+    name: "Migration Hub",
+    category: "integration",
+    summary: "Track migrations with progress update streams, migration task state and history, created artifacts, discovered and source resources, and application states.",
+    docsHref: "../../../index.html#migrationhub",
+    exampleHref: "../../../../examples/aws/migrationhub/docker-compose.yml"
+  },
+  {
     id: "migrationhub-orchestrator",
     name: "Migration Hub Orchestrator",
     category: "integration",

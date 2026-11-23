@@ -566,6 +566,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
+    "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2241,6 +2242,10 @@ SERVICE_ALIASES = {
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
     "textract": "textract",
+    "migrationhub": "migrationhub",
+    "mgh": "migrationhub",
+    "awsmigrationhub": "migrationhub",
+    "aws migration hub": "migrationhub",
     "amazontextract": "textract",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3205,6 +3210,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53domains": {},
     "textract": {},
     "servicecatalog": {},
+    "migrationhub": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -33019,6 +33025,78 @@ def textract_create_version(aws_bin: str, endpoint_url: str, region: str, env: d
     return str((data or {}).get("AdapterVersion") or "")
 
 
+MGH_STREAM = "stackyard-mgh"
+MGH_TASK = "stackyard-task"
+MGH_ARTIFACT = "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789abcdef0"
+MGH_CONFIGURATION = "srv-000001"  # seeded by Application Discovery Service
+MGH_APPLICATION = "app-000001"  # seeded by Application Discovery Service
+
+
+def mgh_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, "mgh", cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def migrationhub_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A progress update stream with one imported task that has a recorded state."""
+    state = RUNTIME_STATE.setdefault("migrationhub", {})
+    if not state.get("ready"):
+        mgh_call(aws_bin, endpoint_url, region, env, "CreateProgressUpdateStream", {"ProgressUpdateStreamName": MGH_STREAM})
+        mgh_call(aws_bin, endpoint_url, region, env, "ImportMigrationTask", {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": MGH_TASK})
+        state["ready"] = True
+    return state
+
+
+def migrationhub_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Migration Hub operations at a real stream and task. Disassociate
+    and delete operations get the thing they remove created first."""
+    op = endpoint.operation
+    state = migrationhub_fixture(aws_bin, endpoint_url, region, env)
+    task = {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": MGH_TASK}
+    unique = f"stackyard-{time.time_ns()}"
+    if op in ("ListProgressUpdateStreams", "ListMigrationTasks", "ListApplicationStates"):
+        return {}
+    if op == "CreateProgressUpdateStream":
+        return {"ProgressUpdateStreamName": unique[:50]}
+    if op == "DeleteProgressUpdateStream":
+        name = unique[:50]
+        mgh_call(aws_bin, endpoint_url, region, env, "CreateProgressUpdateStream", {"ProgressUpdateStreamName": name})
+        return {"ProgressUpdateStreamName": name}
+    if op == "ImportMigrationTask":
+        return {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": unique}
+    if op == "NotifyMigrationTaskState":
+        # Updates must not go back in time, so each run uses a later timestamp.
+        at = max(time.time(), state.get("last_update", 0) + 1)
+        state["last_update"] = at
+        return {**task, "Task": {"Status": "IN_PROGRESS", "ProgressPercent": 50, "StatusDetail": "copying"},
+                "UpdateDateTime": at, "NextUpdateSeconds": 60}
+    if op == "PutResourceAttributes":
+        return {**task, "ResourceAttributeList": [{"Type": "FQDN", "Value": "web.example.com"}]}
+    if op == "AssociateCreatedArtifact":
+        return {**task, "CreatedArtifact": {"Name": MGH_ARTIFACT, "Description": "migrated instance"}}
+    if op == "DisassociateCreatedArtifact":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateCreatedArtifact", {**task, "CreatedArtifact": {"Name": MGH_ARTIFACT}})
+        return {**task, "CreatedArtifactName": MGH_ARTIFACT}
+    if op == "AssociateDiscoveredResource":
+        return {**task, "DiscoveredResource": {"ConfigurationId": MGH_CONFIGURATION, "Description": "source server"}}
+    if op == "DisassociateDiscoveredResource":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateDiscoveredResource", {**task, "DiscoveredResource": {"ConfigurationId": MGH_CONFIGURATION}})
+        return {**task, "ConfigurationId": MGH_CONFIGURATION}
+    if op == "AssociateSourceResource":
+        return {**task, "SourceResource": {"Name": "vm-42", "Description": "source VM", "StatusDetail": "replicating"}}
+    if op == "DisassociateSourceResource":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateSourceResource", {**task, "SourceResource": {"Name": "vm-42"}})
+        return {**task, "SourceResourceName": "vm-42"}
+    if op == "NotifyApplicationState":
+        return {"ApplicationId": MGH_APPLICATION, "Status": "IN_PROGRESS", "UpdateDateTime": time.time()}
+    if op == "DescribeApplicationState":
+        mgh_call(aws_bin, endpoint_url, region, env, "NotifyApplicationState", {"ApplicationId": MGH_APPLICATION, "Status": "IN_PROGRESS"})
+        return {"ApplicationId": MGH_APPLICATION}
+    return task  # DescribeMigrationTask and the per-task List operations
+
+
 def textract_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -36687,6 +36765,8 @@ def hydrate_payload_with_service_state(
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalog":
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "migrationhub":
+        return migrationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalogappregistry":
