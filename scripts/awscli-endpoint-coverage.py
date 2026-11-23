@@ -571,6 +571,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "applicationautoscaling": {"cli": "application-autoscaling", "ops_file": REPO_ROOT / "internal/server/applicationautoscaling_ops.go"},
     "ec2instanceconnect": {"cli": "ec2-instance-connect", "ops_file": REPO_ROOT / "internal/server/ec2instanceconnect_ops.go"},
     "scheduler": {"cli": "scheduler", "ops_file": REPO_ROOT / "internal/server/scheduler_ops.go"},
+    "schemas": {"cli": "schemas", "ops_file": REPO_ROOT / "internal/server/schemas_ops.go"},
     "pipes": {"cli": "pipes", "ops_file": REPO_ROOT / "internal/server/pipes_ops.go"},
     "datasync": {"cli": "datasync", "ops_file": REPO_ROOT / "internal/server/datasync_ops.go"},
     "dax": {"cli": "dax", "ops_file": REPO_ROOT / "internal/server/dax_ops.go"},
@@ -2247,6 +2248,9 @@ SERVICE_ALIASES = {
     "scheduler": "scheduler",
     "eventbridgescheduler": "scheduler",
     "amazoneventbridgescheduler": "scheduler",
+    "schemas": "schemas",
+    "eventbridgeschemas": "schemas",
+    "amazoneventbridgeschemas": "schemas",
     "eksauth": "eksauth",
     "eks-auth": "eksauth",
     "amazoneksauth": "eksauth",
@@ -3177,6 +3181,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "efs": {},
     "elasticsearchservice": {},
     "scheduler": {},
+    "schemas": {},
     "pipes": {},
     "route53profiles": {},
     "polly": {},
@@ -13456,6 +13461,10 @@ def generate_cli_input_payload(
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
         return {"accountId": "-", "vaultName": "", "jobId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("schemas", "GetCodeBindingSource"):
+        # get-code-binding-source streams a zip, so the CLI needs its members as
+        # flags plus an outfile even to print a skeleton.
+        return {"RegistryName": "", "SchemaName": "", "Language": "Python36"}, None
     if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
@@ -14225,10 +14234,13 @@ def validate_output_schema(endpoint: Endpoint, stdout_text: str) -> str | None:
     if not text:
         if output_schema_allows_empty_stdout(endpoint):
             return None
-        if (
-            str(getattr(output_shape, "type_name", "")).lower() == "structure"
-            and not (getattr(output_shape, "members", {}) or {})
-        ):
+        members = getattr(output_shape, "members", {}) or {}
+        if str(getattr(output_shape, "type_name", "")).lower() == "structure" and not members:
+            return None
+        # The only output is a blob or event-stream payload, which the CLI
+        # writes to the outfile, so nothing is printed.
+        payload = output_payload_exempt_member(output_shape)
+        if payload is not None and set(members) == {payload}:
             return None
         return "empty output"
     try:
@@ -32371,6 +32383,109 @@ def scheduler_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str
     )
 
 
+SCHEMAS_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "123456789012"}, "Action": "schemas:*", "Resource": "*"}]})
+
+
+def schemas_content(marker: str) -> str:
+    return json.dumps({
+        "openapi": "3.0.0", "info": {"version": "1.0.0", "title": "StackyardEvent"}, "paths": {},
+        "components": {"schemas": {"AWSEvent": {"type": "object", "properties": {"source": {"type": "string"}, "stackyard": {"type": "string", "description": marker}}}}},
+    })
+
+
+def schemas_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "schemas", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def schemas_new_schema(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], registry: str) -> str:
+    name = f"stackyard-{time.time_ns()}"
+    schemas_cli(aws_bin, endpoint_url, region, env, "create-schema", ["--registry-name", registry, "--schema-name", name, "--type", "OpenApi3", "--content", schemas_content(name)])
+    return name
+
+
+def schemas_new_discoverer(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    bus = run_aws_json(aws_bin, endpoint_url, region, "events", "create-event-bus", env, ["--name", f"stackyard-schemas-{time.time_ns()}"])
+    arn = str((bus or {}).get("EventBusArn") or "") if isinstance(bus, dict) else ""
+    return str(schemas_cli(aws_bin, endpoint_url, region, env, "create-discoverer", ["--source-arn", arn]).get("DiscovererId") or "")
+
+
+def schemas_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each EventBridge Schemas operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("schemas", {})
+    if not state.get("registry"):
+        registry = f"stackyard-schemas-{time.time_ns()}"
+        schemas_cli(aws_bin, endpoint_url, region, env, "create-registry", ["--registry-name", registry])
+        state["registry"] = registry
+        state["schema"] = schemas_new_schema(aws_bin, endpoint_url, region, env, registry)
+        state["discoverer"] = schemas_new_discoverer(aws_bin, endpoint_url, region, env)
+    registry, schema, discoverer = str(state["registry"]), str(state["schema"]), str(state["discoverer"])
+    unique = f"stackyard-{time.time_ns()}"
+    shared = {"RegistryName": registry, "SchemaName": schema}
+    if op == "CreateRegistry":
+        return {"RegistryName": unique}
+    if op in {"DescribeRegistry", "ListSchemas"}:
+        return {"RegistryName": registry}
+    if op == "UpdateRegistry":
+        return {"RegistryName": registry, "Description": "stackyard coverage"}
+    if op == "DeleteRegistry":
+        schemas_cli(aws_bin, endpoint_url, region, env, "create-registry", ["--registry-name", unique])
+        return {"RegistryName": unique}
+    if op in {"ListRegistries", "ListDiscoverers"}:
+        return {}
+    if op == "CreateSchema":
+        return {"RegistryName": registry, "SchemaName": unique, "Type": "OpenApi3", "Content": schemas_content(unique)}
+    if op in {"DescribeSchema", "ListSchemaVersions"}:
+        return dict(shared)
+    if op == "UpdateSchema":
+        return {**shared, "Content": schemas_content(unique)}
+    if op == "ExportSchema":
+        return {**shared, "Type": "JSONSchemaDraft4"}
+    if op == "SearchSchemas":
+        return {"RegistryName": registry, "Keywords": "stackyard"}
+    if op == "DeleteSchema":
+        return {"RegistryName": registry, "SchemaName": schemas_new_schema(aws_bin, endpoint_url, region, env, registry)}
+    if op == "DeleteSchemaVersion":
+        own = schemas_new_schema(aws_bin, endpoint_url, region, env, registry)
+        schemas_cli(aws_bin, endpoint_url, region, env, "update-schema", ["--registry-name", registry, "--schema-name", own, "--content", schemas_content(own + "-2")])
+        return {"RegistryName": registry, "SchemaName": own, "SchemaVersion": "1"}
+    if op == "PutCodeBinding":
+        return {**shared, "Language": "Python36"}
+    if op in {"DescribeCodeBinding", "GetCodeBindingSource"}:
+        args = ["--registry-name", registry, "--schema-name", schema, "--language", "Python36"]
+        schemas_cli(aws_bin, endpoint_url, region, env, "put-code-binding", args)
+        schemas_cli(aws_bin, endpoint_url, region, env, "describe-code-binding", args)
+        return {**shared, "Language": "Python36"}
+    if op == "GetDiscoveredSchema":
+        return {"Type": "OpenApi3", "Events": ['{"source":"stackyard","detail":{"id":1}}']}
+    if op == "CreateDiscoverer":
+        bus = run_aws_json(aws_bin, endpoint_url, region, "events", "create-event-bus", env, ["--name", unique])
+        return {"SourceArn": str((bus or {}).get("EventBusArn") or "") if isinstance(bus, dict) else ""}
+    if op in {"DescribeDiscoverer", "StartDiscoverer", "StopDiscoverer"}:
+        return {"DiscovererId": discoverer}
+    if op == "UpdateDiscoverer":
+        return {"DiscovererId": discoverer, "Description": "stackyard coverage"}
+    if op == "DeleteDiscoverer":
+        return {"DiscovererId": schemas_new_discoverer(aws_bin, endpoint_url, region, env)}
+    if op == "PutResourcePolicy":
+        return {"Policy": SCHEMAS_POLICY}
+    if op in {"GetResourcePolicy", "DeleteResourcePolicy"}:
+        schemas_cli(aws_bin, endpoint_url, region, env, "put-resource-policy", ["--policy", SCHEMAS_POLICY])
+        return {}
+    registry_arn = f"arn:aws:schemas:{region}:123456789012:registry/{registry}"
+    if op == "ListTagsForResource":
+        return {"ResourceArn": registry_arn}
+    if op == "TagResource":
+        return {"ResourceArn": registry_arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": registry_arn, "TagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 def scheduler_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -36163,6 +36278,8 @@ def hydrate_payload_with_service_state(
         return codecommit_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "codestarnotifications":
         return codestarnotifications_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
+    if endpoint.service == "schemas":
+        return schemas_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "scheduler":
         return scheduler_hydrate_payload(aws_bin, endpoint, endpoint_url, region, env)
     if endpoint.service == "route53resolver":
@@ -58398,7 +58515,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech")}:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

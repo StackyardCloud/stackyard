@@ -864,6 +864,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/scheduler/docker-compose.yml"
   },
   {
+    id: "schemas",
+    name: "EventBridge Schemas",
+    category: "integration",
+    summary: "Emulate schema registries with versioned OpenAPI 3 and JSON Schema Draft 4 schemas, search and export, schema inference from sample events, generated Java, Python, TypeScript and Go code bindings, discoverers on event buses, resource policies and tags.",
+    docsHref: "../../../index.html#schemas",
+    exampleHref: "../../../../examples/aws/schemas/docker-compose.yml"
+  },
+  {
     id: "pipes",
     name: "EventBridge Pipes",
     category: "integration",
