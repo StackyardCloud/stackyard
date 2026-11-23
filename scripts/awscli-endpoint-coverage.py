@@ -3575,22 +3575,6 @@ _BOTOCORE_SESSION = None
 _AWS_BIN = "aws"
 
 
-def awscli_botocore_data_dir(aws_bin: str) -> Path | None:
-    """Locate the botocore model data bundled with the AWS CLI being exercised.
-
-    Output validation must use the same service models as the CLI that sends the
-    requests; a separately installed (often older) botocore drifts from it and
-    reports real, current fields as unknown."""
-    found = shutil.which(aws_bin)
-    if not found:
-        return None
-    real = Path(found).resolve()
-    for base in (real.parent, real.parent.parent):
-        for pattern in ("awscli/botocore/data", "lib/python*/site-packages/awscli/botocore/data"):
-            for candidate in sorted(base.glob(pattern)):
-                if candidate.is_dir():
-                    return candidate
-    return None
 _IOTMI_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTEVENTS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTWIRELESS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -13789,13 +13773,9 @@ def get_operation_model(endpoint: Endpoint):
     try:
         if _BOTOCORE_SESSION is None:
             _BOTOCORE_SESSION = botocore_session.get_session()
-            cli_data = aws_cli_botocore_data_dir(os.getenv("AWS_BIN", "aws"))
+            cli_data = aws_cli_botocore_data_dir(_AWS_BIN)
             if cli_data is not None:
                 _BOTOCORE_SESSION.get_component("data_loader").search_paths.insert(0, str(cli_data))
-            data_dir = awscli_botocore_data_dir(_AWS_BIN)
-            if data_dir is not None:
-                # Searched before botocore's own bundled data.
-                _BOTOCORE_SESSION.set_config_variable("data_path", str(data_dir))
         service_model = _BOTOCORE_SESSION.get_service_model(botocore_service_name(endpoint.cli_service))
         operation_name = kebab_to_pascal(endpoint.cli_operation)
         model = service_model.operation_model(operation_name)

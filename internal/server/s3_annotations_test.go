@@ -40,3 +40,16 @@ func TestS3ObjectAnnotations(t *testing.T) {
 	assertStatus(t, signedRequest(t, http.MethodPut, ts.URL+"/ann-bucket?metadataAnnotationTable", cfg, nil), http.StatusOK)
 	assertStatus(t, signedRequest(t, http.MethodPut, ts.URL+"/ann-bucket?metadataAnnotationTable", []byte(`<x/>`), nil), http.StatusBadRequest)
 }
+
+func TestS3ObjectAnnotationsDroppedOnOverwrite(t *testing.T) {
+	srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+	ts := httptest.NewServer(srv.Handler())
+	defer ts.Close()
+	obj := ts.URL + "/ann-bucket2/doc.txt"
+
+	assertStatus(t, signedRequest(t, http.MethodPut, ts.URL+"/ann-bucket2", nil, nil), http.StatusOK)
+	assertStatus(t, signedRequest(t, http.MethodPut, obj, []byte("v1"), nil), http.StatusOK)
+	assertStatus(t, signedRequest(t, http.MethodPut, obj+"?annotation&annotationName=a1", []byte("x"), nil), http.StatusOK)
+	assertStatus(t, signedRequest(t, http.MethodPut, obj, []byte("v2"), nil), http.StatusOK)
+	assertStatus(t, signedRequest(t, http.MethodGet, obj+"?annotation&annotationName=a1", nil, nil), http.StatusNotFound)
+}

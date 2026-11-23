@@ -37,12 +37,13 @@ type s3Annotation struct {
 type s3AnnotationStore struct {
 	mu         sync.Mutex
 	objects    map[string]map[string]s3Annotation
+	identity   map[string]string // object identity the annotations belong to
 	tableState map[string]string
 	totalBytes int
 }
 
 func newS3AnnotationStore() *s3AnnotationStore {
-	return &s3AnnotationStore{objects: map[string]map[string]s3Annotation{}, tableState: map[string]string{}}
+	return &s3AnnotationStore{objects: map[string]map[string]s3Annotation{}, identity: map[string]string{}, tableState: map[string]string{}}
 }
 
 func s3AnnObjectKey(bucket, key string) string { return bucket + "\x00" + key }
@@ -68,6 +69,23 @@ func (st *s3AnnotationStore) put(bucket, key, name string, payload []byte) (s3An
 	anns[name] = a
 	st.totalBytes += delta
 	return a, nil
+}
+
+// bind ties the object's annotations to its current identity, dropping annotations left by a
+// deleted or overwritten object at the same key so a new object never inherits them.
+// ponytail: cleared lazily on next access; the total-bytes cap bounds what lingers until then.
+func (st *s3AnnotationStore) bind(bucket, key, identity string) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	ok := s3AnnObjectKey(bucket, key)
+	if st.identity[ok] == identity {
+		return
+	}
+	for _, a := range st.objects[ok] {
+		st.totalBytes -= len(a.payload)
+	}
+	delete(st.objects, ok)
+	st.identity[ok] = identity
 }
 
 func (st *s3AnnotationStore) get(bucket, key, name string) (s3Annotation, bool) {
@@ -154,6 +172,18 @@ func (s *Server) handleS3AnnotationRoutes(w http.ResponseWriter, r *http.Request
 		}
 		return true
 	}
+	action := "s3:GetObject"
+	switch r.Method {
+	case http.MethodPut:
+		action = "s3:PutObject"
+	case http.MethodDelete:
+		action = "s3:DeleteObject"
+	}
+	if !s.authorizeS3Request(r, bucket, key, action, obj.ACL) {
+		respondS3ErrorXML(w, http.StatusForbidden, "AccessDenied", "access denied")
+		return true
+	}
+	s.s3Annotations.bind(bucket, key, obj.VersionID+"|"+obj.ETag+"|"+obj.UpdatedAt.Format(time.RFC3339Nano))
 	versionID := obj.VersionID
 	if versionID == "" {
 		versionID = "null"
@@ -265,8 +295,13 @@ func (s *Server) putS3AnnotationTableConfiguration(w http.ResponseWriter, r *htt
 		respondS3ErrorXML(w, http.StatusBadRequest, "InvalidRequest", "annotation table configuration is a bucket-scoped PUT")
 		return
 	}
-	if _, err := s.s3.GetBucket(bucket); err != nil {
+	b, err := s.s3.GetBucket(bucket)
+	if err != nil {
 		respondS3ErrorXML(w, http.StatusNotFound, "NoSuchBucket", "bucket not found")
+		return
+	}
+	if !s.authorizeS3Request(r, bucket, "", "s3:PutBucketMetadataTableConfiguration", b.ACL) {
+		respondS3ErrorXML(w, http.StatusForbidden, "AccessDenied", "access denied")
 		return
 	}
 	var cfg struct {

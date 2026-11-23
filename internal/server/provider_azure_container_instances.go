@@ -31,13 +31,13 @@ type azureContainerInstancesResource struct {
 }
 
 type azureContainerInstancesProfileRevision struct {
-	Revision  int
-	Location  string
-	Tags      map[string]string
-	Identity  map[string]any
-	Zones     []string
+	Revision   int
+	Location   string
+	Tags       map[string]string
+	Identity   map[string]any
+	Zones      []string
 	Properties map[string]any
-	CreatedAt time.Time
+	CreatedAt  time.Time
 }
 
 type azureContainerInstancesProfileResource struct {
@@ -624,13 +624,13 @@ func (s *Server) handleAzureContainerInstancesPutProfile(w http.ResponseWriter, 
 	profile.Properties = azureContainerInstancesNormalizeProfileProperties(azureContainerInstancesCloneMap(properties))
 	profile.Revision++
 	profile.Revisions = append(profile.Revisions, &azureContainerInstancesProfileRevision{
-		Revision:  profile.Revision,
-		Location:  profile.Location,
-		Tags:      azureContainerInstancesCopyStringMap(profile.Tags),
-		Identity:  azureContainerInstancesCloneMap(profile.Identity),
-		Zones:     append([]string(nil), profile.Zones...),
+		Revision:   profile.Revision,
+		Location:   profile.Location,
+		Tags:       azureContainerInstancesCopyStringMap(profile.Tags),
+		Identity:   azureContainerInstancesCloneMap(profile.Identity),
+		Zones:      append([]string(nil), profile.Zones...),
 		Properties: azureContainerInstancesCloneMap(profile.Properties),
-		CreatedAt: now,
+		CreatedAt:  now,
 	})
 	profile.UpdatedAt = now
 	profile.ETag = azureContainerInstancesETag("containerGroupProfiles", subscriptionID, resourceGroup, name, strconv.Itoa(profile.Revision), now.Format(time.RFC3339Nano))
@@ -825,22 +825,22 @@ func azureContainerInstancesUsagesFixture(subscriptionID, location string) []map
 				"value":          "ContainerGroups",
 				"localizedValue": "Container Groups",
 			},
-			"unit":          "Count",
-			"currentValue":  4,
-			"limit":         100,
+			"unit":           "Count",
+			"currentValue":   4,
+			"limit":          100,
 			"subscriptionId": subscriptionID,
-			"location":      location,
+			"location":       location,
 		},
 		{
 			"name": map[string]any{
 				"value":          "Cores",
 				"localizedValue": "Cores",
 			},
-			"unit":          "Count",
-			"currentValue":  6,
-			"limit":         100,
+			"unit":           "Count",
+			"currentValue":   6,
+			"limit":          100,
 			"subscriptionId": subscriptionID,
-			"location":      location,
+			"location":       location,
 		},
 	}
 }
@@ -920,7 +920,7 @@ func azureContainerInstancesLogsFixture(groupName string, container map[string]a
 	if strings.EqualFold(strings.TrimSpace(timestamps), "true") {
 		now := time.Now().UTC()
 		for idx := range lines {
-			lines[idx] = now.Add(time.Duration(idx) * time.Second).Format(time.RFC3339) + " " + lines[idx]
+			lines[idx] = now.Add(time.Duration(idx)*time.Second).Format(time.RFC3339) + " " + lines[idx]
 		}
 	}
 	return map[string]any{
@@ -979,9 +979,9 @@ func azureContainerInstancesNormalizeResourceProperties(collection, name string,
 	}
 	normalized["provisioningState"] = "Succeeded"
 	normalized["instanceView"] = map[string]any{
-		"state":      state,
-		"events":     []any{},
-		"startTime":  time.Now().UTC().Format(time.RFC3339),
+		"state":        state,
+		"events":       []any{},
+		"startTime":    time.Now().UTC().Format(time.RFC3339),
 		"restartCount": 0,
 	}
 	if _, ok := normalized["isCreatedFromStandbyPool"]; !ok && collection == "containerGroups" {
@@ -1014,7 +1014,7 @@ func azureContainerInstancesNormalizeContainers(containers []any, state, groupNa
 		props = azureContainerInstancesCloneMap(props)
 		props["instanceView"] = map[string]any{
 			"currentState": map[string]any{
-				"state":  state,
+				"state":        state,
 				"detailStatus": state,
 			},
 			"events": []any{},
