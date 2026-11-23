@@ -176,6 +176,7 @@ type Server struct {
 	pcaConnectorAD                                      *padStore
 	pcaConnectorSCEP                                    *pscStore
 	serverlessRepo                                      *sarStore
+	schemas                                             *schStore
 	polly                                               *pollyStore
 	appRegistry                                         *aprStore
 	directconnect                                       *directConnectStore
@@ -220,6 +221,8 @@ type Server struct {
 	codeConnections                                     *codeConnectionsStore
 	route53Domains                                      *route53DomainsStore
 	textract                                            *textractStore
+	wafRegional                                         *wafRegionalStore
+	pi                                                  *piStore
 	serviceCatalog                                      *serviceCatalogStore
 	migrationHub                                        *migrationHubStore
 	openSearchServerless                                *openSearchServerlessStore
@@ -749,6 +752,7 @@ func New(cfg Config) *Server {
 		pcaConnectorAD:                newPCAConnectorADStore(),
 		pcaConnectorSCEP:              newPCAConnectorSCEPStore(),
 		serverlessRepo:                newServerlessRepoStore(),
+		schemas:                       newSchemasStore(),
 		polly:                         newPollyStore(),
 		appRegistry:                   newAppRegistryStore(),
 		directconnect:                 newDirectConnectStore(),
@@ -791,6 +795,8 @@ func New(cfg Config) *Server {
 		codeConnections:               newCodeConnectionsStore(),
 		route53Domains:                newRoute53DomainsStore(),
 		textract:                      newTextractStore(),
+		wafRegional:                   newWAFRegionalStore(),
+		pi:                            newPIStore(),
 		serviceCatalog:                newServiceCatalogStore(),
 		migrationHub:                  newMigrationHubStore(),
 		scheduler:                     newSchedulerStore(),
@@ -1428,7 +1434,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		"status":    "ok",
 		"timestamp": time.Now().UTC(),
 		"providers": s.enabledProviders,
-		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "awscostmanagement", "billingconductor", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "flink", "kinesis", "kendra", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakerruntime", "simspaceweaver", "savingsplans", "tnb", "pcaconnectorad", "pinpoint", "pipes", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite"},
+		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "awscostmanagement", "billingconductor", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "flink", "kinesis", "kendra", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakerruntime", "simspaceweaver", "savingsplans", "tnb", "pi", "pcaconnectorad", "pinpoint", "pipes", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafregional", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "schemas", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite"},
 	})
 }
 
@@ -2999,6 +3005,9 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	if s.handleRedshiftDataJSONRouter(w, r) {
 		return
 	}
+	if s.handleWAFRegionalJSONRouter(w, r) {
+		return
+	}
 	if s.handleWAFV2JSONRouter(w, r) {
 		return
 	}
@@ -3021,6 +3030,9 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleTextractJSONRouter(w, r) {
+		return
+	}
+	if s.handlePIJSONRouter(w, r) {
 		return
 	}
 	if s.handleServiceCatalogJSONRouter(w, r) {
@@ -3373,6 +3385,9 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleServerlessRepoRESTRouter(w, r) {
+		return
+	}
+	if s.handleSchemasRESTRouter(w, r) {
 		return
 	}
 	if s.handleRoute53ProfilesRESTRouter(w, r) {

@@ -302,7 +302,7 @@ func (s *Server) docdbInstanceToXML(i rdssvc.DBInstance) docdbInstanceXML {
 		AvailabilityZone: i.AvailabilityZone, PreferredMaintenanceWindow: i.PreferredMaintenanceWindow,
 		EngineVersion: i.EngineVersion, AutoMinorVersionUpgrade: i.AutoMinorVersionUpgrade,
 		PubliclyAccessible: i.PubliclyAccessible, DBClusterIdentifier: i.DBClusterIdentifier,
-		DbiResourceID: "db-" + strings.ToUpper(strings.ReplaceAll(i.Identifier, "-", "")), CACertificateIdentifier: i.CACertificateIdentifier,
+		DbiResourceID: rdssvc.ResourceID(i.Identifier), CACertificateIdentifier: i.CACertificateIdentifier,
 		PromotionTier: i.PromotionTier, DBInstanceArn: i.ARN,
 	}
 	if i.EndpointAddress != "" {

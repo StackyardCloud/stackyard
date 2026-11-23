@@ -190,6 +190,22 @@ const SERVICE_CATALOG = [
     summary: "Emulate text detection, forms, tables, queries, layout, signatures, expense, identity and lending analysis over text and PDF documents, with async jobs, adapters and tags.",
     docsHref: "../../../index.html#textract",
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
+  },  {
+    id: "wafregional",
+    name: "WAF Classic Regional",
+    category: "security",
+    summary: "Emulate WAF Classic regional conditions, rules, rate-based rules, rule groups and web ACLs with change tokens, resource associations, logging, rule group policies and tags.",
+    docsHref: "../../../index.html#wafregional",
+    exampleHref: "../../../../examples/aws/waf-regional/docker-compose.yml"
+  },
+
+  {
+    id: "pi",
+    name: "Performance Insights",
+    category: "integration",
+    summary: "Emulate Performance Insights for RDS and DocumentDB instances: deterministic db.load and OS/DB counter metrics, dimension keys by SQL, wait event, user and host, analysis reports with insights and recommendations, and tags.",
+    docsHref: "../../../index.html#pi",
+    exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
   },
   {
     id: "servicecatalog",
@@ -886,6 +902,14 @@ const SERVICE_CATALOG = [
     summary: "Emulate at(), rate() and cron() schedules with timezones, schedule groups, templated and universal targets, retry and dead-letter settings, plus on-demand delivery to SQS, SNS and EventBridge.",
     docsHref: "../../../index.html#scheduler",
     exampleHref: "../../../../examples/aws/scheduler/docker-compose.yml"
+  },
+  {
+    id: "schemas",
+    name: "EventBridge Schemas",
+    category: "integration",
+    summary: "Emulate schema registries with versioned OpenAPI 3 and JSON Schema Draft 4 schemas, search and export, schema inference from sample events, generated Java, Python, TypeScript and Go code bindings, discoverers on event buses, resource policies and tags.",
+    docsHref: "../../../index.html#schemas",
+    exampleHref: "../../../../examples/aws/schemas/docker-compose.yml"
   },
   {
     id: "pipes",
