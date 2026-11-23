@@ -37259,19 +37259,9 @@ def pad_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], o
 
 
 def pad_new_ca(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
-    """Create an ACTIVE Private CA for connectors to use."""
-    payload = {
-        "CertificateAuthorityConfiguration": {
-            "KeyAlgorithm": "RSA_2048", "SigningAlgorithm": "SHA256WITHRSA",
-            "Subject": {"CommonName": "stackyard-pca-connector-ad"},
-        },
-        "CertificateAuthorityType": "ROOT",
-    }
-    data = run_aws_json(
-        aws_bin, endpoint_url, region, "acm-pca", "create-certificate-authority", env,
-        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
-    )
-    return str((data or {}).get("CertificateAuthorityArn") or "") if isinstance(data, dict) else ""
+    """Use the Private CA checks' own ACTIVE CA (shared with the SCEP connector),
+    so running these first leaves no extra CA behind to break Private CA's runs."""
+    return psc_certificate_authority(aws_bin, endpoint_url, region, env)
 
 
 def pad_new_directory(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
