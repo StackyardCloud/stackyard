@@ -337,6 +337,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
+    "osis": {"cli": "osis", "ops_file": REPO_ROOT / "internal/server/osis_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -1483,6 +1484,9 @@ SERVICE_ALIASES = {
     "docdb-elastic": "docdbelastic",
     "amazondocdbelastic": "docdbelastic",
     "documentdbelastic": "docdbelastic",
+    "osis": "osis",
+    "opensearchingestion": "osis",
+    "amazonopensearchingestion": "osis",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -3160,6 +3164,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glacier": {},
     "docdb": {},
     "docdbelastic": {},
+    "osis": {},
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
@@ -34523,6 +34528,99 @@ def eksauth_hydrate_payload(aws_bin: str, payload: dict, endpoint_url: str, regi
     return hydrated
 
 
+OSIS_SUBNET = "subnet-00000001"
+OSIS_CONFIG = """version: "2"
+log-pipeline:
+  source:
+    http:
+      path: "/logs"
+  sink:
+    - opensearch:
+        hosts: ["https://search-stackyard.us-east-1.es.amazonaws.com"]
+        index: "logs"
+"""
+OSIS_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "123456789012"}, "Action": "osis:Ingest", "Resource": "*"}]})
+
+
+def osis_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "osis", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def osis_create_pipeline(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], stopped: bool = False) -> str:
+    """Create a pipeline and read it once so it settles to ACTIVE (changes while
+    CREATING are conflicts); optionally stop it too. Returns the name."""
+    name = f"sy-{time.time_ns() % 10**12:012d}"
+    osis_cli(aws_bin, endpoint_url, region, env, "create-pipeline",
+             ["--pipeline-name", name, "--min-units", "1", "--max-units", "2", "--pipeline-configuration-body", OSIS_CONFIG])
+    osis_cli(aws_bin, endpoint_url, region, env, "get-pipeline", ["--pipeline-name", name])
+    if stopped:
+        osis_cli(aws_bin, endpoint_url, region, env, "stop-pipeline", ["--pipeline-name", name])
+        osis_cli(aws_bin, endpoint_url, region, env, "get-pipeline", ["--pipeline-name", name])
+    return name
+
+
+def osis_arn(region: str, name: str) -> str:
+    return f"arn:aws:osis:{region}:123456789012:pipeline/{name}"
+
+
+def osis_create_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    created = osis_cli(aws_bin, endpoint_url, region, env, "create-pipeline-endpoint",
+                       ["--pipeline-arn", osis_arn(region, name), "--vpc-options", json.dumps({"SubnetIds": [OSIS_SUBNET]})])
+    return str(created.get("EndpointId") or "")
+
+
+def osis_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each OpenSearch Ingestion operation at settled pipelines; changes
+    (update, start, stop, delete, endpoints) each get resources of their own."""
+    op = endpoint.operation
+    if op == "CreatePipeline":
+        return {"PipelineName": f"sy-{time.time_ns() % 10**12:012d}", "MinUnits": 1, "MaxUnits": 2, "PipelineConfigurationBody": OSIS_CONFIG}
+    if op == "ValidatePipeline":
+        return {"PipelineConfigurationBody": OSIS_CONFIG}
+    if op in {"ListPipelines", "ListPipelineBlueprints", "ListPipelineEndpoints", "ListPipelineEndpointConnections"}:
+        return {}
+    if op == "GetPipelineBlueprint":
+        return {"BlueprintName": "AWS-ApacheLogPipeline"}
+    if op == "UpdatePipeline":
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env), "MaxUnits": 4}
+    if op in {"DeletePipeline", "StopPipeline"}:
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env)}
+    if op == "StartPipeline":
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env, stopped=True)}
+    state = RUNTIME_STATE.setdefault("osis", {})
+    if not state.get("pipeline"):
+        state["pipeline"] = osis_create_pipeline(aws_bin, endpoint_url, region, env)
+        osis_cli(aws_bin, endpoint_url, region, env, "put-resource-policy",
+                 ["--resource-arn", osis_arn(region, state["pipeline"]), "--policy", OSIS_POLICY])
+    name = state["pipeline"]
+    arn = osis_arn(region, name)
+    if op in {"GetPipeline", "GetPipelineChangeProgress"}:
+        return {"PipelineName": name}
+    if op == "CreatePipelineEndpoint":
+        return {"PipelineArn": arn, "VpcOptions": {"SubnetIds": [OSIS_SUBNET]}}
+    if op == "DeletePipelineEndpoint":
+        return {"EndpointId": osis_create_endpoint(aws_bin, endpoint_url, region, env, name)}
+    if op == "RevokePipelineEndpointConnections":
+        return {"PipelineArn": arn, "EndpointIds": [osis_create_endpoint(aws_bin, endpoint_url, region, env, name)]}
+    if op == "PutResourcePolicy":
+        return {"ResourceArn": arn, "Policy": OSIS_POLICY}
+    if op == "DeleteResourcePolicy":
+        fresh = osis_create_pipeline(aws_bin, endpoint_url, region, env)
+        osis_cli(aws_bin, endpoint_url, region, env, "put-resource-policy",
+                 ["--resource-arn", osis_arn(region, fresh), "--policy", OSIS_POLICY])
+        return {"ResourceArn": osis_arn(region, fresh)}
+    if op == "GetResourcePolicy":
+        return {"ResourceArn": arn}
+    if op == "TagResource":
+        return {"Arn": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"Arn": arn, "TagKeys": ["stackyard"]}
+    return {"Arn": arn}
+
+
 DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
 
 
@@ -35308,6 +35406,8 @@ def hydrate_payload_with_service_state(
         return inspector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "inspectorscan":
         return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
+    if endpoint.service == "osis":
+        return osis_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdbelastic":
         return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "eksauth":

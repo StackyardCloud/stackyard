@@ -1104,6 +1104,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/opensearch-serverless/docker-compose.yml"
   },
   {
+    id: "osis",
+    name: "OpenSearch Ingestion",
+    category: "database",
+    summary: "Manage OpenSearch Ingestion pipelines with checked Data Prepper configurations, settle-on-read lifecycles, VPC endpoints, change progress, blueprints, resource policies and tags.",
+    docsHref: "../../../index.html#osis",
+    exampleHref: "../../../../examples/aws/osis/docker-compose.yml"
+  },
+  {
     id: "elasticsearchservice",
     name: "Elasticsearch Service",
     category: "database",
