@@ -11,6 +11,7 @@ import (
 
 const (
 	pollyMaxStreamEvents = 1000
+	pollyMaxStreamAudio  = 32 << 20 // audio bytes buffered across one stream
 	pollyStreamChunk     = 32 << 10
 )
 
@@ -61,7 +62,7 @@ func (s *Server) pollyStream(w http.ResponseWriter, r *http.Request) *pollyError
 	}
 	m := awsmodels.PollyModel()
 	var results []*pollySynthesis
-	chars := 0
+	chars, audioBytes := 0, 0
 	for _, ev := range events {
 		switch brtHeaderString(ev, ":event-type") {
 		case "TextEvent":
@@ -81,6 +82,11 @@ func (s *Server) pollyStream(w http.ResponseWriter, r *http.Request) *pollyError
 				return perr
 			}
 			chars += res.chars
+			// Every result is buffered until the stream ends, so bound the
+			// whole stream, not just each event.
+			if audioBytes += len(res.audio); audioBytes > pollyMaxStreamAudio {
+				return pollyErr(http.StatusPaymentRequired, "ServiceQuotaExceededException", "A stream can produce at most %d bytes of audio.", pollyMaxStreamAudio)
+			}
 			results = append(results, res)
 		case "CloseStreamEvent":
 		default:

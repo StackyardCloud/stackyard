@@ -244,3 +244,29 @@ func TestPollyStage1Stream(t *testing.T) {
 		t.Fatalf("stream without VoiceId: %d", status)
 	}
 }
+
+// Each TextEvent is capped on its own, but every result is buffered until the
+// stream ends, so the whole stream is bounded too.
+func TestPollyStage1StreamAudioIsBoundedAcrossEvents(t *testing.T) {
+	_, ts := newPollyTestServer(t)
+	var body bytes.Buffer
+	enc := eventstream.NewEncoder()
+	text, _ := json.Marshal(map[string]string{"Text": strings.Repeat("word ", 590)})
+	for i := 0; i < 40; i++ { // ~1.9 MB of 16 kHz PCM per event, ~77 MB in total
+		msg := eventstream.Message{Payload: text}
+		msg.Headers.Set(":message-type", eventstream.StringValue("event"))
+		msg.Headers.Set(":event-type", eventstream.StringValue("TextEvent"))
+		_ = enc.Encode(&body, msg)
+	}
+	headers := map[string]string{
+		"Content-Type": "application/vnd.amazon.eventstream", "x-amzn-Engine": "neural",
+		"x-amzn-OutputFormat": "pcm", "x-amzn-SampleRate": "16000", "x-amzn-VoiceId": "Joanna",
+	}
+	status, _, data := pollyRaw(t, ts, http.MethodPost, "/v1/synthesisStream", body.String(), headers)
+	if status == http.StatusOK && len(data) > pollyMaxStreamAudio+(1<<20) {
+		t.Fatalf("stream returned %d bytes, over the %d-byte cap", len(data), pollyMaxStreamAudio)
+	}
+	if status == http.StatusOK && !strings.Contains(string(data), "ServiceQuotaExceededException") {
+		t.Fatalf("expected ServiceQuotaExceededException, got %d bytes", len(data))
+	}
+}
