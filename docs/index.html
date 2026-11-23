@@ -213,6 +213,7 @@
         <a href="#neptuneanalytics">Neptune Analytics API</a>
         <a href="#omics">HealthOmics</a>
         <a href="#opensearch">OpenSearch Service</a>
+        <a href="#osis">OpenSearch Ingestion</a>
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
@@ -17762,6 +17763,103 @@
         <ul>
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
+                </ul>
+        </details>
+        </section>
+
+        <section id="osis" class="service">
+
+        <div class="service-header">
+        <h2>Amazon OpenSearch Ingestion</h2>
+        <p>SigV4 signed with service <code>osis</code>. REST JSON API under <code>/2022-01-01/osis/</code>. Pipelines report CREATING, UPDATING, STARTING or STOPPING and settle to ACTIVE or STOPPED on the next read; changes while transitional return <code>ConflictException</code>. Configurations are checked structurally (a top-level <code>version</code> and a source and sink per pipeline; JSON or indented YAML, no full YAML parse). VPC subnets and security groups are checked against the EC2 store. Ingest endpoint URLs point at Stackyard, but the ingestion data plane is not emulated. All 22 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: osis</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>CreatePipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePipelineEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePipelineEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPipelineBlueprint</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPipelineChangeProgress</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPipelineBlueprints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPipelineEndpointConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPipelineEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPipelines</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResourcePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>RevokePipelineEndpointConnections</code></td>
+        </tr>
+        <tr>
+        <td><code>StartPipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>StopPipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePipeline</code></td>
+        </tr>
+        <tr>
+        <td><code>ValidatePipeline</code></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>osis</code>: <code>docker compose -f examples/aws/osis/docker-compose.yml up --build</code></li>
                 </ul>
         </details>
         </section>
