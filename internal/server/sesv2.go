@@ -773,6 +773,27 @@ func (s *Server) handleSESV2JSONRouter(w http.ResponseWriter, r *http.Request) b
 			"Errors":  []map[string]any{},
 		})
 		return true
+	case "CreateTenant", "GetTenant", "ListTenants", "DeleteTenant",
+		"CreateTenantResourceAssociation", "DeleteTenantResourceAssociation",
+		"ListTenantResources", "ListResourceTenants":
+		s.handleSESV2Tenant(w, op.Name, payload)
+		return true
+	case "CreateMultiRegionEndpoint", "GetMultiRegionEndpoint", "DeleteMultiRegionEndpoint", "ListMultiRegionEndpoints":
+		s.handleSESV2MultiRegionEndpoint(w, op.Name, params, payload)
+		return true
+	case "GetEmailAddressInsights":
+		address := sesv2String(payload["EmailAddress"])
+		if address == "" {
+			respondSESV2Error(w, http.StatusBadRequest, "BadRequestException", "EmailAddress is required")
+			return true
+		}
+		respondSESV2JSON(w, http.StatusOK, map[string]any{"MailboxValidation": sesv2MailboxValidation(address)})
+		return true
+	case "GetReputationEntity":
+		respondSESV2JSON(w, http.StatusOK, map[string]any{
+			"ReputationEntity": sesv2DefaultReputationEntity(params["ReputationEntityType"], params["ReputationEntityReference"]),
+		})
+		return true
 	default:
 		respondSESV2JSON(w, http.StatusOK, map[string]any{
 			"Operation": op.Name,
@@ -801,6 +822,8 @@ func respondSESV2ErrorForErr(w http.ResponseWriter, err error) {
 		respondSESV2Error(w, http.StatusBadRequest, "AlreadyExistsException", err.Error())
 	case sesv2.ErrNotFound:
 		respondSESV2Error(w, http.StatusNotFound, "NotFoundException", err.Error())
+	case sesv2.ErrLimitExceeded:
+		respondSESV2Error(w, http.StatusBadRequest, "LimitExceededException", err.Error())
 	case sesv2.ErrSendingDisabled:
 		respondSESV2Error(w, http.StatusBadRequest, "SendingPausedException", err.Error())
 	default:
@@ -819,7 +842,14 @@ func isSESV2JSONCandidate(r *http.Request) bool {
 }
 
 func matchSESV2Operation(method, path string) (sesv2Operation, map[string]string, bool) {
-	for _, op := range sesv2Operations {
+	if op, params, ok := matchSESV2OperationIn(sesv2Operations, method, path); ok {
+		return op, params, true
+	}
+	return matchSESV2OperationIn(sesv2LegacyOperations, method, path)
+}
+
+func matchSESV2OperationIn(ops []sesv2Operation, method, path string) (sesv2Operation, map[string]string, bool) {
+	for _, op := range ops {
 		if method != op.Method {
 			continue
 		}

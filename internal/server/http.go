@@ -4162,6 +4162,10 @@ var redshiftHandlers = func() map[string]func(*Server, http.ResponseWriter, *htt
 	handlers["DescribeRedshiftIdcApplications"] = (*Server).handleRedshiftDescribeRedshiftIdcApplications
 	handlers["ModifyRedshiftIdcApplication"] = (*Server).handleRedshiftModifyRedshiftIdcApplication
 	handlers["DeleteRedshiftIdcApplication"] = (*Server).handleRedshiftDeleteRedshiftIdcApplication
+	handlers["CreateQev2IdcApplication"] = (*Server).handleRedshiftCreateQev2IdcApplication
+	handlers["DescribeQev2IdcApplications"] = (*Server).handleRedshiftDescribeQev2IdcApplications
+	handlers["ModifyQev2IdcApplication"] = (*Server).handleRedshiftModifyQev2IdcApplication
+	handlers["DeleteQev2IdcApplication"] = (*Server).handleRedshiftDeleteQev2IdcApplication
 	handlers["GetIdentityCenterAuthToken"] = (*Server).handleRedshiftGetIdentityCenterAuthToken
 	handlers["RegisterNamespace"] = (*Server).handleRedshiftRegisterNamespace
 	handlers["DeregisterNamespace"] = (*Server).handleRedshiftDeregisterNamespace
@@ -4276,6 +4280,7 @@ type redshiftStore struct {
 	usageLimits        map[string]*redshiftUsageLimit
 	authProfiles       map[string]*redshiftAuthenticationProfile
 	idcApplications    map[string]*redshiftIdcApplication
+	qev2Applications   map[string]*redshiftQev2IdcApplication
 	namespaces         map[string]*redshiftNamespaceRegistration
 	paramGroups        map[string]*redshiftParameterGroup
 	scheduled          map[string]*redshiftScheduledAction
@@ -4569,6 +4574,7 @@ func newRedshiftStore() *redshiftStore {
 		usageLimits:        make(map[string]*redshiftUsageLimit),
 		authProfiles:       make(map[string]*redshiftAuthenticationProfile),
 		idcApplications:    make(map[string]*redshiftIdcApplication),
+		qev2Applications:   make(map[string]*redshiftQev2IdcApplication),
 		namespaces:         make(map[string]*redshiftNamespaceRegistration),
 		paramGroups:        make(map[string]*redshiftParameterGroup),
 		scheduled:          make(map[string]*redshiftScheduledAction),
@@ -4703,11 +4709,6 @@ type redshiftIdcApplicationXML struct {
 	RedshiftIdcApplicationArn  string `xml:"RedshiftIdcApplicationArn,omitempty"`
 	IdcInstanceArn             string `xml:"IdcInstanceArn,omitempty"`
 	Status                     string `xml:"Status,omitempty"`
-}
-
-type redshiftNamespaceRegistrationXML struct {
-	NamespaceIdentifier string `xml:"NamespaceIdentifier"`
-	Status              string `xml:"Status,omitempty"`
 }
 
 type redshiftPartnerIntegrationXML struct {
@@ -4944,20 +4945,26 @@ type redshiftDataShareListResponse struct {
 	ResponseMetadata redshiftResponseMetadata    `xml:"ResponseMetadata"`
 }
 
-type redshiftIntegrationXML struct {
-	XMLName         xml.Name `xml:"Integration"`
-	IntegrationArn  string   `xml:"IntegrationArn"`
-	IntegrationName string   `xml:"IntegrationName"`
-	SourceArn       string   `xml:"SourceArn,omitempty"`
-	TargetArn       string   `xml:"TargetArn,omitempty"`
-	Status          string   `xml:"Status,omitempty"`
-	Description     string   `xml:"Description,omitempty"`
-	CreationDate    string   `xml:"CreationDate,omitempty"`
+type redshiftIntegrationFields struct {
+	IntegrationArn  string `xml:"IntegrationArn"`
+	IntegrationName string `xml:"IntegrationName"`
+	SourceArn       string `xml:"SourceArn,omitempty"`
+	TargetArn       string `xml:"TargetArn,omitempty"`
+	Status          string `xml:"Status,omitempty"`
+	Description     string `xml:"Description,omitempty"`
+	CreateTime      string `xml:"CreateTime,omitempty"`
 }
 
+type redshiftIntegrationXML struct {
+	XMLName xml.Name `xml:"Integration"`
+	redshiftIntegrationFields
+}
+
+// Create/Modify/DeleteIntegration return the Integration shape itself as the
+// result, so its members sit directly under the <Action>Result element.
 type redshiftIntegrationResult struct {
-	XMLName     xml.Name               `xml:""`
-	Integration redshiftIntegrationXML `xml:"Integration"`
+	XMLName xml.Name `xml:""`
+	redshiftIntegrationFields
 }
 
 type redshiftIntegrationResponse struct {
@@ -8222,28 +8229,7 @@ func (s *Server) handleRedshiftRegisterNamespace(w http.ResponseWriter, r *http.
 		CreatedAt:  time.Now().UTC(),
 	}
 	s.redshift.namespaces[identifier] = ns
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"RegisterNamespaceResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName   xml.Name                         `xml:"RegisterNamespaceResult"`
-			Namespace redshiftNamespaceRegistrationXML `xml:"Namespace"`
-		} `xml:"RegisterNamespaceResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName   xml.Name                         `xml:"RegisterNamespaceResult"`
-			Namespace redshiftNamespaceRegistrationXML `xml:"Namespace"`
-		}{
-			XMLName: xml.Name{Local: "RegisterNamespaceResult"},
-			Namespace: redshiftNamespaceRegistrationXML{
-				NamespaceIdentifier: ns.Identifier,
-				Status:              ns.Status,
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftNamespaceStatus(w, "RegisterNamespace", "Registering")
 }
 
 func (s *Server) handleRedshiftDeregisterNamespace(w http.ResponseWriter, r *http.Request) {
@@ -8254,34 +8240,12 @@ func (s *Server) handleRedshiftDeregisterNamespace(w http.ResponseWriter, r *htt
 	}
 	s.redshiftMu.Lock()
 	defer s.redshiftMu.Unlock()
-	ns, ok := s.redshift.namespaces[identifier]
-	if !ok {
+	if _, ok := s.redshift.namespaces[identifier]; !ok {
 		respondRedshiftErrorXML(w, http.StatusBadRequest, "NamespaceNotFound", "namespace not found")
 		return
 	}
 	delete(s.redshift.namespaces, identifier)
-	respondRedshiftXML(w, http.StatusOK, struct {
-		XMLName xml.Name `xml:"DeregisterNamespaceResponse"`
-		XMLNS   string   `xml:"xmlns,attr"`
-		Result  struct {
-			XMLName   xml.Name                         `xml:"DeregisterNamespaceResult"`
-			Namespace redshiftNamespaceRegistrationXML `xml:"Namespace"`
-		} `xml:"DeregisterNamespaceResult"`
-		ResponseMetadata redshiftResponseMetadata `xml:"ResponseMetadata"`
-	}{
-		XMLNS: redshiftNamespace,
-		Result: struct {
-			XMLName   xml.Name                         `xml:"DeregisterNamespaceResult"`
-			Namespace redshiftNamespaceRegistrationXML `xml:"Namespace"`
-		}{
-			XMLName: xml.Name{Local: "DeregisterNamespaceResult"},
-			Namespace: redshiftNamespaceRegistrationXML{
-				NamespaceIdentifier: ns.Identifier,
-				Status:              "DEREGISTERED",
-			},
-		},
-		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
-	})
+	respondRedshiftNamespaceStatus(w, "DeregisterNamespace", "Deregistering")
 }
 
 func (s *Server) handleRedshiftModifyLakehouseConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -9551,9 +9515,14 @@ func (s *Server) handleRedshiftCreateIntegration(w http.ResponseWriter, r *http.
 }
 
 func (s *Server) handleRedshiftModifyIntegration(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimSpace(r.Form.Get("IntegrationName"))
+	arn := strings.TrimSpace(r.Form.Get("IntegrationArn"))
+	newName := strings.TrimSpace(r.Form.Get("IntegrationName"))
+	name := newName
+	if arn != "" {
+		name = redshiftIntegrationNameFromForm(url.Values{"IntegrationArn": []string{arn}})
+	}
 	if name == "" {
-		respondRedshiftErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "IntegrationName is required")
+		respondRedshiftErrorXML(w, http.StatusBadRequest, "InvalidParameterValue", "IntegrationArn is required")
 		return
 	}
 	description := strings.TrimSpace(r.Form.Get("Description"))
@@ -9563,6 +9532,16 @@ func (s *Server) handleRedshiftModifyIntegration(w http.ResponseWriter, r *http.
 	if integration == nil {
 		respondRedshiftErrorXML(w, http.StatusBadRequest, "IntegrationNotFound", "integration not found")
 		return
+	}
+	if newName != "" && newName != name {
+		if _, taken := s.redshift.integrations[newName]; taken {
+			respondRedshiftErrorXML(w, http.StatusBadRequest, "IntegrationAlreadyExists", "integration already exists")
+			return
+		}
+		// The ARN stays stable across a rename, as in AWS.
+		delete(s.redshift.integrations, name)
+		integration.Name = newName
+		s.redshift.integrations[newName] = integration
 	}
 	if description != "" {
 		integration.Description = description
@@ -11553,16 +11532,8 @@ func respondRedshiftIntegrationResponse(w http.ResponseWriter, status int, actio
 		XMLName: xml.Name{Local: action + "Response"},
 		XMLNS:   redshiftNamespace,
 		Result: redshiftIntegrationResult{
-			XMLName: xml.Name{Local: action + "Result"},
-			Integration: redshiftIntegrationXML{
-				IntegrationArn:  integration.Arn,
-				IntegrationName: integration.Name,
-				SourceArn:       integration.SourceArn,
-				TargetArn:       integration.TargetArn,
-				Status:          integration.Status,
-				Description:     integration.Description,
-				CreationDate:    integration.CreatedAt.Format(time.RFC3339),
-			},
+			XMLName:                   xml.Name{Local: action + "Result"},
+			redshiftIntegrationFields: redshiftIntegrationFieldsOf(integration),
 		},
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
@@ -11572,15 +11543,7 @@ func respondRedshiftIntegrationResponse(w http.ResponseWriter, status int, actio
 func respondRedshiftIntegrationsResponse(w http.ResponseWriter, status int, action string, integrations []*redshiftIntegration) {
 	items := make([]redshiftIntegrationXML, 0, len(integrations))
 	for _, integration := range integrations {
-		items = append(items, redshiftIntegrationXML{
-			IntegrationArn:  integration.Arn,
-			IntegrationName: integration.Name,
-			SourceArn:       integration.SourceArn,
-			TargetArn:       integration.TargetArn,
-			Status:          integration.Status,
-			Description:     integration.Description,
-			CreationDate:    integration.CreatedAt.Format(time.RFC3339),
-		})
+		items = append(items, redshiftIntegrationXML{redshiftIntegrationFields: redshiftIntegrationFieldsOf(integration)})
 	}
 	resp := redshiftIntegrationsResponse{
 		XMLName: xml.Name{Local: action + "Response"},
@@ -11592,6 +11555,18 @@ func respondRedshiftIntegrationsResponse(w http.ResponseWriter, status int, acti
 		ResponseMetadata: redshiftResponseMetadata{RequestID: "stackyard-request"},
 	}
 	respondRedshiftXML(w, status, resp)
+}
+
+func redshiftIntegrationFieldsOf(integration *redshiftIntegration) redshiftIntegrationFields {
+	return redshiftIntegrationFields{
+		IntegrationArn:  integration.Arn,
+		IntegrationName: integration.Name,
+		SourceArn:       integration.SourceArn,
+		TargetArn:       integration.TargetArn,
+		Status:          integration.Status,
+		Description:     integration.Description,
+		CreateTime:      integration.CreatedAt.Format(time.RFC3339),
+	}
 }
 
 func respondRedshiftInboundIntegrationsResponse(w http.ResponseWriter, status int, action string, integrations []*redshiftIntegration) {

@@ -58,6 +58,7 @@
   "PauseClusterMessage",
   "PendingModifiedValues",
   "ProvisionedIdentifier",
+  "Qev2IdcApplication",
   "ReadWriteAccess",
   "Recommendation",
   "RecommendedAction",
