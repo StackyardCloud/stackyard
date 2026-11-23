@@ -185,6 +185,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/route53domains/docker-compose.yml"
   },
   {
+    id: "textract",
+    name: "Textract",
+    category: "integration",
+    summary: "Emulate text detection, forms, tables, queries, layout, signatures, expense, identity and lending analysis over text and PDF documents, with async jobs, adapters and tags.",
+    docsHref: "../../../index.html#textract",
+    exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",
