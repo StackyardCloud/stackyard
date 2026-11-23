@@ -396,6 +396,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
     "pcaconnectorscep": {"cli": "pca-connector-scep", "ops_file": REPO_ROOT / "internal/server/pcaconnectorscep_ops.go"},
+    "serverlessrepo": {"cli": "serverlessrepo", "ops_file": REPO_ROOT / "internal/server/serverlessrepo_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
@@ -1950,6 +1951,9 @@ SERVICE_ALIASES = {
     "privatecaconnectorforscep": "pcaconnectorscep",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
+    "serverlessrepo": "serverlessrepo",
+    "serverlessapplicationrepository": "serverlessrepo",
+    "awsserverlessapplicationrepository": "serverlessrepo",
     "polly": "polly",
     "amazonpolly": "polly",
     "servicecatalogappregistry": "servicecatalogappregistry",
@@ -3207,6 +3211,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53profiles": {},
     "networkmanager": {},
     "pcaconnectorscep": {},
+    "serverlessrepo": {},
     "polly": {},
     "servicecatalogappregistry": {},
     "datasync": {},
@@ -34972,6 +34977,64 @@ def polly_hydrate_payload(
     return payload
 
 
+SAR_TEMPLATE = json.dumps(
+    {
+        "Parameters": {"Stage": {"Type": "String", "Default": "dev"}},
+        "Resources": {"Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": {"Ref": "Stage"}}}},
+    }
+)
+SAR_ORG = "o-stackyard01"
+
+
+def sar_new_app(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-{time.time_ns()}"
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "serverlessrepo", "create-application", env,
+        ["--name", name, "--author", "stackyard", "--description", "Stackyard coverage app",
+         "--semantic-version", "1.0.0", "--template-body", SAR_TEMPLATE],
+    )
+    return str(data.get("ApplicationId") or "") if isinstance(data, dict) else ""
+
+
+def serverlessrepo_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Serverless Application Repository operation at a real
+    application. Delete and unshare each get an application of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("serverlessrepo", {})
+    if not state.get("app"):
+        state["app"] = sar_new_app(aws_bin, endpoint_url, region, env)
+    app = str(state["app"])
+    unique = time.time_ns()
+    if op == "CreateApplication":
+        return {"Name": f"stackyard-{unique}", "Author": "stackyard", "Description": "Stackyard coverage app",
+                "SemanticVersion": "1.0.0", "TemplateBody": SAR_TEMPLATE}
+    if op == "ListApplications":
+        return {}
+    if op == "CreateApplicationVersion":
+        return {"ApplicationId": app, "SemanticVersion": f"2.0.{unique}", "TemplateBody": SAR_TEMPLATE}
+    if op == "CreateCloudFormationChangeSet":
+        return {"ApplicationId": app, "StackName": f"stackyard-{unique}"}
+    if op == "GetCloudFormationTemplate":
+        data = run_aws_json(aws_bin, endpoint_url, region, "serverlessrepo", "create-cloud-formation-template", env, ["--application-id", app])
+        return {"ApplicationId": app, "TemplateId": str((data or {}).get("TemplateId") or "") if isinstance(data, dict) else ""}
+    if op == "DeleteApplication":
+        return {"ApplicationId": sar_new_app(aws_bin, endpoint_url, region, env)}
+    if op == "PutApplicationPolicy":
+        return {"ApplicationId": app, "Statements": [{"Actions": ["Deploy"], "Principals": ["123456789012"]}]}
+    if op == "UnshareApplication":
+        own = sar_new_app(aws_bin, endpoint_url, region, env)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "serverlessrepo", "put-application-policy", env,
+            ["--application-id", own, "--statements", json.dumps([{"Actions": ["Deploy"], "Principals": ["*"], "PrincipalOrgIDs": [SAR_ORG]}])],
+        )
+        return {"ApplicationId": own, "OrganizationId": SAR_ORG}
+    if op == "UpdateApplication":
+        return {"ApplicationId": app, "Description": "Stackyard coverage app (updated)"}
+    return {"ApplicationId": app}
+
+
 def psc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
     data = run_aws_json(aws_bin, endpoint_url, region, "pca-connector-scep", op, env, args)
     return data if isinstance(data, dict) else {}
@@ -37381,6 +37444,8 @@ def hydrate_payload_with_service_state(
         return pcaconnectorscep_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "serverlessrepo":
+        return serverlessrepo_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalogappregistry":
         return servicecatalogappregistry_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "networkmanager":

@@ -240,6 +240,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/route53profiles/docker-compose.yml"
   },
   {
+    id: "serverlessrepo",
+    name: "Serverless Application Repository",
+    category: "integration",
+    summary: "Publish SAM applications and versions with parameters, capabilities and nested-app dependencies read from the template; share them with policies and deploy them as CloudFormation change sets.",
+    docsHref: "../../../index.html#serverlessrepo",
+    exampleHref: "../../../../examples/aws/serverlessrepo/docker-compose.yml"
+  },
+  {
     id: "config",
     name: "AWS Config",
     category: "integration",
