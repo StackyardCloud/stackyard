@@ -242,6 +242,7 @@
         <a href="#security-ir">Security Incident Response</a>
         <a href="#security-lake">Security Lake</a>
         <a href="#wafv2">WAFV2</a>
+        <a href="#verifiedpermissions">Verified Permissions</a>
         <a href="#shield">Shield Advanced</a>
         <a href="#payment-cryptography">Payment Cryptography</a>
         <a href="#payment-cryptography-data">Payment Cryptography Data Plane</a>
@@ -26079,6 +26080,134 @@
         <li><code>waf</code>: <code>docker compose -f examples/aws/waf/docker-compose.yml up --build</code></li>
         <li><code>waf</code>: <code>docker compose -f examples/aws/waf/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="verifiedpermissions" class="service">
+
+        <div class="service-header">
+        <h2>Verified Permissions</h2>
+        <p>SigV4 signed with service <code>verifiedpermissions</code>. JSON 1.0 API with <code>X-Amz-Target: VerifiedPermissions.*</code>. Policy stores, Cedar JSON schemas, static and template-linked policies, policy templates, aliases and identity sources keep real state. Policies are parsed as Cedar when created (syntax errors are a <code>ValidationException</code> with line and column), and STRICT stores check entity types, actions and the scope's principal and resource types against the schema. <code>IsAuthorized</code> and its batch and token variants run a Cedar evaluator: <code>==</code>, <code>in</code> and <code>is</code> scopes, <code>when</code>/<code>unless</code> conditions with comparison, arithmetic, <code>has</code>, <code>like</code>, <code>if</code>, sets and records; forbid overrides permit and the default is deny. Extension functions (<code>ip</code>, <code>decimal</code>, ...) are rejected, attribute types aren't checked against the schema, and token signatures aren't verified.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: verifiedpermissions</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div>
+        <pre><code>aws verifiedpermissions create-policy-store --validation-settings mode=OFF --endpoint-url http://localhost:4566</code></pre>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchGetPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchIsAuthorized</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchIsAuthorizedWithToken</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetSchema</code></td>
+        </tr>
+        <tr>
+        <td><code>IsAuthorized</code></td>
+        </tr>
+        <tr>
+        <td><code>IsAuthorizedWithToken</code></td>
+        </tr>
+        <tr>
+        <td><code>ListIdentitySources</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicies</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyStoreAliases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyStores</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyTemplates</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutSchema</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicyTemplate</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
