@@ -615,6 +615,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "neptunedata": {"cli": "neptunedata", "ops_file": REPO_ROOT / "internal/server/neptunedata_ops.go"},
     "opensearch": {"cli": "opensearch", "ops_file": REPO_ROOT / "internal/server/opensearch_ops.go"},
     "privateca": {"cli": "acm-pca", "ops_file": REPO_ROOT / "internal/server/privateca_ops.go"},
+    "pcaconnectorad": {"cli": "pca-connector-ad", "ops_file": REPO_ROOT / "internal/server/pcaconnectorad_ops.go"},
     "rds": {"cli": "rds", "ops_file": None},
     "secretsmanager": {
         "cli": "secretsmanager",
@@ -2361,6 +2362,8 @@ SERVICE_ALIASES = {
     "neptune-data": "neptunedata",
     "privateca": "privateca",
     "private-ca": "privateca",
+    "pcaconnectorad": "pcaconnectorad",
+    "pca-connector-ad": "pcaconnectorad",
     "rds": "rds",
     "amazonrds": "rds",
     "relationaldatabaseservice": "rds",
@@ -3396,6 +3399,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kms": {},
     "neptuneanalytics": {},
     "privateca": {},
+    "pcaconnectorad": {},
     "secretsmanager": {},
     "redshift": {},
     "sns": {},
@@ -37080,6 +37084,172 @@ def servicecatalog_hydrate_payload(
     return {}
 
 
+PAD_SECURITY_GROUP = "sg-00000000"
+PAD_DIRECTORY = "d-0000000000"
+PAD_TEMPLATE_DEFINITION = {
+    "TemplateV2": {
+        "CertificateValidity": {
+            "ValidityPeriod": {"Period": 1, "PeriodType": "YEARS"},
+            "RenewalPeriod": {"Period": 6, "PeriodType": "WEEKS"},
+        },
+        "EnrollmentFlags": {"IncludeSymmetricAlgorithms": True},
+        "Extensions": {
+            "KeyUsage": {"UsageFlags": {"DigitalSignature": True, "KeyEncipherment": True}},
+            "ApplicationPolicies": {"Policies": [{"PolicyType": "SERVER_AUTHENTICATION"}]},
+        },
+        "GeneralFlags": {"AutoEnrollment": True, "MachineType": True},
+        "PrivateKeyAttributes": {"KeySpec": "KEY_EXCHANGE", "MinimalKeyLength": 2048},
+        "PrivateKeyFlags": {"ClientVersion": "WINDOWS_SERVER_2016"},
+        "SubjectNameFlags": {"SanRequireDns": True},
+    }
+}
+
+
+def pad_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "pca-connector-ad", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def pad_new_ca(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create an ACTIVE Private CA for connectors to use."""
+    payload = {
+        "CertificateAuthorityConfiguration": {
+            "KeyAlgorithm": "RSA_2048", "SigningAlgorithm": "SHA256WITHRSA",
+            "Subject": {"CommonName": "stackyard-pca-connector-ad"},
+        },
+        "CertificateAuthorityType": "ROOT",
+    }
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "acm-pca", "create-certificate-authority", env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return str((data or {}).get("CertificateAuthorityArn") or "") if isinstance(data, dict) else ""
+
+
+def pad_new_directory(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "ds", "create-directory", env,
+        ["--name", f"pad{time.time_ns() % 10**9}.local", "--password", "Stackyard-Passw0rd", "--size", "Small"],
+    )
+    return str((data or {}).get("DirectoryId") or "") if isinstance(data, dict) else ""
+
+
+def pad_new_connector(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], ca: str) -> str:
+    data = pad_cli(aws_bin, endpoint_url, region, env, "create-connector", {
+        "CertificateAuthorityArn": ca, "DirectoryId": PAD_DIRECTORY,
+        "VpcInformation": {"SecurityGroupIds": [PAD_SECURITY_GROUP]},
+    })
+    return str(data.get("ConnectorArn") or "")
+
+
+def pad_new_template(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connector: str) -> str:
+    data = pad_cli(aws_bin, endpoint_url, region, env, "create-template", {
+        "ConnectorArn": connector, "Name": f"stackyard-{time.time_ns()}", "Definition": PAD_TEMPLATE_DEFINITION,
+    })
+    return str(data.get("TemplateArn") or "")
+
+
+def pad_new_ace(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], template: str) -> str:
+    sid = f"S-1-5-21-{time.time_ns() % 10**9}-512"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "pca-connector-ad", "create-template-group-access-control-entry", env,
+        ["--cli-input-json", json.dumps({
+            "TemplateArn": template, "GroupSecurityIdentifier": sid, "GroupDisplayName": "Stackyard",
+            "AccessRights": {"Enroll": "ALLOW"},
+        }, separators=(",", ":"))],
+    )
+    return sid
+
+
+def pad_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared CA, directory registration, connector, SPN, template and ACE."""
+    state = RUNTIME_STATE.setdefault("pcaconnectorad", {})
+    if state.get("template"):
+        return state
+    state["ca"] = pad_new_ca(aws_bin, endpoint_url, region, env)
+    # The seeded directory may already be registered by an earlier run on the
+    # same server; the registration ARN is derived from the directory either way.
+    pad_cli(aws_bin, endpoint_url, region, env, "create-directory-registration", {"DirectoryId": PAD_DIRECTORY})
+    state["registration"] = f"arn:aws:pca-connector-ad:{region}:123456789012:directory-registration/{PAD_DIRECTORY}"
+    state["connector"] = pad_new_connector(aws_bin, endpoint_url, region, env, str(state["ca"]))
+    pad_cli(aws_bin, endpoint_url, region, env, "create-service-principal-name", {
+        "DirectoryRegistrationArn": state["registration"], "ConnectorArn": state["connector"],
+    })
+    state["template"] = pad_new_template(aws_bin, endpoint_url, region, env, str(state["connector"]))
+    state["sid"] = pad_new_ace(aws_bin, endpoint_url, region, env, str(state["template"]))
+    return state
+
+
+def pcaconnectorad_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each pca-connector-ad operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    f = pad_fixture(aws_bin, endpoint_url, region, env)
+    ca, reg, conn, tmpl, sid = (str(f[k]) for k in ("ca", "registration", "connector", "template", "sid"))
+    if op in {"ListConnectors", "ListDirectoryRegistrations"}:
+        return {}
+    if op == "CreateConnector":
+        return {"CertificateAuthorityArn": ca, "DirectoryId": PAD_DIRECTORY, "VpcInformation": {"SecurityGroupIds": [PAD_SECURITY_GROUP]}}
+    if op == "GetConnector":
+        return {"ConnectorArn": conn}
+    if op == "DeleteConnector":
+        return {"ConnectorArn": pad_new_connector(aws_bin, endpoint_url, region, env, ca)}
+    if op == "CreateDirectoryRegistration":
+        return {"DirectoryId": pad_new_directory(aws_bin, endpoint_url, region, env)}
+    if op == "GetDirectoryRegistration":
+        return {"DirectoryRegistrationArn": reg}
+    if op == "DeleteDirectoryRegistration":
+        own = pad_cli(aws_bin, endpoint_url, region, env, "create-directory-registration", {
+            "DirectoryId": pad_new_directory(aws_bin, endpoint_url, region, env),
+        })
+        return {"DirectoryRegistrationArn": str(own.get("DirectoryRegistrationArn") or reg)}
+    if op == "CreateServicePrincipalName":
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": pad_new_connector(aws_bin, endpoint_url, region, env, ca)}
+    if op in {"GetServicePrincipalName"}:
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": conn}
+    if op == "DeleteServicePrincipalName":
+        own = pad_new_connector(aws_bin, endpoint_url, region, env, ca)
+        pad_cli(aws_bin, endpoint_url, region, env, "create-service-principal-name", {"DirectoryRegistrationArn": reg, "ConnectorArn": own})
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": own}
+    if op == "ListServicePrincipalNames":
+        return {"DirectoryRegistrationArn": reg}
+    if op == "CreateTemplate":
+        return {"ConnectorArn": conn, "Name": f"stackyard-{time.time_ns()}", "Definition": PAD_TEMPLATE_DEFINITION}
+    if op == "GetTemplate":
+        return {"TemplateArn": tmpl}
+    if op == "UpdateTemplate":
+        return {"TemplateArn": tmpl, "ReenrollAllCertificateHolders": True}
+    if op == "DeleteTemplate":
+        return {"TemplateArn": pad_new_template(aws_bin, endpoint_url, region, env, conn)}
+    if op == "ListTemplates":
+        return {"ConnectorArn": conn}
+    if op == "CreateTemplateGroupAccessControlEntry":
+        return {
+            "TemplateArn": tmpl, "GroupSecurityIdentifier": f"S-1-5-21-{time.time_ns() % 10**9}-513",
+            "GroupDisplayName": "Stackyard", "AccessRights": {"Enroll": "ALLOW"},
+        }
+    if op == "GetTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": sid}
+    if op == "UpdateTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": sid, "AccessRights": {"AutoEnroll": "DENY"}}
+    if op == "DeleteTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": pad_new_ace(aws_bin, endpoint_url, region, env, tmpl)}
+    if op == "ListTemplateGroupAccessControlEntries":
+        return {"TemplateArn": tmpl}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": conn}
+    if op == "TagResource":
+        return {"ResourceArn": conn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": conn, "TagKeys": ["stackyard"]}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -37091,6 +37261,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "pcaconnectorad":
+        return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
         return verifiedpermissions_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "opensearchserverless":

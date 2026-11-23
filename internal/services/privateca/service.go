@@ -1098,7 +1098,9 @@ func (s *Service) UntagCertificateAuthority(certificateAuthorityARN string, tagK
 
 func (s *Service) nextCertificateAuthorityARNLocked() string {
 	s.seq++
-	id := fmt.Sprintf("%032x", s.seq)
+	// AWS CA ids are UUIDs; other services (e.g. pca-connector-ad) validate that shape.
+	h := fmt.Sprintf("%032x", s.seq)
+	id := h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
 	return fmt.Sprintf("arn:aws:acm-pca:%s:%s:certificate-authority/%s", DefaultRegion, DefaultAccountID, id)
 }
 

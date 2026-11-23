@@ -1177,6 +1177,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/privateca/docker-compose.yml"
   },
   {
+    id: "pcaconnectorad",
+    name: "Private CA Connector for Active Directory",
+    category: "security",
+    summary: "Emulate AD connectors, directory registrations, service principal names, certificate templates and group access control entries backed by Private CA.",
+    docsHref: "../../../index.html#pcaconnectorad",
+    exampleHref: "../../../../examples/aws/pca-connector-ad/docker-compose.yml"
+  },
+  {
     id: "rds",
     name: "RDS",
     category: "database",
