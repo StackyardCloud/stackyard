@@ -81,7 +81,10 @@ func (s *quickSetupStore) Handle(action string, payload map[string]any, pathPara
 	case "GetConfiguration":
 		configID := qsPathString(pathParams, "ConfigurationId", "cfg-000001")
 		cfg := s.ensureConfigurationLocked(configID, s.firstManagerARNLocked())
-		return map[string]any{"Configuration": qsCloneMap(cfg)}
+		out := s.configurationSummaryLocked(configID)
+		out["CreatedAt"] = cfg["CreatedAt"]
+		out["LastModifiedAt"] = cfg["LastModifiedAt"]
+		return out
 
 	case "GetConfigurationManager":
 		managerARN := qsPathString(pathParams, "ManagerArn", s.firstManagerARNLocked())
@@ -107,8 +110,8 @@ func (s *quickSetupStore) Handle(action string, payload map[string]any, pathPara
 			items = append(items, qsCloneMap(s.managerSummaryLocked(arn)))
 		}
 		return map[string]any{
-			"ConfigurationManagers": items,
-			"NextToken":             "",
+			"ConfigurationManagersList": items,
+			"NextToken":                 "",
 		}
 
 	case "ListConfigurations":
@@ -122,8 +125,8 @@ func (s *quickSetupStore) Handle(action string, payload map[string]any, pathPara
 			items = append(items, qsCloneMap(s.configurationSummaryLocked(id)))
 		}
 		return map[string]any{
-			"Configurations": items,
-			"NextToken":      "",
+			"ConfigurationsList": items,
+			"NextToken":          "",
 		}
 
 	case "ListQuickSetupTypes":
@@ -244,7 +247,7 @@ func (s *quickSetupStore) managerSummaryLocked(managerARN string) map[string]any
 func (s *quickSetupStore) configurationSummaryLocked(configID string) map[string]any {
 	cfg := s.ensureConfigurationLocked(configID, s.firstManagerARNLocked())
 	return map[string]any{
-		"ConfigurationId": qsStringAny(cfg, "ConfigurationId", configID),
+		"Id":              qsStringAny(cfg, "ConfigurationId", configID),
 		"ManagerArn":      qsStringAny(cfg, "ManagerArn", s.firstManagerARNLocked()),
 		"Type":            qsStringAny(cfg, "Type", "AWSQuickSetupType-SSMHostMgmt"),
 		"StatusSummaries": qsCloneAnySlice(qsAnySliceAny(cfg, "StatusSummaries")),

@@ -43,7 +43,7 @@ func TestDSQLStage2UpdateAndVpcEndpointServiceName(t *testing.T) {
 	resp = dsqlRequest(t, ts, http.MethodGet, "/clusters/"+created.Identifier+"/vpc-endpoint-service-name", nil)
 	assertStatus(t, resp, http.StatusOK)
 	var vpcOut struct {
-		VpcEndpointServiceName string `json:"vpcEndpointServiceName"`
+		VpcEndpointServiceName string `json:"serviceName"`
 	}
 	if err := json.Unmarshal(mustBody(t, resp), &vpcOut); err != nil {
 		t.Fatalf("unmarshal vpc endpoint service name: %v", err)

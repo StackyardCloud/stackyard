@@ -43,8 +43,8 @@ func TestFlinkStage34OperationsAndSnapshots(t *testing.T) {
 	resp = flinkRequest(t, ts, "StartApplication", `{"ApplicationName":"stage-flink-ops"}`)
 	assertStatus(t, resp, http.StatusOK)
 	startBody := decodeShard9JSONBody(t, resp)
-	if _, ok := startBody["OperationId"]; ok {
-		t.Fatalf("expected StartApplication to omit OperationId, got %#v", startBody["OperationId"])
+	if got, _ := startBody["OperationId"].(string); got == "" {
+		t.Fatalf("expected StartApplication to return OperationId, got %#v", startBody["OperationId"])
 	}
 
 	resp = flinkRequest(t, ts, "ListApplicationOperations", `{"ApplicationName":"stage-flink-ops"}`)
@@ -82,8 +82,8 @@ func TestFlinkStage34OperationsAndSnapshots(t *testing.T) {
 	resp = flinkRequest(t, ts, "StopApplication", `{"ApplicationName":"stage-flink-ops"}`)
 	assertStatus(t, resp, http.StatusOK)
 	stopBody := decodeShard9JSONBody(t, resp)
-	if _, ok := stopBody["OperationId"]; ok {
-		t.Fatalf("expected StopApplication to omit OperationId, got %#v", stopBody["OperationId"])
+	if got, _ := stopBody["OperationId"].(string); got == "" {
+		t.Fatalf("expected StopApplication to return OperationId, got %#v", stopBody["OperationId"])
 	}
 }
 

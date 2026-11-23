@@ -20073,7 +20073,7 @@ def cognitouserpools_record_runtime_payload(region: str, payload: object) -> Non
         _record_user_pool_id(terms_obj.get("UserPoolId"))
         _record_string("terms_id", terms_obj.get("TermsId"))
 
-    terms_list = payload.get("TermsList")
+    terms_list = payload.get("Terms")
     if isinstance(terms_list, list):
         for item in terms_list:
             if not isinstance(item, dict):

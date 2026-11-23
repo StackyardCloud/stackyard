@@ -179,7 +179,7 @@ func (s *Server) handleDSQLStage0To2(w http.ResponseWriter, r *http.Request) boo
 			return true
 		}
 		respondDSQLJSON(w, http.StatusOK, map[string]any{
-			"vpcEndpointServiceName": serviceName,
+			"serviceName": serviceName,
 		})
 		return true
 	}
