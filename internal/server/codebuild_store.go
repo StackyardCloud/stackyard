@@ -737,26 +737,26 @@ func (s *codeBuildStore) Handle(action string, payload map[string]any) map[strin
 		return map[string]any{"reports": codeBuildToAnySlice(arns), "nextToken": ""}
 
 	case "ListSandboxes":
-		arns := make([]string, 0, len(s.sandboxOrder))
+		ids := make([]string, 0, len(s.sandboxOrder))
 		for _, id := range s.sandboxOrder {
-			if sandbox := s.sandboxes[id]; sandbox != nil {
-				arns = append(arns, sandbox.Arn)
+			if s.sandboxes[id] != nil {
+				ids = append(ids, id)
 			}
 		}
-		sort.Strings(arns)
-		return map[string]any{"sandboxes": codeBuildToAnySlice(arns), "nextToken": ""}
+		sort.Strings(ids)
+		return map[string]any{"ids": codeBuildToAnySlice(ids)}
 
 	case "ListSandboxesForProject":
 		projectName := codeBuildDefaultString(payload, "projectName", "stackyard-codebuild-project")
 		ids := append([]string{}, s.sandboxesByProject[projectName]...)
 		sort.Strings(ids)
-		arns := make([]any, 0, len(ids))
+		out := make([]any, 0, len(ids))
 		for _, id := range ids {
-			if sandbox := s.sandboxes[id]; sandbox != nil {
-				arns = append(arns, sandbox.Arn)
+			if s.sandboxes[id] != nil {
+				out = append(out, id)
 			}
 		}
-		return map[string]any{"sandboxes": arns, "nextToken": ""}
+		return map[string]any{"ids": out}
 
 	case "ListSharedProjects":
 		return map[string]any{"projects": codeBuildToAnySlice(s.sortedProjectNames()), "nextToken": ""}
@@ -850,8 +850,11 @@ func (s *codeBuildStore) Handle(action string, payload map[string]any) map[strin
 			sandbox.LastModified = time.Now().UTC()
 		}
 		return map[string]any{
-			"sandboxArn": codeBuildSandboxARN(id),
-			"token":      fmt.Sprintf("sandbox-token-%06d", s.nextLocked()),
+			"ssmSession": map[string]any{
+				"sessionId":  fmt.Sprintf("sandbox-session-%06d", s.nextLocked()),
+				"tokenValue": fmt.Sprintf("sandbox-token-%06d", s.nextLocked()),
+				"streamUrl":  "wss://ssmmessages.us-east-1.amazonaws.com/v1/data-channel/" + id,
+			},
 		}
 
 	case "StopBuild":

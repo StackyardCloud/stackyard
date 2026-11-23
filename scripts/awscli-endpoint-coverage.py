@@ -13663,7 +13663,11 @@ def generate_cli_input_payload(
     payload = apply_common_payload_tweaks(payload)
     payload = apply_service_payload_tweaks(endpoint, payload)
     if input_mode == "required":
+        tweaked = payload
         payload = prune_payload_to_required(endpoint, payload)
+        for name in REQUIRED_MODE_ONE_OF_MEMBERS.get((endpoint.service, endpoint.operation), ()):
+            if isinstance(tweaked, dict) and isinstance(payload, dict) and name in tweaked:
+                payload[name] = tweaked[name]
     return payload, None
 
 
@@ -13869,6 +13873,18 @@ def botocore_shape_default(shape):
             out[name] = botocore_shape_default(member_shape)
         return out
     return "stackyard"
+
+
+# The service model marks these members optional only because an alternative
+# member can stand in (e.g. AvailabilityZone vs AvailabilityZoneId); AWS still
+# rejects a request carrying neither, so required-mode keeps one of each pair.
+REQUIRED_MODE_ONE_OF_MEMBERS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("ec2", "CreateDefaultSubnet"): ("AvailabilityZone",),
+    ("ec2", "CreateVpcBlockPublicAccessExclusion"): ("VpcId",),
+    ("ec2", "CreateVpcEndpoint"): ("ServiceName",),
+    ("ec2", "EnableFastSnapshotRestores"): ("AvailabilityZones",),
+    ("ec2", "ModifyInstanceMetadataDefaults"): ("HttpTokens",),
+}
 
 
 def prune_payload_to_required(endpoint: Endpoint, payload):

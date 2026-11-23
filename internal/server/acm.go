@@ -162,7 +162,7 @@ func (s *Server) handleACMJSONRouter(w http.ResponseWriter, r *http.Request) boo
 			respondACMErrorForErr(w, err)
 			return true
 		}
-		respondACMJSON(w, http.StatusOK, map[string]any{})
+		respondACMJSON(w, http.StatusOK, map[string]any{"CertificateArn": acmString(payload["CertificateArn"])})
 		return true
 
 	case "ResendValidationEmail":

@@ -23,33 +23,34 @@ const (
 )
 
 type Service struct {
-	mu                sync.Mutex
-	instances         map[string]*DBInstance
-	snapshots         map[string]*DBSnapshot
-	exportTasks       map[string]*ExportTask
-	automatedBackup   map[string]*DBInstanceAutomatedBackup
-	dbParamGroups     map[string]*DBParameterGroup
-	optionGroups      map[string]*OptionGroup
-	dbSubnetGroups    map[string]*DBSubnetGroup
-	dbSecGroups       map[string]*DBSecurityGroup
-	certificates      map[string]*Certificate
-	clusters          map[string]*DBCluster
-	clusterEndpoints  map[string]*DBClusterEndpoint
-	globalClusters    map[string]*GlobalCluster
-	blueGreen         map[string]*BlueGreenDeployment
-	tenantDBs         map[string]*TenantDatabase
-	tags              map[string]map[string]string
-	eventSubs         map[string]*EventSubscription
-	pendingMaint      map[string][]*PendingMaintenanceAction
-	instanceRoles     map[string]map[string]string
-	clusterRoles      map[string]map[string]string
-	activityStreams   map[string]*ActivityStream
-	proxies           map[string]*DBProxy
-	proxyEndpoints    map[string]*DBProxyEndpoint
-	proxyTargets      map[string]map[string]*DBProxyTarget
-	integrations      map[string]*Integration
-	reservedOfferings map[string]*ReservedDBInstancesOffering
-	reservedInstances map[string]*ReservedDBInstance
+	mu                   sync.Mutex
+	instances            map[string]*DBInstance
+	snapshots            map[string]*DBSnapshot
+	exportTasks          map[string]*ExportTask
+	automatedBackup      map[string]*DBInstanceAutomatedBackup
+	dbParamGroups        map[string]*DBParameterGroup
+	optionGroups         map[string]*OptionGroup
+	dbSubnetGroups       map[string]*DBSubnetGroup
+	dbSecGroups          map[string]*DBSecurityGroup
+	certificates         map[string]*Certificate
+	clusters             map[string]*DBCluster
+	clusterEndpoints     map[string]*DBClusterEndpoint
+	globalClusters       map[string]*GlobalCluster
+	blueGreen            map[string]*BlueGreenDeployment
+	tenantDBs            map[string]*TenantDatabase
+	tags                 map[string]map[string]string
+	eventSubs            map[string]*EventSubscription
+	pendingMaint         map[string][]*PendingMaintenanceAction
+	instanceRoles        map[string]map[string]string
+	clusterRoles         map[string]map[string]string
+	activityStreams      map[string]*ActivityStream
+	proxies              map[string]*DBProxy
+	proxyEndpoints       map[string]*DBProxyEndpoint
+	proxyTargets         map[string]map[string]*DBProxyTarget
+	integrations         map[string]*Integration
+	capacityReservations map[string]*CapacityReservation
+	reservedOfferings    map[string]*ReservedDBInstancesOffering
+	reservedInstances    map[string]*ReservedDBInstance
 
 	clusterParamGroups map[string]*DBClusterParameterGroup
 	clusterSnapshots   map[string]*DBClusterSnapshot

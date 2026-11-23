@@ -1542,26 +1542,27 @@ func (s *Service) ImportKeyMaterial(keyRef string, encryptedKeyMaterial, importT
 	return nil
 }
 
-func (s *Service) DeleteImportedKeyMaterial(keyRef string) error {
+// DeleteImportedKeyMaterial removes imported material and returns the key ARN.
+func (s *Service) DeleteImportedKeyMaterial(keyRef string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	key, err := s.resolveKeyLocked(keyRef)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if key.Origin != "EXTERNAL" {
-		return ErrInvalidState
+		return "", ErrInvalidState
 	}
 
 	material, err := randomBytes(32)
 	if err != nil {
-		return err
+		return "", err
 	}
 	key.material = material
 	key.Origin = "AWS_KMS"
 	key.importedKeyExpiration = nil
-	return nil
+	return key.Arn, nil
 }
 
 func (s *Service) ReplicateKey(keyRef, replicaRegion string) (Key, error) {
