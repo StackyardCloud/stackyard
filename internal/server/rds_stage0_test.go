@@ -8,8 +8,8 @@ import (
 )
 
 func TestRDSStage0OperationCoverage(t *testing.T) {
-	if len(rdsOperations) != 163 {
-		t.Fatalf("expected 163 RDS operations from docs, got %d", len(rdsOperations))
+	if len(rdsOperations) != 168 {
+		t.Fatalf("expected 168 RDS operations from docs, got %d", len(rdsOperations))
 	}
 	if len(rdsOperationByName) != len(rdsOperations) {
 		t.Fatalf("expected unique operation names")

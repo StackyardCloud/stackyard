@@ -144,6 +144,13 @@ var rdsQueryHandlers = func() map[string]func(*Server, http.ResponseWriter, *htt
 	handlers["DescribeReservedDBInstancesOfferings"] = (*Server).handleRDSDescribeReservedDBInstancesOfferings
 	handlers["PurchaseReservedDBInstancesOffering"] = (*Server).handleRDSPurchaseReservedDBInstancesOffering
 
+	// Capacity reservations and Serverless v2 platform versions
+	handlers["CreateDBCapacityReservation"] = (*Server).handleRDSCreateDBCapacityReservation
+	handlers["ModifyDBCapacityReservation"] = (*Server).handleRDSModifyDBCapacityReservation
+	handlers["CancelDBCapacityReservation"] = (*Server).handleRDSCancelDBCapacityReservation
+	handlers["DescribeDBCapacityReservations"] = (*Server).handleRDSDescribeDBCapacityReservations
+	handlers["DescribeServerlessV2PlatformVersions"] = (*Server).handleRDSDescribeServerlessV2PlatformVersions
+
 	// Stage 9
 	for _, action := range rdsStage9CompatActions {
 		handlers[action] = (*Server).handleRDSCompatNoop

@@ -8,6 +8,11 @@ type rdsOperation struct {
 // https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_Operations.html
 var rdsOperations = []rdsOperation{
 	{Name: "AddRoleToDBCluster"},
+	{Name: "CancelDBCapacityReservation"},
+	{Name: "CreateDBCapacityReservation"},
+	{Name: "DescribeDBCapacityReservations"},
+	{Name: "DescribeServerlessV2PlatformVersions"},
+	{Name: "ModifyDBCapacityReservation"},
 	{Name: "AddRoleToDBInstance"},
 	{Name: "AddSourceIdentifierToSubscription"},
 	{Name: "AddTagsToResource"},

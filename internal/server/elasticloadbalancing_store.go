@@ -310,7 +310,11 @@ func (s *elasticLoadBalancingStore) Handle(action string, form url.Values) map[s
 			},
 		}
 	case "ModifyIpPools":
-		return map[string]any{}
+		pools := map[string]any{}
+		if id := elasticLoadBalancingFormString(form, "IpamPools.Ipv4IpamPoolId", ""); id != "" && form.Get("RemoveIpamPools.member.1") != "ipv4" {
+			pools["Ipv4IpamPoolId"] = id
+		}
+		return map[string]any{"IpamPools": pools}
 	case "SetIpAddressType":
 		return map[string]any{"IpAddressType": elasticLoadBalancingFormString(form, "IpAddressType", "ipv4")}
 	case "SetSecurityGroups":
