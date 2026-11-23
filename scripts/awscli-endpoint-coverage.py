@@ -394,6 +394,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
+    "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
         "cli": "globalaccelerator",
@@ -565,7 +566,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
+    "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
+    "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
@@ -1938,6 +1941,9 @@ SERVICE_ALIASES = {
     "amazonroute53profiles": "route53profiles",
     "polly": "polly",
     "amazonpolly": "polly",
+    "servicecatalogappregistry": "servicecatalogappregistry",
+    "servicecatalog-appregistry": "servicecatalogappregistry",
+    "appregistry": "servicecatalogappregistry",
     "route-53": "route53",
     "route 53": "route53",
     "amazonroute53": "route53",
@@ -2229,6 +2235,8 @@ SERVICE_ALIASES = {
     "efs": "efs",
     "codeconnections": "codeconnections",
     "route53domains": "route53domains",
+    "servicecatalog": "servicecatalog",
+    "awsservicecatalog": "servicecatalog",
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
     "textract": "textract",
@@ -2242,6 +2250,8 @@ SERVICE_ALIASES = {
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
     "amazonopensearchserverless": "opensearchserverless",
+    "verifiedpermissions": "verifiedpermissions",
+    "amazonverifiedpermissions": "verifiedpermissions",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
     "awscodestarconnections": "codestarconnections",
@@ -3188,6 +3198,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pipes": {},
     "route53profiles": {},
     "polly": {},
+    "servicecatalogappregistry": {},
     "datasync": {},
     "dax": {},
     "route53resolver": {},
@@ -3202,7 +3213,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "textract": {},
     "wafregional": {},
     "pi": {},
+    "servicecatalog": {},
     "opensearchserverless": {},
+    "verifiedpermissions": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -34857,6 +34870,90 @@ def r53p_new_resource(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return {"id": ra_id, "arn": arn}
 
 
+def apr_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "servicecatalog-appregistry", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def apr_new_application(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-app-{time.time_ns()}"
+    data = apr_cli(aws_bin, endpoint_url, region, env, "create-application", ["--name", name, "--client-token", name])
+    return str((data.get("application") or {}).get("id") or name)
+
+
+def apr_new_group(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-group-{time.time_ns()}"
+    data = apr_cli(aws_bin, endpoint_url, region, env, "create-attribute-group", ["--name", name, "--attributes", "{}", "--client-token", name])
+    return str((data.get("attributeGroup") or {}).get("id") or name)
+
+
+def apr_new_stack(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """A fresh CloudFormation stack: each stack can belong to one application."""
+    name = f"stackyard-apr-{time.time_ns()}"
+    run_aws_json(aws_bin, endpoint_url, region, "cloudformation", "create-stack", env, ["--stack-name", name, "--template-body", "{}"])
+    return name
+
+
+def servicecatalogappregistry_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each AppRegistry operation at real applications, attribute groups
+    and CloudFormation stacks. Destructive operations get resources of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("servicecatalogappregistry", {})
+    if not state.get("app"):
+        state["app"] = apr_new_application(aws_bin, endpoint_url, region, env)
+        state["group"] = apr_new_group(aws_bin, endpoint_url, region, env)
+        state["stack"] = apr_new_stack(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-resource", ["--application", state["app"], "--resource-type", "CFN_STACK", "--resource", state["stack"], "--options", "APPLY_APPLICATION_TAG"])
+    app, group, stack = str(state["app"]), str(state["group"]), str(state["stack"])
+    unique = f"stackyard-{time.time_ns()}"
+    app_arn = f"arn:aws:servicecatalog:{region}:123456789012:/applications/{app}"
+    if op == "CreateApplication":
+        return {"name": unique, "clientToken": unique}
+    if op == "CreateAttributeGroup":
+        return {"name": unique, "attributes": '{"owner":"stackyard"}', "clientToken": unique}
+    if op in {"ListApplications", "ListAttributeGroups", "GetConfiguration"}:
+        return {}
+    if op == "PutConfiguration":
+        return {"configuration": {"tagQueryConfiguration": {"tagKey": "stackyard"}}}
+    if op in {"GetApplication", "ListAssociatedAttributeGroups", "ListAssociatedResources", "ListAttributeGroupsForApplication"}:
+        return {"application": app}
+    if op == "UpdateApplication":
+        return {"application": app, "description": "stackyard coverage"}
+    if op == "DeleteApplication":
+        return {"application": apr_new_application(aws_bin, endpoint_url, region, env)}
+    if op == "GetAttributeGroup":
+        return {"attributeGroup": group}
+    if op == "UpdateAttributeGroup":
+        return {"attributeGroup": group, "description": "stackyard coverage"}
+    if op == "DeleteAttributeGroup":
+        return {"attributeGroup": apr_new_group(aws_bin, endpoint_url, region, env)}
+    if op == "AssociateAttributeGroup":
+        return {"application": app, "attributeGroup": apr_new_group(aws_bin, endpoint_url, region, env)}
+    if op == "DisassociateAttributeGroup":
+        own = apr_new_group(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-attribute-group", ["--application", app, "--attribute-group", own])
+        return {"application": app, "attributeGroup": own}
+    if op == "AssociateResource":
+        return {"application": app, "resourceType": "CFN_STACK", "resource": apr_new_stack(aws_bin, endpoint_url, region, env)}
+    if op == "DisassociateResource":
+        own = apr_new_stack(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-resource", ["--application", app, "--resource-type", "CFN_STACK", "--resource", own])
+        return {"application": app, "resourceType": "CFN_STACK", "resource": own}
+    if op == "GetAssociatedResource":
+        return {"application": app, "resourceType": "CFN_STACK", "resource": stack}
+    if op == "SyncResource":
+        return {"resourceType": "CFN_STACK", "resource": stack}
+    if op == "ListTagsForResource":
+        return {"resourceArn": app_arn}
+    if op == "TagResource":
+        return {"resourceArn": app_arn, "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": app_arn, "tagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 POLLY_COVERAGE_BUCKET = "stackyard-polly-coverage"
 POLLY_LEXICON = (
     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -35948,6 +36045,133 @@ def timestream_hydrate_payload(
     return payload
 
 
+VP_CLI = "verifiedpermissions"
+VP_ISSUER = "https://stackyard-coverage.example.com"
+VP_SCHEMA = json.dumps(
+    {"Cov": {"entityTypes": {"User": {}, "Photo": {}}, "actions": {"view": {"appliesTo": {"principalTypes": ["User"], "resourceTypes": ["Photo"]}}}}}
+)
+VP_STATIC = 'permit(principal == Cov::User::"alice", action == Cov::Action::"view", resource);'
+VP_TEMPLATE = 'permit(principal == ?principal, action == Cov::Action::"view", resource);'
+VP_OIDC = {"openIdConnectConfiguration": {"issuer": VP_ISSUER, "tokenSelection": {"identityTokenOnly": {"clientIds": ["cov"]}}}}
+VP_PRINCIPAL = {"entityType": "Cov::User", "entityId": "alice"}
+VP_ACTION = {"actionType": "Cov::Action", "actionId": "view"}
+VP_RESOURCE = {"entityType": "Cov::Photo", "entityId": "p1"}
+
+
+def vp_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, body: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, VP_CLI, op, env, ["--cli-input-json", json.dumps(body)]) or {}
+
+
+def vp_token() -> str:
+    """An unsigned OIDC identity token for the coverage identity source."""
+    enc = lambda v: base64.urlsafe_b64encode(json.dumps(v).encode()).decode().rstrip("=")  # noqa: E731
+    claims = {"iss": VP_ISSUER, "sub": "alice", "aud": "cov", "exp": int(time.time()) + 3600}
+    return f"{enc({'alg': 'RS256'})}.{enc(claims)}.c2ln"
+
+
+def vp_store(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = vp_call(aws_bin, endpoint_url, region, env, "create-policy-store", {"validationSettings": {"mode": "OFF"}})
+    return str(data.get("policyStoreId") or "")
+
+
+def vp_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("verifiedpermissions", {})
+    if not state.get("store"):
+        call = lambda op, body: vp_call(aws_bin, endpoint_url, region, env, op, body)  # noqa: E731
+        store = vp_store(aws_bin, endpoint_url, region, env)
+        state["store"] = store
+        state["arn"] = str(call("get-policy-store", {"policyStoreId": store}).get("arn") or "")
+        call("put-schema", {"policyStoreId": store, "definition": {"cedarJson": VP_SCHEMA}})
+        state["template"] = str(call("create-policy-template", {"policyStoreId": store, "statement": VP_TEMPLATE}).get("policyTemplateId") or "")
+        state["policy"] = str(call("create-policy", {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}).get("policyId") or "")
+        call("create-policy", {"policyStoreId": store, "definition": {"templateLinked": {"policyTemplateId": state["template"], "principal": VP_PRINCIPAL}}})
+        state["source"] = str(call("create-identity-source", {"policyStoreId": store, "principalEntityType": "Cov::User", "configuration": VP_OIDC}).get("identitySourceId") or "")
+        state["alias"] = f"cov-{time.time_ns() % 10**12}"
+        call("create-policy-store-alias", {"aliasName": state["alias"], "policyStoreId": store})
+    return state
+
+
+def verifiedpermissions_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Verified Permissions operation at real fixtures; destructive
+    operations get resources of their own."""
+    op = endpoint.operation
+    call = lambda o, body: vp_call(aws_bin, endpoint_url, region, env, o, body)  # noqa: E731
+    if op == "CreatePolicyStore":
+        return {"validationSettings": {"mode": "OFF"}, "description": "coverage"}
+    if op == "ListPolicyStores" or op == "ListPolicyStoreAliases":
+        return {}
+    if op == "DeletePolicyStore":
+        return {"policyStoreId": vp_store(aws_bin, endpoint_url, region, env)}
+    state = vp_fixture(aws_bin, endpoint_url, region, env)
+    store = state["store"]
+    if op == "CreateIdentitySource":  # one identity source per store
+        return {"policyStoreId": vp_store(aws_bin, endpoint_url, region, env), "principalEntityType": "Cov::User", "configuration": VP_OIDC}
+    if op == "DeleteIdentitySource":
+        own = vp_store(aws_bin, endpoint_url, region, env)
+        sid = str(call("create-identity-source", {"policyStoreId": own, "configuration": VP_OIDC}).get("identitySourceId") or "")
+        return {"policyStoreId": own, "identitySourceId": sid}
+    if op in {"GetIdentitySource", "UpdateIdentitySource"}:
+        body = {"policyStoreId": store, "identitySourceId": state["source"]}
+        if op == "UpdateIdentitySource":
+            body["updateConfiguration"] = VP_OIDC
+        return body
+    if op == "ListIdentitySources" or op == "ListPolicies" or op == "ListPolicyTemplates" or op == "GetSchema" or op == "GetPolicyStore":
+        return {"policyStoreId": store}
+    if op == "UpdatePolicyStore":
+        return {"policyStoreId": store, "validationSettings": {"mode": "OFF"}, "description": "coverage"}
+    if op == "PutSchema":
+        return {"policyStoreId": store, "definition": {"cedarJson": VP_SCHEMA}}
+    if op == "CreatePolicy":
+        return {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}
+    if op in {"GetPolicy", "UpdatePolicy"}:
+        body = {"policyStoreId": store, "policyId": state["policy"]}
+        if op == "UpdatePolicy":
+            body["definition"] = {"static": {"statement": VP_STATIC, "description": "updated"}}
+        return body
+    if op == "DeletePolicy":
+        pid = str(call("create-policy", {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}).get("policyId") or "")
+        return {"policyStoreId": store, "policyId": pid}
+    if op == "BatchGetPolicy":
+        return {"requests": [{"policyStoreId": store, "policyId": state["policy"]}]}
+    if op == "CreatePolicyTemplate":
+        return {"policyStoreId": store, "statement": VP_TEMPLATE}
+    if op in {"GetPolicyTemplate", "UpdatePolicyTemplate"}:
+        body = {"policyStoreId": store, "policyTemplateId": state["template"]}
+        if op == "UpdatePolicyTemplate":
+            body["statement"] = VP_TEMPLATE
+        return body
+    if op == "DeletePolicyTemplate":
+        tid = str(call("create-policy-template", {"policyStoreId": store, "statement": VP_TEMPLATE}).get("policyTemplateId") or "")
+        return {"policyStoreId": store, "policyTemplateId": tid}
+    if op == "CreatePolicyStoreAlias":
+        return {"aliasName": f"cov-{time.time_ns() % 10**12}", "policyStoreId": store}
+    if op == "GetPolicyStoreAlias":
+        return {"aliasName": state["alias"]}
+    if op == "DeletePolicyStoreAlias":
+        name = f"cov-del-{time.time_ns() % 10**12}"
+        call("create-policy-store-alias", {"aliasName": name, "policyStoreId": store})
+        return {"aliasName": name}
+    if op in {"TagResource", "UntagResource", "ListTagsForResource"}:
+        body = {"resourceArn": state["arn"]}
+        if op == "TagResource":
+            body["tags"] = {"stackyard": "coverage"}
+        if op == "UntagResource":
+            body["tagKeys"] = ["stackyard"]
+        return body
+    request = {"principal": VP_PRINCIPAL, "action": VP_ACTION, "resource": VP_RESOURCE}
+    if op == "IsAuthorized":
+        return {"policyStoreId": store, **request}
+    if op == "BatchIsAuthorized":
+        return {"policyStoreId": store, "requests": [request]}
+    if op == "IsAuthorizedWithToken":
+        return {"policyStoreId": store, "identityToken": vp_token(), "action": VP_ACTION, "resource": VP_RESOURCE}
+    if op == "BatchIsAuthorizedWithToken":
+        return {"policyStoreId": store, "identityToken": vp_token(), "requests": [{"action": VP_ACTION, "resource": VP_RESOURCE}]}
+    return copy.deepcopy(payload)
+
+
 AOSS_CLI = "opensearchserverless"
 AOSS_ENCRYPTION_POLICY = json.dumps({"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AWSOwnedKey": True})
 AOSS_NETWORK_POLICY = json.dumps([{"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AllowFromPublic": True}])
@@ -36156,6 +36380,282 @@ def opensearchserverless_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+SERVICECATALOG_TEMPLATE = json.dumps({
+    "Parameters": {"Env": {"Type": "String", "AllowedValues": ["dev", "prod"]}, "Size": {"Type": "Number", "Default": "1"}},
+    "Resources": {"Bucket": {"Type": "AWS::S3::Bucket"}},
+    "Outputs": {"EnvOut": {"Value": {"Ref": "Env"}}},
+})
+SERVICECATALOG_ROLE = "arn:aws:iam::123456789012:role/stackyard-sc"
+SERVICECATALOG_ACCOUNT = "111122223333"
+
+
+def servicecatalog_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "servicecatalog", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def servicecatalog_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**14}"
+
+
+class ServiceCatalogFixture:
+    """Real resources made through the CLI; destructive operations get their own."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> None:
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.bucket = servicecatalog_unique("stackyard-sc-")
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", self.bucket])
+        self.put("app.json", SERVICECATALOG_TEMPLATE)
+        self.put("tf.tar.gz", "terraform-archive")
+        self.portfolio = self.new_portfolio()
+        self.product, self.artifact, self.view, self.product_arn = self.new_product()
+        self.call("associate-product-with-portfolio", {"ProductId": self.product, "PortfolioId": self.portfolio})
+        self.constraint = self.new_constraint(self.portfolio, self.product)
+        self.tag_option = self.new_tag_option(self.portfolio)
+        self.call("associate-budget-with-resource", {"BudgetName": "stackyard-budget", "ResourceId": self.portfolio})
+        self.call("create-portfolio-share", {"PortfolioId": self.portfolio, "AccountId": SERVICECATALOG_ACCOUNT})
+        self.action = self.new_action(associate=True)
+        self.pp, self.record = self.provision()
+        self.plan = self.new_plan()
+        self.copy_token = str(self.call("copy-product", {"SourceProductArn": self.product_arn, "IdempotencyToken": servicecatalog_unique("cp"),
+                                                         "TargetProductName": "stackyard-copy"}).get("CopyProductToken") or "")
+        # An organization share token, then the share is removed so org access can be disabled.
+        self.call("enable-aws-organizations-access", {})
+        node = {"Type": "ORGANIZATION", "Value": "o-stackyard00"}
+        org_port = self.new_portfolio()
+        self.share_token = str(self.call("create-portfolio-share", {"PortfolioId": org_port, "OrganizationNode": node}).get("PortfolioShareToken") or "")
+        self.call("delete-portfolio-share", {"PortfolioId": org_port, "OrganizationNode": node})
+
+    def call(self, op: str, payload: dict) -> dict:
+        aws_bin, endpoint_url, region, env = self.args
+        return servicecatalog_cli(aws_bin, endpoint_url, region, env, op, payload)
+
+    def put(self, key: str, body: str) -> None:
+        aws_bin, endpoint_url, region, env = self.args
+        with tempfile.NamedTemporaryFile("w", suffix=".tmpl", delete=False) as fh:
+            fh.write(body)
+            path = fh.name
+        try:
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env, ["--bucket", self.bucket, "--key", key, "--body", path])
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+    def url(self, key: str) -> str:
+        return f"https://{self.bucket}.s3.amazonaws.com/{key}"
+
+    def new_portfolio(self) -> str:
+        out = self.call("create-portfolio", {"DisplayName": servicecatalog_unique("sc-port-"), "ProviderName": "Stackyard",
+                                             "IdempotencyToken": servicecatalog_unique("p")})
+        return str((out.get("PortfolioDetail") or {}).get("Id") or "")
+
+    def new_product(self, product_type: str = "CLOUD_FORMATION_TEMPLATE", key: str = "app.json") -> tuple[str, str, str, str]:
+        out = self.call("create-product", {"Name": servicecatalog_unique("sc-prod-"), "Owner": "Stackyard", "ProductType": product_type,
+                                           "IdempotencyToken": servicecatalog_unique("pr"),
+                                           "ProvisioningArtifactParameters": {"Name": "v1", "Info": {"LoadTemplateFromURL": self.url(key)}}})
+        view = out.get("ProductViewDetail") or {}
+        summary = view.get("ProductViewSummary") or {}
+        return (str(summary.get("ProductId") or ""), str((out.get("ProvisioningArtifactDetail") or {}).get("Id") or ""),
+                str(summary.get("Id") or ""), str(view.get("ProductARN") or ""))
+
+    def new_constraint(self, portfolio: str, product: str) -> str:
+        out = self.call("create-constraint", {"PortfolioId": portfolio, "ProductId": product, "Type": "NOTIFICATION",
+                                              "Parameters": json.dumps({"NotificationArns": ["arn:aws:sns:us-east-1:123456789012:stackyard-sc"]}),
+                                              "IdempotencyToken": servicecatalog_unique("c")})
+        return str((out.get("ConstraintDetail") or {}).get("ConstraintId") or "")
+
+    def new_tag_option(self, resource: str = "") -> str:
+        out = self.call("create-tag-option", {"Key": servicecatalog_unique("sc-key-"), "Value": "v"})
+        tid = str((out.get("TagOptionDetail") or {}).get("Id") or "")
+        if resource:
+            self.call("associate-tag-option-with-resource", {"ResourceId": resource, "TagOptionId": tid})
+        return tid
+
+    def new_action(self, associate: bool = False) -> str:
+        out = self.call("create-service-action", {"Name": servicecatalog_unique("sc-act-"), "DefinitionType": "SSM_AUTOMATION",
+                                                  "IdempotencyToken": servicecatalog_unique("a"),
+                                                  "Definition": {"Name": "AWS-RestartEC2Instance", "Version": "1",
+                                                                 "Parameters": json.dumps([{"Name": "InstanceId", "Type": "TARGET"}])}})
+        aid = str(((out.get("ServiceActionDetail") or {}).get("ServiceActionSummary") or {}).get("Id") or "")
+        if associate:
+            self.call("associate-service-action-with-provisioning-artifact",
+                      {"ProductId": self.product, "ProvisioningArtifactId": self.artifact, "ServiceActionId": aid})
+        return aid
+
+    def provision(self, product: str = "", artifact: str = "", settle: bool = True) -> tuple[str, str]:
+        params = [{"Key": "Env", "Value": "dev"}] if not product else []
+        out = self.call("provision-product", {"ProductId": product or self.product, "ProvisioningArtifactId": artifact or self.artifact,
+                                              "ProvisionedProductName": servicecatalog_unique("sc-pp-"), "ProvisionToken": servicecatalog_unique("t"),
+                                              "ProvisioningParameters": params})
+        rec = out.get("RecordDetail") or {}
+        if settle:
+            self.call("describe-record", {"Id": rec.get("RecordId", "")})
+        return str(rec.get("ProvisionedProductId") or ""), str(rec.get("RecordId") or "")
+
+    def new_plan(self) -> str:
+        out = self.call("create-provisioned-product-plan", {"PlanName": servicecatalog_unique("sc-plan-"), "PlanType": "CLOUDFORMATION",
+                                                            "ProductId": self.product, "ProvisioningArtifactId": self.artifact,
+                                                            "ProvisionedProductName": servicecatalog_unique("sc-planned-"),
+                                                            "IdempotencyToken": servicecatalog_unique("pl"),
+                                                            "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]})
+        plan = str(out.get("PlanId") or "")
+        self.call("describe-provisioned-product-plan", {"PlanId": plan})
+        return plan
+
+    def terraform_record(self, kind: str) -> str:
+        """An in-progress Terraform record of the given kind, for the engine notify calls."""
+        port = self.new_portfolio()
+        product, artifact, _, _ = self.new_product("TERRAFORM_OPEN_SOURCE", "tf.tar.gz")
+        self.call("associate-product-with-portfolio", {"ProductId": product, "PortfolioId": port})
+        pp, rec = self.provision(product, artifact, settle=False)
+        if kind == "provision":
+            return rec
+        self.call("notify-provision-product-engine-workflow-result",
+                  {"WorkflowToken": "stackyard", "RecordId": rec, "Status": "SUCCEEDED", "IdempotencyToken": servicecatalog_unique("n")})
+        if kind == "update":
+            out = self.call("update-provisioned-product", {"ProvisionedProductId": pp, "UpdateToken": servicecatalog_unique("u")})
+        else:
+            out = self.call("terminate-provisioned-product", {"ProvisionedProductId": pp, "TerminateToken": servicecatalog_unique("x")})
+        return str((out.get("RecordDetail") or {}).get("RecordId") or "")
+
+
+def servicecatalog_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    state = RUNTIME_STATE.setdefault("servicecatalog", {})
+    if "fixture" not in state:
+        state["fixture"] = ServiceCatalogFixture(aws_bin, endpoint_url, region, env)
+    f: ServiceCatalogFixture = state["fixture"]
+    op = endpoint.operation
+    tok = servicecatalog_unique("k")
+    port, prod, pa = f.portfolio, f.product, f.artifact
+    simple = {
+        "AcceptPortfolioShare": {"PortfolioId": port},
+        "AssociateBudgetWithResource": {"BudgetName": servicecatalog_unique("b"), "ResourceId": port},
+        "AssociatePrincipalWithPortfolio": {"PortfolioId": port, "PrincipalARN": SERVICECATALOG_ROLE, "PrincipalType": "IAM"},
+        "AssociateProductWithPortfolio": {"ProductId": prod, "PortfolioId": port},
+        "CopyProduct": {"SourceProductArn": f.product_arn, "IdempotencyToken": tok, "TargetProductName": "stackyard-copy"},
+        "CreateConstraint": {"PortfolioId": port, "ProductId": prod, "Type": "NOTIFICATION", "IdempotencyToken": tok,
+                             "Parameters": json.dumps({"NotificationArns": ["arn:aws:sns:us-east-1:123456789012:stackyard-sc"]})},
+        "CreatePortfolio": {"DisplayName": servicecatalog_unique("sc-port-"), "ProviderName": "Stackyard", "IdempotencyToken": tok},
+        "CreatePortfolioShare": {"PortfolioId": port, "AccountId": SERVICECATALOG_ACCOUNT},
+        "CreateProduct": {"Name": servicecatalog_unique("sc-prod-"), "Owner": "Stackyard", "ProductType": "CLOUD_FORMATION_TEMPLATE", "IdempotencyToken": tok,
+                          "ProvisioningArtifactParameters": {"Info": {"LoadTemplateFromURL": f.url("app.json")}}},
+        "CreateProvisionedProductPlan": {"PlanName": servicecatalog_unique("sc-plan-"), "PlanType": "CLOUDFORMATION", "ProductId": prod,
+                                         "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-planned-"),
+                                         "IdempotencyToken": tok, "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]},
+        "CreateProvisioningArtifact": {"ProductId": prod, "IdempotencyToken": tok,
+                                       "Parameters": {"Name": servicecatalog_unique("v"), "Info": {"LoadTemplateFromURL": f.url("app.json")}}},
+        "CreateServiceAction": {"Name": servicecatalog_unique("sc-act-"), "DefinitionType": "SSM_AUTOMATION", "IdempotencyToken": tok,
+                                "Definition": {"Name": "AWS-RestartEC2Instance", "Version": "1"}},
+        "CreateTagOption": {"Key": servicecatalog_unique("sc-key-"), "Value": "v"},
+        "DescribeConstraint": {"Id": f.constraint},
+        "DescribeCopyProductStatus": {"CopyProductToken": f.copy_token},
+        "DescribePortfolio": {"Id": port},
+        "DescribePortfolioShareStatus": {"PortfolioShareToken": f.share_token},
+        "DescribePortfolioShares": {"PortfolioId": port, "Type": "ACCOUNT"},
+        "DescribeProduct": {"Id": prod},
+        "DescribeProductAsAdmin": {"Id": prod},
+        "DescribeProductView": {"Id": f.view},
+        "DescribeProvisionedProduct": {"Id": f.pp},
+        "DescribeProvisionedProductPlan": {"PlanId": f.plan},
+        "DescribeProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "DescribeProvisioningParameters": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "DescribeRecord": {"Id": f.record},
+        "DescribeServiceAction": {"Id": f.action},
+        "DescribeServiceActionExecutionParameters": {"ProvisionedProductId": f.pp, "ServiceActionId": f.action},
+        "DescribeTagOption": {"Id": f.tag_option},
+        "ExecuteProvisionedProductServiceAction": {"ProvisionedProductId": f.pp, "ServiceActionId": f.action, "ExecuteToken": tok},
+        "GetProvisionedProductOutputs": {"ProvisionedProductId": f.pp},
+        "ListBudgetsForResource": {"ResourceId": port},
+        "ListConstraintsForPortfolio": {"PortfolioId": port},
+        "ListLaunchPaths": {"ProductId": prod},
+        "ListPortfolioAccess": {"PortfolioId": port},
+        "ListPortfoliosForProduct": {"ProductId": prod},
+        "ListPrincipalsForPortfolio": {"PortfolioId": port},
+        "ListProvisioningArtifacts": {"ProductId": prod},
+        "ListProvisioningArtifactsForServiceAction": {"ServiceActionId": f.action},
+        "ListResourcesForTagOption": {"TagOptionId": f.tag_option},
+        "ListServiceActionsForProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "ListStackInstancesForProvisionedProduct": {"ProvisionedProductId": f.pp},
+        "ProvisionProduct": {"ProductId": prod, "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-pp-"),
+                             "ProvisionToken": tok, "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]},
+        "RejectPortfolioShare": {"PortfolioId": port},
+        "UpdateConstraint": {"Id": f.constraint, "Description": "stackyard"},
+        "UpdatePortfolio": {"Id": port, "Description": "stackyard"},
+        "UpdatePortfolioShare": {"PortfolioId": port, "AccountId": SERVICECATALOG_ACCOUNT, "ShareTagOptions": True},
+        "UpdateProduct": {"Id": prod, "Description": "stackyard"},
+        "UpdateProvisionedProduct": {"ProvisionedProductId": f.pp, "UpdateToken": tok, "ProvisioningParameters": [{"Key": "Size", "Value": "2"}]},
+        "UpdateProvisionedProductProperties": {"ProvisionedProductId": f.pp, "IdempotencyToken": tok,
+                                               "ProvisionedProductProperties": {"OWNER": SERVICECATALOG_ROLE}},
+        "UpdateProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa, "Description": "stackyard"},
+        "UpdateServiceAction": {"Id": f.action, "Description": "stackyard"},
+        "UpdateTagOption": {"Id": f.tag_option, "Active": True},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "ListOrganizationPortfolioAccess":
+        f.call("enable-aws-organizations-access", {})
+        return {"PortfolioId": port, "OrganizationNodeType": "ORGANIZATION"}
+    if op in {"AssociateServiceActionWithProvisioningArtifact", "BatchAssociateServiceActionWithProvisioningArtifact"}:
+        item = {"ServiceActionId": f.new_action(), "ProductId": prod, "ProvisioningArtifactId": pa}
+        return item if op.startswith("Associate") else {"ServiceActionAssociations": [item]}
+    if op in {"DisassociateServiceActionFromProvisioningArtifact", "BatchDisassociateServiceActionFromProvisioningArtifact"}:
+        item = {"ServiceActionId": f.new_action(associate=True), "ProductId": prod, "ProvisioningArtifactId": pa}
+        return item if op.startswith("Disassociate") else {"ServiceActionAssociations": [item]}
+    if op == "AssociateTagOptionWithResource":
+        return {"ResourceId": port, "TagOptionId": f.new_tag_option()}
+    if op == "DisassociateTagOptionFromResource":
+        target = f.new_portfolio()
+        return {"ResourceId": target, "TagOptionId": f.new_tag_option(target)}
+    if op == "DeleteTagOption":
+        return {"Id": f.new_tag_option()}
+    if op == "DeleteConstraint":
+        return {"Id": f.new_constraint(port, prod)}
+    if op == "DeletePortfolio":
+        return {"Id": f.new_portfolio()}
+    if op == "DeletePortfolioShare":
+        target = f.new_portfolio()
+        f.call("create-portfolio-share", {"PortfolioId": target, "AccountId": SERVICECATALOG_ACCOUNT})
+        return {"PortfolioId": target, "AccountId": SERVICECATALOG_ACCOUNT}
+    if op == "DeleteProduct":
+        return {"Id": f.new_product()[0]}
+    if op == "DeleteProvisionedProductPlan":
+        return {"PlanId": f.new_plan()}
+    if op == "DeleteProvisioningArtifact":
+        product, _, _, _ = f.new_product()
+        extra = f.call("create-provisioning-artifact", {"ProductId": product, "IdempotencyToken": tok,
+                                                       "Parameters": {"Name": "v2", "Info": {"LoadTemplateFromURL": f.url("app.json")}}})
+        return {"ProductId": product, "ProvisioningArtifactId": str((extra.get("ProvisioningArtifactDetail") or {}).get("Id") or "")}
+    if op == "DeleteServiceAction":
+        return {"Id": f.new_action()}
+    if op == "DisassociateBudgetFromResource":
+        name = servicecatalog_unique("b")
+        f.call("associate-budget-with-resource", {"BudgetName": name, "ResourceId": port})
+        return {"BudgetName": name, "ResourceId": port}
+    if op == "DisassociatePrincipalFromPortfolio":
+        arn = f"arn:aws:iam::123456789012:role/{servicecatalog_unique('sc-')}"
+        f.call("associate-principal-with-portfolio", {"PortfolioId": port, "PrincipalARN": arn, "PrincipalType": "IAM"})
+        return {"PortfolioId": port, "PrincipalARN": arn, "PrincipalType": "IAM"}
+    if op == "DisassociateProductFromPortfolio":
+        target, (product, _, _, _) = f.new_portfolio(), f.new_product()
+        f.call("associate-product-with-portfolio", {"ProductId": product, "PortfolioId": target})
+        return {"ProductId": product, "PortfolioId": target}
+    if op == "ExecuteProvisionedProductPlan":
+        return {"PlanId": f.new_plan(), "IdempotencyToken": tok}
+    if op == "ImportAsProvisionedProduct":
+        stack = run_aws_json(aws_bin, endpoint_url, region, "cloudformation", "create-stack", env,
+                             ["--stack-name", servicecatalog_unique("sc-import-"), "--template-body", SERVICECATALOG_TEMPLATE]) or {}
+        return {"ProductId": prod, "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-imported-"),
+                "PhysicalId": str(stack.get("StackId") or ""), "IdempotencyToken": tok}
+    if op == "TerminateProvisionedProduct":
+        return {"ProvisionedProductId": f.provision()[0], "TerminateToken": tok}
+    notify = {"NotifyProvisionProductEngineWorkflowResult": "provision", "NotifyUpdateProvisionedProductEngineWorkflowResult": "update",
+              "NotifyTerminateProvisionedProductEngineWorkflowResult": "terminate"}
+    if op in notify:
+        return {"WorkflowToken": "stackyard", "RecordId": f.terraform_record(notify[op]), "Status": "SUCCEEDED", "IdempotencyToken": tok}
+    return {}
+
+
 WAFR_ALB = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/stackyard-waf/50dc6c495c0c9188"
 WAFR_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": "111122223333"},
                                           "Action": ["waf-regional:UpdateWebACL", "waf-regional:GetRuleGroup"]}]})
@@ -36304,6 +36804,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "verifiedpermissions":
+        return verifiedpermissions_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "opensearchserverless":
         return opensearchserverless_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"timestreamwrite", "timestreamquery"}:
@@ -36332,8 +36834,12 @@ def hydrate_payload_with_service_state(
         return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pi":
         return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "servicecatalog":
+        return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "servicecatalogappregistry":
+        return servicecatalogappregistry_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":

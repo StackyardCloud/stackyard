@@ -221,6 +221,7 @@
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
+        <a href="#servicecatalogappregistry">Service Catalog AppRegistry</a>
         <a href="#servicequotas">Service Quotas</a>
         <a href="#support">Support</a>
         <a href="#marketplace">Marketplace</a>
@@ -242,6 +243,7 @@
         <a href="#security-ir">Security Incident Response</a>
         <a href="#security-lake">Security Lake</a>
         <a href="#wafv2">WAFV2</a>
+        <a href="#verifiedpermissions">Verified Permissions</a>
         <a href="#shield">Shield Advanced</a>
         <a href="#payment-cryptography">Payment Cryptography</a>
         <a href="#payment-cryptography-data">Payment Cryptography Data Plane</a>
@@ -291,6 +293,7 @@
         <a href="#route53">Route 53</a>
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
+        <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
         <a href="#pi">Performance Insights</a>
         <a href="#wafregional">WAF Classic Regional</a>
@@ -18842,6 +18845,59 @@
         </section>
 
 
+        <section id="servicecatalogappregistry" class="service">
+
+        <div class="service-header">
+        <h2>AWS Service Catalog AppRegistry</h2>
+        <p>SigV4 signed with service <code>servicecatalog</code>. REST JSON API under <code>/applications</code>, <code>/attribute-groups</code>, <code>/configuration</code>, <code>/sync/</code> and <code>/tags/</code>; Service Catalog shares the signing name but uses <code>X-Amz-Target</code>, so those requests aren't claimed. Requests are validated against the service model and every operation accepts a name, id or ARN. CreateApplication and CreateAttributeGroup are idempotent on clientToken; each application gets its two resource groups in Stackyard's Resource Groups store. Attribute groups hold a JSON object. CFN_STACK resources must exist in Stackyard's CloudFormation store and belong to one application; RESOURCE_TAG_VALUE associations record the tag value. Applications and attribute groups can't be deleted while associated. All 24 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: servicecatalog</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateAttributeGroup</code></td></tr>
+        <tr><td><code>AssociateResource</code></td></tr>
+        <tr><td><code>CreateApplication</code></td></tr>
+        <tr><td><code>CreateAttributeGroup</code></td></tr>
+        <tr><td><code>DeleteApplication</code></td></tr>
+        <tr><td><code>DeleteAttributeGroup</code></td></tr>
+        <tr><td><code>DisassociateAttributeGroup</code></td></tr>
+        <tr><td><code>DisassociateResource</code></td></tr>
+        <tr><td><code>GetApplication</code></td></tr>
+        <tr><td><code>GetAssociatedResource</code></td></tr>
+        <tr><td><code>GetAttributeGroup</code></td></tr>
+        <tr><td><code>GetConfiguration</code></td></tr>
+        <tr><td><code>ListApplications</code></td></tr>
+        <tr><td><code>ListAssociatedAttributeGroups</code></td></tr>
+        <tr><td><code>ListAssociatedResources</code></td></tr>
+        <tr><td><code>ListAttributeGroups</code></td></tr>
+        <tr><td><code>ListAttributeGroupsForApplication</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutConfiguration</code></td></tr>
+        <tr><td><code>SyncResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateApplication</code></td></tr>
+        <tr><td><code>UpdateAttributeGroup</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>servicecatalog-appregistry</code>: <code>docker compose -f examples/aws/servicecatalog-appregistry/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="servicequotas" class="service">
 
         <div class="service-header">
@@ -24987,6 +25043,120 @@
         </details>
         </section>
 
+        <section id="servicecatalog" class="service">
+
+        <div class="service-header">
+        <h2>AWS Service Catalog</h2>
+        <p>SigV4 signed with service <code>servicecatalog</code>. JSON 1.1 API with <code>X-Amz-Target: AWS242ServiceCatalogService.*</code>. Provisioning artifacts load their template from an object in Stackyard's S3 (<code>LoadTemplateFromURL</code>); JSON CloudFormation templates are parsed for parameters, outputs and resources. Provisioning a CloudFormation product registers a stack in Stackyard's CloudFormation and resolves outputs from literal values and parameter <code>Ref</code>s. Requests settle on the next request: records go from <code>IN_PROGRESS</code> to <code>SUCCEEDED</code>. Terraform and external products wait for <code>Notify*EngineWorkflowResult</code>. Stackyard has one account, so accepting a share marks the portfolio as imported. YAML templates are accepted but not parsed for parameters.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: servicecatalog</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Service Catalog API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptPortfolioShare</code></td></tr>
+        <tr><td><code>AssociateBudgetWithResource</code></td></tr>
+        <tr><td><code>AssociatePrincipalWithPortfolio</code></td></tr>
+        <tr><td><code>AssociateProductWithPortfolio</code></td></tr>
+        <tr><td><code>AssociateServiceActionWithProvisioningArtifact</code></td></tr>
+        <tr><td><code>AssociateTagOptionWithResource</code></td></tr>
+        <tr><td><code>BatchAssociateServiceActionWithProvisioningArtifact</code></td></tr>
+        <tr><td><code>BatchDisassociateServiceActionFromProvisioningArtifact</code></td></tr>
+        <tr><td><code>CopyProduct</code></td></tr>
+        <tr><td><code>CreateConstraint</code></td></tr>
+        <tr><td><code>CreatePortfolio</code></td></tr>
+        <tr><td><code>CreatePortfolioShare</code></td></tr>
+        <tr><td><code>CreateProduct</code></td></tr>
+        <tr><td><code>CreateProvisionedProductPlan</code></td></tr>
+        <tr><td><code>CreateProvisioningArtifact</code></td></tr>
+        <tr><td><code>CreateServiceAction</code></td></tr>
+        <tr><td><code>CreateTagOption</code></td></tr>
+        <tr><td><code>DeleteConstraint</code></td></tr>
+        <tr><td><code>DeletePortfolio</code></td></tr>
+        <tr><td><code>DeletePortfolioShare</code></td></tr>
+        <tr><td><code>DeleteProduct</code></td></tr>
+        <tr><td><code>DeleteProvisionedProductPlan</code></td></tr>
+        <tr><td><code>DeleteProvisioningArtifact</code></td></tr>
+        <tr><td><code>DeleteServiceAction</code></td></tr>
+        <tr><td><code>DeleteTagOption</code></td></tr>
+        <tr><td><code>DescribeConstraint</code></td></tr>
+        <tr><td><code>DescribeCopyProductStatus</code></td></tr>
+        <tr><td><code>DescribePortfolio</code></td></tr>
+        <tr><td><code>DescribePortfolioShareStatus</code></td></tr>
+        <tr><td><code>DescribePortfolioShares</code></td></tr>
+        <tr><td><code>DescribeProduct</code></td></tr>
+        <tr><td><code>DescribeProductAsAdmin</code></td></tr>
+        <tr><td><code>DescribeProductView</code></td></tr>
+        <tr><td><code>DescribeProvisionedProduct</code></td></tr>
+        <tr><td><code>DescribeProvisionedProductPlan</code></td></tr>
+        <tr><td><code>DescribeProvisioningArtifact</code></td></tr>
+        <tr><td><code>DescribeProvisioningParameters</code></td></tr>
+        <tr><td><code>DescribeRecord</code></td></tr>
+        <tr><td><code>DescribeServiceAction</code></td></tr>
+        <tr><td><code>DescribeServiceActionExecutionParameters</code></td></tr>
+        <tr><td><code>DescribeTagOption</code></td></tr>
+        <tr><td><code>DisableAWSOrganizationsAccess</code></td></tr>
+        <tr><td><code>DisassociateBudgetFromResource</code></td></tr>
+        <tr><td><code>DisassociatePrincipalFromPortfolio</code></td></tr>
+        <tr><td><code>DisassociateProductFromPortfolio</code></td></tr>
+        <tr><td><code>DisassociateServiceActionFromProvisioningArtifact</code></td></tr>
+        <tr><td><code>DisassociateTagOptionFromResource</code></td></tr>
+        <tr><td><code>EnableAWSOrganizationsAccess</code></td></tr>
+        <tr><td><code>ExecuteProvisionedProductPlan</code></td></tr>
+        <tr><td><code>ExecuteProvisionedProductServiceAction</code></td></tr>
+        <tr><td><code>GetAWSOrganizationsAccessStatus</code></td></tr>
+        <tr><td><code>GetProvisionedProductOutputs</code></td></tr>
+        <tr><td><code>ImportAsProvisionedProduct</code></td></tr>
+        <tr><td><code>ListAcceptedPortfolioShares</code></td></tr>
+        <tr><td><code>ListBudgetsForResource</code></td></tr>
+        <tr><td><code>ListConstraintsForPortfolio</code></td></tr>
+        <tr><td><code>ListLaunchPaths</code></td></tr>
+        <tr><td><code>ListOrganizationPortfolioAccess</code></td></tr>
+        <tr><td><code>ListPortfolioAccess</code></td></tr>
+        <tr><td><code>ListPortfolios</code></td></tr>
+        <tr><td><code>ListPortfoliosForProduct</code></td></tr>
+        <tr><td><code>ListPrincipalsForPortfolio</code></td></tr>
+        <tr><td><code>ListProvisionedProductPlans</code></td></tr>
+        <tr><td><code>ListProvisioningArtifacts</code></td></tr>
+        <tr><td><code>ListProvisioningArtifactsForServiceAction</code></td></tr>
+        <tr><td><code>ListRecordHistory</code></td></tr>
+        <tr><td><code>ListResourcesForTagOption</code></td></tr>
+        <tr><td><code>ListServiceActions</code></td></tr>
+        <tr><td><code>ListServiceActionsForProvisioningArtifact</code></td></tr>
+        <tr><td><code>ListStackInstancesForProvisionedProduct</code></td></tr>
+        <tr><td><code>ListTagOptions</code></td></tr>
+        <tr><td><code>NotifyProvisionProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>NotifyTerminateProvisionedProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>NotifyUpdateProvisionedProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>ProvisionProduct</code></td></tr>
+        <tr><td><code>RejectPortfolioShare</code></td></tr>
+        <tr><td><code>ScanProvisionedProducts</code></td></tr>
+        <tr><td><code>SearchProducts</code></td></tr>
+        <tr><td><code>SearchProductsAsAdmin</code></td></tr>
+        <tr><td><code>SearchProvisionedProducts</code></td></tr>
+        <tr><td><code>TerminateProvisionedProduct</code></td></tr>
+        <tr><td><code>UpdateConstraint</code></td></tr>
+        <tr><td><code>UpdatePortfolio</code></td></tr>
+        <tr><td><code>UpdatePortfolioShare</code></td></tr>
+        <tr><td><code>UpdateProduct</code></td></tr>
+        <tr><td><code>UpdateProvisionedProduct</code></td></tr>
+        <tr><td><code>UpdateProvisionedProductProperties</code></td></tr>
+        <tr><td><code>UpdateProvisioningArtifact</code></td></tr>
+        <tr><td><code>UpdateServiceAction</code></td></tr>
+        <tr><td><code>UpdateTagOption</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
         <section id="textract" class="service">
 
         <div class="service-header">
@@ -26121,6 +26291,134 @@
         <li><code>waf</code>: <code>docker compose -f examples/aws/waf/docker-compose.yml up --build</code></li>
         <li><code>waf</code>: <code>docker compose -f examples/aws/waf/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="verifiedpermissions" class="service">
+
+        <div class="service-header">
+        <h2>Verified Permissions</h2>
+        <p>SigV4 signed with service <code>verifiedpermissions</code>. JSON 1.0 API with <code>X-Amz-Target: VerifiedPermissions.*</code>. Policy stores, Cedar JSON schemas, static and template-linked policies, policy templates, aliases and identity sources keep real state. Policies are parsed as Cedar when created (syntax errors are a <code>ValidationException</code> with line and column), and STRICT stores check entity types, actions and the scope's principal and resource types against the schema. <code>IsAuthorized</code> and its batch and token variants run a Cedar evaluator: <code>==</code>, <code>in</code> and <code>is</code> scopes, <code>when</code>/<code>unless</code> conditions with comparison, arithmetic, <code>has</code>, <code>like</code>, <code>if</code>, sets and records; forbid overrides permit and the default is deny. Extension functions (<code>ip</code>, <code>decimal</code>, ...) are rejected, attribute types aren't checked against the schema, and token signatures aren't verified.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: verifiedpermissions</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div>
+        <pre><code>aws verifiedpermissions create-policy-store --validation-settings mode=OFF --endpoint-url http://localhost:4566</code></pre>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchGetPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchIsAuthorized</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchIsAuthorizedWithToken</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>CreatePolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>DeletePolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyStoreAlias</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPolicyTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetSchema</code></td>
+        </tr>
+        <tr>
+        <td><code>IsAuthorized</code></td>
+        </tr>
+        <tr>
+        <td><code>IsAuthorizedWithToken</code></td>
+        </tr>
+        <tr>
+        <td><code>ListIdentitySources</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicies</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyStoreAliases</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyStores</code></td>
+        </tr>
+        <tr>
+        <td><code>ListPolicyTemplates</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutSchema</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateIdentitySource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicyStore</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdatePolicyTemplate</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 

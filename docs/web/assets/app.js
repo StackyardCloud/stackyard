@@ -208,6 +208,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
   },
   {
+    id: "servicecatalog",
+    name: "Service Catalog",
+    category: "integration",
+    summary: "Emulate portfolios, products and provisioning artifacts from S3 templates, sharing, constraints, TagOptions, service actions, provisioning with real CloudFormation stacks, plans and records.",
+    docsHref: "../../../index.html#servicecatalog",
+    exampleHref: "../../../../examples/aws/servicecatalog/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",
@@ -1320,6 +1328,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/secretsmanager/docker-compose.yml"
   },
   {
+    id: "servicecatalogappregistry",
+    name: "Service Catalog AppRegistry",
+    category: "integration",
+    summary: "Emulate applications, attribute groups, CloudFormation stack and tag-value associations, configuration, and tagging.",
+    docsHref: "../../../index.html#servicecatalogappregistry",
+    exampleHref: "../../../../examples/aws/servicecatalog-appregistry/docker-compose.yml"
+  },
+  {
     id: "servicequotas",
     name: "Service Quotas",
     category: "integration",
@@ -1559,6 +1575,14 @@ const SERVICE_CATALOG = [
     summary: "Manage code-signing profiles and signing jobs.",
     docsHref: "../../../index.html#signer",
     exampleHref: "../../../../examples/aws/signer/docker-compose.yml"
+  },
+  {
+    id: "verifiedpermissions",
+    name: "Verified Permissions",
+    category: "security",
+    summary: "Cedar policy stores with schemas, STRICT validation, static and template-linked policies, aliases, identity sources and real IsAuthorized decisions.",
+    docsHref: "../../../index.html#verifiedpermissions",
+    exampleHref: "../../../../examples/aws/verifiedpermissions/docker-compose.yml"
   },
   {
     id: "sns",
