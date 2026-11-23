@@ -558,6 +558,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
+    "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
@@ -2213,6 +2214,9 @@ SERVICE_ALIASES = {
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
     "awscodeconnections": "codeconnections",
+    "opensearchserverless": "opensearchserverless",
+    "aoss": "opensearchserverless",
+    "amazonopensearchserverless": "opensearchserverless",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
     "awscodestarconnections": "codestarconnections",
@@ -3159,6 +3163,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
+    "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -35074,6 +35079,214 @@ def elasticsearchservice_hydrate_payload(
     return {"DomainName": domain}
 
 
+AOSS_CLI = "opensearchserverless"
+AOSS_ENCRYPTION_POLICY = json.dumps({"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AWSOwnedKey": True})
+AOSS_NETWORK_POLICY = json.dumps([{"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AllowFromPublic": True}])
+AOSS_DATA_POLICY = json.dumps(
+    [{"Rules": [{"ResourceType": "index", "Resource": ["index/cov*/*"], "Permission": ["aoss:ReadDocument"]}], "Principal": ["arn:aws:iam::123456789012:root"]}]
+)
+AOSS_RETENTION_POLICY = json.dumps({"Rules": [{"ResourceType": "index", "Resource": ["index/cov*/*"], "MinIndexRetention": "15d"}]})
+AOSS_POLICY_KIND = {"Security": ("encryption", AOSS_ENCRYPTION_POLICY), "Access": ("data", AOSS_DATA_POLICY), "Lifecycle": ("retention", AOSS_RETENTION_POLICY)}
+
+
+def aoss_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def aoss_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, body: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, AOSS_CLI, op, env, ["--cli-input-json", json.dumps(body)]) or {}
+
+
+def aoss_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, **ids: str) -> str:
+    """Create one OpenSearch Serverless resource through the real CLI and return its id/name."""
+    call = lambda op, body: aoss_call(aws_bin, endpoint_url, region, env, op, body)  # noqa: E731
+    if kind in AOSS_POLICY_KIND:
+        ptype, doc = AOSS_POLICY_KIND[kind]
+        name = aoss_unique("cov-")
+        call(f"create-{kind.lower()}-policy", {"type": ptype, "name": name, "policy": doc})
+        return name
+    if kind == "network":
+        name = aoss_unique("cov-net-")
+        call("create-security-policy", {"type": "network", "name": name, "policy": AOSS_NETWORK_POLICY})
+        return name
+    if kind == "collection":
+        data = call("create-collection", {"name": aoss_unique("cov"), "type": "SEARCH"})
+        cid = str((data.get("createCollectionDetail") or {}).get("id") or "")
+        call("batch-get-collection", {"ids": [cid]})  # settle CREATING -> ACTIVE
+        return cid
+    if kind == "group":
+        data = call("create-collection-group", {"name": aoss_unique("cov-grp-"), "standbyReplicas": "DISABLED"})
+        return str((data.get("createCollectionGroupDetail") or {}).get("id") or "")
+    if kind == "config":
+        data = call("create-security-config", {"type": "saml", "name": aoss_unique("cov-saml-"), "samlOptions": {"metadata": "<EntityDescriptor/>"}})
+        return str((data.get("securityConfigDetail") or {}).get("id") or "")
+    if kind == "endpoint":
+        subnets = run_aws_json(aws_bin, endpoint_url, region, "ec2", "describe-subnets", env, ["--filters", "Name=vpc-id,Values=vpc-00000001"]) or {}
+        subnet = next((s.get("SubnetId") for s in subnets.get("Subnets") or [] if s.get("SubnetId")), "subnet-00000001")
+        data = call("create-vpc-endpoint", {"name": aoss_unique("cov-vpce-"), "vpcId": "vpc-00000001", "subnetIds": [subnet]})
+        eid = str((data.get("createVpcEndpointDetail") or {}).get("id") or "")
+        call("batch-get-vpc-endpoint", {"ids": [eid]})  # settle PENDING -> ACTIVE
+        return eid
+    if kind == "index":
+        name = aoss_unique("idx-")
+        call("create-index", {"id": ids["collection"], "indexName": name, "indexSchema": {"mappings": {"properties": {"title": {"type": "text"}}}}})
+        return name
+    if kind == "job":
+        data = call("create-ingestion-job", {"collectionId": ids["collection"], "ingestionJobName": aoss_unique("cov-job-"), "indexName": "books", "source": {"s3": {"bucket": "stackyard-aoss"}}})
+        return str((data.get("ingestionJobDetail") or {}).get("ingestionJobId") or "")
+    if kind == "stream":
+        data = call(
+            "create-ingestion-stream",
+            {
+                "collectionId": ids["collection"], "ingestionStreamName": aoss_unique("cov-stream-"), "indexName": "books",
+                "roleArn": "arn:aws:iam::123456789012:role/stackyard-aoss", "source": {"s3": {"sqsArn": "arn:aws:sqs:us-east-1:123456789012:stackyard-aoss"}},
+            },
+        )
+        sid = str((data.get("ingestionStreamDetail") or {}).get("ingestionStreamId") or "")
+        call("get-ingestion-stream", {"collectionId": ids["collection"], "ingestionStreamId": sid})  # CREATING -> ACTIVE
+        return sid
+    raise ValueError(kind)
+
+
+def aoss_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("opensearchserverless", {})
+    if not state.get("collection"):
+        make = lambda kind, **ids: aoss_create(aws_bin, endpoint_url, region, env, kind, **ids)  # noqa: E731
+        state["encryption"] = make("Security")  # must exist before any collection
+        state["network"] = make("network")
+        state["data"] = make("Access")
+        state["retention"] = make("Lifecycle")
+        state["collection"] = make("collection")
+        state["index"] = make("index", collection=state["collection"])
+        state["group"] = make("group")
+        state["config"] = make("config")
+        state["endpoint"] = make("endpoint")
+    return state
+
+
+def aoss_policy_version(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, ptype: str, name: str) -> str:
+    if kind == "lifecycle":
+        data = aoss_call(aws_bin, endpoint_url, region, env, "batch-get-lifecycle-policy", {"identifiers": [{"type": ptype, "name": name}]})
+        items = data.get("lifecyclePolicyDetails") or [{}]
+        return str(items[0].get("policyVersion") or "")
+    data = aoss_call(aws_bin, endpoint_url, region, env, f"get-{kind}-policy", {"type": ptype, "name": name})
+    return str((data.get(f"{kind}PolicyDetail") or {}).get("policyVersion") or "")
+
+
+def opensearchserverless_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each OpenSearch Serverless operation at real resources; deletes
+    and cancels get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    fx = aoss_fixture(aws_bin, endpoint_url, region, env)
+
+    def make(kind: str, **ids: str) -> str:
+        return aoss_create(aws_bin, endpoint_url, region, env, kind, **ids)
+
+    coll = fx["collection"]
+    coll_arn = f"arn:aws:aoss:{region}:123456789012:collection/{coll}"
+    policies = {"Security": ("security", "encryption", fx["encryption"]), "Access": ("access", "data", fx["data"]), "Lifecycle": ("lifecycle", "retention", fx["retention"])}
+    for word, (kind, ptype, name) in policies.items():
+        if op == f"Create{word}Policy":
+            return {"type": ptype, "name": aoss_unique("cov-"), "policy": AOSS_POLICY_KIND[word][1]}
+        if op == f"Get{word}Policy":
+            return {"type": ptype, "name": name}
+        if op == f"Update{word}Policy":
+            return {"type": ptype, "name": name, "policyVersion": aoss_policy_version(aws_bin, endpoint_url, region, env, kind, ptype, name), "description": "coverage"}
+        if op == f"Delete{word}Policy":
+            return {"type": ptype, "name": make(word)}
+    if op == "ListSecurityPolicies":
+        return {"type": "encryption"}
+    if op == "ListAccessPolicies":
+        return {"type": "data"}
+    if op == "ListLifecyclePolicies":
+        return {"type": "retention"}
+    if op == "BatchGetLifecyclePolicy":
+        return {"identifiers": [{"type": "retention", "name": fx["retention"]}]}
+    if op == "BatchGetEffectiveLifecyclePolicy":
+        return {"resourceIdentifiers": [{"type": "retention", "resource": f"index/cov-x/{fx['index']}"}]}
+    if op == "CreateCollection":
+        return {"name": aoss_unique("cov"), "type": "SEARCH"}
+    if op == "BatchGetCollection":
+        return {"ids": [coll]}
+    if op == "ListCollections":
+        return {}
+    if op == "UpdateCollection":
+        make_id = make("collection")
+        return {"id": make_id, "description": "coverage"}
+    if op == "DeleteCollection":
+        return {"id": make("collection")}
+    if op == "CreateCollectionGroup":
+        return {"name": aoss_unique("cov-grp-"), "standbyReplicas": "DISABLED"}
+    if op == "BatchGetCollectionGroup":
+        return {"ids": [fx["group"]]}
+    if op == "ListCollectionGroups":
+        return {}
+    if op == "UpdateCollectionGroup":
+        return {"id": fx["group"], "description": "coverage"}
+    if op == "DeleteCollectionGroup":
+        return {"id": make("group")}
+    if op == "CreateIndex":
+        return {"id": coll, "indexName": aoss_unique("idx-"), "indexSchema": {"mappings": {"properties": {"title": {"type": "text"}}}}}
+    if op in {"GetIndex", "UpdateIndex"}:
+        out = {"id": coll, "indexName": fx["index"]}
+        if op == "UpdateIndex":
+            out["indexSchema"] = {"mappings": {"properties": {"body": {"type": "text"}}}}
+        return out
+    if op == "DeleteIndex":
+        return {"id": coll, "indexName": make("index", collection=coll)}
+    if op == "CreateIngestionJob":
+        return {"collectionId": coll, "ingestionJobName": aoss_unique("cov-job-"), "indexName": "books", "source": {"s3": {"bucket": "stackyard-aoss"}}}
+    if op == "GetIngestionJob":
+        return {"collectionId": coll, "ingestionJobId": make("job", collection=coll)}
+    if op == "CancelIngestionJob":
+        return {"collectionId": coll, "ingestionJobId": make("job", collection=coll)}
+    if op in {"ListIngestionJobs", "ListIngestionStreams"}:
+        return {"collectionId": coll}
+    if op == "CreateIngestionStream":
+        return {
+            "collectionId": coll, "ingestionStreamName": aoss_unique("cov-stream-"), "indexName": "books",
+            "roleArn": "arn:aws:iam::123456789012:role/stackyard-aoss", "source": {"s3": {"sqsArn": "arn:aws:sqs:us-east-1:123456789012:stackyard-aoss"}},
+        }
+    if op in {"GetIngestionStream", "DeleteIngestionStream"}:
+        return {"collectionId": coll, "ingestionStreamId": make("stream", collection=coll)}
+    if op == "CreateSecurityConfig":
+        return {"type": "saml", "name": aoss_unique("cov-saml-"), "samlOptions": {"metadata": "<EntityDescriptor/>"}}
+    if op == "GetSecurityConfig":
+        return {"id": fx["config"]}
+    if op == "UpdateSecurityConfig":
+        cfg = aoss_call(aws_bin, endpoint_url, region, env, "get-security-config", {"id": fx["config"]})
+        return {"id": fx["config"], "configVersion": str((cfg.get("securityConfigDetail") or {}).get("configVersion") or ""), "description": "coverage"}
+    if op == "DeleteSecurityConfig":
+        return {"id": make("config")}
+    if op == "ListSecurityConfigs":
+        return {"type": "saml"}
+    if op == "CreateVpcEndpoint":
+        subnets = run_aws_json(aws_bin, endpoint_url, region, "ec2", "describe-subnets", env, ["--filters", "Name=vpc-id,Values=vpc-00000001"]) or {}
+        subnet = next((s.get("SubnetId") for s in subnets.get("Subnets") or [] if s.get("SubnetId")), "subnet-00000001")
+        return {"name": aoss_unique("cov-vpce-"), "vpcId": "vpc-00000001", "subnetIds": [subnet]}
+    if op == "BatchGetVpcEndpoint":
+        return {"ids": [fx["endpoint"]]}
+    if op == "ListVpcEndpoints":
+        return {}
+    if op == "UpdateVpcEndpoint":
+        return {"id": make("endpoint")}
+    if op == "DeleteVpcEndpoint":
+        return {"id": make("endpoint")}
+    if op in {"GetAccountSettings", "GetPoliciesStats"}:
+        return {}
+    if op == "UpdateAccountSettings":
+        return {"capacityLimits": {"maxIndexingCapacityInOCU": 20, "maxSearchCapacityInOCU": 20}}
+    if op == "TagResource":
+        return {"resourceArn": coll_arn, "tags": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": coll_arn, "tagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": coll_arn}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -35085,6 +35298,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "opensearchserverless":
+        return opensearchserverless_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "elasticsearchservice":
         return elasticsearchservice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glacier":

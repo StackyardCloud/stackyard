@@ -1097,6 +1097,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/opensearch/docker-compose.yml"
   },
   {
+    id: "opensearchserverless",
+    name: "OpenSearch Serverless",
+    category: "database",
+    summary: "Serverless collections gated by encryption policies, network, data access and retention policies, security configs, VPC endpoints, indexes and ingestion.",
+    docsHref: "../../../index.html#opensearchserverless",
+    exampleHref: "../../../../examples/aws/opensearch-serverless/docker-compose.yml"
+  },
+  {
     id: "elasticsearchservice",
     name: "Elasticsearch Service",
     category: "database",

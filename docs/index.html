@@ -213,6 +213,7 @@
         <a href="#neptuneanalytics">Neptune Analytics API</a>
         <a href="#omics">HealthOmics</a>
         <a href="#opensearch">OpenSearch Service</a>
+        <a href="#opensearchserverless">OpenSearch Serverless</a>
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
@@ -17766,6 +17767,194 @@
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
                 <li><code>opensearch</code>: <code>docker compose -f examples/aws/opensearch/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="opensearchserverless" class="service">
+
+        <div class="service-header">
+        <h2>OpenSearch Serverless</h2>
+        <p>SigV4 signed with service <code>aoss</code>. JSON 1.0 API with <code>X-Amz-Target: OpenSearchServerless.*</code>. A collection can only be created when an encryption security policy covers its name (or the request carries <code>encryptionConfig</code>); collections, collection groups, encryption/network/data/retention policies (with <code>policyVersion</code> checks), security configs, VPC endpoints (subnets and security groups checked against EC2), indexes and ingestion jobs/streams keep real state, and transitional states settle on the next read. The collection data plane (the OpenSearch REST API on the collection endpoint) is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: aoss</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div>
+        <pre><code>aws opensearchserverless create-collection --name logs-app --endpoint-url http://localhost:4566</code></pre>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchGetCollection</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchGetCollectionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchGetEffectiveLifecyclePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchGetLifecyclePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchGetVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>CancelIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateAccessPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateCollection</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateCollectionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateIndex</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateIngestionStream</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateLifecyclePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSecurityConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSecurityPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteAccessPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCollection</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteCollectionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteIndex</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteIngestionStream</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteLifecyclePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSecurityConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSecurityPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteVpcEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAccessPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetAccountSettings</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIndex</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIngestionJob</code></td>
+        </tr>
+        <tr>
+        <td><code>GetIngestionStream</code></td>
+        </tr>
+        <tr>
+        <td><code>GetPoliciesStats</code></td>
+        </tr>
+        <tr>
+        <td><code>GetSecurityConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetSecurityPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>ListAccessPolicies</code></td>
+        </tr>
+        <tr>
+        <td><code>ListCollectionGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>ListCollections</code></td>
+        </tr>
+        <tr>
+        <td><code>ListIngestionJobs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListIngestionStreams</code></td>
+        </tr>
+        <tr>
+        <td><code>ListLifecyclePolicies</code></td>
+        </tr>
+        <tr>
+        <td><code>ListSecurityConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListSecurityPolicies</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ListVpcEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAccessPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateAccountSettings</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCollection</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateCollectionGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateIndex</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateLifecyclePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSecurityConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSecurityPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateVpcEndpoint</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
