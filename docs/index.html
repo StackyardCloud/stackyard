@@ -288,6 +288,7 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#networkmanager">Network Manager</a>
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#textract">Textract</a>
@@ -24814,6 +24815,144 @@
         <ul>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="networkmanager" class="service">
+
+        <div class="service-header">
+        <h2>AWS Network Manager (Cloud WAN)</h2>
+        <p>SigV4 signed with service <code>networkmanager</code>. REST JSON API under <code>/global-networks</code>, <code>/core-networks</code>, the attachment, peering and connect-peer paths, <code>/context-stores</code> and <code>/tags/</code>. Requests are validated against the service model. Global networks hold sites, devices, links and connections, with link, customer gateway and Connect peer associations; transit gateways and customer gateways must exist in Stackyard's EC2 store, and a transit gateway registers with one global network. Core network policies are checked for version, ASN ranges, edge locations, segments, segment actions and attachment policies, and invalid documents return CoreNetworkPolicyException with a list of errors. Each new policy version generates a change set, and ExecuteCoreNetworkChangeSet makes it LIVE. VPC attachments check the VPC and subnets in EC2 (one subnet per Availability Zone), VPN attachments check the VPN connection, and attachment policies choose the segment, which may require acceptance. Resources report a transitional state once, then settle (for example CREATING, then AVAILABLE). Network routes are derived from available VPC attachments. Route analysis always reports NOT_CONNECTED. All 109 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: networkmanager</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptAttachment</code></td></tr>
+        <tr><td><code>AssociateConnectPeer</code></td></tr>
+        <tr><td><code>AssociateContextStore</code></td></tr>
+        <tr><td><code>AssociateCustomerGateway</code></td></tr>
+        <tr><td><code>AssociateLink</code></td></tr>
+        <tr><td><code>AssociateTransitGatewayConnectPeer</code></td></tr>
+        <tr><td><code>CreateConnectAttachment</code></td></tr>
+        <tr><td><code>CreateConnectPeer</code></td></tr>
+        <tr><td><code>CreateConnection</code></td></tr>
+        <tr><td><code>CreateContextStore</code></td></tr>
+        <tr><td><code>CreateCoreNetwork</code></td></tr>
+        <tr><td><code>CreateCoreNetworkPrefixListAssociation</code></td></tr>
+        <tr><td><code>CreateDevice</code></td></tr>
+        <tr><td><code>CreateDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>CreateGlobalNetwork</code></td></tr>
+        <tr><td><code>CreateLink</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>CreateSiteToSiteVpnAttachment</code></td></tr>
+        <tr><td><code>CreateTransitGatewayPeering</code></td></tr>
+        <tr><td><code>CreateTransitGatewayRouteTableAttachment</code></td></tr>
+        <tr><td><code>CreateVpcAttachment</code></td></tr>
+        <tr><td><code>DeleteAttachment</code></td></tr>
+        <tr><td><code>DeleteConnectPeer</code></td></tr>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteContextStore</code></td></tr>
+        <tr><td><code>DeleteCoreNetwork</code></td></tr>
+        <tr><td><code>DeleteCoreNetworkPolicyVersion</code></td></tr>
+        <tr><td><code>DeleteCoreNetworkPrefixListAssociation</code></td></tr>
+        <tr><td><code>DeleteDevice</code></td></tr>
+        <tr><td><code>DeleteGlobalNetwork</code></td></tr>
+        <tr><td><code>DeleteLink</code></td></tr>
+        <tr><td><code>DeletePeering</code></td></tr>
+        <tr><td><code>DeleteResourcePolicy</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>DeregisterTransitGateway</code></td></tr>
+        <tr><td><code>DescribeGlobalNetworks</code></td></tr>
+        <tr><td><code>DisassociateConnectPeer</code></td></tr>
+        <tr><td><code>DisassociateContextStore</code></td></tr>
+        <tr><td><code>DisassociateCustomerGateway</code></td></tr>
+        <tr><td><code>DisassociateLink</code></td></tr>
+        <tr><td><code>DisassociateTransitGatewayConnectPeer</code></td></tr>
+        <tr><td><code>ExecuteCoreNetworkChangeSet</code></td></tr>
+        <tr><td><code>GetConnectAttachment</code></td></tr>
+        <tr><td><code>GetConnectPeer</code></td></tr>
+        <tr><td><code>GetConnectPeerAssociations</code></td></tr>
+        <tr><td><code>GetConnections</code></td></tr>
+        <tr><td><code>GetContextStore</code></td></tr>
+        <tr><td><code>GetContextStoreAssociation</code></td></tr>
+        <tr><td><code>GetContextVersion</code></td></tr>
+        <tr><td><code>GetCoreNetwork</code></td></tr>
+        <tr><td><code>GetCoreNetworkChangeEvents</code></td></tr>
+        <tr><td><code>GetCoreNetworkChangeSet</code></td></tr>
+        <tr><td><code>GetCoreNetworkPolicy</code></td></tr>
+        <tr><td><code>GetCustomerGatewayAssociations</code></td></tr>
+        <tr><td><code>GetDevices</code></td></tr>
+        <tr><td><code>GetDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>GetLinkAssociations</code></td></tr>
+        <tr><td><code>GetLinks</code></td></tr>
+        <tr><td><code>GetNetworkResourceCounts</code></td></tr>
+        <tr><td><code>GetNetworkResourceRelationships</code></td></tr>
+        <tr><td><code>GetNetworkResources</code></td></tr>
+        <tr><td><code>GetNetworkRoutes</code></td></tr>
+        <tr><td><code>GetNetworkTelemetry</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>GetRouteAnalysis</code></td></tr>
+        <tr><td><code>GetSiteToSiteVpnAttachment</code></td></tr>
+        <tr><td><code>GetSites</code></td></tr>
+        <tr><td><code>GetTransitGatewayConnectPeerAssociations</code></td></tr>
+        <tr><td><code>GetTransitGatewayPeering</code></td></tr>
+        <tr><td><code>GetTransitGatewayRegistrations</code></td></tr>
+        <tr><td><code>GetTransitGatewayRouteTableAttachment</code></td></tr>
+        <tr><td><code>GetVpcAttachment</code></td></tr>
+        <tr><td><code>ListAttachmentNatConfigurations</code></td></tr>
+        <tr><td><code>ListAttachmentRoutingPolicyAssociations</code></td></tr>
+        <tr><td><code>ListAttachments</code></td></tr>
+        <tr><td><code>ListConnectPeers</code></td></tr>
+        <tr><td><code>ListContextChanges</code></td></tr>
+        <tr><td><code>ListContextStoreAssociations</code></td></tr>
+        <tr><td><code>ListContextStores</code></td></tr>
+        <tr><td><code>ListContexts</code></td></tr>
+        <tr><td><code>ListCoreNetworkPolicyVersions</code></td></tr>
+        <tr><td><code>ListCoreNetworkPrefixListAssociations</code></td></tr>
+        <tr><td><code>ListCoreNetworkRoutingInformation</code></td></tr>
+        <tr><td><code>ListCoreNetworks</code></td></tr>
+        <tr><td><code>ListOrganizationServiceAccessStatus</code></td></tr>
+        <tr><td><code>ListPeerings</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutAttachmentRoutingPolicyLabel</code></td></tr>
+        <tr><td><code>PutCoreNetworkPolicy</code></td></tr>
+        <tr><td><code>PutResourcePolicy</code></td></tr>
+        <tr><td><code>RegisterTransitGateway</code></td></tr>
+        <tr><td><code>RejectAttachment</code></td></tr>
+        <tr><td><code>RemoveAttachmentRoutingPolicyLabel</code></td></tr>
+        <tr><td><code>RestoreCoreNetworkPolicyVersion</code></td></tr>
+        <tr><td><code>StartOrganizationServiceAccessUpdate</code></td></tr>
+        <tr><td><code>StartRouteAnalysis</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAttachmentNatConfiguration</code></td></tr>
+        <tr><td><code>UpdateConnection</code></td></tr>
+        <tr><td><code>UpdateContextStore</code></td></tr>
+        <tr><td><code>UpdateCoreNetwork</code></td></tr>
+        <tr><td><code>UpdateDevice</code></td></tr>
+        <tr><td><code>UpdateDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>UpdateGlobalNetwork</code></td></tr>
+        <tr><td><code>UpdateLink</code></td></tr>
+        <tr><td><code>UpdateNetworkResourceMetadata</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateVpcAttachment</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>networkmanager</code>: <code>docker compose -f examples/aws/networkmanager/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

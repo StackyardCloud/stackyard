@@ -216,6 +216,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/directconnect/docker-compose.yml"
   },
   {
+    id: "networkmanager",
+    name: "Network Manager (Cloud WAN)",
+    category: "integration",
+    summary: "Global networks with sites, devices and links, Cloud WAN core networks driven by validated policy documents and change sets, and VPC, VPN, Connect, peering and Direct Connect attachments.",
+    docsHref: "../../../index.html#networkmanager",
+    exampleHref: "../../../../examples/aws/networkmanager/docker-compose.yml"
+  },
+  {
     id: "route53profiles",
     name: "Route 53 Profiles",
     category: "integration",
