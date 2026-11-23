@@ -220,6 +220,7 @@
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
         <a href="#secretsmanager">Secrets Manager</a>
+        <a href="#servicecatalogappregistry">Service Catalog AppRegistry</a>
         <a href="#servicequotas">Service Quotas</a>
         <a href="#support">Support</a>
         <a href="#marketplace">Marketplace</a>
@@ -18779,6 +18780,59 @@
         </details>
         </section>
 
+
+        <section id="servicecatalogappregistry" class="service">
+
+        <div class="service-header">
+        <h2>AWS Service Catalog AppRegistry</h2>
+        <p>SigV4 signed with service <code>servicecatalog</code>. REST JSON API under <code>/applications</code>, <code>/attribute-groups</code>, <code>/configuration</code>, <code>/sync/</code> and <code>/tags/</code>; Service Catalog shares the signing name but uses <code>X-Amz-Target</code>, so those requests aren't claimed. Requests are validated against the service model and every operation accepts a name, id or ARN. CreateApplication and CreateAttributeGroup are idempotent on clientToken; each application gets its two resource groups in Stackyard's Resource Groups store. Attribute groups hold a JSON object. CFN_STACK resources must exist in Stackyard's CloudFormation store and belong to one application; RESOURCE_TAG_VALUE associations record the tag value. Applications and attribute groups can't be deleted while associated. All 24 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: servicecatalog</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateAttributeGroup</code></td></tr>
+        <tr><td><code>AssociateResource</code></td></tr>
+        <tr><td><code>CreateApplication</code></td></tr>
+        <tr><td><code>CreateAttributeGroup</code></td></tr>
+        <tr><td><code>DeleteApplication</code></td></tr>
+        <tr><td><code>DeleteAttributeGroup</code></td></tr>
+        <tr><td><code>DisassociateAttributeGroup</code></td></tr>
+        <tr><td><code>DisassociateResource</code></td></tr>
+        <tr><td><code>GetApplication</code></td></tr>
+        <tr><td><code>GetAssociatedResource</code></td></tr>
+        <tr><td><code>GetAttributeGroup</code></td></tr>
+        <tr><td><code>GetConfiguration</code></td></tr>
+        <tr><td><code>ListApplications</code></td></tr>
+        <tr><td><code>ListAssociatedAttributeGroups</code></td></tr>
+        <tr><td><code>ListAssociatedResources</code></td></tr>
+        <tr><td><code>ListAttributeGroups</code></td></tr>
+        <tr><td><code>ListAttributeGroupsForApplication</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutConfiguration</code></td></tr>
+        <tr><td><code>SyncResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateApplication</code></td></tr>
+        <tr><td><code>UpdateAttributeGroup</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>servicecatalog-appregistry</code>: <code>docker compose -f examples/aws/servicecatalog-appregistry/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
 
         <section id="servicequotas" class="service">
 

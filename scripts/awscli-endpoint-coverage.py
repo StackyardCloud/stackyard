@@ -394,6 +394,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
+    "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
         "cli": "globalaccelerator",
@@ -1936,6 +1937,9 @@ SERVICE_ALIASES = {
     "amazonroute53profiles": "route53profiles",
     "polly": "polly",
     "amazonpolly": "polly",
+    "servicecatalogappregistry": "servicecatalogappregistry",
+    "servicecatalog-appregistry": "servicecatalogappregistry",
+    "appregistry": "servicecatalogappregistry",
     "route-53": "route53",
     "route 53": "route53",
     "amazonroute53": "route53",
@@ -3179,6 +3183,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pipes": {},
     "route53profiles": {},
     "polly": {},
+    "servicecatalogappregistry": {},
     "datasync": {},
     "dax": {},
     "route53resolver": {},
@@ -34666,6 +34671,90 @@ def r53p_new_resource(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return {"id": ra_id, "arn": arn}
 
 
+def apr_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "servicecatalog-appregistry", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def apr_new_application(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-app-{time.time_ns()}"
+    data = apr_cli(aws_bin, endpoint_url, region, env, "create-application", ["--name", name, "--client-token", name])
+    return str((data.get("application") or {}).get("id") or name)
+
+
+def apr_new_group(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-group-{time.time_ns()}"
+    data = apr_cli(aws_bin, endpoint_url, region, env, "create-attribute-group", ["--name", name, "--attributes", "{}", "--client-token", name])
+    return str((data.get("attributeGroup") or {}).get("id") or name)
+
+
+def apr_new_stack(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """A fresh CloudFormation stack: each stack can belong to one application."""
+    name = f"stackyard-apr-{time.time_ns()}"
+    run_aws_json(aws_bin, endpoint_url, region, "cloudformation", "create-stack", env, ["--stack-name", name, "--template-body", "{}"])
+    return name
+
+
+def servicecatalogappregistry_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each AppRegistry operation at real applications, attribute groups
+    and CloudFormation stacks. Destructive operations get resources of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("servicecatalogappregistry", {})
+    if not state.get("app"):
+        state["app"] = apr_new_application(aws_bin, endpoint_url, region, env)
+        state["group"] = apr_new_group(aws_bin, endpoint_url, region, env)
+        state["stack"] = apr_new_stack(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-resource", ["--application", state["app"], "--resource-type", "CFN_STACK", "--resource", state["stack"], "--options", "APPLY_APPLICATION_TAG"])
+    app, group, stack = str(state["app"]), str(state["group"]), str(state["stack"])
+    unique = f"stackyard-{time.time_ns()}"
+    app_arn = f"arn:aws:servicecatalog:{region}:123456789012:/applications/{app}"
+    if op == "CreateApplication":
+        return {"name": unique, "clientToken": unique}
+    if op == "CreateAttributeGroup":
+        return {"name": unique, "attributes": '{"owner":"stackyard"}', "clientToken": unique}
+    if op in {"ListApplications", "ListAttributeGroups", "GetConfiguration"}:
+        return {}
+    if op == "PutConfiguration":
+        return {"configuration": {"tagQueryConfiguration": {"tagKey": "stackyard"}}}
+    if op in {"GetApplication", "ListAssociatedAttributeGroups", "ListAssociatedResources", "ListAttributeGroupsForApplication"}:
+        return {"application": app}
+    if op == "UpdateApplication":
+        return {"application": app, "description": "stackyard coverage"}
+    if op == "DeleteApplication":
+        return {"application": apr_new_application(aws_bin, endpoint_url, region, env)}
+    if op == "GetAttributeGroup":
+        return {"attributeGroup": group}
+    if op == "UpdateAttributeGroup":
+        return {"attributeGroup": group, "description": "stackyard coverage"}
+    if op == "DeleteAttributeGroup":
+        return {"attributeGroup": apr_new_group(aws_bin, endpoint_url, region, env)}
+    if op == "AssociateAttributeGroup":
+        return {"application": app, "attributeGroup": apr_new_group(aws_bin, endpoint_url, region, env)}
+    if op == "DisassociateAttributeGroup":
+        own = apr_new_group(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-attribute-group", ["--application", app, "--attribute-group", own])
+        return {"application": app, "attributeGroup": own}
+    if op == "AssociateResource":
+        return {"application": app, "resourceType": "CFN_STACK", "resource": apr_new_stack(aws_bin, endpoint_url, region, env)}
+    if op == "DisassociateResource":
+        own = apr_new_stack(aws_bin, endpoint_url, region, env)
+        apr_cli(aws_bin, endpoint_url, region, env, "associate-resource", ["--application", app, "--resource-type", "CFN_STACK", "--resource", own])
+        return {"application": app, "resourceType": "CFN_STACK", "resource": own}
+    if op == "GetAssociatedResource":
+        return {"application": app, "resourceType": "CFN_STACK", "resource": stack}
+    if op == "SyncResource":
+        return {"resourceType": "CFN_STACK", "resource": stack}
+    if op == "ListTagsForResource":
+        return {"resourceArn": app_arn}
+    if op == "TagResource":
+        return {"resourceArn": app_arn, "tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": app_arn, "tagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
 POLLY_COVERAGE_BUCKET = "stackyard-polly-coverage"
 POLLY_LEXICON = (
     '<?xml version="1.0" encoding="UTF-8"?>'
@@ -36280,6 +36369,8 @@ def hydrate_payload_with_service_state(
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "servicecatalogappregistry":
+        return servicecatalogappregistry_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":

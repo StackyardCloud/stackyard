@@ -1304,6 +1304,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/secretsmanager/docker-compose.yml"
   },
   {
+    id: "servicecatalogappregistry",
+    name: "Service Catalog AppRegistry",
+    category: "integration",
+    summary: "Emulate applications, attribute groups, CloudFormation stack and tag-value associations, configuration, and tagging.",
+    docsHref: "../../../index.html#servicecatalogappregistry",
+    exampleHref: "../../../../examples/aws/servicecatalog-appregistry/docker-compose.yml"
+  },
+  {
     id: "servicequotas",
     name: "Service Quotas",
     category: "integration",
