@@ -33965,7 +33965,7 @@ GLUE_FIXTURE_DEPS = {
     "udf": ["database"],
     "trigger": ["job"],
     "colstatsettings": ["table"],
-    "dqevalconfig": ["table"],
+    "dqevalconfig": ["table", "dqruleset"],
     "asset": ["assettype"],
     "attachment": ["asset", "formtype"],
 }
@@ -34121,14 +34121,33 @@ def glue_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, r
         hydrated["ConnectionInput"] = dict(GLUE_FIXTURES["connection"][0][1]["ConnectionInput"])
     if op in ("CreateUserDefinedFunction", "UpdateUserDefinedFunction"):
         hydrated["FunctionInput"] = {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}
-    # Members the CLI's (newer) model requires that the botocore skeleton lacks.
+    # The skeleton comes from the installed CLI, whose Glue asset model differs
+    # by version (AssetTypeId/FormTypeId/ExportSetting before 2.42,
+    # AssetTypeIdentifier/FormTypeIdentifier/Assets after): fill whichever it has.
     if op == "PutAsset":
-        hydrated.update({"AssetTypeId": GLUE_FIXTURE, "Forms": {}})
+        hydrated["Forms"] = {}
+        for key in ("AssetTypeId", "AssetTypeIdentifier"):
+            if key in hydrated:
+                hydrated[key] = GLUE_FIXTURE
     if op == "PutAttachment":
-        hydrated.update({"FormTypeId": GLUE_FIXTURE, "Content": "e30="})
+        hydrated["Content"] = "e30="
+        for key in ("FormTypeId", "FormTypeIdentifier"):
+            if key in hydrated:
+                hydrated[key] = GLUE_FIXTURE
         glue_ensure(ctx, "asset", "formtype")
     if op == "PutDataCatalogExportConfiguration":
-        hydrated["ExportSetting"] = "ENABLED"
+        if "ExportSetting" in hydrated:
+            hydrated = {"ExportSetting": "ENABLED"}
+        else:
+            hydrated = {"Assets": {"S3TablesExport": "ENABLED"}}
+    if op in ("CreateDataQualityEvaluationConfig", "UpdateDataQualityEvaluationConfig") and "RulesetName" in hydrated:
+        hydrated["RulesetName"] = GLUE_FIXTURE
+        hydrated.pop("ManagedRulesetName", None)
+    if op == "SearchAssets":
+        # The skeleton's recursive FilterClause union sets every member, which
+        # the CLI rejects; search unfiltered.
+        hydrated.pop("FilterClause", None)
+        hydrated.pop("Sort", None)
 
     if op in GLUE_CREATE_RESETS:
         kind = GLUE_CREATE_RESETS[op]

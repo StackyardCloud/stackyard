@@ -729,8 +729,15 @@ func glueGlossaryTerms(add bool) glueHandler {
 }
 
 func gluePutAsset(st *glueStore, in glueRecord) (glueRecord, *glueError) {
-	if _, err := st.find("assettype", []any{in["AssetTypeId"]}); err != nil {
-		return nil, err
+	// Older CLI models name it AssetTypeId (required); newer ones AssetTypeIdentifier (optional).
+	if typeID := glueFirstPresent(in, "AssetTypeIdentifier", "AssetTypeId"); typeID != nil {
+		if _, err := st.find("assettype", []any{typeID}); err != nil {
+			return nil, err
+		}
+		delete(in, "AssetTypeIdentifier")
+		in["AssetTypeId"] = typeID
+	} else {
+		in["AssetTypeId"] = glueDefaultAssetType // the output requires one
 	}
 	if prev, err := st.find("asset", []any{in["Identifier"]}); err == nil {
 		st.remove("asset", prev)
@@ -760,13 +767,20 @@ func gluePutNamed(kind string) glueHandler {
 }
 
 func gluePutAttachment(st *glueStore, in glueRecord) (glueRecord, *glueError) {
-	if _, err := st.find("formtype", []any{in["FormTypeId"]}); err != nil {
-		return nil, err
+	// Older CLI models name it FormTypeId (required); newer ones FormTypeIdentifier (optional).
+	if formID := glueFirstPresent(in, "FormTypeIdentifier", "FormTypeId"); formID != nil {
+		if _, err := st.find("formtype", []any{formID}); err != nil {
+			return nil, err
+		}
+		delete(in, "FormTypeIdentifier")
+		in["FormTypeId"] = formID
 	}
 	if prev, err := st.find("attachment", []any{in["AssetIdentifier"], in["AttachmentName"]}); err == nil {
 		st.remove("attachment", prev)
 	}
-	rec := glueRecord{}
+	// Outputs name the asset and item AssetId/ItemId (current model) or echo the
+	// *Identifier inputs (older CLI models); keep both, conform picks per model.
+	rec := glueRecord{"AssetId": in["AssetIdentifier"], "ItemId": in["ItemIdentifier"]}
 	for k, v := range in {
 		if k != "ClientToken" {
 			rec[k] = v
@@ -1088,4 +1102,17 @@ func glueGetMapping(st *glueStore, in glueRecord) (glueRecord, *glueError) {
 
 func glueGetDashboardURL(st *glueStore, in glueRecord) (glueRecord, *glueError) {
 	return glueRecord{"Url": fmt.Sprintf("https://%s.console.aws.amazon.com/gluestudio/home?region=%s#/%v/%v", glueRegion, glueRegion, in["ResourceType"], in["ResourceId"])}, nil
+}
+
+// glueDefaultAssetType names the type of assets put without AssetTypeIdentifier.
+const glueDefaultAssetType = "stackyard-default-asset-type"
+
+// glueFirstPresent returns the first non-nil value among keys.
+func glueFirstPresent(in glueRecord, keys ...string) any {
+	for _, k := range keys {
+		if v := in[k]; v != nil {
+			return v
+		}
+	}
+	return nil
 }
