@@ -162,6 +162,7 @@
         <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
         <a href="#dynamodbstreams">DynamoDB Streams</a>
+        <a href="#databrew">Glue DataBrew</a>
         <a href="#dax">DynamoDB Accelerator (DAX)</a>
         <a href="#ec2">EC2</a>
         <a href="#ec2instanceconnect">EC2 Instance Connect</a>
@@ -220,6 +221,8 @@
         <a href="#opensearchserverless">OpenSearch Serverless</a>
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
+        <a href="#pcaconnectorscep">Private CA Connector for SCEP</a>
+        <a href="#pcaconnectorad">Private CA Connector for AD</a>
         <a href="#secretsmanager">Secrets Manager</a>
         <a href="#servicecatalogappregistry">Service Catalog AppRegistry</a>
         <a href="#servicequotas">Service Quotas</a>
@@ -274,6 +277,7 @@
         <a href="#ground-station">Ground Station</a>
         <a href="#deadline-cloud">Deadline Cloud</a>
         <a href="#migrationhub-refactor-spaces">Migration Hub Refactor Spaces</a>
+        <a href="#migrationhub">Migration Hub</a>
         <a href="#migrationhub-orchestrator">Migration Hub Orchestrator</a>
         <a href="#migrationhub-strategy">Migration Hub Strategy Recommendations</a>
         <a href="#drs">Elastic Disaster Recovery (DRS)</a>
@@ -291,7 +295,9 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#networkmanager">Network Manager</a>
         <a href="#route53profiles">Route 53 Profiles</a>
+        <a href="#serverlessrepo">Serverless Application Repository</a>
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
@@ -8345,6 +8351,141 @@
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="pcaconnectorscep" class="service">
+
+        <div class="service-header">
+        <h2>AWS Private CA Connector for SCEP</h2>
+        <p>SigV4 signed with service <code>pca-connector-scep</code>. REST JSON API under <code>/connectors</code>, <code>/challenges</code>, <code>/challengeMetadata</code>, <code>/challengePasswords</code> and <code>/tags/</code>. Requests are validated against the service model. A connector needs an ACTIVE, GENERAL_PURPOSE certificate authority in Stackyard's Private CA store; it is GENERAL_PURPOSE, or INTUNE when <code>MobileDeviceManagement.Intune</code> is given, reports CREATING once and then ACTIVE, and is idempotent on ClientToken. Challenges need an ACTIVE GENERAL_PURPOSE connector; the password is returned only by CreateChallenge and GetChallengePassword. Deleting a connector deletes its challenges. The connector <code>Endpoint</code> is a Stackyard URL, but the SCEP protocol itself (GetCACaps, GetCACert, PKIOperation) is not served. All 12 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pca-connector-scep</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <tr><td><code>CreateChallenge</code></td></tr>
+        <tr><td><code>CreateConnector</code></td></tr>
+        <tr><td><code>DeleteChallenge</code></td></tr>
+        <tr><td><code>DeleteConnector</code></td></tr>
+        <tr><td><code>GetChallengeMetadata</code></td></tr>
+        <tr><td><code>GetChallengePassword</code></td></tr>
+        <tr><td><code>GetConnector</code></td></tr>
+        <tr><td><code>ListChallengeMetadata</code></td></tr>
+        <tr><td><code>ListConnectors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pca-connector-scep</code>: <code>docker compose -f examples/aws/pca-connector-scep/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="pcaconnectorad" class="service">
+
+        <div class="service-header">
+        <h2>AWS Private CA Connector for Active Directory</h2>
+        <p>SigV4 signed with service <code>pca-connector-ad</code>. REST JSON API under <code>/connectors</code>, <code>/directoryRegistrations</code>, <code>/templates</code> and <code>/tags</code>; ARN path labels are percent-encoded. Connectors require an ACTIVE certificate authority in the Private CA store, a directory in the Directory Service store and security groups in the EC2 store, and report CREATING once before ACTIVE. Registering a directory that isn't Active settles to FAILED with <code>DIRECTORY_NOT_ACTIVE</code>. Template definitions (V2, V3, V4) are validated against the model plus the union rules, template-name rules and a renewal period shorter than the validity period; updates raise the minor revision and re-enrolling raises the major revision. No Active Directory or certificate enrollment traffic is emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pca-connector-ad</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>CreateConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>GetConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>GetDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>GetServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>GetTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>ListConnectors</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDirectoryRegistrations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListServicePrincipalNames</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTemplateGroupAccessControlEntries</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTemplates</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -18704,6 +18845,163 @@
         </ul>
         </details>
         </section>
+        <section id="databrew" class="service">
+
+        <div class="service-header">
+        <h2>AWS Glue DataBrew</h2>
+        <p>SigV4 signed with service <code>databrew</code>. REST JSON API under <code>/datasets</code>, <code>/recipes</code>, <code>/projects</code>, <code>/jobs</code>, <code>/schedules</code>, <code>/rulesets</code> and <code>/tags</code>. S3 datasets must point at an existing object or prefix in the S3 store and Data Catalog datasets at an existing Glue table. Recipes keep a working version and numbered published versions; recipe jobs run a published version. Recipe and profile jobs read CSV or JSON from S3 and write CSV/JSON output or a profile JSON back to S3; runs report STARTING, RUNNING and then their result on successive reads. Project sessions preview recipe steps on the dataset sample. Supported recipe operations: ADD_PREFIX, ADD_SUFFIX, CAPITAL_CASE, DELETE, DUPLICATE, FILL_WITH_CUSTOM, FILL_WITH_EMPTY, LOWER_CASE, REMOVE_MISSING, RENAME, SENTENCE_CASE, UPPER_CASE; other operations fail the preview or run with a clear message. All 44 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: databrew</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchDeleteRecipeVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateProfileJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateProject</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRecipeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteJob</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteProject</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRecipeVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeProject</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDatasets</code></td>
+        </tr>
+        <tr>
+        <td><code>ListJobRuns</code></td>
+        </tr>
+        <tr>
+        <td><code>ListJobs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListProjects</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRecipeVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRecipes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRulesets</code></td>
+        </tr>
+        <tr>
+        <td><code>ListSchedules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PublishRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>SendProjectSessionAction</code></td>
+        </tr>
+        <tr>
+        <td><code>StartJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>StartProjectSession</code></td>
+        </tr>
+        <tr>
+        <td><code>StopJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateProfileJob</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateProject</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRecipeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSchedule</code></td>
+        </tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
         <section id="dax" class="service">
 
         <div class="service-header">
@@ -24937,6 +25235,144 @@
         </details>
         </section>
 
+        <section id="networkmanager" class="service">
+
+        <div class="service-header">
+        <h2>AWS Network Manager (Cloud WAN)</h2>
+        <p>SigV4 signed with service <code>networkmanager</code>. REST JSON API under <code>/global-networks</code>, <code>/core-networks</code>, the attachment, peering and connect-peer paths, <code>/context-stores</code> and <code>/tags/</code>. Requests are validated against the service model. Global networks hold sites, devices, links and connections, with link, customer gateway and Connect peer associations; transit gateways and customer gateways must exist in Stackyard's EC2 store, and a transit gateway registers with one global network. Core network policies are checked for version, ASN ranges, edge locations, segments, segment actions and attachment policies, and invalid documents return CoreNetworkPolicyException with a list of errors. Each new policy version generates a change set, and ExecuteCoreNetworkChangeSet makes it LIVE. VPC attachments check the VPC and subnets in EC2 (one subnet per Availability Zone), VPN attachments check the VPN connection, and attachment policies choose the segment, which may require acceptance. Resources report a transitional state once, then settle (for example CREATING, then AVAILABLE). Network routes are derived from available VPC attachments. Route analysis always reports NOT_CONNECTED. All 109 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: networkmanager</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptAttachment</code></td></tr>
+        <tr><td><code>AssociateConnectPeer</code></td></tr>
+        <tr><td><code>AssociateContextStore</code></td></tr>
+        <tr><td><code>AssociateCustomerGateway</code></td></tr>
+        <tr><td><code>AssociateLink</code></td></tr>
+        <tr><td><code>AssociateTransitGatewayConnectPeer</code></td></tr>
+        <tr><td><code>CreateConnectAttachment</code></td></tr>
+        <tr><td><code>CreateConnectPeer</code></td></tr>
+        <tr><td><code>CreateConnection</code></td></tr>
+        <tr><td><code>CreateContextStore</code></td></tr>
+        <tr><td><code>CreateCoreNetwork</code></td></tr>
+        <tr><td><code>CreateCoreNetworkPrefixListAssociation</code></td></tr>
+        <tr><td><code>CreateDevice</code></td></tr>
+        <tr><td><code>CreateDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>CreateGlobalNetwork</code></td></tr>
+        <tr><td><code>CreateLink</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>CreateSiteToSiteVpnAttachment</code></td></tr>
+        <tr><td><code>CreateTransitGatewayPeering</code></td></tr>
+        <tr><td><code>CreateTransitGatewayRouteTableAttachment</code></td></tr>
+        <tr><td><code>CreateVpcAttachment</code></td></tr>
+        <tr><td><code>DeleteAttachment</code></td></tr>
+        <tr><td><code>DeleteConnectPeer</code></td></tr>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteContextStore</code></td></tr>
+        <tr><td><code>DeleteCoreNetwork</code></td></tr>
+        <tr><td><code>DeleteCoreNetworkPolicyVersion</code></td></tr>
+        <tr><td><code>DeleteCoreNetworkPrefixListAssociation</code></td></tr>
+        <tr><td><code>DeleteDevice</code></td></tr>
+        <tr><td><code>DeleteGlobalNetwork</code></td></tr>
+        <tr><td><code>DeleteLink</code></td></tr>
+        <tr><td><code>DeletePeering</code></td></tr>
+        <tr><td><code>DeleteResourcePolicy</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>DeregisterTransitGateway</code></td></tr>
+        <tr><td><code>DescribeGlobalNetworks</code></td></tr>
+        <tr><td><code>DisassociateConnectPeer</code></td></tr>
+        <tr><td><code>DisassociateContextStore</code></td></tr>
+        <tr><td><code>DisassociateCustomerGateway</code></td></tr>
+        <tr><td><code>DisassociateLink</code></td></tr>
+        <tr><td><code>DisassociateTransitGatewayConnectPeer</code></td></tr>
+        <tr><td><code>ExecuteCoreNetworkChangeSet</code></td></tr>
+        <tr><td><code>GetConnectAttachment</code></td></tr>
+        <tr><td><code>GetConnectPeer</code></td></tr>
+        <tr><td><code>GetConnectPeerAssociations</code></td></tr>
+        <tr><td><code>GetConnections</code></td></tr>
+        <tr><td><code>GetContextStore</code></td></tr>
+        <tr><td><code>GetContextStoreAssociation</code></td></tr>
+        <tr><td><code>GetContextVersion</code></td></tr>
+        <tr><td><code>GetCoreNetwork</code></td></tr>
+        <tr><td><code>GetCoreNetworkChangeEvents</code></td></tr>
+        <tr><td><code>GetCoreNetworkChangeSet</code></td></tr>
+        <tr><td><code>GetCoreNetworkPolicy</code></td></tr>
+        <tr><td><code>GetCustomerGatewayAssociations</code></td></tr>
+        <tr><td><code>GetDevices</code></td></tr>
+        <tr><td><code>GetDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>GetLinkAssociations</code></td></tr>
+        <tr><td><code>GetLinks</code></td></tr>
+        <tr><td><code>GetNetworkResourceCounts</code></td></tr>
+        <tr><td><code>GetNetworkResourceRelationships</code></td></tr>
+        <tr><td><code>GetNetworkResources</code></td></tr>
+        <tr><td><code>GetNetworkRoutes</code></td></tr>
+        <tr><td><code>GetNetworkTelemetry</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>GetRouteAnalysis</code></td></tr>
+        <tr><td><code>GetSiteToSiteVpnAttachment</code></td></tr>
+        <tr><td><code>GetSites</code></td></tr>
+        <tr><td><code>GetTransitGatewayConnectPeerAssociations</code></td></tr>
+        <tr><td><code>GetTransitGatewayPeering</code></td></tr>
+        <tr><td><code>GetTransitGatewayRegistrations</code></td></tr>
+        <tr><td><code>GetTransitGatewayRouteTableAttachment</code></td></tr>
+        <tr><td><code>GetVpcAttachment</code></td></tr>
+        <tr><td><code>ListAttachmentNatConfigurations</code></td></tr>
+        <tr><td><code>ListAttachmentRoutingPolicyAssociations</code></td></tr>
+        <tr><td><code>ListAttachments</code></td></tr>
+        <tr><td><code>ListConnectPeers</code></td></tr>
+        <tr><td><code>ListContextChanges</code></td></tr>
+        <tr><td><code>ListContextStoreAssociations</code></td></tr>
+        <tr><td><code>ListContextStores</code></td></tr>
+        <tr><td><code>ListContexts</code></td></tr>
+        <tr><td><code>ListCoreNetworkPolicyVersions</code></td></tr>
+        <tr><td><code>ListCoreNetworkPrefixListAssociations</code></td></tr>
+        <tr><td><code>ListCoreNetworkRoutingInformation</code></td></tr>
+        <tr><td><code>ListCoreNetworks</code></td></tr>
+        <tr><td><code>ListOrganizationServiceAccessStatus</code></td></tr>
+        <tr><td><code>ListPeerings</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutAttachmentRoutingPolicyLabel</code></td></tr>
+        <tr><td><code>PutCoreNetworkPolicy</code></td></tr>
+        <tr><td><code>PutResourcePolicy</code></td></tr>
+        <tr><td><code>RegisterTransitGateway</code></td></tr>
+        <tr><td><code>RejectAttachment</code></td></tr>
+        <tr><td><code>RemoveAttachmentRoutingPolicyLabel</code></td></tr>
+        <tr><td><code>RestoreCoreNetworkPolicyVersion</code></td></tr>
+        <tr><td><code>StartOrganizationServiceAccessUpdate</code></td></tr>
+        <tr><td><code>StartRouteAnalysis</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAttachmentNatConfiguration</code></td></tr>
+        <tr><td><code>UpdateConnection</code></td></tr>
+        <tr><td><code>UpdateContextStore</code></td></tr>
+        <tr><td><code>UpdateCoreNetwork</code></td></tr>
+        <tr><td><code>UpdateDevice</code></td></tr>
+        <tr><td><code>UpdateDirectConnectGatewayAttachment</code></td></tr>
+        <tr><td><code>UpdateGlobalNetwork</code></td></tr>
+        <tr><td><code>UpdateLink</code></td></tr>
+        <tr><td><code>UpdateNetworkResourceMetadata</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateVpcAttachment</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>networkmanager</code>: <code>docker compose -f examples/aws/networkmanager/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="route53profiles" class="service">
 
         <div class="service-header">
@@ -24979,6 +25415,49 @@
         <summary>Examples</summary>
         <ul>
         <li><code>route53profiles</code>: <code>docker compose -f examples/aws/route53profiles/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="serverlessrepo" class="service">
+
+        <div class="service-header">
+        <h2>AWS Serverless Application Repository</h2>
+        <p>SigV4 signed with service <code>serverlessrepo</code>. REST JSON API under <code>/applications</code>. Templates come inline or from an object in Stackyard's S3; JSON templates are parsed for parameter definitions (with the resources that reference them), required capabilities and nested <code>AWS::Serverless::Application</code> dependencies, while YAML templates get a structural check only. Readme and license bodies, inline templates and generated templates are stored in Stackyard's S3. Application policies accept the documented actions, account principals and organization shares. CreateCloudFormationChangeSet checks parameter overrides and capabilities and registers the <code>serverlessrepo-&lt;StackName&gt;</code> stack and change set in Stackyard's CloudFormation. Generated templates report PREPARING once, then ACTIVE. All 14 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: serverlessrepo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateApplication</code></td></tr>
+        <tr><td><code>CreateApplicationVersion</code></td></tr>
+        <tr><td><code>CreateCloudFormationChangeSet</code></td></tr>
+        <tr><td><code>CreateCloudFormationTemplate</code></td></tr>
+        <tr><td><code>DeleteApplication</code></td></tr>
+        <tr><td><code>GetApplication</code></td></tr>
+        <tr><td><code>GetApplicationPolicy</code></td></tr>
+        <tr><td><code>GetCloudFormationTemplate</code></td></tr>
+        <tr><td><code>ListApplicationDependencies</code></td></tr>
+        <tr><td><code>ListApplicationVersions</code></td></tr>
+        <tr><td><code>ListApplications</code></td></tr>
+        <tr><td><code>PutApplicationPolicy</code></td></tr>
+        <tr><td><code>UnshareApplication</code></td></tr>
+        <tr><td><code>UpdateApplication</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>serverlessrepo</code>: <code>docker compose -f examples/aws/serverlessrepo/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -28604,6 +29083,51 @@
         <li><code>migrationhub-refactor-spaces</code>: <code>docker compose -f examples/aws/migrationhub-refactor-spaces/docker-compose.yml up --build</code></li>
         <li><code>migrationhub-refactor-spaces</code>: <code>docker compose -f examples/aws/migrationhub-refactor-spaces/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="migrationhub" class="service">
+
+        <div class="service-header">
+        <h2>AWS Migration Hub</h2>
+        <p>SigV4 signed with service <code>mgh</code>. Migration Hub exposes a JSON 1.1 API (<code>X-Amz-Target: AWSMigrationHub.*</code>) for progress update streams, migration task state and update history, created artifacts, discovered resources (validated against Application Discovery Service configurations), source resources, and application states. Stackyard's region is always the Migration Hub home region. Stale task updates (an <code>UpdateDateTime</code> older than the task's latest) are rejected, and every mutating call honours <code>DryRun</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mgh</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateCreatedArtifact</code></td></tr>
+        <tr><td><code>AssociateDiscoveredResource</code></td></tr>
+        <tr><td><code>AssociateSourceResource</code></td></tr>
+        <tr><td><code>CreateProgressUpdateStream</code></td></tr>
+        <tr><td><code>DeleteProgressUpdateStream</code></td></tr>
+        <tr><td><code>DescribeApplicationState</code></td></tr>
+        <tr><td><code>DescribeMigrationTask</code></td></tr>
+        <tr><td><code>DisassociateCreatedArtifact</code></td></tr>
+        <tr><td><code>DisassociateDiscoveredResource</code></td></tr>
+        <tr><td><code>DisassociateSourceResource</code></td></tr>
+        <tr><td><code>ImportMigrationTask</code></td></tr>
+        <tr><td><code>ListApplicationStates</code></td></tr>
+        <tr><td><code>ListCreatedArtifacts</code></td></tr>
+        <tr><td><code>ListDiscoveredResources</code></td></tr>
+        <tr><td><code>ListMigrationTaskUpdates</code></td></tr>
+        <tr><td><code>ListMigrationTasks</code></td></tr>
+        <tr><td><code>ListProgressUpdateStreams</code></td></tr>
+        <tr><td><code>ListSourceResources</code></td></tr>
+        <tr><td><code>NotifyApplicationState</code></td></tr>
+        <tr><td><code>NotifyMigrationTaskState</code></td></tr>
+        <tr><td><code>PutResourceAttributes</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 

@@ -340,6 +340,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
     "osis": {"cli": "osis", "ops_file": REPO_ROOT / "internal/server/osis_ops.go"},
+    "databrew": {"cli": "databrew", "ops_file": REPO_ROOT / "internal/server/databrew_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -393,6 +394,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
+    "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
+    "pcaconnectorscep": {"cli": "pca-connector-scep", "ops_file": REPO_ROOT / "internal/server/pcaconnectorscep_ops.go"},
+    "serverlessrepo": {"cli": "serverlessrepo", "ops_file": REPO_ROOT / "internal/server/serverlessrepo_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
@@ -567,6 +571,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
+    "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -615,6 +620,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "neptunedata": {"cli": "neptunedata", "ops_file": REPO_ROOT / "internal/server/neptunedata_ops.go"},
     "opensearch": {"cli": "opensearch", "ops_file": REPO_ROOT / "internal/server/opensearch_ops.go"},
     "privateca": {"cli": "acm-pca", "ops_file": REPO_ROOT / "internal/server/privateca_ops.go"},
+    "pcaconnectorad": {"cli": "pca-connector-ad", "ops_file": REPO_ROOT / "internal/server/pcaconnectorad_ops.go"},
     "rds": {"cli": "rds", "ops_file": None},
     "secretsmanager": {
         "cli": "secretsmanager",
@@ -1502,6 +1508,9 @@ SERVICE_ALIASES = {
     "osis": "osis",
     "opensearchingestion": "osis",
     "amazonopensearchingestion": "osis",
+    "databrew": "databrew",
+    "gluedatabrew": "databrew",
+    "awsgluedatabrew": "databrew",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -1937,8 +1946,17 @@ SERVICE_ALIASES = {
     "amazonram": "ram",
     "route53": "route53",
     "route53profiles": "route53profiles",
+    "networkmanager": "networkmanager",
+    "network-manager": "networkmanager",
+    "cloudwan": "networkmanager",
+    "pcaconnectorscep": "pcaconnectorscep",
+    "pca-connector-scep": "pcaconnectorscep",
+    "privatecaconnectorforscep": "pcaconnectorscep",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
+    "serverlessrepo": "serverlessrepo",
+    "serverlessapplicationrepository": "serverlessrepo",
+    "awsserverlessapplicationrepository": "serverlessrepo",
     "polly": "polly",
     "amazonpolly": "polly",
     "servicecatalogappregistry": "servicecatalogappregistry",
@@ -2240,6 +2258,10 @@ SERVICE_ALIASES = {
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
     "textract": "textract",
+    "migrationhub": "migrationhub",
+    "mgh": "migrationhub",
+    "awsmigrationhub": "migrationhub",
+    "aws migration hub": "migrationhub",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
@@ -2359,6 +2381,8 @@ SERVICE_ALIASES = {
     "neptune-data": "neptunedata",
     "privateca": "privateca",
     "private-ca": "privateca",
+    "pcaconnectorad": "pcaconnectorad",
+    "pca-connector-ad": "pcaconnectorad",
     "rds": "rds",
     "amazonrds": "rds",
     "relationaldatabaseservice": "rds",
@@ -3197,6 +3221,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "schemas": {},
     "pipes": {},
     "route53profiles": {},
+    "networkmanager": {},
+    "pcaconnectorscep": {},
+    "serverlessrepo": {},
     "polly": {},
     "servicecatalogappregistry": {},
     "datasync": {},
@@ -3207,6 +3234,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "docdb": {},
     "docdbelastic": {},
     "osis": {},
+    "databrew": {},
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
@@ -3214,6 +3242,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "pi": {},
     "servicecatalog": {},
+    "migrationhub": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -3394,6 +3423,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kms": {},
     "neptuneanalytics": {},
     "privateca": {},
+    "pcaconnectorad": {},
     "secretsmanager": {},
     "redshift": {},
     "sns": {},
@@ -33209,6 +33239,78 @@ def pi_hydrate_payload(
     return payload
 
 
+MGH_STREAM = "stackyard-mgh"
+MGH_TASK = "stackyard-task"
+MGH_ARTIFACT = "arn:aws:ec2:us-east-1:123456789012:instance/i-0123456789abcdef0"
+MGH_CONFIGURATION = "srv-000001"  # seeded by Application Discovery Service
+MGH_APPLICATION = "app-000001"  # seeded by Application Discovery Service
+
+
+def mgh_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, "mgh", cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def migrationhub_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A progress update stream with one imported task that has a recorded state."""
+    state = RUNTIME_STATE.setdefault("migrationhub", {})
+    if not state.get("ready"):
+        mgh_call(aws_bin, endpoint_url, region, env, "CreateProgressUpdateStream", {"ProgressUpdateStreamName": MGH_STREAM})
+        mgh_call(aws_bin, endpoint_url, region, env, "ImportMigrationTask", {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": MGH_TASK})
+        state["ready"] = True
+    return state
+
+
+def migrationhub_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Migration Hub operations at a real stream and task. Disassociate
+    and delete operations get the thing they remove created first."""
+    op = endpoint.operation
+    state = migrationhub_fixture(aws_bin, endpoint_url, region, env)
+    task = {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": MGH_TASK}
+    unique = f"stackyard-{time.time_ns()}"
+    if op in ("ListProgressUpdateStreams", "ListMigrationTasks", "ListApplicationStates"):
+        return {}
+    if op == "CreateProgressUpdateStream":
+        return {"ProgressUpdateStreamName": unique[:50]}
+    if op == "DeleteProgressUpdateStream":
+        name = unique[:50]
+        mgh_call(aws_bin, endpoint_url, region, env, "CreateProgressUpdateStream", {"ProgressUpdateStreamName": name})
+        return {"ProgressUpdateStreamName": name}
+    if op == "ImportMigrationTask":
+        return {"ProgressUpdateStream": MGH_STREAM, "MigrationTaskName": unique}
+    if op == "NotifyMigrationTaskState":
+        # Updates must not go back in time, so each run uses a later timestamp.
+        at = max(time.time(), state.get("last_update", 0) + 1)
+        state["last_update"] = at
+        return {**task, "Task": {"Status": "IN_PROGRESS", "ProgressPercent": 50, "StatusDetail": "copying"},
+                "UpdateDateTime": at, "NextUpdateSeconds": 60}
+    if op == "PutResourceAttributes":
+        return {**task, "ResourceAttributeList": [{"Type": "FQDN", "Value": "web.example.com"}]}
+    if op == "AssociateCreatedArtifact":
+        return {**task, "CreatedArtifact": {"Name": MGH_ARTIFACT, "Description": "migrated instance"}}
+    if op == "DisassociateCreatedArtifact":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateCreatedArtifact", {**task, "CreatedArtifact": {"Name": MGH_ARTIFACT}})
+        return {**task, "CreatedArtifactName": MGH_ARTIFACT}
+    if op == "AssociateDiscoveredResource":
+        return {**task, "DiscoveredResource": {"ConfigurationId": MGH_CONFIGURATION, "Description": "source server"}}
+    if op == "DisassociateDiscoveredResource":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateDiscoveredResource", {**task, "DiscoveredResource": {"ConfigurationId": MGH_CONFIGURATION}})
+        return {**task, "ConfigurationId": MGH_CONFIGURATION}
+    if op == "AssociateSourceResource":
+        return {**task, "SourceResource": {"Name": "vm-42", "Description": "source VM", "StatusDetail": "replicating"}}
+    if op == "DisassociateSourceResource":
+        mgh_call(aws_bin, endpoint_url, region, env, "AssociateSourceResource", {**task, "SourceResource": {"Name": "vm-42"}})
+        return {**task, "SourceResourceName": "vm-42"}
+    if op == "NotifyApplicationState":
+        return {"ApplicationId": MGH_APPLICATION, "Status": "IN_PROGRESS", "UpdateDateTime": time.time()}
+    if op == "DescribeApplicationState":
+        mgh_call(aws_bin, endpoint_url, region, env, "NotifyApplicationState", {"ApplicationId": MGH_APPLICATION, "Status": "IN_PROGRESS"})
+        return {"ApplicationId": MGH_APPLICATION}
+    return task  # DescribeMigrationTask and the per-task List operations
+
+
 def textract_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -35070,6 +35172,492 @@ def polly_hydrate_payload(
     return payload
 
 
+SAR_TEMPLATE = json.dumps(
+    {
+        "Parameters": {"Stage": {"Type": "String", "Default": "dev"}},
+        "Resources": {"Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": {"Ref": "Stage"}}}},
+    }
+)
+SAR_ORG = "o-stackyard01"
+
+
+def sar_new_app(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-{time.time_ns()}"
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "serverlessrepo", "create-application", env,
+        ["--name", name, "--author", "stackyard", "--description", "Stackyard coverage app",
+         "--semantic-version", "1.0.0", "--template-body", SAR_TEMPLATE],
+    )
+    return str(data.get("ApplicationId") or "") if isinstance(data, dict) else ""
+
+
+def serverlessrepo_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Serverless Application Repository operation at a real
+    application. Delete and unshare each get an application of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("serverlessrepo", {})
+    if not state.get("app"):
+        state["app"] = sar_new_app(aws_bin, endpoint_url, region, env)
+    app = str(state["app"])
+    unique = time.time_ns()
+    if op == "CreateApplication":
+        return {"Name": f"stackyard-{unique}", "Author": "stackyard", "Description": "Stackyard coverage app",
+                "SemanticVersion": "1.0.0", "TemplateBody": SAR_TEMPLATE}
+    if op == "ListApplications":
+        return {}
+    if op == "CreateApplicationVersion":
+        return {"ApplicationId": app, "SemanticVersion": f"2.0.{unique}", "TemplateBody": SAR_TEMPLATE}
+    if op == "CreateCloudFormationChangeSet":
+        return {"ApplicationId": app, "StackName": f"stackyard-{unique}"}
+    if op == "GetCloudFormationTemplate":
+        data = run_aws_json(aws_bin, endpoint_url, region, "serverlessrepo", "create-cloud-formation-template", env, ["--application-id", app])
+        return {"ApplicationId": app, "TemplateId": str((data or {}).get("TemplateId") or "") if isinstance(data, dict) else ""}
+    if op == "DeleteApplication":
+        return {"ApplicationId": sar_new_app(aws_bin, endpoint_url, region, env)}
+    if op == "PutApplicationPolicy":
+        return {"ApplicationId": app, "Statements": [{"Actions": ["Deploy"], "Principals": ["123456789012"]}]}
+    if op == "UnshareApplication":
+        own = sar_new_app(aws_bin, endpoint_url, region, env)
+        run_aws_json(
+            aws_bin, endpoint_url, region, "serverlessrepo", "put-application-policy", env,
+            ["--application-id", own, "--statements", json.dumps([{"Actions": ["Deploy"], "Principals": ["*"], "PrincipalOrgIDs": [SAR_ORG]}])],
+        )
+        return {"ApplicationId": own, "OrganizationId": SAR_ORG}
+    if op == "UpdateApplication":
+        return {"ApplicationId": app, "Description": "Stackyard coverage app (updated)"}
+    return {"ApplicationId": app}
+
+
+def psc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "pca-connector-scep", op, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def psc_certificate_authority(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Reuse the Private CA checks' own CA, so running these first leaves no
+    extra CA behind for them; create a separate one only when that CA isn't
+    ACTIVE (a Private CA run may have disabled or deleted it)."""
+    state = RUNTIME_STATE.setdefault("pcaconnectorscep", {})
+    if state.get("ca"):
+        return str(state["ca"])
+    arn = privateca_ensure_certificate_authority_arn(aws_bin, endpoint_url, region, env)
+    described = run_aws_json(aws_bin, endpoint_url, region, "acm-pca", "describe-certificate-authority", env, ["--certificate-authority-arn", arn])
+    status = str(((described or {}).get("CertificateAuthority") or {}).get("Status") or "") if isinstance(described, dict) else ""
+    if status != "ACTIVE":
+        config = json.dumps({"KeyAlgorithm": "RSA_2048", "SigningAlgorithm": "SHA256WITHRSA", "Subject": {"CommonName": "stackyard-scep"}})
+        data = run_aws_json(
+            aws_bin, endpoint_url, region, "acm-pca", "create-certificate-authority", env,
+            ["--certificate-authority-configuration", config, "--certificate-authority-type", "ROOT",
+             "--idempotency-token", f"scep{time.time_ns() % 10**12}"],
+        )
+        arn = str((data or {}).get("CertificateAuthorityArn") or "") if isinstance(data, dict) else ""
+    state["ca"] = arn
+    return arn
+
+
+def psc_new_connector(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a connector and read it once so it settles to ACTIVE."""
+    ca = psc_certificate_authority(aws_bin, endpoint_url, region, env)
+    arn = str(psc_cli(aws_bin, endpoint_url, region, env, "create-connector", ["--certificate-authority-arn", ca]).get("ConnectorArn") or "")
+    if arn:
+        psc_cli(aws_bin, endpoint_url, region, env, "get-connector", ["--connector-arn", arn])
+    return arn
+
+
+def psc_new_challenge(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connector: str) -> str:
+    data = psc_cli(aws_bin, endpoint_url, region, env, "create-challenge", ["--connector-arn", connector])
+    return str((data.get("Challenge") or {}).get("Arn") or "")
+
+
+def pcaconnectorscep_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each SCEP connector operation at real resources. Deletes get
+    resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("pcaconnectorscep", {})
+    if not state.get("connector"):
+        state["connector"] = psc_new_connector(aws_bin, endpoint_url, region, env)
+        state["challenge"] = psc_new_challenge(aws_bin, endpoint_url, region, env, str(state["connector"]))
+    connector, challenge = str(state["connector"]), str(state["challenge"])
+    if op == "CreateConnector":
+        return {"CertificateAuthorityArn": psc_certificate_authority(aws_bin, endpoint_url, region, env), "ClientToken": f"stackyard-{time.time_ns()}"}
+    if op == "ListConnectors":
+        return {}
+    if op == "GetConnector":
+        return {"ConnectorArn": connector}
+    if op == "DeleteConnector":
+        return {"ConnectorArn": psc_new_connector(aws_bin, endpoint_url, region, env)}
+    if op == "CreateChallenge":
+        return {"ConnectorArn": connector, "ClientToken": f"stackyard-{time.time_ns()}"}
+    if op == "ListChallengeMetadata":
+        return {"ConnectorArn": connector}
+    if op in {"GetChallengeMetadata", "GetChallengePassword"}:
+        return {"ChallengeArn": challenge}
+    if op == "DeleteChallenge":
+        return {"ChallengeArn": psc_new_challenge(aws_bin, endpoint_url, region, env, connector)}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": connector}
+    if op == "TagResource":
+        return {"ResourceArn": connector, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": connector, "TagKeys": ["stackyard"]}
+    return copy.deepcopy(payload)
+
+
+NM_ACCOUNT = "123456789012"
+NM_POLICY = json.dumps({
+    "version": "2021.12",
+    "core-network-configuration": {"asn-ranges": ["64512-64555"], "edge-locations": [{"location": "us-east-1"}, {"location": "us-west-2"}]},
+    "segments": [{"name": "prod"}, {"name": "dev", "require-attachment-acceptance": True}],
+    "segment-actions": [{"action": "share", "segment": "prod", "share-with": ["dev"]}],
+    "attachment-policies": [
+        {"rule-number": 100, "conditions": [{"type": "tag-value", "key": "env", "value": "dev"}], "action": {"association-method": "constant", "segment": "dev"}},
+        {"rule-number": 200, "conditions": [{"type": "any"}], "action": {"association-method": "constant", "segment": "prod"}},
+    ],
+}, separators=(",", ":"))
+NM_RESOURCE_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": NM_ACCOUNT}, "Action": "networkmanager:*", "Resource": "*"}]})
+
+
+class NetworkManagerFixture:
+    """Real Network Manager (and EC2) resources created through the CLI, shared
+    by every hydrated operation; destructive operations make their own."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.aws_bin, self.endpoint_url, self.region, self.env = aws_bin, endpoint_url, region, env
+
+    def nm(self, op: str, payload: dict) -> dict:
+        data = run_aws_json(self.aws_bin, self.endpoint_url, self.region, "networkmanager", op, self.env,
+                            ["--cli-input-json", json.dumps(payload, separators=(",", ":"))])
+        return data if isinstance(data, dict) else {}
+
+    def ec2(self, op: str, args: list[str]) -> dict:
+        data = run_aws_json(self.aws_bin, self.endpoint_url, self.region, "ec2", op, self.env, args)
+        return data if isinstance(data, dict) else {}
+
+    def unique(self) -> str:
+        return f"{time.time_ns():x}"[-12:]
+
+    # ---- EC2 ----
+    def tgw_arn(self) -> str:
+        tgw = str((self.ec2("create-transit-gateway", []).get("TransitGateway") or {}).get("TransitGatewayId") or "")
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway/{tgw}"
+
+    def cgw_arn(self) -> str:
+        # EC2 returns the existing gateway for identical parameters, so vary the IP.
+        self.cgw_count = getattr(self, "cgw_count", 0) + 1
+        ip = f"203.0.113.{10 + self.cgw_count % 200}"
+        cgw = str((self.ec2("create-customer-gateway", ["--type", "ipsec.1", "--bgp-asn", "65000", "--public-ip", ip])
+                   .get("CustomerGateway") or {}).get("CustomerGatewayId") or "")
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:customer-gateway/{cgw}"
+
+    # ---- global network inventory ----
+    def new_gn(self) -> str:
+        gn = str((self.nm("create-global-network", {}).get("GlobalNetwork") or {}).get("GlobalNetworkId") or "")
+        self.nm("describe-global-networks", {"GlobalNetworkIds": [gn]})
+        return gn
+
+    def new_site(self) -> str:
+        return str((self.nm("create-site", {"GlobalNetworkId": self.gn}).get("Site") or {}).get("SiteId") or "")
+
+    def new_device(self) -> str:
+        return str((self.nm("create-device", {"GlobalNetworkId": self.gn, "SiteId": self.site}).get("Device") or {}).get("DeviceId") or "")
+
+    def new_link(self) -> str:
+        data = self.nm("create-link", {"GlobalNetworkId": self.gn, "SiteId": self.site, "Bandwidth": {"UploadSpeed": 10, "DownloadSpeed": 10}})
+        return str((data.get("Link") or {}).get("LinkId") or "")
+
+    def new_connection(self) -> str:
+        data = self.nm("create-connection", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "ConnectedDeviceId": self.dev2})
+        return str((data.get("Connection") or {}).get("ConnectionId") or "")
+
+    def new_link_assoc(self) -> str:
+        link = self.new_link()
+        self.nm("associate-link", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "LinkId": link})
+        return link
+
+    def new_context_store(self) -> str:
+        data = self.nm("create-context-store", {"GlobalNetworkId": self.gn})
+        return str((data.get("ContextStore") or {}).get("ContextStoreId") or "")
+
+    # ---- core network ----
+    def new_core(self, policy: bool) -> str:
+        payload = {"GlobalNetworkId": self.gn}
+        if policy:
+            payload["PolicyDocument"] = NM_POLICY
+        core = str((self.nm("create-core-network", payload).get("CoreNetwork") or {}).get("CoreNetworkId") or "")
+        if policy:
+            self.nm("get-core-network-policy", {"CoreNetworkId": core, "Alias": "LATEST"})
+            self.nm("execute-core-network-change-set", {"CoreNetworkId": core, "PolicyVersionId": 1})
+        self.nm("get-core-network", {"CoreNetworkId": core})
+        return core
+
+    def new_policy_version(self) -> int:
+        data = self.nm("put-core-network-policy", {"CoreNetworkId": self.core, "PolicyDocument": NM_POLICY})
+        version = int((data.get("CoreNetworkPolicy") or {}).get("PolicyVersionId") or 0)
+        self.nm("get-core-network-policy", {"CoreNetworkId": self.core, "PolicyVersionId": version})
+        return version
+
+    def new_vpc_attachment(self, tags: list | None = None) -> str:
+        payload = {"CoreNetworkId": self.core, "VpcArn": self.vpc_arn, "SubnetArns": [self.subnet_a]}
+        if tags:
+            payload["Tags"] = tags
+        att = str(((self.nm("create-vpc-attachment", payload).get("VpcAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        if not tags:
+            self.nm("get-vpc-attachment", {"AttachmentId": att})
+        return att
+
+    def new_connect_peer(self) -> str:
+        data = self.nm("create-connect-peer", {"ConnectAttachmentId": self.connect_att, "PeerAddress": "10.40.1.10",
+                                               "InsideCidrBlocks": ["169.254.10.0/29"], "BgpOptions": {"PeerAsn": 65010}})
+        peer = str((data.get("ConnectPeer") or {}).get("ConnectPeerId") or "")
+        self.nm("get-connect-peer", {"ConnectPeerId": peer})
+        return peer
+
+    def new_peering(self) -> str:
+        data = self.nm("create-transit-gateway-peering", {"CoreNetworkId": self.core, "TransitGatewayArn": self.tgw_arn()})
+        peering = str(((data.get("TransitGatewayPeering") or {}).get("Peering") or {}).get("PeeringId") or "")
+        self.nm("get-transit-gateway-peering", {"PeeringId": peering})
+        return peering
+
+    def build(self) -> None:
+        self.gn = self.new_gn()
+        self.gn_arn = f"arn:aws:networkmanager::{NM_ACCOUNT}:global-network/{self.gn}"
+        self.site = self.new_site()
+        self.dev1, self.dev2 = self.new_device(), self.new_device()
+        self.link = self.new_link()
+        self.connection = self.new_connection()
+        self.nm("associate-link", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "LinkId": self.link})
+        vpc = str((self.ec2("create-vpc", ["--cidr-block", "10.40.0.0/16"]).get("Vpc") or {}).get("VpcId") or "")
+        subnets = [
+            str((self.ec2("create-subnet", ["--vpc-id", vpc, "--cidr-block", cidr, "--availability-zone", az]).get("Subnet") or {}).get("SubnetId") or "")
+            for cidr, az in (("10.40.1.0/24", "us-east-1a"), ("10.40.2.0/24", "us-east-1b"))
+        ]
+        self.vpc_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:vpc/{vpc}"
+        self.subnet_a, self.subnet_b = (f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:subnet/{s}" for s in subnets)
+        self.core = self.new_core(policy=True)
+        self.core_arn = f"arn:aws:networkmanager::{NM_ACCOUNT}:core-network/{self.core}"
+        self.vpc_att = self.new_vpc_attachment()
+        data = self.nm("create-connect-attachment", {"CoreNetworkId": self.core, "EdgeLocation": "us-east-1",
+                                                     "TransportAttachmentId": self.vpc_att, "Options": {"Protocol": "GRE"}})
+        self.connect_att = str(((data.get("ConnectAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.nm("get-connect-attachment", {"AttachmentId": self.connect_att})
+        self.connect_peer = self.new_connect_peer()
+        cgw = str(self.cgw_arn().rsplit("/", 1)[-1])
+        tgw_for_vpn = self.tgw_arn().rsplit("/", 1)[-1]
+        vpn = str((self.ec2("create-vpn-connection", ["--type", "ipsec.1", "--customer-gateway-id", cgw, "--transit-gateway-id", tgw_for_vpn])
+                   .get("VpnConnection") or {}).get("VpnConnectionId") or "")
+        self.vpn_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:vpn-connection/{vpn}"
+        data = self.nm("create-site-to-site-vpn-attachment", {"CoreNetworkId": self.core, "VpnConnectionArn": self.vpn_arn})
+        self.vpn_att = str(((data.get("SiteToSiteVpnAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.dx_arn = f"arn:aws:directconnect::{NM_ACCOUNT}:dx-gateway/12345678-1234-1234-1234-123456789012"
+        data = self.nm("create-direct-connect-gateway-attachment", {"CoreNetworkId": self.core, "DirectConnectGatewayArn": self.dx_arn, "EdgeLocations": ["us-east-1"]})
+        self.dx_att = str(((data.get("DirectConnectGatewayAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.peering = self.new_peering()
+        self.rtb_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-route-table/tgw-rtb-0123456789abcdef0"
+        data = self.nm("create-transit-gateway-route-table-attachment", {"PeeringId": self.peering, "TransitGatewayRouteTableArn": self.rtb_arn})
+        self.rtb_att = str(((data.get("TransitGatewayRouteTableAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.store = self.new_context_store()
+        self.store_tgw = self.tgw_arn()
+        self.nm("associate-context-store", {"ContextStoreId": self.store, "TransitGatewayArn": self.store_tgw})
+        self.reg_tgw = self.tgw_arn()
+        self.nm("register-transit-gateway", {"GlobalNetworkId": self.gn, "TransitGatewayArn": self.reg_tgw})
+        self.cgw = self.cgw_arn()
+        self.nm("associate-customer-gateway", {"GlobalNetworkId": self.gn, "CustomerGatewayArn": self.cgw, "DeviceId": self.dev1})
+        self.tgw_cp = self.tgw_connect_peer_arn()
+        self.nm("associate-transit-gateway-connect-peer", {"GlobalNetworkId": self.gn, "TransitGatewayConnectPeerArn": self.tgw_cp, "DeviceId": self.dev1})
+        self.nm("associate-connect-peer", {"GlobalNetworkId": self.gn, "ConnectPeerId": self.connect_peer, "DeviceId": self.dev1})
+        self.prefix_list = self.prefix_list_arn()
+        self.nm("create-core-network-prefix-list-association", {"CoreNetworkId": self.core, "PrefixListArn": self.prefix_list, "PrefixListAlias": "shared"})
+        self.nm("put-attachment-routing-policy-label", {"CoreNetworkId": self.core, "AttachmentId": self.vpc_att, "RoutingPolicyLabel": "blue"})
+        self.analysis = self.start_analysis()
+
+    def tgw_connect_peer_arn(self) -> str:
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-connect-peer/tgw-connect-peer-{self.unique()}"
+
+    def prefix_list_arn(self) -> str:
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:prefix-list/pl-{self.unique()}"
+
+    def analysis_endpoint(self) -> dict:
+        return {"TransitGatewayAttachmentArn": f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-attachment/tgw-attach-0123456789abcdef0"}
+
+    def start_analysis(self) -> str:
+        data = self.nm("start-route-analysis", {"GlobalNetworkId": self.gn, "Source": self.analysis_endpoint(), "Destination": self.analysis_endpoint()})
+        return str((data.get("RouteAnalysis") or {}).get("RouteAnalysisId") or "")
+
+
+def networkmanager_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Network Manager operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    state = RUNTIME_STATE.setdefault("networkmanager", {})
+    fx = state.get("fixture")
+    if fx is None:
+        fx = NetworkManagerFixture(aws_bin, endpoint_url, region, env)
+        fx.build()
+        state["fixture"] = fx
+    op = endpoint.operation
+    gn, core = fx.gn, fx.core
+    seg_edge = {"CoreNetworkId": core, "SegmentName": "prod", "EdgeLocation": "us-east-1"}
+    gn_ops = {"GetNetworkResources", "GetNetworkResourceCounts", "GetNetworkResourceRelationships", "GetNetworkTelemetry",
+              "GetSites", "GetDevices", "GetLinks", "GetConnections", "GetLinkAssociations", "GetCustomerGatewayAssociations",
+              "GetTransitGatewayConnectPeerAssociations", "GetConnectPeerAssociations", "GetTransitGatewayRegistrations"}
+    if op in gn_ops:
+        return {"GlobalNetworkId": gn}
+    simple = {
+        "CreateGlobalNetwork": {"Description": "stackyard"},
+        "DescribeGlobalNetworks": {},
+        "UpdateGlobalNetwork": {"GlobalNetworkId": gn, "Description": "updated"},
+        "CreateSite": {"GlobalNetworkId": gn, "Description": "site"},
+        "UpdateSite": {"GlobalNetworkId": gn, "SiteId": fx.site, "Description": "updated"},
+        "CreateDevice": {"GlobalNetworkId": gn, "SiteId": fx.site},
+        "UpdateDevice": {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "Description": "updated"},
+        "CreateLink": {"GlobalNetworkId": gn, "SiteId": fx.site, "Bandwidth": {"UploadSpeed": 10, "DownloadSpeed": 10}},
+        "UpdateLink": {"GlobalNetworkId": gn, "LinkId": fx.link, "Description": "updated"},
+        "CreateConnection": {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "ConnectedDeviceId": fx.dev2},
+        "UpdateConnection": {"GlobalNetworkId": gn, "ConnectionId": fx.connection, "Description": "updated"},
+        "CreateContextStore": {"GlobalNetworkId": gn},
+        "GetContextStore": {"ContextStoreId": fx.store},
+        "UpdateContextStore": {"ContextStoreId": fx.store, "Description": "updated"},
+        "ListContextStores": {"GlobalNetworkId": gn},
+        "GetContextStoreAssociation": {"ContextStoreId": fx.store, "TransitGatewayArn": fx.store_tgw},
+        "ListContextStoreAssociations": {"ContextStoreId": fx.store},
+        "GetContextVersion": {"ContextStoreId": fx.store},
+        "ListContextChanges": {"ContextStoreId": fx.store, "FromVersionId": "0"},
+        "ListContexts": {"ContextStoreId": fx.store},
+        "CreateCoreNetwork": {"GlobalNetworkId": gn},
+        "GetCoreNetwork": {"CoreNetworkId": core},
+        "ListCoreNetworks": {},
+        "UpdateCoreNetwork": {"CoreNetworkId": core, "Description": "updated"},
+        "PutCoreNetworkPolicy": {"CoreNetworkId": core, "PolicyDocument": NM_POLICY},
+        "GetCoreNetworkPolicy": {"CoreNetworkId": core, "Alias": "LIVE"},
+        "ListCoreNetworkPolicyVersions": {"CoreNetworkId": core},
+        "RestoreCoreNetworkPolicyVersion": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "GetCoreNetworkChangeSet": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "GetCoreNetworkChangeEvents": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "CreateVpcAttachment": {"CoreNetworkId": core, "VpcArn": fx.vpc_arn, "SubnetArns": [fx.subnet_a]},
+        "CreateConnectAttachment": {"CoreNetworkId": core, "EdgeLocation": "us-east-1", "TransportAttachmentId": fx.vpc_att, "Options": {"Protocol": "GRE"}},
+        "CreateSiteToSiteVpnAttachment": {"CoreNetworkId": core, "VpnConnectionArn": fx.vpn_arn},
+        "CreateDirectConnectGatewayAttachment": {"CoreNetworkId": core, "DirectConnectGatewayArn": fx.dx_arn, "EdgeLocations": ["us-east-1"]},
+        "CreateTransitGatewayRouteTableAttachment": {"PeeringId": fx.peering, "TransitGatewayRouteTableArn": fx.rtb_arn},
+        "GetVpcAttachment": {"AttachmentId": fx.vpc_att},
+        "GetConnectAttachment": {"AttachmentId": fx.connect_att},
+        "GetSiteToSiteVpnAttachment": {"AttachmentId": fx.vpn_att},
+        "GetDirectConnectGatewayAttachment": {"AttachmentId": fx.dx_att},
+        "GetTransitGatewayRouteTableAttachment": {"AttachmentId": fx.rtb_att},
+        "ListAttachments": {"CoreNetworkId": core},
+        "CreateConnectPeer": {"ConnectAttachmentId": fx.connect_att, "PeerAddress": "10.40.1.20", "InsideCidrBlocks": ["169.254.20.0/29"]},
+        "GetConnectPeer": {"ConnectPeerId": fx.connect_peer},
+        "ListConnectPeers": {"CoreNetworkId": core},
+        "GetTransitGatewayPeering": {"PeeringId": fx.peering},
+        "ListPeerings": {"CoreNetworkId": core},
+        "ListCoreNetworkPrefixListAssociations": {"CoreNetworkId": core},
+        "PutAttachmentRoutingPolicyLabel": {"CoreNetworkId": core, "AttachmentId": fx.vpc_att, "RoutingPolicyLabel": "blue"},
+        "ListAttachmentRoutingPolicyAssociations": {"CoreNetworkId": core},
+        "ListAttachmentNatConfigurations": {"CoreNetworkId": core},
+        "UpdateAttachmentNatConfiguration": {"AttachmentId": fx.vpc_att, "NatGatewaySupport": "ENABLE",
+                                             "NatGatewayRules": [{"RuleNumber": 1, "MatchSourceCidr": "10.40.0.0/16", "NatCidr": "100.64.0.0/24"}]},
+        "ListCoreNetworkRoutingInformation": {"CoreNetworkId": core, "SegmentName": "prod", "EdgeLocation": "us-east-1"},
+        "GetNetworkRoutes": {"GlobalNetworkId": gn, "RouteTableIdentifier": {"CoreNetworkSegmentEdge": seg_edge}},
+        "UpdateNetworkResourceMetadata": {"GlobalNetworkId": gn, "ResourceArn": fx.core_arn, "Metadata": {"owner": "stackyard"}},
+        "StartRouteAnalysis": {"GlobalNetworkId": gn, "Source": fx.analysis_endpoint(), "Destination": fx.analysis_endpoint()},
+        "GetRouteAnalysis": {"GlobalNetworkId": gn, "RouteAnalysisId": fx.analysis},
+        "PutResourcePolicy": {"ResourceArn": fx.core_arn, "PolicyDocument": NM_RESOURCE_POLICY},
+        "StartOrganizationServiceAccessUpdate": {"Action": "ENABLE"},
+        "ListOrganizationServiceAccessStatus": {},
+        "TagResource": {"ResourceArn": fx.gn_arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": fx.gn_arn, "TagKeys": ["stackyard"]},
+        "ListTagsForResource": {"ResourceArn": fx.gn_arn},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "UpdateVpcAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(), "AddSubnetArns": [fx.subnet_b]}
+    if op == "UpdateDirectConnectGatewayAttachment":
+        fx.nm("get-direct-connect-gateway-attachment", {"AttachmentId": fx.dx_att})
+        return {"AttachmentId": fx.dx_att, "EdgeLocations": ["us-east-1", "us-west-2"]}
+    if op == "AcceptAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(tags=[{"Key": "env", "Value": "dev"}])}
+    if op == "RejectAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(tags=[{"Key": "env", "Value": "dev"}])}
+    if op == "DeleteAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment()}
+    if op == "ExecuteCoreNetworkChangeSet":
+        return {"CoreNetworkId": core, "PolicyVersionId": fx.new_policy_version()}
+    if op == "DeleteCoreNetworkPolicyVersion":
+        return {"CoreNetworkId": core, "PolicyVersionId": fx.new_policy_version()}
+    if op == "DeleteCoreNetwork":
+        return {"CoreNetworkId": fx.new_core(policy=False)}
+    if op == "CreateTransitGatewayPeering":
+        return {"CoreNetworkId": core, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DeletePeering":
+        return {"PeeringId": fx.new_peering()}
+    if op == "DeleteConnectPeer":
+        return {"ConnectPeerId": fx.new_connect_peer()}
+    if op == "AssociateConnectPeer":
+        return {"GlobalNetworkId": gn, "ConnectPeerId": fx.new_connect_peer(), "DeviceId": fx.dev1}
+    if op == "DisassociateConnectPeer":
+        peer = fx.new_connect_peer()
+        fx.nm("associate-connect-peer", {"GlobalNetworkId": gn, "ConnectPeerId": peer, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "ConnectPeerId": peer}
+    if op == "AssociateLink":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "LinkId": fx.new_link()}
+    if op == "DisassociateLink":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "LinkId": fx.new_link_assoc()}
+    if op == "AssociateCustomerGateway":
+        return {"GlobalNetworkId": gn, "CustomerGatewayArn": fx.cgw_arn(), "DeviceId": fx.dev1}
+    if op == "DisassociateCustomerGateway":
+        cgw = fx.cgw_arn()
+        fx.nm("associate-customer-gateway", {"GlobalNetworkId": gn, "CustomerGatewayArn": cgw, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "CustomerGatewayArn": cgw}
+    if op == "AssociateTransitGatewayConnectPeer":
+        return {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": fx.tgw_connect_peer_arn(), "DeviceId": fx.dev1}
+    if op == "DisassociateTransitGatewayConnectPeer":
+        arn = fx.tgw_connect_peer_arn()
+        fx.nm("associate-transit-gateway-connect-peer", {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": arn, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": arn}
+    if op == "RegisterTransitGateway":
+        return {"GlobalNetworkId": gn, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DeregisterTransitGateway":
+        arn = fx.tgw_arn()
+        fx.nm("register-transit-gateway", {"GlobalNetworkId": gn, "TransitGatewayArn": arn})
+        return {"GlobalNetworkId": gn, "TransitGatewayArn": arn}
+    if op == "AssociateContextStore":
+        return {"ContextStoreId": fx.store, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DisassociateContextStore":
+        arn = fx.tgw_arn()
+        fx.nm("associate-context-store", {"ContextStoreId": fx.store, "TransitGatewayArn": arn})
+        return {"ContextStoreId": fx.store, "TransitGatewayArn": arn}
+    if op == "CreateCoreNetworkPrefixListAssociation":
+        return {"CoreNetworkId": core, "PrefixListArn": fx.prefix_list_arn(), "PrefixListAlias": "coverage"}
+    if op == "DeleteCoreNetworkPrefixListAssociation":
+        arn = fx.prefix_list_arn()
+        fx.nm("create-core-network-prefix-list-association", {"CoreNetworkId": core, "PrefixListArn": arn, "PrefixListAlias": "coverage"})
+        return {"CoreNetworkId": core, "PrefixListArn": arn}
+    if op == "RemoveAttachmentRoutingPolicyLabel":
+        fx.nm("put-attachment-routing-policy-label", {"CoreNetworkId": core, "AttachmentId": fx.vpc_att, "RoutingPolicyLabel": "blue"})
+        return {"CoreNetworkId": core, "AttachmentId": fx.vpc_att}
+    if op in {"GetResourcePolicy", "DeleteResourcePolicy"}:
+        fx.nm("put-resource-policy", {"ResourceArn": fx.core_arn, "PolicyDocument": NM_RESOURCE_POLICY})
+        return {"ResourceArn": fx.core_arn}
+    if op == "DeleteGlobalNetwork":
+        return {"GlobalNetworkId": fx.new_gn()}
+    if op == "DeleteSite":
+        return {"GlobalNetworkId": gn, "SiteId": fx.new_site()}
+    if op == "DeleteDevice":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.new_device()}
+    if op == "DeleteLink":
+        return {"GlobalNetworkId": gn, "LinkId": fx.new_link()}
+    if op == "DeleteConnection":
+        return {"GlobalNetworkId": gn, "ConnectionId": fx.new_connection()}
+    if op == "DeleteContextStore":
+        return {"ContextStoreId": fx.new_context_store()}
+    return payload
+
+
 def route53profiles_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -35287,6 +35875,186 @@ def osis_hydrate_payload(
     if op == "UntagResource":
         return {"Arn": arn, "TagKeys": ["stackyard"]}
     return {"Arn": arn}
+
+
+DATABREW_BUCKET = "stackyard-databrew"
+DATABREW_ROLE = "arn:aws:iam::123456789012:role/stackyard-databrew"
+DATABREW_CSV = b"name,city,score\nalice,paris,3\nbob,,5\ncarol,rome,4\n"
+DATABREW_STEPS = [{"Action": {"Operation": "UPPER_CASE", "Parameters": {"sourceColumn": "name"}}}]
+
+
+def databrew_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "databrew", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def databrew_name(kind: str) -> str:
+    return f"sy-{kind}-{time.time_ns() % 10**12:012d}"
+
+
+def databrew_arn(region: str, kind: str, name: str) -> str:
+    return f"arn:aws:databrew:{region}:123456789012:{kind}/{name}"
+
+
+def databrew_dataset(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = databrew_name("ds")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-dataset",
+                 ["--name", name, "--input", json.dumps({"S3InputDefinition": {"Bucket": DATABREW_BUCKET, "Key": "people.csv"}})])
+    return name
+
+
+def databrew_recipe(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], publish: bool = False) -> str:
+    name = databrew_name("recipe")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-recipe", ["--name", name, "--steps", json.dumps(DATABREW_STEPS)])
+    if publish:
+        databrew_cli(aws_bin, endpoint_url, region, env, "publish-recipe", ["--name", name])
+    return name
+
+
+def databrew_project(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dataset: str) -> str:
+    name = databrew_name("project")
+    recipe = databrew_recipe(aws_bin, endpoint_url, region, env)
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-project",
+                 ["--name", name, "--dataset-name", dataset, "--recipe-name", recipe, "--role-arn", DATABREW_ROLE])
+    return name
+
+
+def databrew_profile_job(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dataset: str) -> str:
+    name = databrew_name("profile")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-profile-job",
+                 ["--name", name, "--dataset-name", dataset, "--role-arn", DATABREW_ROLE,
+                  "--output-location", json.dumps({"Bucket": DATABREW_BUCKET, "Key": "profiles/"})])
+    return name
+
+
+def databrew_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached set of DataBrew resources: a CSV dataset in S3, a published
+    recipe, a project, recipe and profile jobs with a run, a ruleset and a
+    schedule."""
+    state = RUNTIME_STATE.setdefault("databrew", {})
+    if state.get("dataset"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, DATABREW_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, DATABREW_BUCKET, "people.csv", DATABREW_CSV)
+    dataset = databrew_dataset(aws_bin, endpoint_url, region, env)
+    recipe = databrew_recipe(aws_bin, endpoint_url, region, env, publish=True)
+    project = databrew_project(aws_bin, endpoint_url, region, env, dataset)
+    job = databrew_name("job")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-recipe-job",
+                 ["--name", job, "--dataset-name", dataset, "--role-arn", DATABREW_ROLE,
+                  "--recipe-reference", json.dumps({"Name": recipe}),
+                  "--outputs", json.dumps([{"Location": {"Bucket": DATABREW_BUCKET, "Key": "out/"}}])])
+    run = databrew_cli(aws_bin, endpoint_url, region, env, "start-job-run", ["--name", job]).get("RunId", "")
+    profile = databrew_profile_job(aws_bin, endpoint_url, region, env, dataset)
+    ruleset = databrew_name("ruleset")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-ruleset",
+                 ["--name", ruleset, "--target-arn", databrew_arn(region, "dataset", dataset),
+                  "--rules", json.dumps([{"Name": "positive", "CheckExpression": ":col1 > :val1",
+                                          "SubstitutionMap": {":col1": "`score`", ":val1": "0"}}])])
+    schedule = databrew_name("schedule")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-schedule",
+                 ["--name", schedule, "--cron-expression", "cron(0 1 * * ? *)", "--job-names", job])
+    state.update({"dataset": dataset, "recipe": recipe, "project": project, "job": job, "run": run,
+                  "profile": profile, "ruleset": ruleset, "schedule": schedule})
+    return state
+
+
+def databrew_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DataBrew operation at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    fx = databrew_fixture(aws_bin, endpoint_url, region, env)
+    dataset_input = {"S3InputDefinition": {"Bucket": DATABREW_BUCKET, "Key": "people.csv"}}
+    outputs = [{"Location": {"Bucket": DATABREW_BUCKET, "Key": "out/"}}]
+    rules = [{"Name": "positive", "CheckExpression": ":col1 > :val1", "SubstitutionMap": {":col1": "`score`", ":val1": "0"}}]
+    if op == "CreateDataset":
+        return {"Name": databrew_name("ds"), "Input": dataset_input}
+    if op == "UpdateDataset":
+        return {"Name": fx["dataset"], "Input": dataset_input}
+    if op == "DeleteDataset":
+        return {"Name": databrew_dataset(aws_bin, endpoint_url, region, env)}
+    if op == "CreateRecipe":
+        return {"Name": databrew_name("recipe"), "Steps": DATABREW_STEPS}
+    if op == "UpdateRecipe":
+        return {"Name": fx["recipe"], "Steps": DATABREW_STEPS}
+    if op == "PublishRecipe":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env)}
+    if op == "DeleteRecipeVersion":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env), "RecipeVersion": "LATEST_WORKING"}
+    if op == "BatchDeleteRecipeVersion":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env, publish=True), "RecipeVersions": ["1.0"]}
+    if op == "CreateProject":
+        return {"Name": databrew_name("project"), "DatasetName": fx["dataset"],
+                "RecipeName": databrew_recipe(aws_bin, endpoint_url, region, env), "RoleArn": DATABREW_ROLE}
+    if op == "UpdateProject":
+        return {"Name": fx["project"], "RoleArn": DATABREW_ROLE}
+    if op == "DeleteProject":
+        return {"Name": databrew_project(aws_bin, endpoint_url, region, env, fx["dataset"])}
+    if op == "StartProjectSession":
+        return {"Name": fx["project"], "AssumeControl": True}
+    if op == "SendProjectSessionAction":
+        session = databrew_cli(aws_bin, endpoint_url, region, env, "start-project-session",
+                               ["--name", fx["project"], "--assume-control"])
+        return {"Name": fx["project"], "Preview": True, "ClientSessionId": session.get("ClientSessionId", ""),
+                "RecipeStep": {"Action": {"Operation": "LOWER_CASE", "Parameters": {"sourceColumn": "city"}}}}
+    if op == "CreateProfileJob":
+        return {"Name": databrew_name("profile"), "DatasetName": fx["dataset"], "RoleArn": DATABREW_ROLE,
+                "OutputLocation": {"Bucket": DATABREW_BUCKET, "Key": "profiles/"}}
+    if op == "UpdateProfileJob":
+        return {"Name": fx["profile"], "RoleArn": DATABREW_ROLE, "OutputLocation": {"Bucket": DATABREW_BUCKET, "Key": "profiles/"}}
+    if op == "CreateRecipeJob":
+        return {"Name": databrew_name("job"), "DatasetName": fx["dataset"], "RoleArn": DATABREW_ROLE,
+                "RecipeReference": {"Name": fx["recipe"]}, "Outputs": outputs}
+    if op == "UpdateRecipeJob":
+        return {"Name": fx["job"], "RoleArn": DATABREW_ROLE, "Outputs": outputs}
+    if op == "DeleteJob":
+        return {"Name": databrew_profile_job(aws_bin, endpoint_url, region, env, fx["dataset"])}
+    if op in {"DescribeJob", "StartJobRun", "ListJobRuns"}:
+        return {"Name": fx["job"]}
+    if op == "DescribeJobRun":
+        return {"Name": fx["job"], "RunId": fx["run"]}
+    if op == "StopJobRun":
+        fresh = databrew_cli(aws_bin, endpoint_url, region, env, "start-job-run", ["--name", fx["profile"]]).get("RunId", "")
+        return {"Name": fx["profile"], "RunId": fresh}
+    if op == "CreateRuleset":
+        return {"Name": databrew_name("ruleset"), "TargetArn": databrew_arn(region, "dataset", fx["dataset"]), "Rules": rules}
+    if op == "UpdateRuleset":
+        return {"Name": fx["ruleset"], "Rules": rules}
+    if op == "DeleteRuleset":
+        name = databrew_name("ruleset")
+        databrew_cli(aws_bin, endpoint_url, region, env, "create-ruleset",
+                     ["--name", name, "--target-arn", databrew_arn(region, "dataset", fx["dataset"]), "--rules", json.dumps(rules)])
+        return {"Name": name}
+    if op == "CreateSchedule":
+        return {"Name": databrew_name("schedule"), "CronExpression": "cron(0 1 * * ? *)", "JobNames": [fx["job"]]}
+    if op == "UpdateSchedule":
+        return {"Name": fx["schedule"], "CronExpression": "cron(0 2 * * ? *)", "JobNames": [fx["job"]]}
+    if op == "DeleteSchedule":
+        name = databrew_name("schedule")
+        databrew_cli(aws_bin, endpoint_url, region, env, "create-schedule", ["--name", name, "--cron-expression", "cron(0 3 * * ? *)"])
+        return {"Name": name}
+    if op == "DescribeDataset":
+        return {"Name": fx["dataset"]}
+    if op == "DescribeProject":
+        return {"Name": fx["project"]}
+    if op == "DescribeRecipe":
+        return {"Name": fx["recipe"]}
+    if op == "DescribeRuleset":
+        return {"Name": fx["ruleset"]}
+    if op == "DescribeSchedule":
+        return {"Name": fx["schedule"]}
+    if op == "ListRecipeVersions":
+        return {"Name": fx["recipe"]}
+    arn = databrew_arn(region, "dataset", fx["dataset"])
+    if op == "ListTagsForResource":
+        return {"ResourceArn": arn}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "TagKeys": ["stackyard"]}
+    return {}
 
 
 DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
@@ -36793,6 +37561,162 @@ def wafregional_hydrate_payload(
     return payload
 
 
+PAD_SECURITY_GROUP = "sg-00000000"
+PAD_DIRECTORY = "d-0000000000"
+PAD_TEMPLATE_DEFINITION = {
+    "TemplateV2": {
+        "CertificateValidity": {
+            "ValidityPeriod": {"Period": 1, "PeriodType": "YEARS"},
+            "RenewalPeriod": {"Period": 6, "PeriodType": "WEEKS"},
+        },
+        "EnrollmentFlags": {"IncludeSymmetricAlgorithms": True},
+        "Extensions": {
+            "KeyUsage": {"UsageFlags": {"DigitalSignature": True, "KeyEncipherment": True}},
+            "ApplicationPolicies": {"Policies": [{"PolicyType": "SERVER_AUTHENTICATION"}]},
+        },
+        "GeneralFlags": {"AutoEnrollment": True, "MachineType": True},
+        "PrivateKeyAttributes": {"KeySpec": "KEY_EXCHANGE", "MinimalKeyLength": 2048},
+        "PrivateKeyFlags": {"ClientVersion": "WINDOWS_SERVER_2016"},
+        "SubjectNameFlags": {"SanRequireDns": True},
+    }
+}
+
+
+def pad_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "pca-connector-ad", op, env,
+        ["--cli-input-json", json.dumps(payload, separators=(",", ":"))],
+    )
+    return data if isinstance(data, dict) else {}
+
+
+def pad_new_ca(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Use the Private CA checks' own ACTIVE CA (shared with the SCEP connector),
+    so running these first leaves no extra CA behind to break Private CA's runs."""
+    return psc_certificate_authority(aws_bin, endpoint_url, region, env)
+
+
+def pad_new_directory(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "ds", "create-directory", env,
+        ["--name", f"pad{time.time_ns() % 10**9}.local", "--password", "Stackyard-Passw0rd", "--size", "Small"],
+    )
+    return str((data or {}).get("DirectoryId") or "") if isinstance(data, dict) else ""
+
+
+def pad_new_connector(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], ca: str) -> str:
+    data = pad_cli(aws_bin, endpoint_url, region, env, "create-connector", {
+        "CertificateAuthorityArn": ca, "DirectoryId": PAD_DIRECTORY,
+        "VpcInformation": {"SecurityGroupIds": [PAD_SECURITY_GROUP]},
+    })
+    return str(data.get("ConnectorArn") or "")
+
+
+def pad_new_template(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connector: str) -> str:
+    data = pad_cli(aws_bin, endpoint_url, region, env, "create-template", {
+        "ConnectorArn": connector, "Name": f"stackyard-{time.time_ns()}", "Definition": PAD_TEMPLATE_DEFINITION,
+    })
+    return str(data.get("TemplateArn") or "")
+
+
+def pad_new_ace(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], template: str) -> str:
+    sid = f"S-1-5-21-{time.time_ns() % 10**9}-512"
+    run_aws_json(
+        aws_bin, endpoint_url, region, "pca-connector-ad", "create-template-group-access-control-entry", env,
+        ["--cli-input-json", json.dumps({
+            "TemplateArn": template, "GroupSecurityIdentifier": sid, "GroupDisplayName": "Stackyard",
+            "AccessRights": {"Enroll": "ALLOW"},
+        }, separators=(",", ":"))],
+    )
+    return sid
+
+
+def pad_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared CA, directory registration, connector, SPN, template and ACE."""
+    state = RUNTIME_STATE.setdefault("pcaconnectorad", {})
+    if state.get("template"):
+        return state
+    state["ca"] = pad_new_ca(aws_bin, endpoint_url, region, env)
+    # The seeded directory may already be registered by an earlier run on the
+    # same server; the registration ARN is derived from the directory either way.
+    pad_cli(aws_bin, endpoint_url, region, env, "create-directory-registration", {"DirectoryId": PAD_DIRECTORY})
+    state["registration"] = f"arn:aws:pca-connector-ad:{region}:123456789012:directory-registration/{PAD_DIRECTORY}"
+    state["connector"] = pad_new_connector(aws_bin, endpoint_url, region, env, str(state["ca"]))
+    pad_cli(aws_bin, endpoint_url, region, env, "create-service-principal-name", {
+        "DirectoryRegistrationArn": state["registration"], "ConnectorArn": state["connector"],
+    })
+    state["template"] = pad_new_template(aws_bin, endpoint_url, region, env, str(state["connector"]))
+    state["sid"] = pad_new_ace(aws_bin, endpoint_url, region, env, str(state["template"]))
+    return state
+
+
+def pcaconnectorad_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each pca-connector-ad operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    f = pad_fixture(aws_bin, endpoint_url, region, env)
+    ca, reg, conn, tmpl, sid = (str(f[k]) for k in ("ca", "registration", "connector", "template", "sid"))
+    if op in {"ListConnectors", "ListDirectoryRegistrations"}:
+        return {}
+    if op == "CreateConnector":
+        return {"CertificateAuthorityArn": ca, "DirectoryId": PAD_DIRECTORY, "VpcInformation": {"SecurityGroupIds": [PAD_SECURITY_GROUP]}}
+    if op == "GetConnector":
+        return {"ConnectorArn": conn}
+    if op == "DeleteConnector":
+        return {"ConnectorArn": pad_new_connector(aws_bin, endpoint_url, region, env, ca)}
+    if op == "CreateDirectoryRegistration":
+        return {"DirectoryId": pad_new_directory(aws_bin, endpoint_url, region, env)}
+    if op == "GetDirectoryRegistration":
+        return {"DirectoryRegistrationArn": reg}
+    if op == "DeleteDirectoryRegistration":
+        own = pad_cli(aws_bin, endpoint_url, region, env, "create-directory-registration", {
+            "DirectoryId": pad_new_directory(aws_bin, endpoint_url, region, env),
+        })
+        return {"DirectoryRegistrationArn": str(own.get("DirectoryRegistrationArn") or reg)}
+    if op == "CreateServicePrincipalName":
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": pad_new_connector(aws_bin, endpoint_url, region, env, ca)}
+    if op in {"GetServicePrincipalName"}:
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": conn}
+    if op == "DeleteServicePrincipalName":
+        own = pad_new_connector(aws_bin, endpoint_url, region, env, ca)
+        pad_cli(aws_bin, endpoint_url, region, env, "create-service-principal-name", {"DirectoryRegistrationArn": reg, "ConnectorArn": own})
+        return {"DirectoryRegistrationArn": reg, "ConnectorArn": own}
+    if op == "ListServicePrincipalNames":
+        return {"DirectoryRegistrationArn": reg}
+    if op == "CreateTemplate":
+        return {"ConnectorArn": conn, "Name": f"stackyard-{time.time_ns()}", "Definition": PAD_TEMPLATE_DEFINITION}
+    if op == "GetTemplate":
+        return {"TemplateArn": tmpl}
+    if op == "UpdateTemplate":
+        return {"TemplateArn": tmpl, "ReenrollAllCertificateHolders": True}
+    if op == "DeleteTemplate":
+        return {"TemplateArn": pad_new_template(aws_bin, endpoint_url, region, env, conn)}
+    if op == "ListTemplates":
+        return {"ConnectorArn": conn}
+    if op == "CreateTemplateGroupAccessControlEntry":
+        return {
+            "TemplateArn": tmpl, "GroupSecurityIdentifier": f"S-1-5-21-{time.time_ns() % 10**9}-513",
+            "GroupDisplayName": "Stackyard", "AccessRights": {"Enroll": "ALLOW"},
+        }
+    if op == "GetTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": sid}
+    if op == "UpdateTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": sid, "AccessRights": {"AutoEnroll": "DENY"}}
+    if op == "DeleteTemplateGroupAccessControlEntry":
+        return {"TemplateArn": tmpl, "GroupSecurityIdentifier": pad_new_ace(aws_bin, endpoint_url, region, env, tmpl)}
+    if op == "ListTemplateGroupAccessControlEntries":
+        return {"TemplateArn": tmpl}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": conn}
+    if op == "TagResource":
+        return {"ResourceArn": conn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": conn, "TagKeys": ["stackyard"]}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -36804,6 +37728,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "pcaconnectorad":
+        return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
         return verifiedpermissions_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "opensearchserverless":
@@ -36820,6 +37746,8 @@ def hydrate_payload_with_service_state(
         return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
     if endpoint.service == "osis":
         return osis_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "databrew":
+        return databrew_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdbelastic":
         return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "eksauth":
@@ -36836,10 +37764,18 @@ def hydrate_payload_with_service_state(
         return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalog":
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "migrationhub":
+        return migrationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pcaconnectorscep":
+        return pcaconnectorscep_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "serverlessrepo":
+        return serverlessrepo_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalogappregistry":
         return servicecatalogappregistry_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "networkmanager":
+        return networkmanager_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":

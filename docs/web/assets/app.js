@@ -240,12 +240,28 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/directconnect/docker-compose.yml"
   },
   {
+    id: "networkmanager",
+    name: "Network Manager (Cloud WAN)",
+    category: "integration",
+    summary: "Global networks with sites, devices and links, Cloud WAN core networks driven by validated policy documents and change sets, and VPC, VPN, Connect, peering and Direct Connect attachments.",
+    docsHref: "../../../index.html#networkmanager",
+    exampleHref: "../../../../examples/aws/networkmanager/docker-compose.yml"
+  },
+  {
     id: "route53profiles",
     name: "Route 53 Profiles",
     category: "integration",
     summary: "Bundle private hosted zones, Resolver rules and DNS Firewall rule groups into Profiles and associate them with VPCs, one Profile per VPC.",
     docsHref: "../../../index.html#route53profiles",
     exampleHref: "../../../../examples/aws/route53profiles/docker-compose.yml"
+  },
+  {
+    id: "serverlessrepo",
+    name: "Serverless Application Repository",
+    category: "integration",
+    summary: "Publish SAM applications and versions with parameters, capabilities and nested-app dependencies read from the template; share them with policies and deploy them as CloudFormation change sets.",
+    docsHref: "../../../index.html#serverlessrepo",
+    exampleHref: "../../../../examples/aws/serverlessrepo/docker-compose.yml"
   },
   {
     id: "config",
@@ -720,6 +736,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "databrew",
+    name: "Glue DataBrew",
+    category: "database",
+    summary: "Run DataBrew datasets, versioned recipes, project sessions and recipe or profile jobs that read CSV/JSON from S3 and write results back, plus rulesets, schedules and tags.",
+    docsHref: "../../../index.html#databrew",
+    exampleHref: "../../../../examples/aws/databrew/docker-compose.yml"
+  },
+  {
     id: "dax",
     name: "DynamoDB Accelerator (DAX)",
     category: "database",
@@ -1184,6 +1208,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/privateca/docker-compose.yml"
   },
   {
+    id: "pcaconnectorad",
+    name: "Private CA Connector for Active Directory",
+    category: "security",
+    summary: "Emulate AD connectors, directory registrations, service principal names, certificate templates and group access control entries backed by Private CA.",
+    docsHref: "../../../index.html#pcaconnectorad",
+    exampleHref: "../../../../examples/aws/pca-connector-ad/docker-compose.yml"
+  },
+  {
+    id: "pcaconnectorscep",
+    name: "Private CA Connector for SCEP",
+    category: "security",
+    summary: "Issue SCEP connectors on ACTIVE Private CAs, with challenge passwords and Intune configurations.",
+    docsHref: "../../../index.html#pcaconnectorscep",
+    exampleHref: "../../../../examples/aws/pca-connector-scep/docker-compose.yml"
+  },
+  {
     id: "rds",
     name: "RDS",
     category: "database",
@@ -1463,6 +1503,14 @@ const SERVICE_CATALOG = [
     summary: "Plan staged emulation for environment/application/service/route lifecycle, resource policies, VPC mappings, and tagging APIs.",
     docsHref: "../../../index.html#migrationhub-refactor-spaces",
     exampleHref: "../../../../examples/aws/migrationhub-refactor-spaces/docker-compose.yml"
+  },
+  {
+    id: "migrationhub",
+    name: "Migration Hub",
+    category: "integration",
+    summary: "Track migrations with progress update streams, migration task state and history, created artifacts, discovered and source resources, and application states.",
+    docsHref: "../../../index.html#migrationhub",
+    exampleHref: "../../../../examples/aws/migrationhub/docker-compose.yml"
   },
   {
     id: "migrationhub-orchestrator",
