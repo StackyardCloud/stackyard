@@ -2936,6 +2936,8 @@ S3TABLES_DEFAULT_BUCKET_NAME = "stackyard-s3tables-bucket"
 S3TABLES_DEFAULT_NAMESPACE = "analytics"
 S3TABLES_DEFAULT_TABLE_NAME = "events"
 S3TABLES_DEFAULT_RESOURCE_POLICY = '{"Version":"2012-10-17","Statement":[]}'
+S3TABLES_MIGRATION_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-s3tables-migration"
+S3TABLES_MIGRATION_REPORT_BUCKET = "stackyard-s3tables-migration-reports"
 CONTROLTOWER_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
     {
         "GetEnabledBaseline",
@@ -3165,6 +3167,7 @@ LAMBDA_DEFAULT_CALLBACK_ID = "stackyard-callback-000001"
 S3_DEFAULT_BUCKET_NAME = "stackyard-s3-coverage"
 S3_DEFAULT_DIRECTORY_BUCKET_NAME = "stackyard-s3-coverage--x-s3"
 S3_DEFAULT_OBJECT_KEY = "coverage-seed.txt"
+S3_COVERAGE_ANNOTATION_NAME = "coverage-annotation"
 S3_DEFAULT_CSV_OBJECT_KEY = "coverage-seed.csv"
 S3_DEFAULT_MULTIPART_KEY = "coverage-multipart.bin"
 S3_DEFAULT_ANALYTICS_ID = "coverage-analytics"
@@ -4587,6 +4590,9 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return {
             "CreateIndex": ("POST", "/CreateIndex"),
             "CreateVectorBucket": ("POST", "/CreateVectorBucket"),
+            "PutVectorBucketDefaultIndexMode": ("POST", "/PutVectorBucketDefaultIndexMode"),
+            "UpdateIndexMode": ("POST", "/UpdateIndexMode"),
+            "UpdateMetadataConfiguration": ("POST", "/UpdateMetadataConfiguration"),
             "DeleteIndex": ("POST", "/DeleteIndex"),
             "DeleteVectorBucket": ("POST", "/DeleteVectorBucket"),
             "DeleteVectorBucketPolicy": ("POST", "/DeleteVectorBucketPolicy"),
@@ -13535,6 +13541,14 @@ def generate_cli_input_payload(
         # aws s3api get-object/get-object-torrent require explicit --bucket/--key args and do not
         # reliably support skeleton generation.
         return {"Bucket": S3_DEFAULT_BUCKET_NAME, "Key": S3_DEFAULT_OBJECT_KEY}, None
+    if endpoint.service == "s3" and endpoint.operation == "GetObjectAnnotation":
+        # get-object-annotation streams the payload to an outfile, so it needs its
+        # members as flags even to print a skeleton; hydration fills in real values.
+        return {
+            "Bucket": S3_DEFAULT_BUCKET_NAME,
+            "Key": S3_DEFAULT_OBJECT_KEY,
+            "AnnotationName": S3_COVERAGE_ANNOTATION_NAME,
+        }, None
     if endpoint.service == "s3" and endpoint.operation == "PutBucketAbac":
         return {"Bucket": S3_DEFAULT_BUCKET_NAME, "AbacStatus": "Enabled"}, None
     if endpoint.service == "s3" and endpoint.operation == "UpdateObjectEncryption":
@@ -14243,7 +14257,8 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
     if endpoint.service == "sqs" and endpoint.operation == "SendMessageBatch":
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
-        return [err for err in errors if err != "$.ChecksumType: unknown field"]
+        # Newer awscli builds model these ListParts members before the checker's botocore does.
+        return [err for err in errors if err not in {"$.ChecksumType: unknown field", "$.VersionId: unknown field"}]
     if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
         # The awscli writes the Body payload to the outfile, not stdout.
         return [err for err in errors if err != "$.Body: missing required field"]
@@ -18878,6 +18893,65 @@ def s3tables_ensure_table_bucket(
                     break
     state["table_bucket_arn"] = arn
     return arn
+
+
+def s3tables_start_migration_payload(bucket_arn: str, namespace: str, name: str, review: bool) -> dict[str, object]:
+    return {
+        "roleARN": S3TABLES_MIGRATION_ROLE_ARN,
+        "destinationTable": {"tableBucketARN": bucket_arn, "namespace": namespace, "name": name},
+        "sourceType": "glueTable",
+        "source": {"glueTable": {"catalogId": "123456789012", "databaseName": "stackyard", "tableName": name}},
+        "reviewMigrationPlan": review,
+        "migrationOutput": {"bucket": S3TABLES_MIGRATION_REPORT_BUCKET},
+    }
+
+
+def s3tables_next_migration_table_name(region: str) -> str:
+    state = s3tables_runtime_state(region)
+    seq = int(state.get("migration_seq") or 0) + 1
+    state["migration_seq"] = seq
+    return f"migrated_{seq}"
+
+
+def s3tables_start_migration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    review: bool = False,
+) -> tuple[str, str]:
+    """Start a fresh migration (new destination table); return (migration_id, table_arn)."""
+    bucket_arn, namespace = s3tables_ensure_namespace(aws_bin, endpoint_url, region, env)
+    name = s3tables_next_migration_table_name(region)
+    out = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "s3tables",
+        "start-table-migration",
+        env,
+        ["--cli-input-json", json.dumps(s3tables_start_migration_payload(bucket_arn, namespace, name, review), separators=(",", ":"))],
+    )
+    migration_id = str((out or {}).get("migrationId") or "").strip()
+    table_arn = s3tables_table_arn(bucket_arn, namespace, name)
+    if migration_id:
+        state = s3tables_runtime_state(region)
+        state["migration_id"] = migration_id
+        state["migration_table_arn"] = table_arn
+    return migration_id, table_arn
+
+
+def s3tables_ensure_migration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> tuple[str, str]:
+    state = s3tables_runtime_state(region)
+    migration_id = str(state.get("migration_id") or "").strip()
+    if migration_id:
+        return migration_id, str(state.get("migration_table_arn") or "")
+    return s3tables_start_migration(aws_bin, endpoint_url, region, env)
 
 
 def s3tables_ensure_namespace(
@@ -39317,6 +39391,55 @@ def hydrate_payload_with_service_state(
             _replace_payload(payload_values)
             return hydrated
 
+        if op == "StartTableMigration":
+            bucket_arn, namespace = s3tables_ensure_namespace(aws_bin, endpoint_url, region, env)
+            name = s3tables_next_migration_table_name(region)
+            _replace_payload(s3tables_start_migration_payload(bucket_arn, namespace, name, False))
+            return hydrated
+
+        if op in {"GetTableMigration", "ListTableMigrations"}:
+            migration_id, _ = s3tables_ensure_migration(aws_bin, endpoint_url, region, env)
+            _replace_payload({"migrationId": migration_id} if op == "GetTableMigration" else {"maxResults": 100})
+            return hydrated
+
+        if op in {"UpdateTableMigration", "CompleteTableMigration", "SyncTableMigration"}:
+            # Each gets its own migration: these change state that later calls would otherwise trip on.
+            migration_id, migration_table_arn = s3tables_start_migration(
+                aws_bin, endpoint_url, region, env, review=op == "UpdateTableMigration"
+            )
+            if op == "UpdateTableMigration":
+                _replace_payload({"migrationId": migration_id, "requestedState": "queued"})
+            elif op == "CompleteTableMigration":
+                _replace_payload({"tableARN": migration_table_arn})
+            else:
+                _replace_payload(
+                    {
+                        "roleARN": S3TABLES_MIGRATION_ROLE_ARN,
+                        "tableARN": migration_table_arn,
+                        "migrationOutput": {"bucket": S3TABLES_MIGRATION_REPORT_BUCKET},
+                    }
+                )
+            return hydrated
+
+        if op in {"PutTableBucketLogging", "GetTableBucketLogging"}:
+            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            payload_values = {"tableBucketARN": bucket_arn}
+            if op == "PutTableBucketLogging":
+                payload_values["tableBucketLoggingStatus"] = {
+                    "loggingEnabled": {
+                        "targetBucket": S3TABLES_MIGRATION_REPORT_BUCKET,
+                        "targetPrefix": "logs/",
+                        "targetObjectKeyFormat": {"partitionedPrefix": {"partitionDateSource": "EventTime"}},
+                    }
+                }
+            _replace_payload(payload_values)
+            return hydrated
+
+        if op == "DisassociateTableReplication":
+            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+            _replace_payload({"tableArn": s3tables_table_arn(bucket_arn, namespace, table_name)})
+            return hydrated
+
         if op == "RenameTable":
             bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
             _replace_payload(
@@ -39524,6 +39647,24 @@ def hydrate_payload_with_service_state(
             if op == "PutVectorBucketPolicy":
                 payload_values["policy"] = str(state.get("bucket_policy") or S3VECTORS_DEFAULT_BUCKET_POLICY)
             _replace_payload(payload_values)
+            return hydrated
+
+        if op == "PutVectorBucketDefaultIndexMode":
+            bucket_name, _ = s3vectors_ensure_bucket(endpoint_url, region, env)
+            _replace_payload({"vectorBucketName": bucket_name, "defaultIndexMode": "ENHANCED"})
+            return hydrated
+
+        if op in {"UpdateIndexMode", "UpdateMetadataConfiguration"}:
+            _, _, _, index_arn = s3vectors_ensure_index(endpoint_url, region, env)
+            if op == "UpdateIndexMode":
+                _replace_payload({"indexArn": index_arn, "indexMode": "ENHANCED"})
+            else:
+                _replace_payload(
+                    {
+                        "indexArn": index_arn,
+                        "add": {"textSearchConfigurations": [{"metadataKey": "env", "language": "en"}]},
+                    }
+                )
             return hydrated
 
         if op in {"GetIndex", "DeleteIndex", "ListIndexes"}:
@@ -45770,6 +45911,36 @@ def hydrate_payload_with_service_state(
                     "Retention": {"Mode": "GOVERNANCE", "RetainUntilDate": retain_until},
                 }
             )
+            return hydrated
+
+        if op in {
+            "PutObjectAnnotation",
+            "GetObjectAnnotation",
+            "DeleteObjectAnnotation",
+            "ListObjectAnnotations",
+        }:
+            annotation_key = s3_ensure_object(aws_bin, endpoint_url, region, env, bucket_name, f"coverage-annotation-{unique}.txt")
+            annotation = {"Bucket": bucket_name, "Key": annotation_key, "AnnotationName": S3_COVERAGE_ANNOTATION_NAME}
+            if op == "PutObjectAnnotation":
+                _replace_payload({**annotation, "AnnotationPayload": "c3RhY2t5YXJk"})
+                return hydrated
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "s3api",
+                "put-object-annotation",
+                env,
+                # A streaming blob flag takes a file path; JSON input takes base64.
+                ["--cli-input-json", json.dumps({**annotation, "AnnotationPayload": "c3RhY2t5YXJk"}, separators=(",", ":"))],
+            )
+            if op == "ListObjectAnnotations":
+                annotation.pop("AnnotationName")
+            _replace_payload(annotation)
+            return hydrated
+
+        if op == "UpdateBucketMetadataAnnotationTableConfiguration":
+            _replace_payload({"Bucket": bucket_name, "AnnotationTableConfiguration": {"ConfigurationState": "ENABLED"}})
             return hydrated
 
         if op == "PutObjectTagging":
@@ -57914,11 +58085,14 @@ def run_s3_outfile_operation(
     key = str(payload_value_case_insensitive(payload, "Key", "")).strip()
     cmd = list(base_cmd)
 
-    if endpoint.operation in {"GetObject", "GetObjectTorrent"}:
+    if endpoint.operation in {"GetObject", "GetObjectTorrent", "GetObjectAnnotation"}:
         if bucket:
             cmd.extend(["--bucket", bucket])
         if key:
             cmd.extend(["--key", key])
+        if endpoint.operation == "GetObjectAnnotation":
+            name = str(payload_value_case_insensitive(payload, "AnnotationName", S3_COVERAGE_ANNOTATION_NAME)).strip()
+            cmd.extend(["--annotation-name", name or S3_COVERAGE_ANNOTATION_NAME])
     elif endpoint.operation == "SelectObjectContent":
         expression = str(payload_value_case_insensitive(payload, "Expression", "SELECT * FROM S3Object")).strip()
         expression_type = str(payload_value_case_insensitive(payload, "ExpressionType", "SQL")).strip() or "SQL"
@@ -60011,7 +60185,7 @@ def run_endpoint(
     text = ""
     cmd: list[str] = []
     s3_manual_arg_ops = {"UploadPart", "UploadPartCopy"}
-    s3_outfile_ops = {"GetObject", "GetObjectTorrent"}
+    s3_outfile_ops = {"GetObject", "GetObjectTorrent", "GetObjectAnnotation"}
     neptunedata_outfile_ops = {"ExecuteGremlinExplainQuery", "ExecuteGremlinProfileQuery", "ExecuteOpenCypherExplainQuery"}
     neptuneanalytics_outfile_ops = {"ExecuteQuery"}
     appsync_outfile_ops = {"GetIntrospectionSchema"}

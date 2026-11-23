@@ -25,6 +25,7 @@ type VectorBucket struct {
 	Region                  string
 	EncryptionConfiguration string
 	MetadataConfiguration   string
+	DefaultIndexMode        string
 }
 
 type VectorIndex struct {
@@ -35,6 +36,8 @@ type VectorIndex struct {
 	DistanceMetric        string
 	CreatedAt             time.Time
 	MetadataConfiguration string
+	IndexMode             string
+	TextSearch            map[string]TextSearchConfig
 	Vectors               map[string]*VectorEntry
 }
 
@@ -374,4 +377,77 @@ func ParseNextToken(token string) (int, error) {
 		idx = idx*10 + int(ch-'0')
 	}
 	return idx, nil
+}
+
+// MaxTextSearchConfigs bounds the text-search metadata keys stored per index.
+const MaxTextSearchConfigs = 64
+
+// ErrTooManyTextSearchConfigs is returned when an update would exceed MaxTextSearchConfigs.
+var ErrTooManyTextSearchConfigs = errors.New("too many text search configurations")
+
+// TextSearchConfig is one metadata key enabled for full-text search.
+type TextSearchConfig struct {
+	Language string
+	Status   string
+}
+
+// SetVectorBucketDefaultIndexMode sets the mode new indexes in the bucket default to.
+func (s *Service) SetVectorBucketDefaultIndexMode(bucketName, mode string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	bucket, ok := s.buckets[bucketName]
+	if !ok {
+		return ErrVectorBucketNotFound
+	}
+	bucket.DefaultIndexMode = mode
+	return nil
+}
+
+// SetIndexMode changes an existing index's mode.
+func (s *Service) SetIndexMode(bucketName, indexName, mode string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.indexLocked(bucketName, indexName)
+	if err != nil {
+		return err
+	}
+	index.IndexMode = mode
+	return nil
+}
+
+// UpdateTextSearch removes the keys in remove, then adds or replaces add.
+func (s *Service) UpdateTextSearch(bucketName, indexName string, add map[string]TextSearchConfig, remove []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	index, err := s.indexLocked(bucketName, indexName)
+	if err != nil {
+		return err
+	}
+	next := make(map[string]TextSearchConfig, len(index.TextSearch)+len(add))
+	for k, v := range index.TextSearch {
+		next[k] = v
+	}
+	for _, k := range remove {
+		delete(next, k)
+	}
+	for k, v := range add {
+		next[k] = v
+	}
+	if len(next) > MaxTextSearchConfigs {
+		return ErrTooManyTextSearchConfigs
+	}
+	index.TextSearch = next
+	return nil
+}
+
+func (s *Service) indexLocked(bucketName, indexName string) (*VectorIndex, error) {
+	bucketIndexes, ok := s.indexes[bucketName]
+	if !ok {
+		return nil, ErrVectorBucketNotFound
+	}
+	index, ok := bucketIndexes[indexName]
+	if !ok {
+		return nil, ErrIndexNotFound
+	}
+	return index, nil
 }
