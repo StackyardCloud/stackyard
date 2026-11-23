@@ -116,9 +116,18 @@ func (ev *cedarEval) charge(n int) error {
 	return nil
 }
 
-// key is cedarKey with its cost charged.
+// key is cedarKey with its cost charged. The key is built against the
+// remaining budget (64 bytes per step) and abandoned as soon as it would
+// exceed it, so a large value can't be encoded in full before the charge.
 func (ev *cedarEval) key(v any) (string, error) {
-	k := cedarKey(v)
+	limit := max(*ev.budget, 0) * 64
+	var b strings.Builder
+	if !cedarWriteKeyLimited(&b, v, limit) {
+		*ev.budget = -1
+		ev.err = errCedarBudget
+		return "", errCedarBudget
+	}
+	k := b.String()
 	return k, ev.charge(1 + len(k)/64)
 }
 
@@ -564,7 +573,51 @@ func cedarKey(v any) string {
 	return b.String()
 }
 
-func cedarWriteKey(b *strings.Builder, v any) {
+// cedarWriteKeyLimited writes v's key, reporting false (and stopping early)
+// once the key would exceed limit bytes.
+func cedarWriteKeyLimited(b *strings.Builder, v any, limit int) bool {
+	lb := cedarLimitedBuilder{limit: limit}
+	cedarWriteKeyTo(&lb, v)
+	if lb.over {
+		return false
+	}
+	b.WriteString(lb.b.String())
+	return true
+}
+
+// cedarKeyWriter is the sink cedarWriteKeyTo encodes into.
+type cedarKeyWriter interface {
+	WriteString(string) (int, error)
+	Len() int
+	stop() bool
+}
+
+type cedarLimitedBuilder struct {
+	b     strings.Builder
+	limit int
+	over  bool
+}
+
+func (l *cedarLimitedBuilder) WriteString(s string) (int, error) {
+	if l.over || l.b.Len()+len(s) > l.limit {
+		l.over = true
+		return 0, nil
+	}
+	return l.b.WriteString(s)
+}
+func (l *cedarLimitedBuilder) Len() int   { return l.b.Len() }
+func (l *cedarLimitedBuilder) stop() bool { return l.over }
+
+type cedarUnlimitedBuilder struct{ *strings.Builder }
+
+func (cedarUnlimitedBuilder) stop() bool { return false }
+
+func cedarWriteKey(b *strings.Builder, v any) { cedarWriteKeyTo(cedarUnlimitedBuilder{b}, v) }
+
+func cedarWriteKeyTo(b cedarKeyWriter, v any) {
+	if b.stop() {
+		return
+	}
 	switch t := v.(type) {
 	case bool:
 		b.WriteString("b:" + strconv.FormatBool(t))
@@ -579,10 +632,21 @@ func cedarWriteKey(b *strings.Builder, v any) {
 	case cedarSet:
 		keys := make([]string, 0, len(t))
 		seen := map[string]bool{}
+		size := 0
 		for _, item := range t {
-			if k := cedarKey(item); !seen[k] {
+			// Encode each member against what's left, so a huge set stops early.
+			sub := cedarLimitedBuilder{limit: cedarRemaining(b) - size}
+			cedarWriteKeyTo(&sub, item)
+			if sub.over {
+				if l, ok := b.(*cedarLimitedBuilder); ok {
+					l.over = true
+				}
+				return
+			}
+			if k := sub.b.String(); !seen[k] {
 				seen[k] = true
 				keys = append(keys, k)
+				size += len(k) + 1
 			}
 		}
 		sort.Strings(keys)
@@ -596,13 +660,22 @@ func cedarWriteKey(b *strings.Builder, v any) {
 		b.WriteString("R{")
 		for _, k := range keys {
 			b.WriteString(strconv.Quote(k) + "=")
-			cedarWriteKey(b, t[k])
+			cedarWriteKeyTo(b, t[k])
 			b.WriteString(";")
 		}
 		b.WriteString("}")
 	default:
 		b.WriteString("?")
 	}
+}
+
+// cedarRemaining is how many more bytes b accepts (effectively unlimited for
+// an unlimited builder).
+func cedarRemaining(b cedarKeyWriter) int {
+	if l, ok := b.(*cedarLimitedBuilder); ok {
+		return l.limit - l.b.Len()
+	}
+	return 1 << 40
 }
 
 func cedarDescribeValue(v any) string {

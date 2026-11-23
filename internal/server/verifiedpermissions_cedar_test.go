@@ -1,6 +1,8 @@
 package server
 
 import (
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -216,5 +218,32 @@ func TestCedarEvaluationBudgetDenies(t *testing.T) {
 	allow, det, errs := cedarAuthorize(policies, req)
 	if allow || len(det) != 0 || len(errs) != 1 || !strings.Contains(errs[0], "evaluation steps") {
 		t.Fatalf("budget: allow=%v determining=%v errors=%v", allow, det, errs)
+	}
+}
+
+// A value's key is built against the remaining budget: a key far larger than
+// the budget allows is abandoned part-way rather than encoded in full first.
+func TestCedarKeyStopsAtBudget(t *testing.T) {
+	big := make(cedarSet, 50000)
+	for i := range big {
+		big[i] = strings.Repeat("x", 100) + strconv.Itoa(i)
+	}
+	budget := 10 // 640 bytes of key
+	ev := &cedarEval{budget: &budget}
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	_, err := ev.key(big)
+	runtime.ReadMemStats(&after)
+	if err == nil {
+		t.Fatal("a ~5 MB key fit in a 640-byte budget")
+	}
+	if grew := after.TotalAlloc - before.TotalAlloc; grew > 1<<20 {
+		t.Fatalf("building an over-budget key allocated %d bytes before giving up", grew)
+	}
+	small := 1000
+	ev = &cedarEval{budget: &small}
+	if k, err := ev.key(cedarSet{int64(2), int64(1), int64(2)}); err != nil || k != cedarKey(cedarSet{int64(1), int64(2)}) {
+		t.Fatalf("small key: %q %v", k, err)
 	}
 }
