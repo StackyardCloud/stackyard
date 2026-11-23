@@ -394,6 +394,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
+    "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
@@ -1939,6 +1940,9 @@ SERVICE_ALIASES = {
     "amazonram": "ram",
     "route53": "route53",
     "route53profiles": "route53profiles",
+    "networkmanager": "networkmanager",
+    "network-manager": "networkmanager",
+    "cloudwan": "networkmanager",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
     "polly": "polly",
@@ -3194,6 +3198,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "scheduler": {},
     "pipes": {},
     "route53profiles": {},
+    "networkmanager": {},
     "polly": {},
     "servicecatalogappregistry": {},
     "datasync": {},
@@ -34958,6 +34963,357 @@ def polly_hydrate_payload(
     return payload
 
 
+NM_ACCOUNT = "123456789012"
+NM_POLICY = json.dumps({
+    "version": "2021.12",
+    "core-network-configuration": {"asn-ranges": ["64512-64555"], "edge-locations": [{"location": "us-east-1"}, {"location": "us-west-2"}]},
+    "segments": [{"name": "prod"}, {"name": "dev", "require-attachment-acceptance": True}],
+    "segment-actions": [{"action": "share", "segment": "prod", "share-with": ["dev"]}],
+    "attachment-policies": [
+        {"rule-number": 100, "conditions": [{"type": "tag-value", "key": "env", "value": "dev"}], "action": {"association-method": "constant", "segment": "dev"}},
+        {"rule-number": 200, "conditions": [{"type": "any"}], "action": {"association-method": "constant", "segment": "prod"}},
+    ],
+}, separators=(",", ":"))
+NM_RESOURCE_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": NM_ACCOUNT}, "Action": "networkmanager:*", "Resource": "*"}]})
+
+
+class NetworkManagerFixture:
+    """Real Network Manager (and EC2) resources created through the CLI, shared
+    by every hydrated operation; destructive operations make their own."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.aws_bin, self.endpoint_url, self.region, self.env = aws_bin, endpoint_url, region, env
+
+    def nm(self, op: str, payload: dict) -> dict:
+        data = run_aws_json(self.aws_bin, self.endpoint_url, self.region, "networkmanager", op, self.env,
+                            ["--cli-input-json", json.dumps(payload, separators=(",", ":"))])
+        return data if isinstance(data, dict) else {}
+
+    def ec2(self, op: str, args: list[str]) -> dict:
+        data = run_aws_json(self.aws_bin, self.endpoint_url, self.region, "ec2", op, self.env, args)
+        return data if isinstance(data, dict) else {}
+
+    def unique(self) -> str:
+        return f"{time.time_ns():x}"[-12:]
+
+    # ---- EC2 ----
+    def tgw_arn(self) -> str:
+        tgw = str((self.ec2("create-transit-gateway", []).get("TransitGateway") or {}).get("TransitGatewayId") or "")
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway/{tgw}"
+
+    def cgw_arn(self) -> str:
+        # EC2 returns the existing gateway for identical parameters, so vary the IP.
+        self.cgw_count = getattr(self, "cgw_count", 0) + 1
+        ip = f"203.0.113.{10 + self.cgw_count % 200}"
+        cgw = str((self.ec2("create-customer-gateway", ["--type", "ipsec.1", "--bgp-asn", "65000", "--public-ip", ip])
+                   .get("CustomerGateway") or {}).get("CustomerGatewayId") or "")
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:customer-gateway/{cgw}"
+
+    # ---- global network inventory ----
+    def new_gn(self) -> str:
+        gn = str((self.nm("create-global-network", {}).get("GlobalNetwork") or {}).get("GlobalNetworkId") or "")
+        self.nm("describe-global-networks", {"GlobalNetworkIds": [gn]})
+        return gn
+
+    def new_site(self) -> str:
+        return str((self.nm("create-site", {"GlobalNetworkId": self.gn}).get("Site") or {}).get("SiteId") or "")
+
+    def new_device(self) -> str:
+        return str((self.nm("create-device", {"GlobalNetworkId": self.gn, "SiteId": self.site}).get("Device") or {}).get("DeviceId") or "")
+
+    def new_link(self) -> str:
+        data = self.nm("create-link", {"GlobalNetworkId": self.gn, "SiteId": self.site, "Bandwidth": {"UploadSpeed": 10, "DownloadSpeed": 10}})
+        return str((data.get("Link") or {}).get("LinkId") or "")
+
+    def new_connection(self) -> str:
+        data = self.nm("create-connection", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "ConnectedDeviceId": self.dev2})
+        return str((data.get("Connection") or {}).get("ConnectionId") or "")
+
+    def new_link_assoc(self) -> str:
+        link = self.new_link()
+        self.nm("associate-link", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "LinkId": link})
+        return link
+
+    def new_context_store(self) -> str:
+        data = self.nm("create-context-store", {"GlobalNetworkId": self.gn})
+        return str((data.get("ContextStore") or {}).get("ContextStoreId") or "")
+
+    # ---- core network ----
+    def new_core(self, policy: bool) -> str:
+        payload = {"GlobalNetworkId": self.gn}
+        if policy:
+            payload["PolicyDocument"] = NM_POLICY
+        core = str((self.nm("create-core-network", payload).get("CoreNetwork") or {}).get("CoreNetworkId") or "")
+        if policy:
+            self.nm("get-core-network-policy", {"CoreNetworkId": core, "Alias": "LATEST"})
+            self.nm("execute-core-network-change-set", {"CoreNetworkId": core, "PolicyVersionId": 1})
+        self.nm("get-core-network", {"CoreNetworkId": core})
+        return core
+
+    def new_policy_version(self) -> int:
+        data = self.nm("put-core-network-policy", {"CoreNetworkId": self.core, "PolicyDocument": NM_POLICY})
+        version = int((data.get("CoreNetworkPolicy") or {}).get("PolicyVersionId") or 0)
+        self.nm("get-core-network-policy", {"CoreNetworkId": self.core, "PolicyVersionId": version})
+        return version
+
+    def new_vpc_attachment(self, tags: list | None = None) -> str:
+        payload = {"CoreNetworkId": self.core, "VpcArn": self.vpc_arn, "SubnetArns": [self.subnet_a]}
+        if tags:
+            payload["Tags"] = tags
+        att = str(((self.nm("create-vpc-attachment", payload).get("VpcAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        if not tags:
+            self.nm("get-vpc-attachment", {"AttachmentId": att})
+        return att
+
+    def new_connect_peer(self) -> str:
+        data = self.nm("create-connect-peer", {"ConnectAttachmentId": self.connect_att, "PeerAddress": "10.40.1.10",
+                                               "InsideCidrBlocks": ["169.254.10.0/29"], "BgpOptions": {"PeerAsn": 65010}})
+        peer = str((data.get("ConnectPeer") or {}).get("ConnectPeerId") or "")
+        self.nm("get-connect-peer", {"ConnectPeerId": peer})
+        return peer
+
+    def new_peering(self) -> str:
+        data = self.nm("create-transit-gateway-peering", {"CoreNetworkId": self.core, "TransitGatewayArn": self.tgw_arn()})
+        peering = str(((data.get("TransitGatewayPeering") or {}).get("Peering") or {}).get("PeeringId") or "")
+        self.nm("get-transit-gateway-peering", {"PeeringId": peering})
+        return peering
+
+    def build(self) -> None:
+        self.gn = self.new_gn()
+        self.gn_arn = f"arn:aws:networkmanager::{NM_ACCOUNT}:global-network/{self.gn}"
+        self.site = self.new_site()
+        self.dev1, self.dev2 = self.new_device(), self.new_device()
+        self.link = self.new_link()
+        self.connection = self.new_connection()
+        self.nm("associate-link", {"GlobalNetworkId": self.gn, "DeviceId": self.dev1, "LinkId": self.link})
+        vpc = str((self.ec2("create-vpc", ["--cidr-block", "10.40.0.0/16"]).get("Vpc") or {}).get("VpcId") or "")
+        subnets = [
+            str((self.ec2("create-subnet", ["--vpc-id", vpc, "--cidr-block", cidr, "--availability-zone", az]).get("Subnet") or {}).get("SubnetId") or "")
+            for cidr, az in (("10.40.1.0/24", "us-east-1a"), ("10.40.2.0/24", "us-east-1b"))
+        ]
+        self.vpc_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:vpc/{vpc}"
+        self.subnet_a, self.subnet_b = (f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:subnet/{s}" for s in subnets)
+        self.core = self.new_core(policy=True)
+        self.core_arn = f"arn:aws:networkmanager::{NM_ACCOUNT}:core-network/{self.core}"
+        self.vpc_att = self.new_vpc_attachment()
+        data = self.nm("create-connect-attachment", {"CoreNetworkId": self.core, "EdgeLocation": "us-east-1",
+                                                     "TransportAttachmentId": self.vpc_att, "Options": {"Protocol": "GRE"}})
+        self.connect_att = str(((data.get("ConnectAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.nm("get-connect-attachment", {"AttachmentId": self.connect_att})
+        self.connect_peer = self.new_connect_peer()
+        cgw = str(self.cgw_arn().rsplit("/", 1)[-1])
+        tgw_for_vpn = self.tgw_arn().rsplit("/", 1)[-1]
+        vpn = str((self.ec2("create-vpn-connection", ["--type", "ipsec.1", "--customer-gateway-id", cgw, "--transit-gateway-id", tgw_for_vpn])
+                   .get("VpnConnection") or {}).get("VpnConnectionId") or "")
+        self.vpn_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:vpn-connection/{vpn}"
+        data = self.nm("create-site-to-site-vpn-attachment", {"CoreNetworkId": self.core, "VpnConnectionArn": self.vpn_arn})
+        self.vpn_att = str(((data.get("SiteToSiteVpnAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.dx_arn = f"arn:aws:directconnect::{NM_ACCOUNT}:dx-gateway/12345678-1234-1234-1234-123456789012"
+        data = self.nm("create-direct-connect-gateway-attachment", {"CoreNetworkId": self.core, "DirectConnectGatewayArn": self.dx_arn, "EdgeLocations": ["us-east-1"]})
+        self.dx_att = str(((data.get("DirectConnectGatewayAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.peering = self.new_peering()
+        self.rtb_arn = f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-route-table/tgw-rtb-0123456789abcdef0"
+        data = self.nm("create-transit-gateway-route-table-attachment", {"PeeringId": self.peering, "TransitGatewayRouteTableArn": self.rtb_arn})
+        self.rtb_att = str(((data.get("TransitGatewayRouteTableAttachment") or {}).get("Attachment") or {}).get("AttachmentId") or "")
+        self.store = self.new_context_store()
+        self.store_tgw = self.tgw_arn()
+        self.nm("associate-context-store", {"ContextStoreId": self.store, "TransitGatewayArn": self.store_tgw})
+        self.reg_tgw = self.tgw_arn()
+        self.nm("register-transit-gateway", {"GlobalNetworkId": self.gn, "TransitGatewayArn": self.reg_tgw})
+        self.cgw = self.cgw_arn()
+        self.nm("associate-customer-gateway", {"GlobalNetworkId": self.gn, "CustomerGatewayArn": self.cgw, "DeviceId": self.dev1})
+        self.tgw_cp = self.tgw_connect_peer_arn()
+        self.nm("associate-transit-gateway-connect-peer", {"GlobalNetworkId": self.gn, "TransitGatewayConnectPeerArn": self.tgw_cp, "DeviceId": self.dev1})
+        self.nm("associate-connect-peer", {"GlobalNetworkId": self.gn, "ConnectPeerId": self.connect_peer, "DeviceId": self.dev1})
+        self.prefix_list = self.prefix_list_arn()
+        self.nm("create-core-network-prefix-list-association", {"CoreNetworkId": self.core, "PrefixListArn": self.prefix_list, "PrefixListAlias": "shared"})
+        self.nm("put-attachment-routing-policy-label", {"CoreNetworkId": self.core, "AttachmentId": self.vpc_att, "RoutingPolicyLabel": "blue"})
+        self.analysis = self.start_analysis()
+
+    def tgw_connect_peer_arn(self) -> str:
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-connect-peer/tgw-connect-peer-{self.unique()}"
+
+    def prefix_list_arn(self) -> str:
+        return f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:prefix-list/pl-{self.unique()}"
+
+    def analysis_endpoint(self) -> dict:
+        return {"TransitGatewayAttachmentArn": f"arn:aws:ec2:us-east-1:{NM_ACCOUNT}:transit-gateway-attachment/tgw-attach-0123456789abcdef0"}
+
+    def start_analysis(self) -> str:
+        data = self.nm("start-route-analysis", {"GlobalNetworkId": self.gn, "Source": self.analysis_endpoint(), "Destination": self.analysis_endpoint()})
+        return str((data.get("RouteAnalysis") or {}).get("RouteAnalysisId") or "")
+
+
+def networkmanager_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Network Manager operation at real resources. Destructive
+    operations get resources of their own so the shared ones stay valid."""
+    state = RUNTIME_STATE.setdefault("networkmanager", {})
+    fx = state.get("fixture")
+    if fx is None:
+        fx = NetworkManagerFixture(aws_bin, endpoint_url, region, env)
+        fx.build()
+        state["fixture"] = fx
+    op = endpoint.operation
+    gn, core = fx.gn, fx.core
+    seg_edge = {"CoreNetworkId": core, "SegmentName": "prod", "EdgeLocation": "us-east-1"}
+    gn_ops = {"GetNetworkResources", "GetNetworkResourceCounts", "GetNetworkResourceRelationships", "GetNetworkTelemetry",
+              "GetSites", "GetDevices", "GetLinks", "GetConnections", "GetLinkAssociations", "GetCustomerGatewayAssociations",
+              "GetTransitGatewayConnectPeerAssociations", "GetConnectPeerAssociations", "GetTransitGatewayRegistrations"}
+    if op in gn_ops:
+        return {"GlobalNetworkId": gn}
+    simple = {
+        "CreateGlobalNetwork": {"Description": "stackyard"},
+        "DescribeGlobalNetworks": {},
+        "UpdateGlobalNetwork": {"GlobalNetworkId": gn, "Description": "updated"},
+        "CreateSite": {"GlobalNetworkId": gn, "Description": "site"},
+        "UpdateSite": {"GlobalNetworkId": gn, "SiteId": fx.site, "Description": "updated"},
+        "CreateDevice": {"GlobalNetworkId": gn, "SiteId": fx.site},
+        "UpdateDevice": {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "Description": "updated"},
+        "CreateLink": {"GlobalNetworkId": gn, "SiteId": fx.site, "Bandwidth": {"UploadSpeed": 10, "DownloadSpeed": 10}},
+        "UpdateLink": {"GlobalNetworkId": gn, "LinkId": fx.link, "Description": "updated"},
+        "CreateConnection": {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "ConnectedDeviceId": fx.dev2},
+        "UpdateConnection": {"GlobalNetworkId": gn, "ConnectionId": fx.connection, "Description": "updated"},
+        "CreateContextStore": {"GlobalNetworkId": gn},
+        "GetContextStore": {"ContextStoreId": fx.store},
+        "UpdateContextStore": {"ContextStoreId": fx.store, "Description": "updated"},
+        "ListContextStores": {"GlobalNetworkId": gn},
+        "GetContextStoreAssociation": {"ContextStoreId": fx.store, "TransitGatewayArn": fx.store_tgw},
+        "ListContextStoreAssociations": {"ContextStoreId": fx.store},
+        "GetContextVersion": {"ContextStoreId": fx.store},
+        "ListContextChanges": {"ContextStoreId": fx.store, "FromVersionId": "0"},
+        "ListContexts": {"ContextStoreId": fx.store},
+        "CreateCoreNetwork": {"GlobalNetworkId": gn},
+        "GetCoreNetwork": {"CoreNetworkId": core},
+        "ListCoreNetworks": {},
+        "UpdateCoreNetwork": {"CoreNetworkId": core, "Description": "updated"},
+        "PutCoreNetworkPolicy": {"CoreNetworkId": core, "PolicyDocument": NM_POLICY},
+        "GetCoreNetworkPolicy": {"CoreNetworkId": core, "Alias": "LIVE"},
+        "ListCoreNetworkPolicyVersions": {"CoreNetworkId": core},
+        "RestoreCoreNetworkPolicyVersion": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "GetCoreNetworkChangeSet": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "GetCoreNetworkChangeEvents": {"CoreNetworkId": core, "PolicyVersionId": 1},
+        "CreateVpcAttachment": {"CoreNetworkId": core, "VpcArn": fx.vpc_arn, "SubnetArns": [fx.subnet_a]},
+        "CreateConnectAttachment": {"CoreNetworkId": core, "EdgeLocation": "us-east-1", "TransportAttachmentId": fx.vpc_att, "Options": {"Protocol": "GRE"}},
+        "CreateSiteToSiteVpnAttachment": {"CoreNetworkId": core, "VpnConnectionArn": fx.vpn_arn},
+        "CreateDirectConnectGatewayAttachment": {"CoreNetworkId": core, "DirectConnectGatewayArn": fx.dx_arn, "EdgeLocations": ["us-east-1"]},
+        "CreateTransitGatewayRouteTableAttachment": {"PeeringId": fx.peering, "TransitGatewayRouteTableArn": fx.rtb_arn},
+        "GetVpcAttachment": {"AttachmentId": fx.vpc_att},
+        "GetConnectAttachment": {"AttachmentId": fx.connect_att},
+        "GetSiteToSiteVpnAttachment": {"AttachmentId": fx.vpn_att},
+        "GetDirectConnectGatewayAttachment": {"AttachmentId": fx.dx_att},
+        "GetTransitGatewayRouteTableAttachment": {"AttachmentId": fx.rtb_att},
+        "ListAttachments": {"CoreNetworkId": core},
+        "CreateConnectPeer": {"ConnectAttachmentId": fx.connect_att, "PeerAddress": "10.40.1.20", "InsideCidrBlocks": ["169.254.20.0/29"]},
+        "GetConnectPeer": {"ConnectPeerId": fx.connect_peer},
+        "ListConnectPeers": {"CoreNetworkId": core},
+        "GetTransitGatewayPeering": {"PeeringId": fx.peering},
+        "ListPeerings": {"CoreNetworkId": core},
+        "ListCoreNetworkPrefixListAssociations": {"CoreNetworkId": core},
+        "PutAttachmentRoutingPolicyLabel": {"CoreNetworkId": core, "AttachmentId": fx.vpc_att, "RoutingPolicyLabel": "blue"},
+        "ListAttachmentRoutingPolicyAssociations": {"CoreNetworkId": core},
+        "ListAttachmentNatConfigurations": {"CoreNetworkId": core},
+        "UpdateAttachmentNatConfiguration": {"AttachmentId": fx.vpc_att, "NatGatewaySupport": "ENABLE",
+                                             "NatGatewayRules": [{"RuleNumber": 1, "MatchSourceCidr": "10.40.0.0/16", "NatCidr": "100.64.0.0/24"}]},
+        "ListCoreNetworkRoutingInformation": {"CoreNetworkId": core, "SegmentName": "prod", "EdgeLocation": "us-east-1"},
+        "GetNetworkRoutes": {"GlobalNetworkId": gn, "RouteTableIdentifier": {"CoreNetworkSegmentEdge": seg_edge}},
+        "UpdateNetworkResourceMetadata": {"GlobalNetworkId": gn, "ResourceArn": fx.core_arn, "Metadata": {"owner": "stackyard"}},
+        "StartRouteAnalysis": {"GlobalNetworkId": gn, "Source": fx.analysis_endpoint(), "Destination": fx.analysis_endpoint()},
+        "GetRouteAnalysis": {"GlobalNetworkId": gn, "RouteAnalysisId": fx.analysis},
+        "PutResourcePolicy": {"ResourceArn": fx.core_arn, "PolicyDocument": NM_RESOURCE_POLICY},
+        "StartOrganizationServiceAccessUpdate": {"Action": "ENABLE"},
+        "ListOrganizationServiceAccessStatus": {},
+        "TagResource": {"ResourceArn": fx.gn_arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": fx.gn_arn, "TagKeys": ["stackyard"]},
+        "ListTagsForResource": {"ResourceArn": fx.gn_arn},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "UpdateVpcAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(), "AddSubnetArns": [fx.subnet_b]}
+    if op == "UpdateDirectConnectGatewayAttachment":
+        fx.nm("get-direct-connect-gateway-attachment", {"AttachmentId": fx.dx_att})
+        return {"AttachmentId": fx.dx_att, "EdgeLocations": ["us-east-1", "us-west-2"]}
+    if op == "AcceptAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(tags=[{"Key": "env", "Value": "dev"}])}
+    if op == "RejectAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment(tags=[{"Key": "env", "Value": "dev"}])}
+    if op == "DeleteAttachment":
+        return {"AttachmentId": fx.new_vpc_attachment()}
+    if op == "ExecuteCoreNetworkChangeSet":
+        return {"CoreNetworkId": core, "PolicyVersionId": fx.new_policy_version()}
+    if op == "DeleteCoreNetworkPolicyVersion":
+        return {"CoreNetworkId": core, "PolicyVersionId": fx.new_policy_version()}
+    if op == "DeleteCoreNetwork":
+        return {"CoreNetworkId": fx.new_core(policy=False)}
+    if op == "CreateTransitGatewayPeering":
+        return {"CoreNetworkId": core, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DeletePeering":
+        return {"PeeringId": fx.new_peering()}
+    if op == "DeleteConnectPeer":
+        return {"ConnectPeerId": fx.new_connect_peer()}
+    if op == "AssociateConnectPeer":
+        return {"GlobalNetworkId": gn, "ConnectPeerId": fx.new_connect_peer(), "DeviceId": fx.dev1}
+    if op == "DisassociateConnectPeer":
+        peer = fx.new_connect_peer()
+        fx.nm("associate-connect-peer", {"GlobalNetworkId": gn, "ConnectPeerId": peer, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "ConnectPeerId": peer}
+    if op == "AssociateLink":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "LinkId": fx.new_link()}
+    if op == "DisassociateLink":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.dev1, "LinkId": fx.new_link_assoc()}
+    if op == "AssociateCustomerGateway":
+        return {"GlobalNetworkId": gn, "CustomerGatewayArn": fx.cgw_arn(), "DeviceId": fx.dev1}
+    if op == "DisassociateCustomerGateway":
+        cgw = fx.cgw_arn()
+        fx.nm("associate-customer-gateway", {"GlobalNetworkId": gn, "CustomerGatewayArn": cgw, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "CustomerGatewayArn": cgw}
+    if op == "AssociateTransitGatewayConnectPeer":
+        return {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": fx.tgw_connect_peer_arn(), "DeviceId": fx.dev1}
+    if op == "DisassociateTransitGatewayConnectPeer":
+        arn = fx.tgw_connect_peer_arn()
+        fx.nm("associate-transit-gateway-connect-peer", {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": arn, "DeviceId": fx.dev1})
+        return {"GlobalNetworkId": gn, "TransitGatewayConnectPeerArn": arn}
+    if op == "RegisterTransitGateway":
+        return {"GlobalNetworkId": gn, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DeregisterTransitGateway":
+        arn = fx.tgw_arn()
+        fx.nm("register-transit-gateway", {"GlobalNetworkId": gn, "TransitGatewayArn": arn})
+        return {"GlobalNetworkId": gn, "TransitGatewayArn": arn}
+    if op == "AssociateContextStore":
+        return {"ContextStoreId": fx.store, "TransitGatewayArn": fx.tgw_arn()}
+    if op == "DisassociateContextStore":
+        arn = fx.tgw_arn()
+        fx.nm("associate-context-store", {"ContextStoreId": fx.store, "TransitGatewayArn": arn})
+        return {"ContextStoreId": fx.store, "TransitGatewayArn": arn}
+    if op == "CreateCoreNetworkPrefixListAssociation":
+        return {"CoreNetworkId": core, "PrefixListArn": fx.prefix_list_arn(), "PrefixListAlias": "coverage"}
+    if op == "DeleteCoreNetworkPrefixListAssociation":
+        arn = fx.prefix_list_arn()
+        fx.nm("create-core-network-prefix-list-association", {"CoreNetworkId": core, "PrefixListArn": arn, "PrefixListAlias": "coverage"})
+        return {"CoreNetworkId": core, "PrefixListArn": arn}
+    if op == "RemoveAttachmentRoutingPolicyLabel":
+        fx.nm("put-attachment-routing-policy-label", {"CoreNetworkId": core, "AttachmentId": fx.vpc_att, "RoutingPolicyLabel": "blue"})
+        return {"CoreNetworkId": core, "AttachmentId": fx.vpc_att}
+    if op in {"GetResourcePolicy", "DeleteResourcePolicy"}:
+        fx.nm("put-resource-policy", {"ResourceArn": fx.core_arn, "PolicyDocument": NM_RESOURCE_POLICY})
+        return {"ResourceArn": fx.core_arn}
+    if op == "DeleteGlobalNetwork":
+        return {"GlobalNetworkId": fx.new_gn()}
+    if op == "DeleteSite":
+        return {"GlobalNetworkId": gn, "SiteId": fx.new_site()}
+    if op == "DeleteDevice":
+        return {"GlobalNetworkId": gn, "DeviceId": fx.new_device()}
+    if op == "DeleteLink":
+        return {"GlobalNetworkId": gn, "LinkId": fx.new_link()}
+    if op == "DeleteConnection":
+        return {"GlobalNetworkId": gn, "ConnectionId": fx.new_connection()}
+    if op == "DeleteContextStore":
+        return {"ContextStoreId": fx.new_context_store()}
+    return payload
+
+
 def route53profiles_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -36771,6 +37127,8 @@ def hydrate_payload_with_service_state(
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalogappregistry":
         return servicecatalogappregistry_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "networkmanager":
+        return networkmanager_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
         return pipes_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "datasync":
