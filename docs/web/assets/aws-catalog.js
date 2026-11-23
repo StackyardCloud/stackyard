@@ -185,6 +185,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/route53domains/docker-compose.yml"
   },
   {
+    id: "textract",
+    name: "Textract",
+    category: "integration",
+    summary: "Emulate text detection, forms, tables, queries, layout, signatures, expense, identity and lending analysis over text and PDF documents, with async jobs, adapters and tags.",
+    docsHref: "../../../index.html#textract",
+    exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",
@@ -857,6 +865,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
+    id: "polly",
+    name: "Amazon Polly",
+    category: "integration",
+    summary: "Synthesize speech (silent but valid MP3, Ogg, PCM and mu-law/A-law audio sized to the text), speech marks, SSML, lexicons, S3 synthesis tasks and custom voices.",
+    docsHref: "../../../index.html#polly",
+    exampleHref: "../../../../examples/aws/polly/docker-compose.yml"
+  },
+  {
     id: "iot",
     name: "IoT",
     category: "integration",
@@ -943,6 +959,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Converse with Lex V2 bots: recognize text and utterances, elicit slots, manage sessions, and stream StartConversation events.",
     docsHref: "../../../index.html#lexruntimev2",
     exampleHref: "../../../../examples/aws/lex-runtime-v2/docker-compose.yml"
+  },
+  {
+    id: "transcribestreaming",
+    name: "Transcribe Streaming",
+    category: "integration",
+    summary: "Stream audio over full-duplex event streams for live, medical, Call Analytics and Medical Scribe transcription with deterministic transcripts.",
+    docsHref: "../../../index.html#transcribestreaming",
+    exampleHref: "../../../../examples/aws/transcribe-streaming/docker-compose.yml"
   },
   {
     id: "lambda",

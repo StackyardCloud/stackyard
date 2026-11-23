@@ -92,6 +92,7 @@
         <a href="#kinesisvideowebrtcstorage">Kinesis Video WebRTC Storage</a>
         <a href="#lexv2">Lex V2</a>
         <a href="#lexruntimev2">Lex Runtime V2</a>
+        <a href="#transcribestreaming">Transcribe Streaming</a>
         <a href="#pinpoint">Pinpoint</a>
         <a href="#pcs">PCS</a>
         <a href="#smsvoicev2">End User Messaging SMS</a>
@@ -181,6 +182,7 @@
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
         <a href="#pipes">EventBridge Pipes</a>
+        <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
@@ -288,6 +290,7 @@
         <a href="#route53">Route 53</a>
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
+        <a href="#textract">Textract</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
@@ -3414,6 +3417,40 @@
         <summary>Examples</summary>
         <ul>
         <li><code>lex-runtime-v2</code>: <code>docker compose -f examples/aws/lex-runtime-v2/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="transcribestreaming" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Transcribe Streaming</h2>
+        <p>SigV4 signed with service <code>transcribe</code>. REST event streams on <code>/stream-transcription</code>, <code>/medical-stream-transcription</code>, <code>/call-analytics-stream-transcription</code> and <code>/medical-scribe-stream</code>: request headers (language or language identification, sample rate, encoding, vocabularies, filters, channels, stabilization, PII) are validated, then each <code>AudioEvent</code> frame is answered with a partial result while the request is still open, with a final result every 5 seconds of audio and when the client ends its stream. Vocabularies, filters and language models must exist in batch Transcribe. There is no speech engine: transcripts describe the audio window they cover (for example <code>[audio 0.00s-2.00s]</code>). Call Analytics streams return <code>UtteranceEvent</code> and <code>CategoryEvent</code> frames; Medical Scribe sessions store their configuration, pause when the stream drops and complete on <code>END_OF_SESSION</code>, readable through <code>GetMedicalScribeStream</code>. Errors mid-stream arrive as exception frames. The AWS CLI has no transcribe-streaming commands.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: transcribe</span>
+        <span class="meta-pill">API: REST event stream</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetMedicalScribeStream</code></td></tr>
+        <tr><td><code>StartCallAnalyticsStreamTranscription</code></td></tr>
+        <tr><td><code>StartMedicalScribeStream</code></td></tr>
+        <tr><td><code>StartMedicalStreamTranscription</code></td></tr>
+        <tr><td><code>StartStreamTranscription</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>transcribe-streaming</code>: <code>docker compose -f examples/aws/transcribe-streaming/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -13089,6 +13126,46 @@
         <ul>
         <li><code>pipes</code>: <code>docker compose -f examples/aws/pipes/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="polly" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Polly</h2>
+        <p>SigV4 signed with service <code>polly</code>. REST JSON API under <code>/v1/voices</code>, <code>/v1/speech</code>, <code>/v1/lexicons</code>, <code>/v1/synthesisTasks</code>, <code>/v1/synthesisStream</code> and the tagging paths. Requests are validated against the service model. DescribeVoices serves an embedded catalog of the 116 built-in voices with engine and language filters. SynthesizeSpeech checks the voice, engine, language, sample rate, lexicons, text limits (3,000 billed / 6,000 total characters) and SSML (well-formed XML with a <code>&lt;speak&gt;</code> root), and returns audio that is valid but silent, sized at 60 ms per character and capped at 60 seconds: MPEG-2 Layer III for <code>mp3</code>, Ogg Opus for <code>ogg_opus</code> and <code>ogg_vorbis</code>, 16-bit PCM, and mu-law or A-law. <code>json</code> returns sentence, word, viseme and SSML speech marks computed from the text. Lexicons are validated PLS documents. StartSpeechSynthesisTask writes the output to a bucket in Stackyard's S3 store; tasks report scheduled, then inProgress, then completed as they are read. Custom voices (CreateVoice, GetVoice, DeleteVoice) report pending until first read. StartSpeechSynthesisStream reads the whole request event stream before answering with AudioEvent frames and a StreamClosedEvent. All 16 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: polly</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateVoice</code></td></tr>
+        <tr><td><code>DeleteLexicon</code></td></tr>
+        <tr><td><code>DeleteVoice</code></td></tr>
+        <tr><td><code>DescribeVoices</code></td></tr>
+        <tr><td><code>GetLexicon</code></td></tr>
+        <tr><td><code>GetSpeechSynthesisTask</code></td></tr>
+        <tr><td><code>GetVoice</code></td></tr>
+        <tr><td><code>ListLexicons</code></td></tr>
+        <tr><td><code>ListSpeechSynthesisTasks</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutLexicon</code></td></tr>
+        <tr><td><code>StartSpeechSynthesisStream</code></td></tr>
+        <tr><td><code>StartSpeechSynthesisTask</code></td></tr>
+        <tr><td><code>SynthesizeSpeech</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
         <section id="scheduler" class="service">
@@ -24842,6 +24919,55 @@
         <tr><td><code>UpdateDomainNameservers</code></td></tr>
         <tr><td><code>UpdateTagsForDomain</code></td></tr>
         <tr><td><code>ViewBilling</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="textract" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Textract</h2>
+        <p>SigV4 signed with service <code>textract</code>. JSON 1.1 API with <code>X-Amz-Target: Textract.*</code>. There is no OCR engine: analysis reads plain UTF-8 text documents (pages split on form feed) and the text-show operators in PDF content streams; PNG, JPEG and TIFF images return a PAGE block only. FORMS reads "Key: Value" lines, TABLES reads tab- or pipe-delimited lines, QUERIES answers from the best-matching key, SIGNATURES reads "/s/ Name" lines. Async jobs report IN_PROGRESS on the first read and SUCCEEDED after, then notify the SNS topic and write OutputConfig to S3.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: textract</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Textract API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AnalyzeDocument</code></td></tr>
+        <tr><td><code>AnalyzeExpense</code></td></tr>
+        <tr><td><code>AnalyzeID</code></td></tr>
+        <tr><td><code>CreateAdapter</code></td></tr>
+        <tr><td><code>CreateAdapterVersion</code></td></tr>
+        <tr><td><code>DeleteAdapter</code></td></tr>
+        <tr><td><code>DeleteAdapterVersion</code></td></tr>
+        <tr><td><code>DetectDocumentText</code></td></tr>
+        <tr><td><code>GetAdapter</code></td></tr>
+        <tr><td><code>GetAdapterVersion</code></td></tr>
+        <tr><td><code>GetDocumentAnalysis</code></td></tr>
+        <tr><td><code>GetDocumentTextDetection</code></td></tr>
+        <tr><td><code>GetExpenseAnalysis</code></td></tr>
+        <tr><td><code>GetLendingAnalysis</code></td></tr>
+        <tr><td><code>GetLendingAnalysisSummary</code></td></tr>
+        <tr><td><code>ListAdapterVersions</code></td></tr>
+        <tr><td><code>ListAdapters</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartDocumentAnalysis</code></td></tr>
+        <tr><td><code>StartDocumentTextDetection</code></td></tr>
+        <tr><td><code>StartExpenseAnalysis</code></td></tr>
+        <tr><td><code>StartLendingAnalysis</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAdapter</code></td></tr>
         </tbody>
         </table>
         </details>

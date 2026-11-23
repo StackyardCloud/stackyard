@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 import xml.etree.ElementTree as xml_etree
 from dataclasses import dataclass
 from pathlib import Path
@@ -121,6 +122,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "imagebuilder": {"cli": "imagebuilder", "ops_file": REPO_ROOT / "internal/server/imagebuilder_ops.go"},
     "rekognition": {"cli": "rekognition", "ops_file": REPO_ROOT / "internal/server/rekognition_ops.go"},
     "transcribe": {"cli": "transcribe", "ops_file": REPO_ROOT / "internal/server/transcribe_ops.go"},
+    "transcribestreaming": {"cli": "transcribe-streaming", "ops_file": REPO_ROOT / "internal/server/transcribestreaming_ops.go"},
     "xray": {"cli": "xray", "ops_file": REPO_ROOT / "internal/server/xray_ops.go"},
     "translate": {"cli": "translate", "ops_file": REPO_ROOT / "internal/server/translate_ops.go"},
     "workmail": {"cli": "workmail", "ops_file": REPO_ROOT / "internal/server/workmail_ops.go"},
@@ -391,6 +393,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
+    "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
         "cli": "globalaccelerator",
@@ -559,6 +562,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
+    "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
@@ -985,6 +989,9 @@ SERVICE_ALIASES = {
     "awsrekognition": "rekognition",
     "aws rekognition": "rekognition",
     "transcribe": "transcribe",
+    "transcribestreaming": "transcribestreaming",
+    "transcribe-streaming": "transcribestreaming",
+    "amazontranscribestreaming": "transcribestreaming",
     "amazontranscribe": "transcribe",
     "amazon transcribe": "transcribe",
     "awstranscribe": "transcribe",
@@ -1926,6 +1933,8 @@ SERVICE_ALIASES = {
     "route53profiles": "route53profiles",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
+    "polly": "polly",
+    "amazonpolly": "polly",
     "route-53": "route53",
     "route 53": "route53",
     "amazonroute53": "route53",
@@ -2219,6 +2228,8 @@ SERVICE_ALIASES = {
     "route53domains": "route53domains",
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
+    "textract": "textract",
+    "amazontextract": "textract",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
@@ -3164,6 +3175,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "scheduler": {},
     "pipes": {},
     "route53profiles": {},
+    "polly": {},
     "datasync": {},
     "dax": {},
     "route53resolver": {},
@@ -3175,6 +3187,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
+    "textract": {},
     "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
@@ -3208,6 +3221,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kendra": {},
     "rekognition": {},
     "transcribe": {},
+    "transcribestreaming": {},
     "sagemaker": {},
     "sagemakerruntime": {},
     "simspaceweaver": {},
@@ -4100,6 +4114,16 @@ def s3tables_raw_fallback_routes() -> dict[str, tuple[str, str]]:
     }
 
 
+# Polly operations the AWS CLI doesn't ship (custom voices and the
+# bidirectional synthesis stream); sent as signed raw calls.
+POLLY_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "CreateVoice": ("POST", "/v1/voices"),
+    "GetVoice": ("GET", "/v1/voices/{VoiceId}"),
+    "DeleteVoice": ("DELETE", "/v1/voices/{VoiceId}"),
+    "StartSpeechSynthesisStream": ("POST", "/v1/synthesisStream"),
+}
+
+
 def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
     if endpoint.service == "acm":
         return ("POST", "/")
@@ -4557,6 +4581,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockruntime":
         return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "polly":
+        return POLLY_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockagentruntime":
         return BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
@@ -6426,6 +6452,9 @@ def invoke_raw_endpoint(
     elif endpoint.service == "lexruntimev2":
         body = lexruntimev2_conversation_body()
         extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
+    elif endpoint.service == "polly" and endpoint.operation == "StartSpeechSynthesisStream":
+        body = polly_stream_body(payload_for_transport)
+        extra_headers = polly_stream_headers(payload_for_transport)
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7561,6 +7590,8 @@ def invoke_raw_endpoint(
 
 
 def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
+    if endpoint.service == "polly":
+        return {}  # polly_hydrate_payload builds each raw request
     if endpoint.service == "lexruntimev2":
         # Path members only; hydration points them at the seeded bot.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}
@@ -13420,6 +13451,10 @@ def generate_cli_input_payload(
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
         return {"accountId": "-", "vaultName": "", "jobId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
+        # synthesize-speech needs its members as flags plus an outfile even to
+        # print a skeleton; hydration fills in a real request.
+        return {"OutputFormat": "mp3", "Text": "hello", "VoiceId": "Joanna"}, None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -31426,27 +31461,134 @@ def run_lexruntimev2_outfile_operation(
     return cp, cmd, extra_output
 
 
+def aws_event_frame(event_type: str, payload: dict | bytes) -> bytes:
+    """One AWS event-stream event frame: dict payloads go as JSON, bytes as-is."""
+    import zlib
+
+    if isinstance(payload, bytes):
+        body, content_type = payload, "application/octet-stream"
+    else:
+        body, content_type = json.dumps(payload, separators=(",", ":")).encode("utf-8"), "application/json"
+    headers = b""
+    for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", content_type)):
+        raw = value.encode("utf-8")
+        headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
+    prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
+    message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
+    return message + zlib.crc32(message).to_bytes(4, "big")
+
+
 def lexruntimev2_conversation_body() -> bytes:
     """A whole StartConversation request stream: configure, one text turn,
     disconnect. Stackyard answers each turn as its frame arrives."""
-
-    def frame(event_type: str, payload: dict) -> bytes:
-        import zlib
-
-        headers = b""
-        for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", "application/json")):
-            raw = value.encode("utf-8")
-            headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
-        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
-        message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
-        return message + zlib.crc32(message).to_bytes(4, "big")
-
+    frame = aws_event_frame
     return (
         frame("ConfigurationEvent", {"responseContentType": "text/plain; charset=utf-8"})
         + frame("TextInputEvent", {"text": LEXRUNTIMEV2_UTTERANCE})
         + frame("DisconnectionEvent", {})
     )
+
+
+TRANSCRIBESTREAMING_ROLE = "arn:aws:iam::123456789012:role/stackyard-transcribe"
+TRANSCRIBESTREAMING_AUDIO = bytes(32000)  # 1 s of 16 kHz 16-bit mono PCM
+
+
+def transcribestreaming_request(
+    endpoint_url: str, region: str, env: dict[str, str], method: str, path: str, body: bytes, headers: dict[str, str]
+) -> tuple[int, bytes]:
+    """A transcribe-signed request; the CLI has no transcribe-streaming commands."""
+    url = endpoint_url.rstrip("/") + path
+    signed = sigv4_sign(
+        method=method,
+        url=url,
+        body=body,
+        service="transcribe",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers=headers,
+    )
+    req = urlrequest.Request(url=url, method=method, data=body if method != "GET" else None, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            return int(resp.status), resp.read()
+    except urlerror.HTTPError as err:
+        return int(err.code), err.read()
+    except (urlerror.URLError, OSError) as err:
+        return 0, str(err).encode("utf-8")
+
+
+def transcribestreaming_scribe_session(endpoint_url: str, region: str, env: dict[str, str]) -> tuple[int, bytes, str]:
+    """Run one complete Medical Scribe stream and remember its session id."""
+    session_id = str(uuid.uuid4())
+    body = (
+        aws_event_frame(
+            "ConfigurationEvent",
+            {
+                "ResourceAccessRoleArn": TRANSCRIBESTREAMING_ROLE,
+                "PostStreamAnalyticsSettings": {"ClinicalNoteGenerationSettings": {"OutputBucketName": "stackyard-scribe-notes"}},
+            },
+        )
+        + aws_event_frame("AudioEvent", TRANSCRIBESTREAMING_AUDIO)
+        + aws_event_frame("SessionControlEvent", {"Type": "END_OF_SESSION"})
+    )
+    status, raw = transcribestreaming_request(
+        endpoint_url, region, env, "POST", "/medical-scribe-stream", body, transcribestreaming_headers({"x-amzn-transcribe-session-id": session_id})
+    )
+    if status == 200:
+        RUNTIME_STATE.setdefault("transcribestreaming", {})["scribe_session_id"] = session_id
+    return status, raw, session_id
+
+
+def transcribestreaming_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
+    headers = {
+        "Content-Type": "application/vnd.amazon.eventstream",
+        "x-amzn-transcribe-language-code": "en-US",
+        "x-amzn-transcribe-sample-rate": "16000",
+        "x-amzn-transcribe-media-encoding": "pcm",
+    }
+    headers.update(extra or {})
+    return headers
+
+
+def run_transcribestreaming_endpoint(endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]) -> tuple[bool, str]:
+    """Drive one Transcribe Streaming operation; returns (ok, detail)."""
+    op = endpoint.operation
+    audio = aws_event_frame("AudioEvent", TRANSCRIBESTREAMING_AUDIO) + aws_event_frame("AudioEvent", b"")
+    if op == "GetMedicalScribeStream":
+        session_id = str(RUNTIME_STATE.setdefault("transcribestreaming", {}).get("scribe_session_id") or "")
+        if not session_id:
+            status, raw, session_id = transcribestreaming_scribe_session(endpoint_url, region, env)
+            if status != 200:
+                return False, f"seeding a scribe session: http {status}"
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "GET", f"/medical-scribe-stream/{session_id}", b"", {})
+        ok = status == 200 and b"MedicalScribeStreamDetails" in raw and b'"COMPLETED"' in raw
+        return ok, raw[:300].decode("utf-8", errors="replace")
+    if op == "StartMedicalScribeStream":
+        status, raw, _ = transcribestreaming_scribe_session(endpoint_url, region, env)
+        expect = b"TranscriptEvent"
+    elif op == "StartStreamTranscription":
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "POST", "/stream-transcription", audio, transcribestreaming_headers())
+        expect = b"TranscriptEvent"
+    elif op == "StartMedicalStreamTranscription":
+        status, raw = transcribestreaming_request(
+            endpoint_url, region, env, "POST", "/medical-stream-transcription", audio,
+            transcribestreaming_headers({"x-amzn-transcribe-specialty": "PRIMARYCARE", "x-amzn-transcribe-type": "DICTATION"}),
+        )
+        expect = b"TranscriptEvent"
+    elif op == "StartCallAnalyticsStreamTranscription":
+        body = aws_event_frame(
+            "ConfigurationEvent",
+            {"ChannelDefinitions": [{"ChannelId": 0, "ParticipantRole": "AGENT"}, {"ChannelId": 1, "ParticipantRole": "CUSTOMER"}]},
+        ) + audio
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "POST", "/call-analytics-stream-transcription", body, transcribestreaming_headers())
+        expect = b"UtteranceEvent"
+    else:
+        return False, f"unknown operation {op}"
+    # A stream answers 200 and may still end with an exception frame.
+    ok = status == 200 and expect in raw and b":exception-type" not in raw
+    return ok, f"http {status}: " + raw[:300].decode("utf-8", errors="replace")
 
 
 def bedrockruntime_event_stream_body(payload: dict) -> bytes:
@@ -32819,6 +32961,117 @@ def route53domains_register(aws_bin: str, endpoint_url: str, region: str, env: d
         "--admin-contact", contact, "--registrant-contact", contact, "--tech-contact", contact,
     ])
     return name, str((data or {}).get("OperationId") or "")
+
+
+TEXTRACT_SAMPLE = (
+    "Acme Supplies\nInvoice Number: INV-42\nDate: 2026-01-31\nTotal: $123.45\n"
+    "Item\tQty\tPrice\nWidget\t2\t$10.00\n/s/ Jane Doe\n"
+)
+TEXTRACT_ID_SAMPLE = "DRIVER LICENSE\nFirst Name: Ada\nLast Name: Lovelace\nDate of Birth: 1815-12-10\n"
+TEXTRACT_ROLE = "arn:aws:iam::123456789012:role/stackyard-textract"
+
+
+def textract_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A bucket holding a sample document and a training manifest, an SNS
+    topic, and one adapter with a version."""
+    state = RUNTIME_STATE.setdefault("textract", {})
+    if not state.get("adapter"):
+        bucket = s3_ensure_bucket(aws_bin, endpoint_url, region, env, "stackyard-textract-cov", track_as_primary=False)
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, bucket, "doc.txt", TEXTRACT_SAMPLE.encode())
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, bucket, "manifest.json", b"{}")
+        state["bucket"], state["topic"] = bucket, sns_ensure_topic(aws_bin, endpoint_url, region, env)
+        state["adapter"] = textract_create_adapter(aws_bin, endpoint_url, region, env)
+        state["version"] = textract_create_version(aws_bin, endpoint_url, region, env, state["adapter"], bucket)
+    return state
+
+
+def textract_create_adapter(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "textract", "create-adapter", env, [
+        "--adapter-name", f"cov-{time.time_ns()}", "--feature-types", "QUERIES",
+    ])
+    return str((data or {}).get("AdapterId") or "")
+
+
+def textract_create_version(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], adapter: str, bucket: str) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "textract", "create-adapter-version", env, [
+        "--adapter-id", adapter,
+        "--dataset-config", json.dumps({"ManifestS3Object": {"Bucket": bucket, "Name": "manifest.json"}}),
+        "--output-config", json.dumps({"S3Bucket": bucket, "S3Prefix": "adapter-output"}),
+    ])
+    return str((data or {}).get("AdapterVersion") or "")
+
+
+def textract_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give Textract operations a real document, job, adapter or ARN;
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    fx = textract_fixture(aws_bin, endpoint_url, region, env)
+    doc = {"Bytes": base64.b64encode(TEXTRACT_SAMPLE.encode()).decode()}
+    location = {"S3Object": {"Bucket": fx["bucket"], "Name": "doc.txt"}}
+    queries = {"Queries": [{"Text": "What is the total?", "Alias": "TOTAL"}]}
+    features = ["TABLES", "FORMS", "QUERIES", "SIGNATURES", "LAYOUT"]
+    starts = {
+        "StartDocumentTextDetection": {},
+        "StartDocumentAnalysis": {"FeatureTypes": features, "QueriesConfig": queries},
+        "StartExpenseAnalysis": {},
+        "StartLendingAnalysis": {},
+    }
+
+    def start(api: str) -> str:
+        args = {"DocumentLocation": location, **starts[api]}
+        cli = re.sub(r"(?<!^)(?=[A-Z])", "-", api).lower()
+        data = run_aws_json(aws_bin, endpoint_url, region, "textract", cli, env, ["--cli-input-json", json.dumps(args)])
+        return str((data or {}).get("JobId") or "")
+
+    if op == "DetectDocumentText" or op == "AnalyzeExpense":
+        return {"Document": doc}
+    if op == "AnalyzeDocument":
+        return {"Document": doc, "FeatureTypes": features, "QueriesConfig": queries}
+    if op == "AnalyzeID":
+        return {"DocumentPages": [{"Bytes": base64.b64encode(TEXTRACT_ID_SAMPLE.encode()).decode()}]}
+    if op in starts:
+        return {
+            "DocumentLocation": location, **starts[op], "JobTag": "coverage",
+            "NotificationChannel": {"SNSTopicArn": fx["topic"], "RoleArn": TEXTRACT_ROLE},
+            "OutputConfig": {"S3Bucket": fx["bucket"], "S3Prefix": "textract-output"},
+        }
+    gets = {
+        "GetDocumentTextDetection": "StartDocumentTextDetection", "GetDocumentAnalysis": "StartDocumentAnalysis",
+        "GetExpenseAnalysis": "StartExpenseAnalysis", "GetLendingAnalysis": "StartLendingAnalysis",
+        "GetLendingAnalysisSummary": "StartLendingAnalysis",
+    }
+    if op in gets:
+        return {"JobId": start(gets[op])}
+    if op == "CreateAdapter":
+        return {"AdapterName": f"cov-{time.time_ns()}", "FeatureTypes": ["QUERIES"], "Tags": {"team": "coverage"}}
+    if op == "CreateAdapterVersion":
+        return {
+            "AdapterId": fx["adapter"],
+            "DatasetConfig": {"ManifestS3Object": {"Bucket": fx["bucket"], "Name": "manifest.json"}},
+            "OutputConfig": {"S3Bucket": fx["bucket"], "S3Prefix": "adapter-output"},
+        }
+    if op in {"GetAdapter", "ListAdapterVersions"}:
+        return {"AdapterId": fx["adapter"]}
+    if op == "UpdateAdapter":
+        return {"AdapterId": fx["adapter"], "Description": "coverage adapter", "AutoUpdate": "DISABLED"}
+    if op == "GetAdapterVersion":
+        return {"AdapterId": fx["adapter"], "AdapterVersion": fx["version"]}
+    if op == "DeleteAdapter":
+        return {"AdapterId": textract_create_adapter(aws_bin, endpoint_url, region, env)}
+    if op == "DeleteAdapterVersion":
+        return {"AdapterId": fx["adapter"], "AdapterVersion": textract_create_version(aws_bin, endpoint_url, region, env, fx["adapter"], fx["bucket"])}
+    arn = f"arn:aws:textract:{region}:123456789012:/adapters/{fx['adapter']}"
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    if op == "ListAdapters":
+        return {}
+    return payload
 
 
 def route53domains_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
@@ -34409,6 +34662,122 @@ def r53p_new_resource(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return {"id": ra_id, "arn": arn}
 
 
+POLLY_COVERAGE_BUCKET = "stackyard-polly-coverage"
+POLLY_LEXICON = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    '<lexicon version="1.0" xmlns="http://www.w3.org/2005/01/pronunciation-lexicon" alphabet="ipa" xml:lang="en-US">'
+    "<lexeme><grapheme>W3C</grapheme><alias>World Wide Web Consortium</alias></lexeme></lexicon>"
+)
+POLLY_SPEECH = {"OutputFormat": "mp3", "Text": "Hello from Stackyard", "VoiceId": "Joanna"}
+
+
+def polly_stream_body(payload: dict) -> bytes:
+    """Encode the stream's TextEvent plus a CloseStreamEvent as event-stream frames."""
+    import struct
+    import zlib
+
+    text_event = (payload.get("ActionStream") or {}).get("TextEvent") or {"Text": "Hello from Stackyard"}
+    out = b""
+    for event_type, event in (("TextEvent", text_event), ("CloseStreamEvent", {})):
+        body = json.dumps(event, separators=(",", ":")).encode("utf-8")
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", event_type)):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("utf-8") + b"\x07" + struct.pack(">H", len(raw)) + raw
+        prelude = struct.pack(">II", 16 + len(headers) + len(body), len(headers))
+        frame = prelude + struct.pack(">I", zlib.crc32(prelude)) + headers + body
+        out += frame + struct.pack(">I", zlib.crc32(frame))
+    return out
+
+
+def polly_stream_headers(payload: dict) -> dict[str, str]:
+    headers = {"Content-Type": "application/vnd.amazon.eventstream"}
+    for member in ("Engine", "OutputFormat", "VoiceId", "LanguageCode", "SampleRate"):
+        if payload.get(member):
+            headers[f"x-amzn-{member}"] = str(payload[member])
+    return headers
+
+
+def polly_put_lexicon(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"sy{time.time_ns() % 10**12}"
+    run_aws_json(aws_bin, endpoint_url, region, "polly", "put-lexicon", env, ["--name", name, "--content", POLLY_LEXICON])
+    return name
+
+
+def polly_start_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", POLLY_COVERAGE_BUCKET])
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "polly", "start-speech-synthesis-task", env,
+        ["--output-format", "mp3", "--output-s3-bucket-name", POLLY_COVERAGE_BUCKET, "--text", "Hello", "--voice-id", "Joanna"],
+    )
+    task = data.get("SynthesisTask") if isinstance(data, dict) else None
+    return str(task.get("TaskId") or "") if isinstance(task, dict) else ""
+
+
+def polly_custom_voice(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a custom voice (raw: the CLI has no create-voice) and read it once
+    so it leaves the pending state and can be deleted."""
+    def raw(op: str, method_payload: dict) -> str:
+        ep = Endpoint(service="polly", cli_service="polly", operation=op, cli_operation=pascal_to_kebab(op), source="runtime-state")
+        _, text = invoke_raw_endpoint(ep, endpoint_url, region, env, method_payload)
+        return text
+    text = raw("CreateVoice", {
+        "Name": "stackyard-voice", "LanguageCode": "en-US", "TermsAccepted": True,
+        "VoiceCreationData": {"Recordings": [{"Format": "wav", "Data": {"Bytes": "AAAA"}}]},
+    })
+    try:
+        voice_id = str(json.loads(text)["Voice"]["Id"])
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return ""
+    raw("GetVoice", {"VoiceId": voice_id})
+    return voice_id
+
+
+def polly_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Polly operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("polly", {})
+    if not state.get("lexicon"):
+        state["lexicon"] = polly_put_lexicon(aws_bin, endpoint_url, region, env)
+    lexicon_arn = f"arn:aws:polly:{region}:123456789012:lexicon/{state['lexicon']}"
+    if op in {"DescribeVoices", "ListLexicons", "ListSpeechSynthesisTasks"}:
+        return {}
+    if op == "SynthesizeSpeech":
+        return dict(POLLY_SPEECH)
+    if op == "PutLexicon":
+        return {"Name": f"sy{time.time_ns() % 10**12}", "Content": POLLY_LEXICON}
+    if op == "GetLexicon":
+        return {"Name": state["lexicon"]}
+    if op == "DeleteLexicon":
+        return {"Name": polly_put_lexicon(aws_bin, endpoint_url, region, env)}
+    if op == "StartSpeechSynthesisTask":
+        polly_start_task(aws_bin, endpoint_url, region, env)  # ensures the bucket
+        return {**POLLY_SPEECH, "OutputS3BucketName": POLLY_COVERAGE_BUCKET}
+    if op == "GetSpeechSynthesisTask":
+        return {"TaskId": polly_start_task(aws_bin, endpoint_url, region, env)}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": lexicon_arn}
+    if op == "TagResource":
+        return {"ResourceArn": lexicon_arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": lexicon_arn, "TagKeys": ["stackyard"]}
+    if op == "CreateVoice":
+        return {
+            "Name": "stackyard-voice", "LanguageCode": "en-US", "TermsAccepted": True,
+            "VoiceCreationData": {"Recordings": [{"Format": "wav", "Data": {"Bytes": "AAAA"}}]},
+        }
+    if op == "GetVoice":
+        return {"VoiceId": "Joanna"}
+    if op == "DeleteVoice":
+        return {"VoiceId": polly_custom_voice(endpoint_url, region, env)}
+    if op == "StartSpeechSynthesisStream":
+        return {"Engine": "neural", "OutputFormat": "pcm", "VoiceId": "Joanna", "ActionStream": {"TextEvent": {"Text": "Hello from Stackyard"}}}
+    return payload
+
+
 def route53profiles_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -35623,6 +35992,10 @@ def hydrate_payload_with_service_state(
         return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "route53domains":
         return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "polly":
+        return polly_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "textract":
+        return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
@@ -56556,6 +56929,17 @@ def run_endpoint(
 ) -> Result:
     started = time.time()
     extra_output_text = ""
+    if endpoint.service == "transcribestreaming":
+        # Every operation is an HTTP/2-style event stream with no CLI command.
+        ok, detail = run_transcribestreaming_endpoint(endpoint, endpoint_url, region, env)
+        return Result(
+            endpoint=endpoint,
+            status="success" if ok else "service_error",
+            returncode=0 if ok else 1,
+            duration_ms=int((time.time() - started) * 1000),
+            detail="ok(raw_event_stream)" if ok else detail,
+            command=f"raw:transcribestreaming.{endpoint.operation}",
+        )
     if endpoint.service == "kinesisvideomedia" and endpoint.operation == "PutMedia":
         # PutMedia is the producer API and has no CLI command; send real MKV.
         kvs_media_seed(endpoint_url, region, env)
@@ -57870,7 +58254,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
