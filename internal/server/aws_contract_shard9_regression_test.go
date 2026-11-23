@@ -284,8 +284,8 @@ func TestFlinkShard9MutationAndSnapshotShapes(t *testing.T) {
 	resp = flinkRequest(t, ts, "StartApplication", `{"ApplicationName":"stage9-flink"}`)
 	assertStatus(t, resp, http.StatusOK)
 	startBody := decodeShard9JSONBody(t, resp)
-	if _, ok := startBody["OperationId"]; ok {
-		t.Fatalf("expected StartApplication to omit OperationId, got %#v", startBody["OperationId"])
+	if got, _ := startBody["OperationId"].(string); got == "" {
+		t.Fatalf("expected StartApplication to return OperationId, got %#v", startBody["OperationId"])
 	}
 
 	resp = flinkRequest(t, ts, "UpdateApplication", `{"ApplicationName":"stage9-flink"}`)

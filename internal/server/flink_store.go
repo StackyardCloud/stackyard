@@ -106,14 +106,14 @@ func (s *flinkStore) Handle(action string, payload map[string]any) map[string]an
 	case "StartApplication":
 		application.Status = "RUNNING"
 		application.UpdatedAt = now
-		s.addOperationLocked(application.Name, "StartApplication", "SUCCEEDED")
-		return map[string]any{}
+		op := s.addOperationLocked(application.Name, "StartApplication", "SUCCEEDED")
+		return map[string]any{"OperationId": op["OperationId"]}
 
 	case "StopApplication":
 		application.Status = "READY"
 		application.UpdatedAt = now
-		s.addOperationLocked(application.Name, "StopApplication", "SUCCEEDED")
-		return map[string]any{}
+		op := s.addOperationLocked(application.Name, "StopApplication", "SUCCEEDED")
+		return map[string]any{"OperationId": op["OperationId"]}
 
 	case "RollbackApplication":
 		if application.VersionID > 1 {

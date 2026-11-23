@@ -256,7 +256,7 @@ func (s *Server) handleCognitoUserPoolsStage7Action(w http.ResponseWriter, actio
 			respondCognitoUserPoolsErrorForErr(w, err)
 			return true
 		}
-		out := map[string]any{"TermsList": cognitoUserPoolsTermsListPayload(records)}
+		out := map[string]any{"Terms": cognitoUserPoolsTermsListPayload(records)}
 		if nextToken != "" {
 			out["NextToken"] = nextToken
 		}
@@ -469,7 +469,18 @@ func cognitoUserPoolsTermsListPayload(records []cognitoUserPoolsTermsRecord) []m
 	}
 	out := make([]map[string]any, 0, len(records))
 	for _, record := range records {
-		out = append(out, cognitoUserPoolsTermsPayload(record))
+		enforcement, _ := record.TermsDetails["Enforcement"].(string)
+		if enforcement == "" {
+			enforcement = "NONE"
+		}
+		// ListTerms returns TermsDescriptionType summaries, not full terms.
+		out = append(out, map[string]any{
+			"TermsId":          record.TermsID,
+			"TermsName":        record.TermsName,
+			"Enforcement":      enforcement,
+			"CreationDate":     float64(record.CreationDate.Unix()),
+			"LastModifiedDate": float64(record.LastModifiedDate.Unix()),
+		})
 	}
 	sort.Slice(out, func(i, j int) bool {
 		left, _ := out[i]["TermsId"].(string)
