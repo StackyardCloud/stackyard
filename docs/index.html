@@ -291,6 +291,7 @@
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#textract">Textract</a>
+        <a href="#wafregional">WAF Classic Regional</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
@@ -24970,6 +24971,116 @@
         <tr><td><code>UpdateAdapter</code></td></tr>
         </tbody>
         </table>
+        </details>
+        </section>
+
+        <section id="wafregional" class="service">
+
+        <div class="service-header">
+        <h2>AWS WAF Classic Regional</h2>
+        <p>SigV4 signed with service <code>waf-regional</code>. JSON 1.1 API with <code>X-Amz-Target: AWSWAF_Regional_20161128.*</code>. Every create, update and delete needs an unused change token from <code>GetChangeToken</code>; a used token reports PENDING once and INSYNC after. Updates apply INSERT/DELETE lists atomically, and conditions, rules, rule groups and web ACLs can't be deleted while non-empty or referenced. Web ACLs associate with Application Load Balancer and API Gateway stage ARNs (checked by pattern). No traffic is inspected, so sampled requests and rate-based managed keys are always empty.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: waf-regional</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS WAF Classic Regional API action catalog. See <code>internal/server/wafregional_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateWebACL</code></td></tr>
+        <tr><td><code>CreateByteMatchSet</code></td></tr>
+        <tr><td><code>CreateGeoMatchSet</code></td></tr>
+        <tr><td><code>CreateIPSet</code></td></tr>
+        <tr><td><code>CreateRateBasedRule</code></td></tr>
+        <tr><td><code>CreateRegexMatchSet</code></td></tr>
+        <tr><td><code>CreateRegexPatternSet</code></td></tr>
+        <tr><td><code>CreateRule</code></td></tr>
+        <tr><td><code>CreateRuleGroup</code></td></tr>
+        <tr><td><code>CreateSizeConstraintSet</code></td></tr>
+        <tr><td><code>CreateSqlInjectionMatchSet</code></td></tr>
+        <tr><td><code>CreateWebACL</code></td></tr>
+        <tr><td><code>CreateWebACLMigrationStack</code></td></tr>
+        <tr><td><code>CreateXssMatchSet</code></td></tr>
+        <tr><td><code>DeleteByteMatchSet</code></td></tr>
+        <tr><td><code>DeleteGeoMatchSet</code></td></tr>
+        <tr><td><code>DeleteIPSet</code></td></tr>
+        <tr><td><code>DeleteLoggingConfiguration</code></td></tr>
+        <tr><td><code>DeletePermissionPolicy</code></td></tr>
+        <tr><td><code>DeleteRateBasedRule</code></td></tr>
+        <tr><td><code>DeleteRegexMatchSet</code></td></tr>
+        <tr><td><code>DeleteRegexPatternSet</code></td></tr>
+        <tr><td><code>DeleteRule</code></td></tr>
+        <tr><td><code>DeleteRuleGroup</code></td></tr>
+        <tr><td><code>DeleteSizeConstraintSet</code></td></tr>
+        <tr><td><code>DeleteSqlInjectionMatchSet</code></td></tr>
+        <tr><td><code>DeleteWebACL</code></td></tr>
+        <tr><td><code>DeleteXssMatchSet</code></td></tr>
+        <tr><td><code>DisassociateWebACL</code></td></tr>
+        <tr><td><code>GetByteMatchSet</code></td></tr>
+        <tr><td><code>GetChangeToken</code></td></tr>
+        <tr><td><code>GetChangeTokenStatus</code></td></tr>
+        <tr><td><code>GetGeoMatchSet</code></td></tr>
+        <tr><td><code>GetIPSet</code></td></tr>
+        <tr><td><code>GetLoggingConfiguration</code></td></tr>
+        <tr><td><code>GetPermissionPolicy</code></td></tr>
+        <tr><td><code>GetRateBasedRule</code></td></tr>
+        <tr><td><code>GetRateBasedRuleManagedKeys</code></td></tr>
+        <tr><td><code>GetRegexMatchSet</code></td></tr>
+        <tr><td><code>GetRegexPatternSet</code></td></tr>
+        <tr><td><code>GetRule</code></td></tr>
+        <tr><td><code>GetRuleGroup</code></td></tr>
+        <tr><td><code>GetSampledRequests</code></td></tr>
+        <tr><td><code>GetSizeConstraintSet</code></td></tr>
+        <tr><td><code>GetSqlInjectionMatchSet</code></td></tr>
+        <tr><td><code>GetWebACL</code></td></tr>
+        <tr><td><code>GetWebACLForResource</code></td></tr>
+        <tr><td><code>GetXssMatchSet</code></td></tr>
+        <tr><td><code>ListActivatedRulesInRuleGroup</code></td></tr>
+        <tr><td><code>ListByteMatchSets</code></td></tr>
+        <tr><td><code>ListGeoMatchSets</code></td></tr>
+        <tr><td><code>ListIPSets</code></td></tr>
+        <tr><td><code>ListLoggingConfigurations</code></td></tr>
+        <tr><td><code>ListRateBasedRules</code></td></tr>
+        <tr><td><code>ListRegexMatchSets</code></td></tr>
+        <tr><td><code>ListRegexPatternSets</code></td></tr>
+        <tr><td><code>ListResourcesForWebACL</code></td></tr>
+        <tr><td><code>ListRuleGroups</code></td></tr>
+        <tr><td><code>ListRules</code></td></tr>
+        <tr><td><code>ListSizeConstraintSets</code></td></tr>
+        <tr><td><code>ListSqlInjectionMatchSets</code></td></tr>
+        <tr><td><code>ListSubscribedRuleGroups</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListWebACLs</code></td></tr>
+        <tr><td><code>ListXssMatchSets</code></td></tr>
+        <tr><td><code>PutLoggingConfiguration</code></td></tr>
+        <tr><td><code>PutPermissionPolicy</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateByteMatchSet</code></td></tr>
+        <tr><td><code>UpdateGeoMatchSet</code></td></tr>
+        <tr><td><code>UpdateIPSet</code></td></tr>
+        <tr><td><code>UpdateRateBasedRule</code></td></tr>
+        <tr><td><code>UpdateRegexMatchSet</code></td></tr>
+        <tr><td><code>UpdateRegexPatternSet</code></td></tr>
+        <tr><td><code>UpdateRule</code></td></tr>
+        <tr><td><code>UpdateRuleGroup</code></td></tr>
+        <tr><td><code>UpdateSizeConstraintSet</code></td></tr>
+        <tr><td><code>UpdateSqlInjectionMatchSet</code></td></tr>
+        <tr><td><code>UpdateWebACL</code></td></tr>
+        <tr><td><code>UpdateXssMatchSet</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>waf-regional</code>: <code>docker compose -f examples/aws/waf-regional/docker-compose.yml up --build</code></li>
+        </ul>
         </details>
         </section>
 

@@ -563,6 +563,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
+    "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
@@ -2230,6 +2231,9 @@ SERVICE_ALIASES = {
     "amazonroute53domains": "route53domains",
     "textract": "textract",
     "amazontextract": "textract",
+    "wafregional": "wafregional",
+    "waf-regional": "wafregional",
+    "awswafregional": "wafregional",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
@@ -3188,6 +3192,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codeconnections": {},
     "route53domains": {},
     "textract": {},
+    "wafregional": {},
     "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
@@ -35961,6 +35966,143 @@ def opensearchserverless_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+WAFR_ALB = "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/stackyard-waf/50dc6c495c0c9188"
+WAFR_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": "111122223333"},
+                                          "Action": ["waf-regional:UpdateWebACL", "waf-regional:GetRuleGroup"]}]})
+# Create-operation extras per entity, and one valid item each Update inserts.
+WAFR_KINDS = {
+    "ByteMatchSet": ("ByteMatchSetId", "ByteMatchTuple", {"FieldToMatch": {"Type": "URI"}, "TargetString": base64.b64encode(b"admin").decode(), "TextTransformation": "NONE", "PositionalConstraint": "CONTAINS"}),
+    "GeoMatchSet": ("GeoMatchSetId", "GeoMatchConstraint", {"Type": "Country", "Value": "US"}),
+    "IPSet": ("IPSetId", "IPSetDescriptor", {"Type": "IPV4", "Value": "192.0.2.0/24"}),
+    "RegexMatchSet": ("RegexMatchSetId", "RegexMatchTuple", None),
+    "RegexPatternSet": ("RegexPatternSetId", "RegexPatternString", "^/admin"),
+    "SizeConstraintSet": ("SizeConstraintSetId", "SizeConstraint", {"FieldToMatch": {"Type": "BODY"}, "TextTransformation": "NONE", "ComparisonOperator": "GT", "Size": 8192}),
+    "SqlInjectionMatchSet": ("SqlInjectionMatchSetId", "SqlInjectionMatchTuple", {"FieldToMatch": {"Type": "QUERY_STRING"}, "TextTransformation": "URL_DECODE"}),
+    "XssMatchSet": ("XssMatchSetId", "XssMatchTuple", {"FieldToMatch": {"Type": "BODY"}, "TextTransformation": "HTML_ENTITY_DECODE"}),
+    "Rule": ("RuleId", "Predicate", None),
+    "RateBasedRule": ("RuleId", "Predicate", None),
+    "RuleGroup": ("RuleGroupId", "ActivatedRule", None),
+    "WebACL": ("WebACLId", "ActivatedRule", None),
+}
+
+
+def wafr_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "waf-regional", pascal_to_kebab(op), env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def wafr_token(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    return str(wafr_call(aws_bin, endpoint_url, region, env, "GetChangeToken", {}).get("ChangeToken") or "")
+
+
+def wafr_create_args(kind: str, token: str) -> dict:
+    unique = f"cov{time.time_ns()}"
+    args = {"Name": unique, "ChangeToken": token}
+    if kind in ("Rule", "RateBasedRule", "RuleGroup", "WebACL"):
+        args["MetricName"] = unique
+    if kind == "WebACL":
+        args["DefaultAction"] = {"Type": "ALLOW"}
+    if kind == "RateBasedRule":
+        args.update({"RateKey": "IP", "RateLimit": 2000})
+    return args
+
+
+def wafr_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str) -> str:
+    token = wafr_token(aws_bin, endpoint_url, region, env)
+    out = wafr_call(aws_bin, endpoint_url, region, env, "Create" + kind, wafr_create_args(kind, token))
+    obj = out.get("Rule" if kind == "RateBasedRule" else kind) or {}
+    return str(obj.get(WAFR_KINDS[kind][0]) or "")
+
+
+def wafr_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One entity of every kind, a web ACL with its arn, a rule group and a
+    migration bucket."""
+    state = RUNTIME_STATE.setdefault("wafregional", {})
+    if not state.get("WebACL"):
+        for kind in WAFR_KINDS:
+            state[kind] = wafr_create(aws_bin, endpoint_url, region, env, kind)
+        state["acl_arn"] = f"arn:aws:waf-regional:us-east-1:123456789012:webacl/{state['WebACL']}"
+        state["group_arn"] = f"arn:aws:waf-regional:us-east-1:123456789012:rulegroup/{state['RuleGroup']}"
+        state["bucket"] = s3_ensure_bucket(aws_bin, endpoint_url, region, env, "aws-waf-migration-stackyard-cov", track_as_primary=False)
+    return state
+
+
+def wafr_item(kind: str, fx: dict) -> object:
+    item = WAFR_KINDS[kind][2]
+    if kind == "RegexMatchSet":
+        item = {"FieldToMatch": {"Type": "URI"}, "TextTransformation": "NONE", "RegexPatternSetId": fx["RegexPatternSet"]}
+    if kind in ("Rule", "RateBasedRule"):
+        item = {"Negated": False, "Type": "IPMatch", "DataId": fx["IPSet"]}
+    if kind == "RuleGroup":
+        item = {"Priority": 1, "RuleId": fx["Rule"], "Action": {"Type": "BLOCK"}}
+    if kind == "WebACL":
+        item = {"Priority": 1, "RuleId": fx["Rule"], "Action": {"Type": "BLOCK"}}
+    return item
+
+
+def wafregional_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Every WAF Classic change needs a fresh change token; updates and deletes
+    get entities of their own so the shared fixture stays usable."""
+    op = endpoint.operation
+    fx = wafr_fixture(aws_bin, endpoint_url, region, env)
+    token = lambda: wafr_token(aws_bin, endpoint_url, region, env)
+    for prefix in ("Create", "Get", "Update", "Delete"):
+        kind = op[len(prefix):]
+        if not op.startswith(prefix) or kind not in WAFR_KINDS:
+            continue
+        id_key, upd_key = WAFR_KINDS[kind][0], WAFR_KINDS[kind][1]
+        if prefix == "Create":
+            return wafr_create_args(kind, token())
+        if prefix == "Get":
+            return {id_key: fx[kind]}
+        own = wafr_create(aws_bin, endpoint_url, region, env, kind)
+        if prefix == "Update":
+            args = {id_key: own, "ChangeToken": token(), "Updates": [{"Action": "INSERT", upd_key: wafr_item(kind, fx)}]}
+            if kind == "RateBasedRule":
+                args["RateLimit"] = 3000
+            return args
+        return {id_key: own, "ChangeToken": token()}
+    if op == "GetChangeTokenStatus":
+        return {"ChangeToken": token()}
+    if op in ("AssociateWebACL",):
+        return {"WebACLId": fx["WebACL"], "ResourceArn": WAFR_ALB}
+    if op in ("DisassociateWebACL", "GetWebACLForResource"):
+        return {"ResourceArn": WAFR_ALB}
+    if op == "ListResourcesForWebACL":
+        return {"WebACLId": fx["WebACL"], "ResourceType": "APPLICATION_LOAD_BALANCER"}
+    logging = {"ResourceArn": fx["acl_arn"], "LogDestinationConfigs": ["arn:aws:firehose:us-east-1:123456789012:deliverystream/aws-waf-logs-cov"]}
+    if op == "PutLoggingConfiguration":
+        return {"LoggingConfiguration": logging}
+    if op in ("GetLoggingConfiguration", "DeleteLoggingConfiguration"):
+        wafr_call(aws_bin, endpoint_url, region, env, "PutLoggingConfiguration", {"LoggingConfiguration": logging})
+        return {"ResourceArn": fx["acl_arn"]}
+    if op == "PutPermissionPolicy":
+        return {"ResourceArn": fx["group_arn"], "Policy": WAFR_POLICY}
+    if op in ("GetPermissionPolicy", "DeletePermissionPolicy"):
+        wafr_call(aws_bin, endpoint_url, region, env, "PutPermissionPolicy", {"ResourceArn": fx["group_arn"], "Policy": WAFR_POLICY})
+        return {"ResourceArn": fx["group_arn"]}
+    if op == "TagResource":
+        return {"ResourceARN": fx["acl_arn"], "Tags": [{"Key": "env", "Value": "cov"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": fx["acl_arn"], "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": fx["acl_arn"]}
+    if op == "GetSampledRequests":
+        now = int(time.time())
+        return {"WebAclId": fx["WebACL"], "RuleId": "Default_Action", "TimeWindow": {"StartTime": now - 3600, "EndTime": now}, "MaxItems": 100}
+    if op == "GetRateBasedRuleManagedKeys":
+        return {"RuleId": fx["RateBasedRule"]}
+    if op == "ListActivatedRulesInRuleGroup":
+        return {"RuleGroupId": fx["RuleGroup"]}
+    if op == "CreateWebACLMigrationStack":
+        return {"WebACLId": fx["WebACL"], "S3BucketName": fx["bucket"], "IgnoreUnsupportedType": True}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -35996,6 +36138,8 @@ def hydrate_payload_with_service_state(
         return polly_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "textract":
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "wafregional":
+        return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":

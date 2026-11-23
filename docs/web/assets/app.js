@@ -190,7 +190,15 @@ const SERVICE_CATALOG = [
     summary: "Emulate text detection, forms, tables, queries, layout, signatures, expense, identity and lending analysis over text and PDF documents, with async jobs, adapters and tags.",
     docsHref: "../../../index.html#textract",
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
+  },  {
+    id: "wafregional",
+    name: "WAF Classic Regional",
+    category: "security",
+    summary: "Emulate WAF Classic regional conditions, rules, rate-based rules, rule groups and web ACLs with change tokens, resource associations, logging, rule group policies and tags.",
+    docsHref: "../../../index.html#wafregional",
+    exampleHref: "../../../../examples/aws/waf-regional/docker-compose.yml"
   },
+
   {
     id: "cloudfront",
     name: "CloudFront",
