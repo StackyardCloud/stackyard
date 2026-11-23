@@ -34,7 +34,7 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 
 - names are 3-63 letters, digits or hyphens that start and end with a letter or digit (400 `InvalidResourceName`)
 - `identity.type`, when set, must be `SystemAssigned`, `UserAssigned` or `None`; `publicNetworkAccess` (default `Enabled`) and `managedResourcesPublicNetworkAccess` must be `Enabled`, `Disabled` or `NotSpecified`
-- `endpoints` (`https://{name}.purview.azure.com/{catalog,guardian,scan}`), `friendlyName`, `createdAt`, `accountStatus` and `managedResources` are server-owned; `managedResourceGroupName` defaults to `managed-rg-{name}`, and the managed storage account and Event Hubs namespace are named but not created
+- `endpoints` (https `{name}.purview.azure.com/{catalog,guardian,scan}`), `friendlyName`, `createdAt`, `accountStatus` and `managedResources` are server-owned; `managedResourceGroupName` defaults to `managed-rg-{name}`, and the managed storage account and Event Hubs namespace are named but not created
 - `listkeys` returns stable primary and secondary Atlas Kafka connection strings; `addRootCollectionAdmin` needs an `objectId`
 - `checkNameAvailability` answers with `nameAvailable` and compares names across all subscriptions, because account endpoints are DNS names
 

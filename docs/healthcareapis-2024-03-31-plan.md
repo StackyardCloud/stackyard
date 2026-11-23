@@ -38,8 +38,8 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 
 - workspace names are 3-24 lowercase letters or digits; service, connector and destination names are 3-24 lowercase letters, digits or hyphens that start and end with a letter or digit (400 `InvalidResourceName`)
 - `publicNetworkAccess` must be `Enabled` (the default) or `Disabled`
-- FHIR services need `kind` `fhir-R4` or `fhir-Stu3`; `authenticationConfiguration.authority`, when set, must be an https URL, and `audience` defaults to the service URL `https://{workspace}-{service}.fhir.azurehealthcareapis.com`
-- DICOM services report `serviceUrl` `https://{workspace}-{service}.dicom.azurehealthcareapis.com`, which is server-owned; FHIR and DICOM services report `eventState` `Disabled`
+- FHIR services need `kind` `fhir-R4` or `fhir-Stu3`; `authenticationConfiguration.authority`, when set, must be an https URL, and `audience` defaults to the service URL https `{workspace}-{service}.fhir.azurehealthcareapis.com`
+- DICOM services report `serviceUrl` https `{workspace}-{service}.dicom.azurehealthcareapis.com`, which is server-owned; FHIR and DICOM services report `eventState` `Disabled`
 - MedTech connectors need an `ingestionEndpointConfiguration` with `eventHubName`, `consumerGroup` and `fullyQualifiedEventHubNamespace`, and a `deviceMapping.content` object
 - FHIR destinations need `resourceIdentityResolutionType` `Create` or `Lookup`, a `fhirServiceResourceId` naming a workspace FHIR service and a `fhirMapping.content` object; the FHIR service is not required to exist
 
