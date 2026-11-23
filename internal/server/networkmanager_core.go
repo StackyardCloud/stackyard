@@ -162,6 +162,9 @@ func nmDeleteCoreNetwork(st *nmStore, in map[string]any) (map[string]any, *nmErr
 // ---- policies and change sets ----
 
 func (st *nmStore) addPolicy(coreID, raw, description string, doc *nmPolicyDoc) *nmPolicy {
+	// Trim first: it may delete from this core network's slice, so read the
+	// versions only afterwards (a slice read before would be stale).
+	st.trimPolicyBytes(len(raw))
 	versions := st.policies[coreID]
 	next := 1
 	if n := len(versions); n > 0 {
@@ -172,9 +175,6 @@ func (st *nmStore) addPolicy(coreID, raw, description string, doc *nmPolicyDoc) 
 			p.alias = ""
 		}
 	}
-	// Bound stored policy text across every core network, not just versions
-	// per network: drop the oldest non-LIVE versions anywhere until it fits.
-	st.trimPolicyBytes(len(raw))
 	p := &nmPolicy{version: next, alias: "LATEST", description: description, document: raw,
 		changeSet: "PENDING_GENERATION", created: nmNow(), parsed: doc}
 	versions = append(versions, p)

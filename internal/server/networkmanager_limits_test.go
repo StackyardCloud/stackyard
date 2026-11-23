@@ -62,3 +62,22 @@ func TestNetworkManagerAssociateLinkWithoutLink(t *testing.T) {
 		t.Fatal("AssociateLink without a LinkId succeeded")
 	}
 }
+
+// Trimming can remove versions from the same core network being written to;
+// the write must not restore them from a stale slice.
+func TestNetworkManagerPolicyTrimOnSameCoreNetwork(t *testing.T) {
+	st := newNetworkManagerStore()
+	doc := strings.Repeat("x", 1<<20)
+	for v := 0; v < 49; v++ {
+		st.addPolicy("core-a", doc, "", nil)
+	}
+	// One more large document forces trimming within core-a itself.
+	st.addPolicy("core-a", strings.Repeat("y", 40<<20), "", nil)
+	total := 0
+	for _, p := range st.policies["core-a"] {
+		total += len(p.document)
+	}
+	if total > nmMaxPolicyBytes {
+		t.Fatalf("core-a holds %d policy bytes after trimming, cap %d", total, nmMaxPolicyBytes)
+	}
+}
