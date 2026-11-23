@@ -184,6 +184,7 @@
         <a href="#pipes">EventBridge Pipes</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
+        <a href="#schemas">EventBridge Schemas</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
         <a href="#mpa">Multi-party Approval</a>
@@ -13205,6 +13206,66 @@
         <summary>Examples</summary>
         <ul>
         <li><code>scheduler</code>: <code>docker compose -f examples/aws/scheduler/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="schemas" class="service">
+
+        <div class="service-header">
+        <h2>Amazon EventBridge Schemas</h2>
+        <p>SigV4 signed with service <code>schemas</code>. REST JSON API under <code>/v1/registries</code>, <code>/v1/discoverers</code>, <code>/v1/discover</code>, <code>/v1/policy</code> and <code>/tags</code> for registries (the AWS-managed <code>aws.events</code> registry and <code>discovered-schemas</code> are built in), schemas validated as OpenAPI 3 or JSON Schema Draft 4 with a new version on every content change, version listing and deletion, keyword search, export to JSON Schema Draft 4, schema inference from sample events, code bindings for Java8, Python36, TypeScript3 and Go1 served as a generated zip archive, discoverers on existing EventBridge event buses, resource policies with revision checks and tags. Code bindings model only the root object's top-level properties. All 31 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: schemas</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDiscoverer</code></td></tr>
+        <tr><td><code>CreateRegistry</code></td></tr>
+        <tr><td><code>CreateSchema</code></td></tr>
+        <tr><td><code>DeleteDiscoverer</code></td></tr>
+        <tr><td><code>DeleteRegistry</code></td></tr>
+        <tr><td><code>DeleteResourcePolicy</code></td></tr>
+        <tr><td><code>DeleteSchema</code></td></tr>
+        <tr><td><code>DeleteSchemaVersion</code></td></tr>
+        <tr><td><code>DescribeCodeBinding</code></td></tr>
+        <tr><td><code>DescribeDiscoverer</code></td></tr>
+        <tr><td><code>DescribeRegistry</code></td></tr>
+        <tr><td><code>DescribeSchema</code></td></tr>
+        <tr><td><code>ExportSchema</code></td></tr>
+        <tr><td><code>GetCodeBindingSource</code></td></tr>
+        <tr><td><code>GetDiscoveredSchema</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>ListDiscoverers</code></td></tr>
+        <tr><td><code>ListRegistries</code></td></tr>
+        <tr><td><code>ListSchemaVersions</code></td></tr>
+        <tr><td><code>ListSchemas</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutCodeBinding</code></td></tr>
+        <tr><td><code>PutResourcePolicy</code></td></tr>
+        <tr><td><code>SearchSchemas</code></td></tr>
+        <tr><td><code>StartDiscoverer</code></td></tr>
+        <tr><td><code>StopDiscoverer</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDiscoverer</code></td></tr>
+        <tr><td><code>UpdateRegistry</code></td></tr>
+        <tr><td><code>UpdateSchema</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>schemas</code>: <code>docker compose -f examples/aws/schemas/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
