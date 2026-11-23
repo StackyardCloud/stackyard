@@ -444,8 +444,17 @@ func nmAssociateLink(st *nmStore, in map[string]any) (map[string]any, *nmErr) {
 	if err := st.checkDeviceLink(gnID, in); err != nil {
 		return nil, err
 	}
-	d, _ := st.child("device", gnID, device)
-	l, _ := st.child("link", gnID, link)
+	if link == "" {
+		return nil, nmValidation("LinkId is required.")
+	}
+	d, err := st.child("device", gnID, device)
+	if err != nil {
+		return nil, err
+	}
+	l, err := st.child("link", gnID, link)
+	if err != nil {
+		return nil, err
+	}
 	if ds, ls := d.data["SiteId"], l.data["SiteId"]; ds != nil && ls != nil && ds != ls {
 		return nil, nmValidation("Device %s and link %s must be in the same site.", device, link)
 	}

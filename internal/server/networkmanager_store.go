@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	nmAccount    = "123456789012"
-	nmMaxRecords = 20000 // every stored record, across all kinds
-	nmMaxTags    = 50
-	nmMaxTokens  = 10000
-	nmMaxVersion = 1000 // policy versions kept per core network
+	nmAccount        = "123456789012"
+	nmMaxRecords     = 20000 // every stored record, across all kinds
+	nmMaxTags        = 50
+	nmMaxTokens      = 10000
+	nmMaxVersion     = 50       // policy versions kept per core network
+	nmMaxPolicyBytes = 64 << 20 // policy document bytes kept across all core networks
 )
 
 // nmRec is one stored resource or association. data holds output-shaped

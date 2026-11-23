@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func init() {
@@ -171,6 +172,9 @@ func (st *nmStore) addPolicy(coreID, raw, description string, doc *nmPolicyDoc) 
 			p.alias = ""
 		}
 	}
+	// Bound stored policy text across every core network, not just versions
+	// per network: drop the oldest non-LIVE versions anywhere until it fits.
+	st.trimPolicyBytes(len(raw))
 	p := &nmPolicy{version: next, alias: "LATEST", description: description, document: raw,
 		changeSet: "PENDING_GENERATION", created: nmNow(), parsed: doc}
 	versions = append(versions, p)
@@ -1267,4 +1271,36 @@ func nmListCoreNetworkRoutingInformation(st *nmStore, in map[string]any) (map[st
 		return nil, err
 	}
 	return map[string]any{"CoreNetworkRoutingInformation": page, "NextToken": nmNonEmpty(next)}, nil
+}
+
+// trimPolicyBytes drops the oldest non-LIVE policy versions (across all core
+// networks) until adding incoming bytes stays within nmMaxPolicyBytes.
+func (st *nmStore) trimPolicyBytes(incoming int) {
+	total := incoming
+	for _, vs := range st.policies {
+		for _, p := range vs {
+			total += len(p.document)
+		}
+	}
+	for total > nmMaxPolicyBytes {
+		oldestCore, oldestIdx := "", -1
+		var oldest time.Time
+		for core, vs := range st.policies {
+			for i, p := range vs {
+				if p.alias == "LIVE" || p.alias == "LATEST" {
+					continue
+				}
+				if oldestIdx < 0 || p.created.Before(oldest) {
+					oldestCore, oldestIdx, oldest = core, i, p.created
+				}
+				break // versions are in creation order; the first eligible is the oldest
+			}
+		}
+		if oldestIdx < 0 {
+			return // only LIVE/LATEST versions remain
+		}
+		vs := st.policies[oldestCore]
+		total -= len(vs[oldestIdx].document)
+		st.policies[oldestCore] = slices.Delete(vs, oldestIdx, oldestIdx+1)
+	}
 }

@@ -130,6 +130,9 @@ func nmParsePolicy(raw string) (*nmPolicyDoc, *nmErr) {
 	edges, _ := cfg["edge-locations"].([]any)
 	if len(edges) == 0 || len(edges) > nmMaxEdges {
 		errs.add("core-network-configuration.edge-locations", "INVALID_EDGE_LOCATIONS", "edge-locations needs 1 to %d entries.", nmMaxEdges)
+		// The document is already rejected; only look at the capped prefix so
+		// an oversized list can't make the (linear) duplicate checks quadratic.
+		edges = edges[:min(len(edges), nmMaxEdges)]
 	}
 	for i, e := range edges {
 		em, _ := e.(map[string]any)
@@ -154,6 +157,7 @@ func nmParsePolicy(raw string) (*nmPolicyDoc, *nmErr) {
 	segments, _ := doc["segments"].([]any)
 	if len(segments) == 0 || len(segments) > nmMaxSegments {
 		errs.add("segments", "INVALID_SEGMENTS", "segments needs 1 to %d entries.", nmMaxSegments)
+		segments = segments[:min(len(segments), nmMaxSegments)]
 	}
 	for i, s := range segments {
 		sm, _ := s.(map[string]any)
