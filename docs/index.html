@@ -219,6 +219,7 @@
         <a href="#opensearchserverless">OpenSearch Serverless</a>
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
+        <a href="#pcaconnectorad">Private CA Connector for AD</a>
         <a href="#secretsmanager">Secrets Manager</a>
         <a href="#servicecatalogappregistry">Service Catalog AppRegistry</a>
         <a href="#servicequotas">Service Quotas</a>
@@ -8342,6 +8343,106 @@
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="pcaconnectorad" class="service">
+
+        <div class="service-header">
+        <h2>AWS Private CA Connector for Active Directory</h2>
+        <p>SigV4 signed with service <code>pca-connector-ad</code>. REST JSON API under <code>/connectors</code>, <code>/directoryRegistrations</code>, <code>/templates</code> and <code>/tags</code>; ARN path labels are percent-encoded. Connectors require an ACTIVE certificate authority in the Private CA store, a directory in the Directory Service store and security groups in the EC2 store, and report CREATING once before ACTIVE. Registering a directory that isn't Active settles to FAILED with <code>DIRECTORY_NOT_ACTIVE</code>. Template definitions (V2, V3, V4) are validated against the model plus the union rules, template-name rules and a renewal period shorter than the validity period; updates raise the minor revision and re-enrolling raises the major revision. No Active Directory or certificate enrollment traffic is emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pca-connector-ad</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>CreateConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>GetConnector</code></td>
+        </tr>
+        <tr>
+        <td><code>GetDirectoryRegistration</code></td>
+        </tr>
+        <tr>
+        <td><code>GetServicePrincipalName</code></td>
+        </tr>
+        <tr>
+        <td><code>GetTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>GetTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        <tr>
+        <td><code>ListConnectors</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDirectoryRegistrations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListServicePrincipalNames</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTemplateGroupAccessControlEntries</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTemplates</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateTemplate</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateTemplateGroupAccessControlEntry</code></td>
+        </tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
