@@ -193,6 +193,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
   },
   {
+    id: "pi",
+    name: "Performance Insights",
+    category: "integration",
+    summary: "Emulate Performance Insights for RDS and DocumentDB instances: deterministic db.load and OS/DB counter metrics, dimension keys by SQL, wait event, user and host, analysis reports with insights and recommendations, and tags.",
+    docsHref: "../../../index.html#pi",
+    exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",

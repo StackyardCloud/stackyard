@@ -310,6 +310,30 @@ func (s *Service) CreateDBInstance(input CreateDBInstanceInput) (DBInstance, err
 	return cloneDBInstance(instance), nil
 }
 
+// ResourceID is the DbiResourceId Stackyard reports for an instance.
+// ponytail: derived from the identifier rather than stored, so "a-b" and "ab"
+// share one; store a random id per instance if that ever matters.
+func ResourceID(identifier string) string {
+	return "db-" + strings.ToUpper(strings.ReplaceAll(identifier, "-", ""))
+}
+
+// InstanceByResourceID returns the instance whose ResourceID is id. When two
+// identifiers map to the same id, the lexically smallest wins.
+func (s *Service) InstanceByResourceID(id string) (DBInstance, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var best *DBInstance
+	for _, inst := range s.instances {
+		if ResourceID(inst.Identifier) == id && (best == nil || inst.Identifier < best.Identifier) {
+			best = inst
+		}
+	}
+	if best == nil {
+		return DBInstance{}, false
+	}
+	return cloneDBInstance(best), true
+}
+
 func (s *Service) DescribeDBInstances(input DescribeDBInstancesInput) ([]DBInstance, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
