@@ -1096,6 +1096,22 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/opensearch/docker-compose.yml"
   },
   {
+    id: "opensearchserverless",
+    name: "OpenSearch Serverless",
+    category: "database",
+    summary: "Serverless collections gated by encryption policies, network, data access and retention policies, security configs, VPC endpoints, indexes and ingestion.",
+    docsHref: "../../../index.html#opensearchserverless",
+    exampleHref: "../../../../examples/aws/opensearch-serverless/docker-compose.yml"
+  },
+  {
+    id: "osis",
+    name: "OpenSearch Ingestion",
+    category: "database",
+    summary: "Manage OpenSearch Ingestion pipelines with checked Data Prepper configurations, settle-on-read lifecycles, VPC endpoints, change progress, blueprints, resource policies and tags.",
+    docsHref: "../../../index.html#osis",
+    exampleHref: "../../../../examples/aws/osis/docker-compose.yml"
+  },
+  {
     id: "elasticsearchservice",
     name: "Elasticsearch Service",
     category: "database",
@@ -1527,6 +1543,22 @@ const SERVICE_CATALOG = [
     summary: "Exercise DB cluster/instance control plane APIs for InfluxDB on Timestream.",
     docsHref: "../../../index.html#timestream-influxdb",
     exampleHref: "../../../../examples/aws/timestream/docker-compose.yml"
+  },
+  {
+    id: "timestream-write",
+    name: "Timestream Write",
+    category: "database",
+    summary: "Emulate Timestream for LiveAnalytics databases, tables, WriteRecords with version upserts and retention windows, and CSV batch loads from S3.",
+    docsHref: "../../../index.html#timestream-write",
+    exampleHref: "../../../../examples/aws/timestream-liveanalytics/docker-compose.yml"
+  },
+  {
+    id: "timestream-query",
+    name: "Timestream Query",
+    category: "database",
+    summary: "Run a practical Timestream SQL subset (filters, bin(), aggregates, ORDER BY, LIMIT) over written records, plus scheduled queries and account settings.",
+    docsHref: "../../../index.html#timestream-query",
+    exampleHref: "../../../../examples/aws/timestream-liveanalytics/docker-compose.yml"
   }
 ];
 
