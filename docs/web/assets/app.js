@@ -176,6 +176,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/cloud-map/docker-compose.yml"
   },
   {
+    id: "route53domains",
+    name: "Route 53 Domains",
+    category: "integration",
+    summary: "Emulate domain registration, renewal, transfers, contacts and privacy, name servers, DNSSEC keys, operations tracking, billing and tags.",
+    docsHref: "../../../index.html#route53domains",
+    exampleHref: "../../../../examples/aws/route53domains/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",
@@ -198,6 +206,14 @@ const SERVICE_CATALOG = [
     summary: "Plan staged coverage for physical links, LAGs, virtual interfaces, direct-connect gateways, and routing/security workflows.",
     docsHref: "../../../index.html#directconnect",
     exampleHref: "../../../../examples/aws/directconnect/docker-compose.yml"
+  },
+  {
+    id: "route53profiles",
+    name: "Route 53 Profiles",
+    category: "integration",
+    summary: "Bundle private hosted zones, Resolver rules and DNS Firewall rule groups into Profiles and associate them with VPCs, one Profile per VPC.",
+    docsHref: "../../../index.html#route53profiles",
+    exampleHref: "../../../../examples/aws/route53profiles/docker-compose.yml"
   },
   {
     id: "config",
@@ -678,6 +694,14 @@ const SERVICE_CATALOG = [
     summary: "Manage DAX clusters, node replication, parameter groups, subnet groups, events and tags (control plane only).",
     docsHref: "../../../index.html#dax",
     exampleHref: "../../../../examples/aws/dax/docker-compose.yml"
+  },
+  {
+    id: "route53resolver",
+    name: "Route 53 Resolver",
+    category: "integration",
+    summary: "Emulate Resolver endpoints, forwarding rules, query logging, DNSSEC and resolver settings, and DNS Firewall domain lists, rule groups and VPC associations.",
+    docsHref: "../../../index.html#route53resolver",
+    exampleHref: "../../../../examples/aws/route53resolver/docker-compose.yml"
   },
   {
     id: "dynamodbstreams",

@@ -306,6 +306,28 @@ func (s *route53Store) route53NextHostedZoneIDLocked() string {
 	return id
 }
 
+// CreateZoneForDomain allocates a public hosted zone for a domain registered
+// through Route 53 Domains and returns its id and the four delegation-set name
+// servers, as AWS does on registration.
+// ponytail: the route53 store keeps no per-zone state yet, so only the id
+// advances; record the zone by name once the store models zones.
+func (s *route53Store) CreateZoneForDomain(domain string) (string, []string) {
+	s.mu.Lock()
+	id := s.route53NextHostedZoneIDLocked()
+	s.hostedZoneID = id
+	s.mu.Unlock()
+	var h uint32 = 2166136261
+	for i := 0; i < len(domain); i++ {
+		h = (h ^ uint32(domain[i])) * 16777619
+	}
+	return id, []string{
+		fmt.Sprintf("ns-%d.awsdns-%02d.com", h%2048, h%64),
+		fmt.Sprintf("ns-%d.awsdns-%02d.net", (h>>3)%2048, (h>>3)%64),
+		fmt.Sprintf("ns-%d.awsdns-%02d.org", (h>>6)%2048, (h>>6)%64),
+		fmt.Sprintf("ns-%d.awsdns-%02d.co.uk", (h>>9)%2048, (h>>9)%64),
+	}
+}
+
 func (s *route53Store) route53NextChangeIDLocked() string {
 	id := fmt.Sprintf("CSTACKYARD%02d", s.nextID)
 	s.nextID++

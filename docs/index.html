@@ -284,6 +284,9 @@
         <a href="#ram">RAM</a>
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
+        <a href="#route53profiles">Route 53 Profiles</a>
+        <a href="#route53domains">Route 53 Domains</a>
+        <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
         <a href="#vpc-lattice">VPC Lattice</a>
         <a href="#global-accelerator">Global Accelerator</a>
@@ -24353,6 +24356,360 @@
         <ul>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
         <li><code>route53</code>: <code>docker compose -f examples/aws/route53/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="route53profiles" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Profiles</h2>
+        <p>SigV4 signed with service <code>route53profiles</code>. REST JSON API under <code>/profile</code>, <code>/profileassociation</code>, <code>/profileresourceassociation</code> and <code>/tags/</code>. Requests are validated against the service model. CreateProfile is idempotent on ClientToken. A Profile associates with VPCs that exist in Stackyard's EC2 store, one Profile per VPC, and can't be deleted while associated. Resources are private hosted zones, Resolver rules and query log configurations, DNS Firewall rule groups (which need a <code>priority</code> of 100–9900 in ResourceProperties) and interface VPC endpoints; they are recognised by ARN, because Stackyard's Route 53 store keeps no hosted zones and Route 53 Resolver isn't emulated here. Profiles and associations report CREATING or UPDATING once, then COMPLETE. All 17 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53profiles</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateProfile</code></td></tr>
+        <tr><td><code>AssociateResourceToProfile</code></td></tr>
+        <tr><td><code>CreateProfile</code></td></tr>
+        <tr><td><code>DeleteProfile</code></td></tr>
+        <tr><td><code>DisassociateProfile</code></td></tr>
+        <tr><td><code>DisassociateResourceFromProfile</code></td></tr>
+        <tr><td><code>GetProfile</code></td></tr>
+        <tr><td><code>GetProfileAssociation</code></td></tr>
+        <tr><td><code>GetProfileResourceAssociation</code></td></tr>
+        <tr><td><code>ListProfileAssociations</code></td></tr>
+        <tr><td><code>ListProfileResourceAssociations</code></td></tr>
+        <tr><td><code>ListProfiles</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateProfileAssociation</code></td></tr>
+        <tr><td><code>UpdateProfileResourceAssociation</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>route53profiles</code>: <code>docker compose -f examples/aws/route53profiles/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="route53domains" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Domains</h2>
+        <p>SigV4 signed with service <code>route53domains</code>. JSON 1.1 API with <code>X-Amz-Target: Route53Domains_v20140515.*</code>. Registration creates a Route 53 hosted zone and uses its name servers; operations report SUBMITTED, IN_PROGRESS, then SUCCESSFUL as they are read. Prices come from a fixed TLD list; transfers to another account need the returned password; DNSSEC keys get RFC 4034 key tags and SHA-256 DS digests.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53domains</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Route 53 Domains API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptDomainTransferFromAnotherAwsAccount</code></td></tr>
+        <tr><td><code>AssociateDelegationSignerToDomain</code></td></tr>
+        <tr><td><code>CancelDomainTransferToAnotherAwsAccount</code></td></tr>
+        <tr><td><code>CheckDomainAvailability</code></td></tr>
+        <tr><td><code>CheckDomainTransferability</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteTagsForDomain</code></td></tr>
+        <tr><td><code>DisableDomainAutoRenew</code></td></tr>
+        <tr><td><code>DisableDomainTransferLock</code></td></tr>
+        <tr><td><code>DisassociateDelegationSignerFromDomain</code></td></tr>
+        <tr><td><code>EnableDomainAutoRenew</code></td></tr>
+        <tr><td><code>EnableDomainTransferLock</code></td></tr>
+        <tr><td><code>GetContactReachabilityStatus</code></td></tr>
+        <tr><td><code>GetDomainDetail</code></td></tr>
+        <tr><td><code>GetDomainPrices</code></td></tr>
+        <tr><td><code>GetDomainSuggestions</code></td></tr>
+        <tr><td><code>GetOperationDetail</code></td></tr>
+        <tr><td><code>ListDomains</code></td></tr>
+        <tr><td><code>ListOperations</code></td></tr>
+        <tr><td><code>ListPrices</code></td></tr>
+        <tr><td><code>ListTagsForDomain</code></td></tr>
+        <tr><td><code>PushDomain</code></td></tr>
+        <tr><td><code>RegisterDomain</code></td></tr>
+        <tr><td><code>RejectDomainTransferFromAnotherAwsAccount</code></td></tr>
+        <tr><td><code>RenewDomain</code></td></tr>
+        <tr><td><code>ResendContactReachabilityEmail</code></td></tr>
+        <tr><td><code>ResendOperationAuthorization</code></td></tr>
+        <tr><td><code>RestoreDomain</code></td></tr>
+        <tr><td><code>RetrieveDomainAuthCode</code></td></tr>
+        <tr><td><code>TransferDomain</code></td></tr>
+        <tr><td><code>TransferDomainToAnotherAwsAccount</code></td></tr>
+        <tr><td><code>UpdateDomainContact</code></td></tr>
+        <tr><td><code>UpdateDomainContactPrivacy</code></td></tr>
+        <tr><td><code>UpdateDomainNameservers</code></td></tr>
+        <tr><td><code>UpdateTagsForDomain</code></td></tr>
+        <tr><td><code>ViewBilling</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="route53resolver" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Route 53 Resolver</h2>
+        <p>SigV4 signed with service <code>route53resolver</code>. JSON RPC API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: Route53Resolver.&lt;Action&gt;</code>. Inbound and outbound Resolver endpoints (IP addresses checked against EC2 subnets, CIDRs and security groups), FORWARD/SYSTEM/DELEGATE rules and their VPC associations, query logging to S3/CloudWatch Logs/Firehose, per-VPC autodefined-reverse, DNSSEC and firewall fail-open settings, Outposts resolvers, resource policies, and DNS Firewall domain lists (including imports from S3), rule groups, rules and VPC associations. Control plane only: no DNS queries are answered.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: route53resolver</span>
+        <span class="meta-pill">API: JSON RPC</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>AssociateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverEndpointIpAddress</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>AssociateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchCreateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchDeleteFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>BatchUpdateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverEndpointIpAddress</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>DisassociateResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallDomainList</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroup</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroupAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetFirewallRuleGroupPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverDnssecConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfigAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverQueryLogConfigPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRule</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRuleAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>GetResolverRulePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>ImportFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallDomainLists</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleGroupAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleGroups</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRuleTypes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListFirewallRules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListOutpostResolvers</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverDnssecConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverEndpointIpAddresses</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverEndpoints</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverQueryLogConfigAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverQueryLogConfigs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverRuleAssociations</code></td>
+        </tr>
+        <tr>
+        <td><code>ListResolverRules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PutFirewallRuleGroupPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResolverQueryLogConfigPolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>PutResolverRulePolicy</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallDomains</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallRule</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateFirewallRuleGroupAssociation</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateOutpostResolver</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverDnssecConfig</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverEndpoint</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateResolverRule</code></td>
+        </tr>
+        </tbody>
+        </table>
+
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+                <li><code>route53resolver</code>: <code>docker compose -f examples/aws/route53resolver/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
