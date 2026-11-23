@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 import xml.etree.ElementTree as xml_etree
 from dataclasses import dataclass
 from pathlib import Path
@@ -121,6 +122,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "imagebuilder": {"cli": "imagebuilder", "ops_file": REPO_ROOT / "internal/server/imagebuilder_ops.go"},
     "rekognition": {"cli": "rekognition", "ops_file": REPO_ROOT / "internal/server/rekognition_ops.go"},
     "transcribe": {"cli": "transcribe", "ops_file": REPO_ROOT / "internal/server/transcribe_ops.go"},
+    "transcribestreaming": {"cli": "transcribe-streaming", "ops_file": REPO_ROOT / "internal/server/transcribestreaming_ops.go"},
     "xray": {"cli": "xray", "ops_file": REPO_ROOT / "internal/server/xray_ops.go"},
     "translate": {"cli": "translate", "ops_file": REPO_ROOT / "internal/server/translate_ops.go"},
     "workmail": {"cli": "workmail", "ops_file": REPO_ROOT / "internal/server/workmail_ops.go"},
@@ -983,6 +985,9 @@ SERVICE_ALIASES = {
     "awsrekognition": "rekognition",
     "aws rekognition": "rekognition",
     "transcribe": "transcribe",
+    "transcribestreaming": "transcribestreaming",
+    "transcribe-streaming": "transcribestreaming",
+    "amazontranscribestreaming": "transcribestreaming",
     "amazontranscribe": "transcribe",
     "amazon transcribe": "transcribe",
     "awstranscribe": "transcribe",
@@ -3199,6 +3204,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "kendra": {},
     "rekognition": {},
     "transcribe": {},
+    "transcribestreaming": {},
     "sagemaker": {},
     "sagemakerruntime": {},
     "simspaceweaver": {},
@@ -31438,27 +31444,134 @@ def run_lexruntimev2_outfile_operation(
     return cp, cmd, extra_output
 
 
+def aws_event_frame(event_type: str, payload: dict | bytes) -> bytes:
+    """One AWS event-stream event frame: dict payloads go as JSON, bytes as-is."""
+    import zlib
+
+    if isinstance(payload, bytes):
+        body, content_type = payload, "application/octet-stream"
+    else:
+        body, content_type = json.dumps(payload, separators=(",", ":")).encode("utf-8"), "application/json"
+    headers = b""
+    for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", content_type)):
+        raw = value.encode("utf-8")
+        headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
+    prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
+    message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
+    return message + zlib.crc32(message).to_bytes(4, "big")
+
+
 def lexruntimev2_conversation_body() -> bytes:
     """A whole StartConversation request stream: configure, one text turn,
     disconnect. Stackyard answers each turn as its frame arrives."""
-
-    def frame(event_type: str, payload: dict) -> bytes:
-        import zlib
-
-        headers = b""
-        for name, value in ((":message-type", "event"), (":event-type", event_type), (":content-type", "application/json")):
-            raw = value.encode("utf-8")
-            headers += bytes([len(name)]) + name.encode("ascii") + b"\x07" + len(raw).to_bytes(2, "big") + raw
-        body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        prelude = (16 + len(headers) + len(body)).to_bytes(4, "big") + len(headers).to_bytes(4, "big")
-        message = prelude + zlib.crc32(prelude).to_bytes(4, "big") + headers + body
-        return message + zlib.crc32(message).to_bytes(4, "big")
-
+    frame = aws_event_frame
     return (
         frame("ConfigurationEvent", {"responseContentType": "text/plain; charset=utf-8"})
         + frame("TextInputEvent", {"text": LEXRUNTIMEV2_UTTERANCE})
         + frame("DisconnectionEvent", {})
     )
+
+
+TRANSCRIBESTREAMING_ROLE = "arn:aws:iam::123456789012:role/stackyard-transcribe"
+TRANSCRIBESTREAMING_AUDIO = bytes(32000)  # 1 s of 16 kHz 16-bit mono PCM
+
+
+def transcribestreaming_request(
+    endpoint_url: str, region: str, env: dict[str, str], method: str, path: str, body: bytes, headers: dict[str, str]
+) -> tuple[int, bytes]:
+    """A transcribe-signed request; the CLI has no transcribe-streaming commands."""
+    url = endpoint_url.rstrip("/") + path
+    signed = sigv4_sign(
+        method=method,
+        url=url,
+        body=body,
+        service="transcribe",
+        region=region,
+        access_key=env.get("AWS_ACCESS_KEY_ID", ""),
+        secret_key=env.get("AWS_SECRET_ACCESS_KEY", ""),
+        session_token=env.get("AWS_SESSION_TOKEN", ""),
+        extra_headers=headers,
+    )
+    req = urlrequest.Request(url=url, method=method, data=body if method != "GET" else None, headers=signed)
+    try:
+        with urlrequest.urlopen(req, timeout=20.0) as resp:
+            return int(resp.status), resp.read()
+    except urlerror.HTTPError as err:
+        return int(err.code), err.read()
+    except (urlerror.URLError, OSError) as err:
+        return 0, str(err).encode("utf-8")
+
+
+def transcribestreaming_scribe_session(endpoint_url: str, region: str, env: dict[str, str]) -> tuple[int, bytes, str]:
+    """Run one complete Medical Scribe stream and remember its session id."""
+    session_id = str(uuid.uuid4())
+    body = (
+        aws_event_frame(
+            "ConfigurationEvent",
+            {
+                "ResourceAccessRoleArn": TRANSCRIBESTREAMING_ROLE,
+                "PostStreamAnalyticsSettings": {"ClinicalNoteGenerationSettings": {"OutputBucketName": "stackyard-scribe-notes"}},
+            },
+        )
+        + aws_event_frame("AudioEvent", TRANSCRIBESTREAMING_AUDIO)
+        + aws_event_frame("SessionControlEvent", {"Type": "END_OF_SESSION"})
+    )
+    status, raw = transcribestreaming_request(
+        endpoint_url, region, env, "POST", "/medical-scribe-stream", body, transcribestreaming_headers({"x-amzn-transcribe-session-id": session_id})
+    )
+    if status == 200:
+        RUNTIME_STATE.setdefault("transcribestreaming", {})["scribe_session_id"] = session_id
+    return status, raw, session_id
+
+
+def transcribestreaming_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
+    headers = {
+        "Content-Type": "application/vnd.amazon.eventstream",
+        "x-amzn-transcribe-language-code": "en-US",
+        "x-amzn-transcribe-sample-rate": "16000",
+        "x-amzn-transcribe-media-encoding": "pcm",
+    }
+    headers.update(extra or {})
+    return headers
+
+
+def run_transcribestreaming_endpoint(endpoint: Endpoint, endpoint_url: str, region: str, env: dict[str, str]) -> tuple[bool, str]:
+    """Drive one Transcribe Streaming operation; returns (ok, detail)."""
+    op = endpoint.operation
+    audio = aws_event_frame("AudioEvent", TRANSCRIBESTREAMING_AUDIO) + aws_event_frame("AudioEvent", b"")
+    if op == "GetMedicalScribeStream":
+        session_id = str(RUNTIME_STATE.setdefault("transcribestreaming", {}).get("scribe_session_id") or "")
+        if not session_id:
+            status, raw, session_id = transcribestreaming_scribe_session(endpoint_url, region, env)
+            if status != 200:
+                return False, f"seeding a scribe session: http {status}"
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "GET", f"/medical-scribe-stream/{session_id}", b"", {})
+        ok = status == 200 and b"MedicalScribeStreamDetails" in raw and b'"COMPLETED"' in raw
+        return ok, raw[:300].decode("utf-8", errors="replace")
+    if op == "StartMedicalScribeStream":
+        status, raw, _ = transcribestreaming_scribe_session(endpoint_url, region, env)
+        expect = b"TranscriptEvent"
+    elif op == "StartStreamTranscription":
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "POST", "/stream-transcription", audio, transcribestreaming_headers())
+        expect = b"TranscriptEvent"
+    elif op == "StartMedicalStreamTranscription":
+        status, raw = transcribestreaming_request(
+            endpoint_url, region, env, "POST", "/medical-stream-transcription", audio,
+            transcribestreaming_headers({"x-amzn-transcribe-specialty": "PRIMARYCARE", "x-amzn-transcribe-type": "DICTATION"}),
+        )
+        expect = b"TranscriptEvent"
+    elif op == "StartCallAnalyticsStreamTranscription":
+        body = aws_event_frame(
+            "ConfigurationEvent",
+            {"ChannelDefinitions": [{"ChannelId": 0, "ParticipantRole": "AGENT"}, {"ChannelId": 1, "ParticipantRole": "CUSTOMER"}]},
+        ) + audio
+        status, raw = transcribestreaming_request(endpoint_url, region, env, "POST", "/call-analytics-stream-transcription", body, transcribestreaming_headers())
+        expect = b"UtteranceEvent"
+    else:
+        return False, f"unknown operation {op}"
+    # A stream answers 200 and may still end with an exception frame.
+    ok = status == 200 and expect in raw and b":exception-type" not in raw
+    return ok, f"http {status}: " + raw[:300].decode("utf-8", errors="replace")
 
 
 def bedrockruntime_event_stream_body(payload: dict) -> bytes:
@@ -56292,6 +56405,17 @@ def run_endpoint(
 ) -> Result:
     started = time.time()
     extra_output_text = ""
+    if endpoint.service == "transcribestreaming":
+        # Every operation is an HTTP/2-style event stream with no CLI command.
+        ok, detail = run_transcribestreaming_endpoint(endpoint, endpoint_url, region, env)
+        return Result(
+            endpoint=endpoint,
+            status="success" if ok else "service_error",
+            returncode=0 if ok else 1,
+            duration_ms=int((time.time() - started) * 1000),
+            detail="ok(raw_event_stream)" if ok else detail,
+            command=f"raw:transcribestreaming.{endpoint.operation}",
+        )
     if endpoint.service == "kinesisvideomedia" and endpoint.operation == "PutMedia":
         # PutMedia is the producer API and has no CLI command; send real MKV.
         kvs_media_seed(endpoint_url, region, env)
