@@ -107,6 +107,8 @@ type Service struct {
 	suppressed   map[string]*SuppressedDestination
 	resourceTags map[string]map[string]string
 	contactLists map[string]*ContactList
+	tenants      map[string]*Tenant
+	multiRegion  map[string]*MultiRegionEndpoint
 	sent         []time.Time
 	account      Account
 }
@@ -119,6 +121,8 @@ func NewService() *Service {
 		suppressed:   map[string]*SuppressedDestination{},
 		resourceTags: map[string]map[string]string{},
 		contactLists: map[string]*ContactList{},
+		tenants:      map[string]*Tenant{},
+		multiRegion:  map[string]*MultiRegionEndpoint{},
 		sent:         []time.Time{},
 		account: Account{
 			SendingEnabled:               true,

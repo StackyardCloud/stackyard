@@ -62,14 +62,14 @@ var sesv2Operations = []sesv2Operation{
 	{Name: "GetReputationEntity", Method: "GET", Pattern: "/v2/email/reputation/entities/{ReputationEntityType}/{ReputationEntityReference}"},
 	{Name: "GetSuppressedDestination", Method: "GET", Pattern: "/v2/email/suppression/addresses/{EmailAddress}"},
 	{Name: "GetTenant", Method: "POST", Pattern: "/v2/email/tenants/get"},
-	{Name: "ListConfigurationSets", Method: "GET", Pattern: "/v2/email/configuration-sets"},
+	{Name: "ListConfigurationSets", Method: "POST", Pattern: "/v2/email/list-configuration-sets"},
 	{Name: "ListContactLists", Method: "GET", Pattern: "/v2/email/contact-lists"},
 	{Name: "ListContacts", Method: "POST", Pattern: "/v2/email/contact-lists/{ContactListName}/contacts/list"},
 	{Name: "ListCustomVerificationEmailTemplates", Method: "GET", Pattern: "/v2/email/custom-verification-email-templates"},
 	{Name: "ListDedicatedIpPools", Method: "GET", Pattern: "/v2/email/dedicated-ip-pools"},
 	{Name: "ListDeliverabilityTestReports", Method: "GET", Pattern: "/v2/email/deliverability-dashboard/test-reports"},
 	{Name: "ListDomainDeliverabilityCampaigns", Method: "GET", Pattern: "/v2/email/deliverability-dashboard/domains/{SubscribedDomain}/campaigns"},
-	{Name: "ListEmailIdentities", Method: "GET", Pattern: "/v2/email/identities"},
+	{Name: "ListEmailIdentities", Method: "POST", Pattern: "/v2/email/list-identities"},
 	{Name: "ListEmailTemplates", Method: "GET", Pattern: "/v2/email/templates"},
 	{Name: "ListExportJobs", Method: "POST", Pattern: "/v2/email/list-export-jobs"},
 	{Name: "ListImportJobs", Method: "POST", Pattern: "/v2/email/import-jobs/list"},
@@ -117,6 +117,13 @@ var sesv2Operations = []sesv2Operation{
 	{Name: "UpdateEmailTemplate", Method: "PUT", Pattern: "/v2/email/templates/{TemplateName}"},
 	{Name: "UpdateReputationEntityCustomerManagedStatus", Method: "PUT", Pattern: "/v2/email/reputation/entities/{ReputationEntityType}/{ReputationEntityReference}/customer-managed-status"},
 	{Name: "UpdateReputationEntityPolicy", Method: "PUT", Pattern: "/v2/email/reputation/entities/{ReputationEntityType}/{ReputationEntityReference}/policy"},
+}
+
+// sesv2LegacyOperations are routes from older SESv2 models that current SDKs
+// replaced (the list operations moved to POST). Older SDKs still send them.
+var sesv2LegacyOperations = []sesv2Operation{
+	{Name: "ListConfigurationSets", Method: "GET", Pattern: "/v2/email/configuration-sets"},
+	{Name: "ListEmailIdentities", Method: "GET", Pattern: "/v2/email/identities"},
 }
 
 var sesv2OperationByName = func() map[string]sesv2Operation {

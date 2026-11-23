@@ -297,6 +297,15 @@ func TestRedshiftStage9OperationRegression(t *testing.T) {
 		})
 	}
 
+	qev2Create := func(name string) url.Values {
+		return url.Values{
+			"Action":                 []string{"CreateQev2IdcApplication"},
+			"Qev2IdcApplicationName": []string{name},
+			"IdcInstanceArn":         []string{"arn:aws:sso:::instance/ssoins-stage9"},
+			"IdcDisplayName":         []string{name},
+		}
+	}
+
 	createRedshiftIdcApplication := func(t *testing.T, appName string) string {
 		t.Helper()
 		mustOK(t, url.Values{
@@ -2298,6 +2307,59 @@ func TestRedshiftStage9OperationRegression(t *testing.T) {
 			},
 			failure: func(t *testing.T) (int, []byte) {
 				return redshiftRequest(t, ts, url.Values{"Action": []string{"GetIdentityCenterAuthToken"}})
+			},
+		},
+		"CreateQev2IdcApplication": {
+			success: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, qev2Create(makeName("CreateQev2IdcApplication", "app")))
+			},
+			failure: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, url.Values{"Action": []string{"CreateQev2IdcApplication"}})
+			},
+		},
+		"DescribeQev2IdcApplications": {
+			success: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, url.Values{"Action": []string{"DescribeQev2IdcApplications"}})
+			},
+			failure: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, url.Values{
+					"Action":                []string{"DescribeQev2IdcApplications"},
+					"Qev2IdcApplicationArn": []string{redshiftQev2IdcApplicationArn("missing")},
+				})
+			},
+		},
+		"ModifyQev2IdcApplication": {
+			success: func(t *testing.T) (int, []byte) {
+				name := makeName("ModifyQev2IdcApplication", "app")
+				if status, body := redshiftRequest(t, ts, qev2Create(name)); status != http.StatusOK {
+					t.Fatalf("create qev2 app: %d %s", status, body)
+				}
+				return redshiftRequest(t, ts, url.Values{
+					"Action":                []string{"ModifyQev2IdcApplication"},
+					"Qev2IdcApplicationArn": []string{redshiftQev2IdcApplicationArn(name)},
+					"IdcDisplayName":        []string{"renamed"},
+				})
+			},
+			failure: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, url.Values{"Action": []string{"ModifyQev2IdcApplication"}})
+			},
+		},
+		"DeleteQev2IdcApplication": {
+			success: func(t *testing.T) (int, []byte) {
+				name := makeName("DeleteQev2IdcApplication", "app")
+				if status, body := redshiftRequest(t, ts, qev2Create(name)); status != http.StatusOK {
+					t.Fatalf("create qev2 app: %d %s", status, body)
+				}
+				return redshiftRequest(t, ts, url.Values{
+					"Action":                []string{"DeleteQev2IdcApplication"},
+					"Qev2IdcApplicationArn": []string{redshiftQev2IdcApplicationArn(name)},
+				})
+			},
+			failure: func(t *testing.T) (int, []byte) {
+				return redshiftRequest(t, ts, url.Values{
+					"Action":                []string{"DeleteQev2IdcApplication"},
+					"Qev2IdcApplicationArn": []string{redshiftQev2IdcApplicationArn("missing")},
+				})
 			},
 		},
 		"RegisterNamespace": {
