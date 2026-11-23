@@ -291,6 +291,7 @@
         <a href="#recyclebin">Recycle Bin</a>
         <a href="#route53">Route 53</a>
         <a href="#route53profiles">Route 53 Profiles</a>
+        <a href="#serverlessrepo">Serverless Application Repository</a>
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
@@ -24916,6 +24917,49 @@
         <summary>Examples</summary>
         <ul>
         <li><code>route53profiles</code>: <code>docker compose -f examples/aws/route53profiles/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="serverlessrepo" class="service">
+
+        <div class="service-header">
+        <h2>AWS Serverless Application Repository</h2>
+        <p>SigV4 signed with service <code>serverlessrepo</code>. REST JSON API under <code>/applications</code>. Templates come inline or from an object in Stackyard's S3; JSON templates are parsed for parameter definitions (with the resources that reference them), required capabilities and nested <code>AWS::Serverless::Application</code> dependencies, while YAML templates get a structural check only. Readme and license bodies, inline templates and generated templates are stored in Stackyard's S3. Application policies accept the documented actions, account principals and organization shares. CreateCloudFormationChangeSet checks parameter overrides and capabilities and registers the <code>serverlessrepo-&lt;StackName&gt;</code> stack and change set in Stackyard's CloudFormation. Generated templates report PREPARING once, then ACTIVE. All 14 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: serverlessrepo</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateApplication</code></td></tr>
+        <tr><td><code>CreateApplicationVersion</code></td></tr>
+        <tr><td><code>CreateCloudFormationChangeSet</code></td></tr>
+        <tr><td><code>CreateCloudFormationTemplate</code></td></tr>
+        <tr><td><code>DeleteApplication</code></td></tr>
+        <tr><td><code>GetApplication</code></td></tr>
+        <tr><td><code>GetApplicationPolicy</code></td></tr>
+        <tr><td><code>GetCloudFormationTemplate</code></td></tr>
+        <tr><td><code>ListApplicationDependencies</code></td></tr>
+        <tr><td><code>ListApplicationVersions</code></td></tr>
+        <tr><td><code>ListApplications</code></td></tr>
+        <tr><td><code>PutApplicationPolicy</code></td></tr>
+        <tr><td><code>UnshareApplication</code></td></tr>
+        <tr><td><code>UpdateApplication</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>serverlessrepo</code>: <code>docker compose -f examples/aws/serverlessrepo/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
