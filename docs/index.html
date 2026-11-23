@@ -290,6 +290,7 @@
         <a href="#route53">Route 53</a>
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
+        <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
@@ -24919,6 +24920,120 @@
         <tr><td><code>UpdateDomainNameservers</code></td></tr>
         <tr><td><code>UpdateTagsForDomain</code></td></tr>
         <tr><td><code>ViewBilling</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="servicecatalog" class="service">
+
+        <div class="service-header">
+        <h2>AWS Service Catalog</h2>
+        <p>SigV4 signed with service <code>servicecatalog</code>. JSON 1.1 API with <code>X-Amz-Target: AWS242ServiceCatalogService.*</code>. Provisioning artifacts load their template from an object in Stackyard's S3 (<code>LoadTemplateFromURL</code>); JSON CloudFormation templates are parsed for parameters, outputs and resources. Provisioning a CloudFormation product registers a stack in Stackyard's CloudFormation and resolves outputs from literal values and parameter <code>Ref</code>s. Requests settle on the next request: records go from <code>IN_PROGRESS</code> to <code>SUCCEEDED</code>. Terraform and external products wait for <code>Notify*EngineWorkflowResult</code>. Stackyard has one account, so accepting a share marks the portfolio as imported. YAML templates are accepted but not parsed for parameters.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: servicecatalog</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Service Catalog API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptPortfolioShare</code></td></tr>
+        <tr><td><code>AssociateBudgetWithResource</code></td></tr>
+        <tr><td><code>AssociatePrincipalWithPortfolio</code></td></tr>
+        <tr><td><code>AssociateProductWithPortfolio</code></td></tr>
+        <tr><td><code>AssociateServiceActionWithProvisioningArtifact</code></td></tr>
+        <tr><td><code>AssociateTagOptionWithResource</code></td></tr>
+        <tr><td><code>BatchAssociateServiceActionWithProvisioningArtifact</code></td></tr>
+        <tr><td><code>BatchDisassociateServiceActionFromProvisioningArtifact</code></td></tr>
+        <tr><td><code>CopyProduct</code></td></tr>
+        <tr><td><code>CreateConstraint</code></td></tr>
+        <tr><td><code>CreatePortfolio</code></td></tr>
+        <tr><td><code>CreatePortfolioShare</code></td></tr>
+        <tr><td><code>CreateProduct</code></td></tr>
+        <tr><td><code>CreateProvisionedProductPlan</code></td></tr>
+        <tr><td><code>CreateProvisioningArtifact</code></td></tr>
+        <tr><td><code>CreateServiceAction</code></td></tr>
+        <tr><td><code>CreateTagOption</code></td></tr>
+        <tr><td><code>DeleteConstraint</code></td></tr>
+        <tr><td><code>DeletePortfolio</code></td></tr>
+        <tr><td><code>DeletePortfolioShare</code></td></tr>
+        <tr><td><code>DeleteProduct</code></td></tr>
+        <tr><td><code>DeleteProvisionedProductPlan</code></td></tr>
+        <tr><td><code>DeleteProvisioningArtifact</code></td></tr>
+        <tr><td><code>DeleteServiceAction</code></td></tr>
+        <tr><td><code>DeleteTagOption</code></td></tr>
+        <tr><td><code>DescribeConstraint</code></td></tr>
+        <tr><td><code>DescribeCopyProductStatus</code></td></tr>
+        <tr><td><code>DescribePortfolio</code></td></tr>
+        <tr><td><code>DescribePortfolioShareStatus</code></td></tr>
+        <tr><td><code>DescribePortfolioShares</code></td></tr>
+        <tr><td><code>DescribeProduct</code></td></tr>
+        <tr><td><code>DescribeProductAsAdmin</code></td></tr>
+        <tr><td><code>DescribeProductView</code></td></tr>
+        <tr><td><code>DescribeProvisionedProduct</code></td></tr>
+        <tr><td><code>DescribeProvisionedProductPlan</code></td></tr>
+        <tr><td><code>DescribeProvisioningArtifact</code></td></tr>
+        <tr><td><code>DescribeProvisioningParameters</code></td></tr>
+        <tr><td><code>DescribeRecord</code></td></tr>
+        <tr><td><code>DescribeServiceAction</code></td></tr>
+        <tr><td><code>DescribeServiceActionExecutionParameters</code></td></tr>
+        <tr><td><code>DescribeTagOption</code></td></tr>
+        <tr><td><code>DisableAWSOrganizationsAccess</code></td></tr>
+        <tr><td><code>DisassociateBudgetFromResource</code></td></tr>
+        <tr><td><code>DisassociatePrincipalFromPortfolio</code></td></tr>
+        <tr><td><code>DisassociateProductFromPortfolio</code></td></tr>
+        <tr><td><code>DisassociateServiceActionFromProvisioningArtifact</code></td></tr>
+        <tr><td><code>DisassociateTagOptionFromResource</code></td></tr>
+        <tr><td><code>EnableAWSOrganizationsAccess</code></td></tr>
+        <tr><td><code>ExecuteProvisionedProductPlan</code></td></tr>
+        <tr><td><code>ExecuteProvisionedProductServiceAction</code></td></tr>
+        <tr><td><code>GetAWSOrganizationsAccessStatus</code></td></tr>
+        <tr><td><code>GetProvisionedProductOutputs</code></td></tr>
+        <tr><td><code>ImportAsProvisionedProduct</code></td></tr>
+        <tr><td><code>ListAcceptedPortfolioShares</code></td></tr>
+        <tr><td><code>ListBudgetsForResource</code></td></tr>
+        <tr><td><code>ListConstraintsForPortfolio</code></td></tr>
+        <tr><td><code>ListLaunchPaths</code></td></tr>
+        <tr><td><code>ListOrganizationPortfolioAccess</code></td></tr>
+        <tr><td><code>ListPortfolioAccess</code></td></tr>
+        <tr><td><code>ListPortfolios</code></td></tr>
+        <tr><td><code>ListPortfoliosForProduct</code></td></tr>
+        <tr><td><code>ListPrincipalsForPortfolio</code></td></tr>
+        <tr><td><code>ListProvisionedProductPlans</code></td></tr>
+        <tr><td><code>ListProvisioningArtifacts</code></td></tr>
+        <tr><td><code>ListProvisioningArtifactsForServiceAction</code></td></tr>
+        <tr><td><code>ListRecordHistory</code></td></tr>
+        <tr><td><code>ListResourcesForTagOption</code></td></tr>
+        <tr><td><code>ListServiceActions</code></td></tr>
+        <tr><td><code>ListServiceActionsForProvisioningArtifact</code></td></tr>
+        <tr><td><code>ListStackInstancesForProvisionedProduct</code></td></tr>
+        <tr><td><code>ListTagOptions</code></td></tr>
+        <tr><td><code>NotifyProvisionProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>NotifyTerminateProvisionedProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>NotifyUpdateProvisionedProductEngineWorkflowResult</code></td></tr>
+        <tr><td><code>ProvisionProduct</code></td></tr>
+        <tr><td><code>RejectPortfolioShare</code></td></tr>
+        <tr><td><code>ScanProvisionedProducts</code></td></tr>
+        <tr><td><code>SearchProducts</code></td></tr>
+        <tr><td><code>SearchProductsAsAdmin</code></td></tr>
+        <tr><td><code>SearchProvisionedProducts</code></td></tr>
+        <tr><td><code>TerminateProvisionedProduct</code></td></tr>
+        <tr><td><code>UpdateConstraint</code></td></tr>
+        <tr><td><code>UpdatePortfolio</code></td></tr>
+        <tr><td><code>UpdatePortfolioShare</code></td></tr>
+        <tr><td><code>UpdateProduct</code></td></tr>
+        <tr><td><code>UpdateProvisionedProduct</code></td></tr>
+        <tr><td><code>UpdateProvisionedProductProperties</code></td></tr>
+        <tr><td><code>UpdateProvisioningArtifact</code></td></tr>
+        <tr><td><code>UpdateServiceAction</code></td></tr>
+        <tr><td><code>UpdateTagOption</code></td></tr>
         </tbody>
         </table>
         </details>
