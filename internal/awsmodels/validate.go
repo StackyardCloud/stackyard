@@ -35,6 +35,8 @@ type ModelShape struct {
 	Pattern   string               `json:"pattern"`
 	Enum      []string             `json:"enum"`
 	Sensitive bool                 `json:"sensitive"`
+	// Document marks a free-form JSON document (any JSON value).
+	Document bool `json:"document"`
 }
 
 // MemberRef points a structure member, list member or map key/value at a shape.
@@ -81,7 +83,7 @@ func (m *Model) validate(shapeName string, value any, path string, problems *[]s
 		return
 	}
 	s := m.Shapes[shapeName]
-	if s == nil || value == nil {
+	if s == nil || value == nil || s.Document {
 		return
 	}
 	add := func(format string, args ...any) {
@@ -213,6 +215,9 @@ func (m *Model) Conform(shapeName string, value any) any {
 	if s == nil || value == nil {
 		return value
 	}
+	if s.Document {
+		return deepCopyJSON(value)
+	}
 	switch s.Type {
 	case "structure":
 		obj, ok := value.(map[string]any)
@@ -270,4 +275,24 @@ func contains(list []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// deepCopyJSON copies a decoded JSON value so conformed output never shares
+// maps or slices with stored documents.
+func deepCopyJSON(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, item := range t {
+			out[k] = deepCopyJSON(item)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, item := range t {
+			out[i] = deepCopyJSON(item)
+		}
+		return out
+	}
+	return v
 }

@@ -339,6 +339,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "dms": {"cli": "dms", "ops_file": REPO_ROOT / "internal/server/dms_ops.go"},
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
+    "osis": {"cli": "osis", "ops_file": REPO_ROOT / "internal/server/osis_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -562,6 +563,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
+    "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
@@ -632,6 +634,8 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "sns": {"cli": "sns", "ops_file": None},
     "sqs": {"cli": "sqs", "ops_file": None},
     "swf": {"cli": "swf", "ops_file": None},
+    "timestreamwrite": {"cli": "timestream-write", "ops_file": REPO_ROOT / "internal/server/timestreamwrite_ops.go"},
+    "timestreamquery": {"cli": "timestream-query", "ops_file": REPO_ROOT / "internal/server/timestreamquery_ops.go"},
     "timestreaminfluxdb": {
         "cli": "timestream-influxdb",
         "ops_file": REPO_ROOT / "internal/server/timestreaminfluxdb_ops.go",
@@ -1489,6 +1493,9 @@ SERVICE_ALIASES = {
     "docdb-elastic": "docdbelastic",
     "amazondocdbelastic": "docdbelastic",
     "documentdbelastic": "docdbelastic",
+    "osis": "osis",
+    "opensearchingestion": "osis",
+    "amazonopensearchingestion": "osis",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -2224,6 +2231,9 @@ SERVICE_ALIASES = {
     "textract": "textract",
     "amazontextract": "textract",
     "awscodeconnections": "codeconnections",
+    "opensearchserverless": "opensearchserverless",
+    "aoss": "opensearchserverless",
+    "amazonopensearchserverless": "opensearchserverless",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
     "awscodestarconnections": "codestarconnections",
@@ -2352,6 +2362,10 @@ SERVICE_ALIASES = {
     "s3api": "s3",
     "timestream": "timestreaminfluxdb",
     "timestreaminfluxdb": "timestreaminfluxdb",
+    "timestreamwrite": "timestreamwrite",
+    "timestream-write": "timestreamwrite",
+    "timestreamquery": "timestreamquery",
+    "timestream-query": "timestreamquery",
     "timestream-influxdb": "timestreaminfluxdb",
     "ts-influxdb": "timestreaminfluxdb",
     "timestreamforinfluxdb": "timestreaminfluxdb",
@@ -3153,6 +3167,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "acm": {},
     "codecommit": {},
     "inspector": {},
+    "timestream": {},
     "applicationautoscaling": {},
     "ec2instanceconnect": {},
     "efs": {},
@@ -3168,10 +3183,12 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glacier": {},
     "docdb": {},
     "docdbelastic": {},
+    "osis": {},
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
     "textract": {},
+    "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -34887,6 +34904,99 @@ def eksauth_hydrate_payload(aws_bin: str, payload: dict, endpoint_url: str, regi
     return hydrated
 
 
+OSIS_SUBNET = "subnet-00000001"
+OSIS_CONFIG = """version: "2"
+log-pipeline:
+  source:
+    http:
+      path: "/logs"
+  sink:
+    - opensearch:
+        hosts: ["https://search-stackyard.us-east-1.es.amazonaws.com"]
+        index: "logs"
+"""
+OSIS_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"AWS": "123456789012"}, "Action": "osis:Ingest", "Resource": "*"}]})
+
+
+def osis_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "osis", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def osis_create_pipeline(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], stopped: bool = False) -> str:
+    """Create a pipeline and read it once so it settles to ACTIVE (changes while
+    CREATING are conflicts); optionally stop it too. Returns the name."""
+    name = f"sy-{time.time_ns() % 10**12:012d}"
+    osis_cli(aws_bin, endpoint_url, region, env, "create-pipeline",
+             ["--pipeline-name", name, "--min-units", "1", "--max-units", "2", "--pipeline-configuration-body", OSIS_CONFIG])
+    osis_cli(aws_bin, endpoint_url, region, env, "get-pipeline", ["--pipeline-name", name])
+    if stopped:
+        osis_cli(aws_bin, endpoint_url, region, env, "stop-pipeline", ["--pipeline-name", name])
+        osis_cli(aws_bin, endpoint_url, region, env, "get-pipeline", ["--pipeline-name", name])
+    return name
+
+
+def osis_arn(region: str, name: str) -> str:
+    return f"arn:aws:osis:{region}:123456789012:pipeline/{name}"
+
+
+def osis_create_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    created = osis_cli(aws_bin, endpoint_url, region, env, "create-pipeline-endpoint",
+                       ["--pipeline-arn", osis_arn(region, name), "--vpc-options", json.dumps({"SubnetIds": [OSIS_SUBNET]})])
+    return str(created.get("EndpointId") or "")
+
+
+def osis_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each OpenSearch Ingestion operation at settled pipelines; changes
+    (update, start, stop, delete, endpoints) each get resources of their own."""
+    op = endpoint.operation
+    if op == "CreatePipeline":
+        return {"PipelineName": f"sy-{time.time_ns() % 10**12:012d}", "MinUnits": 1, "MaxUnits": 2, "PipelineConfigurationBody": OSIS_CONFIG}
+    if op == "ValidatePipeline":
+        return {"PipelineConfigurationBody": OSIS_CONFIG}
+    if op in {"ListPipelines", "ListPipelineBlueprints", "ListPipelineEndpoints", "ListPipelineEndpointConnections"}:
+        return {}
+    if op == "GetPipelineBlueprint":
+        return {"BlueprintName": "AWS-ApacheLogPipeline"}
+    if op == "UpdatePipeline":
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env), "MaxUnits": 4}
+    if op in {"DeletePipeline", "StopPipeline"}:
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env)}
+    if op == "StartPipeline":
+        return {"PipelineName": osis_create_pipeline(aws_bin, endpoint_url, region, env, stopped=True)}
+    state = RUNTIME_STATE.setdefault("osis", {})
+    if not state.get("pipeline"):
+        state["pipeline"] = osis_create_pipeline(aws_bin, endpoint_url, region, env)
+        osis_cli(aws_bin, endpoint_url, region, env, "put-resource-policy",
+                 ["--resource-arn", osis_arn(region, state["pipeline"]), "--policy", OSIS_POLICY])
+    name = state["pipeline"]
+    arn = osis_arn(region, name)
+    if op in {"GetPipeline", "GetPipelineChangeProgress"}:
+        return {"PipelineName": name}
+    if op == "CreatePipelineEndpoint":
+        return {"PipelineArn": arn, "VpcOptions": {"SubnetIds": [OSIS_SUBNET]}}
+    if op == "DeletePipelineEndpoint":
+        return {"EndpointId": osis_create_endpoint(aws_bin, endpoint_url, region, env, name)}
+    if op == "RevokePipelineEndpointConnections":
+        return {"PipelineArn": arn, "EndpointIds": [osis_create_endpoint(aws_bin, endpoint_url, region, env, name)]}
+    if op == "PutResourcePolicy":
+        return {"ResourceArn": arn, "Policy": OSIS_POLICY}
+    if op == "DeleteResourcePolicy":
+        fresh = osis_create_pipeline(aws_bin, endpoint_url, region, env)
+        osis_cli(aws_bin, endpoint_url, region, env, "put-resource-policy",
+                 ["--resource-arn", osis_arn(region, fresh), "--policy", OSIS_POLICY])
+        return {"ResourceArn": osis_arn(region, fresh)}
+    if op == "GetResourcePolicy":
+        return {"ResourceArn": arn}
+    if op == "TagResource":
+        return {"Arn": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"Arn": arn, "TagKeys": ["stackyard"]}
+    return {"Arn": arn}
+
+
 DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
 
 
@@ -35443,6 +35553,414 @@ def elasticsearchservice_hydrate_payload(
     return {"DomainName": domain}
 
 
+TIMESTREAM_DATA_MODEL = {
+    "TimeColumn": "time",
+    "TimeUnit": "MILLISECONDS",
+    "DimensionMappings": [{"SourceColumn": "host", "DestinationColumn": "host"}],
+    "MultiMeasureMappings": {
+        "TargetMultiMeasureName": "metrics",
+        "MultiMeasureAttributeMappings": [{"SourceColumn": "cpu", "MeasureValueType": "DOUBLE"}],
+    },
+}
+
+
+def timestream_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], api: str, op: str, payload: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, api, op, env, ["--cli-input-json", json.dumps(payload)]) or {}
+
+
+def timestream_put_object(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str, key: str, body: str) -> None:
+    with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+        fh.write(body)
+        path = fh.name
+    try:
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env, ["--bucket", bucket, "--key", key, "--body", path])
+    finally:
+        Path(path).unlink(missing_ok=True)
+
+
+def timestream_database(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard_ts_{time.time_ns()}"
+    timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-database", {"DatabaseName": name})
+    return name
+
+
+def timestream_batch_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict, prefix: str) -> str:
+    return str(
+        timestream_cli(
+            aws_bin,
+            endpoint_url,
+            region,
+            env,
+            "timestream-write",
+            "create-batch-load-task",
+            {
+                "TargetDatabaseName": state["db"],
+                "TargetTableName": state["table"],
+                "DataSourceConfiguration": {"DataSourceS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": prefix}, "DataFormat": "CSV"},
+                "ReportConfiguration": {"ReportS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "reports"}},
+                "DataModelConfiguration": {"DataModel": TIMESTREAM_DATA_MODEL},
+            },
+        ).get("TaskId")
+        or ""
+    )
+
+
+def timestream_stopped_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict) -> str:
+    """A batch load whose only row is outside the retention window settles at
+    PROGRESS_STOPPED, the one status ResumeBatchLoadTask accepts."""
+    prefix = f"stopped-{time.time_ns()}/"
+    timestream_put_object(aws_bin, endpoint_url, region, env, state["bucket"], prefix + "data.csv", "time,host,cpu\n1000,h1,1.5\n")
+    task = timestream_batch_task(aws_bin, endpoint_url, region, env, state, prefix)
+    for _ in range(2):  # tasks settle on read: IN_PROGRESS, then the final status
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "describe-batch-load-task", {"TaskId": task})
+    return task
+
+
+def timestream_scheduled_query_input(state: dict) -> dict:
+    return {
+        "Name": f"stackyard-sq-{time.time_ns()}",
+        "QueryString": f'SELECT host, bin(time, 1m) AS t, avg(measure_value::double) AS avg_value FROM "{state["db"]}"."{state["table"]}" WHERE time BETWEEN @scheduled_runtime - 1h AND @scheduled_runtime GROUP BY host, bin(time, 1m)',
+        "ScheduleConfiguration": {"ScheduleExpression": "rate(1 hour)"},
+        "NotificationConfiguration": {"SnsConfiguration": {"TopicArn": state["topic"]}},
+        "ScheduledQueryExecutionRoleArn": "arn:aws:iam::123456789012:role/stackyard-timestream",
+        "ErrorReportConfiguration": {"S3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "errors"}},
+        "TargetConfiguration": {
+            "TimestreamConfiguration": {
+                "DatabaseName": state["db"],
+                "TableName": state["table"],
+                "TimeColumn": "t",
+                "DimensionMappings": [{"Name": "host", "DimensionValueType": "VARCHAR"}],
+                "MultiMeasureMappings": {
+                    "TargetMultiMeasureName": "rollup",
+                    "MultiMeasureAttributeMappings": [{"SourceColumn": "avg_value", "MeasureValueType": "DOUBLE"}],
+                },
+            }
+        },
+    }
+
+
+def timestream_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One shared database and table holding records, a bucket with batch load
+    data, a settled batch load task, an SNS topic and a scheduled query."""
+    state = RUNTIME_STATE.setdefault("timestream", {})
+    if state.get("db"):
+        return state
+    db = timestream_database(aws_bin, endpoint_url, region, env)
+    table = "metrics"
+    timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-table", {"DatabaseName": db, "TableName": table})
+    now = str(int(time.time() * 1000))
+    timestream_cli(
+        aws_bin,
+        endpoint_url,
+        region,
+        env,
+        "timestream-write",
+        "write-records",
+        {
+            "DatabaseName": db,
+            "TableName": table,
+            "Records": [{"Dimensions": [{"Name": "host", "Value": "h1"}], "MeasureName": "cpu", "MeasureValue": "42.5", "MeasureValueType": "DOUBLE", "Time": now}],
+        },
+    )
+    bucket = f"stackyard-ts-{time.time_ns()}"
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+    timestream_put_object(aws_bin, endpoint_url, region, env, bucket, "load/data.csv", f"time,host,cpu\n{now},h2,12.5\n")
+    topic = run_aws_json(aws_bin, endpoint_url, region, "sns", "create-topic", env, ["--name", "stackyard-timestream"]) or {}
+    state.update(db=db, table=table, bucket=bucket, topic=str(topic.get("TopicArn") or ""))
+    state["task"] = timestream_batch_task(aws_bin, endpoint_url, region, env, state, "load/")
+    state["scheduled"] = str(
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "create-scheduled-query", timestream_scheduled_query_input(state)).get("Arn") or ""
+    )
+    return state
+
+
+def timestream_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Timestream Write and Query operation at real databases,
+    tables, records, tasks and scheduled queries. Destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    if op in {"DescribeEndpoints", "ListDatabases", "ListBatchLoadTasks", "ListScheduledQueries", "DescribeAccountSettings"}:
+        return {}
+    if op == "UpdateAccountSettings":
+        return {"QueryPricingModel": "BYTES_SCANNED"}
+    state = timestream_fixture(aws_bin, endpoint_url, region, env)
+    db, table = state["db"], state["table"]
+    sql = f'SELECT host, measure_name, time, measure_value::double FROM "{db}"."{table}" WHERE time > ago(1d) ORDER BY time DESC LIMIT 10'
+    if op == "CreateDatabase":
+        return {"DatabaseName": f"stackyard_ts_new_{time.time_ns()}"}
+    if op == "DeleteDatabase":
+        return {"DatabaseName": timestream_database(aws_bin, endpoint_url, region, env)}
+    if op in {"DescribeDatabase"}:
+        return {"DatabaseName": db}
+    if op == "UpdateDatabase":
+        return {"DatabaseName": db, "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/stackyard-timestream"}
+    if op == "ListTables":
+        return {"DatabaseName": db}
+    if op == "CreateTable":
+        return {"DatabaseName": db, "TableName": f"t_{time.time_ns()}"}
+    if op == "DescribeTable":
+        return {"DatabaseName": db, "TableName": table}
+    if op == "UpdateTable":
+        return {"DatabaseName": db, "TableName": table, "RetentionProperties": {"MemoryStoreRetentionPeriodInHours": 24, "MagneticStoreRetentionPeriodInDays": 7}}
+    if op == "DeleteTable":
+        name = f"t_del_{time.time_ns()}"
+        timestream_cli(aws_bin, endpoint_url, region, env, "timestream-write", "create-table", {"DatabaseName": db, "TableName": name})
+        return {"DatabaseName": db, "TableName": name}
+    if op == "WriteRecords":
+        return {
+            "DatabaseName": db,
+            "TableName": table,
+            "CommonAttributes": {"Dimensions": [{"Name": "host", "Value": "h1"}], "MeasureValueType": "DOUBLE"},
+            "Records": [{"MeasureName": "cpu", "MeasureValue": "7.25", "Time": str(int(time.time() * 1000))}],
+        }
+    if op == "CreateBatchLoadTask":
+        return {
+            "TargetDatabaseName": db,
+            "TargetTableName": table,
+            "DataSourceConfiguration": {"DataSourceS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "load/"}, "DataFormat": "CSV"},
+            "ReportConfiguration": {"ReportS3Configuration": {"BucketName": state["bucket"], "ObjectKeyPrefix": "reports"}},
+            "DataModelConfiguration": {"DataModel": TIMESTREAM_DATA_MODEL},
+        }
+    if op == "DescribeBatchLoadTask":
+        return {"TaskId": state["task"]}
+    if op == "ResumeBatchLoadTask":
+        return {"TaskId": timestream_stopped_task(aws_bin, endpoint_url, region, env, state)}
+    if op in {"TagResource", "UntagResource", "ListTagsForResource"}:
+        arn = state["scheduled"] if endpoint.service == "timestreamquery" else f"arn:aws:timestream:us-east-1:123456789012:database/{db}"
+        if op == "TagResource":
+            return {"ResourceARN": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+        if op == "UntagResource":
+            return {"ResourceARN": arn, "TagKeys": ["stackyard"]}
+        return {"ResourceARN": arn}
+    if op in {"Query", "PrepareQuery"}:
+        return {"QueryString": sql}
+    if op == "CancelQuery":
+        started = timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "query", {"QueryString": sql})
+        return {"QueryId": str(started.get("QueryId") or "AAAAAAAAAAAAAAAAAAAAAAAAAA")}
+    if op == "CreateScheduledQuery":
+        return timestream_scheduled_query_input(state)
+    if op == "DeleteScheduledQuery":
+        created = timestream_cli(aws_bin, endpoint_url, region, env, "timestream-query", "create-scheduled-query", timestream_scheduled_query_input(state))
+        return {"ScheduledQueryArn": str(created.get("Arn") or "")}
+    if op == "DescribeScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"]}
+    if op == "UpdateScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"], "State": "ENABLED"}
+    if op == "ExecuteScheduledQuery":
+        return {"ScheduledQueryArn": state["scheduled"], "InvocationTime": int(time.time())}
+    return payload
+
+
+AOSS_CLI = "opensearchserverless"
+AOSS_ENCRYPTION_POLICY = json.dumps({"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AWSOwnedKey": True})
+AOSS_NETWORK_POLICY = json.dumps([{"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AllowFromPublic": True}])
+AOSS_DATA_POLICY = json.dumps(
+    [{"Rules": [{"ResourceType": "index", "Resource": ["index/cov*/*"], "Permission": ["aoss:ReadDocument"]}], "Principal": ["arn:aws:iam::123456789012:root"]}]
+)
+AOSS_RETENTION_POLICY = json.dumps({"Rules": [{"ResourceType": "index", "Resource": ["index/cov*/*"], "MinIndexRetention": "15d"}]})
+AOSS_POLICY_KIND = {"Security": ("encryption", AOSS_ENCRYPTION_POLICY), "Access": ("data", AOSS_DATA_POLICY), "Lifecycle": ("retention", AOSS_RETENTION_POLICY)}
+
+
+def aoss_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def aoss_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, body: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, AOSS_CLI, op, env, ["--cli-input-json", json.dumps(body)]) or {}
+
+
+def aoss_create(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, **ids: str) -> str:
+    """Create one OpenSearch Serverless resource through the real CLI and return its id/name."""
+    call = lambda op, body: aoss_call(aws_bin, endpoint_url, region, env, op, body)  # noqa: E731
+    if kind in AOSS_POLICY_KIND:
+        ptype, doc = AOSS_POLICY_KIND[kind]
+        name = aoss_unique("cov-")
+        call(f"create-{kind.lower()}-policy", {"type": ptype, "name": name, "policy": doc})
+        return name
+    if kind == "network":
+        name = aoss_unique("cov-net-")
+        call("create-security-policy", {"type": "network", "name": name, "policy": AOSS_NETWORK_POLICY})
+        return name
+    if kind == "collection":
+        data = call("create-collection", {"name": aoss_unique("cov"), "type": "SEARCH"})
+        cid = str((data.get("createCollectionDetail") or {}).get("id") or "")
+        call("batch-get-collection", {"ids": [cid]})  # settle CREATING -> ACTIVE
+        return cid
+    if kind == "group":
+        data = call("create-collection-group", {"name": aoss_unique("cov-grp-"), "standbyReplicas": "DISABLED"})
+        return str((data.get("createCollectionGroupDetail") or {}).get("id") or "")
+    if kind == "config":
+        data = call("create-security-config", {"type": "saml", "name": aoss_unique("cov-saml-"), "samlOptions": {"metadata": "<EntityDescriptor/>"}})
+        return str((data.get("securityConfigDetail") or {}).get("id") or "")
+    if kind == "endpoint":
+        subnets = run_aws_json(aws_bin, endpoint_url, region, "ec2", "describe-subnets", env, ["--filters", "Name=vpc-id,Values=vpc-00000001"]) or {}
+        subnet = next((s.get("SubnetId") for s in subnets.get("Subnets") or [] if s.get("SubnetId")), "subnet-00000001")
+        data = call("create-vpc-endpoint", {"name": aoss_unique("cov-vpce-"), "vpcId": "vpc-00000001", "subnetIds": [subnet]})
+        eid = str((data.get("createVpcEndpointDetail") or {}).get("id") or "")
+        call("batch-get-vpc-endpoint", {"ids": [eid]})  # settle PENDING -> ACTIVE
+        return eid
+    if kind == "index":
+        name = aoss_unique("idx-")
+        call("create-index", {"id": ids["collection"], "indexName": name, "indexSchema": {"mappings": {"properties": {"title": {"type": "text"}}}}})
+        return name
+    if kind == "job":
+        data = call("create-ingestion-job", {"collectionId": ids["collection"], "ingestionJobName": aoss_unique("cov-job-"), "indexName": "books", "source": {"s3": {"bucket": "stackyard-aoss"}}})
+        return str((data.get("ingestionJobDetail") or {}).get("ingestionJobId") or "")
+    if kind == "stream":
+        data = call(
+            "create-ingestion-stream",
+            {
+                "collectionId": ids["collection"], "ingestionStreamName": aoss_unique("cov-stream-"), "indexName": "books",
+                "roleArn": "arn:aws:iam::123456789012:role/stackyard-aoss", "source": {"s3": {"sqsArn": "arn:aws:sqs:us-east-1:123456789012:stackyard-aoss"}},
+            },
+        )
+        sid = str((data.get("ingestionStreamDetail") or {}).get("ingestionStreamId") or "")
+        call("get-ingestion-stream", {"collectionId": ids["collection"], "ingestionStreamId": sid})  # CREATING -> ACTIVE
+        return sid
+    raise ValueError(kind)
+
+
+def aoss_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("opensearchserverless", {})
+    if not state.get("collection"):
+        make = lambda kind, **ids: aoss_create(aws_bin, endpoint_url, region, env, kind, **ids)  # noqa: E731
+        state["encryption"] = make("Security")  # must exist before any collection
+        state["network"] = make("network")
+        state["data"] = make("Access")
+        state["retention"] = make("Lifecycle")
+        state["collection"] = make("collection")
+        state["index"] = make("index", collection=state["collection"])
+        state["group"] = make("group")
+        state["config"] = make("config")
+        state["endpoint"] = make("endpoint")
+    return state
+
+
+def aoss_policy_version(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, ptype: str, name: str) -> str:
+    if kind == "lifecycle":
+        data = aoss_call(aws_bin, endpoint_url, region, env, "batch-get-lifecycle-policy", {"identifiers": [{"type": ptype, "name": name}]})
+        items = data.get("lifecyclePolicyDetails") or [{}]
+        return str(items[0].get("policyVersion") or "")
+    data = aoss_call(aws_bin, endpoint_url, region, env, f"get-{kind}-policy", {"type": ptype, "name": name})
+    return str((data.get(f"{kind}PolicyDetail") or {}).get("policyVersion") or "")
+
+
+def opensearchserverless_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each OpenSearch Serverless operation at real resources; deletes
+    and cancels get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    fx = aoss_fixture(aws_bin, endpoint_url, region, env)
+
+    def make(kind: str, **ids: str) -> str:
+        return aoss_create(aws_bin, endpoint_url, region, env, kind, **ids)
+
+    coll = fx["collection"]
+    coll_arn = f"arn:aws:aoss:{region}:123456789012:collection/{coll}"
+    policies = {"Security": ("security", "encryption", fx["encryption"]), "Access": ("access", "data", fx["data"]), "Lifecycle": ("lifecycle", "retention", fx["retention"])}
+    for word, (kind, ptype, name) in policies.items():
+        if op == f"Create{word}Policy":
+            return {"type": ptype, "name": aoss_unique("cov-"), "policy": AOSS_POLICY_KIND[word][1]}
+        if op == f"Get{word}Policy":
+            return {"type": ptype, "name": name}
+        if op == f"Update{word}Policy":
+            return {"type": ptype, "name": name, "policyVersion": aoss_policy_version(aws_bin, endpoint_url, region, env, kind, ptype, name), "description": "coverage"}
+        if op == f"Delete{word}Policy":
+            return {"type": ptype, "name": make(word)}
+    if op == "ListSecurityPolicies":
+        return {"type": "encryption"}
+    if op == "ListAccessPolicies":
+        return {"type": "data"}
+    if op == "ListLifecyclePolicies":
+        return {"type": "retention"}
+    if op == "BatchGetLifecyclePolicy":
+        return {"identifiers": [{"type": "retention", "name": fx["retention"]}]}
+    if op == "BatchGetEffectiveLifecyclePolicy":
+        return {"resourceIdentifiers": [{"type": "retention", "resource": f"index/cov-x/{fx['index']}"}]}
+    if op == "CreateCollection":
+        return {"name": aoss_unique("cov"), "type": "SEARCH"}
+    if op == "BatchGetCollection":
+        return {"ids": [coll]}
+    if op == "ListCollections":
+        return {}
+    if op == "UpdateCollection":
+        make_id = make("collection")
+        return {"id": make_id, "description": "coverage"}
+    if op == "DeleteCollection":
+        return {"id": make("collection")}
+    if op == "CreateCollectionGroup":
+        return {"name": aoss_unique("cov-grp-"), "standbyReplicas": "DISABLED"}
+    if op == "BatchGetCollectionGroup":
+        return {"ids": [fx["group"]]}
+    if op == "ListCollectionGroups":
+        return {}
+    if op == "UpdateCollectionGroup":
+        return {"id": fx["group"], "description": "coverage"}
+    if op == "DeleteCollectionGroup":
+        return {"id": make("group")}
+    if op == "CreateIndex":
+        return {"id": coll, "indexName": aoss_unique("idx-"), "indexSchema": {"mappings": {"properties": {"title": {"type": "text"}}}}}
+    if op in {"GetIndex", "UpdateIndex"}:
+        out = {"id": coll, "indexName": fx["index"]}
+        if op == "UpdateIndex":
+            out["indexSchema"] = {"mappings": {"properties": {"body": {"type": "text"}}}}
+        return out
+    if op == "DeleteIndex":
+        return {"id": coll, "indexName": make("index", collection=coll)}
+    if op == "CreateIngestionJob":
+        return {"collectionId": coll, "ingestionJobName": aoss_unique("cov-job-"), "indexName": "books", "source": {"s3": {"bucket": "stackyard-aoss"}}}
+    if op == "GetIngestionJob":
+        return {"collectionId": coll, "ingestionJobId": make("job", collection=coll)}
+    if op == "CancelIngestionJob":
+        return {"collectionId": coll, "ingestionJobId": make("job", collection=coll)}
+    if op in {"ListIngestionJobs", "ListIngestionStreams"}:
+        return {"collectionId": coll}
+    if op == "CreateIngestionStream":
+        return {
+            "collectionId": coll, "ingestionStreamName": aoss_unique("cov-stream-"), "indexName": "books",
+            "roleArn": "arn:aws:iam::123456789012:role/stackyard-aoss", "source": {"s3": {"sqsArn": "arn:aws:sqs:us-east-1:123456789012:stackyard-aoss"}},
+        }
+    if op in {"GetIngestionStream", "DeleteIngestionStream"}:
+        return {"collectionId": coll, "ingestionStreamId": make("stream", collection=coll)}
+    if op == "CreateSecurityConfig":
+        return {"type": "saml", "name": aoss_unique("cov-saml-"), "samlOptions": {"metadata": "<EntityDescriptor/>"}}
+    if op == "GetSecurityConfig":
+        return {"id": fx["config"]}
+    if op == "UpdateSecurityConfig":
+        cfg = aoss_call(aws_bin, endpoint_url, region, env, "get-security-config", {"id": fx["config"]})
+        return {"id": fx["config"], "configVersion": str((cfg.get("securityConfigDetail") or {}).get("configVersion") or ""), "description": "coverage"}
+    if op == "DeleteSecurityConfig":
+        return {"id": make("config")}
+    if op == "ListSecurityConfigs":
+        return {"type": "saml"}
+    if op == "CreateVpcEndpoint":
+        subnets = run_aws_json(aws_bin, endpoint_url, region, "ec2", "describe-subnets", env, ["--filters", "Name=vpc-id,Values=vpc-00000001"]) or {}
+        subnet = next((s.get("SubnetId") for s in subnets.get("Subnets") or [] if s.get("SubnetId")), "subnet-00000001")
+        return {"name": aoss_unique("cov-vpce-"), "vpcId": "vpc-00000001", "subnetIds": [subnet]}
+    if op == "BatchGetVpcEndpoint":
+        return {"ids": [fx["endpoint"]]}
+    if op == "ListVpcEndpoints":
+        return {}
+    if op == "UpdateVpcEndpoint":
+        return {"id": make("endpoint")}
+    if op == "DeleteVpcEndpoint":
+        return {"id": make("endpoint")}
+    if op in {"GetAccountSettings", "GetPoliciesStats"}:
+        return {}
+    if op == "UpdateAccountSettings":
+        return {"capacityLimits": {"maxIndexingCapacityInOCU": 20, "maxSearchCapacityInOCU": 20}}
+    if op == "TagResource":
+        return {"resourceArn": coll_arn, "tags": [{"key": "stackyard", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": coll_arn, "tagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": coll_arn}
+    return copy.deepcopy(payload)
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -35454,6 +35972,10 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "opensearchserverless":
+        return opensearchserverless_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in {"timestreamwrite", "timestreamquery"}:
+        return timestream_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "elasticsearchservice":
         return elasticsearchservice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "glacier":
@@ -35462,6 +35984,8 @@ def hydrate_payload_with_service_state(
         return inspector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "inspectorscan":
         return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
+    if endpoint.service == "osis":
+        return osis_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdbelastic":
         return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "eksauth":
