@@ -560,6 +560,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
+    "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
     "elasticsearchservice": {"cli": "es", "ops_file": REPO_ROOT / "internal/server/elasticsearchservice_ops.go"},
@@ -2223,6 +2224,8 @@ SERVICE_ALIASES = {
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
     "amazonopensearchserverless": "opensearchserverless",
+    "verifiedpermissions": "verifiedpermissions",
+    "amazonverifiedpermissions": "verifiedpermissions",
     "codestarconnections": "codestarconnections",
     "codestar-connections": "codestarconnections",
     "awscodestarconnections": "codestarconnections",
@@ -3176,6 +3179,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "codeconnections": {},
     "route53domains": {},
     "opensearchserverless": {},
+    "verifiedpermissions": {},
     "codestarconnections": {},
     "codestarnotifications": {},
     "appconfig": {},
@@ -35384,6 +35388,133 @@ def timestream_hydrate_payload(
     return payload
 
 
+VP_CLI = "verifiedpermissions"
+VP_ISSUER = "https://stackyard-coverage.example.com"
+VP_SCHEMA = json.dumps(
+    {"Cov": {"entityTypes": {"User": {}, "Photo": {}}, "actions": {"view": {"appliesTo": {"principalTypes": ["User"], "resourceTypes": ["Photo"]}}}}}
+)
+VP_STATIC = 'permit(principal == Cov::User::"alice", action == Cov::Action::"view", resource);'
+VP_TEMPLATE = 'permit(principal == ?principal, action == Cov::Action::"view", resource);'
+VP_OIDC = {"openIdConnectConfiguration": {"issuer": VP_ISSUER, "tokenSelection": {"identityTokenOnly": {"clientIds": ["cov"]}}}}
+VP_PRINCIPAL = {"entityType": "Cov::User", "entityId": "alice"}
+VP_ACTION = {"actionType": "Cov::Action", "actionId": "view"}
+VP_RESOURCE = {"entityType": "Cov::Photo", "entityId": "p1"}
+
+
+def vp_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, body: dict) -> dict:
+    return run_aws_json(aws_bin, endpoint_url, region, VP_CLI, op, env, ["--cli-input-json", json.dumps(body)]) or {}
+
+
+def vp_token() -> str:
+    """An unsigned OIDC identity token for the coverage identity source."""
+    enc = lambda v: base64.urlsafe_b64encode(json.dumps(v).encode()).decode().rstrip("=")  # noqa: E731
+    claims = {"iss": VP_ISSUER, "sub": "alice", "aud": "cov", "exp": int(time.time()) + 3600}
+    return f"{enc({'alg': 'RS256'})}.{enc(claims)}.c2ln"
+
+
+def vp_store(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = vp_call(aws_bin, endpoint_url, region, env, "create-policy-store", {"validationSettings": {"mode": "OFF"}})
+    return str(data.get("policyStoreId") or "")
+
+
+def vp_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    state = RUNTIME_STATE.setdefault("verifiedpermissions", {})
+    if not state.get("store"):
+        call = lambda op, body: vp_call(aws_bin, endpoint_url, region, env, op, body)  # noqa: E731
+        store = vp_store(aws_bin, endpoint_url, region, env)
+        state["store"] = store
+        state["arn"] = str(call("get-policy-store", {"policyStoreId": store}).get("arn") or "")
+        call("put-schema", {"policyStoreId": store, "definition": {"cedarJson": VP_SCHEMA}})
+        state["template"] = str(call("create-policy-template", {"policyStoreId": store, "statement": VP_TEMPLATE}).get("policyTemplateId") or "")
+        state["policy"] = str(call("create-policy", {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}).get("policyId") or "")
+        call("create-policy", {"policyStoreId": store, "definition": {"templateLinked": {"policyTemplateId": state["template"], "principal": VP_PRINCIPAL}}})
+        state["source"] = str(call("create-identity-source", {"policyStoreId": store, "principalEntityType": "Cov::User", "configuration": VP_OIDC}).get("identitySourceId") or "")
+        state["alias"] = f"cov-{time.time_ns() % 10**12}"
+        call("create-policy-store-alias", {"aliasName": state["alias"], "policyStoreId": store})
+    return state
+
+
+def verifiedpermissions_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Verified Permissions operation at real fixtures; destructive
+    operations get resources of their own."""
+    op = endpoint.operation
+    call = lambda o, body: vp_call(aws_bin, endpoint_url, region, env, o, body)  # noqa: E731
+    if op == "CreatePolicyStore":
+        return {"validationSettings": {"mode": "OFF"}, "description": "coverage"}
+    if op == "ListPolicyStores" or op == "ListPolicyStoreAliases":
+        return {}
+    if op == "DeletePolicyStore":
+        return {"policyStoreId": vp_store(aws_bin, endpoint_url, region, env)}
+    state = vp_fixture(aws_bin, endpoint_url, region, env)
+    store = state["store"]
+    if op == "CreateIdentitySource":  # one identity source per store
+        return {"policyStoreId": vp_store(aws_bin, endpoint_url, region, env), "principalEntityType": "Cov::User", "configuration": VP_OIDC}
+    if op == "DeleteIdentitySource":
+        own = vp_store(aws_bin, endpoint_url, region, env)
+        sid = str(call("create-identity-source", {"policyStoreId": own, "configuration": VP_OIDC}).get("identitySourceId") or "")
+        return {"policyStoreId": own, "identitySourceId": sid}
+    if op in {"GetIdentitySource", "UpdateIdentitySource"}:
+        body = {"policyStoreId": store, "identitySourceId": state["source"]}
+        if op == "UpdateIdentitySource":
+            body["updateConfiguration"] = VP_OIDC
+        return body
+    if op == "ListIdentitySources" or op == "ListPolicies" or op == "ListPolicyTemplates" or op == "GetSchema" or op == "GetPolicyStore":
+        return {"policyStoreId": store}
+    if op == "UpdatePolicyStore":
+        return {"policyStoreId": store, "validationSettings": {"mode": "OFF"}, "description": "coverage"}
+    if op == "PutSchema":
+        return {"policyStoreId": store, "definition": {"cedarJson": VP_SCHEMA}}
+    if op == "CreatePolicy":
+        return {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}
+    if op in {"GetPolicy", "UpdatePolicy"}:
+        body = {"policyStoreId": store, "policyId": state["policy"]}
+        if op == "UpdatePolicy":
+            body["definition"] = {"static": {"statement": VP_STATIC, "description": "updated"}}
+        return body
+    if op == "DeletePolicy":
+        pid = str(call("create-policy", {"policyStoreId": store, "definition": {"static": {"statement": VP_STATIC}}}).get("policyId") or "")
+        return {"policyStoreId": store, "policyId": pid}
+    if op == "BatchGetPolicy":
+        return {"requests": [{"policyStoreId": store, "policyId": state["policy"]}]}
+    if op == "CreatePolicyTemplate":
+        return {"policyStoreId": store, "statement": VP_TEMPLATE}
+    if op in {"GetPolicyTemplate", "UpdatePolicyTemplate"}:
+        body = {"policyStoreId": store, "policyTemplateId": state["template"]}
+        if op == "UpdatePolicyTemplate":
+            body["statement"] = VP_TEMPLATE
+        return body
+    if op == "DeletePolicyTemplate":
+        tid = str(call("create-policy-template", {"policyStoreId": store, "statement": VP_TEMPLATE}).get("policyTemplateId") or "")
+        return {"policyStoreId": store, "policyTemplateId": tid}
+    if op == "CreatePolicyStoreAlias":
+        return {"aliasName": f"cov-{time.time_ns() % 10**12}", "policyStoreId": store}
+    if op == "GetPolicyStoreAlias":
+        return {"aliasName": state["alias"]}
+    if op == "DeletePolicyStoreAlias":
+        name = f"cov-del-{time.time_ns() % 10**12}"
+        call("create-policy-store-alias", {"aliasName": name, "policyStoreId": store})
+        return {"aliasName": name}
+    if op in {"TagResource", "UntagResource", "ListTagsForResource"}:
+        body = {"resourceArn": state["arn"]}
+        if op == "TagResource":
+            body["tags"] = {"stackyard": "coverage"}
+        if op == "UntagResource":
+            body["tagKeys"] = ["stackyard"]
+        return body
+    request = {"principal": VP_PRINCIPAL, "action": VP_ACTION, "resource": VP_RESOURCE}
+    if op == "IsAuthorized":
+        return {"policyStoreId": store, **request}
+    if op == "BatchIsAuthorized":
+        return {"policyStoreId": store, "requests": [request]}
+    if op == "IsAuthorizedWithToken":
+        return {"policyStoreId": store, "identityToken": vp_token(), "action": VP_ACTION, "resource": VP_RESOURCE}
+    if op == "BatchIsAuthorizedWithToken":
+        return {"policyStoreId": store, "identityToken": vp_token(), "requests": [{"action": VP_ACTION, "resource": VP_RESOURCE}]}
+    return copy.deepcopy(payload)
+
+
 AOSS_CLI = "opensearchserverless"
 AOSS_ENCRYPTION_POLICY = json.dumps({"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AWSOwnedKey": True})
 AOSS_NETWORK_POLICY = json.dumps([{"Rules": [{"ResourceType": "collection", "Resource": ["collection/cov*"]}], "AllowFromPublic": True}])
@@ -35603,6 +35734,8 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "verifiedpermissions":
+        return verifiedpermissions_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "opensearchserverless":
         return opensearchserverless_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in {"timestreamwrite", "timestreamquery"}:

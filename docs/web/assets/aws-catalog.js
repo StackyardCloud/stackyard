@@ -1514,6 +1514,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/signer/docker-compose.yml"
   },
   {
+    id: "verifiedpermissions",
+    name: "Verified Permissions",
+    category: "security",
+    summary: "Cedar policy stores with schemas, STRICT validation, static and template-linked policies, aliases, identity sources and real IsAuthorized decisions.",
+    docsHref: "../../../index.html#verifiedpermissions",
+    exampleHref: "../../../../examples/aws/verifiedpermissions/docker-compose.yml"
+  },
+  {
     id: "sns",
     name: "SNS",
     category: "integration",
