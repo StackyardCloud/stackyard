@@ -1161,6 +1161,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/privateca/docker-compose.yml"
   },
   {
+    id: "pcaconnectorscep",
+    name: "Private CA Connector for SCEP",
+    category: "security",
+    summary: "Issue SCEP connectors on ACTIVE Private CAs, with challenge passwords and Intune configurations.",
+    docsHref: "../../../index.html#pcaconnectorscep",
+    exampleHref: "../../../../examples/aws/pca-connector-scep/docker-compose.yml"
+  },
+  {
     id: "rds",
     name: "RDS",
     category: "database",

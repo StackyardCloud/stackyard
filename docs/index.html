@@ -219,6 +219,7 @@
         <a href="#opensearchserverless">OpenSearch Serverless</a>
         <a href="#elasticsearchservice">Elasticsearch Service</a>
         <a href="#privateca">Private CA</a>
+        <a href="#pcaconnectorscep">Private CA Connector for SCEP</a>
         <a href="#secretsmanager">Secrets Manager</a>
         <a href="#servicecatalogappregistry">Service Catalog AppRegistry</a>
         <a href="#servicequotas">Service Quotas</a>
@@ -8342,6 +8343,41 @@
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 <li><code>privateca</code>: <code>docker compose -f examples/aws/privateca/docker-compose.yml up --build</code></li>
                 </ul>
+        </details>
+        </section>
+
+        <section id="pcaconnectorscep" class="service">
+
+        <div class="service-header">
+        <h2>AWS Private CA Connector for SCEP</h2>
+        <p>SigV4 signed with service <code>pca-connector-scep</code>. REST JSON API under <code>/connectors</code>, <code>/challenges</code>, <code>/challengeMetadata</code>, <code>/challengePasswords</code> and <code>/tags/</code>. Requests are validated against the service model. A connector needs an ACTIVE, GENERAL_PURPOSE certificate authority in Stackyard's Private CA store; it is GENERAL_PURPOSE, or INTUNE when <code>MobileDeviceManagement.Intune</code> is given, reports CREATING once and then ACTIVE, and is idempotent on ClientToken. Challenges need an ACTIVE GENERAL_PURPOSE connector; the password is returned only by CreateChallenge and GetChallengePassword. Deleting a connector deletes its challenges. The connector <code>Endpoint</code> is a Stackyard URL, but the SCEP protocol itself (GetCACaps, GetCACert, PKIOperation) is not served. All 12 documented actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pca-connector-scep</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <tr><td><code>CreateChallenge</code></td></tr>
+        <tr><td><code>CreateConnector</code></td></tr>
+        <tr><td><code>DeleteChallenge</code></td></tr>
+        <tr><td><code>DeleteConnector</code></td></tr>
+        <tr><td><code>GetChallengeMetadata</code></td></tr>
+        <tr><td><code>GetChallengePassword</code></td></tr>
+        <tr><td><code>GetConnector</code></td></tr>
+        <tr><td><code>ListChallengeMetadata</code></td></tr>
+        <tr><td><code>ListConnectors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pca-connector-scep</code>: <code>docker compose -f examples/aws/pca-connector-scep/docker-compose.yml up --build</code></li>
+        </ul>
         </details>
         </section>
 
