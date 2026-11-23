@@ -857,6 +857,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
+    id: "polly",
+    name: "Amazon Polly",
+    category: "integration",
+    summary: "Synthesize speech (silent but valid MP3, Ogg, PCM and mu-law/A-law audio sized to the text), speech marks, SSML, lexicons, S3 synthesis tasks and custom voices.",
+    docsHref: "../../../index.html#polly",
+    exampleHref: "../../../../examples/aws/polly/docker-compose.yml"
+  },
+  {
     id: "iot",
     name: "IoT",
     category: "integration",

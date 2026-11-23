@@ -390,6 +390,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     },
     "route53": {"cli": "route53", "ops_file": REPO_ROOT / "internal/server/route53_ops.go"},
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
+    "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "directconnect": {"cli": "directconnect", "ops_file": REPO_ROOT / "internal/server/directconnect_ops.go"},
     "globalaccelerator": {
         "cli": "globalaccelerator",
@@ -1919,6 +1920,8 @@ SERVICE_ALIASES = {
     "route53profiles": "route53profiles",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
+    "polly": "polly",
+    "amazonpolly": "polly",
     "route-53": "route53",
     "route 53": "route53",
     "amazonroute53": "route53",
@@ -3149,6 +3152,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "scheduler": {},
     "pipes": {},
     "route53profiles": {},
+    "polly": {},
     "datasync": {},
     "dax": {},
     "route53resolver": {},
@@ -4083,6 +4087,16 @@ def s3tables_raw_fallback_routes() -> dict[str, tuple[str, str]]:
     }
 
 
+# Polly operations the AWS CLI doesn't ship (custom voices and the
+# bidirectional synthesis stream); sent as signed raw calls.
+POLLY_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] = {
+    "CreateVoice": ("POST", "/v1/voices"),
+    "GetVoice": ("GET", "/v1/voices/{VoiceId}"),
+    "DeleteVoice": ("DELETE", "/v1/voices/{VoiceId}"),
+    "StartSpeechSynthesisStream": ("POST", "/v1/synthesisStream"),
+}
+
+
 def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
     if endpoint.service == "acm":
         return ("POST", "/")
@@ -4540,6 +4554,8 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return BATCH_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockruntime":
         return BEDROCKRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
+    if endpoint.service == "polly":
+        return POLLY_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrockagentruntime":
         return BEDROCKAGENTRUNTIME_RAW_FALLBACK_ROUTES.get(endpoint.operation)
     if endpoint.service == "bedrock":
@@ -6409,6 +6425,9 @@ def invoke_raw_endpoint(
     elif endpoint.service == "lexruntimev2":
         body = lexruntimev2_conversation_body()
         extra_headers = {"Content-Type": "application/vnd.amazon.eventstream", "x-amz-lex-conversation-mode": "TEXT"}
+    elif endpoint.service == "polly" and endpoint.operation == "StartSpeechSynthesisStream":
+        body = polly_stream_body(payload_for_transport)
+        extra_headers = polly_stream_headers(payload_for_transport)
     elif endpoint.service == "cloudfront":
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         extra_headers = {
@@ -7544,6 +7563,8 @@ def invoke_raw_endpoint(
 
 
 def build_raw_fallback_payload(endpoint: Endpoint) -> dict[str, object] | None:
+    if endpoint.service == "polly":
+        return {}  # polly_hydrate_payload builds each raw request
     if endpoint.service == "lexruntimev2":
         # Path members only; hydration points them at the seeded bot.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}
@@ -13403,6 +13424,10 @@ def generate_cli_input_payload(
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
         return {"accountId": "-", "vaultName": "", "jobId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
+        # synthesize-speech needs its members as flags plus an outfile even to
+        # print a skeleton; hydration fills in a real request.
+        return {"OutputFormat": "mp3", "Text": "hello", "VoiceId": "Joanna"}, None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -34392,6 +34417,122 @@ def r53p_new_resource(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return {"id": ra_id, "arn": arn}
 
 
+POLLY_COVERAGE_BUCKET = "stackyard-polly-coverage"
+POLLY_LEXICON = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    '<lexicon version="1.0" xmlns="http://www.w3.org/2005/01/pronunciation-lexicon" alphabet="ipa" xml:lang="en-US">'
+    "<lexeme><grapheme>W3C</grapheme><alias>World Wide Web Consortium</alias></lexeme></lexicon>"
+)
+POLLY_SPEECH = {"OutputFormat": "mp3", "Text": "Hello from Stackyard", "VoiceId": "Joanna"}
+
+
+def polly_stream_body(payload: dict) -> bytes:
+    """Encode the stream's TextEvent plus a CloseStreamEvent as event-stream frames."""
+    import struct
+    import zlib
+
+    text_event = (payload.get("ActionStream") or {}).get("TextEvent") or {"Text": "Hello from Stackyard"}
+    out = b""
+    for event_type, event in (("TextEvent", text_event), ("CloseStreamEvent", {})):
+        body = json.dumps(event, separators=(",", ":")).encode("utf-8")
+        headers = b""
+        for name, value in ((":message-type", "event"), (":event-type", event_type)):
+            raw = value.encode("utf-8")
+            headers += bytes([len(name)]) + name.encode("utf-8") + b"\x07" + struct.pack(">H", len(raw)) + raw
+        prelude = struct.pack(">II", 16 + len(headers) + len(body), len(headers))
+        frame = prelude + struct.pack(">I", zlib.crc32(prelude)) + headers + body
+        out += frame + struct.pack(">I", zlib.crc32(frame))
+    return out
+
+
+def polly_stream_headers(payload: dict) -> dict[str, str]:
+    headers = {"Content-Type": "application/vnd.amazon.eventstream"}
+    for member in ("Engine", "OutputFormat", "VoiceId", "LanguageCode", "SampleRate"):
+        if payload.get(member):
+            headers[f"x-amzn-{member}"] = str(payload[member])
+    return headers
+
+
+def polly_put_lexicon(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"sy{time.time_ns() % 10**12}"
+    run_aws_json(aws_bin, endpoint_url, region, "polly", "put-lexicon", env, ["--name", name, "--content", POLLY_LEXICON])
+    return name
+
+
+def polly_start_task(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", POLLY_COVERAGE_BUCKET])
+    data = run_aws_json(
+        aws_bin, endpoint_url, region, "polly", "start-speech-synthesis-task", env,
+        ["--output-format", "mp3", "--output-s3-bucket-name", POLLY_COVERAGE_BUCKET, "--text", "Hello", "--voice-id", "Joanna"],
+    )
+    task = data.get("SynthesisTask") if isinstance(data, dict) else None
+    return str(task.get("TaskId") or "") if isinstance(task, dict) else ""
+
+
+def polly_custom_voice(endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """Create a custom voice (raw: the CLI has no create-voice) and read it once
+    so it leaves the pending state and can be deleted."""
+    def raw(op: str, method_payload: dict) -> str:
+        ep = Endpoint(service="polly", cli_service="polly", operation=op, cli_operation=pascal_to_kebab(op), source="runtime-state")
+        _, text = invoke_raw_endpoint(ep, endpoint_url, region, env, method_payload)
+        return text
+    text = raw("CreateVoice", {
+        "Name": "stackyard-voice", "LanguageCode": "en-US", "TermsAccepted": True,
+        "VoiceCreationData": {"Recordings": [{"Format": "wav", "Data": {"Bytes": "AAAA"}}]},
+    })
+    try:
+        voice_id = str(json.loads(text)["Voice"]["Id"])
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return ""
+    raw("GetVoice", {"VoiceId": voice_id})
+    return voice_id
+
+
+def polly_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Polly operation at real resources. Destructive operations
+    get resources of their own so the shared ones stay valid."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("polly", {})
+    if not state.get("lexicon"):
+        state["lexicon"] = polly_put_lexicon(aws_bin, endpoint_url, region, env)
+    lexicon_arn = f"arn:aws:polly:{region}:123456789012:lexicon/{state['lexicon']}"
+    if op in {"DescribeVoices", "ListLexicons", "ListSpeechSynthesisTasks"}:
+        return {}
+    if op == "SynthesizeSpeech":
+        return dict(POLLY_SPEECH)
+    if op == "PutLexicon":
+        return {"Name": f"sy{time.time_ns() % 10**12}", "Content": POLLY_LEXICON}
+    if op == "GetLexicon":
+        return {"Name": state["lexicon"]}
+    if op == "DeleteLexicon":
+        return {"Name": polly_put_lexicon(aws_bin, endpoint_url, region, env)}
+    if op == "StartSpeechSynthesisTask":
+        polly_start_task(aws_bin, endpoint_url, region, env)  # ensures the bucket
+        return {**POLLY_SPEECH, "OutputS3BucketName": POLLY_COVERAGE_BUCKET}
+    if op == "GetSpeechSynthesisTask":
+        return {"TaskId": polly_start_task(aws_bin, endpoint_url, region, env)}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": lexicon_arn}
+    if op == "TagResource":
+        return {"ResourceArn": lexicon_arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": lexicon_arn, "TagKeys": ["stackyard"]}
+    if op == "CreateVoice":
+        return {
+            "Name": "stackyard-voice", "LanguageCode": "en-US", "TermsAccepted": True,
+            "VoiceCreationData": {"Recordings": [{"Format": "wav", "Data": {"Bytes": "AAAA"}}]},
+        }
+    if op == "GetVoice":
+        return {"VoiceId": "Joanna"}
+    if op == "DeleteVoice":
+        return {"VoiceId": polly_custom_voice(endpoint_url, region, env)}
+    if op == "StartSpeechSynthesisStream":
+        return {"Engine": "neural", "OutputFormat": "pcm", "VoiceId": "Joanna", "ActionStream": {"TextEvent": {"Text": "Hello from Stackyard"}}}
+    return payload
+
+
 def route53profiles_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -35099,6 +35240,8 @@ def hydrate_payload_with_service_state(
         return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "route53domains":
         return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "polly":
+        return polly_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
@@ -57346,7 +57489,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

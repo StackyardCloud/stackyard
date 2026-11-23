@@ -181,6 +181,7 @@
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
         <a href="#pipes">EventBridge Pipes</a>
+        <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#grafana">Managed Grafana</a>
         <a href="#prometheus">Managed Service for Prometheus</a>
@@ -13085,6 +13086,46 @@
         <ul>
         <li><code>pipes</code>: <code>docker compose -f examples/aws/pipes/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="polly" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Polly</h2>
+        <p>SigV4 signed with service <code>polly</code>. REST JSON API under <code>/v1/voices</code>, <code>/v1/speech</code>, <code>/v1/lexicons</code>, <code>/v1/synthesisTasks</code>, <code>/v1/synthesisStream</code> and the tagging paths. Requests are validated against the service model. DescribeVoices serves an embedded catalog of the 116 built-in voices with engine and language filters. SynthesizeSpeech checks the voice, engine, language, sample rate, lexicons, text limits (3,000 billed / 6,000 total characters) and SSML (well-formed XML with a <code>&lt;speak&gt;</code> root), and returns audio that is valid but silent, sized at 60 ms per character and capped at 60 seconds: MPEG-2 Layer III for <code>mp3</code>, Ogg Opus for <code>ogg_opus</code> and <code>ogg_vorbis</code>, 16-bit PCM, and mu-law or A-law. <code>json</code> returns sentence, word, viseme and SSML speech marks computed from the text. Lexicons are validated PLS documents. StartSpeechSynthesisTask writes the output to a bucket in Stackyard's S3 store; tasks report scheduled, then inProgress, then completed as they are read. Custom voices (CreateVoice, GetVoice, DeleteVoice) report pending until first read. StartSpeechSynthesisStream reads the whole request event stream before answering with AudioEvent frames and a StreamClosedEvent. All 16 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: polly</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateVoice</code></td></tr>
+        <tr><td><code>DeleteLexicon</code></td></tr>
+        <tr><td><code>DeleteVoice</code></td></tr>
+        <tr><td><code>DescribeVoices</code></td></tr>
+        <tr><td><code>GetLexicon</code></td></tr>
+        <tr><td><code>GetSpeechSynthesisTask</code></td></tr>
+        <tr><td><code>GetVoice</code></td></tr>
+        <tr><td><code>ListLexicons</code></td></tr>
+        <tr><td><code>ListSpeechSynthesisTasks</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutLexicon</code></td></tr>
+        <tr><td><code>StartSpeechSynthesisStream</code></td></tr>
+        <tr><td><code>StartSpeechSynthesisTask</code></td></tr>
+        <tr><td><code>SynthesizeSpeech</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
         <section id="scheduler" class="service">
