@@ -19,6 +19,11 @@ const (
 	dbwMaxInputBytes = 32 << 20 // dataset bytes read by one run or preview
 	dbwMaxRows       = 100_000  // rows read by one run
 	dbwMaxColumns    = 1_000
+	// Rows are padded to the column count and steps can grow values, so the
+	// whole table is bounded too, not just what was read.
+	dbwMaxCells      = 5_000_000
+	dbwMaxTableBytes = 2 * dbwMaxInputBytes
+	dbwMaxSteps      = 100
 	dbwProfileRows   = 20_000 // default profile sample (AWS's default is 20,000 rows)
 )
 
@@ -26,6 +31,19 @@ const (
 type dbwTable struct {
 	cols []string
 	rows [][]string
+	size int // bytes held in cells
+}
+
+// grow accounts for n more cell bytes and enforces the table budgets.
+func (t *dbwTable) grow(n int) error {
+	t.size += n
+	if t.size > dbwMaxTableBytes {
+		return fmt.Errorf("the table would exceed %d MiB", dbwMaxTableBytes>>20)
+	}
+	if len(t.rows)*len(t.cols) > dbwMaxCells {
+		return fmt.Errorf("the table would exceed %d cells", dbwMaxCells)
+	}
+	return nil
 }
 
 // dbwLoadTable reads up to limit rows (the last ones with fromEnd) of an S3
@@ -128,7 +146,9 @@ func (t *dbwTable) readCSV(body []byte, opts map[string]any) error {
 				continue // later objects repeat the header
 			}
 		}
-		t.addRow(rec)
+		if err := t.addRow(rec); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -151,6 +171,9 @@ func (t *dbwTable) readJSON(body []byte) error {
 			records = append(records, x)
 		case []any:
 			for _, item := range x {
+				if len(t.rows)+len(records) >= dbwMaxRows {
+					break
+				}
 				if obj, ok := item.(map[string]any); ok {
 					records = append(records, obj)
 				}
@@ -184,15 +207,25 @@ func (t *dbwTable) readJSON(body []byte) error {
 				row[index[k]] = string(raw)
 			}
 		}
-		t.addRow(row)
+		if err := t.addRow(row); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (t *dbwTable) addRow(rec []string) {
+func (t *dbwTable) addRow(rec []string) error {
+	if (len(t.rows)+1)*len(t.cols) > dbwMaxCells {
+		return fmt.Errorf("the table would exceed %d cells", dbwMaxCells)
+	}
 	row := make([]string, len(t.cols))
 	copy(row, rec)
 	t.rows = append(t.rows, row)
+	n := 0
+	for _, v := range row {
+		n += len(v)
+	}
+	return t.grow(n)
 }
 
 func (t *dbwTable) col(name string) (int, error) {
@@ -213,6 +246,9 @@ var dbwSupportedOperations = []string{
 
 // apply runs recipe steps in order.
 func (t *dbwTable) apply(steps []any) error {
+	if len(steps) > dbwMaxSteps {
+		return fmt.Errorf("a recipe can apply at most %d steps", dbwMaxSteps)
+	}
 	for i, raw := range steps {
 		step, _ := raw.(map[string]any)
 		if len(dbwList(step, "ConditionExpressions")) > 0 {
@@ -238,7 +274,11 @@ func (t *dbwTable) mapColumn(name string, f func(string) string) error {
 		return err
 	}
 	for _, row := range t.rows {
+		before := len(row[c])
 		row[c] = f(row[c])
+		if err := t.grow(len(row[c]) - before); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -330,11 +370,18 @@ func (t *dbwTable) applyOne(op string, p map[string]string) error {
 		if len(t.cols) >= dbwMaxColumns {
 			return fmt.Errorf("more than %d columns", dbwMaxColumns)
 		}
+		if len(t.rows)*(len(t.cols)+1) > dbwMaxCells {
+			return fmt.Errorf("the table would exceed %d cells", dbwMaxCells)
+		}
+		added := 0
+		for _, row := range t.rows {
+			added += len(row[c])
+		}
 		t.cols = append(t.cols, target)
 		for i, row := range t.rows {
 			t.rows[i] = append(row, row[c])
 		}
-		return nil
+		return t.grow(added)
 	case "DELETE":
 		var names []string
 		if err := json.Unmarshal([]byte(p["sourceColumns"]), &names); err != nil || len(names) == 0 {
