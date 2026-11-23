@@ -564,6 +564,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
+    "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
@@ -2235,6 +2236,8 @@ SERVICE_ALIASES = {
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
+    "pi": "pi",
+    "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
     "aoss": "opensearchserverless",
@@ -3198,6 +3201,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53domains": {},
     "textract": {},
     "wafregional": {},
+    "pi": {},
     "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
@@ -33121,6 +33125,77 @@ def textract_create_version(aws_bin: str, endpoint_url: str, region: str, env: d
     return str((data or {}).get("AdapterVersion") or "")
 
 
+PI_START = 1767225600  # 2026-01-01T00:00:00Z
+
+
+def pi_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An RDS instance (its DbiResourceId) and one analysis report."""
+    state = RUNTIME_STATE.setdefault("pi", {})
+    if not state.get("identifier"):
+        name = f"stackyard-pi-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "rds", "create-db-instance", env, [
+            "--db-instance-identifier", name, "--engine", "postgres", "--db-instance-class", "db.t3.micro",
+            "--allocated-storage", "20", "--master-username", "admin", "--master-user-password", "stackyard123",
+        ])
+        # Stackyard derives DbiResourceId from the instance identifier.
+        state["identifier"] = "db-" + name.replace("-", "").upper()
+        state["report"] = pi_create_report(aws_bin, endpoint_url, region, env, state["identifier"])
+    return state
+
+
+def pi_create_report(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], identifier: str) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "pi", "create-performance-analysis-report", env, [
+        "--service-type", "RDS", "--identifier", identifier,
+        "--start-time", str(PI_START), "--end-time", str(PI_START + 3600),
+    ])
+    return str((data or {}).get("AnalysisReportId") or "")
+
+
+def pi_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Performance Insights operations at a real instance and report;
+    DeletePerformanceAnalysisReport gets a report of its own."""
+    op = endpoint.operation
+    fx = pi_fixture(aws_bin, endpoint_url, region, env)
+    base = {"ServiceType": "RDS", "Identifier": fx["identifier"]}
+    window = {"StartTime": PI_START, "EndTime": PI_START + 3600}
+    arn = f"arn:aws:pi:{region}:123456789012:perf-reports/RDS/{fx['identifier']}/{fx['report']}"
+    if op == "DescribeDimensionKeys":
+        return {**base, **window, "Metric": "db.load.avg", "GroupBy": {"Group": "db.wait_event", "Limit": 5},
+                "PartitionBy": {"Group": "db.user"}, "AdditionalMetrics": ["db.sql.stats.calls_per_sec.avg"]}
+    if op == "GetResourceMetrics":
+        return {**base, **window, "PeriodInSeconds": 60, "MetricQueries": [
+            {"Metric": "db.load.avg", "GroupBy": {"Group": "db.sql", "Limit": 3}},
+            {"Metric": "os.cpuUtilization.total.avg"},
+        ]}
+    if op == "GetDimensionKeyDetails":
+        return {**base, "Group": "db.sql", "GroupIdentifier": "A1B2C3D4E5F60718", "RequestedDimensions": ["db.sql.statement"]}
+    if op == "GetResourceMetadata":
+        return base
+    if op == "ListAvailableResourceDimensions":
+        return {**base, "Metrics": ["db.load"]}
+    if op == "ListAvailableResourceMetrics":
+        return {**base, "MetricTypes": ["os", "db"]}
+    if op == "CreatePerformanceAnalysisReport":
+        return {**base, **window, "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "GetPerformanceAnalysisReport":
+        return {**base, "AnalysisReportId": fx["report"], "TextFormat": "MARKDOWN", "AcceptLanguage": "EN_US"}
+    if op == "ListPerformanceAnalysisReports":
+        return {**base, "ListTags": True}
+    if op == "ListPerformanceAnalysisReportRecommendations":
+        return {**base, "AnalysisReportId": fx["report"]}
+    if op == "DeletePerformanceAnalysisReport":
+        return {**base, "AnalysisReportId": pi_create_report(aws_bin, endpoint_url, region, env, fx["identifier"])}
+    if op == "TagResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ServiceType": "RDS", "ResourceARN": arn}
+    return payload
+
+
 def textract_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -36255,6 +36330,8 @@ def hydrate_payload_with_service_state(
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "wafregional":
         return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pi":
+        return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":

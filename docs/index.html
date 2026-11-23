@@ -292,6 +292,7 @@
         <a href="#route53profiles">Route 53 Profiles</a>
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#textract">Textract</a>
+        <a href="#pi">Performance Insights</a>
         <a href="#wafregional">WAF Classic Regional</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
@@ -25030,6 +25031,44 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateAdapter</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="pi" class="service">
+
+        <div class="service-header">
+        <h2>Amazon RDS Performance Insights</h2>
+        <p>SigV4 signed with service <code>pi</code>. JSON 1.1 API with <code>X-Amz-Target: PerformanceInsightsv20180227.*</code>. <code>Identifier</code> is an instance's DbiResourceId (<code>db-</code> plus the instance identifier, upper-cased without dashes) from the RDS store; <code>DOCDB</code> requires a docdb-engine instance, and unknown identifiers return NotAuthorizedException. Metric data is synthetic but deterministic: values depend on the identifier, metric, dimension key and timestamp, so repeated calls agree. <code>db.load</code> and <code>db.sampledload</code> can be grouped by fixed sample keys for db.sql, db.sql_tokenized, db.wait_event, db.user, db.host and more (db.query and db.wait_state for DocumentDB). Periods are 1, 60, 300, 3600 or 86400 seconds with at most 1,440 points per series. Analysis reports run on read (RUNNING, then SUCCEEDED) and return a fixed high-load insight with recommendations.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: pi</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon RDS Performance Insights API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreatePerformanceAnalysisReport</code></td></tr>
+        <tr><td><code>DeletePerformanceAnalysisReport</code></td></tr>
+        <tr><td><code>DescribeDimensionKeys</code></td></tr>
+        <tr><td><code>GetDimensionKeyDetails</code></td></tr>
+        <tr><td><code>GetPerformanceAnalysisReport</code></td></tr>
+        <tr><td><code>GetResourceMetadata</code></td></tr>
+        <tr><td><code>GetResourceMetrics</code></td></tr>
+        <tr><td><code>ListAvailableResourceDimensions</code></td></tr>
+        <tr><td><code>ListAvailableResourceMetrics</code></td></tr>
+        <tr><td><code>ListPerformanceAnalysisReportRecommendations</code></td></tr>
+        <tr><td><code>ListPerformanceAnalysisReports</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
         </tbody>
         </table>
         </details>
