@@ -185,6 +185,14 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/route53domains/docker-compose.yml"
   },
   {
+    id: "servicecatalog",
+    name: "Service Catalog",
+    category: "integration",
+    summary: "Emulate portfolios, products and provisioning artifacts from S3 templates, sharing, constraints, TagOptions, service actions, provisioning with real CloudFormation stacks, plans and records.",
+    docsHref: "../../../index.html#servicecatalog",
+    exampleHref: "../../../../examples/aws/servicecatalog/docker-compose.yml"
+  },
+  {
     id: "cloudfront",
     name: "CloudFront",
     category: "integration",

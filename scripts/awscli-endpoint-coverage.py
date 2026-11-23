@@ -559,6 +559,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "efs": {"cli": "efs", "ops_file": REPO_ROOT / "internal/server/efs_ops.go"},
     "codeconnections": {"cli": "codeconnections", "ops_file": REPO_ROOT / "internal/server/codeconnections_ops.go"},
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
+    "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
     "codestarnotifications": {"cli": "codestar-notifications", "ops_file": REPO_ROOT / "internal/server/codestarnotifications_ops.go"},
@@ -2217,6 +2218,8 @@ SERVICE_ALIASES = {
     "efs": "efs",
     "codeconnections": "codeconnections",
     "route53domains": "route53domains",
+    "servicecatalog": "servicecatalog",
+    "awsservicecatalog": "servicecatalog",
     "route53-domains": "route53domains",
     "amazonroute53domains": "route53domains",
     "awscodeconnections": "codeconnections",
@@ -3175,6 +3178,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
+    "servicecatalog": {},
     "opensearchserverless": {},
     "codestarconnections": {},
     "codestarnotifications": {},
@@ -35592,6 +35596,282 @@ def opensearchserverless_hydrate_payload(
     return copy.deepcopy(payload)
 
 
+SERVICECATALOG_TEMPLATE = json.dumps({
+    "Parameters": {"Env": {"Type": "String", "AllowedValues": ["dev", "prod"]}, "Size": {"Type": "Number", "Default": "1"}},
+    "Resources": {"Bucket": {"Type": "AWS::S3::Bucket"}},
+    "Outputs": {"EnvOut": {"Value": {"Ref": "Env"}}},
+})
+SERVICECATALOG_ROLE = "arn:aws:iam::123456789012:role/stackyard-sc"
+SERVICECATALOG_ACCOUNT = "111122223333"
+
+
+def servicecatalog_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "servicecatalog", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def servicecatalog_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**14}"
+
+
+class ServiceCatalogFixture:
+    """Real resources made through the CLI; destructive operations get their own."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> None:
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.bucket = servicecatalog_unique("stackyard-sc-")
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", self.bucket])
+        self.put("app.json", SERVICECATALOG_TEMPLATE)
+        self.put("tf.tar.gz", "terraform-archive")
+        self.portfolio = self.new_portfolio()
+        self.product, self.artifact, self.view, self.product_arn = self.new_product()
+        self.call("associate-product-with-portfolio", {"ProductId": self.product, "PortfolioId": self.portfolio})
+        self.constraint = self.new_constraint(self.portfolio, self.product)
+        self.tag_option = self.new_tag_option(self.portfolio)
+        self.call("associate-budget-with-resource", {"BudgetName": "stackyard-budget", "ResourceId": self.portfolio})
+        self.call("create-portfolio-share", {"PortfolioId": self.portfolio, "AccountId": SERVICECATALOG_ACCOUNT})
+        self.action = self.new_action(associate=True)
+        self.pp, self.record = self.provision()
+        self.plan = self.new_plan()
+        self.copy_token = str(self.call("copy-product", {"SourceProductArn": self.product_arn, "IdempotencyToken": servicecatalog_unique("cp"),
+                                                         "TargetProductName": "stackyard-copy"}).get("CopyProductToken") or "")
+        # An organization share token, then the share is removed so org access can be disabled.
+        self.call("enable-aws-organizations-access", {})
+        node = {"Type": "ORGANIZATION", "Value": "o-stackyard00"}
+        org_port = self.new_portfolio()
+        self.share_token = str(self.call("create-portfolio-share", {"PortfolioId": org_port, "OrganizationNode": node}).get("PortfolioShareToken") or "")
+        self.call("delete-portfolio-share", {"PortfolioId": org_port, "OrganizationNode": node})
+
+    def call(self, op: str, payload: dict) -> dict:
+        aws_bin, endpoint_url, region, env = self.args
+        return servicecatalog_cli(aws_bin, endpoint_url, region, env, op, payload)
+
+    def put(self, key: str, body: str) -> None:
+        aws_bin, endpoint_url, region, env = self.args
+        with tempfile.NamedTemporaryFile("w", suffix=".tmpl", delete=False) as fh:
+            fh.write(body)
+            path = fh.name
+        try:
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env, ["--bucket", self.bucket, "--key", key, "--body", path])
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+    def url(self, key: str) -> str:
+        return f"https://{self.bucket}.s3.amazonaws.com/{key}"
+
+    def new_portfolio(self) -> str:
+        out = self.call("create-portfolio", {"DisplayName": servicecatalog_unique("sc-port-"), "ProviderName": "Stackyard",
+                                             "IdempotencyToken": servicecatalog_unique("p")})
+        return str((out.get("PortfolioDetail") or {}).get("Id") or "")
+
+    def new_product(self, product_type: str = "CLOUD_FORMATION_TEMPLATE", key: str = "app.json") -> tuple[str, str, str, str]:
+        out = self.call("create-product", {"Name": servicecatalog_unique("sc-prod-"), "Owner": "Stackyard", "ProductType": product_type,
+                                           "IdempotencyToken": servicecatalog_unique("pr"),
+                                           "ProvisioningArtifactParameters": {"Name": "v1", "Info": {"LoadTemplateFromURL": self.url(key)}}})
+        view = out.get("ProductViewDetail") or {}
+        summary = view.get("ProductViewSummary") or {}
+        return (str(summary.get("ProductId") or ""), str((out.get("ProvisioningArtifactDetail") or {}).get("Id") or ""),
+                str(summary.get("Id") or ""), str(view.get("ProductARN") or ""))
+
+    def new_constraint(self, portfolio: str, product: str) -> str:
+        out = self.call("create-constraint", {"PortfolioId": portfolio, "ProductId": product, "Type": "NOTIFICATION",
+                                              "Parameters": json.dumps({"NotificationArns": ["arn:aws:sns:us-east-1:123456789012:stackyard-sc"]}),
+                                              "IdempotencyToken": servicecatalog_unique("c")})
+        return str((out.get("ConstraintDetail") or {}).get("ConstraintId") or "")
+
+    def new_tag_option(self, resource: str = "") -> str:
+        out = self.call("create-tag-option", {"Key": servicecatalog_unique("sc-key-"), "Value": "v"})
+        tid = str((out.get("TagOptionDetail") or {}).get("Id") or "")
+        if resource:
+            self.call("associate-tag-option-with-resource", {"ResourceId": resource, "TagOptionId": tid})
+        return tid
+
+    def new_action(self, associate: bool = False) -> str:
+        out = self.call("create-service-action", {"Name": servicecatalog_unique("sc-act-"), "DefinitionType": "SSM_AUTOMATION",
+                                                  "IdempotencyToken": servicecatalog_unique("a"),
+                                                  "Definition": {"Name": "AWS-RestartEC2Instance", "Version": "1",
+                                                                 "Parameters": json.dumps([{"Name": "InstanceId", "Type": "TARGET"}])}})
+        aid = str(((out.get("ServiceActionDetail") or {}).get("ServiceActionSummary") or {}).get("Id") or "")
+        if associate:
+            self.call("associate-service-action-with-provisioning-artifact",
+                      {"ProductId": self.product, "ProvisioningArtifactId": self.artifact, "ServiceActionId": aid})
+        return aid
+
+    def provision(self, product: str = "", artifact: str = "", settle: bool = True) -> tuple[str, str]:
+        params = [{"Key": "Env", "Value": "dev"}] if not product else []
+        out = self.call("provision-product", {"ProductId": product or self.product, "ProvisioningArtifactId": artifact or self.artifact,
+                                              "ProvisionedProductName": servicecatalog_unique("sc-pp-"), "ProvisionToken": servicecatalog_unique("t"),
+                                              "ProvisioningParameters": params})
+        rec = out.get("RecordDetail") or {}
+        if settle:
+            self.call("describe-record", {"Id": rec.get("RecordId", "")})
+        return str(rec.get("ProvisionedProductId") or ""), str(rec.get("RecordId") or "")
+
+    def new_plan(self) -> str:
+        out = self.call("create-provisioned-product-plan", {"PlanName": servicecatalog_unique("sc-plan-"), "PlanType": "CLOUDFORMATION",
+                                                            "ProductId": self.product, "ProvisioningArtifactId": self.artifact,
+                                                            "ProvisionedProductName": servicecatalog_unique("sc-planned-"),
+                                                            "IdempotencyToken": servicecatalog_unique("pl"),
+                                                            "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]})
+        plan = str(out.get("PlanId") or "")
+        self.call("describe-provisioned-product-plan", {"PlanId": plan})
+        return plan
+
+    def terraform_record(self, kind: str) -> str:
+        """An in-progress Terraform record of the given kind, for the engine notify calls."""
+        port = self.new_portfolio()
+        product, artifact, _, _ = self.new_product("TERRAFORM_OPEN_SOURCE", "tf.tar.gz")
+        self.call("associate-product-with-portfolio", {"ProductId": product, "PortfolioId": port})
+        pp, rec = self.provision(product, artifact, settle=False)
+        if kind == "provision":
+            return rec
+        self.call("notify-provision-product-engine-workflow-result",
+                  {"WorkflowToken": "stackyard", "RecordId": rec, "Status": "SUCCEEDED", "IdempotencyToken": servicecatalog_unique("n")})
+        if kind == "update":
+            out = self.call("update-provisioned-product", {"ProvisionedProductId": pp, "UpdateToken": servicecatalog_unique("u")})
+        else:
+            out = self.call("terminate-provisioned-product", {"ProvisionedProductId": pp, "TerminateToken": servicecatalog_unique("x")})
+        return str((out.get("RecordDetail") or {}).get("RecordId") or "")
+
+
+def servicecatalog_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    state = RUNTIME_STATE.setdefault("servicecatalog", {})
+    if "fixture" not in state:
+        state["fixture"] = ServiceCatalogFixture(aws_bin, endpoint_url, region, env)
+    f: ServiceCatalogFixture = state["fixture"]
+    op = endpoint.operation
+    tok = servicecatalog_unique("k")
+    port, prod, pa = f.portfolio, f.product, f.artifact
+    simple = {
+        "AcceptPortfolioShare": {"PortfolioId": port},
+        "AssociateBudgetWithResource": {"BudgetName": servicecatalog_unique("b"), "ResourceId": port},
+        "AssociatePrincipalWithPortfolio": {"PortfolioId": port, "PrincipalARN": SERVICECATALOG_ROLE, "PrincipalType": "IAM"},
+        "AssociateProductWithPortfolio": {"ProductId": prod, "PortfolioId": port},
+        "CopyProduct": {"SourceProductArn": f.product_arn, "IdempotencyToken": tok, "TargetProductName": "stackyard-copy"},
+        "CreateConstraint": {"PortfolioId": port, "ProductId": prod, "Type": "NOTIFICATION", "IdempotencyToken": tok,
+                             "Parameters": json.dumps({"NotificationArns": ["arn:aws:sns:us-east-1:123456789012:stackyard-sc"]})},
+        "CreatePortfolio": {"DisplayName": servicecatalog_unique("sc-port-"), "ProviderName": "Stackyard", "IdempotencyToken": tok},
+        "CreatePortfolioShare": {"PortfolioId": port, "AccountId": SERVICECATALOG_ACCOUNT},
+        "CreateProduct": {"Name": servicecatalog_unique("sc-prod-"), "Owner": "Stackyard", "ProductType": "CLOUD_FORMATION_TEMPLATE", "IdempotencyToken": tok,
+                          "ProvisioningArtifactParameters": {"Info": {"LoadTemplateFromURL": f.url("app.json")}}},
+        "CreateProvisionedProductPlan": {"PlanName": servicecatalog_unique("sc-plan-"), "PlanType": "CLOUDFORMATION", "ProductId": prod,
+                                         "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-planned-"),
+                                         "IdempotencyToken": tok, "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]},
+        "CreateProvisioningArtifact": {"ProductId": prod, "IdempotencyToken": tok,
+                                       "Parameters": {"Name": servicecatalog_unique("v"), "Info": {"LoadTemplateFromURL": f.url("app.json")}}},
+        "CreateServiceAction": {"Name": servicecatalog_unique("sc-act-"), "DefinitionType": "SSM_AUTOMATION", "IdempotencyToken": tok,
+                                "Definition": {"Name": "AWS-RestartEC2Instance", "Version": "1"}},
+        "CreateTagOption": {"Key": servicecatalog_unique("sc-key-"), "Value": "v"},
+        "DescribeConstraint": {"Id": f.constraint},
+        "DescribeCopyProductStatus": {"CopyProductToken": f.copy_token},
+        "DescribePortfolio": {"Id": port},
+        "DescribePortfolioShareStatus": {"PortfolioShareToken": f.share_token},
+        "DescribePortfolioShares": {"PortfolioId": port, "Type": "ACCOUNT"},
+        "DescribeProduct": {"Id": prod},
+        "DescribeProductAsAdmin": {"Id": prod},
+        "DescribeProductView": {"Id": f.view},
+        "DescribeProvisionedProduct": {"Id": f.pp},
+        "DescribeProvisionedProductPlan": {"PlanId": f.plan},
+        "DescribeProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "DescribeProvisioningParameters": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "DescribeRecord": {"Id": f.record},
+        "DescribeServiceAction": {"Id": f.action},
+        "DescribeServiceActionExecutionParameters": {"ProvisionedProductId": f.pp, "ServiceActionId": f.action},
+        "DescribeTagOption": {"Id": f.tag_option},
+        "ExecuteProvisionedProductServiceAction": {"ProvisionedProductId": f.pp, "ServiceActionId": f.action, "ExecuteToken": tok},
+        "GetProvisionedProductOutputs": {"ProvisionedProductId": f.pp},
+        "ListBudgetsForResource": {"ResourceId": port},
+        "ListConstraintsForPortfolio": {"PortfolioId": port},
+        "ListLaunchPaths": {"ProductId": prod},
+        "ListPortfolioAccess": {"PortfolioId": port},
+        "ListPortfoliosForProduct": {"ProductId": prod},
+        "ListPrincipalsForPortfolio": {"PortfolioId": port},
+        "ListProvisioningArtifacts": {"ProductId": prod},
+        "ListProvisioningArtifactsForServiceAction": {"ServiceActionId": f.action},
+        "ListResourcesForTagOption": {"TagOptionId": f.tag_option},
+        "ListServiceActionsForProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa},
+        "ListStackInstancesForProvisionedProduct": {"ProvisionedProductId": f.pp},
+        "ProvisionProduct": {"ProductId": prod, "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-pp-"),
+                             "ProvisionToken": tok, "ProvisioningParameters": [{"Key": "Env", "Value": "dev"}]},
+        "RejectPortfolioShare": {"PortfolioId": port},
+        "UpdateConstraint": {"Id": f.constraint, "Description": "stackyard"},
+        "UpdatePortfolio": {"Id": port, "Description": "stackyard"},
+        "UpdatePortfolioShare": {"PortfolioId": port, "AccountId": SERVICECATALOG_ACCOUNT, "ShareTagOptions": True},
+        "UpdateProduct": {"Id": prod, "Description": "stackyard"},
+        "UpdateProvisionedProduct": {"ProvisionedProductId": f.pp, "UpdateToken": tok, "ProvisioningParameters": [{"Key": "Size", "Value": "2"}]},
+        "UpdateProvisionedProductProperties": {"ProvisionedProductId": f.pp, "IdempotencyToken": tok,
+                                               "ProvisionedProductProperties": {"OWNER": SERVICECATALOG_ROLE}},
+        "UpdateProvisioningArtifact": {"ProductId": prod, "ProvisioningArtifactId": pa, "Description": "stackyard"},
+        "UpdateServiceAction": {"Id": f.action, "Description": "stackyard"},
+        "UpdateTagOption": {"Id": f.tag_option, "Active": True},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "ListOrganizationPortfolioAccess":
+        f.call("enable-aws-organizations-access", {})
+        return {"PortfolioId": port, "OrganizationNodeType": "ORGANIZATION"}
+    if op in {"AssociateServiceActionWithProvisioningArtifact", "BatchAssociateServiceActionWithProvisioningArtifact"}:
+        item = {"ServiceActionId": f.new_action(), "ProductId": prod, "ProvisioningArtifactId": pa}
+        return item if op.startswith("Associate") else {"ServiceActionAssociations": [item]}
+    if op in {"DisassociateServiceActionFromProvisioningArtifact", "BatchDisassociateServiceActionFromProvisioningArtifact"}:
+        item = {"ServiceActionId": f.new_action(associate=True), "ProductId": prod, "ProvisioningArtifactId": pa}
+        return item if op.startswith("Disassociate") else {"ServiceActionAssociations": [item]}
+    if op == "AssociateTagOptionWithResource":
+        return {"ResourceId": port, "TagOptionId": f.new_tag_option()}
+    if op == "DisassociateTagOptionFromResource":
+        target = f.new_portfolio()
+        return {"ResourceId": target, "TagOptionId": f.new_tag_option(target)}
+    if op == "DeleteTagOption":
+        return {"Id": f.new_tag_option()}
+    if op == "DeleteConstraint":
+        return {"Id": f.new_constraint(port, prod)}
+    if op == "DeletePortfolio":
+        return {"Id": f.new_portfolio()}
+    if op == "DeletePortfolioShare":
+        target = f.new_portfolio()
+        f.call("create-portfolio-share", {"PortfolioId": target, "AccountId": SERVICECATALOG_ACCOUNT})
+        return {"PortfolioId": target, "AccountId": SERVICECATALOG_ACCOUNT}
+    if op == "DeleteProduct":
+        return {"Id": f.new_product()[0]}
+    if op == "DeleteProvisionedProductPlan":
+        return {"PlanId": f.new_plan()}
+    if op == "DeleteProvisioningArtifact":
+        product, _, _, _ = f.new_product()
+        extra = f.call("create-provisioning-artifact", {"ProductId": product, "IdempotencyToken": tok,
+                                                       "Parameters": {"Name": "v2", "Info": {"LoadTemplateFromURL": f.url("app.json")}}})
+        return {"ProductId": product, "ProvisioningArtifactId": str((extra.get("ProvisioningArtifactDetail") or {}).get("Id") or "")}
+    if op == "DeleteServiceAction":
+        return {"Id": f.new_action()}
+    if op == "DisassociateBudgetFromResource":
+        name = servicecatalog_unique("b")
+        f.call("associate-budget-with-resource", {"BudgetName": name, "ResourceId": port})
+        return {"BudgetName": name, "ResourceId": port}
+    if op == "DisassociatePrincipalFromPortfolio":
+        arn = f"arn:aws:iam::123456789012:role/{servicecatalog_unique('sc-')}"
+        f.call("associate-principal-with-portfolio", {"PortfolioId": port, "PrincipalARN": arn, "PrincipalType": "IAM"})
+        return {"PortfolioId": port, "PrincipalARN": arn, "PrincipalType": "IAM"}
+    if op == "DisassociateProductFromPortfolio":
+        target, (product, _, _, _) = f.new_portfolio(), f.new_product()
+        f.call("associate-product-with-portfolio", {"ProductId": product, "PortfolioId": target})
+        return {"ProductId": product, "PortfolioId": target}
+    if op == "ExecuteProvisionedProductPlan":
+        return {"PlanId": f.new_plan(), "IdempotencyToken": tok}
+    if op == "ImportAsProvisionedProduct":
+        stack = run_aws_json(aws_bin, endpoint_url, region, "cloudformation", "create-stack", env,
+                             ["--stack-name", servicecatalog_unique("sc-import-"), "--template-body", SERVICECATALOG_TEMPLATE]) or {}
+        return {"ProductId": prod, "ProvisioningArtifactId": pa, "ProvisionedProductName": servicecatalog_unique("sc-imported-"),
+                "PhysicalId": str(stack.get("StackId") or ""), "IdempotencyToken": tok}
+    if op == "TerminateProvisionedProduct":
+        return {"ProvisionedProductId": f.provision()[0], "TerminateToken": tok}
+    notify = {"NotifyProvisionProductEngineWorkflowResult": "provision", "NotifyUpdateProvisionedProductEngineWorkflowResult": "update",
+              "NotifyTerminateProvisionedProductEngineWorkflowResult": "terminate"}
+    if op in notify:
+        return {"WorkflowToken": "stackyard", "RecordId": f.terraform_record(notify[op]), "Status": "SUCCEEDED", "IdempotencyToken": tok}
+    return {}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -35623,6 +35903,8 @@ def hydrate_payload_with_service_state(
         return eksauth_hydrate_payload(aws_bin, payload, endpoint_url, region, env)
     if endpoint.service == "route53domains":
         return route53domains_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "servicecatalog":
+        return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
         return route53profiles_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pipes":
