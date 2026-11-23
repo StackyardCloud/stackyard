@@ -340,6 +340,7 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "docdb": {"cli": "docdb", "ops_file": REPO_ROOT / "internal/server/docdb_ops.go"},
     "docdbelastic": {"cli": "docdb-elastic", "ops_file": REPO_ROOT / "internal/server/docdbelastic_ops.go"},
     "osis": {"cli": "osis", "ops_file": REPO_ROOT / "internal/server/osis_ops.go"},
+    "databrew": {"cli": "databrew", "ops_file": REPO_ROOT / "internal/server/databrew_ops.go"},
     "drs": {"cli": "drs", "ops_file": REPO_ROOT / "internal/server/drs_ops.go"},
     "fsx": {"cli": "fsx", "ops_file": REPO_ROOT / "internal/server/fsx_ops.go"},
     "glue": {"cli": "glue", "ops_file": REPO_ROOT / "internal/server/glue_ops.go"},
@@ -1499,6 +1500,9 @@ SERVICE_ALIASES = {
     "osis": "osis",
     "opensearchingestion": "osis",
     "amazonopensearchingestion": "osis",
+    "databrew": "databrew",
+    "gluedatabrew": "databrew",
+    "awsgluedatabrew": "databrew",
     "database-migration-service": "dms",
     "database migration service": "dms",
     "databasemigrationservice": "dms",
@@ -3195,6 +3199,7 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "docdb": {},
     "docdbelastic": {},
     "osis": {},
+    "databrew": {},
     "glue": {},
     "codeconnections": {},
     "route53domains": {},
@@ -35094,6 +35099,186 @@ def osis_hydrate_payload(
     return {"Arn": arn}
 
 
+DATABREW_BUCKET = "stackyard-databrew"
+DATABREW_ROLE = "arn:aws:iam::123456789012:role/stackyard-databrew"
+DATABREW_CSV = b"name,city,score\nalice,paris,3\nbob,,5\ncarol,rome,4\n"
+DATABREW_STEPS = [{"Action": {"Operation": "UPPER_CASE", "Parameters": {"sourceColumn": "name"}}}]
+
+
+def databrew_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], command: str, args: list[str]) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "databrew", command, env, args)
+    return data if isinstance(data, dict) else {}
+
+
+def databrew_name(kind: str) -> str:
+    return f"sy-{kind}-{time.time_ns() % 10**12:012d}"
+
+
+def databrew_arn(region: str, kind: str, name: str) -> str:
+    return f"arn:aws:databrew:{region}:123456789012:{kind}/{name}"
+
+
+def databrew_dataset(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = databrew_name("ds")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-dataset",
+                 ["--name", name, "--input", json.dumps({"S3InputDefinition": {"Bucket": DATABREW_BUCKET, "Key": "people.csv"}})])
+    return name
+
+
+def databrew_recipe(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], publish: bool = False) -> str:
+    name = databrew_name("recipe")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-recipe", ["--name", name, "--steps", json.dumps(DATABREW_STEPS)])
+    if publish:
+        databrew_cli(aws_bin, endpoint_url, region, env, "publish-recipe", ["--name", name])
+    return name
+
+
+def databrew_project(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dataset: str) -> str:
+    name = databrew_name("project")
+    recipe = databrew_recipe(aws_bin, endpoint_url, region, env)
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-project",
+                 ["--name", name, "--dataset-name", dataset, "--recipe-name", recipe, "--role-arn", DATABREW_ROLE])
+    return name
+
+
+def databrew_profile_job(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dataset: str) -> str:
+    name = databrew_name("profile")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-profile-job",
+                 ["--name", name, "--dataset-name", dataset, "--role-arn", DATABREW_ROLE,
+                  "--output-location", json.dumps({"Bucket": DATABREW_BUCKET, "Key": "profiles/"})])
+    return name
+
+
+def databrew_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached set of DataBrew resources: a CSV dataset in S3, a published
+    recipe, a project, recipe and profile jobs with a run, a ruleset and a
+    schedule."""
+    state = RUNTIME_STATE.setdefault("databrew", {})
+    if state.get("dataset"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, DATABREW_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, DATABREW_BUCKET, "people.csv", DATABREW_CSV)
+    dataset = databrew_dataset(aws_bin, endpoint_url, region, env)
+    recipe = databrew_recipe(aws_bin, endpoint_url, region, env, publish=True)
+    project = databrew_project(aws_bin, endpoint_url, region, env, dataset)
+    job = databrew_name("job")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-recipe-job",
+                 ["--name", job, "--dataset-name", dataset, "--role-arn", DATABREW_ROLE,
+                  "--recipe-reference", json.dumps({"Name": recipe}),
+                  "--outputs", json.dumps([{"Location": {"Bucket": DATABREW_BUCKET, "Key": "out/"}}])])
+    run = databrew_cli(aws_bin, endpoint_url, region, env, "start-job-run", ["--name", job]).get("RunId", "")
+    profile = databrew_profile_job(aws_bin, endpoint_url, region, env, dataset)
+    ruleset = databrew_name("ruleset")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-ruleset",
+                 ["--name", ruleset, "--target-arn", databrew_arn(region, "dataset", dataset),
+                  "--rules", json.dumps([{"Name": "positive", "CheckExpression": ":col1 > :val1",
+                                          "SubstitutionMap": {":col1": "`score`", ":val1": "0"}}])])
+    schedule = databrew_name("schedule")
+    databrew_cli(aws_bin, endpoint_url, region, env, "create-schedule",
+                 ["--name", schedule, "--cron-expression", "cron(0 1 * * ? *)", "--job-names", job])
+    state.update({"dataset": dataset, "recipe": recipe, "project": project, "job": job, "run": run,
+                  "profile": profile, "ruleset": ruleset, "schedule": schedule})
+    return state
+
+
+def databrew_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each DataBrew operation at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    fx = databrew_fixture(aws_bin, endpoint_url, region, env)
+    dataset_input = {"S3InputDefinition": {"Bucket": DATABREW_BUCKET, "Key": "people.csv"}}
+    outputs = [{"Location": {"Bucket": DATABREW_BUCKET, "Key": "out/"}}]
+    rules = [{"Name": "positive", "CheckExpression": ":col1 > :val1", "SubstitutionMap": {":col1": "`score`", ":val1": "0"}}]
+    if op == "CreateDataset":
+        return {"Name": databrew_name("ds"), "Input": dataset_input}
+    if op == "UpdateDataset":
+        return {"Name": fx["dataset"], "Input": dataset_input}
+    if op == "DeleteDataset":
+        return {"Name": databrew_dataset(aws_bin, endpoint_url, region, env)}
+    if op == "CreateRecipe":
+        return {"Name": databrew_name("recipe"), "Steps": DATABREW_STEPS}
+    if op == "UpdateRecipe":
+        return {"Name": fx["recipe"], "Steps": DATABREW_STEPS}
+    if op == "PublishRecipe":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env)}
+    if op == "DeleteRecipeVersion":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env), "RecipeVersion": "LATEST_WORKING"}
+    if op == "BatchDeleteRecipeVersion":
+        return {"Name": databrew_recipe(aws_bin, endpoint_url, region, env, publish=True), "RecipeVersions": ["1.0"]}
+    if op == "CreateProject":
+        return {"Name": databrew_name("project"), "DatasetName": fx["dataset"],
+                "RecipeName": databrew_recipe(aws_bin, endpoint_url, region, env), "RoleArn": DATABREW_ROLE}
+    if op == "UpdateProject":
+        return {"Name": fx["project"], "RoleArn": DATABREW_ROLE}
+    if op == "DeleteProject":
+        return {"Name": databrew_project(aws_bin, endpoint_url, region, env, fx["dataset"])}
+    if op == "StartProjectSession":
+        return {"Name": fx["project"], "AssumeControl": True}
+    if op == "SendProjectSessionAction":
+        session = databrew_cli(aws_bin, endpoint_url, region, env, "start-project-session",
+                               ["--name", fx["project"], "--assume-control"])
+        return {"Name": fx["project"], "Preview": True, "ClientSessionId": session.get("ClientSessionId", ""),
+                "RecipeStep": {"Action": {"Operation": "LOWER_CASE", "Parameters": {"sourceColumn": "city"}}}}
+    if op == "CreateProfileJob":
+        return {"Name": databrew_name("profile"), "DatasetName": fx["dataset"], "RoleArn": DATABREW_ROLE,
+                "OutputLocation": {"Bucket": DATABREW_BUCKET, "Key": "profiles/"}}
+    if op == "UpdateProfileJob":
+        return {"Name": fx["profile"], "RoleArn": DATABREW_ROLE, "OutputLocation": {"Bucket": DATABREW_BUCKET, "Key": "profiles/"}}
+    if op == "CreateRecipeJob":
+        return {"Name": databrew_name("job"), "DatasetName": fx["dataset"], "RoleArn": DATABREW_ROLE,
+                "RecipeReference": {"Name": fx["recipe"]}, "Outputs": outputs}
+    if op == "UpdateRecipeJob":
+        return {"Name": fx["job"], "RoleArn": DATABREW_ROLE, "Outputs": outputs}
+    if op == "DeleteJob":
+        return {"Name": databrew_profile_job(aws_bin, endpoint_url, region, env, fx["dataset"])}
+    if op in {"DescribeJob", "StartJobRun", "ListJobRuns"}:
+        return {"Name": fx["job"]}
+    if op == "DescribeJobRun":
+        return {"Name": fx["job"], "RunId": fx["run"]}
+    if op == "StopJobRun":
+        fresh = databrew_cli(aws_bin, endpoint_url, region, env, "start-job-run", ["--name", fx["profile"]]).get("RunId", "")
+        return {"Name": fx["profile"], "RunId": fresh}
+    if op == "CreateRuleset":
+        return {"Name": databrew_name("ruleset"), "TargetArn": databrew_arn(region, "dataset", fx["dataset"]), "Rules": rules}
+    if op == "UpdateRuleset":
+        return {"Name": fx["ruleset"], "Rules": rules}
+    if op == "DeleteRuleset":
+        name = databrew_name("ruleset")
+        databrew_cli(aws_bin, endpoint_url, region, env, "create-ruleset",
+                     ["--name", name, "--target-arn", databrew_arn(region, "dataset", fx["dataset"]), "--rules", json.dumps(rules)])
+        return {"Name": name}
+    if op == "CreateSchedule":
+        return {"Name": databrew_name("schedule"), "CronExpression": "cron(0 1 * * ? *)", "JobNames": [fx["job"]]}
+    if op == "UpdateSchedule":
+        return {"Name": fx["schedule"], "CronExpression": "cron(0 2 * * ? *)", "JobNames": [fx["job"]]}
+    if op == "DeleteSchedule":
+        name = databrew_name("schedule")
+        databrew_cli(aws_bin, endpoint_url, region, env, "create-schedule", ["--name", name, "--cron-expression", "cron(0 3 * * ? *)"])
+        return {"Name": name}
+    if op == "DescribeDataset":
+        return {"Name": fx["dataset"]}
+    if op == "DescribeProject":
+        return {"Name": fx["project"]}
+    if op == "DescribeRecipe":
+        return {"Name": fx["recipe"]}
+    if op == "DescribeRuleset":
+        return {"Name": fx["ruleset"]}
+    if op == "DescribeSchedule":
+        return {"Name": fx["schedule"]}
+    if op == "ListRecipeVersions":
+        return {"Name": fx["recipe"]}
+    arn = databrew_arn(region, "dataset", fx["dataset"])
+    if op == "ListTagsForResource":
+        return {"ResourceArn": arn}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "TagKeys": ["stackyard"]}
+    return {}
+
+
 DOCDBELASTIC_PASSWORD = "StackyardPassw0rd"
 
 
@@ -36488,6 +36673,8 @@ def hydrate_payload_with_service_state(
         return {"sbom": copy.deepcopy(INSPECTOR_SAMPLE_SBOM), "outputFormat": "CYCLONE_DX_1_5"}
     if endpoint.service == "osis":
         return osis_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "databrew":
+        return databrew_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "docdbelastic":
         return docdbelastic_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "eksauth":

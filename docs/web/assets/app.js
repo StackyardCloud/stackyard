@@ -704,6 +704,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/dynamodb/docker-compose.yml"
   },
   {
+    id: "databrew",
+    name: "Glue DataBrew",
+    category: "database",
+    summary: "Run DataBrew datasets, versioned recipes, project sessions and recipe or profile jobs that read CSV/JSON from S3 and write results back, plus rulesets, schedules and tags.",
+    docsHref: "../../../index.html#databrew",
+    exampleHref: "../../../../examples/aws/databrew/docker-compose.yml"
+  },
+  {
     id: "dax",
     name: "DynamoDB Accelerator (DAX)",
     category: "database",

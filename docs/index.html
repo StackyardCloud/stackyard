@@ -162,6 +162,7 @@
         <a href="#rds-data">RDS Data API</a>
         <a href="#dynamodb">DynamoDB</a>
         <a href="#dynamodbstreams">DynamoDB Streams</a>
+        <a href="#databrew">Glue DataBrew</a>
         <a href="#dax">DynamoDB Accelerator (DAX)</a>
         <a href="#ec2">EC2</a>
         <a href="#ec2instanceconnect">EC2 Instance Connect</a>
@@ -18641,6 +18642,163 @@
         </ul>
         </details>
         </section>
+        <section id="databrew" class="service">
+
+        <div class="service-header">
+        <h2>AWS Glue DataBrew</h2>
+        <p>SigV4 signed with service <code>databrew</code>. REST JSON API under <code>/datasets</code>, <code>/recipes</code>, <code>/projects</code>, <code>/jobs</code>, <code>/schedules</code>, <code>/rulesets</code> and <code>/tags</code>. S3 datasets must point at an existing object or prefix in the S3 store and Data Catalog datasets at an existing Glue table. Recipes keep a working version and numbered published versions; recipe jobs run a published version. Recipe and profile jobs read CSV or JSON from S3 and write CSV/JSON output or a profile JSON back to S3; runs report STARTING, RUNNING and then their result on successive reads. Project sessions preview recipe steps on the dataset sample. Supported recipe operations: ADD_PREFIX, ADD_SUFFIX, CAPITAL_CASE, DELETE, DUPLICATE, FILL_WITH_CUSTOM, FILL_WITH_EMPTY, LOWER_CASE, REMOVE_MISSING, RENAME, SENTENCE_CASE, UPPER_CASE; other operations fail the preview or run with a clear message. All 44 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: databrew</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div>
+        <details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><code>BatchDeleteRecipeVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateProfileJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateProject</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRecipeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>CreateSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteJob</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteProject</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRecipeVersion</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>DeleteSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeProject</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>DescribeSchedule</code></td>
+        </tr>
+        <tr>
+        <td><code>ListDatasets</code></td>
+        </tr>
+        <tr>
+        <td><code>ListJobRuns</code></td>
+        </tr>
+        <tr>
+        <td><code>ListJobs</code></td>
+        </tr>
+        <tr>
+        <td><code>ListProjects</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRecipeVersions</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRecipes</code></td>
+        </tr>
+        <tr>
+        <td><code>ListRulesets</code></td>
+        </tr>
+        <tr>
+        <td><code>ListSchedules</code></td>
+        </tr>
+        <tr>
+        <td><code>ListTagsForResource</code></td>
+        </tr>
+        <tr>
+        <td><code>PublishRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>SendProjectSessionAction</code></td>
+        </tr>
+        <tr>
+        <td><code>StartJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>StartProjectSession</code></td>
+        </tr>
+        <tr>
+        <td><code>StopJobRun</code></td>
+        </tr>
+        <tr>
+        <td><code>TagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UntagResource</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateDataset</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateProfileJob</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateProject</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRecipe</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRecipeJob</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateRuleset</code></td>
+        </tr>
+        <tr>
+        <td><code>UpdateSchedule</code></td>
+        </tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
         <section id="dax" class="service">
 
         <div class="service-header">
