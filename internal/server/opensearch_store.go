@@ -48,6 +48,57 @@ func (s *openSearchStore) Handle(action string, payload map[string]any, pathPara
 		return map[string]any{"Message": "updated"}
 	case "AssociatePackage", "DissociatePackage":
 		return map[string]any{"DomainPackageDetails": s.domainPackageDetails(domainName)}
+	case "AssociatePackages", "DissociatePackages":
+		return map[string]any{"DomainPackageDetailsList": s.domainPackageDetailsList(action, domainName, payload)}
+	case "CreateApplication", "GetApplication", "UpdateApplication":
+		return s.application(action, payload, pathParams)
+	case "ListApplications":
+		app := s.application("GetApplication", payload, pathParams)
+		delete(app, "iamIdentityCenterOptions")
+		delete(app, "dataSources")
+		delete(app, "appConfigs")
+		delete(app, "kmsKeyArn")
+		return map[string]any{"ApplicationSummaries": []any{app}}
+	case "GetDefaultApplicationSetting", "PutDefaultApplicationSetting":
+		return map[string]any{"applicationArn": opensearchFirstNonEmpty(
+			opensearchPayloadString(payload, "applicationArn"), s.applicationARN("stackyard-application"))}
+	case "GetDirectQueryDataSource":
+		name := s.resolveDataSourceName(payload, pathParams)
+		return map[string]any{
+			"DataSourceName": name,
+			"DataSourceType": s.directQueryDataSourceType(),
+			"Description":    "stackyard direct query data source",
+			"OpenSearchArns": []any{},
+			"DataSourceArn":  s.directQueryDataSourceARN(name),
+		}
+	case "ListDirectQueryDataSources":
+		name := "stackyard-datasource"
+		return map[string]any{"DirectQueryDataSources": []any{map[string]any{
+			"DataSourceName": name,
+			"DataSourceType": s.directQueryDataSourceType(),
+			"Description":    "stackyard direct query data source",
+			"OpenSearchArns": []any{},
+			"DataSourceArn":  s.directQueryDataSourceARN(name),
+			"TagList":        []any{},
+		}}}
+	case "CreateIndex":
+		return map[string]any{"Status": "CREATED"}
+	case "UpdateIndex":
+		return map[string]any{"Status": "UPDATED"}
+	case "DeleteIndex":
+		return map[string]any{"Status": "DELETED"}
+	case "GetIndex":
+		return map[string]any{"IndexSchema": map[string]any{}}
+	case "UpdatePackageScope":
+		users := []any{}
+		if list, ok := payload["PackageUserList"].([]any); ok {
+			users = list
+		}
+		return map[string]any{
+			"PackageID":       s.resolvePackageID(payload, pathParams),
+			"Operation":       opensearchFirstNonEmpty(opensearchPayloadString(payload, "Operation"), "ADD"),
+			"PackageUserList": users,
+		}
 	case "AuthorizeVpcEndpointAccess":
 		return map[string]any{
 			"AuthorizedPrincipal": map[string]any{
@@ -221,6 +272,81 @@ func (s *openSearchStore) domainPackageDetails(domainName string) map[string]any
 		"DomainName": domainName,
 		"PackageID":  s.defaultPackageID,
 	}
+}
+
+// domainPackageDetailsList echoes the packages named in an Associate/DissociatePackages
+// request; AssociatePackages lists objects with PackageID, DissociatePackages lists IDs.
+func (s *openSearchStore) domainPackageDetailsList(action, domainName string, payload map[string]any) []any {
+	status := "ACTIVE"
+	if action == "DissociatePackages" {
+		status = "DISSOCIATING"
+	}
+	out := []any{}
+	list, _ := payload["PackageList"].([]any)
+	for _, item := range list {
+		id := opensearchAnyToString(item)
+		if m, ok := item.(map[string]any); ok {
+			id = opensearchPayloadString(m, "PackageID")
+		}
+		if id == "" {
+			continue
+		}
+		out = append(out, map[string]any{
+			"PackageID":           id,
+			"DomainName":          domainName,
+			"DomainPackageStatus": status,
+			"LastUpdated":         time.Now().UTC().Format(time.RFC3339),
+		})
+	}
+	return out
+}
+
+func (s *openSearchStore) applicationARN(id string) string {
+	return fmt.Sprintf("arn:aws:opensearch:us-east-1:%s:application/%s", s.defaultAccountID, id)
+}
+
+func (s *openSearchStore) directQueryDataSourceARN(name string) string {
+	return fmt.Sprintf("arn:aws:opensearch:us-east-1:%s:datasource/%s", s.defaultAccountID, name)
+}
+
+func (s *openSearchStore) directQueryDataSourceType() map[string]any {
+	return map[string]any{"CloudWatchLog": map[string]any{
+		"RoleArn": "arn:aws:iam::123456789012:role/stackyard-opensearch-direct-query",
+	}}
+}
+
+// application answers Create/Get/UpdateApplication by echoing the request.
+// ponytail: stateless like the rest of this store; add an app map if callers need persistence.
+func (s *openSearchStore) application(action string, payload map[string]any, pathParams map[string]string) map[string]any {
+	id := opensearchFirstNonEmpty(opensearchPathParam(pathParams, "id"), "stackyard-application")
+	now := time.Now().UTC().Format(time.RFC3339)
+	out := map[string]any{
+		"id":        id,
+		"arn":       s.applicationARN(id),
+		"name":      opensearchFirstNonEmpty(opensearchPayloadString(payload, "name"), id),
+		"createdAt": now,
+	}
+	for _, key := range []string{"dataSources", "appConfigs", "iamIdentityCenterOptions"} {
+		if v, ok := payload[key]; ok {
+			out[key] = v
+		}
+	}
+	switch action {
+	case "CreateApplication":
+		if tags, ok := payload["tagList"]; ok {
+			out["tagList"] = tags
+		}
+		if kms := opensearchPayloadString(payload, "kmsKeyArn"); kms != "" {
+			out["kmsKeyArn"] = kms
+		}
+	case "GetApplication":
+		out["status"] = "ACTIVE"
+		out["endpoint"] = id + ".opensearch.stackyard.local"
+		out["lastUpdatedAt"] = now
+	case "UpdateApplication":
+		out["lastUpdatedAt"] = now
+	}
+	return out
 }
 
 func (s *openSearchStore) domainStatus(domainName string) map[string]any {

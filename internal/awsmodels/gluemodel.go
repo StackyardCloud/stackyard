@@ -11,6 +11,11 @@ import (
 // operation's input/output shape, and every reachable shape's type, members,
 // required members, enum values and min/max bounds.
 //
+// Generated from AWS CLI 2.42.1, plus PutAssetType/DeleteAssetType (and their
+// shapes) carried over from the 2.41 model: AWS dropped them, but older CLIs
+// still send them and they are the only way to create the types GetAssetType
+// reads. Re-merge them after regenerating.
+//
 //go:embed glue/model.json
 var glueModelJSON []byte
 
