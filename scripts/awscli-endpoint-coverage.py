@@ -13878,6 +13878,9 @@ REQUIRED_MODE_ONE_OF_MEMBERS: dict[tuple[str, str], tuple[str, ...]] = {
     ("ec2", "CreateVpcEndpoint"): ("ServiceName",),
     ("ec2", "EnableFastSnapshotRestores"): ("AvailabilityZones",),
     ("ec2", "ModifyInstanceMetadataDefaults"): ("HttpTokens",),
+    ("ec2", "CreateClientVpnRoute"): ("TargetVpcSubnetId",),
+    ("ec2", "AssociateClientVpnTargetNetwork"): ("SubnetId",),
+    ("ec2", "ModifyInstanceCpuOptions"): ("CoreCount", "ThreadsPerCore"),
 }
 
 
