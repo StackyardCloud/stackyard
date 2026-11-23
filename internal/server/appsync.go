@@ -40,6 +40,16 @@ func (s *Server) handleAppSyncRESTRouter(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 
+	if appSyncEventsActions[action] {
+		response, apiErr := s.appsync.handleEvents(action, payload, pathParams, r.URL.Query())
+		if apiErr != nil {
+			respondAppSyncError(w, apiErr.status, apiErr.code, apiErr.msg)
+			return true
+		}
+		respondAppSyncJSON(w, http.StatusOK, response)
+		return true
+	}
+
 	response := s.appsync.Handle(action, payload, pathParams, r.URL.Query())
 	if response == nil {
 		response = map[string]any{}
@@ -84,19 +94,23 @@ func parseAppSyncRoute(method, requestPath string) (string, map[string]string) {
 		path = "/"
 	}
 
-	for _, op := range appSyncOperations {
-		if !strings.EqualFold(op.Method, method) {
-			continue
-		}
-		params, ok := appSyncPathParams(op.URI, path)
-		if ok {
-			return op.Name, params
+	// Exact segment matches win; only then may a trailing parameter swallow
+	// the remaining segments (resource ARNs contain slashes). Otherwise
+	// /v2/apis/{apiId} would claim /v2/apis and its sub-resources.
+	for _, greedy := range []bool{false, true} {
+		for _, op := range appSyncOperations {
+			if !strings.EqualFold(op.Method, method) {
+				continue
+			}
+			if params, ok := appSyncPathParams(op.URI, path, greedy); ok {
+				return op.Name, params
+			}
 		}
 	}
 	return "", nil
 }
 
-func appSyncPathParams(template, actual string) (map[string]string, bool) {
+func appSyncPathParams(template, actual string, greedy bool) (map[string]string, bool) {
 	tSegs := appSyncSplitPath(template)
 	aSegs := appSyncSplitPath(actual)
 	params := map[string]string{}
@@ -108,7 +122,7 @@ func appSyncPathParams(template, actual string) (map[string]string, bool) {
 			if name == "" {
 				return nil, false
 			}
-			if i == len(tSegs)-1 {
+			if greedy && i == len(tSegs)-1 && j < len(aSegs) {
 				value, err := url.PathUnescape(strings.Join(aSegs[j:], "/"))
 				if err != nil {
 					value = strings.Join(aSegs[j:], "/")
