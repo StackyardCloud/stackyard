@@ -3094,6 +3094,8 @@ REDSHIFT_DEFAULT_NAMESPACE_IDENTIFIER = "stackyard-rs-namespace"
 REDSHIFT_DEFAULT_USAGE_LIMIT_ID = "stackyard-rs-usage-limit"
 REDSHIFT_DEFAULT_SNAPSHOT_SCHEDULE_ID = "stackyard-rs-snapshot-schedule"
 REDSHIFT_DEFAULT_IDC_APPLICATION_NAME = "stackyard-rs-idc-app"
+REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME = "stackyard-rs-qev2-app"
+REDSHIFT_DEFAULT_IDC_INSTANCE_ARN = "arn:aws:sso:::instance/ssoins-1234567890abcdef"
 REDSHIFT_DEFAULT_PARTNER_NAME = "stackyard-rs-partner"
 REDSHIFT_DEFAULT_PARTNER_ACCOUNT_ID = "123456789012"
 REDSHIFT_DEFAULT_CUSTOM_DOMAIN_NAME = "stackyard-rs.example.com"
@@ -3567,6 +3569,25 @@ SINGLESIGNON_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
 
 _BOTOCORE_MODEL_CACHE: dict[tuple[str, str], object | None] = {}
 _BOTOCORE_SESSION = None
+_AWS_BIN = "aws"
+
+
+def awscli_botocore_data_dir(aws_bin: str) -> Path | None:
+    """Locate the botocore model data bundled with the AWS CLI being exercised.
+
+    Output validation must use the same service models as the CLI that sends the
+    requests; a separately installed (often older) botocore drifts from it and
+    reports real, current fields as unknown."""
+    found = shutil.which(aws_bin)
+    if not found:
+        return None
+    real = Path(found).resolve()
+    for base in (real.parent, real.parent.parent):
+        for pattern in ("awscli/botocore/data", "lib/python*/site-packages/awscli/botocore/data"):
+            for candidate in sorted(base.glob(pattern)):
+                if candidate.is_dir():
+                    return candidate
+    return None
 _IOTMI_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTEVENTS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTWIRELESS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -13730,6 +13751,10 @@ def get_operation_model(endpoint: Endpoint):
     try:
         if _BOTOCORE_SESSION is None:
             _BOTOCORE_SESSION = botocore_session.get_session()
+            data_dir = awscli_botocore_data_dir(_AWS_BIN)
+            if data_dir is not None:
+                # Searched before botocore's own bundled data.
+                _BOTOCORE_SESSION.set_config_variable("data_path", str(data_dir))
         service_model = _BOTOCORE_SESSION.get_service_model(botocore_service_name(endpoint.cli_service))
         operation_name = kebab_to_pascal(endpoint.cli_operation)
         model = service_model.operation_model(operation_name)
@@ -29690,6 +29715,40 @@ def redshift_ensure_usage_limit(
     if isinstance(created, dict):
         redshift_record_runtime_payload(region, created)
     return str(redshift_runtime_state(region).get("usage_limit_id", limit_id))
+
+
+def redshift_ensure_qev2_application(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    """Return the ARN of a Query Editor v2 IDC application, creating it if needed."""
+    created = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "redshift",
+        "create-qev2-idc-application",
+        env,
+        [
+            "--qev2-idc-application-name",
+            REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME,
+            "--idc-instance-arn",
+            REDSHIFT_DEFAULT_IDC_INSTANCE_ARN,
+            "--idc-display-name",
+            "stackyard-qev2-app",
+        ],
+    )
+    app = created.get("Qev2IdcApplication") if isinstance(created, dict) else None
+    if isinstance(app, dict) and app.get("Qev2IdcApplicationArn"):
+        return str(app["Qev2IdcApplicationArn"])
+    # Already present from an earlier run: find it by name.
+    described = run_aws_json(aws_bin, endpoint_url, region, "redshift", "describe-qev2-idc-applications", env)
+    for item in (described or {}).get("Qev2IdcApplications") or []:
+        if isinstance(item, dict) and item.get("Qev2IdcApplicationName") == REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME:
+            return str(item.get("Qev2IdcApplicationArn", ""))
+    return ""
 
 
 def redshift_ensure_idc_application(
@@ -46302,6 +46361,23 @@ def hydrate_payload_with_service_state(
             _replace_payload({"ResourceArn": resource_arn, "Policy": policy_json})
             return hydrated
 
+        if op == "CreateQev2IdcApplication":
+            _replace_payload(
+                {
+                    "IdcInstanceArn": REDSHIFT_DEFAULT_IDC_INSTANCE_ARN,
+                    "Qev2IdcApplicationName": f"{REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME}-{unique}",
+                    "IdcDisplayName": "stackyard-qev2-app",
+                }
+            )
+            return hydrated
+
+        if op in {"ModifyQev2IdcApplication", "DeleteQev2IdcApplication"}:
+            payload_update = {"Qev2IdcApplicationArn": redshift_ensure_qev2_application(aws_bin, endpoint_url, region, env)}
+            if op == "ModifyQev2IdcApplication":
+                payload_update["IdcDisplayName"] = "stackyard-qev2-app-updated"
+            _replace_payload(payload_update)
+            return hydrated
+
         if op == "CreateRedshiftIdcApplication":
             idc_application_name = f"{REDSHIFT_DEFAULT_IDC_APPLICATION_NAME}-{unique}"
             idc_application_arn = redshift_idc_application_arn(idc_application_name)
@@ -60525,6 +60601,12 @@ def endpoint_dependency_rank(endpoint: Endpoint) -> int:
             return 1
         if endpoint.operation.startswith("Delete"):
             return 2
+    if endpoint.service == "sesv2":
+        # Remove a tenant's resource associations before the tenant itself.
+        if endpoint.operation == "DeleteTenantResourceAssociation":
+            return 0
+        if endpoint.operation == "DeleteTenant":
+            return 1
     if endpoint.service == "privateca":
         if endpoint.operation == "DeletePolicy":
             return 0
@@ -61100,6 +61182,8 @@ def main() -> int:
                 print(f"error: {err}", file=sys.stderr)
                 return 1
 
+        global _AWS_BIN  # noqa: PLW0603
+        _AWS_BIN = args.aws_bin
         endpoints, warnings = build_endpoints(
             args.aws_bin,
             env,
