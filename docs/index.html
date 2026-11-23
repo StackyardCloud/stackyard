@@ -271,6 +271,7 @@
         <a href="#ground-station">Ground Station</a>
         <a href="#deadline-cloud">Deadline Cloud</a>
         <a href="#migrationhub-refactor-spaces">Migration Hub Refactor Spaces</a>
+        <a href="#migrationhub">Migration Hub</a>
         <a href="#migrationhub-orchestrator">Migration Hub Orchestrator</a>
         <a href="#migrationhub-strategy">Migration Hub Strategy Recommendations</a>
         <a href="#drs">Elastic Disaster Recovery (DRS)</a>
@@ -28095,6 +28096,51 @@
         <li><code>migrationhub-refactor-spaces</code>: <code>docker compose -f examples/aws/migrationhub-refactor-spaces/docker-compose.yml up --build</code></li>
         <li><code>migrationhub-refactor-spaces</code>: <code>docker compose -f examples/aws/migrationhub-refactor-spaces/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="migrationhub" class="service">
+
+        <div class="service-header">
+        <h2>AWS Migration Hub</h2>
+        <p>SigV4 signed with service <code>mgh</code>. Migration Hub exposes a JSON 1.1 API (<code>X-Amz-Target: AWSMigrationHub.*</code>) for progress update streams, migration task state and update history, created artifacts, discovered resources (validated against Application Discovery Service configurations), source resources, and application states. Stackyard's region is always the Migration Hub home region. Stale task updates (an <code>UpdateDateTime</code> older than the task's latest) are rejected, and every mutating call honours <code>DryRun</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mgh</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateCreatedArtifact</code></td></tr>
+        <tr><td><code>AssociateDiscoveredResource</code></td></tr>
+        <tr><td><code>AssociateSourceResource</code></td></tr>
+        <tr><td><code>CreateProgressUpdateStream</code></td></tr>
+        <tr><td><code>DeleteProgressUpdateStream</code></td></tr>
+        <tr><td><code>DescribeApplicationState</code></td></tr>
+        <tr><td><code>DescribeMigrationTask</code></td></tr>
+        <tr><td><code>DisassociateCreatedArtifact</code></td></tr>
+        <tr><td><code>DisassociateDiscoveredResource</code></td></tr>
+        <tr><td><code>DisassociateSourceResource</code></td></tr>
+        <tr><td><code>ImportMigrationTask</code></td></tr>
+        <tr><td><code>ListApplicationStates</code></td></tr>
+        <tr><td><code>ListCreatedArtifacts</code></td></tr>
+        <tr><td><code>ListDiscoveredResources</code></td></tr>
+        <tr><td><code>ListMigrationTaskUpdates</code></td></tr>
+        <tr><td><code>ListMigrationTasks</code></td></tr>
+        <tr><td><code>ListProgressUpdateStreams</code></td></tr>
+        <tr><td><code>ListSourceResources</code></td></tr>
+        <tr><td><code>NotifyApplicationState</code></td></tr>
+        <tr><td><code>NotifyMigrationTaskState</code></td></tr>
+        <tr><td><code>PutResourceAttributes</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
