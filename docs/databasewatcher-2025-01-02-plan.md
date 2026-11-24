@@ -328,3 +328,10 @@ Expected stage-0 result:
 
 - router and docs/coverage wiring pass service discovery checks
 - strict coverage checks fail until implementation/tests are added in later stages
+
+## Implementation Status
+
+- Implemented on the shared ARM handler (`internal/server/provider_azure_databasewatcher_2025_01_02.go`): watchers (create/update, get, list by group and subscription, update, delete, start, stop), targets with `SqlDb`/`SqlEp`/`SqlMi` discriminator validation, alert rule resources, shared private link resources (status `Pending`), health validations and the operations list.
+- `startValidation` creates or reruns the named validation; it succeeds at once with no issues. At most 100 validations are kept per watcher.
+- Watchers start `Stopped`; `start`/`stop` answer `200` and settle at once (no `202` polling). Watcher and shared private link deletes answer `204`.
+- Not emulated: monitoring data collection and any Kusto datastore behaviour.

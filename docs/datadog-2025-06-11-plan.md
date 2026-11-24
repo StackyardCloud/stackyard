@@ -328,3 +328,9 @@ Expected stage-0 result:
 
 - router and docs/coverage wiring pass service discovery checks
 - strict coverage checks fail until implementation/tests are added in later stages
+
+## Implementation Status
+
+- Implemented on the shared ARM handler (`internal/server/provider_azure_datadog_2025_06_11.go`): monitors with `listApiKeys`, `getDefaultKey`, `setDefaultKey`, `listHosts`, `listLinkedResources`, `listMonitoredResources`, `refreshSetPasswordLink`, `getBillingInfo` and `resubscribe`; monitored subscriptions, tag rules and single sign-on configurations; marketplace agreements; creation support (`subscriptionStatuses`) and the operations list.
+- Organization secrets (`apiKey`, `applicationKey`, linking codes) are write-only. Each monitor has one deterministic API key.
+- Not emulated: a Datadog organization, so host and monitored-resource lists are empty; the `datadogOrganizationId` filter on creation support is accepted and ignored.

@@ -2576,9 +2576,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureDesktopVirtualization20251010Router(w, r) {
 			return
 		}
-		if s.handleAzureDatadog20250611Router(w, r) {
-			return
-		}
 		if s.handleAzureDefenderForEasmControlPlanePreview20230401Router(w, r) {
 			return
 		}
@@ -2652,6 +2649,9 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureDataLakeStore20161101Router(w, r) {
+			return
+		}
+		if s.handleAzureDataFactoryV2Router(w, r) {
 			return
 		}
 		if s.handleAzureActiveDirectoryRouter(w, r) {

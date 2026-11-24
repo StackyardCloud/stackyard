@@ -303,3 +303,9 @@ Run once implementation stages are complete:
 Success target:
 - no `NotImplemented` for the 54 reviewed Data Factory v2 methods
 - coverage gates pass for `datafactory_v2`
+
+## Implementation Status
+
+- Implemented on the shared ARM handler (`internal/server/provider_azure_datafactory_v2.go`, `internal/server/azure_datafactory_runs.go`): factories (etags, `getGitHubAccessToken`, `getDataPlaneAccess`, `configureFactoryRepo`), linked services, datasets, pipelines, triggers (start/stop, event subscription status, `querytriggers`), data flows, integration runtimes (start/stop, status, connection info, auth keys, monitoring data, sync, upgrade, link removal, linked runtimes, outbound dependencies), managed virtual networks and private endpoints, global parameters, credentials, private endpoint connections and the operations list. Create-or-update answers `200`, as the service does.
+- Pipeline runs: `createRun`, get, cancel, `queryPipelineRuns` (time window plus `PipelineName`/`Status`/`RunId`/`RunGroupId` filters, first 100 matches) and `queryActivityruns`. Runs succeed the moment they are created, with one succeeded activity run per pipeline activity; at most 1,000 runs are kept per factory.
+- Not emulated: pipeline execution, trigger firing (`queryTriggerRuns` is always empty), data flow debug sessions, change data capture and exposure control.
