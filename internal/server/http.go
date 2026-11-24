@@ -2324,9 +2324,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureOpenAIRouter(w, r) {
 			return
 		}
-		if s.handleAzureFleet20250301Router(w, r) {
-			return
-		}
 		if s.handleAzureAKSRouter(w, r) {
 			return
 		}
@@ -2367,9 +2364,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureFrontDoorServiceWebApplicationFirewall20251101Router(w, r) {
-			return
-		}
-		if s.handleAzureFrontDoorServiceAzureFrontDoorStandardPremium20250415Router(w, r) {
 			return
 		}
 		if s.handleAzureEdgeActions20251201PreviewRouter(w, r) {
@@ -2487,12 +2481,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureResourceGraphRouter(w, r) {
-			return
-		}
-		if s.handleAzureGraphServices20230413Router(w, r) {
-			return
-		}
-		if s.handleAzureGuestConfiguration20240405Router(w, r) {
 			return
 		}
 		if s.handleAzureQuantumRouter(w, r) {
@@ -2628,9 +2616,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureExtendedLocation20210815Router(w, r) {
-			return
-		}
-		if s.handleAzureMicrosoftFabric20231101Router(w, r) {
 			return
 		}
 		if s.handleAzureFirewall20250501Router(w, r) {
