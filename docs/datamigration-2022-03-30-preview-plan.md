@@ -279,3 +279,15 @@ Success target:
 
 - coverage scripts resolve and report the service key
 - example compiles and demonstrates the intended API families
+
+## Implementation Status
+
+Served by the shared ARM handler (`internal/server/provider_azure_datamigration_2022_03_30_preview.go`):
+
+- services with `start`, `stop` (provisioningState `Succeeded`/`Stopped`) and `checkStatus`; SKUs are `Standard_1vCores`, `Standard_2vCores`, `Standard_4vCores` and `Premium_4vCores`
+- projects (tracked, so `location` is required), service tasks and project tasks; tasks start `Queued`, `command` records the command (capped at 50) and `cancel` (or a `cancel` command) moves them to `Canceled`
+- project files with `read` and `readwrite` returning a SAS URI fixture
+- subscription and child name checks, `GET .../skus` and the operations list
+- other paths under the provider answer `404 InvalidResourceType`
+
+Not emulated: the task list `taskType` filter and `deleteRunningTasks` on service delete. No migration runs.

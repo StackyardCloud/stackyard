@@ -314,3 +314,15 @@ Expected stage-0 result:
 
 - router and docs/coverage wiring pass service discovery checks
 - strict coverage checks fail until implementation/tests are added in later stages
+
+## Implementation Status
+
+Served by the shared ARM handler plus a small router (`internal/server/provider_azure_datashare_2021_08_01.go`):
+
+- accounts (system-assigned identity required), shares, invitations, data sets, synchronization settings, share subscriptions, data set mappings and triggers
+- a share subscription names an invitation's server-issued `invitationId`, which accepts it; consumer source data sets, source synchronization settings and provider share subscriptions follow from that link, and a data set mapping must name a source `dataSetId`
+- `synchronize` (finishes at once; 100 kept per share subscription), `cancelSynchronization`, `listSynchronizations` and `listSynchronizationDetails` on shares and share subscriptions
+- provider share subscription `adjust`, `revoke` and `reinstate`; consumer invitations, `listInvitations`, `rejectInvitation`, `registerEmail` and `activateEmail`
+- the operations list
+
+The example now follows this flow with the IDs the service returns, and uses the documented `POST .../listSynchronizations` routes.

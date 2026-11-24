@@ -301,3 +301,15 @@ Success target:
 
 - coverage scripts resolve and report `datareplication_2026_05_01`
 - example compiles and exercises the staged surface contract
+
+## Implementation Status
+
+Served by the shared ARM handler plus a small router (`internal/server/provider_azure_datareplication_2026_05_01.go`):
+
+- vaults, fabrics and fabric agents, policies, replication extensions and alert settings; deletes answer `202`
+- private endpoint connection proxies, each creating the private endpoint connection of the same name (connections can't be created directly); private link resources
+- protected items, which must name a policy and replication extension in the vault (neither can then be deleted); enabling protection, planned failover and disabling protection record finished jobs and events (200 kept per vault); each protected item has an initial recovery point
+- operation results for each job's operation at `operations/{id}` and `locations/{location}/operationResults/{id}`
+- `checkNameAvailability`, `deployments/{name}/preflight` and the operations list
+
+The example reads job, event, recovery point and connection names from responses, and uses the documented operation result paths.

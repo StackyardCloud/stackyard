@@ -333,3 +333,15 @@ Example should execute representative calls spanning all operation groups and in
 - `python3 scripts/azure-contract-coverage.py --service defenderforeasm-dataplanepreview-2024-10-01-preview --require-service defenderforeasm_dataplanepreview_2024_10_01_preview --fail-on any`
 - `python3 scripts/azure-io-contract-coverage.py --service defenderforeasm-dataplanepreview-2024-10-01-preview --require-service defenderforeasm_dataplanepreview_2024_10_01_preview --fail-on any`
 - `python3 scripts/azure-doc-contract-coverage.py --service defenderforeasm-dataplanepreview-2024-10-01-preview --require-service defenderforeasm_dataplanepreview_2024_10_01_preview --fail-on any`
+
+## Implementation Status
+
+Served by `internal/server/provider_azure_defenderforeasm_dataplanepreview_2024_10_01_preview.go` for one emulated workspace:
+
+- a seeded Contoso asset inventory; filters support `field = "v"`, `!=`, `^=` and `IN (...)` over `state`, `kind`, `name` and `externalId` joined by `AND`
+- asset updates, exports, delta details and summary and observations; CISA CVEs and discovery templates are fixtures
+- data connections (API keys are write-only), discovery groups with runs (100 kept per group) and asset chain actions, saved filters and policies (which must name a saved filter); each collection holds at most 1000 items
+- billable, summary, snapshot and snapshot export reports
+- tasks (1000 kept) with `run`, `cancel` and `download`; tasks finish at once
+
+Discovery finds nothing new.
