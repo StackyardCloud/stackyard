@@ -172,18 +172,18 @@ func main() {
 
 	calls := []extendedLocationCall{
 		{
+			name:     "resource_group_create",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{200, 201},
+		},
+		{
 			name:     "custom_locations_create_or_update",
 			method:   http.MethodPut,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ExtendedLocation/customLocations/{resourceName}?api-version=2021-08-15",
 			payload:  payloadForMethod("custom-locations/create-or-update", location, hostResourceID, clusterExtensionID),
 			statuses: []int{200, 201},
-		},
-		{
-			name:     "custom_locations_delete",
-			method:   http.MethodDelete,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ExtendedLocation/customLocations/{resourceName}?api-version=2021-08-15",
-			payload:  nil,
-			statuses: []int{202, 204},
 		},
 		{
 			name:     "custom_locations_get",
@@ -226,6 +226,13 @@ func main() {
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ExtendedLocation/customLocations/{resourceName}?api-version=2021-08-15",
 			payload:  payloadForMethod("custom-locations/update", location, hostResourceID, clusterExtensionID),
 			statuses: []int{200},
+		},
+		{
+			name:     "custom_locations_delete",
+			method:   http.MethodDelete,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ExtendedLocation/customLocations/{resourceName}?api-version=2021-08-15",
+			payload:  nil,
+			statuses: []int{200, 202, 204},
 		},
 	}
 

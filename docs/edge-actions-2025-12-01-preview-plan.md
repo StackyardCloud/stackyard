@@ -251,3 +251,7 @@ Recommended aliases:
 - `python3 scripts/azure-contract-coverage.py --service edge-actions-2025-12-01-preview --fail-on any`
 - `python3 scripts/azure-io-contract-coverage.py --service edge-actions-2025-12-01-preview --fail-on any`
 - `python3 scripts/azure-doc-contract-coverage.py --service edge-actions-2025-12-01-preview --fail-on any`
+
+## Implementation Status
+
+Implemented on the shared ARM handler (`provider_azure_edge_actions_2025_12_01_preview.go`): edge actions, versions and execution filters with full CRUD and lists; `deployVersionCode` (base64, 4 MiB per version, 64 MiB per server), `getVersionCode` and `swapDefault`. A version marked default clears the flag on its siblings; a version an execution filter points at can't be deleted. Long-running operations finish at once. No code runs.

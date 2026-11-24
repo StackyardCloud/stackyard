@@ -191,6 +191,13 @@ func main() {
 
 	calls := []elasticCall{
 		{
+			name:     "resource_group_create",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{200, 201},
+		},
+		{
 			name:     "operations_list",
 			method:   http.MethodGet,
 			template: "/providers/Microsoft.Elastic/operations?api-version=2020-07-01",
@@ -245,7 +252,7 @@ func main() {
 			method:   http.MethodPut,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Elastic/monitors/{monitorName}/tagRules/{ruleSetName}?api-version=2020-07-01",
 			payload:  tagRulesPayload,
-			statuses: []int{200},
+			statuses: []int{200, 201},
 		},
 		{
 			name:     "tag_rules_get",
