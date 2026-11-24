@@ -81,7 +81,7 @@ Private Link Resources method pages (`2`):
 SDK parity cross-check used:
 
 - `https://learn.microsoft.com/en-us/rest/api/deviceupdate/resourcemanager/accounts/create?view=rest-deviceupdate-resourcemanager-2023-07-01` (Go tab references `armdeviceupdate`)
-- `https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/deviceupdate/armdeviceupdate`
+- `github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/deviceupdate/armdeviceupdate`
 
 ## Surface Summary
 

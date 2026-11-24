@@ -101,6 +101,13 @@ func azureIsBillingPath(segments []string) bool {
 	if len(segments) >= 2 &&
 		strings.EqualFold(segments[0], "providers") &&
 		strings.EqualFold(segments[1], "Microsoft.Billing") {
+		// Other providers' resources under a billing scope, such as
+		// Education labs, belong to those providers' routers.
+		for i := 2; i+1 < len(segments); i++ {
+			if strings.EqualFold(segments[i], "providers") && !strings.EqualFold(segments[i+1], "Microsoft.Billing") {
+				return false
+			}
+		}
 		return true
 	}
 	_, tail, ok := azureBillingSubscriptionContext(segments)

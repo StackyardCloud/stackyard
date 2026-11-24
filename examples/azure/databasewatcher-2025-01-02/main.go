@@ -172,6 +172,14 @@ func main() {
 		statuses []int
 	}{
 		{
+			// The shared ARM handler serves resources only in an existing resource group.
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     fmt.Sprintf("/azure/subscriptions/%s/resourcegroups/%s?api-version=2021-04-01", subscriptionID, resourceGroup),
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusCreated, http.StatusOK},
+		},
+		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
 			path:     "/azure/providers/Microsoft.DatabaseWatcher/operations?api-version=" + databaseWatcherAPIVersion,

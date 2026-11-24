@@ -212,3 +212,7 @@ Exit criteria:
   - tag-rule lifecycle behavior
   - VM collection update action behavior
   - deterministic error envelopes for contract violations
+
+## Implementation Status
+
+Implemented on the shared ARM handler (`provider_azure_elastic_2020_07_01.go`): monitors, the `default` tag rule set, `listMonitoredResources` (the subscription's stored resources the tag rules select), `vmCollectionUpdate`/`listVMHost`, `listDeploymentInfo`, `vmIngestionDetails` and operations. No Elastic deployment runs.

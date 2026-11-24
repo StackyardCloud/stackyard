@@ -291,7 +291,7 @@ func main() {
 
 	volumeUpdatePayload := map[string]any{
 		"properties": map[string]any{
-			"sizeGiB": 7,
+			"sizeGiB": 30,
 			"managedBy": map[string]any{
 				"resourceId": managedByResourceID,
 			},
@@ -307,6 +307,13 @@ func main() {
 	}
 
 	calls := []elasticSanCall{
+		{
+			name:     "resource_group_create",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{200, 201},
+		},
 		{
 			name:     "operations_list",
 			method:   http.MethodGet,
@@ -403,25 +410,6 @@ func main() {
 			statuses: []int{200, 202},
 		},
 		{
-			name:     "volume_snapshots_create",
-			method:   http.MethodPut,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots/{snapshotName}?api-version=2025-09-01",
-			payload:  volumeSnapshotCreatePayload,
-			statuses: []int{200, 201},
-		},
-		{
-			name:     "volume_snapshots_get",
-			method:   http.MethodGet,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots/{snapshotName}?api-version=2025-09-01",
-			statuses: []int{200},
-		},
-		{
-			name:     "volume_snapshots_list_by_volume_group",
-			method:   http.MethodGet,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots?api-version=2025-09-01",
-			statuses: []int{200},
-		},
-		{
 			name:     "volumes_create",
 			method:   http.MethodPut,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/volumes/{volumeName}?api-version=2025-09-01",
@@ -438,6 +426,25 @@ func main() {
 			name:     "volumes_list_by_volume_group",
 			method:   http.MethodGet,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/volumes?api-version=2025-09-01",
+			statuses: []int{200},
+		},
+		{
+			name:     "volume_snapshots_create",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots/{snapshotName}?api-version=2025-09-01",
+			payload:  volumeSnapshotCreatePayload,
+			statuses: []int{200, 201},
+		},
+		{
+			name:     "volume_snapshots_get",
+			method:   http.MethodGet,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots/{snapshotName}?api-version=2025-09-01",
+			statuses: []int{200},
+		},
+		{
+			name:     "volume_snapshots_list_by_volume_group",
+			method:   http.MethodGet,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots?api-version=2025-09-01",
 			statuses: []int{200},
 		},
 		{
@@ -474,15 +481,15 @@ func main() {
 
 	cleanup := []elasticSanCall{
 		{
-			name:     "volumes_delete",
-			method:   http.MethodDelete,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/volumes/{volumeName}?api-version=2025-09-01",
-			statuses: []int{200, 202, 204},
-		},
-		{
 			name:     "volume_snapshots_delete",
 			method:   http.MethodDelete,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/snapshots/{snapshotName}?api-version=2025-09-01",
+			statuses: []int{200, 202, 204},
+		},
+		{
+			name:     "volumes_delete",
+			method:   http.MethodDelete,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ElasticSan/elasticSans/{elasticSanName}/volumegroups/{volumeGroupName}/volumes/{volumeName}?api-version=2025-09-01",
 			statuses: []int{200, 202, 204},
 		},
 		{

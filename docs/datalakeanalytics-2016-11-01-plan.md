@@ -275,3 +275,9 @@ Success target:
 
 - new service key is fully wired for plan/example/coverage discovery
 - example builds and exercises representative Data Lake Analytics surfaces via Azure Go SDK pipeline calls
+
+## Implementation Status
+
+- Management plane on the shared ARM handler (`internal/server/provider_azure_datalakeanalytics_2016_11_01.go`): accounts (with inline Data Lake Store accounts, storage accounts, compute policies and firewall rules), each of those child types, name availability, the regional capability and the operations list. Storage account keys are write-only. Storage containers list empty and `listSasTokens` is not served.
+- Data plane (`internal/server/azure_datalakeanalytics_dataplane.go`) at `/azure/Jobs`, `/azure/BuildJob`, `/azure/pipelines`, `/azure/recurrences` and `/azure/catalog/usql/...`: jobs (create, get, list, cancel, build, statistics, debug data path) end `Succeeded` at submission; pipelines and recurrences list empty; the catalog holds the `master` database and `dbo` schema plus credentials and the deprecated secrets; ACL grants and revokes are accepted. The account comes from the `{account}.azuredatalakeanalytics.net` host, else `default`. At most 1,000 jobs and 500 credentials and secrets are kept across all accounts.
+- Not emulated: U-SQL execution, so tables, views and other catalog items are never found.

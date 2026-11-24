@@ -27,14 +27,6 @@ type educationSharedKeyPolicy struct {
 	subscriptionKey string
 }
 
-type educationCall struct {
-	name     string
-	method   string
-	template string
-	payload  any
-	statuses []int
-}
-
 func (p *educationSharedKeyPolicy) Do(req *policy.Request) (*http.Response, error) {
 	req.Raw().Header.Set("Authorization", "SharedKey "+p.account+":signature")
 	if strings.TrimSpace(p.subscriptionKey) != "" {
@@ -121,10 +113,7 @@ func main() {
 	billingAccountName := getenv("STACKYARD_AZURE_EDUCATION_BILLING_ACCOUNT_NAME", "123456")
 	billingProfileName := getenv("STACKYARD_AZURE_EDUCATION_BILLING_PROFILE_NAME", "bp-0001")
 	invoiceSectionName := getenv("STACKYARD_AZURE_EDUCATION_INVOICE_SECTION_NAME", "is-0001")
-	joinRequestName := getenv("STACKYARD_AZURE_EDUCATION_JOIN_REQUEST_NAME", "joinrequest1")
 	studentAlias := getenv("STACKYARD_AZURE_EDUCATION_STUDENT_ALIAS", "student1")
-	studentLabName := getenv("STACKYARD_AZURE_EDUCATION_STUDENT_LAB_NAME", "studentlab1")
-	redeemCode := getenv("STACKYARD_AZURE_EDUCATION_REDEEM_CODE", "exampleRedeemCode")
 
 	client := newEducationClient(endpoint, account, subscriptionKey)
 
@@ -132,9 +121,7 @@ func main() {
 		"billingAccountName": billingAccountName,
 		"billingProfileName": billingProfileName,
 		"invoiceSectionName": invoiceSectionName,
-		"joinRequestName":    joinRequestName,
 		"studentAlias":       studentAlias,
-		"studentLabName":     studentLabName,
 	}
 
 	labCreatePayload := map[string]any{
@@ -153,12 +140,6 @@ func main() {
 		"maxStudentCount": 10.0,
 	}
 
-	redeemPayload := map[string]any{
-		"firstName":  "test",
-		"lastName":   "user",
-		"redeemCode": redeemCode,
-	}
-
 	studentCreatePayload := map[string]any{
 		"properties": map[string]any{
 			"budget": map[string]any{
@@ -173,156 +154,88 @@ func main() {
 		},
 	}
 
-	calls := []educationCall{
-		{
-			name:     "operations_list",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Education/operations?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "grants_list_all",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Education/grants?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "grants_list",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/providers/Microsoft.Education/grants?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "grants_get",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/providers/Microsoft.Education/grants/default?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "labs_list_all",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/providers/Microsoft.Education/labs?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "labs_list",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "labs_create_or_update",
-			method:   http.MethodPut,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default?api-version=2021-12-01-preview",
-			payload:  labCreatePayload,
-			statuses: []int{200, 201},
-		},
-		{
-			name:     "labs_get",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "labs_generate_invite_code",
-			method:   http.MethodPost,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/generateInviteCode?api-version=2021-12-01-preview",
-			payload:  inviteCodePayload,
-			statuses: []int{200},
-		},
-		{
-			name:     "join_requests_list",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/joinRequests?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "join_requests_get",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/joinRequests/{joinRequestName}?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "join_requests_approve",
-			method:   http.MethodPost,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/joinRequests/{joinRequestName}/approve?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "join_requests_deny",
-			method:   http.MethodPost,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/joinRequests/{joinRequestName}/deny?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "students_list",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/students?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "students_create_or_update",
-			method:   http.MethodPut,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/students/{studentAlias}?api-version=2021-12-01-preview",
-			payload:  studentCreatePayload,
-			statuses: []int{200, 201},
-		},
-		{
-			name:     "students_get",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/students/{studentAlias}?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "student_labs_list_all",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Education/studentLabs?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "student_labs_get",
-			method:   http.MethodGet,
-			template: "/providers/Microsoft.Education/studentLabs/{studentLabName}?api-version=2021-12-01-preview",
-			statuses: []int{200},
-		},
-		{
-			name:     "redeem_invitation_code",
-			method:   http.MethodPost,
-			template: "/providers/Microsoft.Education/redeemInvitationCode?api-version=2021-12-01-preview",
-			payload:  redeemPayload,
-			statuses: []int{200},
-		},
-		{
-			name:     "students_delete",
-			method:   http.MethodDelete,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default/students/{studentAlias}?api-version=2021-12-01-preview",
-			statuses: []int{200, 204},
-		},
-		{
-			name:     "labs_delete",
-			method:   http.MethodDelete,
-			template: "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default?api-version=2021-12-01-preview",
-			statuses: []int{200, 204},
-		},
-	}
-
-	for _, call := range calls {
-		path := buildPath(call.template, vars)
-		response, status, err := client.doJSON(ctx, call.method, path, call.payload, call.statuses...)
+	run := func(name, method, template string, payload any, statuses ...int) map[string]any {
+		response, status, err := client.doJSON(ctx, method, buildPath(template, vars), payload, statuses...)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s failed: %v\n", call.name, err)
+			fmt.Fprintf(os.Stderr, "%s failed: %v\n", name, err)
 			os.Exit(1)
 		}
-		fmt.Printf("%s -> %d\n", call.name, status)
+		fmt.Printf("%s -> %d\n", name, status)
 		if len(response) > 0 {
 			encoded, err := json.MarshalIndent(response, "", "  ")
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s marshal response: %v\n", call.name, err)
+				fmt.Fprintf(os.Stderr, "%s marshal response: %v\n", name, err)
 				os.Exit(1)
 			}
 			fmt.Println(string(encoded))
 		}
+		return response
 	}
+	names := func(list map[string]any) []string {
+		var out []string
+		for _, item := range asSlice(list["value"]) {
+			if m, ok := item.(map[string]any); ok {
+				out = append(out, fmt.Sprint(m["name"]))
+			}
+		}
+		return out
+	}
+
+	profile := "/providers/Microsoft.Billing/billingAccounts/{billingAccountName}/billingProfiles/{billingProfileName}"
+	lab := profile + "/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs/default"
+	q := "?api-version=" + educationAPIVersion
+
+	run("operations_list", http.MethodGet, "/providers/Microsoft.Education/operations"+q, nil, 200)
+	run("labs_create_or_update", http.MethodPut, lab+q, labCreatePayload, 200, 201)
+	run("labs_get", http.MethodGet, lab+q+"&includeBudget=true", nil, 200)
+	run("labs_list_all", http.MethodGet, profile+"/providers/Microsoft.Education/labs"+q, nil, 200)
+	run("labs_list", http.MethodGet, profile+"/invoiceSections/{invoiceSectionName}/providers/Microsoft.Education/labs"+q, nil, 200)
+	invite := run("labs_generate_invite_code", http.MethodPost, lab+"/generateInviteCode"+q, inviteCodePayload, 200)
+	code := fmt.Sprint(asMap(invite["properties"])["invitationCode"])
+
+	// Two students redeem the code: one request is approved, one denied.
+	for _, who := range [][2]string{{"test", "user"}, {"other", "user"}} {
+		run("redeem_invitation_code", http.MethodPost, "/providers/Microsoft.Education/redeemInvitationCode"+q,
+			map[string]any{"firstName": who[0], "lastName": who[1], "redeemCode": code}, 200)
+	}
+	requests := names(run("join_requests_list", http.MethodGet, lab+"/joinRequests"+q, nil, 200))
+	if len(requests) != 2 {
+		fmt.Fprintf(os.Stderr, "expected 2 join requests, got %d\n", len(requests))
+		os.Exit(1)
+	}
+	vars["joinRequestName"] = requests[0]
+	run("join_requests_get", http.MethodGet, lab+"/joinRequests/{joinRequestName}"+q, nil, 200)
+	run("join_requests_approve", http.MethodPost, lab+"/joinRequests/{joinRequestName}/approve"+q, nil, 200)
+	vars["joinRequestName"] = requests[1]
+	run("join_requests_deny", http.MethodPost, lab+"/joinRequests/{joinRequestName}/deny"+q, nil, 200)
+
+	run("students_create_or_update", http.MethodPut, lab+"/students/{studentAlias}"+q, studentCreatePayload, 200, 201)
+	run("students_get", http.MethodGet, lab+"/students/{studentAlias}"+q, nil, 200)
+	run("students_list", http.MethodGet, lab+"/students"+q, nil, 200)
+
+	run("grants_list_all", http.MethodGet, "/providers/Microsoft.Education/grants"+q, nil, 200)
+	run("grants_list", http.MethodGet, profile+"/providers/Microsoft.Education/grants"+q, nil, 200)
+	run("grants_get", http.MethodGet, profile+"/providers/Microsoft.Education/grants/default"+q+"&includeAllocatedBudget=true", nil, 200)
+	studentLabs := names(run("student_labs_list_all", http.MethodGet, "/providers/Microsoft.Education/studentLabs"+q, nil, 200))
+	if len(studentLabs) == 0 {
+		fmt.Fprintln(os.Stderr, "expected a student lab")
+		os.Exit(1)
+	}
+	vars["studentLabName"] = studentLabs[0]
+	run("student_labs_get", http.MethodGet, "/providers/Microsoft.Education/studentLabs/{studentLabName}"+q, nil, 200)
+
+	run("students_delete", http.MethodDelete, lab+"/students/{studentAlias}"+q, nil, 200, 204)
+	run("labs_delete", http.MethodDelete, lab+q, nil, 200, 204)
+}
+
+func asMap(v any) map[string]any {
+	m, _ := v.(map[string]any)
+	return m
+}
+
+func asSlice(v any) []any {
+	s, _ := v.([]any)
+	return s
 }
 
 func ensureStatus(actual int, body []byte, expected ...int) error {

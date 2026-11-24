@@ -226,3 +226,6 @@ Exit criteria:
 - example compiles and is ready for end-to-end runs once handlers are implemented
 - coverage scripts include `education_2021_12_01_preview` aliases and plan-doc mapping
 
+## Implementation Status
+
+Implemented (`provider_azure_education_2021_12_01_preview.go`): labs under an invoice section, `generateInviteCode`, `redeemInvitationCode` creating pending join requests, `approve`/`deny` (approval adds the student), students, budget totals, the default grant of every billing profile, student labs and operations. Billing-scoped records live in the shared ARM store; the billing router leaves nested `/providers/Microsoft.Education` paths to this router.

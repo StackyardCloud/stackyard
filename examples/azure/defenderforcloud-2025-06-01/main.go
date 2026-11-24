@@ -135,6 +135,14 @@ func main() {
 		},
 	}
 
+	// The setting attaches to a storage account in a resource group, which
+	// must exist; derive it from the resource ID.
+	parts := strings.Split(strings.Trim(resourceID, "/"), "/")
+	if len(parts) < 4 || !strings.EqualFold(parts[2], "resourceGroups") {
+		fatalf("resource ID %q has no resource group", resourceID)
+	}
+	groupPath := "/azure/subscriptions/" + parts[1] + "/resourcegroups/" + parts[3] + "?api-version=2021-04-01"
+
 	calls := []struct {
 		name     string
 		method   string
@@ -142,6 +150,13 @@ func main() {
 		payload  any
 		statuses []int
 	}{
+		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     groupPath,
+			payload:  map[string]any{"location": "eastus"},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
 		{
 			name:     "CreateDefenderForStorageSetting",
 			method:   http.MethodPut,

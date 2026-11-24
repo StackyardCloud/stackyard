@@ -20,10 +20,13 @@ type azureCDNProfile struct {
 	Name           string
 	Location       string
 	Tags           map[string]string
-	Properties     map[string]any
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	ETag           string
+	// SKU is the pricing tier, such as Standard_Microsoft or, for Azure
+	// Front Door profiles, Standard_AzureFrontDoor.
+	SKU        map[string]any
+	Properties map[string]any
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	ETag       string
 }
 
 type azureCDNEndpoint struct {
@@ -136,6 +139,15 @@ func (s *Server) handleAzureCDNRouter(w http.ResponseWriter, r *http.Request) bo
 	case "profiles":
 		s.handleAzureCDNProfilesRoute(w, r, path, subscriptionID, resourceGroup, tail)
 		return true
+	case "checkendpointnameavailability":
+		if resourceGroup == "" || r.Method != http.MethodPost || len(tail) != 1 {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return true
+		}
+		s.serveAzureARMPost(w, r, func(payload map[string]any) (int, any) {
+			return s.azureAfdxCheckEndpointName(subscriptionID, resourceGroup, payload)
+		})
+		return true
 	default:
 		return false
 	}
@@ -155,7 +167,7 @@ func azureCDNIsPath(segments []string) bool {
 		return false
 	}
 	switch strings.ToLower(strings.TrimSpace(tail[0])) {
-	case "checknameavailability", "checkresourceusage", "validateprobe", "profiles":
+	case "checknameavailability", "checkresourceusage", "validateprobe", "profiles", "checkendpointnameavailability":
 		return true
 	default:
 		return false
@@ -365,6 +377,9 @@ func (s *Server) handleAzureCDNProfilesRoute(w http.ResponseWriter, r *http.Requ
 		s.handleAzureCDNEndpointsRoute(w, r, path, subscriptionID, resourceGroup, profileName, tail[2:])
 		return
 	}
+	if s.handleAzureAfdxProfileAction(w, r, subscriptionID, resourceGroup, profileName, tail[2:]) {
+		return
+	}
 
 	respondAzureImplemented(w, path)
 }
@@ -536,10 +551,14 @@ func (s *Server) handleAzureCDNCreateOrUpdateProfile(w http.ResponseWriter, r *h
 	}
 	profile.Location = location
 	profile.Tags = azureCDNStringMap(payload["tags"])
+	if sku := azureARMObject(payload["sku"]); len(sku) > 0 {
+		profile.SKU = sku
+	}
 	profile.Properties = azureCDNNormalizeProfileProperties(profileName, payload["properties"], profile.CreatedAt, now)
 	profile.UpdatedAt = now
 	profile.ETag = azureCDNETag(profileID, now)
 	s.azureCDNProfiles[profileID] = profile
+	s.azureAfdxMirrorProfileLocked(profile)
 
 	respondJSON(w, status, azureCDNProfileFixture(profile))
 }
@@ -568,6 +587,7 @@ func (s *Server) handleAzureCDNPatchProfile(w http.ResponseWriter, r *http.Reque
 	}
 	profile.UpdatedAt = now
 	profile.ETag = azureCDNETag(profileID, now)
+	s.azureAfdxMirrorProfileLocked(profile)
 	respondJSON(w, http.StatusOK, azureCDNProfileFixture(profile))
 }
 
@@ -597,6 +617,8 @@ func (s *Server) handleAzureCDNDeleteProfile(w http.ResponseWriter, subscription
 		return
 	}
 	delete(s.azureCDNProfiles, profileID)
+	// Front Door resources under the profile go with it.
+	s.deleteAzureARMTreeLocked(profileID)
 	for key, endpoint := range s.azureCDNEndpoints {
 		if endpoint.SubscriptionID == subscriptionID && strings.EqualFold(endpoint.ResourceGroup, resourceGroup) && strings.EqualFold(endpoint.ProfileName, profileName) {
 			delete(s.azureCDNEndpoints, key)
@@ -1225,7 +1247,16 @@ func azureCDNProfileFixture(profile *azureCDNProfile) map[string]any {
 		"etag":       profile.ETag,
 		"systemData": azureCDNSystemData(profile.CreatedAt, profile.UpdatedAt),
 		"properties": profile.Properties,
+		"sku":        azureCDNProfileSKU(profile),
 	}
+}
+
+// azureCDNProfileSKU is the SKU the client sent, or Standard_Microsoft.
+func azureCDNProfileSKU(profile *azureCDNProfile) map[string]any {
+	if len(profile.SKU) == 0 {
+		return map[string]any{"name": "Standard_Microsoft"}
+	}
+	return profile.SKU
 }
 
 func azureCDNEndpointFixture(endpoint *azureCDNEndpoint) map[string]any {
@@ -1369,10 +1400,21 @@ func azureCDNValidateCustomDomainProperties(raw any) error {
 	return nil
 }
 
+const azureCDNMaxRequestBody = 4 << 20
+
 func azureCDNReadRequestBody(w http.ResponseWriter, r *http.Request, path string) ([]byte, map[string]any, bool) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, azureCDNMaxRequestBody+1))
 	if err != nil {
 		respondAzureInvalidRequest(w, path, "failed to read request body")
+		return nil, nil, false
+	}
+	if len(body) > azureCDNMaxRequestBody {
+		respondJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+			"error":    "RequestEntityTooLarge",
+			"message":  "request body is limited to 4 MiB",
+			"provider": providerAzure,
+			"path":     path,
+		})
 		return nil, nil, false
 	}
 	if len(strings.TrimSpace(string(body))) == 0 {

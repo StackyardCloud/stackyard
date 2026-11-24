@@ -109,14 +109,9 @@ func main() {
 	policyName := getenv("STACKYARD_AZURE_DATAREPLICATION_POLICY_NAME", "dr-policy-example")
 	replicationExtensionName := getenv("STACKYARD_AZURE_DATAREPLICATION_EXTENSION_NAME", "dr-extension-example")
 	protectedItemName := getenv("STACKYARD_AZURE_DATAREPLICATION_PROTECTED_ITEM_NAME", "dr-protected-item-example")
-	jobName := getenv("STACKYARD_AZURE_DATAREPLICATION_JOB_NAME", "dr-job-example")
-	eventName := getenv("STACKYARD_AZURE_DATAREPLICATION_EVENT_NAME", "dr-event-example")
-	recoveryPointName := getenv("STACKYARD_AZURE_DATAREPLICATION_RECOVERY_POINT_NAME", "dr-rp-example")
 	emailConfigurationName := getenv("STACKYARD_AZURE_DATAREPLICATION_EMAIL_CONFIGURATION_NAME", "dr-alerts")
 	privateEndpointConnectionProxyName := getenv("STACKYARD_AZURE_DATAREPLICATION_PRIVATE_ENDPOINT_CONNECTION_PROXY_NAME", "dr-pec-proxy")
-	privateEndpointConnectionName := getenv("STACKYARD_AZURE_DATAREPLICATION_PRIVATE_ENDPOINT_CONNECTION_NAME", "dr-pec")
 	deploymentID := getenv("STACKYARD_AZURE_DATAREPLICATION_DEPLOYMENT_ID", "dr-deployment-01")
-	operationID := getenv("STACKYARD_AZURE_DATAREPLICATION_OPERATION_ID", "dr-op-01")
 
 	client := newDataReplicationClient(endpoint, account, subscriptionKey)
 
@@ -136,12 +131,8 @@ func main() {
 	policyBase := vaultBase + "/replicationPolicies/" + policyName
 	replicationExtensionBase := vaultBase + "/replicationExtensions/" + replicationExtensionName
 	protectedItemBase := vaultBase + "/protectedItems/" + protectedItemName
-	recoveryPointBase := protectedItemBase + "/recoveryPoints/" + recoveryPointName
-	jobBase := vaultBase + "/jobs/" + jobName
-	eventBase := vaultBase + "/events/" + eventName
 	emailConfigurationBase := vaultBase + "/alertSettings/" + emailConfigurationName
 	privateEndpointConnectionProxyBase := vaultBase + "/privateEndpointConnectionProxies/" + privateEndpointConnectionProxyName
-	privateEndpointConnectionBase := vaultBase + "/privateEndpointConnections/" + privateEndpointConnectionName
 
 	calls := []struct {
 		name     string
@@ -150,6 +141,13 @@ func main() {
 		payload  any
 		statuses []int
 	}{
+		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     "/azure/subscriptions/" + subscriptionID + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
 		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
@@ -429,12 +427,6 @@ func main() {
 			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetPrivateEndpointConnection",
-			method:   http.MethodGet,
-			path:     privateEndpointConnectionBase + "?api-version=" + dataReplicationAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
 			name:     "ListPrivateEndpointConnections",
 			method:   http.MethodGet,
 			path:     vaultBase + "/privateEndpointConnections?api-version=" + dataReplicationAPIVersion,
@@ -506,61 +498,15 @@ func main() {
 			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetRecoveryPoint",
-			method:   http.MethodGet,
-			path:     recoveryPointBase + "?api-version=" + dataReplicationAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
 			name:     "ListJobs",
 			method:   http.MethodGet,
 			path:     vaultBase + "/jobs?api-version=" + dataReplicationAPIVersion,
 			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "GetJob",
-			method:   http.MethodGet,
-			path:     jobBase + "?api-version=" + dataReplicationAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
 			name:     "ListEvents",
 			method:   http.MethodGet,
 			path:     vaultBase + "/events?api-version=" + dataReplicationAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetEvent",
-			method:   http.MethodGet,
-			path:     eventBase + "?api-version=" + dataReplicationAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "GetLocationBasedOperationResult",
-			method: http.MethodGet,
-			path: fmt.Sprintf(
-				"/azure/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataReplication/locations/%s/operationResults/%s?api-version=%s",
-				subscriptionID,
-				resourceGroup,
-				location,
-				operationID,
-				dataReplicationAPIVersion,
-			),
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "GetOperationResult",
-			method: http.MethodGet,
-			path: fmt.Sprintf(
-				"/azure/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataReplication/operationResults/%s/subscriptions/%s/resourceGroups/%s/%s?api-version=%s",
-				subscriptionID,
-				resourceGroup,
-				operationID,
-				subscriptionID,
-				resourceGroup,
-				operationID,
-				dataReplicationAPIVersion,
-			),
 			statuses: []int{http.StatusOK},
 		},
 	}
@@ -572,6 +518,37 @@ func main() {
 		}
 		printJSON(call.name, status, payload)
 	}
+
+	// Follow-ups that read names the service generates: the protected item's
+	// recovery point, the jobs and events protection and failover recorded,
+	// the operation behind a job, and the connection the proxy created.
+	q := "?api-version=" + dataReplicationAPIVersion
+	run := func(name, method, path string, statuses ...int) map[string]any {
+		body, status, err := client.doJSON(ctx, method, path, nil, statuses...)
+		if err != nil {
+			fatalf("%s failed: %v", name, err)
+		}
+		printJSON(name, status, body)
+		return body
+	}
+	firstName := func(list map[string]any) string {
+		items, _ := list["value"].([]any)
+		if len(items) == 0 {
+			fatalf("expected at least one item in %v", list)
+		}
+		name, _ := items[0].(map[string]any)["name"].(string)
+		return name
+	}
+	recoveryPoint := firstName(run("ListRecoveryPointsForGet", http.MethodGet, protectedItemBase+"/recoveryPoints"+q, http.StatusOK))
+	run("GetRecoveryPoint", http.MethodGet, protectedItemBase+"/recoveryPoints/"+recoveryPoint+q, http.StatusOK)
+	job := firstName(run("ListJobsForGet", http.MethodGet, vaultBase+"/jobs"+q, http.StatusOK))
+	run("GetJob", http.MethodGet, vaultBase+"/jobs/"+job+q, http.StatusOK)
+	event := firstName(run("ListEventsForGet", http.MethodGet, vaultBase+"/events"+q, http.StatusOK))
+	run("GetEvent", http.MethodGet, vaultBase+"/events/"+event+q, http.StatusOK)
+	groupProviders := fmt.Sprintf("/azure/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataReplication", subscriptionID, resourceGroup)
+	run("GetOperationResult", http.MethodGet, groupProviders+"/operations/"+job+q, http.StatusOK)
+	run("GetLocationBasedOperationResult", http.MethodGet, groupProviders+"/locations/"+location+"/operationResults/"+job+q, http.StatusOK)
+	run("GetPrivateEndpointConnection", http.MethodGet, vaultBase+"/privateEndpointConnections/"+privateEndpointConnectionProxyName+q, http.StatusOK)
 
 	cleanup := []struct {
 		name     string

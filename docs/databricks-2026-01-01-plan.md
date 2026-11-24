@@ -292,3 +292,9 @@ Expected stage-0 result:
 
 - router and docs/coverage wiring pass service discovery checks
 - strict coverage checks fail until implementation/tests are added in later stages
+
+## Implementation Status
+
+- Implemented on the shared ARM handler (`internal/server/provider_azure_databricks_2026_01_01.go`): workspaces (sku and managed resource group validation; stable `workspaceId` and `workspaceUrl`), virtual network peerings (`Connected`), private endpoint connections, private link resources, access connectors and the operations list.
+- `outboundNetworkDependenciesEndpoints` returns a bare JSON array, as the service does.
+- Not emulated: a Databricks control plane behind the workspace URL, and asynchronous (`202`) provisioning.
