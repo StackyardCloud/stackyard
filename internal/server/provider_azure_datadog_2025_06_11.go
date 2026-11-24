@@ -30,10 +30,12 @@ func init() {
 			"datadogOrganizationProperties.linkingAuthCode", "datadogOrganizationProperties.linkingClientId",
 			"datadogOrganizationProperties.redirectUri",
 		},
+		ServerActions: map[string]func(*Server, *azureARMResource, map[string]any) (int, any){
+			"listapikeys":   azureDDOGListAPIKeys,
+			"getdefaultkey": azureDDOGDefaultKey,
+			"setdefaultkey": azureDDOGSetDefaultKey,
+		},
 		Actions: map[string]azureARMAction{
-			"listapikeys":            azureDDOGListAPIKeys,
-			"getdefaultkey":          azureDDOGDefaultKey,
-			"setdefaultkey":          azureDDOGSetDefaultKey,
 			"listhosts":              azureDDOGEmptyList,
 			"listmonitoredresources": azureDDOGEmptyList,
 			"listlinkedresources": func(rec *azureARMResource, _ map[string]any) (int, any) {
@@ -54,10 +56,7 @@ func init() {
 	registerAzureARMResourceType(azureARMResourceType{
 		Namespace: ns, Type: "monitors/monitoredSubscriptions", Proxy: true,
 		ValidateName: azureDataPlatOnlyName("default"),
-		Validate: azureDataPlatAll(
-			azureDataPlatRequired("operation"),
-			azureDataPlatEnum("operation", "AddBegin", "AddComplete", "DeleteBegin", "DeleteComplete", "Active"),
-		),
+		Validate:     azureDataPlatEnum("operation", "AddBegin", "AddComplete", "DeleteBegin", "DeleteComplete", "Active"),
 	})
 	registerAzureARMResourceType(azureARMResourceType{
 		Namespace: ns, Type: "monitors/tagRules", CreateStatus: http.StatusOK, Proxy: true,
@@ -81,14 +80,20 @@ func init() {
 	registerAzureARMResourceType(azureARMResourceType{
 		Namespace: ns, Type: "agreements", CreateStatus: http.StatusOK, Subscription: true,
 		ValidateName: azureDataPlatOnlyName("default"),
-		Validate:     azureDataPlatRequired("publisher", "product", "plan"),
 		ReadOnlyProperties: func(rec *azureARMResource) map[string]any {
-			return map[string]any{
+			props := map[string]any{
 				"licenseTextLink":   "https://www.datadoghq.com/legal/eula/",
 				"privacyPolicyLink": "https://www.datadoghq.com/legal/privacy/",
 				"retrieveDatetime":  rec.UpdatedAt.Format(time.RFC3339),
 				"signature":         azureDataPlatGUID(rec.ID),
 			}
+			// The Datadog marketplace offer, unless the client names another.
+			for key, value := range map[string]string{"publisher": "datadog1591740804488", "product": "dd_liftr_v2", "plan": "payg_v2"} {
+				if azureARMString(rec.Properties[key]) == "" {
+					props[key] = value
+				}
+			}
+			return props
 		},
 		NoPatch: true, NoDelete: true,
 	})
@@ -151,6 +156,12 @@ func azureDDOGMonitorReadOnly(rec *azureARMResource) map[string]any {
 	return props
 }
 
+// azureDDOGKeyType is the type of the stored default API key a client set,
+// kept under its monitor (so deleting the monitor removes it) but not an ARM
+// resource.
+const azureDDOGKeyType = azureDDOGNamespace + "/monitors/apiKeys"
+
+// azureDDOGAPIKey is the API key every monitor starts with.
 func azureDDOGAPIKey(rec *azureARMResource) map[string]any {
 	return map[string]any{
 		"name": "Default", "key": strings.ReplaceAll(azureDataPlatGUID(rec.ID+"/apikey"), "-", ""),
@@ -158,19 +169,49 @@ func azureDDOGAPIKey(rec *azureARMResource) map[string]any {
 	}
 }
 
-func azureDDOGListAPIKeys(rec *azureARMResource, _ map[string]any) (int, any) {
-	return http.StatusOK, map[string]any{"value": []any{azureDDOGAPIKey(rec)}}
-}
-
-func azureDDOGDefaultKey(rec *azureARMResource, _ map[string]any) (int, any) {
-	return http.StatusOK, azureDDOGAPIKey(rec)
-}
-
-// azureDDOGSetDefaultKey accepts only the monitor's one key.
-func azureDDOGSetDefaultKey(rec *azureARMResource, payload map[string]any) (int, any) {
-	if azureARMString(payload["key"]) != azureDDOGAPIKey(rec)["key"] {
-		return http.StatusBadRequest, azureARMErrorBody("InvalidRequestContent", "key must be one of the monitor's API keys.")
+// azureDDOGKeysLocked returns the monitor's API keys, default first: the
+// one a client set with setDefaultKey, if any, then the original. Caller
+// holds providerStorageMu.
+func (s *Server) azureDDOGKeysLocked(rec *azureARMResource) []any {
+	original := azureDDOGAPIKey(rec)
+	set := s.azureDataPlatStoredLocked(rec.ID+"/apiKeys/default", azureDDOGKeyType)
+	if set == nil || set.Properties["key"] == original["key"] {
+		return []any{original}
 	}
+	return []any{set.Properties, original}
+}
+
+func azureDDOGListAPIKeys(s *Server, rec *azureARMResource, _ map[string]any) (int, any) {
+	s.providerStorageMu.Lock()
+	defer s.providerStorageMu.Unlock()
+	return http.StatusOK, map[string]any{"value": s.azureDDOGKeysLocked(rec)}
+}
+
+func azureDDOGDefaultKey(s *Server, rec *azureARMResource, _ map[string]any) (int, any) {
+	s.providerStorageMu.Lock()
+	defer s.providerStorageMu.Unlock()
+	return http.StatusOK, s.azureDDOGKeysLocked(rec)[0]
+}
+
+// azureDDOGSetDefaultKey makes the key it is given the monitor's default.
+func azureDDOGSetDefaultKey(s *Server, rec *azureARMResource, payload map[string]any) (int, any) {
+	key := azureARMString(payload["key"])
+	if strings.TrimSpace(key) == "" || len(key) > 256 {
+		return http.StatusBadRequest, azureARMErrorBody("InvalidRequestContent", "key is required and must be at most 256 characters.")
+	}
+	name := azureARMString(payload["name"])
+	if len(name) > 256 {
+		return http.StatusBadRequest, azureARMErrorBody("InvalidRequestContent", "name must be at most 256 characters.")
+	}
+	s.providerStorageMu.Lock()
+	defer s.providerStorageMu.Unlock()
+	monitor := s.azureDataPlatStoredLocked(rec.ID, azureDDOGNamespace+"/monitors")
+	if monitor == nil {
+		return http.StatusNotFound, azureARMErrorBody("ResourceNotFound", "The monitor '"+rec.ID+"' was not found.")
+	}
+	s.azureDataPlatPutChildLocked(monitor, azureDDOGKeyType, "apiKeys", "default", map[string]any{
+		"name": name, "key": key, "createdBy": "stackyard", "created": time.Now().UTC().Format(time.RFC3339),
+	}, 1)
 	return http.StatusOK, nil
 }
 

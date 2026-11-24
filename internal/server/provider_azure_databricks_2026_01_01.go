@@ -43,7 +43,7 @@ func init() {
 		NoPatch: true,
 	})
 	registerAzureARMResourceType(azureARMResourceType{
-		Namespace: ns, Type: "workspaces/privateEndpointConnections", Proxy: true,
+		Namespace: ns, Type: "workspaces/privateEndpointConnections", Proxy: true, CreateStatus: http.StatusOK,
 		Validate: azureDataPlatAll(
 			azureDataPlatRequired("privateLinkServiceConnectionState.status"),
 			azureDataPlatEnum("privateLinkServiceConnectionState.status", "Pending", "Approved", "Rejected", "Disconnected"),

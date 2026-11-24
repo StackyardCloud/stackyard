@@ -123,6 +123,14 @@ func main() {
 		statuses []int
 	}{
 		{
+			// The shared ARM handler serves resources only in an existing resource group.
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     fmt.Sprintf("/azure/subscriptions/%s/resourcegroups/%s?api-version=2021-04-01", subscriptionID, resourceGroup),
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusCreated, http.StatusOK},
+		},
+		{
 			name:   "CheckNameAvailability",
 			method: http.MethodPost,
 			path: fmt.Sprintf(
@@ -145,6 +153,7 @@ func main() {
 				"location": location,
 				"properties": map[string]any{
 					"defaultDataLakeStoreAccount": dataLakeStoreName,
+					"dataLakeStoreAccounts":       []any{map[string]any{"name": dataLakeStoreName}},
 				},
 			},
 			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted},

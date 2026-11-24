@@ -129,6 +129,14 @@ func main() {
 		statuses []int
 	}{
 		{
+			// The shared ARM handler serves resources only in an existing resource group.
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     fmt.Sprintf("/azure/subscriptions/%s/resourcegroups/%s?api-version=2021-04-01", subscriptionID, resourceGroup),
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusCreated, http.StatusOK},
+		},
+		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
 			path:     "/azure/providers/Microsoft.DataFactory/operations?api-version=" + dataFactoryAPIVersion,
@@ -275,7 +283,7 @@ func main() {
 	payload, status, err := client.doJSON(
 		ctx,
 		http.MethodPost,
-		factoryBase+"/pipelineruns/queryByFactory?api-version="+dataFactoryAPIVersion,
+		factoryBase+"/queryPipelineRuns?api-version="+dataFactoryAPIVersion,
 		queryRunsPayload,
 		http.StatusOK,
 	)

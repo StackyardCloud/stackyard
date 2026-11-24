@@ -146,7 +146,7 @@ Representative routes:
 - `PUT /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/datasets/{name}?api-version=2018-06-01`
 - `PUT /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/pipelines/{name}?api-version=2018-06-01`
 - `POST /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/pipelines/{name}/createRun?api-version=2018-06-01`
-- `POST /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/pipelineruns/queryByFactory?api-version=2018-06-01`
+- `POST /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/queryPipelineRuns?api-version=2018-06-01`
 - `POST /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/pipelineruns/{runId}/queryActivityruns?api-version=2018-06-01`
 - `PUT /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/triggers/{name}?api-version=2018-06-01`
 - `POST /azure/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.DataFactory/factories/{factory}/triggers/{name}/start?api-version=2018-06-01`

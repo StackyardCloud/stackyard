@@ -31,8 +31,16 @@ func TestAzureDatadog20250611Lifecycle(t *testing.T) {
 	if keys := providerContractJSONMap(t, resp)["value"].([]any); len(keys) != 1 || keys[0].(map[string]any)["key"] != key {
 		t.Fatalf("unexpected API keys: %#v", keys)
 	}
-	azureResourcesExpectStatus(t, do(http.MethodPost, monitor+"/setDefaultKey"+azureDDOGTestVersion, `{"key":"`+key+`"}`), http.StatusOK)
-	azureResourcesExpectErrorCode(t, do(http.MethodPost, monitor+"/setDefaultKey"+azureDDOGTestVersion, `{"key":"other"}`), http.StatusBadRequest, "InvalidRequestContent")
+	azureResourcesExpectStatus(t, do(http.MethodPost, monitor+"/setDefaultKey"+azureDDOGTestVersion, `{"name":"rotated","key":"abc123"}`), http.StatusOK)
+	resp = do(http.MethodPost, monitor+"/getDefaultKey"+azureDDOGTestVersion, "")
+	if got := providerContractJSONMap(t, resp)["key"]; got != "abc123" {
+		t.Fatalf("default key after setDefaultKey = %v", got)
+	}
+	resp = do(http.MethodPost, monitor+"/listApiKeys"+azureDDOGTestVersion, "")
+	if keys := providerContractJSONMap(t, resp)["value"].([]any); len(keys) != 2 {
+		t.Fatalf("want the set key and the original, got %d keys", len(keys))
+	}
+	azureResourcesExpectErrorCode(t, do(http.MethodPost, monitor+"/setDefaultKey"+azureDDOGTestVersion, `{"key":""}`), http.StatusBadRequest, "InvalidRequestContent")
 	for _, action := range []string{"listHosts", "listMonitoredResources", "listLinkedResources"} {
 		resp = do(http.MethodPost, monitor+"/"+action+azureDDOGTestVersion, "")
 		azureResourcesExpectStatus(t, resp, http.StatusOK)

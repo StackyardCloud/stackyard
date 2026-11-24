@@ -28,7 +28,7 @@ func TestAzureDatabricks20260101Lifecycle(t *testing.T) {
 	if got := providerContractJSONMap(t, resp)["properties"].(map[string]any)["peeringState"]; got != "Connected" {
 		t.Fatalf("peering state = %v", got)
 	}
-	azureResourcesExpectStatus(t, do(http.MethodPut, workspace+"/privateEndpointConnections/pe1"+azureDBXTestVersion, `{"properties":{"privateLinkServiceConnectionState":{"status":"Approved"}}}`), http.StatusCreated)
+	azureResourcesExpectStatus(t, do(http.MethodPut, workspace+"/privateEndpointConnections/pe1"+azureDBXTestVersion, `{"properties":{"privateLinkServiceConnectionState":{"status":"Approved"}}}`), http.StatusOK)
 	resp = do(http.MethodGet, workspace+"/privateLinkResources"+azureDBXTestVersion, "")
 	if items := providerContractJSONMap(t, resp)["value"].([]any); len(items) != 2 {
 		t.Fatalf("want 2 private link resources, got %d", len(items))
