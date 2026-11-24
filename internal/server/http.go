@@ -2468,18 +2468,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureDeviceRegistry20260401Router(w, r) {
 			return
 		}
-		if s.handleAzureDiscovery20260601Router(w, r) {
-			return
-		}
-		if s.handleAzureDNS20180501Router(w, r) {
-			return
-		}
-		if s.handleAzureDNSPrivateDNS20180901Router(w, r) {
-			return
-		}
-		if s.handleAzureDNSDNSResolver20250501Router(w, r) {
-			return
-		}
 		if s.handleAzurePlaywrightDataPlaneRouter(w, r) {
 			return
 		}
@@ -2601,12 +2589,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.handleAzureDataShare20210801Router(w, r) {
-			return
-		}
-		if s.handleAzureDurableTask20260201Router(w, r) {
-			return
-		}
-		if s.handleAzureDynatrace20210901Router(w, r) {
 			return
 		}
 		if s.handleAzureElastic20200701Router(w, r) {
