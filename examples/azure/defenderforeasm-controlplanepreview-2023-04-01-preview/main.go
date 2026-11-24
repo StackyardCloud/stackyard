@@ -125,6 +125,13 @@ func main() {
 		statuses []int
 	}{
 		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     "/azure/subscriptions/" + subscriptionID + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
+		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
 			path:     "/azure/providers/Microsoft.Easm/operations?api-version=" + defenderForEASMControlPlanePreviewAPIVersion,

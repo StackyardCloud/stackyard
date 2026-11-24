@@ -103,9 +103,6 @@ func main() {
 	vaultName := getenv("STACKYARD_AZURE_DATAPROTECTION_VAULT_NAME", "dp-vault-example")
 	policyName := getenv("STACKYARD_AZURE_DATAPROTECTION_POLICY_NAME", "dp-policy-example")
 	backupInstanceName := getenv("STACKYARD_AZURE_DATAPROTECTION_BACKUP_INSTANCE_NAME", "dp-bi-example")
-	jobID := getenv("STACKYARD_AZURE_DATAPROTECTION_JOB_ID", "00000000-0000-0000-0000-000000000001")
-	operationID := getenv("STACKYARD_AZURE_DATAPROTECTION_OPERATION_ID", "00000000-0000-0000-0000-000000000002")
-	deletedVaultName := getenv("STACKYARD_AZURE_DATAPROTECTION_DELETED_VAULT_NAME", "deleted-vault-01")
 
 	client := newDataProtectionClient(endpoint, account, subscriptionKey)
 
@@ -125,6 +122,13 @@ func main() {
 		payload  any
 		statuses []int
 	}{
+		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     "/azure/subscriptions/" + subscriptionID + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
 		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
@@ -271,71 +275,6 @@ func main() {
 			path:     vaultBase + "/backupInstances?api-version=" + dataProtectionAPIVersion,
 			statuses: []int{http.StatusOK},
 		},
-		{
-			name:   "TriggerAdhocBackup",
-			method: http.MethodPost,
-			path:   backupInstanceBase + "/backup?api-version=" + dataProtectionAPIVersion,
-			payload: map[string]any{
-				"backupRuleOptions": map[string]any{
-					"ruleName": "Default",
-				},
-			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:     "ListBackupJobs",
-			method:   http.MethodGet,
-			path:     vaultBase + "/backupJobs?api-version=" + dataProtectionAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetBackupJob",
-			method:   http.MethodGet,
-			path:     vaultBase + "/backupJobs/" + jobID + "?api-version=" + dataProtectionAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "TriggerExportJobs",
-			method:   http.MethodPost,
-			path:     vaultBase + "/exportBackupJobs?api-version=" + dataProtectionAPIVersion,
-			statuses: []int{http.StatusAccepted, http.StatusNoContent},
-		},
-		{
-			name:     "GetExportJobsOperationResult",
-			method:   http.MethodGet,
-			path:     vaultBase + "/backupJobs/operations/" + operationID + "?api-version=" + dataProtectionAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetProviderOperationStatus",
-			method:   http.MethodGet,
-			path:     fmt.Sprintf("/azure/subscriptions/%s/providers/Microsoft.DataProtection/locations/%s/operationStatus/%s?api-version=%s", subscriptionID, location, operationID, dataProtectionAPIVersion),
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetProviderOperationResult",
-			method:   http.MethodGet,
-			path:     fmt.Sprintf("/azure/subscriptions/%s/providers/Microsoft.DataProtection/locations/%s/operationResults/%s?api-version=%s", subscriptionID, location, operationID, dataProtectionAPIVersion),
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:     "GetResourceGroupOperationStatus",
-			method:   http.MethodGet,
-			path:     fmt.Sprintf("/azure/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataProtection/locations/%s/operationStatus/%s?api-version=%s", subscriptionID, resourceGroup, location, operationID, dataProtectionAPIVersion),
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetBackupVaultContextOperationStatus",
-			method:   http.MethodGet,
-			path:     vaultBase + "/operationStatus/" + operationID + "?api-version=" + dataProtectionAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "GetDeletedBackupVault",
-			method:   http.MethodGet,
-			path:     fmt.Sprintf("/azure/subscriptions/%s/providers/Microsoft.DataProtection/locations/%s/deletedVaults/%s?api-version=%s", subscriptionID, location, deletedVaultName, dataProtectionAPIVersion),
-			statuses: []int{http.StatusOK},
-		},
 	}
 
 	for _, call := range calls {
@@ -345,6 +284,38 @@ func main() {
 		}
 		printJSON(call.name, status, payload)
 	}
+
+	// Follow-ups that use the IDs the service hands back: the ad hoc backup's
+	// job, the job export's operation (from its Location header) and, after
+	// cleanup, the soft-deleted vault.
+	q := "?api-version=" + dataProtectionAPIVersion
+	run := func(name, method, path string, payload any, statuses ...int) map[string]any {
+		body, status, err := client.doJSON(ctx, method, path, payload, statuses...)
+		if err != nil {
+			fatalf("%s failed: %v", name, err)
+		}
+		printJSON(name, status, body)
+		return body
+	}
+	backup := run("TriggerAdhocBackup", http.MethodPost, backupInstanceBase+"/backup"+q,
+		map[string]any{"backupRuleOptions": map[string]any{"ruleName": "Default"}}, http.StatusOK, http.StatusAccepted)
+	jobID, _ := backup["jobId"].(string)
+	run("ListBackupJobs", http.MethodGet, vaultBase+"/backupJobs"+q, nil, http.StatusOK)
+	run("GetBackupJob", http.MethodGet, vaultBase+"/backupJobs/"+jobID+q, nil, http.StatusOK)
+
+	operationLocation, err := client.postForLocation(ctx, vaultBase+"/exportBackupJobs"+q)
+	if err != nil {
+		fatalf("TriggerExportJobs failed: %v", err)
+	}
+	fmt.Printf("TriggerExportJobs -> 202 Location: %s\n", operationLocation)
+	operationID, _, _ := strings.Cut(operationLocation[strings.LastIndex(operationLocation, "/")+1:], "?")
+	providers := fmt.Sprintf("/azure/subscriptions/%s/providers/Microsoft.DataProtection/locations/%s", subscriptionID, location)
+	groupProviders := fmt.Sprintf("/azure/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataProtection/locations/%s", subscriptionID, resourceGroup, location)
+	run("GetExportJobsOperationResult", http.MethodGet, vaultBase+"/backupJobs/operations/"+operationID+q, nil, http.StatusOK)
+	run("GetProviderOperationStatus", http.MethodGet, providers+"/operationStatus/"+operationID+q, nil, http.StatusOK)
+	run("GetProviderOperationResult", http.MethodGet, providers+"/operationResults/"+operationID+q, nil, http.StatusOK, http.StatusAccepted)
+	run("GetResourceGroupOperationStatus", http.MethodGet, groupProviders+"/operationStatus/"+operationID+q, nil, http.StatusOK)
+	run("GetBackupVaultContextOperationStatus", http.MethodGet, vaultBase+"/operationStatus/"+operationID+q, nil, http.StatusOK)
 
 	cleanup := []struct {
 		name     string
@@ -379,6 +350,35 @@ func main() {
 		}
 		printJSON(call.name, status, payload)
 	}
+
+	deleted := run("ListDeletedBackupVaults", http.MethodGet, providers+"/deletedVaults"+q, nil, http.StatusOK)
+	if vaults, _ := deleted["value"].([]any); len(vaults) > 0 {
+		name, _ := vaults[0].(map[string]any)["name"].(string)
+		run("GetDeletedBackupVault", http.MethodGet, providers+"/deletedVaults/"+name+q, nil, http.StatusOK)
+	}
+}
+
+// postForLocation POSTs an empty body, expects 202 Accepted and returns the
+// Location header naming the operation.
+func (c *dataProtectionClient) postForLocation(ctx context.Context, path string) (string, error) {
+	req, err := runtime.NewRequest(ctx, http.MethodPost, c.endpoint+path)
+	if err != nil {
+		return "", fmt.Errorf("create request POST %s: %w", path, err)
+	}
+	resp, err := c.pipeline.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("execute request POST %s: %w", path, err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if err := ensureStatus(resp.StatusCode, body, http.StatusAccepted); err != nil {
+		return "", err
+	}
+	location := resp.Header.Get("Location")
+	if location == "" {
+		return "", fmt.Errorf("POST %s: no Location header", path)
+	}
+	return location, nil
 }
 
 func ensureStatus(status int, body []byte, expectedStatuses ...int) error {

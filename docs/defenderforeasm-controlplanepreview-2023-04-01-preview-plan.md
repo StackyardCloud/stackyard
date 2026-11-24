@@ -268,3 +268,11 @@ Example operation coverage target:
 - `python3 scripts/azure-contract-coverage.py --service defenderforeasm --require-service defenderforeasm_controlplanepreview_2023_04_01_preview --fail-on any`
 - `python3 scripts/azure-io-contract-coverage.py --service defenderforeasm --require-service defenderforeasm_controlplanepreview_2023_04_01_preview --fail-on any`
 - `python3 scripts/azure-doc-contract-coverage.py --service defenderforeasm --require-service defenderforeasm_controlplanepreview_2023_04_01_preview --fail-on any`
+
+## Implementation Status
+
+Served by the shared ARM handler (`internal/server/provider_azure_defenderforeasm_controlplanepreview_2023_04_01_preview.go`):
+
+- workspaces (with a `dataPlaneEndpoint`) and labels; deletes answer `202`
+- `workspaces/{name}/tasks/{taskId}` reads the data plane's tasks, since the emulated data plane serves one workspace
+- the operations list

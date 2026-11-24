@@ -350,3 +350,15 @@ Success target:
 
 - coverage scripts resolve and report `dataprotection_2026_03_01`
 - example compiles and exercises the staged surface contract
+
+## Implementation Status
+
+Served by the shared ARM handler plus a small router (`internal/server/provider_azure_dataprotection_2026_03_01.go`):
+
+- backup vaults (storage settings validated; a vault with backup instances can't be deleted, and a deleted vault is kept under `locations/{location}/deletedVaults`)
+- backup policies (a policy protecting an instance can't be deleted)
+- backup instances, whose policy must be in the same vault and cover the datasource type; `backup` records a finished job, and `stopProtection`, `suspendBackups`, `resumeProtection` and `resumeBackups` change `currentProtectionState`
+- backup jobs (100 kept per vault), `exportBackupJobs` (`202` with `Location` and `Azure-AsyncOperation`) and its result, and operation status and results at subscription, resource group and vault scope for those operations
+- `checkFeatureSupport`, `checkNameAvailability` and the operations list
+
+The example reads the job ID, export operation ID and deleted vault name from responses rather than using fixed IDs.

@@ -240,3 +240,12 @@ Example should:
 - `python3 scripts/azure-contract-coverage.py --service defenderforcloud-2025-06-01 --require-service defenderforcloud_2025_06_01 --fail-on any`
 - `python3 scripts/azure-io-contract-coverage.py --service defenderforcloud-2025-06-01 --require-service defenderforcloud_2025_06_01 --fail-on any`
 - `python3 scripts/azure-doc-contract-coverage.py --service defenderforcloud-2025-06-01 --require-service defenderforcloud_2025_06_01 --fail-on any`
+
+## Implementation Status
+
+Served by the shared ARM handler (the `current` setting, an extension resource on a storage account ID) plus a router for scans (`internal/server/provider_azure_defenderforcloud_2025_06_01.go`):
+
+- the setting accepts PUT and GET only, and reports `operationStatus` `Succeeded` for malware scanning and sensitive data discovery
+- `startMalwareScan` needs malware scanning enabled and records a `Running` scan (20 kept per setting); `malwareScans/{latest|scanId}` reads it and `cancelMalwareScan` moves a running scan to `Canceled`
+
+The storage account itself is not checked for existence; its resource group is. The example creates that resource group.

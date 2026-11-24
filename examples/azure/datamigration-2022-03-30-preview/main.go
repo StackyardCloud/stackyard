@@ -128,6 +128,13 @@ func main() {
 		statuses []int
 	}{
 		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     "/azure/subscriptions/" + subscriptionID + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
+		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
 			path:     "/azure/providers/Microsoft.DataMigration/operations?api-version=" + dataMigrationOperationsAPIVersion,
@@ -149,24 +156,13 @@ func main() {
 			statuses: []int{http.StatusOK},
 		},
 		{
-			name:   "CheckChildResourceNameAvailability",
-			method: http.MethodPost,
-			path: serviceBase +
-				"/checkNameAvailability?api-version=" + dataMigrationAPIVersion,
-			payload: map[string]any{
-				"name": projectName,
-				"type": "projects",
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
 			name:   "CreateOrUpdateService",
 			method: http.MethodPut,
 			path:   serviceBase + "?api-version=" + dataMigrationAPIVersion,
 			payload: map[string]any{
 				"location": location,
 				"sku": map[string]any{
-					"name": "Standard_1vCore",
+					"name": "Standard_1vCores",
 				},
 				"properties": map[string]any{
 					"virtualSubnetId": fmt.Sprintf(
@@ -182,6 +178,17 @@ func main() {
 			name:     "GetService",
 			method:   http.MethodGet,
 			path:     serviceBase + "?api-version=" + dataMigrationAPIVersion,
+			statuses: []int{http.StatusOK},
+		},
+		{
+			name:   "CheckChildResourceNameAvailability",
+			method: http.MethodPost,
+			path: serviceBase +
+				"/checkNameAvailability?api-version=" + dataMigrationAPIVersion,
+			payload: map[string]any{
+				"name": projectName,
+				"type": "projects",
+			},
 			statuses: []int{http.StatusOK},
 		},
 		{
@@ -237,6 +244,7 @@ func main() {
 			method: http.MethodPut,
 			path:   projectBase + "?api-version=" + dataMigrationAPIVersion,
 			payload: map[string]any{
+				"location": location,
 				"properties": map[string]any{
 					"sourcePlatform": "SQL",
 					"targetPlatform": "SQLDB",

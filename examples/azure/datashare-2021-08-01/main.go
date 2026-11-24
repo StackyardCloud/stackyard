@@ -111,10 +111,6 @@ func main() {
 	shareSubscriptionName := getenv("STACKYARD_AZURE_DATASHARE_SHARE_SUBSCRIPTION_NAME", "datashare-subscription-example")
 	dataSetMappingName := getenv("STACKYARD_AZURE_DATASHARE_DATA_SET_MAPPING_NAME", "datashare-mapping-example")
 	triggerName := getenv("STACKYARD_AZURE_DATASHARE_TRIGGER_NAME", "datashare-trigger-example")
-	providerShareSubscriptionID := getenv("STACKYARD_AZURE_DATASHARE_PROVIDER_SHARE_SUBSCRIPTION_ID", "11111111-1111-1111-1111-111111111111")
-	consumerInvitationID := getenv("STACKYARD_AZURE_DATASHARE_CONSUMER_INVITATION_ID", "22222222-2222-2222-2222-222222222222")
-	synchronizationID := getenv("STACKYARD_AZURE_DATASHARE_SYNCHRONIZATION_ID", "33333333-3333-3333-3333-333333333333")
-	sourceDataSetID := getenv("STACKYARD_AZURE_DATASHARE_SOURCE_DATA_SET_ID", "44444444-4444-4444-4444-444444444444")
 
 	client := newDataShareClient(endpoint, account, subscriptionKey)
 
@@ -128,15 +124,9 @@ func main() {
 	invitationBase := shareBase + "/invitations/" + invitationName
 	dataSetBase := shareBase + "/dataSets/" + dataSetName
 	syncSettingBase := shareBase + "/synchronizationSettings/" + syncSettingName
-	providerShareSubscriptionBase := shareBase + "/providerShareSubscriptions/" + providerShareSubscriptionID
 	shareSubscriptionBase := accountBase + "/shareSubscriptions/" + shareSubscriptionName
 	dataSetMappingBase := shareSubscriptionBase + "/dataSetMappings/" + dataSetMappingName
 	triggerBase := shareSubscriptionBase + "/triggers/" + triggerName
-	consumerInvitationBase := fmt.Sprintf(
-		"/azure/providers/Microsoft.DataShare/locations/%s/consumerInvitations/%s",
-		location,
-		consumerInvitationID,
-	)
 
 	calls := []struct {
 		name     string
@@ -145,6 +135,13 @@ func main() {
 		payload  any
 		statuses []int
 	}{
+		{
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     "/azure/subscriptions/" + subscriptionID + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
 		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,
@@ -227,18 +224,6 @@ func main() {
 			statuses: []int{http.StatusOK},
 		},
 		{
-			name:     "ListShareSynchronizations",
-			method:   http.MethodGet,
-			path:     shareBase + "/synchronizations?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListShareSynchronizationDetails",
-			method:   http.MethodGet,
-			path:     shareBase + "/synchronizationDetails?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
 			name:   "CreateInvitation",
 			method: http.MethodPut,
 			path:   invitationBase + "?api-version=" + dataShareAPIVersion,
@@ -315,184 +300,6 @@ func main() {
 			path:     shareBase + "/synchronizationSettings?api-version=" + dataShareAPIVersion,
 			statuses: []int{http.StatusOK},
 		},
-		{
-			name:   "CreateShareSubscription",
-			method: http.MethodPut,
-			path:   shareSubscriptionBase + "?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"invitationId":        consumerInvitationID,
-					"sourceShareLocation": location,
-				},
-			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
-		},
-		{
-			name:     "GetShareSubscription",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListShareSubscriptionsByAccount",
-			method:   http.MethodGet,
-			path:     accountBase + "/shareSubscriptions?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateDataSetMapping",
-			method: http.MethodPut,
-			path:   dataSetMappingBase + "?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"kind": "Blob",
-				"properties": map[string]any{
-					"dataSetId":          sourceDataSetID,
-					"resourceGroup":      resourceGroup,
-					"storageAccountName": "storage2",
-					"containerName":      "sink-container",
-					"filePath":           "landing/file.csv",
-					"subscriptionId":     subscriptionID,
-					"outputType":         "Csv",
-				},
-			},
-			statuses: []int{http.StatusOK, http.StatusCreated},
-		},
-		{
-			name:     "GetDataSetMapping",
-			method:   http.MethodGet,
-			path:     dataSetMappingBase + "?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListDataSetMappingsByShareSubscription",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "/dataSetMappings?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "CreateTrigger",
-			method: http.MethodPut,
-			path:   triggerBase + "?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"kind": "ScheduleBased",
-				"properties": map[string]any{
-					"recurrenceInterval":  "Day",
-					"synchronizationTime": "2026-01-01T00:00:00Z",
-					"synchronizationMode": "Incremental",
-				},
-			},
-			statuses: []int{http.StatusOK, http.StatusCreated, http.StatusAccepted},
-		},
-		{
-			name:     "GetTrigger",
-			method:   http.MethodGet,
-			path:     triggerBase + "?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListTriggersByShareSubscription",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "/triggers?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListConsumerSourceDataSetsByShareSubscription",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "/consumerSourceDataSets?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListShareSubscriptionSynchronizations",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "/synchronizations?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListShareSubscriptionSynchronizationDetails",
-			method:   http.MethodGet,
-			path:     shareSubscriptionBase + "/synchronizationDetails?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListSourceShareSynchronizationSettings",
-			method:   http.MethodPost,
-			path:     shareSubscriptionBase + "/listSourceShareSynchronizationSettings?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "SynchronizeShareSubscription",
-			method: http.MethodPost,
-			path:   shareSubscriptionBase + "/synchronize?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"synchronizationMode": "Incremental",
-			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:   "CancelShareSubscriptionSynchronization",
-			method: http.MethodPost,
-			path:   shareSubscriptionBase + "/cancelSynchronization?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"synchronizationId": synchronizationID,
-			},
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:     "GetProviderShareSubscription",
-			method:   http.MethodGet,
-			path:     providerShareSubscriptionBase + "?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListProviderShareSubscriptionsByShare",
-			method:   http.MethodGet,
-			path:     shareBase + "/providerShareSubscriptions?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "AdjustProviderShareSubscription",
-			method: http.MethodPost,
-			path:   providerShareSubscriptionBase + "/adjust?api-version=" + dataShareAPIVersion,
-			payload: map[string]any{
-				"properties": map[string]any{
-					"expirationDate": "2030-01-01T00:00:00Z",
-				},
-			},
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ReinstateProviderShareSubscription",
-			method:   http.MethodPost,
-			path:     providerShareSubscriptionBase + "/reinstate?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:     "RevokeProviderShareSubscription",
-			method:   http.MethodPost,
-			path:     providerShareSubscriptionBase + "/revoke?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK, http.StatusAccepted},
-		},
-		{
-			name:     "GetConsumerInvitation",
-			method:   http.MethodGet,
-			path:     consumerInvitationBase + "?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:     "ListConsumerInvitations",
-			method:   http.MethodGet,
-			path:     "/azure/providers/Microsoft.DataShare/listInvitations?api-version=" + dataShareAPIVersion,
-			statuses: []int{http.StatusOK},
-		},
-		{
-			name:   "RejectConsumerInvitation",
-			method: http.MethodPost,
-			path:   fmt.Sprintf("/azure/providers/Microsoft.DataShare/locations/%s/rejectInvitation?api-version=%s", location, dataShareAPIVersion),
-			payload: map[string]any{
-				"invitationId": consumerInvitationID,
-			},
-			statuses: []int{http.StatusOK},
-		},
 	}
 
 	for _, call := range calls {
@@ -502,6 +309,92 @@ func main() {
 		}
 		printJSON(call.name, status, payload)
 	}
+
+	// The provider-to-consumer flow, which needs IDs the service issues: the
+	// invitation's invitationId, the source data set's dataSetId, the
+	// synchronization's ID and the provider share subscription's object ID.
+	q := "?api-version=" + dataShareAPIVersion
+	run := func(name, method, path string, payload any, statuses ...int) map[string]any {
+		body, status, err := client.doJSON(ctx, method, path, payload, statuses...)
+		if err != nil {
+			fatalf("%s failed: %v", name, err)
+		}
+		printJSON(name, status, body)
+		return body
+	}
+	prop := func(body map[string]any, key string) string {
+		props, _ := body["properties"].(map[string]any)
+		value, _ := props[key].(string)
+		if value == "" {
+			fatalf("response has no properties.%s: %v", key, body)
+		}
+		return value
+	}
+	firstProps := func(body map[string]any) map[string]any {
+		items, _ := body["value"].([]any)
+		if len(items) == 0 {
+			fatalf("expected at least one item in %v", body)
+		}
+		return items[0].(map[string]any)
+	}
+	providerLocations := "/azure/providers/Microsoft.DataShare/locations/" + location
+
+	invitationID := prop(run("GetInvitationID", http.MethodGet, invitationBase+q, nil, http.StatusOK), "invitationId")
+	run("ListConsumerInvitations", http.MethodGet, "/azure/providers/Microsoft.DataShare/listInvitations"+q, nil, http.StatusOK)
+	run("GetConsumerInvitation", http.MethodGet, providerLocations+"/consumerInvitations/"+invitationID+q, nil, http.StatusOK)
+
+	subscription := run("CreateShareSubscription", http.MethodPut, shareSubscriptionBase+q, map[string]any{
+		"properties": map[string]any{"invitationId": invitationID, "sourceShareLocation": location},
+	}, http.StatusOK, http.StatusCreated)
+	objectID := prop(subscription, "shareSubscriptionObjectId")
+	run("GetShareSubscription", http.MethodGet, shareSubscriptionBase+q, nil, http.StatusOK)
+	run("ListShareSubscriptionsByAccount", http.MethodGet, accountBase+"/shareSubscriptions"+q, nil, http.StatusOK)
+
+	sourceDataSetID := prop(firstProps(run("ListConsumerSourceDataSetsByShareSubscription", http.MethodGet, shareSubscriptionBase+"/consumerSourceDataSets"+q, nil, http.StatusOK)), "dataSetId")
+	run("CreateDataSetMapping", http.MethodPut, dataSetMappingBase+q, map[string]any{
+		"kind": "Blob",
+		"properties": map[string]any{
+			"dataSetId": sourceDataSetID, "resourceGroup": resourceGroup, "storageAccountName": "storage2",
+			"containerName": "sink-container", "filePath": "landing/file.csv", "subscriptionId": subscriptionID, "outputType": "Csv",
+		},
+	}, http.StatusOK, http.StatusCreated)
+	run("GetDataSetMapping", http.MethodGet, dataSetMappingBase+q, nil, http.StatusOK)
+	run("ListDataSetMappingsByShareSubscription", http.MethodGet, shareSubscriptionBase+"/dataSetMappings"+q, nil, http.StatusOK)
+
+	run("CreateTrigger", http.MethodPut, triggerBase+q, map[string]any{
+		"kind": "ScheduleBased",
+		"properties": map[string]any{
+			"recurrenceInterval": "Day", "synchronizationTime": "2026-01-01T00:00:00Z", "synchronizationMode": "Incremental",
+		},
+	}, http.StatusOK, http.StatusCreated, http.StatusAccepted)
+	run("GetTrigger", http.MethodGet, triggerBase+q, nil, http.StatusOK)
+	run("ListTriggersByShareSubscription", http.MethodGet, shareSubscriptionBase+"/triggers"+q, nil, http.StatusOK)
+	run("ListSourceShareSynchronizationSettings", http.MethodPost, shareSubscriptionBase+"/listSourceShareSynchronizationSettings"+q, nil, http.StatusOK)
+
+	sync := run("SynchronizeShareSubscription", http.MethodPost, shareSubscriptionBase+"/synchronize"+q,
+		map[string]any{"synchronizationMode": "Incremental"}, http.StatusOK, http.StatusAccepted)
+	syncRef := map[string]any{"synchronizationId": sync["synchronizationId"]}
+	run("ListShareSubscriptionSynchronizations", http.MethodPost, shareSubscriptionBase+"/listSynchronizations"+q, nil, http.StatusOK)
+	run("ListShareSubscriptionSynchronizationDetails", http.MethodPost, shareSubscriptionBase+"/listSynchronizationDetails"+q, syncRef, http.StatusOK)
+	run("CancelShareSubscriptionSynchronization", http.MethodPost, shareSubscriptionBase+"/cancelSynchronization"+q, syncRef, http.StatusOK, http.StatusAccepted)
+	run("ListShareSynchronizations", http.MethodPost, shareBase+"/listSynchronizations"+q, nil, http.StatusOK)
+	run("ListShareSynchronizationDetails", http.MethodPost, shareBase+"/listSynchronizationDetails"+q, syncRef, http.StatusOK)
+
+	providerShareSubscription := shareBase + "/providerShareSubscriptions/" + objectID
+	run("ListProviderShareSubscriptionsByShare", http.MethodGet, shareBase+"/providerShareSubscriptions"+q, nil, http.StatusOK)
+	run("GetProviderShareSubscription", http.MethodGet, providerShareSubscription+q, nil, http.StatusOK)
+	run("AdjustProviderShareSubscription", http.MethodPost, providerShareSubscription+"/adjust"+q,
+		map[string]any{"properties": map[string]any{"expirationDate": "2031-01-01T00:00:00Z"}}, http.StatusOK)
+	run("RevokeProviderShareSubscription", http.MethodPost, providerShareSubscription+"/revoke"+q, nil, http.StatusOK, http.StatusAccepted)
+	run("ReinstateProviderShareSubscription", http.MethodPost, providerShareSubscription+"/reinstate"+q, nil, http.StatusOK, http.StatusAccepted)
+
+	// A second invitation for the consumer to reject.
+	rejectBase := shareBase + "/invitations/" + invitationName + "-reject"
+	rejectID := prop(run("CreateInvitationToReject", http.MethodPut, rejectBase+q, map[string]any{
+		"properties": map[string]any{"targetEmail": "consumer@example.com"},
+	}, http.StatusOK, http.StatusCreated), "invitationId")
+	run("RejectConsumerInvitation", http.MethodPost, providerLocations+"/rejectInvitation"+q,
+		map[string]any{"properties": map[string]any{"invitationId": rejectID}}, http.StatusOK)
 
 	cleanup := []struct {
 		name     string
