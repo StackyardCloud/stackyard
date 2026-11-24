@@ -84,14 +84,18 @@ func (c *databricksClient) doJSON(ctx context.Context, method, path string, payl
 		return map[string]any{}, resp.StatusCode, nil
 	}
 
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
+	var raw any
+	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, resp.StatusCode, fmt.Errorf("decode response %s %s: %w", method, path, err)
 	}
-	if decoded == nil {
-		decoded = map[string]any{}
+	switch decoded := raw.(type) {
+	case map[string]any:
+		return decoded, resp.StatusCode, nil
+	case []any:
+		// Some operations, such as outboundNetworkDependenciesEndpoints, return a bare array.
+		return map[string]any{"value": decoded}, resp.StatusCode, nil
 	}
-	return decoded, resp.StatusCode, nil
+	return map[string]any{}, resp.StatusCode, nil
 }
 
 func main() {
@@ -168,6 +172,14 @@ func main() {
 		payload  any
 		statuses []int
 	}{
+		{
+			// The shared ARM handler serves resources only in an existing resource group.
+			name:     "CreateResourceGroup",
+			method:   http.MethodPut,
+			path:     fmt.Sprintf("/azure/subscriptions/%s/resourcegroups/%s?api-version=2021-04-01", subscriptionID, resourceGroup),
+			payload:  map[string]any{"location": location},
+			statuses: []int{http.StatusCreated, http.StatusOK},
+		},
 		{
 			name:     "ListProviderOperations",
 			method:   http.MethodGet,

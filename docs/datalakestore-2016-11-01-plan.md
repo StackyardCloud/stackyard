@@ -256,3 +256,8 @@ Add aliases mapping all common forms to `datalakestore_2016_11_01`, including:
 - `azure_data_lake_store`
 - `microsoft_datalakestore`
 - `rest_datalakestore_2016_11_01`
+
+## Implementation Status
+
+- Implemented on the shared ARM handler (`internal/server/provider_azure_datalakestore_2016_11_01.go`): accounts (encryption, firewall, trusted identity provider and tier validation; inline firewall rules, trusted ID providers and virtual network rules), `enableKeyVault`, each child type, name availability, the regional capability and usages, and the operations list.
+- Not emulated: the WebHDFS file system data plane.
