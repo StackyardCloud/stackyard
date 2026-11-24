@@ -174,12 +174,6 @@ func init() {
 	registerAzureARMView(ns, "operations", elasOperations("Microsoft Elastic SAN", ns, "elasticSans", "elasticSans/volumegroups", "elasticSans/volumegroups/volumes", "elasticSans/volumegroups/snapshots"))
 }
 
-// handleAzureElasticSan20250901Router stays as the stage-0 dispatch hook;
-// the shared ARM handler, which runs first, serves every route.
-func (s *Server) handleAzureElasticSan20250901Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 // esanInt returns raw as a whole number, if it is one: a JSON number, or
 // an int64 the server stored.
 func esanInt(raw any) (int64, bool) {

@@ -149,12 +149,6 @@ func init() {
 		"devcenters", "projects", "networkConnections", "devcenters/catalogs", "projects/pools"))
 }
 
-// handleAzureDevCenterAdministrator20240201Router keeps the http.go dispatch
-// slot; the shared ARM handler (registered above) serves these routes first.
-func (s *Server) handleAzureDevCenterAdministrator20240201Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 var dcadmNamePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-_.]{2,62}$`)
 
 func dcadmValidateName(name string) string {

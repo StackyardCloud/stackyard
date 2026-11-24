@@ -103,12 +103,6 @@ func init() {
 	})
 }
 
-// handleAzureFirewall20250501Router is kept for the router chain; the shared
-// ARM handler serves every Azure Firewall route.
-func (s *Server) handleAzureFirewall20250501Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 func afwDefaultName(name string) string {
 	if name != "default" {
 		return "This resource is a singleton named default."

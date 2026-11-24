@@ -70,6 +70,8 @@ import (
 )
 
 type Server struct {
+	// azureSideState holds per-server state for Azure emulations that have no field of their own.
+	azureSideState                                      sync.Map
 	httpServer                                          *http.Server
 	http2Server                                         *http.Server
 	acm                                                 *acm.Service
@@ -2366,9 +2368,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureFrontDoorServiceWebApplicationFirewall20251101Router(w, r) {
 			return
 		}
-		if s.handleAzureEdgeActions20251201PreviewRouter(w, r) {
-			return
-		}
 		if s.handleAzureCDNRouter(w, r) {
 			return
 		}
@@ -2456,12 +2455,6 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureDeviceUpdateDataPlane20221001Router(w, r) {
 			return
 		}
-		if s.handleAzureDeviceUpdateResourceManager20230701Router(w, r) {
-			return
-		}
-		if s.handleAzureDeviceRegistry20260401Router(w, r) {
-			return
-		}
 		if s.handleAzurePlaywrightDataPlaneRouter(w, r) {
 			return
 		}
@@ -2540,16 +2533,7 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureDatabricks20260101Router(w, r) {
 			return
 		}
-		if s.handleAzureDellStorage20250321Router(w, r) {
-			return
-		}
-		if s.handleAzureDevCenterAdministrator20240201Router(w, r) {
-			return
-		}
 		if s.handleAzureDevCenterDeveloper20250201Router(w, r) {
-			return
-		}
-		if s.handleAzureDesktopVirtualization20251010Router(w, r) {
 			return
 		}
 		if s.handleAzureDefenderForEasmControlPlanePreview20230401Router(w, r) {
@@ -2576,34 +2560,16 @@ func (s *Server) handleProviderRouter(w http.ResponseWriter, r *http.Request) {
 		if s.handleAzureDataShare20210801Router(w, r) {
 			return
 		}
-		if s.handleAzureElastic20200701Router(w, r) {
-			return
-		}
 		if s.handleAzureEventGridDataPlane20180101Router(w, r) {
 			return
 		}
 		if s.handleAzureEventGridNamespace20240601Router(w, r) {
 			return
 		}
-		if s.handleAzureEventGridControlPlane20250215Router(w, r) {
-			return
-		}
 		if s.handleAzureEventHub20260101Router(w, r) {
 			return
 		}
 		if s.handleAzureExpressRoute20250501Router(w, r) {
-			return
-		}
-		if s.handleAzureExtendedLocation20210815Router(w, r) {
-			return
-		}
-		if s.handleAzureFirewall20250501Router(w, r) {
-			return
-		}
-		if s.handleAzureElasticSan20250901Router(w, r) {
-			return
-		}
-		if s.handleAzureEdgeHardwareCenter20240201Router(w, r) {
 			return
 		}
 		if s.handleAzureEducation20211201PreviewRouter(w, r) {

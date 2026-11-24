@@ -1400,10 +1400,21 @@ func azureCDNValidateCustomDomainProperties(raw any) error {
 	return nil
 }
 
+const azureCDNMaxRequestBody = 4 << 20
+
 func azureCDNReadRequestBody(w http.ResponseWriter, r *http.Request, path string) ([]byte, map[string]any, bool) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, azureCDNMaxRequestBody+1))
 	if err != nil {
 		respondAzureInvalidRequest(w, path, "failed to read request body")
+		return nil, nil, false
+	}
+	if len(body) > azureCDNMaxRequestBody {
+		respondJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+			"error":    "RequestEntityTooLarge",
+			"message":  "request body is limited to 4 MiB",
+			"provider": providerAzure,
+			"path":     path,
+		})
 		return nil, nil, false
 	}
 	if len(strings.TrimSpace(string(body))) == 0 {

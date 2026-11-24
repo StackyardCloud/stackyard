@@ -2,7 +2,6 @@ package server
 
 import (
 	"cmp"
-	"net/http"
 	"strings"
 )
 
@@ -73,12 +72,6 @@ func init() {
 		return out
 	})
 	registerAzureARMView(ns, "operations", elasOperations("Microsoft Extended Location", ns, "customLocations"))
-}
-
-// handleAzureExtendedLocation20210815Router stays as the stage-0 dispatch
-// hook; the shared ARM handler, which runs first, serves every route.
-func (s *Server) handleAzureExtendedLocation20210815Router(http.ResponseWriter, *http.Request) bool {
-	return false
 }
 
 func xlocValidate(payload map[string]any) string {

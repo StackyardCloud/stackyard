@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -30,12 +29,6 @@ func init() {
 		},
 	})
 	registerAzureARMView(dellNamespace, "operations", azureARMCrudOperations(dellNamespace, "Dell Storage", "filesystems"))
-}
-
-// handleAzureDellStorage20250321Router keeps the http.go dispatch slot; the
-// shared ARM handler (registered above) serves every Dell.Storage route first.
-func (s *Server) handleAzureDellStorage20250321Router(http.ResponseWriter, *http.Request) bool {
-	return false
 }
 
 var (

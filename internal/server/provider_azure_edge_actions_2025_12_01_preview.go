@@ -34,11 +34,14 @@ var (
 
 // edgeaCode holds each server's deployed version code, keyed by the
 // lower-cased version ID.
-// ponytail: package-level, keyed by server; entries go with their version.
-var edgeaCode = struct {
+type edgeaCodeStore struct {
 	sync.Mutex
-	m map[*Server]map[string][2]string // {name, base64 content}
-}{m: map[*Server]map[string][2]string{}}
+	m map[string][2]string
+}
+
+func edgeaCodeFor(s *Server) *edgeaCodeStore {
+	return azureDMSStateFor(s, "edgeaCode", func() *edgeaCodeStore { return &edgeaCodeStore{m: map[string][2]string{}} })
+}
 
 func init() {
 	ns := edgeaNamespace
@@ -120,12 +123,6 @@ func init() {
 	})
 }
 
-// handleAzureEdgeActions20251201PreviewRouter stays as the stage-0 dispatch
-// hook; the shared ARM handler, which runs first, serves every route.
-func (s *Server) handleAzureEdgeActions20251201PreviewRouter(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 // edgeaClearDefaultsLocked marks every other version of the edge action as
 // not the default. Caller holds providerStorageMu.
 func (s *Server) edgeaClearDefaultsLocked(versionID string) {
@@ -171,34 +168,44 @@ func edgeaDeployCode(s *Server, rec *azureARMResource, payload map[string]any) (
 	if _, err := base64.StdEncoding.DecodeString(content); err != nil {
 		return azureOracleBad("content is invalid: it must be base64.")
 	}
-	edgeaCode.Lock()
+	// Check the total and reserve the slot under one lock so concurrent deploys can't
+	// both pass the cap; roll back if the version disappears meanwhile.
+	key := azureARMKey(rec.ID)
+	edgeaCodeFor(s).Lock()
 	total := len(content)
-	for k, code := range edgeaCode.m[s] {
-		if k != azureARMKey(rec.ID) {
+	for k, code := range edgeaCodeFor(s).m {
+		if k != key {
 			total += len(code[1])
 		}
 	}
-	edgeaCode.Unlock()
 	if total > edgeaMaxTotalCode {
+		edgeaCodeFor(s).Unlock()
 		return http.StatusConflict, azureARMErrorBody("QuotaExceeded", "Deployed edge action code is limited to 64 MiB in total.")
 	}
+	if edgeaCodeFor(s).m == nil {
+		edgeaCodeFor(s).m = map[string][2]string{}
+	}
+	prev, hadPrev := edgeaCodeFor(s).m[key]
+	edgeaCodeFor(s).m[key] = [2]string{azureARMString(payload["name"]), content}
+	edgeaCodeFor(s).Unlock()
 	updated, ok := s.edgeaUpdateVersion(rec.ID, map[string]any{"validationStatus": "Succeeded", "lastPackageUpdateTime": time.Now().UTC().Format(time.RFC3339)}, false)
 	if !ok {
+		edgeaCodeFor(s).Lock()
+		if hadPrev {
+			edgeaCodeFor(s).m[key] = prev
+		} else {
+			delete(edgeaCodeFor(s).m, key)
+		}
+		edgeaCodeFor(s).Unlock()
 		return http.StatusNotFound, azureARMErrorBody("ResourceNotFound", "The Resource '"+rec.ID+"' was not found.")
 	}
-	edgeaCode.Lock()
-	if edgeaCode.m[s] == nil {
-		edgeaCode.m[s] = map[string][2]string{}
-	}
-	edgeaCode.m[s][azureARMKey(rec.ID)] = [2]string{azureARMString(payload["name"]), content}
-	edgeaCode.Unlock()
 	return http.StatusOK, updated.fixture()
 }
 
 func edgeaGetCode(s *Server, rec *azureARMResource, _ map[string]any) (int, any) {
-	edgeaCode.Lock()
-	code, ok := edgeaCode.m[s][azureARMKey(rec.ID)]
-	edgeaCode.Unlock()
+	edgeaCodeFor(s).Lock()
+	code, ok := edgeaCodeFor(s).m[azureARMKey(rec.ID)]
+	edgeaCodeFor(s).Unlock()
 	if !ok {
 		return http.StatusNotFound, azureARMErrorBody("NotFound", "No code has been deployed to version "+rec.Name+".")
 	}
@@ -216,11 +223,11 @@ func edgeaSwapDefault(s *Server, rec *azureARMResource, _ map[string]any) (int, 
 // version of an edge action.
 func edgeaForgetCode(s *Server, id string) {
 	key := azureARMKey(id)
-	edgeaCode.Lock()
-	defer edgeaCode.Unlock()
-	for k := range edgeaCode.m[s] {
+	edgeaCodeFor(s).Lock()
+	defer edgeaCodeFor(s).Unlock()
+	for k := range edgeaCodeFor(s).m {
 		if k == key || strings.HasPrefix(k, key+"/") {
-			delete(edgeaCode.m[s], k)
+			delete(edgeaCodeFor(s).m, k)
 		}
 	}
 }

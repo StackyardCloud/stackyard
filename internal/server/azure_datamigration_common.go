@@ -148,27 +148,12 @@ func (s *Server) azureDMSUpdateLocked(id string, props map[string]any) *azureARM
 	return &updated
 }
 
-type azureDMSStateKey struct {
-	server *Server
-	name   string
-}
-
-var (
-	azureDMSStatesMu sync.Mutex
-	azureDMSStates   = map[azureDMSStateKey]any{}
-)
-
-// azureDMSStateFor returns the server's state named name, made by create on
-// first use. ponytail: kept beside the Server struct rather than in it, so
-// these emulations add no fields; a server's state lives as long as the process.
+// azureDMSStateFor returns the server's state named name, made by create on first use.
+// It lives on the Server, so it goes away with it.
 func azureDMSStateFor[T any](s *Server, name string, create func() *T) *T {
-	azureDMSStatesMu.Lock()
-	defer azureDMSStatesMu.Unlock()
-	key := azureDMSStateKey{s, name}
-	if st, ok := azureDMSStates[key].(*T); ok {
-		return st
+	if st, ok := s.azureSideState.Load(name); ok {
+		return st.(*T)
 	}
-	st := create()
-	azureDMSStates[key] = st
-	return st
+	st, _ := s.azureSideState.LoadOrStore(name, create())
+	return st.(*T)
 }

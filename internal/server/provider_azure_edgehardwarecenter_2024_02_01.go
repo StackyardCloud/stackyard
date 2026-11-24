@@ -102,12 +102,6 @@ func init() {
 	registerAzureARMView(ns, "operations", elasOperations("Microsoft Edge Order", ns, "addresses", "orderItems", "orders"))
 }
 
-// handleAzureEdgeHardwareCenter20240201Router stays as the stage-0 dispatch
-// hook; the shared ARM handler, which runs first, serves every route.
-func (s *Server) handleAzureEdgeHardwareCenter20240201Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 func ehwcValidateContact(contact map[string]any, path string) string {
 	emails := azureARMSlice(contact["emailList"])
 	msg := azureWorkloadsRequired(contact, path, "contactName", "phone")

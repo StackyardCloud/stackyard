@@ -88,12 +88,6 @@ func init() {
 		"assetEndpointProfiles", "assets", "namespaces", "namespaces/assets", "namespaces/devices", "schemaRegistries"))
 }
 
-// handleAzureDeviceRegistry20260401Router keeps the http.go dispatch slot;
-// the shared ARM handler (registered above) serves these routes first.
-func (s *Server) handleAzureDeviceRegistry20260401Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 func adrUUID(rec *azureARMResource) string {
 	key := azureARMDerivedKey(rec.ID, "uuid")
 	return key[0:8] + "-" + key[8:12] + "-" + key[12:16] + "-" + key[16:20] + "-" + key[20:32]

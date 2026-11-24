@@ -34,11 +34,14 @@ var (
 
 // elasVMs holds each server's monitor agent VM collections, keyed by the
 // lower-cased monitor ID.
-// ponytail: package-level, keyed by server; entries go with their monitor.
-var elasVMs = struct {
+type elasVMsStore struct {
 	sync.Mutex
-	m map[*Server]map[string][]string
-}{m: map[*Server]map[string][]string{}}
+	m map[string][]string
+}
+
+func elasVMsFor(s *Server) *elasVMsStore {
+	return azureDMSStateFor(s, "elasVMs", func() *elasVMsStore { return &elasVMsStore{m: map[string][]string{}} })
+}
 
 func init() {
 	ns := elasNamespace
@@ -70,9 +73,9 @@ func init() {
 		},
 		WriteOnlyProperties: []string{"userInfo"},
 		Deleted: func(s *Server, removed *azureARMResource) {
-			elasVMs.Lock()
-			delete(elasVMs.m[s], azureARMKey(removed.ID))
-			elasVMs.Unlock()
+			elasVMsFor(s).Lock()
+			delete(elasVMsFor(s).m, azureARMKey(removed.ID))
+			elasVMsFor(s).Unlock()
 		},
 		ServerActions: map[string]func(*Server, *azureARMResource, map[string]any) (int, any){
 			"listmonitoredresources": elasMonitoredResources,
@@ -99,12 +102,6 @@ func init() {
 		Validate: elasValidateTagRules,
 	})
 	registerAzureARMView(ns, "operations", elasOperations("Microsoft Elastic", ns, "monitors", "monitors/tagRules"))
-}
-
-// handleAzureElastic20200701Router stays as the stage-0 dispatch hook; the
-// shared ARM handler, which runs first, serves every route.
-func (s *Server) handleAzureElastic20200701Router(http.ResponseWriter, *http.Request) bool {
-	return false
 }
 
 // elasOperations returns an operations view listing read, write and delete
@@ -223,13 +220,13 @@ func elasVMCollectionUpdate(s *Server, rec *azureARMResource, payload map[string
 	if !elasVMIDRE.MatchString(vmID) {
 		return azureOracleBad("vmResourceId is invalid: it must be a virtual machine resource ID.")
 	}
-	elasVMs.Lock()
-	defer elasVMs.Unlock()
-	if elasVMs.m[s] == nil {
-		elasVMs.m[s] = map[string][]string{}
+	elasVMsFor(s).Lock()
+	defer elasVMsFor(s).Unlock()
+	if elasVMsFor(s).m == nil {
+		elasVMsFor(s).m = map[string][]string{}
 	}
 	key := azureARMKey(rec.ID)
-	vms := elasVMs.m[s][key]
+	vms := elasVMsFor(s).m[key]
 	present := slices.ContainsFunc(vms, func(id string) bool { return strings.EqualFold(id, vmID) })
 	switch payload["operationName"] {
 	case "Add":
@@ -248,15 +245,15 @@ func elasVMCollectionUpdate(s *Server, rec *azureARMResource, payload map[string
 		}
 		vms = kept
 	}
-	elasVMs.m[s][key] = vms
+	elasVMsFor(s).m[key] = vms
 	return http.StatusOK, nil
 }
 
 // elasVMHosts lists the VMs the monitor's agent runs on.
 func elasVMHosts(s *Server, rec *azureARMResource, _ map[string]any) (int, any) {
-	elasVMs.Lock()
-	vms := elasVMs.m[s][azureARMKey(rec.ID)]
-	elasVMs.Unlock()
+	elasVMsFor(s).Lock()
+	vms := elasVMsFor(s).m[azureARMKey(rec.ID)]
+	elasVMsFor(s).Unlock()
 	value := []any{}
 	for _, id := range vms {
 		value = append(value, map[string]any{"vmResourceId": id})

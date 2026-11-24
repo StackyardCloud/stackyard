@@ -87,12 +87,6 @@ func init() {
 	registerAzureARMView(ns, "operations", azureARMCrudOperations(ns, "Device Update", "accounts", "accounts/instances", "accounts/privateEndpointConnections"))
 }
 
-// handleAzureDeviceUpdateResourceManager20230701Router keeps the http.go
-// dispatch slot; the shared ARM handler (registered above) serves these routes first.
-func (s *Server) handleAzureDeviceUpdateResourceManager20230701Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 var aduRMNamePattern = regexp.MustCompile(`^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$`)
 
 func aduRMValidateName(name string) string {

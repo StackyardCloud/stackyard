@@ -156,12 +156,6 @@ func init() {
 	})
 }
 
-// handleAzureEventGridControlPlane20250215Router is kept for the router
-// chain; the shared ARM handler serves every Microsoft.EventGrid route.
-func (s *Server) handleAzureEventGridControlPlane20250215Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 // egcpName returns a ValidateName hook for names matching re.
 func egcpName(what string, re *regexp.Regexp) func(string) string {
 	return func(name string) string {

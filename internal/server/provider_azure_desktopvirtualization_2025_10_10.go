@@ -94,12 +94,6 @@ func init() {
 		"hostPools", "applicationGroups", "workspaces", "scalingPlans", "appAttachPackages"))
 }
 
-// handleAzureDesktopVirtualization20251010Router keeps the http.go dispatch
-// slot; the shared ARM handler (registered above) serves these routes first.
-func (s *Server) handleAzureDesktopVirtualization20251010Router(http.ResponseWriter, *http.Request) bool {
-	return false
-}
-
 // avdOneOf checks an optional (when allowEmpty) enum property.
 func avdOneOf(props map[string]any, key string, allowEmpty bool, values ...string) string {
 	v, present := props[key]
