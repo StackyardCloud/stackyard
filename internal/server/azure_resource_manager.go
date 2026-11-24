@@ -69,6 +69,11 @@ type azureARMResourceType struct {
 	// or change other records, such as moving a collection's resources.
 	// They run without the store lock held. Optional.
 	ServerActions map[string]func(s *Server, rec *azureARMResource, payload map[string]any) (int, any)
+	// CollectionActions are POST operations on the type's collection rather
+	// than one resource, at {collection}/{action}, such as a name check for
+	// child resources; keyed by the lower-cased action segment and given
+	// the parent resource ID (empty for top-level types). Optional.
+	CollectionActions map[string]func(s *Server, parentID string, payload map[string]any) (int, any)
 	// StringBodyActions are the Actions or ServerActions, keyed like them,
 	// whose request body is a bare JSON string; it arrives as
 	// payload["body"]. Optional.
@@ -736,6 +741,10 @@ func (s *Server) handleAzureARMRouter(w http.ResponseWriter, r *http.Request) bo
 
 	if action != nil {
 		s.invokeAzureARMAction(w, r, action, stringBody, ifMatch, id, sub, rg, parentID)
+		return true
+	}
+	if fn := typ.CollectionActions[strings.ToLower(name)]; fn != nil && r.Method == http.MethodPost {
+		s.serveAzureARMPost(w, r, func(payload map[string]any) (int, any) { return fn(s, parentID, payload) })
 		return true
 	}
 	if transition != nil {
