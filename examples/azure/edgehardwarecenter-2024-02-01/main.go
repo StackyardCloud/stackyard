@@ -128,12 +128,13 @@ func main() {
 	client := newEdgeHardwareCenterClient(endpoint, account, subscriptionKey)
 
 	vars := map[string]string{
-		"subscriptionId":    subscriptionID,
-		"resourceGroupName": resourceGroupName,
-		"location":          location,
-		"addressName":       addressName,
-		"orderItemName":     orderItemName,
-		"orderName":         orderName,
+		"subscriptionId":      subscriptionID,
+		"resourceGroupName":   resourceGroupName,
+		"location":            location,
+		"addressName":         addressName,
+		"orderItemName":       orderItemName,
+		"orderName":           orderName,
+		"returnOrderItemName": orderItemName + "-return",
 	}
 
 	addressCreatePayload := map[string]any{
@@ -292,6 +293,13 @@ func main() {
 
 	calls := []edgeHardwareCenterCall{
 		{
+			name:     "resource_group_create",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}?api-version=2021-04-01",
+			payload:  map[string]any{"location": location},
+			statuses: []int{200, 201},
+		},
+		{
 			name:     "operations_list",
 			method:   http.MethodGet,
 			template: "/providers/Microsoft.EdgeOrder/operations?api-version=2024-02-01",
@@ -314,7 +322,7 @@ func main() {
 			method:   http.MethodPut,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/addresses/{addressName}?api-version=2024-02-01",
 			payload:  addressCreatePayload,
-			statuses: []int{200, 202},
+			statuses: []int{200, 201, 202},
 		},
 		{
 			name:     "addresses_get",
@@ -327,7 +335,7 @@ func main() {
 			method:   http.MethodPatch,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/addresses/{addressName}?api-version=2024-02-01",
 			payload:  addressUpdatePayload,
-			statuses: []int{200, 202},
+			statuses: []int{200, 201, 202},
 		},
 		{
 			name:     "order_items_list_by_subscription",
@@ -346,7 +354,14 @@ func main() {
 			method:   http.MethodPut,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{orderItemName}?api-version=2024-02-01",
 			payload:  orderItemCreatePayload,
-			statuses: []int{200, 202},
+			statuses: []int{200, 201, 202},
+		},
+		{
+			name:     "order_items_create_for_return",
+			method:   http.MethodPut,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{returnOrderItemName}?api-version=2024-02-01",
+			payload:  orderItemCreatePayload,
+			statuses: []int{200, 201, 202},
 		},
 		{
 			name:     "order_items_get",
@@ -359,7 +374,7 @@ func main() {
 			method:   http.MethodPatch,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{orderItemName}?api-version=2024-02-01",
 			payload:  orderItemUpdatePayload,
-			statuses: []int{200, 202},
+			statuses: []int{200, 201, 202},
 		},
 		{
 			name:     "order_items_cancel",
@@ -371,7 +386,7 @@ func main() {
 		{
 			name:     "order_items_return",
 			method:   http.MethodPost,
-			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{orderItemName}/return?api-version=2024-02-01",
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{returnOrderItemName}/return?api-version=2024-02-01",
 			payload:  orderItemReturnPayload,
 			statuses: []int{200, 202},
 		},
@@ -417,13 +432,19 @@ func main() {
 			name:     "order_items_delete",
 			method:   http.MethodDelete,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{orderItemName}?api-version=2024-02-01",
-			statuses: []int{202, 204},
+			statuses: []int{200, 202, 204},
+		},
+		{
+			name:     "order_items_delete_for_return",
+			method:   http.MethodDelete,
+			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/orderItems/{returnOrderItemName}?api-version=2024-02-01",
+			statuses: []int{200, 202, 204},
 		},
 		{
 			name:     "addresses_delete",
 			method:   http.MethodDelete,
 			template: "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.EdgeOrder/addresses/{addressName}?api-version=2024-02-01",
-			statuses: []int{202, 204},
+			statuses: []int{200, 202, 204},
 		},
 	}
 

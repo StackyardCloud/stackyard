@@ -245,3 +245,7 @@ Exit criteria:
   - volume group/snapshot/volume lifecycle
   - pre-backup and pre-restore actions
   - deterministic error envelopes for contract violations
+
+## Implementation Status
+
+Implemented on the shared ARM handler (`provider_azure_elasticsan_2025_09_01.go`): SANs (`properties.sku`), volume groups with `preBackup`/`preRestore`, volumes within the SAN's capacity (no shrinking), snapshots of existing volumes, private endpoint connections, private link resources (one per volume group), SKUs and operations. A SAN's `totalVolumeSizeGiB` refreshes when a volume group changes.

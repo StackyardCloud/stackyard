@@ -229,3 +229,6 @@ Exit criteria:
 - example compiles and is ready for end-to-end runs once handlers are implemented
 - coverage scripts include `edgehardwarecenter_2024_02_01` aliases and plan-doc mapping
 
+## Implementation Status
+
+Implemented on the shared ARM handler (`provider_azure_edgehardwarecenter_2024_02_01.go`): addresses, order items with `cancel` and `return`, orders as a view over the items' `orderId`, `listProductFamilies`, `listConfigurations`, `productFamiliesMetadata` over a small Azure Stack Edge catalog, and operations. Items stay `Placed` until cancelled or returned and can only be deleted after; `listProductFamilies` always expands configurations.

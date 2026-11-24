@@ -133,6 +133,13 @@ func main() {
 		statuses []int
 	}{
 		{
+			name:     "ResourceGroupCreate",
+			method:   http.MethodPut,
+			path:     subscriptionBase + "/resourcegroups/" + resourceGroup + "?api-version=2021-04-01",
+			payload:  map[string]any{"location": "eastus"},
+			statuses: []int{http.StatusOK, http.StatusCreated},
+		},
+		{
 			name:   "EdgeActionsCreate",
 			method: http.MethodPut,
 			path:   edgeActionBase + "?api-version=" + edgeActionsAPIVersion,

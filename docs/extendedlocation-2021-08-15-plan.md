@@ -144,3 +144,7 @@ Operation-group method counts:
 ## Example Scope
 
 Example `examples/azure/extendedlocation-2021-08-15/main.go` executes representative calls across the custom locations surface, including create/get/list/update/delete plus operations and enabled-resource-types listing.
+
+## Implementation Status
+
+Implemented on the shared ARM handler (`provider_azure_extendedlocation_2021_08_15.go`): custom locations with CRUD and lists (`authentication.value` is write-only), enabled resource types derived from `clusterExtensionIds`, and operations.
