@@ -19,7 +19,7 @@ func (s *Server) handleAzureBlobRouter(w http.ResponseWriter, r *http.Request) b
 	}
 	segments := splitPathSegments(path)
 	if len(segments) == 0 {
-		respondAzureImplemented(w, rawRequestPath(r))
+		respondProviderNotImplemented(w, providerAzure, rawRequestPath(r))
 		return true
 	}
 	account := segments[0]
@@ -43,7 +43,7 @@ func (s *Server) handleAzureBlobRouter(w http.ResponseWriter, r *http.Request) b
 		case http.MethodHead:
 			s.handleAzureGetContainer(w, account, container)
 		default:
-			respondAzureImplemented(w, rawRequestPath(r))
+			respondProviderNotImplemented(w, providerAzure, rawRequestPath(r))
 		}
 		return true
 	}
@@ -58,7 +58,7 @@ func (s *Server) handleAzureBlobRouter(w http.ResponseWriter, r *http.Request) b
 		case http.MethodHead:
 			s.handleAzureGetBlob(w, r, account, container, blobName, false)
 		default:
-			respondAzureImplemented(w, rawRequestPath(r))
+			respondProviderNotImplemented(w, providerAzure, rawRequestPath(r))
 		}
 		return true
 	}
