@@ -3,6 +3,7 @@ package s3tables
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -750,9 +751,9 @@ func (s *Service) GetTableBucketMaintenance(bucketArn string) (map[string]json.R
 
 // withMaintenanceEntry copies cfg and, when typ is set, adds typ=value (copy-on-write).
 func withMaintenanceEntry(cfg map[string]json.RawMessage, typ string, value json.RawMessage) map[string]json.RawMessage {
-	out := make(map[string]json.RawMessage, len(cfg)+1)
-	for k, v := range cfg {
-		out[k] = v
+	out := maps.Clone(cfg)
+	if out == nil {
+		out = map[string]json.RawMessage{}
 	}
 	if typ != "" {
 		out[typ] = append(json.RawMessage(nil), value...)
