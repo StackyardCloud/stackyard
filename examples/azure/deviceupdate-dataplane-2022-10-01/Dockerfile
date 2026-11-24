@@ -2,6 +2,6 @@ FROM golang:1.25-alpine
 
 WORKDIR /app
 COPY . .
-RUN go build -o /deviceupdate-dataplane-2022-10-01-example ./examples/azure/deviceupdate-dataplane-2022-10-01
+RUN go build -o /deviceupdate-dataplane-2022-10-01 ./examples/azure/deviceupdate-dataplane-2022-10-01
 
-ENTRYPOINT ["/deviceupdate-dataplane-2022-10-01-example"]
+ENTRYPOINT ["/deviceupdate-dataplane-2022-10-01"]

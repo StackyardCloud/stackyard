@@ -135,7 +135,7 @@ Schemas method pages (`4`):
 SDK parity cross-check used:
 
 - `https://learn.microsoft.com/en-us/rest/api/deviceregistry/assets/create-or-replace?view=rest-deviceregistry-2026-04-01` (Go tab uses `armdeviceregistry`)
-- `https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/deviceregistry/armdeviceregistry`
+- `github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/deviceregistry/armdeviceregistry`
 
 ## Surface Summary
 
