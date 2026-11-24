@@ -24,6 +24,8 @@ func init() {
 		Validate:           azureVNetValidate,
 		ReadOnlyProperties: azureNetworkResourceGUID,
 		InlineChildren:     map[string]string{"subnets": "virtualNetworks/subnets", "virtualNetworkPeerings": "virtualNetworks/virtualNetworkPeerings"},
+		// DNS Private Resolver list operations (provider_azure_dns_dnsresolver_2025_05_01.go).
+		ServerActions: dnsrVNetActions,
 	})
 	registerAzureARMResourceType(azureARMResourceType{
 		Namespace: ns, Type: "virtualNetworks/subnets", Proxy: true,
