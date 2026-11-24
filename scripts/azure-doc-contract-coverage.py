@@ -1549,6 +1549,7 @@ SERVICE_PLAN_DOCS: dict[str, list[str]] = {
     "communication_jobrouter": ["communication-jobrouter-2023-11-01-plan.md"],
     "confluent": ["confluent-2024-07-01-plan.md"],
     "containerapps": ["containerapps-2026-01-01-plan.md"],
+    "container_instances": ["container-instances-2025-09-01-plan.md"],
     "containerapps_data_plane": ["containerapps-data-plane-2025-10-02-preview-plan.md"],
     "compute": ["compute-2025-04-01-plan.md"],
     "compute_limit": ["computelimit-2026-04-30-plan.md"],

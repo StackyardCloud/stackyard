@@ -186,7 +186,7 @@ func (s *savingsPlansStore) Handle(action string, payload map[string]any, pathPa
 		plan := s.ensureSavingsPlanLocked(savingsPlanID, now)
 		plan["state"] = "returned"
 		plan["returnTime"] = now.Format(time.RFC3339)
-		return map[string]any{}
+		return map[string]any{"savingsPlanId": savingsPlanID}
 
 	case "TagResource":
 		if strings.TrimSpace(savingsPlanArn) == "" {

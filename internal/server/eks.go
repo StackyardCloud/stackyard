@@ -1274,7 +1274,7 @@ func (s *Server) handleEKSStage5(w http.ResponseWriter, r *http.Request) bool {
 			respondEKSErrorForErr(w, err)
 			return true
 		}
-		respondEKSJSON(w, http.StatusOK, map[string]any{"insightsRefresh": refresh})
+		respondEKSJSON(w, http.StatusOK, eksInsightsRefreshOutput(refresh, false))
 		return true
 
 	case len(segments) == 3 && segments[2] == "insights-refresh" && r.Method == http.MethodGet:
@@ -1283,7 +1283,7 @@ func (s *Server) handleEKSStage5(w http.ResponseWriter, r *http.Request) bool {
 			respondEKSErrorForErr(w, err)
 			return true
 		}
-		respondEKSJSON(w, http.StatusOK, map[string]any{"insightsRefresh": refresh})
+		respondEKSJSON(w, http.StatusOK, eksInsightsRefreshOutput(refresh, true))
 		return true
 
 	case len(segments) == 3 && segments[2] == "pod-identity-associations" && r.Method == http.MethodPost:
@@ -1912,5 +1912,17 @@ func (r *eksCreateFargateProfileRequest) toServiceSelectors() []ekssvc.FargatePr
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].Namespace < out[j].Namespace
 	})
+	return out
+}
+
+// eksInsightsRefreshOutput shapes Start/DescribeInsightsRefresh responses, which are flat.
+func eksInsightsRefreshOutput(refresh *ekssvc.InsightsRefresh, withTimes bool) map[string]any {
+	out := map[string]any{"status": refresh.Status, "message": "Insights refresh " + strings.ToLower(refresh.Status)}
+	if withTimes {
+		out["startedAt"] = refresh.StartedAt
+		if !refresh.CompletedAt.IsZero() {
+			out["endedAt"] = refresh.CompletedAt
+		}
+	}
 	return out
 }

@@ -877,7 +877,7 @@ func paginateLambdaSlice[T any](in []T, maxItems, marker int) ([]T, string) {
 	if maxItems > 0 && marker+maxItems < end {
 		end = marker + maxItems
 	}
-	out := append([]T(nil), in[marker:end]...)
+	out := append(make([]T, 0, end-marker), in[marker:end]...) // empty page encodes as [], not null
 	if end >= len(in) {
 		return out, ""
 	}

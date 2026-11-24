@@ -49,6 +49,8 @@ func TestSESV2Stage0Lifecycle(t *testing.T) {
 
 	resp = sesv2Request(t, ts, http.MethodGet, "/v2/email/identities", nil)
 	assertStatus(t, resp, http.StatusOK)
+	resp = sesv2Request(t, ts, http.MethodPost, "/v2/email/list-identities", nil)
+	assertStatus(t, resp, http.StatusOK)
 
 	resp = sesv2Request(t, ts, http.MethodPost, "/v2/email/templates", []byte(`{"TemplateName":"welcome","TemplateContent":{"Subject":"Hi {{name}}","Text":"Hello {{name}}","Html":"<h1>Hello {{name}}</h1>"}}`))
 	assertStatus(t, resp, http.StatusOK)

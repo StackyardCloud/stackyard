@@ -32,7 +32,7 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 
 - clusters need `identity.type` `SystemAssigned` or `None` and `agentPublicKeyCertificate`; `privateLinkState`, when set, must be `Enabled` or `Disabled`
 - `connectivityStatus` (`Connected`) and `lastConnectivityTime` are server-owned; `distribution`, `infrastructure` and `privateLinkState` default to `generic`, `generic` and `Disabled`
-- `listClusterUserCredential` needs `authenticationMethod` `Token` or `AAD` and returns one base64 kubeconfig, `credentialUser`, whose server is `https://{name}.arc.stackyard.local`
+- `listClusterUserCredential` needs `authenticationMethod` `Token` or `AAD` and returns one base64 kubeconfig, `credentialUser`, whose server is https `{name}.arc.stackyard.local`
 - extensions and Flux configurations on a cluster are served by `kubernetesconfiguration` and are deleted with it
 
 Out of scope for this stage:

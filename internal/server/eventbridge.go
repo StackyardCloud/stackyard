@@ -1302,10 +1302,6 @@ func (s *Server) handleEventBridgeJSONRouter(w http.ResponseWriter, r *http.Requ
 			respondEventBridgeJSONError(w, http.StatusBadRequest, "ValidationException", "invalid JSON")
 			return true
 		}
-		if strings.TrimSpace(input.Name) == "" {
-			respondEventBridgeJSONError(w, http.StatusBadRequest, "ValidationException", "Name is required")
-			return true
-		}
 		bus, err := s.eventbridge.UpdateEventBus(input.Name, input.KmsKeyIdentifier, input.Description, input.DeadLetterConfig.Arn)
 		if err != nil {
 			code := "ValidationException"

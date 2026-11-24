@@ -1,7 +1,9 @@
 package s3tables
 
 import (
+	"encoding/json"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -38,6 +40,14 @@ type Table struct {
 	TableId          string
 	MetadataLocation string
 	Format           string
+	ModifiedAt       string
+	VersionToken     string
+	Type             string
+}
+
+// WarehouseLocation is the S3 location Iceberg writers use for the table's data.
+func (t Table) WarehouseLocation() string {
+	return "s3://" + t.TableId + "--table-s3"
 }
 
 type Service struct {
@@ -55,8 +65,11 @@ type Service struct {
 	tableReplication       map[string]string
 	bucketReplication      map[string]string
 	tableReplicationStatus map[string]string
-	tableMaintenance       map[string]string
-	bucketMaintenance      map[string]string
+	tableMaintenance       map[string]map[string]json.RawMessage
+	bucketMaintenance      map[string]map[string]json.RawMessage
+	bucketLogging          map[string]json.RawMessage
+	migrations             map[string]TableMigration
+	nextMigrationID        int
 	tableMaintenanceStatus map[string]string
 	tableRecordExpiration  map[string]string
 	recordExpirationStatus map[string]string
@@ -81,8 +94,10 @@ func NewService() *Service {
 		tableReplication:       map[string]string{},
 		bucketReplication:      map[string]string{},
 		tableReplicationStatus: map[string]string{},
-		tableMaintenance:       map[string]string{},
-		bucketMaintenance:      map[string]string{},
+		tableMaintenance:       map[string]map[string]json.RawMessage{},
+		bucketMaintenance:      map[string]map[string]json.RawMessage{},
+		bucketLogging:          map[string]json.RawMessage{},
+		migrations:             map[string]TableMigration{},
 		tableMaintenanceStatus: map[string]string{},
 		tableRecordExpiration:  map[string]string{},
 		recordExpirationStatus: map[string]string{},
@@ -122,6 +137,9 @@ func NewService() *Service {
 		TableId:          "tbtable-1234567890abcdef",
 		MetadataLocation: "s3://demo-bucket/analytics/events/metadata.json",
 		Format:           "ICEBERG",
+		ModifiedAt:       "2024-01-03T00:00:00Z",
+		VersionToken:     "v1",
+		Type:             "customer",
 	}
 	s.tables[seedBucket.Arn]["analytics"] = map[string]Table{"events": seedTable}
 	return s
@@ -259,6 +277,11 @@ func (s *Service) ListNamespaces(tableBucketArn, prefix string) []Namespace {
 func (s *Service) CreateTable(tableBucketArn string, namespace []string, name string) (Table, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.createTableLocked(tableBucketArn, namespace, name)
+}
+
+// createTableLocked returns the existing table when one already has this name.
+func (s *Service) createTableLocked(tableBucketArn string, namespace []string, name string) (Table, bool) {
 	bucket, ok := s.tableBuckets[tableBucketArn]
 	if !ok {
 		return Table{}, false
@@ -275,10 +298,11 @@ func (s *Service) CreateTable(tableBucketArn string, namespace []string, name st
 	}
 	id := fmt.Sprintf("tbtable-1234567890abcde%d", s.nextTableID)
 	s.nextTableID++
+	now := time.Now().UTC().Format(time.RFC3339)
 	table := Table{
-		CreatedAt:        time.Now().UTC().Format(time.RFC3339),
+		CreatedAt:        now,
 		CreatedBy:        "arn:aws:iam::123456789012:user/test",
-		Namespace:        namespace,
+		Namespace:        append([]string(nil), namespace...),
 		Name:             name,
 		TableArn:         "arn:aws:s3tables:us-east-1:123456789012:bucket/" + bucket.Name + "/table/" + key + "/" + name,
 		TableBucketArn:   tableBucketArn,
@@ -286,9 +310,16 @@ func (s *Service) CreateTable(tableBucketArn string, namespace []string, name st
 		TableId:          id,
 		MetadataLocation: "s3://" + bucket.Name + "/" + key + "/" + name + "/metadata.json",
 		Format:           "ICEBERG",
+		ModifiedAt:       now,
+		VersionToken:     newVersionToken(),
+		Type:             "customer",
 	}
 	s.tables[tableBucketArn][key][name] = table
 	return table, true
+}
+
+func newVersionToken() string {
+	return fmt.Sprintf("%x", time.Now().UnixNano())
 }
 
 func (s *Service) GetTable(tableBucketArn string, namespace []string, name string) (Table, bool) {
@@ -359,29 +390,24 @@ func (s *Service) RenameTable(tableBucketArn string, namespace []string, name, n
 	return table, true
 }
 
-func (s *Service) GetTableMetadataLocation(tableBucketArn string, namespace []string, name string) (string, bool) {
-	table, ok := s.GetTable(tableBucketArn, namespace, name)
-	if !ok {
-		return "", false
-	}
-	return table.MetadataLocation, true
-}
-
-func (s *Service) UpdateTableMetadataLocation(tableBucketArn string, namespace []string, name, location string) bool {
+// UpdateTableMetadataLocation stores the new location and rotates the table's version token.
+func (s *Service) UpdateTableMetadataLocation(tableBucketArn string, namespace []string, name, location string) (Table, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key := strings.Join(namespace, ".")
 	nsMap, ok := s.tables[tableBucketArn]
 	if !ok {
-		return false
+		return Table{}, false
 	}
 	table, ok := nsMap[key][name]
 	if !ok {
-		return false
+		return Table{}, false
 	}
 	table.MetadataLocation = location
+	table.VersionToken = newVersionToken()
+	table.ModifiedAt = time.Now().UTC().Format(time.RFC3339)
 	nsMap[key][name] = table
-	return true
+	return table, true
 }
 
 func (s *Service) TagResource(arn string, tags map[string]string) bool {
@@ -680,47 +706,59 @@ func (s *Service) DeleteTableBucketReplication(bucketArn string) (bool, bool) {
 	return true, true
 }
 
-func (s *Service) PutTableMaintenance(tableArn, config string) bool {
+// PutTableMaintenance stores the configuration value for one maintenance type.
+func (s *Service) PutTableMaintenance(tableArn, typ string, value json.RawMessage) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.tableExists(tableArn) {
 		return false
 	}
-	s.tableMaintenance[tableArn] = config
+	s.tableMaintenance[tableArn] = withMaintenanceEntry(s.tableMaintenance[tableArn], typ, value)
 	if _, ok := s.tableMaintenanceStatus[tableArn]; !ok {
 		s.tableMaintenanceStatus[tableArn] = "ACTIVE"
 	}
 	return true
 }
 
-func (s *Service) GetTableMaintenance(tableArn string) (string, bool) {
+// GetTableMaintenance returns a copy of the table's configuration keyed by maintenance type.
+func (s *Service) GetTableMaintenance(tableArn string) (map[string]json.RawMessage, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.tableExists(tableArn) {
-		return "", false
+		return nil, false
 	}
-	config := s.tableMaintenance[tableArn]
-	return config, config != ""
+	return withMaintenanceEntry(s.tableMaintenance[tableArn], "", nil), true
 }
 
-func (s *Service) PutTableBucketMaintenance(bucketArn, config string) bool {
+func (s *Service) PutTableBucketMaintenance(bucketArn, typ string, value json.RawMessage) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.tableBuckets[bucketArn]; !ok {
 		return false
 	}
-	s.bucketMaintenance[bucketArn] = config
+	s.bucketMaintenance[bucketArn] = withMaintenanceEntry(s.bucketMaintenance[bucketArn], typ, value)
 	return true
 }
 
-func (s *Service) GetTableBucketMaintenance(bucketArn string) (string, bool) {
+func (s *Service) GetTableBucketMaintenance(bucketArn string) (map[string]json.RawMessage, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.tableBuckets[bucketArn]; !ok {
-		return "", false
+		return nil, false
 	}
-	config := s.bucketMaintenance[bucketArn]
-	return config, config != ""
+	return withMaintenanceEntry(s.bucketMaintenance[bucketArn], "", nil), true
+}
+
+// withMaintenanceEntry copies cfg and, when typ is set, adds typ=value (copy-on-write).
+func withMaintenanceEntry(cfg map[string]json.RawMessage, typ string, value json.RawMessage) map[string]json.RawMessage {
+	out := maps.Clone(cfg)
+	if out == nil {
+		out = map[string]json.RawMessage{}
+	}
+	if typ != "" {
+		out[typ] = append(json.RawMessage(nil), value...)
+	}
+	return out
 }
 
 func (s *Service) GetTableMaintenanceStatus(tableArn string) (string, bool) {

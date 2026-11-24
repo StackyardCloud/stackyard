@@ -2936,6 +2936,8 @@ S3TABLES_DEFAULT_BUCKET_NAME = "stackyard-s3tables-bucket"
 S3TABLES_DEFAULT_NAMESPACE = "analytics"
 S3TABLES_DEFAULT_TABLE_NAME = "events"
 S3TABLES_DEFAULT_RESOURCE_POLICY = '{"Version":"2012-10-17","Statement":[]}'
+S3TABLES_MIGRATION_ROLE_ARN = "arn:aws:iam::123456789012:role/stackyard-s3tables-migration"
+S3TABLES_MIGRATION_REPORT_BUCKET = "stackyard-s3tables-migration-reports"
 CONTROLTOWER_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
     {
         "GetEnabledBaseline",
@@ -3094,6 +3096,8 @@ REDSHIFT_DEFAULT_NAMESPACE_IDENTIFIER = "stackyard-rs-namespace"
 REDSHIFT_DEFAULT_USAGE_LIMIT_ID = "stackyard-rs-usage-limit"
 REDSHIFT_DEFAULT_SNAPSHOT_SCHEDULE_ID = "stackyard-rs-snapshot-schedule"
 REDSHIFT_DEFAULT_IDC_APPLICATION_NAME = "stackyard-rs-idc-app"
+REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME = "stackyard-rs-qev2-app"
+REDSHIFT_DEFAULT_IDC_INSTANCE_ARN = "arn:aws:sso:::instance/ssoins-1234567890abcdef"
 REDSHIFT_DEFAULT_PARTNER_NAME = "stackyard-rs-partner"
 REDSHIFT_DEFAULT_PARTNER_ACCOUNT_ID = "123456789012"
 REDSHIFT_DEFAULT_CUSTOM_DOMAIN_NAME = "stackyard-rs.example.com"
@@ -3165,6 +3169,7 @@ LAMBDA_DEFAULT_CALLBACK_ID = "stackyard-callback-000001"
 S3_DEFAULT_BUCKET_NAME = "stackyard-s3-coverage"
 S3_DEFAULT_DIRECTORY_BUCKET_NAME = "stackyard-s3-coverage--x-s3"
 S3_DEFAULT_OBJECT_KEY = "coverage-seed.txt"
+S3_COVERAGE_ANNOTATION_NAME = "coverage-annotation"
 S3_DEFAULT_CSV_OBJECT_KEY = "coverage-seed.csv"
 S3_DEFAULT_MULTIPART_KEY = "coverage-multipart.bin"
 S3_DEFAULT_ANALYTICS_ID = "coverage-analytics"
@@ -3567,6 +3572,9 @@ SINGLESIGNON_FORCE_RAW_FALLBACK_OPERATIONS: frozenset[str] = frozenset(
 
 _BOTOCORE_MODEL_CACHE: dict[tuple[str, str], object | None] = {}
 _BOTOCORE_SESSION = None
+_AWS_BIN = "aws"
+
+
 _IOTMI_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTEVENTS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
 _IOTWIRELESS_RAW_FALLBACK_ROUTES: dict[str, tuple[str, str]] | None = None
@@ -4587,6 +4595,9 @@ def raw_fallback_route(endpoint: Endpoint) -> tuple[str, str] | None:
         return {
             "CreateIndex": ("POST", "/CreateIndex"),
             "CreateVectorBucket": ("POST", "/CreateVectorBucket"),
+            "PutVectorBucketDefaultIndexMode": ("POST", "/PutVectorBucketDefaultIndexMode"),
+            "UpdateIndexMode": ("POST", "/UpdateIndexMode"),
+            "UpdateMetadataConfiguration": ("POST", "/UpdateMetadataConfiguration"),
             "DeleteIndex": ("POST", "/DeleteIndex"),
             "DeleteVectorBucket": ("POST", "/DeleteVectorBucket"),
             "DeleteVectorBucketPolicy": ("POST", "/DeleteVectorBucketPolicy"),
@@ -13535,6 +13546,14 @@ def generate_cli_input_payload(
         # aws s3api get-object/get-object-torrent require explicit --bucket/--key args and do not
         # reliably support skeleton generation.
         return {"Bucket": S3_DEFAULT_BUCKET_NAME, "Key": S3_DEFAULT_OBJECT_KEY}, None
+    if endpoint.service == "s3" and endpoint.operation == "GetObjectAnnotation":
+        # get-object-annotation streams the payload to an outfile, so it needs its
+        # members as flags even to print a skeleton; hydration fills in real values.
+        return {
+            "Bucket": S3_DEFAULT_BUCKET_NAME,
+            "Key": S3_DEFAULT_OBJECT_KEY,
+            "AnnotationName": S3_COVERAGE_ANNOTATION_NAME,
+        }, None
     if endpoint.service == "s3" and endpoint.operation == "PutBucketAbac":
         return {"Bucket": S3_DEFAULT_BUCKET_NAME, "AbacStatus": "Enabled"}, None
     if endpoint.service == "s3" and endpoint.operation == "UpdateObjectEncryption":
@@ -13642,7 +13661,11 @@ def generate_cli_input_payload(
     payload = apply_common_payload_tweaks(payload)
     payload = apply_service_payload_tweaks(endpoint, payload)
     if input_mode == "required":
+        tweaked = payload
         payload = prune_payload_to_required(endpoint, payload)
+        for name in REQUIRED_MODE_ONE_OF_MEMBERS.get((endpoint.service, endpoint.operation), ()):
+            if isinstance(tweaked, dict) and isinstance(payload, dict) and name in tweaked:
+                payload[name] = tweaked[name]
     return payload, None
 
 
@@ -13716,6 +13739,26 @@ def botocore_service_name(cli_service: str) -> str:
     return CLI_TO_BOTOCORE_SERVICE.get(cli_service, cli_service)
 
 
+def aws_cli_botocore_data_dir(aws_bin: str) -> Path | None:
+    """Return the service-model directory bundled with the AWS CLI being run.
+
+    The CLI v2 vendors its own botocore models, which can be newer or older
+    than the pip botocore this script imports. Skeleton pruning and output
+    validation must use the models the CLI actually sends and parses with.
+    """
+    found = shutil.which(aws_bin)
+    if not found:
+        return None
+    resolved = Path(found).resolve()
+    for parent in list(resolved.parents)[:3]:
+        bundled = parent / "awscli" / "botocore" / "data"  # installer: dist/awscli/...
+        if bundled.is_dir():
+            return bundled
+        for candidate in sorted(parent.glob("lib/python*/site-packages/awscli/botocore/data")):
+            return candidate
+    return None
+
+
 def get_operation_model(endpoint: Endpoint):
     global _BOTOCORE_SESSION  # noqa: PLW0603
 
@@ -13730,6 +13773,9 @@ def get_operation_model(endpoint: Endpoint):
     try:
         if _BOTOCORE_SESSION is None:
             _BOTOCORE_SESSION = botocore_session.get_session()
+            cli_data = aws_cli_botocore_data_dir(_AWS_BIN)
+            if cli_data is not None:
+                _BOTOCORE_SESSION.get_component("data_loader").search_paths.insert(0, str(cli_data))
         service_model = _BOTOCORE_SESSION.get_service_model(botocore_service_name(endpoint.cli_service))
         operation_name = kebab_to_pascal(endpoint.cli_operation)
         model = service_model.operation_model(operation_name)
@@ -13821,6 +13867,21 @@ def botocore_shape_default(shape):
             out[name] = botocore_shape_default(member_shape)
         return out
     return "stackyard"
+
+
+# The service model marks these members optional only because an alternative
+# member can stand in (e.g. AvailabilityZone vs AvailabilityZoneId); AWS still
+# rejects a request carrying neither, so required-mode keeps one of each pair.
+REQUIRED_MODE_ONE_OF_MEMBERS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("ec2", "CreateDefaultSubnet"): ("AvailabilityZone",),
+    ("ec2", "CreateVpcBlockPublicAccessExclusion"): ("VpcId",),
+    ("ec2", "CreateVpcEndpoint"): ("ServiceName",),
+    ("ec2", "EnableFastSnapshotRestores"): ("AvailabilityZones",),
+    ("ec2", "ModifyInstanceMetadataDefaults"): ("HttpTokens",),
+    ("ec2", "CreateClientVpnRoute"): ("TargetVpcSubnetId",),
+    ("ec2", "AssociateClientVpnTargetNetwork"): ("SubnetId",),
+    ("ec2", "ModifyInstanceCpuOptions"): ("CoreCount", "ThreadsPerCore"),
+}
 
 
 def prune_payload_to_required(endpoint: Endpoint, payload):
@@ -14243,7 +14304,8 @@ def filter_output_schema_errors(endpoint: Endpoint, errors: list[str]) -> list[s
     if endpoint.service == "sqs" and endpoint.operation == "SendMessageBatch":
         return [err for err in errors if err != "$.Failed: missing required field"]
     if endpoint.service == "s3" and endpoint.operation == "ListParts":
-        return [err for err in errors if err != "$.ChecksumType: unknown field"]
+        # Newer awscli builds model these ListParts members before the checker's botocore does.
+        return [err for err in errors if err not in {"$.ChecksumType: unknown field", "$.VersionId: unknown field"}]
     if endpoint.service == "sagemakerruntime" and endpoint.operation == "InvokeEndpoint":
         # The awscli writes the Body payload to the outfile, not stdout.
         return [err for err in errors if err != "$.Body: missing required field"]
@@ -18264,6 +18326,27 @@ def apply_service_payload_tweaks(endpoint: Endpoint, payload):
     return payload
 
 
+def appsync_events_api_id(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    name: str,
+    event_config: str,
+) -> str | None:
+    """Return the id of the AppSync Events API called name, creating it if needed."""
+    listed = run_aws_json(aws_bin, endpoint_url, region, "appsync", "list-apis", env) or {}
+    for api in listed.get("apis") or []:
+        if isinstance(api, dict) and api.get("name") == name and api.get("apiId"):
+            return str(api["apiId"])
+    created = run_aws_json(
+        aws_bin, endpoint_url, region, "appsync", "create-api", env,
+        ["--name", name, "--event-config", event_config],
+    )
+    api = (created or {}).get("api") or {}
+    return str(api["apiId"]) if api.get("apiId") else None
+
+
 def run_aws_json(
     aws_bin: str,
     endpoint_url: str,
@@ -18878,6 +18961,65 @@ def s3tables_ensure_table_bucket(
                     break
     state["table_bucket_arn"] = arn
     return arn
+
+
+def s3tables_start_migration_payload(bucket_arn: str, namespace: str, name: str, review: bool) -> dict[str, object]:
+    return {
+        "roleARN": S3TABLES_MIGRATION_ROLE_ARN,
+        "destinationTable": {"tableBucketARN": bucket_arn, "namespace": namespace, "name": name},
+        "sourceType": "glueTable",
+        "source": {"glueTable": {"catalogId": "123456789012", "databaseName": "stackyard", "tableName": name}},
+        "reviewMigrationPlan": review,
+        "migrationOutput": {"bucket": S3TABLES_MIGRATION_REPORT_BUCKET},
+    }
+
+
+def s3tables_next_migration_table_name(region: str) -> str:
+    state = s3tables_runtime_state(region)
+    seq = int(state.get("migration_seq") or 0) + 1
+    state["migration_seq"] = seq
+    return f"migrated_{seq}"
+
+
+def s3tables_start_migration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+    review: bool = False,
+) -> tuple[str, str]:
+    """Start a fresh migration (new destination table); return (migration_id, table_arn)."""
+    bucket_arn, namespace = s3tables_ensure_namespace(aws_bin, endpoint_url, region, env)
+    name = s3tables_next_migration_table_name(region)
+    out = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "s3tables",
+        "start-table-migration",
+        env,
+        ["--cli-input-json", json.dumps(s3tables_start_migration_payload(bucket_arn, namespace, name, review), separators=(",", ":"))],
+    )
+    migration_id = str((out or {}).get("migrationId") or "").strip()
+    table_arn = s3tables_table_arn(bucket_arn, namespace, name)
+    if migration_id:
+        state = s3tables_runtime_state(region)
+        state["migration_id"] = migration_id
+        state["migration_table_arn"] = table_arn
+    return migration_id, table_arn
+
+
+def s3tables_ensure_migration(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> tuple[str, str]:
+    state = s3tables_runtime_state(region)
+    migration_id = str(state.get("migration_id") or "").strip()
+    if migration_id:
+        return migration_id, str(state.get("migration_table_arn") or "")
+    return s3tables_start_migration(aws_bin, endpoint_url, region, env)
 
 
 def s3tables_ensure_namespace(
@@ -20073,7 +20215,7 @@ def cognitouserpools_record_runtime_payload(region: str, payload: object) -> Non
         _record_user_pool_id(terms_obj.get("UserPoolId"))
         _record_string("terms_id", terms_obj.get("TermsId"))
 
-    terms_list = payload.get("TermsList")
+    terms_list = payload.get("Terms")
     if isinstance(terms_list, list):
         for item in terms_list:
             if not isinstance(item, dict):
@@ -29692,6 +29834,40 @@ def redshift_ensure_usage_limit(
     return str(redshift_runtime_state(region).get("usage_limit_id", limit_id))
 
 
+def redshift_ensure_qev2_application(
+    aws_bin: str,
+    endpoint_url: str,
+    region: str,
+    env: dict[str, str],
+) -> str:
+    """Return the ARN of a Query Editor v2 IDC application, creating it if needed."""
+    created = run_aws_json(
+        aws_bin,
+        endpoint_url,
+        region,
+        "redshift",
+        "create-qev2-idc-application",
+        env,
+        [
+            "--qev2-idc-application-name",
+            REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME,
+            "--idc-instance-arn",
+            REDSHIFT_DEFAULT_IDC_INSTANCE_ARN,
+            "--idc-display-name",
+            "stackyard-qev2-app",
+        ],
+    )
+    app = created.get("Qev2IdcApplication") if isinstance(created, dict) else None
+    if isinstance(app, dict) and app.get("Qev2IdcApplicationArn"):
+        return str(app["Qev2IdcApplicationArn"])
+    # Already present from an earlier run: find it by name.
+    described = run_aws_json(aws_bin, endpoint_url, region, "redshift", "describe-qev2-idc-applications", env)
+    for item in (described or {}).get("Qev2IdcApplications") or []:
+        if isinstance(item, dict) and item.get("Qev2IdcApplicationName") == REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME:
+            return str(item.get("Qev2IdcApplicationArn", ""))
+    return ""
+
+
 def redshift_ensure_idc_application(
     aws_bin: str,
     endpoint_url: str,
@@ -33862,7 +34038,7 @@ GLUE_FIXTURE_DEPS = {
     "udf": ["database"],
     "trigger": ["job"],
     "colstatsettings": ["table"],
-    "dqevalconfig": ["table"],
+    "dqevalconfig": ["table", "dqruleset"],
     "asset": ["assettype"],
     "attachment": ["asset", "formtype"],
 }
@@ -34018,14 +34194,33 @@ def glue_hydrate_payload(endpoint: Endpoint, payload: dict, endpoint_url: str, r
         hydrated["ConnectionInput"] = dict(GLUE_FIXTURES["connection"][0][1]["ConnectionInput"])
     if op in ("CreateUserDefinedFunction", "UpdateUserDefinedFunction"):
         hydrated["FunctionInput"] = {"FunctionName": GLUE_FIXTURE, "ClassName": "com.example.Fn"}
-    # Members the CLI's (newer) model requires that the botocore skeleton lacks.
+    # The skeleton comes from the installed CLI, whose Glue asset model differs
+    # by version (AssetTypeId/FormTypeId/ExportSetting before 2.42,
+    # AssetTypeIdentifier/FormTypeIdentifier/Assets after): fill whichever it has.
     if op == "PutAsset":
-        hydrated.update({"AssetTypeId": GLUE_FIXTURE, "Forms": {}})
+        hydrated["Forms"] = {}
+        for key in ("AssetTypeId", "AssetTypeIdentifier"):
+            if key in hydrated:
+                hydrated[key] = GLUE_FIXTURE
     if op == "PutAttachment":
-        hydrated.update({"FormTypeId": GLUE_FIXTURE, "Content": "e30="})
+        hydrated["Content"] = "e30="
+        for key in ("FormTypeId", "FormTypeIdentifier"):
+            if key in hydrated:
+                hydrated[key] = GLUE_FIXTURE
         glue_ensure(ctx, "asset", "formtype")
     if op == "PutDataCatalogExportConfiguration":
-        hydrated["ExportSetting"] = "ENABLED"
+        if "ExportSetting" in hydrated:
+            hydrated = {"ExportSetting": "ENABLED"}
+        else:
+            hydrated = {"Assets": {"S3TablesExport": "ENABLED"}}
+    if op in ("CreateDataQualityEvaluationConfig", "UpdateDataQualityEvaluationConfig") and "RulesetName" in hydrated:
+        hydrated["RulesetName"] = GLUE_FIXTURE
+        hydrated.pop("ManagedRulesetName", None)
+    if op == "SearchAssets":
+        # The skeleton's recursive FilterClause union sets every member, which
+        # the CLI rejects; search unfiltered.
+        hydrated.pop("FilterClause", None)
+        hydrated.pop("Sort", None)
 
     if op in GLUE_CREATE_RESETS:
         kind = GLUE_CREATE_RESETS[op]
@@ -39317,6 +39512,55 @@ def hydrate_payload_with_service_state(
             _replace_payload(payload_values)
             return hydrated
 
+        if op == "StartTableMigration":
+            bucket_arn, namespace = s3tables_ensure_namespace(aws_bin, endpoint_url, region, env)
+            name = s3tables_next_migration_table_name(region)
+            _replace_payload(s3tables_start_migration_payload(bucket_arn, namespace, name, False))
+            return hydrated
+
+        if op in {"GetTableMigration", "ListTableMigrations"}:
+            migration_id, _ = s3tables_ensure_migration(aws_bin, endpoint_url, region, env)
+            _replace_payload({"migrationId": migration_id} if op == "GetTableMigration" else {"maxResults": 100})
+            return hydrated
+
+        if op in {"UpdateTableMigration", "CompleteTableMigration", "SyncTableMigration"}:
+            # Each gets its own migration: these change state that later calls would otherwise trip on.
+            migration_id, migration_table_arn = s3tables_start_migration(
+                aws_bin, endpoint_url, region, env, review=op == "UpdateTableMigration"
+            )
+            if op == "UpdateTableMigration":
+                _replace_payload({"migrationId": migration_id, "requestedState": "queued"})
+            elif op == "CompleteTableMigration":
+                _replace_payload({"tableARN": migration_table_arn})
+            else:
+                _replace_payload(
+                    {
+                        "roleARN": S3TABLES_MIGRATION_ROLE_ARN,
+                        "tableARN": migration_table_arn,
+                        "migrationOutput": {"bucket": S3TABLES_MIGRATION_REPORT_BUCKET},
+                    }
+                )
+            return hydrated
+
+        if op in {"PutTableBucketLogging", "GetTableBucketLogging"}:
+            bucket_arn = s3tables_ensure_table_bucket(aws_bin, endpoint_url, region, env)
+            payload_values = {"tableBucketARN": bucket_arn}
+            if op == "PutTableBucketLogging":
+                payload_values["tableBucketLoggingStatus"] = {
+                    "loggingEnabled": {
+                        "targetBucket": S3TABLES_MIGRATION_REPORT_BUCKET,
+                        "targetPrefix": "logs/",
+                        "targetObjectKeyFormat": {"partitionedPrefix": {"partitionDateSource": "EventTime"}},
+                    }
+                }
+            _replace_payload(payload_values)
+            return hydrated
+
+        if op == "DisassociateTableReplication":
+            bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
+            _replace_payload({"tableArn": s3tables_table_arn(bucket_arn, namespace, table_name)})
+            return hydrated
+
         if op == "RenameTable":
             bucket_arn, namespace, table_name = s3tables_ensure_table(aws_bin, endpoint_url, region, env)
             _replace_payload(
@@ -39524,6 +39768,24 @@ def hydrate_payload_with_service_state(
             if op == "PutVectorBucketPolicy":
                 payload_values["policy"] = str(state.get("bucket_policy") or S3VECTORS_DEFAULT_BUCKET_POLICY)
             _replace_payload(payload_values)
+            return hydrated
+
+        if op == "PutVectorBucketDefaultIndexMode":
+            bucket_name, _ = s3vectors_ensure_bucket(endpoint_url, region, env)
+            _replace_payload({"vectorBucketName": bucket_name, "defaultIndexMode": "ENHANCED"})
+            return hydrated
+
+        if op in {"UpdateIndexMode", "UpdateMetadataConfiguration"}:
+            _, _, _, index_arn = s3vectors_ensure_index(endpoint_url, region, env)
+            if op == "UpdateIndexMode":
+                _replace_payload({"indexArn": index_arn, "indexMode": "ENHANCED"})
+            else:
+                _replace_payload(
+                    {
+                        "indexArn": index_arn,
+                        "add": {"textSearchConfigurations": [{"metadataKey": "env", "language": "en"}]},
+                    }
+                )
             return hydrated
 
         if op in {"GetIndex", "DeleteIndex", "ListIndexes"}:
@@ -40301,6 +40563,46 @@ def hydrate_payload_with_service_state(
 
         if op == "StartSchemaCreation":
             _replace_payload({"apiId": api_id, "definition": "c3RhY2t5YXJk"})
+            return hydrated
+
+        # AppSync Events APIs are stateful: run against a real API and namespace.
+        events_ops = {
+            "CreateApi", "GetApi", "UpdateApi", "DeleteApi",
+            "CreateChannelNamespace", "GetChannelNamespace", "UpdateChannelNamespace",
+            "DeleteChannelNamespace", "ListChannelNamespaces",
+        }
+        if op in events_ops:
+            modes = [{"authType": "API_KEY"}]
+            event_config = {
+                "authProviders": [{"authType": "API_KEY"}],
+                "connectionAuthModes": modes,
+                "defaultPublishAuthModes": modes,
+                "defaultSubscribeAuthModes": modes,
+            }
+            config_arg = json.dumps(event_config)
+            if op == "CreateApi":
+                _replace_payload({"name": "stackyard-events-create", "eventConfig": event_config})
+                return hydrated
+            events_api_id = appsync_events_api_id(
+                aws_bin, endpoint_url, region, env, "stackyard-events-delete" if op == "DeleteApi" else "stackyard-events", config_arg
+            )
+            if not events_api_id:
+                return hydrated
+            if op in {"GetApi", "DeleteApi"}:
+                _replace_payload({"apiId": events_api_id})
+            elif op == "UpdateApi":
+                _replace_payload({"apiId": events_api_id, "name": "stackyard-events", "eventConfig": event_config})
+            elif op == "ListChannelNamespaces":
+                _replace_payload({"apiId": events_api_id})
+            elif op == "CreateChannelNamespace":
+                _replace_payload({"apiId": events_api_id, "name": "stackyard-create-ns"})
+            else:
+                ns = "stackyard-delete-ns" if op == "DeleteChannelNamespace" else "stackyard-ns"
+                run_aws_json(
+                    aws_bin, endpoint_url, region, "appsync", "create-channel-namespace", env,
+                    ["--api-id", events_api_id, "--name", ns],
+                )
+                _replace_payload({"apiId": events_api_id, "name": ns})
             return hydrated
 
         if op == "TagResource":
@@ -45772,6 +46074,36 @@ def hydrate_payload_with_service_state(
             )
             return hydrated
 
+        if op in {
+            "PutObjectAnnotation",
+            "GetObjectAnnotation",
+            "DeleteObjectAnnotation",
+            "ListObjectAnnotations",
+        }:
+            annotation_key = s3_ensure_object(aws_bin, endpoint_url, region, env, bucket_name, f"coverage-annotation-{unique}.txt")
+            annotation = {"Bucket": bucket_name, "Key": annotation_key, "AnnotationName": S3_COVERAGE_ANNOTATION_NAME}
+            if op == "PutObjectAnnotation":
+                _replace_payload({**annotation, "AnnotationPayload": "c3RhY2t5YXJk"})
+                return hydrated
+            run_aws_json(
+                aws_bin,
+                endpoint_url,
+                region,
+                "s3api",
+                "put-object-annotation",
+                env,
+                # A streaming blob flag takes a file path; JSON input takes base64.
+                ["--cli-input-json", json.dumps({**annotation, "AnnotationPayload": "c3RhY2t5YXJk"}, separators=(",", ":"))],
+            )
+            if op == "ListObjectAnnotations":
+                annotation.pop("AnnotationName")
+            _replace_payload(annotation)
+            return hydrated
+
+        if op == "UpdateBucketMetadataAnnotationTableConfiguration":
+            _replace_payload({"Bucket": bucket_name, "AnnotationTableConfiguration": {"ConfigurationState": "ENABLED"}})
+            return hydrated
+
         if op == "PutObjectTagging":
             tagging_key = s3_ensure_object(aws_bin, endpoint_url, region, env, bucket_name, f"coverage-tagging-{unique}.txt")
             _replace_payload(
@@ -46300,6 +46632,23 @@ def hydrate_payload_with_service_state(
 
         if op == "PutResourcePolicy":
             _replace_payload({"ResourceArn": resource_arn, "Policy": policy_json})
+            return hydrated
+
+        if op == "CreateQev2IdcApplication":
+            _replace_payload(
+                {
+                    "IdcInstanceArn": REDSHIFT_DEFAULT_IDC_INSTANCE_ARN,
+                    "Qev2IdcApplicationName": f"{REDSHIFT_DEFAULT_QEV2_APPLICATION_NAME}-{unique}",
+                    "IdcDisplayName": "stackyard-qev2-app",
+                }
+            )
+            return hydrated
+
+        if op in {"ModifyQev2IdcApplication", "DeleteQev2IdcApplication"}:
+            payload_update = {"Qev2IdcApplicationArn": redshift_ensure_qev2_application(aws_bin, endpoint_url, region, env)}
+            if op == "ModifyQev2IdcApplication":
+                payload_update["IdcDisplayName"] = "stackyard-qev2-app-updated"
+            _replace_payload(payload_update)
             return hydrated
 
         if op == "CreateRedshiftIdcApplication":
@@ -47741,7 +48090,8 @@ def hydrate_payload_with_service_state(
             return hydrated
 
         if op == "GetFunctionEventInvokeConfig":
-            _replace_payload({"FunctionName": function_name, "Qualifier": alias_name})
+            # The helper above puts an unqualified config; read that one back.
+            _replace_payload({"FunctionName": function_name})
             return hydrated
 
         if op == "GetFunctionRecursionConfig":
@@ -56891,6 +57241,11 @@ def hydrate_payload_with_service_state(
         if op in {"CreateJobQueue", "UpdateJobQueue"}:
             set_key_if_present_case_insensitive(payload, "SchedulingPolicyArn", "")
             order_key = find_key_case_insensitive(payload, "ComputeEnvironmentOrder")
+            if order_key is None and op == "CreateJobQueue":
+                # Optional in the model (pruned away), but a queue needs one
+                # compute or service environment.
+                order_key = "computeEnvironmentOrder"
+                payload[order_key] = [{"order": 1, "computeEnvironment": ""}]
             if order_key is not None and isinstance(payload.get(order_key), list):
                 order_list = payload[order_key]
                 if not order_list:
@@ -57914,11 +58269,14 @@ def run_s3_outfile_operation(
     key = str(payload_value_case_insensitive(payload, "Key", "")).strip()
     cmd = list(base_cmd)
 
-    if endpoint.operation in {"GetObject", "GetObjectTorrent"}:
+    if endpoint.operation in {"GetObject", "GetObjectTorrent", "GetObjectAnnotation"}:
         if bucket:
             cmd.extend(["--bucket", bucket])
         if key:
             cmd.extend(["--key", key])
+        if endpoint.operation == "GetObjectAnnotation":
+            name = str(payload_value_case_insensitive(payload, "AnnotationName", S3_COVERAGE_ANNOTATION_NAME)).strip()
+            cmd.extend(["--annotation-name", name or S3_COVERAGE_ANNOTATION_NAME])
     elif endpoint.operation == "SelectObjectContent":
         expression = str(payload_value_case_insensitive(payload, "Expression", "SELECT * FROM S3Object")).strip()
         expression_type = str(payload_value_case_insensitive(payload, "ExpressionType", "SQL")).strip() or "SQL"
@@ -60011,7 +60369,7 @@ def run_endpoint(
     text = ""
     cmd: list[str] = []
     s3_manual_arg_ops = {"UploadPart", "UploadPartCopy"}
-    s3_outfile_ops = {"GetObject", "GetObjectTorrent"}
+    s3_outfile_ops = {"GetObject", "GetObjectTorrent", "GetObjectAnnotation"}
     neptunedata_outfile_ops = {"ExecuteGremlinExplainQuery", "ExecuteGremlinProfileQuery", "ExecuteOpenCypherExplainQuery"}
     neptuneanalytics_outfile_ops = {"ExecuteQuery"}
     appsync_outfile_ops = {"GetIntrospectionSchema"}
@@ -60525,6 +60883,12 @@ def endpoint_dependency_rank(endpoint: Endpoint) -> int:
             return 1
         if endpoint.operation.startswith("Delete"):
             return 2
+    if endpoint.service == "sesv2":
+        # Remove a tenant's resource associations before the tenant itself.
+        if endpoint.operation == "DeleteTenantResourceAssociation":
+            return 0
+        if endpoint.operation == "DeleteTenant":
+            return 1
     if endpoint.service == "privateca":
         if endpoint.operation == "DeletePolicy":
             return 0
@@ -61100,6 +61464,8 @@ def main() -> int:
                 print(f"error: {err}", file=sys.stderr)
                 return 1
 
+        global _AWS_BIN  # noqa: PLW0603
+        _AWS_BIN = args.aws_bin
         endpoints, warnings = build_endpoints(
             args.aws_bin,
             env,

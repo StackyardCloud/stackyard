@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -30,8 +31,8 @@ func TestS3TablesStage2CreateGetDeleteTable(t *testing.T) {
 	if err := json.Unmarshal(mustBody(t, resp), &createResp); err != nil {
 		t.Fatalf("parse create response: %v", err)
 	}
-	if createResp.Name != "metrics" {
-		t.Fatalf("unexpected table name %q", createResp.Name)
+	if !strings.HasSuffix(createResp.TableArn, "/metrics") || createResp.VersionToken == "" {
+		t.Fatalf("unexpected create response %+v", createResp)
 	}
 
 	getURL := createURL + "?namespace=analytics&name=metrics"

@@ -81,6 +81,8 @@ func (s *fsxStore) Handle(action string, payload map[string]any) map[string]any 
 				fsxDefaultStorageVirtualMachine("svm-00000000000000000", "fs-00000000000000000", now, "CREATED"),
 			},
 		}
+	case "DetachAndDeleteS3AccessPoint":
+		return map[string]any{"Lifecycle": "DELETING", "Name": fsxPayloadString(payload, "Name", "stackyard")}
 	case "CreateAndAttachS3AccessPoint":
 		return map[string]any{
 			"S3AccessPointAttachment": fsxDefaultS3AccessPointAttachment(payload, volumeID, now),

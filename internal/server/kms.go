@@ -758,11 +758,16 @@ func (s *Server) handleKMSJSONRouter(w http.ResponseWriter, r *http.Request) boo
 		return true
 
 	case "DeleteImportedKeyMaterial":
-		if err := s.kms.DeleteImportedKeyMaterial(kmsString(payload["KeyId"])); err != nil {
+		keyArn, err := s.kms.DeleteImportedKeyMaterial(kmsString(payload["KeyId"]))
+		if err != nil {
 			respondKMSErrorForErr(w, err)
 			return true
 		}
-		respondKMSJSON(w, http.StatusOK, map[string]any{})
+		out := map[string]any{"KeyId": keyArn}
+		if id := kmsString(payload["KeyMaterialId"]); id != "" {
+			out["KeyMaterialId"] = id
+		}
+		respondKMSJSON(w, http.StatusOK, out)
 		return true
 
 	case "ReplicateKey":

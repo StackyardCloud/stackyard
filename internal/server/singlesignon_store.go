@@ -141,23 +141,22 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 	case "UpdateInstance", "DeleteInstance":
 		return map[string]any{}
 	case "AddRegion":
-		region := ssoPayloadString(payload, "Region", "us-east-1")
+		region := ssoPayloadString(payload, "RegionName", "us-east-1")
 		s.regions[region] = true
-		return map[string]any{}
+		return map[string]any{"Status": "ACTIVE"}
 	case "RemoveRegion":
-		region := ssoPayloadString(payload, "Region", "us-east-1")
-		delete(s.regions, region)
-		if len(s.regions) == 0 {
-			s.regions["us-east-1"] = true
+		region := ssoPayloadString(payload, "RegionName", "us-east-1")
+		if region != ssoPrimaryRegion { // the primary region cannot be removed
+			delete(s.regions, region)
 		}
-		return map[string]any{}
+		return map[string]any{"Status": "REMOVING"}
 	case "DescribeRegion":
-		region := ssoPayloadString(payload, "Region", "us-east-1")
-		return map[string]any{"Region": map[string]any{"Region": region, "Status": "ACTIVE"}}
+		region := ssoPayloadString(payload, "RegionName", "us-east-1")
+		return ssoRegionMetadata(region)
 	case "ListRegions":
 		items := make([]any, 0, len(s.regions))
 		for _, r := range sortedStringKeysBool(s.regions) {
-			items = append(items, map[string]any{"Region": r, "Status": "ACTIVE"})
+			items = append(items, ssoRegionMetadata(r))
 		}
 		return map[string]any{"Regions": items, "NextToken": ""}
 	case "CreateInstanceAccessControlAttributeConfiguration", "UpdateInstanceAccessControlAttributeConfiguration", "DeleteInstanceAccessControlAttributeConfiguration":
@@ -514,15 +513,19 @@ func (s *singleSignOnStore) Handle(action string, payload map[string]any) map[st
 		}
 	case "PutApplicationSessionConfiguration":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
-		s.appSessionConfigs[arn] = map[string]any{"SessionDuration": ssoPayloadString(payload, "SessionDuration", "PT1H")}
+		status := ssoPayloadString(payload, "UserBackgroundSessionApplicationStatus", "DISABLED")
+		if status != "ENABLED" {
+			status = "DISABLED" // ponytail: store has no error path; unknown enum values collapse to the default
+		}
+		s.appSessionConfigs[arn] = map[string]any{"UserBackgroundSessionApplicationStatus": status}
 		return map[string]any{}
 	case "GetApplicationSessionConfiguration":
 		arn := ssoPayloadString(payload, "ApplicationArn", firstKeyAnyMap(s.applications))
-		m := s.appSessionConfigs[arn]
-		if m == nil {
-			m = map[string]any{"SessionDuration": "PT1H"}
+		status, _ := s.appSessionConfigs[arn]["UserBackgroundSessionApplicationStatus"].(string)
+		if status == "" {
+			status = "DISABLED"
 		}
-		return map[string]any{"SessionConfiguration": cloneAnyMap(m)}
+		return map[string]any{"UserBackgroundSessionApplicationStatus": status}
 	case "PutApplicationAssignmentConfiguration":
 		return map[string]any{}
 	case "GetApplicationAssignmentConfiguration":
@@ -844,4 +847,15 @@ func cloneAnyMap(in map[string]any) map[string]any {
 		out[k] = v
 	}
 	return out
+}
+
+const ssoPrimaryRegion = "us-east-1"
+
+func ssoRegionMetadata(region string) map[string]any {
+	return map[string]any{
+		"RegionName":      region,
+		"Status":          "ACTIVE",
+		"AddedDate":       float64(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		"IsPrimaryRegion": region == ssoPrimaryRegion,
+	}
 }

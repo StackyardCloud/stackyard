@@ -214,7 +214,7 @@ func (s *Service) CreateEventBus(name, eventSourceName, description string) (Eve
 func (s *Service) UpdateEventBus(nameOrArn, kmsKeyIdentifier, description, deadLetterArn string) (EventBus, error) {
 	name := strings.TrimSpace(nameOrArn)
 	if name == "" {
-		return EventBus{}, ErrInvalidParameter
+		name = "default" // Name is optional; AWS updates the default bus.
 	}
 	if strings.HasPrefix(name, "arn:") {
 		if parsed := parseEventBusName(name); parsed != "" {

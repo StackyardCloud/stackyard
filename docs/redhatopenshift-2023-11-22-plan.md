@@ -33,7 +33,7 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 - clusters need a lowercase DNS `clusterProfile.domain`, a `clusterProfile.resourceGroupId` naming a resource group, a `servicePrincipalProfile.clientId`, a `masterProfile.subnetId` and at least one worker profile, each with a `subnetId` and a `count` of at least 3; subnet IDs must name virtual network subnets, which are not required to exist
 - `apiserverProfile` and `ingressProfiles` visibility must be `Public` or `Private`
 - `clusterProfile.pullSecret` and `servicePrincipalProfile.clientSecret` are accepted but never returned
-- the console URL (`https://console-openshift-console.apps.{domain}/`) and API server URL (`https://api.{domain}:6443/`) are server-owned; a domain without a dot is a prefix of `{location}.aroapp.io`
+- the console URL (https `console-openshift-console.apps.{domain}/`) and API server URL (https `api.{domain}:6443/`) are server-owned; a domain without a dot is a prefix of `{location}.aroapp.io`
 - the version defaults to `4.14.16` and the network to pod CIDR `10.128.0.0/14`, service CIDR `172.30.0.0/16` and outbound type `Loadbalancer`
 - `listCredentials` returns the `kubeadmin` user with a stable password; `listAdminCredentials` returns a base64 kubeconfig for the API server URL, at which nothing listens
 

@@ -39,7 +39,7 @@ CRUD, listing, cascade and error behavior come from the shared ARM handler (see 
 
 - workflow `state` is `Enabled` (the default) or `Disabled`; `enable` and `disable` set it
 - a workflow `definition`, when set, must be an object, and its `triggers`, `actions`, `parameters` and `outputs` must be objects; the definition is not otherwise checked
-- `createdTime`, `changedTime`, `version` and `accessEndpoint` (`https://prod-00.{location}.logic.azure.com:443/workflows/{id}`) are server-owned
+- `createdTime`, `changedTime`, `version` and `accessEndpoint` (https `prod-00.{location}.logic.azure.com:443/workflows/{id}`) are server-owned
 - integration accounts need `sku.name` `Free`, `Basic` or `Standard`; `listCallbackUrl` returns a URL signed with a key derived from the account
 - schemas need `schemaType` `Xml` and maps need `mapType` `Xslt`, `Xslt20`, `Xslt30` or `Liquid`; both take no location and report a `contentLink` with the size of any `content`
 

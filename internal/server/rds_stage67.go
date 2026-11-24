@@ -811,12 +811,7 @@ func (s *Server) handleRDSModifyIntegration(w http.ResponseWriter, r *http.Reque
 		respondRDSServiceError(w, "ModifyIntegration", err)
 		return
 	}
-	respondRDSXML(w, "ModifyIntegration", struct {
-		XMLName     xml.Name          `xml:"ModifyIntegrationResult"`
-		Integration rdsIntegrationXML `xml:"Integration"`
-	}{
-		Integration: rdsIntegrationToXML(item),
-	})
+	respondRDSXML(w, "ModifyIntegration", rdsIntegrationResultToXML("ModifyIntegrationResult", item))
 }
 
 func (s *Server) handleRDSDeleteIntegration(w http.ResponseWriter, r *http.Request) {

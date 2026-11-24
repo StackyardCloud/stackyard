@@ -149,4 +149,3 @@ func exitf(format string, args ...any) {
 func logf(format string, args ...any) {
 	fmt.Printf(format+"\n", args...)
 }
-
