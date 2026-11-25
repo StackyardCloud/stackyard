@@ -19,8 +19,7 @@ func (st *frdStore) putDetector(in map[string]any) (map[string]any, *fcErr) {
 		if d, ok := in["description"]; ok {
 			rec["description"] = d
 		}
-		st.coll("detector")[id] = rec
-		return nil, nil
+		return nil, st.replace("detector", id, rec)
 	}
 	return nil, st.add("detector", id, "detector/"+id, map[string]any{"detectorId": id, "eventTypeName": et, "description": in["description"]}, in["tags"])
 }
@@ -169,6 +168,9 @@ func (st *frdStore) updateDetectorVersion(in map[string]any) (map[string]any, *f
 		}
 	}
 	rec["lastUpdatedTime"] = frdNow()
+	if err := st.charge("detector-version/"+id+"/"+ver, rec); err != nil {
+		return nil, err
+	}
 	st.versions[id][ver] = rec
 	return nil, nil
 }
@@ -181,6 +183,9 @@ func (st *frdStore) updateDetectorVersionMetadata(in map[string]any) (map[string
 	}
 	rec := frdCopy(v)
 	rec["description"], rec["lastUpdatedTime"] = in["description"], frdNow()
+	if err := st.charge("detector-version/"+id+"/"+ver, rec); err != nil {
+		return nil, err
+	}
 	st.versions[id][ver] = rec
 	return nil, nil
 }
@@ -333,6 +338,9 @@ func (st *frdStore) updateRuleMetadata(in map[string]any) (map[string]any, *fcEr
 	}
 	rec := frdCopy(r)
 	rec["description"], rec["lastUpdatedTime"] = in["description"], frdNow()
+	if err := st.charge("rule/"+key, rec); err != nil {
+		return nil, err
+	}
 	st.rules[key] = rec
 	return nil, nil
 }

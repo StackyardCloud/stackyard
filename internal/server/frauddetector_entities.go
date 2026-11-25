@@ -103,8 +103,7 @@ func (st *frdStore) updateVariable(in map[string]any) (map[string]any, *fcErr) {
 		}
 	}
 	rec["lastUpdatedTime"] = frdNow()
-	st.coll("variable")[name] = rec
-	return nil, nil
+	return nil, st.replace("variable", name, rec)
 }
 
 func (st *frdStore) deleteVariable(in map[string]any) (map[string]any, *fcErr) {
@@ -175,8 +174,7 @@ func (st *frdStore) putEventType(in map[string]any) (map[string]any, *fcErr) {
 	fcDefault(rec, "labels", []any{})
 	if old := st.coll("event-type")[name]; old != nil {
 		rec["arn"], rec["createdTime"], rec["lastUpdatedTime"] = old["arn"], old["createdTime"], frdNow()
-		st.coll("event-type")[name] = rec
-		return nil, nil
+		return nil, st.replace("event-type", name, rec)
 	}
 	return nil, st.add("event-type", name, "event-type/"+name, rec, in["tags"])
 }
@@ -221,8 +219,7 @@ func (st *frdStore) putExternalModel(in map[string]any) (map[string]any, *fcErr)
 	}
 	if old := st.coll("external-model")[name]; old != nil {
 		rec["arn"], rec["createdTime"], rec["lastUpdatedTime"] = old["arn"], old["createdTime"], frdNow()
-		st.coll("external-model")[name] = rec
-		return nil, nil
+		return nil, st.replace("external-model", name, rec)
 	}
 	return nil, st.add("external-model", name, "external-model/"+name, rec, in["tags"])
 }
@@ -324,8 +321,7 @@ func (st *frdStore) updateList(in map[string]any) (map[string]any, *fcErr) {
 		}
 	}
 	rec["updatedTime"] = frdNow()
-	st.coll("list")[name] = rec
-	return nil, nil
+	return nil, st.replace("list", name, rec)
 }
 
 func (st *frdStore) getListElements(in map[string]any) (map[string]any, *fcErr) {

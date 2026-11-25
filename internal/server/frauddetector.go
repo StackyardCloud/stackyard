@@ -181,6 +181,16 @@ func (st *frdStore) refund(key string) {
 	delete(st.sizes, key)
 }
 
+// replace stores an updated copy of a record, re-charging its size against
+// frdMaxBytes under the key add used, so updates can't grow past the cap.
+func (st *frdStore) replace(kind, key string, rec map[string]any) *fcErr {
+	if err := st.charge(kind+"/"+key, rec); err != nil {
+		return err
+	}
+	st.coll(kind)[key] = rec
+	return nil
+}
+
 // add stores a new record with its ARN, times and tags.
 func (st *frdStore) add(kind, key, arnPath string, rec map[string]any, tags any) *fcErr {
 	c := st.coll(kind)
