@@ -98,6 +98,9 @@
         <a href="#smsvoicev2">End User Messaging SMS</a>
         <a href="#social-messaging">End User Messaging Social</a>
         <a href="#location">Location Service</a>
+        <a href="#geomaps">Location Maps V2</a>
+        <a href="#geoplaces">Location Places V2</a>
+        <a href="#georoutes">Location Routes V2</a>
         <a href="#app-mesh">App Mesh</a>
         <a href="#appsync">AppSync</a>
         <a href="#arc-region-switch">ARC Region Switch</a>
@@ -3603,6 +3606,95 @@
         <li><code>location</code>: <code>docker compose -f examples/aws/location/docker-compose.yml up --build</code></li>
         <li><code>location</code>: <code>docker compose -f examples/aws/location/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="geomaps" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Maps V2</h2>
+        <p>SigV4 signed with service <code>geo-maps</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key (<code>?key=</code>) on a <code>maps.geo.*</code> or <code>geo-maps.*</code> host. Stateless and deterministic: MapLibre style descriptors (version 8) that point back at Stackyard, Mapbox vector tiles holding one empty layer, solid JPEG satellite tiles and terrain-RGB PNG DEM tiles, a one-icon sprite sheet (1x and @2x, PNG and JSON index), glyph PBFs with the requested font stack and range, and static maps rendered as JPEG at the requested size. Path and query members are validated against the model (enums, patterns, ranges, tile coordinates within the zoom level, 256-codepoint glyph ranges, mutually exclusive static-map anchors).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-maps</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Maps V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetGlyphs</code></td></tr>
+        <tr><td><code>GetSprites</code></td></tr>
+        <tr><td><code>GetStaticMap</code></td></tr>
+        <tr><td><code>GetStyleDescriptor</code></td></tr>
+        <tr><td><code>GetTile</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="geoplaces" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Places V2</h2>
+        <p>SigV4 signed with service <code>geo-places</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key. Answers come from a small built-in gazetteer of cities, landmarks and addresses on several continents: token-prefix text matching, structured geocoding by address component, reverse geocoding and nearby search by great-circle distance with radius, bounding-box, circle, country, place-type and category filters, offset NextToken paging, category query suggestions whose QueryId feeds SearchText, highlights, and time zones, contacts and access points on request.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-places</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Places V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>Autocomplete</code></td></tr>
+        <tr><td><code>Geocode</code></td></tr>
+        <tr><td><code>GetPlace</code></td></tr>
+        <tr><td><code>ReverseGeocode</code></td></tr>
+        <tr><td><code>SearchNearby</code></td></tr>
+        <tr><td><code>SearchText</code></td></tr>
+        <tr><td><code>Suggest</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="georoutes" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Routes V2</h2>
+        <p>SigV4 signed with service <code>geo-routes</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key. No road network: routes run in straight great-circle segments through their waypoints (pass-through waypoints stay within a leg) at a fixed speed per travel mode, with FlexiblePolyline or Simple geometry and departure/arrival times. Route matrices (up to 100 x 100) honour circle, auto-circle, bounding-box and polygon routing boundaries; isolines are circles per distance or time threshold; waypoint optimization (up to 50 stops) orders by nearest neighbour while honouring Before constraints and reports cycles as impeding waypoints; SnapToRoads keeps each trace point in place and flags out-of-sequence timestamps.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-routes</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Routes V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CalculateIsolines</code></td></tr>
+        <tr><td><code>CalculateRouteMatrix</code></td></tr>
+        <tr><td><code>CalculateRoutes</code></td></tr>
+        <tr><td><code>OptimizeWaypoints</code></td></tr>
+        <tr><td><code>SnapToRoads</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
