@@ -4,6 +4,8 @@ type chimeOperation struct {
 	Name   string
 	Method string
 	URI    string
+	// Code is the success status when it isn't 200 (Chime SDK APIs).
+	Code int
 }
 
 // Amazon Chime actions sourced from:
