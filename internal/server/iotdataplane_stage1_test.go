@@ -177,6 +177,9 @@ func TestIoTDataPlaneStage1PublishRetainAndConnections(t *testing.T) {
 	if resp, err := http.Post(ts.URL+"/_stackyard/iot-data/connections", "application/json", strings.NewReader(`{"clientId":"dev-1","cleanSession":false,"sessionToken":"guess"}`)); err != nil || resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("session takeover without token: %v %v", resp, err)
 	}
+	if resp, err := http.Post(ts.URL+"/_stackyard/iot-data/connections", "application/json", strings.NewReader(`{"clientId":"dev-1","cleanSession":true}`)); err != nil || resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("clean-connect takeover without token: %v %v", resp, err)
+	}
 	if msgs := iotdpInbox(t, ts, "dev-1"); len(msgs) != 1 || msgs[0]["topic"] != "plant/line1/temp" {
 		t.Fatalf("retained on subscribe: %v", msgs)
 	}

@@ -492,9 +492,13 @@ func (s *Server) handleIoTDataConnect(w http.ResponseWriter, r *http.Request) {
 		iotdRespondError(w, iotdErrorf("ThrottlingException", "at most %d clients can be connected", iotdMaxClients))
 		return
 	}
-	if c != nil && !clean && !iotdTokenOK(c, req.SessionToken) {
+	// Any connect under an existing client ID needs that client's token:
+	// otherwise a clean connect could replace the client and receive the
+	// messages addressed to it. A stale session is cleared with the signed
+	// DeleteConnection API (cleanSession=true).
+	if c != nil && !iotdTokenOK(c, req.SessionToken) {
 		st.mu.Unlock()
-		iotdRespondError(w, iotdErrorf("ForbiddenException", "resuming client %s's session needs its sessionToken", req.ClientID))
+		iotdRespondError(w, iotdErrorf("ForbiddenException", "client %s is already connected or has a session; pass its sessionToken, or delete the connection first", req.ClientID))
 		return
 	}
 	next := &iotdClient{subs: map[string]int{}, token: iotdNewToken()}
