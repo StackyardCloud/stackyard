@@ -1025,6 +1025,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/iot-twinmaker/docker-compose.yml"
   },
   {
+    id: "iot-secure-tunneling",
+    name: "IoT Secure Tunneling",
+    category: "integration",
+    summary: "Emulate tunnels with one-time source and destination access tokens, token rotation, lifetime-based auto-close, close and delete, listing by thing and tags.",
+    docsHref: "../../../index.html#iot-secure-tunneling",
+    exampleHref: "../../../../examples/aws/iot-secure-tunneling/docker-compose.yml"
+  },
+  {
+    id: "iot-device-advisor",
+    name: "IoT Device Advisor",
+    category: "integration",
+    summary: "Emulate versioned suite definitions, suite runs that progress to PASS with per-test results, stop, qualification reports, the test endpoint and tags.",
+    docsHref: "../../../index.html#iot-device-advisor",
+    exampleHref: "../../../../examples/aws/iot-device-advisor/docker-compose.yml"
+  },
+  {
+    id: "iot-things-graph",
+    name: "IoT Things Graph",
+    category: "integration",
+    summary: "Emulate GraphQL entity uploads into a versioned namespace, thing associations, flow and system templates with revisions, system instance deployments, flow executions and tags.",
+    docsHref: "../../../index.html#iot-things-graph",
+    exampleHref: "../../../../examples/aws/iot-things-graph/docker-compose.yml"
+  },
+  {
     id: "keyspaces",
     name: "Keyspaces",
     category: "database",
