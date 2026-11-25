@@ -21,6 +21,17 @@ type sagemakerStore struct {
 	tags            map[string]map[string]string
 	// runtimeSessions maps SageMaker Runtime stateful session IDs to their endpoint.
 	runtimeSessions map[string]sagemakerRuntimeSession
+
+	// Stateful resources (sagemaker_resources.go), created on first use.
+	featureGroups   map[string]*smfsGroup
+	deviceFleets    map[string]*smeFleet
+	devices         map[string]*smeDevice
+	edgePlans       map[string]*smePlan
+	trialComponents map[string]*smmComponent
+	// smfsBytes counts Feature Store record bytes across groups; smmPoints
+	// counts stored SageMaker Metrics points across trial components.
+	smfsBytes int
+	smmPoints int
 }
 
 type sagemakerTrainingJob struct {

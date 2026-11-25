@@ -66,6 +66,9 @@
         <a href="#braket">Braket</a>
         <a href="#chime">Chime</a>
         <a href="#connect">Connect</a>
+        <a href="#connectcases">Connect Cases</a>
+        <a href="#connectparticipant">Connect Participant</a>
+        <a href="#connectcontactlens">Connect Contact Lens</a>
         <a href="#cleanrooms">Clean Rooms</a>
         <a href="#cleanrooms-ml">Clean Rooms ML</a>
         <a href="#dlm">Data Lifecycle Manager</a>
@@ -113,6 +116,9 @@
         <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrockagent">Agents for Amazon Bedrock</a>
         <a href="#backup">AWS Backup</a>
+        <a href="#outposts">AWS Outposts</a>
+        <a href="#snow-device-management">AWS Snow Device Management</a>
+        <a href="#backup-gateway">AWS Backup gateway</a>
         <a href="#bedrockagentruntime">Agents for Amazon Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
@@ -322,6 +328,12 @@
         <a href="#budgets">Budgets</a>
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
+        <a href="#applicationcostprofiler">Application Cost Profiler</a>
+        <a href="#bcmdashboards">Billing and Cost Management Dashboards</a>
+        <a href="#bcmpricingcalculator">Pricing Calculator</a>
+        <a href="#account">Account</a>
+        <a href="#freetier">Free Tier</a>
+        <a href="#taxsettings">Tax Settings</a>
         <a href="#pi">Performance Insights</a>
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
@@ -342,6 +354,9 @@
         <a href="#rekognition">Rekognition</a>
         <a href="#sagemaker">SageMaker</a>
         <a href="#sagemaker-runtime">SageMaker Runtime</a>
+        <a href="#sagemaker-featurestore-runtime">SageMaker Feature Store Runtime</a>
+        <a href="#sagemaker-metrics">SageMaker Metrics</a>
+        <a href="#sagemaker-edge">SageMaker Edge Manager</a>
         <a href="#simspaceweaver">SimSpace Weaver</a>
         <a href="#supplychain">Supply Chain</a>
         <a href="#savingsplans">Savings Plans</a>
@@ -2534,6 +2549,137 @@
         <li><code>connect</code>: <code>docker compose -f examples/aws/connect/docker-compose.yml up --build</code></li>
         <li><code>connect</code>: <code>docker compose -f examples/aws/connect/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="connectcases" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Cases</h2>
+        <p>SigV4 signed with service <code>cases</code>. REST JSON. Domains are seeded with system fields (title, status with open/closed options, customer_id, reference_number, summary and the created/updated/closed date-times). Custom fields, SingleSelect options, layouts, templates (required fields, case rules, tag propagation) and case rules are checked against each other; deletes are refused while something references them. Cases get reference numbers, typed field values, client-token idempotency and an audit history; closing stamps last_closed_datetime. Related items are comments, files, SLAs (Active, Met once the case field reaches the target, Overdue past the target time), linked cases, custom field sets and contacts, which must be chat contacts started with Connect's StartChatContact. SearchCases takes a search term, field and tag filters (at most 20 conditions, 5 deep), sorts and paging; StartMergeCases copies chosen fields and moves related items onto the primary case. Stored case bytes are bounded per case (512 KiB) and store-wide (16 MiB).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cases</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Cases API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateRelatedItem</code></td></tr>
+        <tr><td><code>BatchGetCaseRule</code></td></tr>
+        <tr><td><code>BatchGetField</code></td></tr>
+        <tr><td><code>BatchPutFieldOptions</code></td></tr>
+        <tr><td><code>BatchUpdateCase</code></td></tr>
+        <tr><td><code>CreateCase</code></td></tr>
+        <tr><td><code>CreateCaseRule</code></td></tr>
+        <tr><td><code>CreateDomain</code></td></tr>
+        <tr><td><code>CreateField</code></td></tr>
+        <tr><td><code>CreateLayout</code></td></tr>
+        <tr><td><code>CreateRelatedItem</code></td></tr>
+        <tr><td><code>CreateTemplate</code></td></tr>
+        <tr><td><code>DeleteCase</code></td></tr>
+        <tr><td><code>DeleteCaseRule</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteField</code></td></tr>
+        <tr><td><code>DeleteLayout</code></td></tr>
+        <tr><td><code>DeleteRelatedItem</code></td></tr>
+        <tr><td><code>DeleteTemplate</code></td></tr>
+        <tr><td><code>GetCase</code></td></tr>
+        <tr><td><code>GetCaseAuditEvents</code></td></tr>
+        <tr><td><code>GetCaseEventConfiguration</code></td></tr>
+        <tr><td><code>GetDomain</code></td></tr>
+        <tr><td><code>GetLayout</code></td></tr>
+        <tr><td><code>GetMergeCasesStatus</code></td></tr>
+        <tr><td><code>GetTemplate</code></td></tr>
+        <tr><td><code>ListCaseRules</code></td></tr>
+        <tr><td><code>ListCasesForContact</code></td></tr>
+        <tr><td><code>ListDomains</code></td></tr>
+        <tr><td><code>ListFieldOptions</code></td></tr>
+        <tr><td><code>ListFields</code></td></tr>
+        <tr><td><code>ListLayouts</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTemplates</code></td></tr>
+        <tr><td><code>PutCaseEventConfiguration</code></td></tr>
+        <tr><td><code>SearchAllRelatedItems</code></td></tr>
+        <tr><td><code>SearchCases</code></td></tr>
+        <tr><td><code>SearchRelatedItems</code></td></tr>
+        <tr><td><code>StartMergeCases</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateCase</code></td></tr>
+        <tr><td><code>UpdateCaseRule</code></td></tr>
+        <tr><td><code>UpdateField</code></td></tr>
+        <tr><td><code>UpdateLayout</code></td></tr>
+        <tr><td><code>UpdateRelatedItem</code></td></tr>
+        <tr><td><code>UpdateTemplate</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="connectparticipant" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Participant Service</h2>
+        <p>REST JSON. The CLI signs these calls for <code>execute-api</code>, but the service authenticates with the participant or connection token in <code>X-Amz-Bearer</code>; unsigned calls carrying a token are accepted too. Chats start with Connect's StartChatContact (CreateParticipant adds a bot or supervisor). CreateParticipantConnection issues connection credentials (WebSocket streaming isn't emulated; poll GetTranscript). Messages and typing/receipt events land in a paged transcript; read and delivered receipts attach to the message. Attachments upload to a one-time URL on Stackyard, exactly the declared size, and download as <code>application/octet-stream</code>. Authentication sessions, the AWS managed views (DescribeView takes the view ARN as its token) and DisconnectParticipant, which ends the chat when the customer leaves. Tokens are never returned by describes or transcripts. Transcripts are bounded per chat and store-wide.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: execute-api (bearer token)</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Participant Service API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelParticipantAuthentication</code></td></tr>
+        <tr><td><code>CompleteAttachmentUpload</code></td></tr>
+        <tr><td><code>CreateParticipantConnection</code></td></tr>
+        <tr><td><code>DescribeView</code></td></tr>
+        <tr><td><code>DisconnectParticipant</code></td></tr>
+        <tr><td><code>GetAttachment</code></td></tr>
+        <tr><td><code>GetAuthenticationUrl</code></td></tr>
+        <tr><td><code>GetTranscript</code></td></tr>
+        <tr><td><code>SendEvent</code></td></tr>
+        <tr><td><code>SendMessage</code></td></tr>
+        <tr><td><code>StartAttachmentUpload</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="connectcontactlens" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Contact Lens</h2>
+        <p>SigV4 signed with service <code>connect</code>; the router claims only <code>POST /realtime-contact-analysis/analysis-segments</code> so Connect keeps the rest. ListRealtimeContactAnalysisSegments analyzes the text messages of chat contacts started with Connect: one Transcript segment per message, with offsets from the start of the contact, lexicon sentiment and detected issues. No Contact Lens rules exist, so no Categories segments are produced.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: connect</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Contact Lens API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ListRealtimeContactAnalysisSegments</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -4735,6 +4881,161 @@
         <ul>
                 <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="outposts" class="service">
+
+        <div class="service-header">
+        <h2>AWS Outposts</h2>
+        <p>SigV4 signed with service <code>outposts</code>. REST JSON API. Sites keep operating and shipping addresses and rack physical properties; outposts belong to a site. Quotes size racks or servers from requested EC2 capacity (vCPUs per family) against a five-item catalog, price every requested term and payment option, and report ordering requirements (outpost, addresses, country). Orders, from a quote option or line items, advance RECEIVED, PENDING, PROCESSING, INSTALLING, FULFILLED one step per GetOrder; fulfilment installs one compute asset per unit and starts the subscription. Capacity tasks re-slot instance pools on the assets (REQUESTED, IN_PROGRESS, COMPLETED per read; FAILED when the pools don't fit) and can be cancelled. Billing lists subscriptions and renewals; private connectivity, connections to assets, decommissioning (blocked by orders in flight) and tags on site and outpost ARNs. Address and rack changes are refused while hardware ships.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: outposts</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Outposts API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelCapacityTask</code></td></tr>
+        <tr><td><code>CancelOrder</code></td></tr>
+        <tr><td><code>CreateOrder</code></td></tr>
+        <tr><td><code>CreateOutpost</code></td></tr>
+        <tr><td><code>CreatePrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>CreateQuote</code></td></tr>
+        <tr><td><code>CreateRenewal</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>DeleteOutpost</code></td></tr>
+        <tr><td><code>DeleteQuote</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>GetCapacityTask</code></td></tr>
+        <tr><td><code>GetCatalogItem</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetOrder</code></td></tr>
+        <tr><td><code>GetOutpost</code></td></tr>
+        <tr><td><code>GetOutpostBillingInformation</code></td></tr>
+        <tr><td><code>GetOutpostInstanceTypes</code></td></tr>
+        <tr><td><code>GetOutpostSupportedInstanceTypes</code></td></tr>
+        <tr><td><code>GetPrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>GetQuote</code></td></tr>
+        <tr><td><code>GetRenewalPricing</code></td></tr>
+        <tr><td><code>GetSite</code></td></tr>
+        <tr><td><code>GetSiteAddress</code></td></tr>
+        <tr><td><code>ListAssetInstances</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListBlockingInstancesForCapacityTask</code></td></tr>
+        <tr><td><code>ListCapacityTasks</code></td></tr>
+        <tr><td><code>ListCatalogItems</code></td></tr>
+        <tr><td><code>ListOrderableInstanceTypes</code></td></tr>
+        <tr><td><code>ListOrders</code></td></tr>
+        <tr><td><code>ListOutposts</code></td></tr>
+        <tr><td><code>ListQuotes</code></td></tr>
+        <tr><td><code>ListSites</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartCapacityTask</code></td></tr>
+        <tr><td><code>StartConnection</code></td></tr>
+        <tr><td><code>StartOutpostDecommission</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateOutpost</code></td></tr>
+        <tr><td><code>UpdateQuote</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateSiteAddress</code></td></tr>
+        <tr><td><code>UpdateSiteRackPhysicalProperties</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="snow-device-management" class="service">
+
+        <div class="service-header">
+        <h2>AWS Snow Device Management</h2>
+        <p>SigV4 signed with service <code>snow-device-management</code>. REST JSON API. Managed devices are the Snowball jobs that are not cancelled (one device per job, typed from the job's Snowball type), each with capacities, network interfaces and one EC2 instance. Tasks run <code>reboot</code> or <code>unlock</code> on their targets: every execution goes QUEUED, IN_PROGRESS, SUCCEEDED one step per read (FAILED if the device leaves management), an unlock moves the device through UNLOCKING to UNLOCKED, and the task completes when all executions finish. CancelTask cancels open executions; client tokens are idempotent. Tags on task and managed device ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: snow-device-management</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Snow Device Management API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTask</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DescribeDevice</code></td></tr>
+        <tr><td><code>DescribeDeviceEc2Instances</code></td></tr>
+        <tr><td><code>DescribeExecution</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>ListDeviceResources</code></td></tr>
+        <tr><td><code>ListDevices</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="backup-gateway" class="service">
+
+        <div class="service-header">
+        <h2>AWS Backup gateway</h2>
+        <p>SigV4 signed with service <code>backup-gateway</code>. JSON 1.0 API with <code>X-Amz-Target: BackupOnPremises_v20210101.*</code>. Gateways associate with one imported hypervisor (and block its deletion), keep a maintenance window (weekly or monthly), a bandwidth rate limit schedule (overlaps refused) and a software version that UpdateGatewaySoftwareNow advances. Imported hypervisors go PENDING to ONLINE on their next read; a metadata sync runs CREATED, RUNNING, SUCCEEDED one step per GetHypervisor and discovers the host's virtual machines, which carry the hypervisor's VMware tag mappings. VMs are AWS Backup resources: StartBackupJob takes their names from here and LastBackupDate comes from their latest completed recovery point. Hypervisor credentials are never stored or returned.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: backup-gateway</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Backup gateway API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateGatewayToServer</code></td></tr>
+        <tr><td><code>CreateGateway</code></td></tr>
+        <tr><td><code>DeleteGateway</code></td></tr>
+        <tr><td><code>DeleteHypervisor</code></td></tr>
+        <tr><td><code>DisassociateGatewayFromServer</code></td></tr>
+        <tr><td><code>GetBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>GetGateway</code></td></tr>
+        <tr><td><code>GetHypervisor</code></td></tr>
+        <tr><td><code>GetHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>GetVirtualMachine</code></td></tr>
+        <tr><td><code>ImportHypervisorConfiguration</code></td></tr>
+        <tr><td><code>ListGateways</code></td></tr>
+        <tr><td><code>ListHypervisors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVirtualMachines</code></td></tr>
+        <tr><td><code>PutBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>PutHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>PutMaintenanceStartTime</code></td></tr>
+        <tr><td><code>StartVirtualMachinesMetadataSync</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>TestHypervisorConfiguration</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateGatewayInformation</code></td></tr>
+        <tr><td><code>UpdateGatewaySoftwareNow</code></td></tr>
+        <tr><td><code>UpdateHypervisor</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -21960,7 +22261,7 @@
 
         <div class="service-header">
         <h2>Amazon SageMaker</h2>
-        <p>SigV4 signed with service <code>sagemaker</code>. SageMaker control plane exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SageMaker.&lt;Action&gt;</code>. Current planning in Stackyard tracks staged implementation across all 379 documented actions and 728 documented API data types.</p>
+        <p>SigV4 signed with service <code>sagemaker</code>. SageMaker control plane exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SageMaker.&lt;Action&gt;</code>. Current planning in Stackyard tracks staged implementation across all 379 documented actions and 728 documented API data types. Feature groups, device fleets, devices, edge deployment plans and trial components keep real state (validated against the CLI 2.42.1 model) for SageMaker Feature Store Runtime, Edge Manager and Metrics.</p>
         </div>
         <div class="service-meta">
         <span class="meta-pill">SigV4: sagemaker</span>
@@ -22018,6 +22319,102 @@
         <summary>Examples</summary>
         <ul>
         <li><code>sagemaker-runtime</code>: <code>docker compose -f examples/aws/sagemaker-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-featurestore-runtime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Feature Store Runtime</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON API over <code>/FeatureGroup/{FeatureGroupName}</code> (PUT, GET, DELETE, <code>/Record</code>, <code>/ListRecords</code>), <code>/BatchGetRecord</code> and <code>/BatchWriteRecord</code>. Records live in the online store of feature groups created with SageMaker <code>CreateFeatureGroup</code>: feature names, Integral/Fractional/String types, List/Set/Vector collections, the record identifier and the event time are checked against the group's definitions; older events don't replace newer records; soft and hard deletes, TTL expiry (<code>ExpiresAt</code>) and <code>UpdateRecord</code> conflicts follow the API reference. The offline store is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>7</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakerfeaturestoreruntime_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-featurestore-runtime</code>: <code>docker compose -f examples/aws/sagemaker-featurestore-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-metrics" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Metrics</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON API: <code>PUT /BatchPutMetrics</code> appends metric values to a trial component created with SageMaker (or a training job's <code>&lt;job&gt;-aws-training-job</code> component); <code>POST /BatchGetMetrics</code> returns Min, Max, Avg, Count, StdDev or Last per iteration or per one-minute, five-minute or one-hour window. <code>DescribeTrialComponent</code> reports the metric summaries.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakermetrics_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-metrics</code>: <code>docker compose -f examples/aws/sagemaker-metrics/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-edge" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Edge Manager</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON agent API over <code>POST /GetDeviceRegistration</code>, <code>/GetDeployments</code> and <code>/SendHeartbeat</code> for devices registered to SageMaker device fleets. Deployments come from in-progress stages of SageMaker edge deployment plans that select the device; heartbeats update <code>DescribeDevice</code> and the plan's per-stage success, pending and failed counts.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>3</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakeredge_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-edge</code>: <code>docker compose -f examples/aws/sagemaker-edge/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -26592,6 +26989,244 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateExport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="applicationcostprofiler" class="service">
+
+        <div class="service-header">
+        <h2>AWS Application Cost Profiler</h2>
+        <p>SigV4 signed with service <code>application-cost-profiler</code>. REST JSON API under <code>/reportDefinition</code> and <code>/importApplicationUsage</code>. Report definitions (at most 50) name a destination bucket and prefix in Stackyard's S3; the bucket must exist. ImportApplicationUsage reads a CSV usage file (ApplicationId, TenantId, TenantDesc, ResourceId, StartTime, EndTime; at most 1 MiB and 10,000 rows) from S3 and writes, for every definition, each tenant's usage hours and share of each resource to <code>prefix/reportId/YYYY/MM/DD/importId.csv</code> (MONTHLY: <code>YYYY/MM</code>) plus a JSON manifest. PARQUET definitions get the manifest only.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: application-cost-profiler</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Application Cost Profiler API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteReportDefinition</code></td></tr>
+        <tr><td><code>GetReportDefinition</code></td></tr>
+        <tr><td><code>ImportApplicationUsage</code></td></tr>
+        <tr><td><code>ListReportDefinitions</code></td></tr>
+        <tr><td><code>PutReportDefinition</code></td></tr>
+        <tr><td><code>UpdateReportDefinition</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="bcmdashboards" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Dashboards</h2>
+        <p>SigV4 signed with service <code>bcm-dashboards</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMDashboardsService.*</code>. Dashboards hold up to 20 widgets on a six-column grid; each widget's Cost Explorer-style query (cost and usage, Savings Plans and reservation coverage or utilization) is checked and stored: one query kind and one display per config, ABSOLUTE ISO 8601 or RELATIVE ISO 8601 duration time ranges in order, at most two group-bys on real dimensions, filters with one operator per level. Stackyard does not compute costs. Scheduled reports take cron or rate schedules, idempotent client tokens and unique names; their health is derived on every read (DASHBOARD_NOT_FOUND, WIDGET_ID_NOT_FOUND) and an unhealthy report is not triggered by ExecuteScheduledReport. Resource policies and tags on dashboard and report ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-dashboards</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Dashboards API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDashboard</code></td></tr>
+        <tr><td><code>CreateScheduledReport</code></td></tr>
+        <tr><td><code>DeleteDashboard</code></td></tr>
+        <tr><td><code>DeleteScheduledReport</code></td></tr>
+        <tr><td><code>ExecuteScheduledReport</code></td></tr>
+        <tr><td><code>GetDashboard</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>GetScheduledReport</code></td></tr>
+        <tr><td><code>ListDashboards</code></td></tr>
+        <tr><td><code>ListScheduledReports</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDashboard</code></td></tr>
+        <tr><td><code>UpdateScheduledReport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="bcmpricingcalculator" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Pricing Calculator</h2>
+        <p>SigV4 signed with service <code>bcm-pricing-calculator</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMPricingCalculator.*</code>. Prices come from a small built-in us-east-1 catalog (EC2, EBS, S3, Lambda, RDS, DynamoDB, CloudWatch) plus three Reserved Instance offerings, so estimates are deterministic. Bill scenarios cover the current month and hold usage modifications (hourly amounts from a start hour) and commitment modifications; batch entries fail individually (unknown price, foreign account, duplicate key). A bill estimate snapshots its scenario and prices it: on-demand usage, Reserved Instances covering matching instance hours, Compute Savings Plans covering eligible spend at a 28% discount. It is IN_PROGRESS, with its scenario LOCKED, until the next request. Workload estimates price usage lines and are UPDATING until the next request after a change. Rate types follow the account's preferences (disallowedRate otherwise). Tags on scenario, estimate and workload ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-pricing-calculator</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Pricing Calculator API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchCreateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchCreateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchDeleteWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchUpdateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>CreateBillEstimate</code></td></tr>
+        <tr><td><code>CreateBillScenario</code></td></tr>
+        <tr><td><code>CreateWorkloadEstimate</code></td></tr>
+        <tr><td><code>DeleteBillEstimate</code></td></tr>
+        <tr><td><code>DeleteBillScenario</code></td></tr>
+        <tr><td><code>DeleteWorkloadEstimate</code></td></tr>
+        <tr><td><code>GetBillEstimate</code></td></tr>
+        <tr><td><code>GetBillScenario</code></td></tr>
+        <tr><td><code>GetPreferences</code></td></tr>
+        <tr><td><code>GetUsageLinesEstimatedCost</code></td></tr>
+        <tr><td><code>GetWorkloadEstimate</code></td></tr>
+        <tr><td><code>ListBillEstimateCommitments</code></td></tr>
+        <tr><td><code>ListBillEstimateInputCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateInputUsageModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateLineItems</code></td></tr>
+        <tr><td><code>ListBillEstimates</code></td></tr>
+        <tr><td><code>ListBillScenarioCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillScenarioUsageModifications</code></td></tr>
+        <tr><td><code>ListBillScenarios</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>ListWorkloadEstimates</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateBillEstimate</code></td></tr>
+        <tr><td><code>UpdateBillScenario</code></td></tr>
+        <tr><td><code>UpdatePreferences</code></td></tr>
+        <tr><td><code>UpdateWorkloadEstimate</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="account" class="service">
+
+        <div class="service-header">
+        <h2>AWS Account</h2>
+        <p>SigV4 signed with service <code>account</code>. REST JSON API; every operation is <code>POST /&lt;operation&gt;</code> in lower camel case (for example <code>POST /getAccountInformation</code>). The caller (123456789012) is the Organizations management account; an AccountId parameter is resolved against the Organizations store's accounts (member 210987654321); the caller's own ID is refused with ValidationException and accounts outside the organization with AccessDeniedException. Account name, state and creation date; alternate contacts (BILLING, OPERATIONS, SECURITY); contact information with phone verification; primary email update for member accounts (StartPrimaryEmailUpdate -&gt; PENDING, AcceptPrimaryEmailUpdate with the one-time code -&gt; ACCEPTED, then COMPLETED); opt-in Regions move through ENABLING / DISABLING and report ENABLED / DISABLED on the following read; default Regions are ENABLED_BY_DEFAULT and can't be changed. Stackyard sends no email or SMS: the one-time code is the first 6 characters, upper-case hex, of SHA-256 of <code>&lt;accountId&gt;:&lt;new email&gt;</code> (email) or <code>&lt;accountId&gt;:&lt;phone number&gt;</code> (phone).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: account</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Account API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>DeleteAlternateContact</code></td></tr>
+        <tr><td><code>DisableRegion</code></td></tr>
+        <tr><td><code>EnableRegion</code></td></tr>
+        <tr><td><code>GetAccountInformation</code></td></tr>
+        <tr><td><code>GetAlternateContact</code></td></tr>
+        <tr><td><code>GetContactInformation</code></td></tr>
+        <tr><td><code>GetGovCloudAccountInformation</code></td></tr>
+        <tr><td><code>GetPrimaryEmail</code></td></tr>
+        <tr><td><code>GetPrimaryEmailUpdateStatus</code></td></tr>
+        <tr><td><code>GetRegionOptStatus</code></td></tr>
+        <tr><td><code>ListRegions</code></td></tr>
+        <tr><td><code>PutAccountName</code></td></tr>
+        <tr><td><code>PutAlternateContact</code></td></tr>
+        <tr><td><code>PutContactInformation</code></td></tr>
+        <tr><td><code>SendPhoneNumberVerification</code></td></tr>
+        <tr><td><code>StartPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>VerifyPhoneNumber</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="freetier" class="service">
+
+        <div class="service-header">
+        <h2>AWS Free Tier</h2>
+        <p>SigV4 signed with service <code>freetier</code>. JSON 1.0 API with <code>X-Amz-Target: AWSFreeTierService.*</code>. The account starts on the FREE plan with USD 100 of credits expiring six months after first use; UpgradeAccountPlan moves it to PAID (no downgrade). Five sign-up activities worth USD 20 each; the AWS Budgets activity completes when the account has a budget in Stackyard's Budgets and adds its credit. A fixed free-tier usage catalog filtered by Dimensions/And/Or/Not expressions, with pagination.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: freetier</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Free Tier API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetAccountActivity</code></td></tr>
+        <tr><td><code>GetAccountPlanState</code></td></tr>
+        <tr><td><code>GetFreeTierUsage</code></td></tr>
+        <tr><td><code>ListAccountActivities</code></td></tr>
+        <tr><td><code>UpgradeAccountPlan</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="taxsettings" class="service">
+
+        <div class="service-header">
+        <h2>Tax Settings</h2>
+        <p>SigV4 signed with service <code>tax</code>. REST JSON API; every operation is <code>POST /&lt;Operation&gt;</code>. Tax registrations for the caller and the Organizations member accounts (batch put/delete report per-account errors); verification documents supplied inline or read from Stackyard S3 are stored and GetTaxRegistrationDocument writes them to an S3 bucket; supplemental (VAT) registrations; tax exemptions against a fixed exemption-type catalog with Pending then Valid status; tax inheritance (OptIn/OptOut) that member accounts' exemption details report.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: tax</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Tax Settings API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchDeleteTaxRegistration</code></td></tr>
+        <tr><td><code>BatchGetTaxExemptions</code></td></tr>
+        <tr><td><code>BatchPutTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxExemptionTypes</code></td></tr>
+        <tr><td><code>GetTaxInheritance</code></td></tr>
+        <tr><td><code>GetTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxRegistrationDocument</code></td></tr>
+        <tr><td><code>ListSupplementalTaxRegistrations</code></td></tr>
+        <tr><td><code>ListTaxExemptions</code></td></tr>
+        <tr><td><code>ListTaxRegistrations</code></td></tr>
+        <tr><td><code>PutSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>PutTaxExemption</code></td></tr>
+        <tr><td><code>PutTaxInheritance</code></td></tr>
+        <tr><td><code>PutTaxRegistration</code></td></tr>
         </tbody>
         </table>
         </details>
