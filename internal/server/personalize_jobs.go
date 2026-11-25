@@ -19,6 +19,9 @@ import (
 const (
 	pszMaxInputBytes = 8 << 20
 	pszMaxBatchLines = 10000
+	// pszMaxOutputBytes caps the total size of a batch job's output, so a
+	// large numResults can't amplify the bounded input into unbounded work.
+	pszMaxOutputBytes = 8 << 20
 )
 
 type pszS3File struct {
@@ -277,7 +280,7 @@ func (st *personalizeStore) batchVersion(in map[string]any) (*pszRes, *pszFilter
 
 func pszLines(files []pszS3File, each func(line map[string]any) map[string]any) ([]pszS3File, error) {
 	var out []pszS3File
-	count := 0
+	count, total := 0, 0
 	for _, f := range files {
 		var buf bytes.Buffer
 		sc := bufio.NewScanner(bytes.NewReader(f.body))
@@ -297,6 +300,9 @@ func pszLines(files []pszS3File, each func(line map[string]any) map[string]any) 
 				result["input"] = line
 			}
 			raw, _ := json.Marshal(result)
+			if total += len(raw) + 1; total > pszMaxOutputBytes {
+				return nil, fmt.Errorf("Stackyard writes at most %d bytes of batch output", pszMaxOutputBytes)
+			}
 			buf.Write(raw)
 			buf.WriteByte('\n')
 		}

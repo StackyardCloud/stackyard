@@ -66,8 +66,10 @@ func newPSZData(typ string, fields []string) *pszData {
 
 func (d *pszData) isEvents() bool { return d.typ == pszInteractions || d.typ == pszActionInteractions }
 
-func (d *pszData) addEvent(e pszEvent) {
-	d.events = append(d.events, e)
+// addEvents appends es and then drops the oldest events past pszMaxEvents
+// with a single copy, so a large import stays linear.
+func (d *pszData) addEvents(es []pszEvent) {
+	d.events = append(d.events, es...)
 	if over := len(d.events) - pszMaxEvents; over > 0 {
 		d.events = append([]pszEvent(nil), d.events[over:]...)
 	}
@@ -272,9 +274,7 @@ func (d *pszData) apply(imp *pszImport, full bool) *pszErr {
 			return err
 		}
 	}
-	for _, e := range imp.events {
-		d.addEvent(e)
-	}
+	d.addEvents(imp.events)
 	return nil
 }
 

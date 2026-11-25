@@ -163,8 +163,6 @@ func (st *personalizeStore) putInteractions(op string, in map[string]any) *pszEr
 		e.at = at
 		events = append(events, e)
 	}
-	for _, e := range events {
-		ds.data.addEvent(e)
-	}
+	ds.data.addEvents(events)
 	return nil
 }
