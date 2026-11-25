@@ -1580,6 +1580,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
   },
   {
+    id: "outposts",
+    name: "Outposts",
+    category: "compute",
+    summary: "Emulate sites, outposts, quotes, orders that progress to FULFILLED and install assets, capacity tasks, billing and renewals, connections, decommissioning and tags.",
+    docsHref: "../../../index.html#outposts",
+    exampleHref: "../../../../examples/aws/outposts/docker-compose.yml"
+  },
+  {
+    id: "snow-device-management",
+    name: "Snow Device Management",
+    category: "storage",
+    summary: "Emulate managed devices backed by Snowball jobs, reboot and unlock tasks with per-device executions, device EC2 instances and tags.",
+    docsHref: "../../../index.html#snow-device-management",
+    exampleHref: "../../../../examples/aws/snow-device-management/docker-compose.yml"
+  },
+  {
+    id: "backup-gateway",
+    name: "Backup Gateway",
+    category: "storage",
+    summary: "Emulate gateways with maintenance and bandwidth schedules, hypervisor import and metadata sync, virtual machines that AWS Backup can back up, and tags.",
+    docsHref: "../../../index.html#backup-gateway",
+    exampleHref: "../../../../examples/aws/backup-gateway/docker-compose.yml"
+  },
+  {
     id: "backup",
     name: "AWS Backup",
     category: "storage",

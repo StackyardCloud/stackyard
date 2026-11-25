@@ -581,6 +581,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
+    "outposts": {"cli": "outposts", "ops_file": REPO_ROOT / "internal/server/outposts_ops.go"},
+    "snowdevicemanagement": {"cli": "snow-device-management", "ops_file": REPO_ROOT / "internal/server/snowdevicemanagement_ops.go"},
+    "backupgateway": {"cli": "backup-gateway", "ops_file": REPO_ROOT / "internal/server/backupgateway_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
@@ -2352,6 +2355,12 @@ SERVICE_ALIASES = {
     "amazonforecastquery": "forecastquery",
     "frauddetector": "frauddetector",
     "amazonfrauddetector": "frauddetector",
+    "outposts": "outposts",
+    "awsoutposts": "outposts",
+    "snowdevicemanagement": "snowdevicemanagement",
+    "snow-device-management": "snowdevicemanagement",
+    "backupgateway": "backupgateway",
+    "backup-gateway": "backupgateway",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -3376,6 +3385,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "forecast": {},
     "frauddetector": {},
+    "outposts": {},
+    "snowdevicemanagement": {},
+    "backupgateway": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
@@ -40160,6 +40172,228 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+EDGE_ACCOUNT = "123456789012"
+EDGE_ADDRESS = {"ContactName": "Stackyard Ops", "ContactPhoneNumber": "+15555550100", "AddressLine1": "1 Main St",
+                "City": "Seattle", "StateOrRegion": "WA", "PostalCode": "98101", "CountryCode": "US"}
+
+
+def edge_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def outposts_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Outposts operations at a fixture site and outpost with installed
+    hardware; creates, deletes and capacity tasks get resources of their own.
+    Names are run-unique because servers are reused between runs."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "outposts", name, args)
+
+    def site() -> str:
+        counter[0] += 1
+        return call("CreateSite", {"Name": f"sy-site-{run}-{counter[0]}", "OperatingAddress": EDGE_ADDRESS,
+                                   "ShippingAddress": EDGE_ADDRESS}).get("Site", {}).get("SiteId", "")
+
+    def outpost(site_id: str) -> str:
+        return call("CreateOutpost", {"Name": f"sy-outpost-{run}", "SiteId": site_id}).get("Outpost", {}).get("OutpostId", "")
+
+    def order(outpost_id: str) -> str:
+        return call("CreateOrder", {"OutpostIdentifier": outpost_id, "PaymentOption": "ALL_UPFRONT",
+                                    "LineItems": [{"CatalogItemId": "OR-RACKM5A", "Quantity": 1}]}).get("Order", {}).get("OrderId", "")
+
+    def fulfilled(site_id: str) -> str:
+        oid = outpost(site_id)
+        order_id = order(oid)
+        for _ in range(4):  # RECEIVED -> ... -> FULFILLED
+            call("GetOrder", {"OrderId": order_id})
+        return oid
+
+    state = RUNTIME_STATE.setdefault("outposts", {})
+    if not state.get("outpost"):
+        sid = site()
+        oid = outpost(sid)
+        order_id = order(oid)
+        for _ in range(4):
+            call("GetOrder", {"OrderId": order_id})
+        asset = (call("ListAssets", {"OutpostIdentifier": oid}).get("Assets") or [{}])[0].get("AssetId", "")
+        task = call("StartCapacityTask", {"OutpostIdentifier": oid, "InstancePools": [{"InstanceType": "m5.xlarge", "Count": 8}]})
+        tid = task.get("CapacityTaskId", "")
+        for _ in range(2):  # REQUESTED -> IN_PROGRESS -> COMPLETED
+            call("GetCapacityTask", {"OutpostIdentifier": oid, "CapacityTaskId": tid})
+        call("CreatePrivateConnectivityConfig", {"OutpostId": oid, "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]})
+        quote = call("CreateQuote", {"OutpostIdentifier": oid, "CountryCode": "US",
+                                     "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "m5", "Quantity": 96}]}).get("Quote", {})
+        conn = call("StartConnection", {"AssetId": asset, "ClientPublicKey": "A" * 43 + "=", "NetworkInterfaceDeviceIndex": 0})
+        state.update({"site": sid, "outpost": oid, "order": order_id, "asset": asset, "task": tid,
+                      "quote": quote.get("QuoteId", ""), "connection": conn.get("ConnectionId", "")})
+    sid, oid = state["site"], state["outpost"]
+    arn = f"arn:aws:outposts:us-east-1:{EDGE_ACCOUNT}:outpost/{oid}"
+    rack = {"PowerDrawKva": "POWER_10_KVA", "PowerPhase": "THREE_PHASE", "PowerConnector": "IEC309", "PowerFeedDrop": "ABOVE_RACK",
+            "UplinkGbps": "UPLINK_10G", "UplinkCount": "UPLINK_COUNT_2", "FiberOpticCableType": "SINGLE_MODE",
+            "OpticalStandard": "OPTIC_10GBASE_LR", "MaximumSupportedWeightLbs": "MAX_1400_LBS"}
+    fixed = {
+        "CreateSite": lambda: {"Name": f"sy-created-{run}", "Description": "coverage", "OperatingAddress": EDGE_ADDRESS,
+                               "RackPhysicalProperties": rack, "Tags": {"team": "coverage"}},
+        "GetSite": lambda: {"SiteId": sid},
+        "UpdateSite": lambda: {"SiteId": sid, "Notes": "updated by coverage"},
+        "DeleteSite": lambda: {"SiteId": site()},
+        "GetSiteAddress": lambda: {"SiteId": sid, "AddressType": "OPERATING_ADDRESS"},
+        "UpdateSiteAddress": lambda: {"SiteId": sid, "AddressType": "SHIPPING_ADDRESS", "Address": EDGE_ADDRESS},
+        "UpdateSiteRackPhysicalProperties": lambda: dict(rack, SiteId=sid),
+        "ListSites": lambda: {"MaxResults": 10},
+        "CreateOutpost": lambda: {"Name": f"sy-created-{run}", "SiteId": sid, "Tags": {"team": "coverage"}},
+        "GetOutpost": lambda: {"OutpostId": oid},
+        "UpdateOutpost": lambda: {"OutpostId": oid, "Description": "updated by coverage"},
+        "DeleteOutpost": lambda: {"OutpostId": outpost(sid)},
+        "StartOutpostDecommission": lambda: {"OutpostIdentifier": outpost(sid)},
+        "ListOutposts": lambda: {"MaxResults": 10},
+        "CreatePrivateConnectivityConfig": lambda: {"OutpostId": outpost(sid), "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]},
+        "GetPrivateConnectivityConfig": lambda: {"OutpostId": oid},
+        "CreateQuote": lambda: {"OutpostIdentifier": oid, "CountryCode": "US", "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "c5", "Quantity": 48}]},
+        "GetQuote": lambda: {"QuoteIdentifier": state["quote"]},
+        "UpdateQuote": lambda: {"QuoteIdentifier": state["quote"], "Description": "updated by coverage"},
+        "DeleteQuote": lambda: {"QuoteIdentifier": call("CreateQuote", {"CountryCode": "US", "RequestedCapacities": [
+            {"QuoteCapacityType": "EBS", "Unit": "TB", "Quantity": 10}]}).get("Quote", {}).get("QuoteId", "")},
+        "ListQuotes": lambda: {"MaxResults": 10},
+        "CreateOrder": lambda: {"OutpostIdentifier": oid, "PaymentOption": "NO_UPFRONT", "PaymentTerm": "ONE_YEAR",
+                                "LineItems": [{"CatalogItemId": "OR-RACKC5A", "Quantity": 1}]},
+        "GetOrder": lambda: {"OrderId": state["order"]},
+        "CancelOrder": lambda: {"OrderId": order(oid)},
+        "ListOrders": lambda: {"OutpostIdentifierFilter": oid},
+        "ListAssets": lambda: {"OutpostIdentifier": oid},
+        "ListAssetInstances": lambda: {"OutpostIdentifier": oid},
+        "GetOutpostInstanceTypes": lambda: {"OutpostId": oid},
+        "GetOutpostSupportedInstanceTypes": lambda: {"OutpostIdentifier": oid, "AssetId": state["asset"]},
+        "StartCapacityTask": lambda: {"OutpostIdentifier": fulfilled(sid), "InstancePools": [{"InstanceType": "m5.large", "Count": 4}]},
+        "CancelCapacityTask": lambda: (lambda o: {"OutpostIdentifier": o, "CapacityTaskId": call("StartCapacityTask", {
+            "OutpostIdentifier": o, "InstancePools": [{"InstanceType": "m5.large", "Count": 2}]}).get("CapacityTaskId", "")})(fulfilled(sid)),
+        "GetCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListBlockingInstancesForCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListCapacityTasks": lambda: {"OutpostIdentifierFilter": oid},
+        "StartConnection": lambda: {"AssetId": state["asset"], "ClientPublicKey": "B" * 43 + "=", "NetworkInterfaceDeviceIndex": 1},
+        "GetConnection": lambda: {"ConnectionId": state["connection"]},
+        "GetOutpostBillingInformation": lambda: {"OutpostIdentifier": oid},
+        "GetRenewalPricing": lambda: {"OutpostIdentifier": oid},
+        "CreateRenewal": lambda: {"OutpostIdentifier": oid, "PaymentOption": "ALL_UPFRONT", "PaymentTerm": "THREE_YEARS", "ClientToken": f"sy-{run}"},
+        "GetCatalogItem": lambda: {"CatalogItemId": "OR-RACKM5A"},
+        "ListCatalogItems": lambda: {"ItemClassFilter": ["RACK"]},
+        "ListOrderableInstanceTypes": lambda: {"OutpostGenerationFilter": "GENERATION_2"},
+        "ListTagsForResource": lambda: {"ResourceArn": arn},
+        "TagResource": lambda: {"ResourceArn": arn, "Tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"ResourceArn": arn, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def snowdevicemanagement_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Managed devices are Snowball jobs: create one, then point device and
+    task operations at it; CancelTask gets a task of its own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "snow-device-management", name, args)
+
+    def task() -> dict:
+        return call("CreateTask", {"command": {"reboot": {}}, "targets": [state["device"]], "tags": {"team": "coverage"}})
+
+    state = RUNTIME_STATE.setdefault("snowdevicemanagement", {})
+    if not state.get("device"):
+        job = edge_call(aws_bin, endpoint_url, region, env, "snowball", "CreateJob",
+                        {"JobType": "IMPORT", "SnowballType": "EDGE", "Description": "snow device management coverage"}).get("JobId", "")
+        device = (call("ListDevices", {"jobId": job}).get("devices") or [{}])[0].get("managedDeviceId", "")
+        state.update({"job": job, "device": device})
+        instance = (call("ListDeviceResources", {"managedDeviceId": device}).get("resources") or [{}])[0].get("id", "")
+        state.update({"instance": instance, "task": task()})
+    dev, tid, tarn = state["device"], state["task"].get("taskId", ""), state["task"].get("taskArn", "")
+    fixed = {
+        "ListDevices": lambda: {"jobId": state["job"], "maxResults": 10},
+        "DescribeDevice": lambda: {"managedDeviceId": dev},
+        "ListDeviceResources": lambda: {"managedDeviceId": dev, "type": "AWS::EC2::Instance"},
+        "DescribeDeviceEc2Instances": lambda: {"managedDeviceId": dev, "instanceIds": [state["instance"]]},
+        "CreateTask": lambda: {"command": {"unlock": {}}, "targets": [dev], "description": "coverage unlock"},
+        "DescribeTask": lambda: {"taskId": tid},
+        "CancelTask": lambda: {"taskId": task().get("taskId", "")},
+        "ListTasks": lambda: {"maxResults": 10},
+        "DescribeExecution": lambda: {"taskId": tid, "managedDeviceId": dev},
+        "ListExecutions": lambda: {"taskId": tid},
+        "ListTagsForResource": lambda: {"resourceArn": tarn},
+        "TagResource": lambda: {"resourceArn": tarn, "tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"resourceArn": tarn, "tagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def backupgateway_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Backup gateway operations at a fixture gateway associated with an
+    imported hypervisor whose VMs are synced; creates and deletes get their own."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "backup-gateway", name, args)
+
+    def gateway() -> str:
+        return call("CreateGateway", {"ActivationKey": f"SY-{run}", "GatewayDisplayName": f"sy-gw-{run}",
+                                      "GatewayType": "BACKUP_VM"}).get("GatewayArn", "")
+
+    def hypervisor() -> str:
+        counter[0] += 1
+        return call("ImportHypervisorConfiguration", {"Name": f"sy-hv-{run}", "Host": f"vcenter-{run}-{counter[0]}.example.com"}).get("HypervisorArn", "")
+
+    state = RUNTIME_STATE.setdefault("backupgateway", {})
+    if not state.get("gateway"):
+        gw, hv = gateway(), hypervisor()
+        for _ in range(3):  # PENDING -> ONLINE, sync CREATED -> RUNNING -> SUCCEEDED
+            call("GetHypervisor", {"HypervisorArn": hv})
+        vm = (call("ListVirtualMachines", {"HypervisorArn": hv}).get("VirtualMachines") or [{}])[0].get("ResourceArn", "")
+        call("AssociateGatewayToServer", {"GatewayArn": gw, "ServerArn": hv})
+        state.update({"gateway": gw, "hypervisor": hv, "vm": vm})
+    gw, hv = state["gateway"], state["hypervisor"]
+    fixed = {
+        "CreateGateway": lambda: {"ActivationKey": f"SY-NEW-{run}", "GatewayDisplayName": "sy-created", "GatewayType": "BACKUP_VM",
+                                  "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "DeleteGateway": lambda: {"GatewayArn": gateway()},
+        "GetGateway": lambda: {"GatewayArn": gw},
+        "ListGateways": lambda: {"MaxResults": 10},
+        "UpdateGatewayInformation": lambda: {"GatewayArn": gw, "GatewayDisplayName": "sy-renamed"},
+        "UpdateGatewaySoftwareNow": lambda: {"GatewayArn": gw},
+        "AssociateGatewayToServer": lambda: {"GatewayArn": gateway(), "ServerArn": hv},
+        "DisassociateGatewayFromServer": lambda: (lambda g: (call("AssociateGatewayToServer", {"GatewayArn": g, "ServerArn": hv}), {"GatewayArn": g})[1])(gateway()),
+        "PutMaintenanceStartTime": lambda: {"GatewayArn": gw, "HourOfDay": 3, "MinuteOfHour": 30, "DayOfWeek": 6},
+        "PutBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw, "BandwidthRateLimitIntervals": [
+            {"AverageUploadRateLimitInBitsPerSec": 104857600, "StartHourOfDay": 9, "StartMinuteOfHour": 0,
+             "EndHourOfDay": 17, "EndMinuteOfHour": 0, "DaysOfWeek": [1, 2, 3, 4, 5]}]},
+        "GetBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw},
+        "TestHypervisorConfiguration": lambda: {"GatewayArn": gw, "Host": "vcenter.example.com", "Username": "backup", "Password": "Coverage-Only-1"},
+        "ImportHypervisorConfiguration": lambda: {"Name": "sy-imported", "Host": f"esxi-{run}.example.com", "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "GetHypervisor": lambda: {"HypervisorArn": hv},
+        "ListHypervisors": lambda: {"MaxResults": 10},
+        "UpdateHypervisor": lambda: {"HypervisorArn": hv, "Name": "sy-renamed"},
+        "DeleteHypervisor": lambda: {"HypervisorArn": hypervisor()},
+        "PutHypervisorPropertyMappings": lambda: {"HypervisorArn": hv, "IamRoleArn": f"arn:aws:iam::{EDGE_ACCOUNT}:role/stackyard-bgw",
+                                                  "VmwareToAwsTagMappings": [{"VmwareCategory": "tier", "VmwareTagName": "gold", "AwsTagKey": "tier", "AwsTagValue": "gold"}]},
+        "GetHypervisorPropertyMappings": lambda: {"HypervisorArn": hv},
+        "StartVirtualMachinesMetadataSync": lambda: {"HypervisorArn": hv},
+        "GetVirtualMachine": lambda: {"ResourceArn": state["vm"]},
+        "ListVirtualMachines": lambda: {"HypervisorArn": hv},
+        "ListTagsForResource": lambda: {"ResourceArn": gw},
+        "TagResource": lambda: {"ResourceARN": gw, "Tags": [{"Key": "env", "Value": "coverage"}]},
+        "UntagResource": lambda: {"ResourceARN": gw, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
 def acp_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
     data = run_aws_json(aws_bin, endpoint_url, region, "applicationcostprofiler", op, env, ["--cli-input-json", json.dumps(payload)])
     return data if isinstance(data, dict) else {}
@@ -40807,6 +41041,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "outposts":
+        return outposts_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "snowdevicemanagement":
+        return snowdevicemanagement_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "backupgateway":
+        return backupgateway_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationcostprofiler":
         return applicationcostprofiler_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bcmdashboards":
