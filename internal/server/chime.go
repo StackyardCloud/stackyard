@@ -79,27 +79,35 @@ func isChimeRESTCandidate(r *http.Request) bool {
 }
 
 func parseChimeRoute(method, requestPath string, query url.Values) (string, map[string]string) {
+	op, params := chimeRouteIn(chimeOperations, method, requestPath, query)
+	return op.Name, params
+}
+
+// chimeRouteIn returns the operation in ops whose method and URI template
+// match the request; query literals in a template make it more specific.
+// The zero operation means no match.
+func chimeRouteIn(ops []chimeOperation, method, requestPath string, query url.Values) (chimeOperation, map[string]string) {
 	path := strings.TrimSpace(strings.SplitN(requestPath, "?", 2)[0])
 	if path == "" {
 		path = "/"
 	}
-	bestAction := ""
+	var best chimeOperation
 	bestParams := map[string]string(nil)
 	bestScore := -1
-	for _, op := range chimeOperations {
+	for _, op := range ops {
 		if !strings.EqualFold(op.Method, method) {
 			continue
 		}
 		params, score, ok := chimeMatchTemplate(op.URI, path, query)
 		if ok {
 			if score > bestScore {
-				bestAction = op.Name
+				best = op
 				bestParams = params
 				bestScore = score
 			}
 		}
 	}
-	return bestAction, bestParams
+	return best, bestParams
 }
 
 func chimeMatchTemplate(template, actualPath string, actualQuery url.Values) (map[string]string, int, bool) {

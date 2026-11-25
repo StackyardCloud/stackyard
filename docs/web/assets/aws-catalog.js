@@ -1068,6 +1068,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
   },
   {
+    id: "chimesdkmeetings",
+    name: "Amazon Chime SDK Meetings",
+    category: "integration",
+    summary: "Meetings with media placement URLs, ClientRequestToken idempotency, replica meetings and meeting features (attendee caps, video/content resolution), attendees whose join tokens are returned only when created, capability rules, live transcription settings, and tags.",
+    docsHref: "../../../index.html#chimesdkmeetings",
+    exampleHref: "../../../../examples/aws/chime-sdk-meetings/docker-compose.yml"
+  },
+  {
+    id: "chimesdkmessaging",
+    name: "Amazon Chime SDK Messaging",
+    category: "integration",
+    summary: "App instance channels acting as the x-amz-chime-bearer user: public/private and restricted channels, moderators, memberships (hidden, elastic sub-channels), bans, preferences and read markers, messages with edits, redaction, targets and paging, channel flows that hold messages PENDING until their callback, expiration settings, streaming configurations and tags.",
+    docsHref: "../../../index.html#chimesdkmessaging",
+    exampleHref: "../../../../examples/aws/chime-sdk-messaging/docker-compose.yml"
+  },
+  {
+    id: "chimesdkmediapipelines",
+    name: "Amazon Chime SDK Media Pipelines",
+    category: "integration",
+    summary: "Capture, concatenation, live connector (RTMP) and stream pipelines over Chime SDK meetings that stop when their meeting ends, Kinesis video stream pools with reserved capacity, media insights pipeline configurations and pipelines with pause/resume, speaker search and voice tone analysis tasks that settle asynchronously, and tags.",
+    docsHref: "../../../index.html#chimesdkmediapipelines",
+    exampleHref: "../../../../examples/aws/chime-sdk-media-pipelines/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",

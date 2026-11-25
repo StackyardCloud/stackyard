@@ -192,6 +192,9 @@
         <a href="#pinpointemail">Amazon Pinpoint Email</a>
         <a href="#pinpointsmsvoice">Amazon Pinpoint SMS and Voice</a>
         <a href="#mailmanager">Amazon SES Mail Manager</a>
+        <a href="#chimesdkmeetings">Amazon Chime SDK Meetings</a>
+        <a href="#chimesdkmessaging">Amazon Chime SDK Messaging</a>
+        <a href="#chimesdkmediapipelines">Amazon Chime SDK Media Pipelines</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -13749,6 +13752,191 @@
         <summary>Examples</summary>
         <ul>
         <li><code>mailmanager</code>: <code>docker compose -f examples/aws/mailmanager/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmeetings" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Meetings</h2>
+        <p>SigV4 signed with service <code>chime</code>. Meetings with media placement URLs, ClientRequestToken idempotency, replica meetings and meeting features (attendee caps, video/content resolution), attendees whose join tokens are returned only when created, capability rules, live transcription settings, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Meetings action catalog (16 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateAttendee</code></td></tr>
+        <tr><td><code>BatchUpdateAttendeeCapabilitiesExcept</code></td></tr>
+        <tr><td><code>CreateAttendee</code></td></tr>
+        <tr><td><code>CreateMeeting</code></td></tr>
+        <tr><td><code>CreateMeetingWithAttendees</code></td></tr>
+        <tr><td><code>DeleteAttendee</code></td></tr>
+        <tr><td><code>DeleteMeeting</code></td></tr>
+        <tr><td><code>GetAttendee</code></td></tr>
+        <tr><td><code>GetMeeting</code></td></tr>
+        <tr><td><code>ListAttendees</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartMeetingTranscription</code></td></tr>
+        <tr><td><code>StopMeetingTranscription</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAttendeeCapabilities</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-meetings</code>: <code>docker compose -f examples/aws/chime-sdk-meetings/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmessaging" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Messaging</h2>
+        <p>SigV4 signed with service <code>chime</code>. App instance channels acting as the x-amz-chime-bearer user: public/private and restricted channels, moderators, memberships (hidden, elastic sub-channels), bans, preferences and read markers, messages with edits, redaction, targets and paging, channel flows that hold messages PENDING until their callback, expiration settings, streaming configurations and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Messaging action catalog (51 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateChannelFlow</code></td></tr>
+        <tr><td><code>BatchCreateChannelMembership</code></td></tr>
+        <tr><td><code>ChannelFlowCallback</code></td></tr>
+        <tr><td><code>CreateChannel</code></td></tr>
+        <tr><td><code>CreateChannelBan</code></td></tr>
+        <tr><td><code>CreateChannelFlow</code></td></tr>
+        <tr><td><code>CreateChannelMembership</code></td></tr>
+        <tr><td><code>CreateChannelModerator</code></td></tr>
+        <tr><td><code>DeleteChannel</code></td></tr>
+        <tr><td><code>DeleteChannelBan</code></td></tr>
+        <tr><td><code>DeleteChannelFlow</code></td></tr>
+        <tr><td><code>DeleteChannelMembership</code></td></tr>
+        <tr><td><code>DeleteChannelMessage</code></td></tr>
+        <tr><td><code>DeleteChannelModerator</code></td></tr>
+        <tr><td><code>DeleteMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>DescribeChannel</code></td></tr>
+        <tr><td><code>DescribeChannelBan</code></td></tr>
+        <tr><td><code>DescribeChannelFlow</code></td></tr>
+        <tr><td><code>DescribeChannelMembership</code></td></tr>
+        <tr><td><code>DescribeChannelMembershipForAppInstanceUser</code></td></tr>
+        <tr><td><code>DescribeChannelModeratedByAppInstanceUser</code></td></tr>
+        <tr><td><code>DescribeChannelModerator</code></td></tr>
+        <tr><td><code>DisassociateChannelFlow</code></td></tr>
+        <tr><td><code>GetChannelMembershipPreferences</code></td></tr>
+        <tr><td><code>GetChannelMessage</code></td></tr>
+        <tr><td><code>GetChannelMessageStatus</code></td></tr>
+        <tr><td><code>GetMessagingSessionEndpoint</code></td></tr>
+        <tr><td><code>GetMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>ListChannelBans</code></td></tr>
+        <tr><td><code>ListChannelFlows</code></td></tr>
+        <tr><td><code>ListChannelMemberships</code></td></tr>
+        <tr><td><code>ListChannelMembershipsForAppInstanceUser</code></td></tr>
+        <tr><td><code>ListChannelMessages</code></td></tr>
+        <tr><td><code>ListChannelModerators</code></td></tr>
+        <tr><td><code>ListChannels</code></td></tr>
+        <tr><td><code>ListChannelsAssociatedWithChannelFlow</code></td></tr>
+        <tr><td><code>ListChannelsModeratedByAppInstanceUser</code></td></tr>
+        <tr><td><code>ListSubChannels</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutChannelExpirationSettings</code></td></tr>
+        <tr><td><code>PutChannelMembershipPreferences</code></td></tr>
+        <tr><td><code>PutMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>RedactChannelMessage</code></td></tr>
+        <tr><td><code>SearchChannels</code></td></tr>
+        <tr><td><code>SendChannelMessage</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateChannel</code></td></tr>
+        <tr><td><code>UpdateChannelFlow</code></td></tr>
+        <tr><td><code>UpdateChannelMessage</code></td></tr>
+        <tr><td><code>UpdateChannelReadMarker</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-messaging</code>: <code>docker compose -f examples/aws/chime-sdk-messaging/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmediapipelines" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Media Pipelines</h2>
+        <p>SigV4 signed with service <code>chime</code>. Capture, concatenation, live connector (RTMP) and stream pipelines over Chime SDK meetings that stop when their meeting ends, Kinesis video stream pools with reserved capacity, media insights pipeline configurations and pipelines with pause/resume, speaker search and voice tone analysis tasks that settle asynchronously, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Media Pipelines action catalog (31 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateMediaCapturePipeline</code></td></tr>
+        <tr><td><code>CreateMediaConcatenationPipeline</code></td></tr>
+        <tr><td><code>CreateMediaInsightsPipeline</code></td></tr>
+        <tr><td><code>CreateMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>CreateMediaLiveConnectorPipeline</code></td></tr>
+        <tr><td><code>CreateMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>CreateMediaStreamPipeline</code></td></tr>
+        <tr><td><code>DeleteMediaCapturePipeline</code></td></tr>
+        <tr><td><code>DeleteMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>DeleteMediaPipeline</code></td></tr>
+        <tr><td><code>DeleteMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>GetMediaCapturePipeline</code></td></tr>
+        <tr><td><code>GetMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>GetMediaPipeline</code></td></tr>
+        <tr><td><code>GetMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>GetSpeakerSearchTask</code></td></tr>
+        <tr><td><code>GetVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>ListMediaCapturePipelines</code></td></tr>
+        <tr><td><code>ListMediaInsightsPipelineConfigurations</code></td></tr>
+        <tr><td><code>ListMediaPipelineKinesisVideoStreamPools</code></td></tr>
+        <tr><td><code>ListMediaPipelines</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartSpeakerSearchTask</code></td></tr>
+        <tr><td><code>StartVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>StopSpeakerSearchTask</code></td></tr>
+        <tr><td><code>StopVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>UpdateMediaInsightsPipelineStatus</code></td></tr>
+        <tr><td><code>UpdateMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-media-pipelines</code>: <code>docker compose -f examples/aws/chime-sdk-media-pipelines/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

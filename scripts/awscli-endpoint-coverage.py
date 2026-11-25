@@ -593,6 +593,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
     "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
     "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
+    "chimesdkmeetings": {"cli": "chime-sdk-meetings", "ops_file": REPO_ROOT / "internal/server/chimesdkmeetings_ops.go"},
+    "chimesdkmessaging": {"cli": "chime-sdk-messaging", "ops_file": REPO_ROOT / "internal/server/chimesdkmessaging_ops.go"},
+    "chimesdkmediapipelines": {"cli": "chime-sdk-media-pipelines", "ops_file": REPO_ROOT / "internal/server/chimesdkmediapipelines_ops.go"},
     "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
     "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
     "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
@@ -2317,6 +2320,15 @@ SERVICE_ALIASES = {
     "mailmanager": "mailmanager",
     "mail-manager": "mailmanager",
     "sesmailmanager": "mailmanager",
+    "chimesdkmeetings": "chimesdkmeetings",
+    "chime-sdk-meetings": "chimesdkmeetings",
+    "amazonchimesdkmeetings": "chimesdkmeetings",
+    "chimesdkmessaging": "chimesdkmessaging",
+    "chime-sdk-messaging": "chimesdkmessaging",
+    "amazonchimesdkmessaging": "chimesdkmessaging",
+    "chimesdkmediapipelines": "chimesdkmediapipelines",
+    "chime-sdk-media-pipelines": "chimesdkmediapipelines",
+    "amazonchimesdkmediapipelines": "chimesdkmediapipelines",
     "iotsecuretunneling": "iotsecuretunneling",
     "iot-secure-tunneling": "iotsecuretunneling",
     "iotdeviceadvisor": "iotdeviceadvisor",
@@ -3350,6 +3362,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pinpointemail": {},
     "pinpointsmsvoice": {},
     "mailmanager": {},
+    "chimesdkmeetings": {},
+    "chimesdkmessaging": {},
+    "chimesdkmediapipelines": {},
     "iotsecuretunneling": {},
     "iotdeviceadvisor": {},
     "iotthingsgraph": {},
@@ -39836,6 +39851,369 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+CHIME_ACCOUNT = "123456789012"
+CHIME_REGION_ARN = f"arn:aws:chime:us-east-1:{CHIME_ACCOUNT}:"
+
+
+def cmtg_meeting(fx: MsgFixture) -> dict:
+    name = fx.name("mtg")
+    return fx.call("CreateMeeting", {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name}, "chime-sdk-meetings").get("Meeting", {})
+
+
+def chimesdkmeetings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Meetings: a cached meeting with one attendee; creates and
+    destructive operations get meetings or attendees of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmeetings", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-meetings")
+        meeting = cmtg_meeting(fx)
+        attendee = fx.call("CreateAttendee", {"MeetingId": meeting.get("MeetingId", ""), "ExternalUserId": fx.name("user")}).get("Attendee", {})
+        state.update({"fx": fx, "meeting": meeting, "attendee": attendee.get("AttendeeId", "")})
+    fx: MsgFixture = state["fx"]
+    mid, arn, aid = state["meeting"].get("MeetingId", ""), state["meeting"].get("MeetingArn", ""), state["attendee"]
+    caps = {"Audio": "SendReceive", "Video": "Receive", "Content": "Receive"}
+    transcription = {"EngineTranscribeSettings": {"LanguageCode": "en-US"}}
+
+    def fresh_attendee() -> str:
+        return fx.call("CreateAttendee", {"MeetingId": mid, "ExternalUserId": fx.name("user")}).get("Attendee", {}).get("AttendeeId", "")
+
+    if op in ("CreateMeeting", "CreateMeetingWithAttendees"):
+        name = fx.name("mtg")
+        out = {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name, "Tags": [{"Key": "team", "Value": "coverage"}]}
+        if op == "CreateMeetingWithAttendees":
+            out["Attendees"] = [{"ExternalUserId": fx.name("user")}]
+        return out
+    if op in ("GetMeeting", "ListAttendees"):
+        return {"MeetingId": mid}
+    if op == "DeleteMeeting":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", "")}
+    if op == "CreateAttendee":
+        return {"MeetingId": mid, "ExternalUserId": fx.name("user"), "Capabilities": caps}
+    if op == "BatchCreateAttendee":
+        return {"MeetingId": mid, "Attendees": [{"ExternalUserId": fx.name("user")}, {"ExternalUserId": fx.name("user")}]}
+    if op == "GetAttendee":
+        return {"MeetingId": mid, "AttendeeId": aid}
+    if op == "UpdateAttendeeCapabilities":
+        return {"MeetingId": mid, "AttendeeId": aid, "Capabilities": caps}
+    if op == "DeleteAttendee":
+        return {"MeetingId": mid, "AttendeeId": fresh_attendee()}
+    if op == "BatchUpdateAttendeeCapabilitiesExcept":
+        return {"MeetingId": mid, "ExcludedAttendeeIds": [{"AttendeeId": aid}], "Capabilities": caps}
+    if op == "StartMeetingTranscription":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", ""), "TranscriptionConfiguration": transcription}
+    if op == "StopMeetingTranscription":
+        other = cmtg_meeting(fx).get("MeetingId", "")
+        fx.call("StartMeetingTranscription", {"MeetingId": other, "TranscriptionConfiguration": transcription})
+        return {"MeetingId": other}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "owner", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["owner"]}
+    return payload
+
+
+def cmsg_processors() -> list:
+    return [{"Name": "filter", "ExecutionOrder": 1, "FallbackAction": "CONTINUE",
+             "Configuration": {"Lambda": {"ResourceArn": f"arn:aws:lambda:us-east-1:{CHIME_ACCOUNT}:function:filter", "InvocationType": "ASYNC"}}}]
+
+
+def chimesdkmessaging_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An app instance of its own with users alice (moderator) and bob
+    (member), a channel holding one of bob's messages and a ban, an elastic
+    channel, a channel flow associated with a second channel, and streaming
+    configurations."""
+    state = RUNTIME_STATE.setdefault("chimesdkmessaging", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-messaging")
+    app = CHIME_REGION_ARN + "app-instance/" + fx.name("app")
+    alice, bob = app + "/user/alice", app + "/user/bob"
+    state.update({"fx": fx, "app": app, "alice": alice, "bob": bob})
+    state["channel"] = chimesdkmessaging_channel(state)
+    fx.call("CreateChannelBan", {"ChannelArn": state["channel"], "MemberArn": app + "/user/banned", "ChimeBearer": alice})
+    state["message"] = chimesdkmessaging_message(state, state["channel"])
+    state["elastic"] = fx.call("CreateChannel", {"AppInstanceArn": app, "Name": "elastic", "ClientRequestToken": fx.name("tok"), "ChimeBearer": alice,
+                                                  "ElasticChannelConfiguration": {"MaximumSubChannels": 2, "TargetMembershipsPerSubChannel": 2, "MinimumMembershipPercentage": 10}}).get("ChannelArn", "")
+    fx.call("CreateChannelMembership", {"ChannelArn": state["elastic"], "MemberArn": bob, "Type": "DEFAULT", "ChimeBearer": alice})
+    state["flow"] = chimesdkmessaging_flow(state)
+    state["flowed"] = chimesdkmessaging_channel(state)
+    fx.call("AssociateChannelFlow", {"ChannelArn": state["flowed"], "ChannelFlowArn": state["flow"], "ChimeBearer": alice})
+    fx.call("PutMessagingStreamingConfigurations", {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()})
+    return state
+
+
+def cmsg_streaming() -> list:
+    return [{"DataType": "ChannelMessage", "ResourceArn": f"arn:aws:kinesis:us-east-1:{CHIME_ACCOUNT}:stream/chat"}]
+
+
+def chimesdkmessaging_channel(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannel", {"AppInstanceArn": state["app"], "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"),
+                                     "MemberArns": [state["bob"]], "ChimeBearer": state["alice"]}).get("ChannelArn", "")
+
+
+def chimesdkmessaging_message(state: dict, channel: str) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("SendChannelMessage", {"ChannelArn": channel, "Content": "hello", "Type": "STANDARD", "Persistence": "PERSISTENT",
+                                          "ClientRequestToken": fx.name("tok"), "ChimeBearer": state["bob"]}).get("MessageId", "")
+
+
+def chimesdkmessaging_flow(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannelFlow", {"AppInstanceArn": state["app"], "Name": "filter", "Processors": cmsg_processors(),
+                                         "ClientRequestToken": fx.name("tok")}).get("ChannelFlowArn", "")
+
+
+def chimesdkmessaging_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Messaging: calls act as alice (the moderator) or bob (a
+    member) of the cached fixture; creates and destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    st = chimesdkmessaging_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    app, alice, bob, ch, flow = st["app"], st["alice"], st["bob"], st["channel"], st["flow"]
+
+    def newcomer() -> str:
+        return app + "/user/" + fx.name("user")
+
+    fixed = {
+        "DescribeChannel": {"ChannelArn": ch, "ChimeBearer": alice},
+        "UpdateChannel": {"ChannelArn": ch, "Name": "renamed", "Mode": "UNRESTRICTED", "Metadata": "coverage", "ChimeBearer": alice},
+        "ListChannels": {"AppInstanceArn": app, "ChimeBearer": alice},
+        "SearchChannels": {"Fields": [{"Key": "MEMBERS", "Values": [bob], "Operator": "INCLUDES"}], "ChimeBearer": alice},
+        "PutChannelExpirationSettings": {"ChannelArn": ch, "ChimeBearer": alice, "ExpirationSettings": {"ExpirationDays": 30, "ExpirationCriterion": "LAST_MESSAGE_TIMESTAMP"}},
+        "ListSubChannels": {"ChannelArn": st["elastic"], "ChimeBearer": alice},
+        "ListChannelMembershipsForAppInstanceUser": {"AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "DescribeChannelMembershipForAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "ListChannelsModeratedByAppInstanceUser": {"AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelModeratedByAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelMembership": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": alice},
+        "ListChannelMemberships": {"ChannelArn": ch, "ChimeBearer": alice},
+        "GetChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob},
+        "PutChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob, "Preferences": {"PushNotifications": {"AllowNotifications": "ALL"}}},
+        "DescribeChannelModerator": {"ChannelArn": ch, "ChannelModeratorArn": alice, "ChimeBearer": alice},
+        "ListChannelModerators": {"ChannelArn": ch, "ChimeBearer": alice},
+        "DescribeChannelBan": {"ChannelArn": ch, "MemberArn": app + "/user/banned", "ChimeBearer": alice},
+        "ListChannelBans": {"ChannelArn": ch, "ChimeBearer": alice},
+        "SendChannelMessage": {"ChannelArn": ch, "Content": "hi", "Type": "STANDARD", "Persistence": "PERSISTENT", "ClientRequestToken": fx.name("tok"), "ChimeBearer": bob},
+        "GetChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "GetChannelMessageStatus": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "ListChannelMessages": {"ChannelArn": ch, "ChimeBearer": bob},
+        "UpdateChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "Content": "hello again", "ChimeBearer": bob},
+        "UpdateChannelReadMarker": {"ChannelArn": ch, "ChimeBearer": bob},
+        "DescribeChannelFlow": {"ChannelFlowArn": flow},
+        "UpdateChannelFlow": {"ChannelFlowArn": flow, "Name": "filter-2", "Processors": cmsg_processors()},
+        "ListChannelFlows": {"AppInstanceArn": app},
+        "ListChannelsAssociatedWithChannelFlow": {"ChannelFlowArn": flow},
+        "PutMessagingStreamingConfigurations": {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()},
+        "GetMessagingStreamingConfigurations": {"AppInstanceArn": app},
+        "GetMessagingSessionEndpoint": {},
+        "ListTagsForResource": {"ResourceARN": ch},
+        "TagResource": {"ResourceARN": ch, "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": ch, "TagKeys": ["owner"]},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateChannel":
+        return {"AppInstanceArn": app, "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"), "Privacy": "PRIVATE",
+                "MemberArns": [bob], "Tags": [{"Key": "team", "Value": "coverage"}], "ChimeBearer": alice}
+    if op == "DeleteChannel":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChimeBearer": alice}
+    if op == "CreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "Type": "DEFAULT", "ChimeBearer": alice}
+    if op == "BatchCreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArns": [newcomer(), newcomer()], "ChimeBearer": alice}
+    if op == "DeleteChannelMembership":
+        who = newcomer()
+        fx.call("CreateChannelMembership", {"ChannelArn": ch, "MemberArn": who, "Type": "DEFAULT", "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelModerator":
+        return {"ChannelArn": ch, "ChannelModeratorArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelModerator":
+        who = newcomer()
+        fx.call("CreateChannelModerator", {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelBan":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelBan":
+        who = newcomer()
+        fx.call("CreateChannelBan", {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "DeleteChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": alice}
+    if op == "RedactChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": bob}
+    if op == "CreateChannelFlow":
+        return {"AppInstanceArn": app, "Name": "filter", "Processors": cmsg_processors(), "ClientRequestToken": fx.name("tok"),
+                "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "DeleteChannelFlow":
+        return {"ChannelFlowArn": chimesdkmessaging_flow(st)}
+    if op == "AssociateChannelFlow":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "DisassociateChannelFlow":
+        other = chimesdkmessaging_channel(st)
+        fx.call("AssociateChannelFlow", {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice})
+        return {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "ChannelFlowCallback":
+        pending = chimesdkmessaging_message(st, st["flowed"])
+        return {"CallbackId": uuid.uuid4().hex, "ChannelArn": st["flowed"], "ChannelMessage": {"MessageId": pending, "Content": "processed"}}
+    if op == "DeleteMessagingStreamingConfigurations":
+        return {"AppInstanceArn": app}
+    return payload
+
+
+def cmpl_wait(fx: MsgFixture, op: str, args: dict, path: list, want: str) -> dict:
+    """Read a resource until the field at path reports want (Stackyard settles async state on read)."""
+    out: dict = {}
+    for _ in range(8):
+        out = fx.call(op, args)
+        value = out
+        for key in path:
+            value = value.get(key, {}) if isinstance(value, dict) else {}
+        if value == want:
+            break
+        time.sleep(0.5)
+    return out
+
+
+def cmpl_config(name: str) -> dict:
+    return {
+        "MediaInsightsPipelineConfigurationName": name, "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+        "Elements": cmpl_elements(), "Tags": [{"Key": "team", "Value": "coverage"}],
+    }
+
+
+def cmpl_elements() -> list:
+    return [{"Type": "VoiceAnalyticsProcessor", "VoiceAnalyticsProcessorConfiguration": {"SpeakerSearchStatus": "Enabled", "VoiceToneAnalysisStatus": "Enabled"}},
+            {"Type": "SnsTopicSink", "SnsTopicSinkConfiguration": {"InsightsTarget": f"arn:aws:sns:us-east-1:{CHIME_ACCOUNT}:insights"}}]
+
+
+def cmpl_kvs_source() -> dict:
+    return {"MediaEncoding": "pcm", "MediaSampleRate": 8000,
+            "Streams": [{"StreamArn": f"arn:aws:kinesisvideo:us-east-1:{CHIME_ACCOUNT}:stream/call/1", "StreamChannelDefinition": {"NumberOfChannels": 1}}]}
+
+
+def chimesdkmediapipelines_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Media Pipelines: a meeting created through chime-sdk-meetings,
+    a capture pipeline on it, an ACTIVE Kinesis video stream pool, a media
+    insights configuration with voice analytics, an insights pipeline and one
+    task of each kind; creates and destructive operations get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmediapipelines", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-media-pipelines")
+        state["fx"] = fx
+        state["meeting"] = cmtg_meeting(fx).get("MeetingArn", "")
+        state["capture"] = cmpl_capture(state)
+        state["pool"] = cmpl_pool(state)
+        state["config"] = fx.name("cfg")
+        state["config_arn"] = fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(state["config"])).get(
+            "MediaInsightsPipelineConfiguration", {}).get("MediaInsightsPipelineConfigurationArn", "")
+        state["insights"] = cmpl_insights(state)
+        state["speaker"] = cmpl_task(state, "StartSpeakerSearchTask")
+        state["voice"] = cmpl_task(state, "StartVoiceToneAnalysisTask")
+    fx: MsgFixture = state["fx"]
+    capture, pool, insights = state["capture"], state["pool"], state["insights"]
+    s3 = {"S3BucketSinkConfiguration": {"Destination": "arn:aws:s3:::coverage-artifacts"}, "Type": "S3Bucket"}
+
+    fixed = {
+        "GetMediaCapturePipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "GetMediaPipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "ListMediaCapturePipelines": {}, "ListMediaPipelines": {}, "ListMediaInsightsPipelineConfigurations": {},
+        "ListMediaPipelineKinesisVideoStreamPools": {},
+        "GetMediaInsightsPipelineConfiguration": {"Identifier": state["config"]},
+        "UpdateMediaInsightsPipelineConfiguration": {"Identifier": state["config"], "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+                                                     "Elements": cmpl_elements()},
+        "GetMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolName"]},
+        "UpdateMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolArn"], "StreamConfiguration": {"DataRetentionInHours": 48}},
+        "GetSpeakerSearchTask": {"Identifier": insights, "SpeakerSearchTaskId": state["speaker"]},
+        "GetVoiceToneAnalysisTask": {"Identifier": insights, "VoiceToneAnalysisTaskId": state["voice"]},
+        "StartSpeakerSearchTask": {"Identifier": insights, "VoiceProfileDomainArn": CHIME_REGION_ARN + "voice-profile-domain/coverage"},
+        "StartVoiceToneAnalysisTask": {"Identifier": insights, "LanguageCode": "en-US"},
+        "ListTagsForResource": {"ResourceARN": capture["MediaPipelineArn"]},
+        "TagResource": {"ResourceARN": capture["MediaPipelineArn"], "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": capture["MediaPipelineArn"], "TagKeys": ["owner"]},
+        "CreateMediaConcatenationPipeline": {
+            "Sources": [{"Type": "MediaCapturePipeline", "MediaCapturePipelineSourceConfiguration": {
+                "MediaPipelineArn": capture["MediaPipelineArn"], "ChimeSdkMeetingConfiguration": {"ArtifactsConfiguration": {
+                    "Audio": {"State": "Enabled"}, "Video": {"State": "Enabled"}, "Content": {"State": "Disabled"}, "DataChannel": {"State": "Enabled"},
+                    "TranscriptionMessages": {"State": "Enabled"}, "MeetingEvents": {"State": "Enabled"}, "CompositedVideo": {"State": "Disabled"}}}}}],
+            "Sinks": [s3]},
+        "CreateMediaLiveConnectorPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "ChimeSdkMeetingLiveConnectorConfiguration": {"Arn": state["meeting"], "MuxType": "AudioWithActiveSpeakerVideo"}}],
+            "Sinks": [{"SinkType": "RTMP", "RTMPConfiguration": {"Url": "rtmps://live.example.com/app/key", "AudioChannels": "Stereo"}}]},
+        "CreateMediaStreamPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"]}],
+            "Sinks": [{"SinkArn": pool["PoolArn"], "SinkType": "KinesisVideoStreamPool", "ReservedStreamCapacity": 1, "MediaStreamType": "IndividualAudio"}]},
+        "CreateMediaInsightsPipeline": {"MediaInsightsPipelineConfigurationArn": state["config_arn"], "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateMediaCapturePipeline":
+        return {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket", "SinkArn": "arn:aws:s3:::coverage-captures",
+                "ClientRequestToken": fx.name("tok"), "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op in ("DeleteMediaCapturePipeline", "DeleteMediaPipeline"):
+        return {"MediaPipelineId": cmpl_capture(state)["MediaPipelineId"]}
+    if op == "CreateMediaInsightsPipelineConfiguration":
+        return cmpl_config(fx.name("cfg"))
+    if op == "DeleteMediaInsightsPipelineConfiguration":
+        name = fx.name("cfg")
+        fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(name))
+        return {"Identifier": name}
+    if op == "CreateMediaPipelineKinesisVideoStreamPool":
+        return {"PoolName": fx.name("pool"), "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}}
+    if op == "DeleteMediaPipelineKinesisVideoStreamPool":
+        return {"Identifier": cmpl_pool(state, wait=False)["PoolName"]}
+    if op == "UpdateMediaInsightsPipelineStatus":
+        return {"Identifier": cmpl_insights(state), "UpdateStatus": "Pause"}
+    if op == "StopSpeakerSearchTask":
+        return {"Identifier": insights, "SpeakerSearchTaskId": cmpl_task(state, "StartSpeakerSearchTask")}
+    if op == "StopVoiceToneAnalysisTask":
+        return {"Identifier": insights, "VoiceToneAnalysisTaskId": cmpl_task(state, "StartVoiceToneAnalysisTask")}
+    return payload
+
+
+def cmpl_capture(state: dict) -> dict:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaCapturePipeline", {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket",
+                                                   "SinkArn": "arn:aws:s3:::coverage-captures"}).get("MediaCapturePipeline", {})
+
+
+def cmpl_pool(state: dict, wait: bool = True) -> dict:
+    fx: MsgFixture = state["fx"]
+    name = fx.name("pool")
+    fx.call("CreateMediaPipelineKinesisVideoStreamPool", {"PoolName": name, "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}})
+    if not wait:
+        return {"PoolName": name}
+    out = cmpl_wait(fx, "GetMediaPipelineKinesisVideoStreamPool", {"Identifier": name}, ["KinesisVideoStreamPoolConfiguration", "PoolStatus"], "ACTIVE")
+    return out.get("KinesisVideoStreamPoolConfiguration", {})
+
+
+def cmpl_insights(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaInsightsPipeline", {"MediaInsightsPipelineConfigurationArn": state["config_arn"],
+                                                    "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()}).get("MediaInsightsPipeline", {}).get("MediaPipelineId", "")
+
+
+def cmpl_task(state: dict, op: str) -> str:
+    fx: MsgFixture = state["fx"]
+    args = {"Identifier": state["insights"]}
+    if op == "StartSpeakerSearchTask":
+        args["VoiceProfileDomainArn"] = CHIME_REGION_ARN + "voice-profile-domain/coverage"
+        return fx.call(op, args).get("SpeakerSearchTask", {}).get("SpeakerSearchTaskId", "")
+    args["LanguageCode"] = "en-US"
+    return fx.call(op, args).get("VoiceToneAnalysisTask", {}).get("VoiceToneAnalysisTaskId", "")
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -39847,6 +40225,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "chimesdkmeetings":
+        return chimesdkmeetings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmessaging":
+        return chimesdkmessaging_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmediapipelines":
+        return chimesdkmediapipelines_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointemail":
         return pinpointemail_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointsmsvoice":
