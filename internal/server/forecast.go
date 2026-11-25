@@ -100,12 +100,13 @@ func fcDecode(s *Server, w http.ResponseWriter, r *http.Request, service string,
 
 // fcRealProblems drops pattern failures the service doesn't make: the
 // Forecast model types RoleArn (an IAM role) and Filter.Value (an ARN or a
-// status) as Forecast ARNs.
+// status) as Forecast ARNs. Amazon ML's PredictEndpoint pattern only admits
+// AWS hosts, but a realtime endpoint here is this server's own URL.
 func fcRealProblems(problems []string) []string {
 	out := problems[:0:0]
 	for _, p := range problems {
 		path, ok := strings.CutSuffix(p, ": does not match the required pattern")
-		if ok && (strings.HasSuffix(path, "RoleArn") || strings.HasPrefix(path, "Filters[") && strings.HasSuffix(path, "].Value")) {
+		if ok && (strings.HasSuffix(path, "RoleArn") || path == "PredictEndpoint" || strings.HasPrefix(path, "Filters[") && strings.HasSuffix(path, "].Value")) {
 			continue
 		}
 		out = append(out, p)

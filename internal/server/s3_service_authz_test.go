@@ -349,3 +349,49 @@ func TestApplicationCostProfilerDeliveryServiceS3Authz(t *testing.T) {
 		})
 	}
 }
+
+// Machine Learning reads a data source's S3 data on the caller's behalf; a
+// denied read settles the data source FAILED.
+func TestMachineLearningServiceS3Authz(t *testing.T) {
+	for _, tc := range svcAuthzCases(amlServicePrincipal) {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+			ts := httptest.NewServer(srv.Handler())
+			t.Cleanup(ts.Close)
+			svcAuthzBucket(t, srv, "aml-authz", tc.principal)
+			if _, err := srv.s3.PutObject("aml-authz", "train.csv", "text/csv", []byte("x,y\n1,0\n2,1\n"), nil, "", ""); err != nil {
+				t.Fatal(err)
+			}
+			amlOK(t, ts, "CreateDataSourceFromS3", `{"DataSourceId":"ds1","DataSpec":{"DataLocationS3":"s3://aml-authz/train.csv","DataSchema":"`+amlTestSchema+`"}}`)
+			want := map[bool]string{true: "COMPLETED", false: "FAILED"}[tc.principal == ""]
+			amlAwait(t, ts, "DataSource", "ds1", want)
+		})
+	}
+}
+
+// A vector enrichment export whose output bucket denies the caller or the
+// service writes nothing and reports FAILED.
+func TestSageMakerGeospatialExportServiceS3Authz(t *testing.T) {
+	for _, tc := range svcAuthzCases(sgeoServicePrincipal) {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := New(Config{Addr: "127.0.0.1:0", AccessKey: testAccessKey, SecretKey: testSecretKey, LogLevel: "error"})
+			ts := httptest.NewServer(srv.Handler())
+			t.Cleanup(ts.Close)
+			svcAuthzBucket(t, srv, "geo-in", "")
+			if _, err := srv.s3.PutObject("geo-in", "points.csv", "text/csv", []byte("id,lon,lat\n1,-122.33,47.61\n"), nil, "", ""); err != nil {
+				t.Fatal(err)
+			}
+			svcAuthzBucket(t, srv, "geo-out", tc.principal)
+			arn := sgeoOK(t, ts, http.MethodPost, "/vector-enrichment-jobs", `{"Name":"rg","ExecutionRoleArn":"`+sgeoTestRole+`","InputConfig":{"DocumentType":"CSV","DataSourceConfig":{"S3Data":{"S3Uri":"s3://geo-in/points.csv"}}},"JobConfig":{"ReverseGeocodingConfig":{"XAttributeName":"lon","YAttributeName":"lat"}}}`)["Arn"].(string)
+			path := sgeoPath("/vector-enrichment-jobs/", arn)
+			sgeoAwait(t, ts, path, "Status", "COMPLETED")
+			sgeoOK(t, ts, http.MethodPost, "/export-vector-enrichment-jobs", `{"Arn":"`+arn+`","ExecutionRoleArn":"`+sgeoTestRole+`","OutputConfig":{"S3Data":{"S3Uri":"s3://geo-out/out/"}}}`)
+			want := map[bool]string{true: "SUCCEEDED", false: "FAILED"}[tc.principal == ""]
+			sgeoAwait(t, ts, path, "ExportStatus", want)
+			objs, _ := srv.s3.ListObjects("geo-out", "")
+			if (tc.principal == "") != (len(objs) > 0) {
+				t.Fatalf("%s: %d output objects", tc.name, len(objs))
+			}
+		})
+	}
+}

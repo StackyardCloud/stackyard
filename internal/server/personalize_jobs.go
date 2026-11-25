@@ -43,15 +43,20 @@ func pszS3Path(p string) (string, string, error) {
 
 // pszReadS3 reads the object at p, or every object under the prefix p.
 func (s *Server) pszReadS3(c s3Caller, p string) ([]pszS3File, error) {
+	return s.pszReadS3As(c, pszServicePrincipal, p)
+}
+
+// pszReadS3As is pszReadS3 for another service reading on the caller's behalf.
+func (s *Server) pszReadS3As(c s3Caller, principal, p string) ([]pszS3File, error) {
 	bucket, key, err := pszS3Path(p)
 	if err != nil {
 		return nil, err
 	}
 	if obj, err := s.s3.GetObject(bucket, key); err == nil && key != "" && !strings.HasSuffix(key, "/") &&
-		!s.authorizeServiceS3As(c, pszServicePrincipal, bucket, key, "s3:GetObject") {
+		!s.authorizeServiceS3As(c, principal, bucket, key, "s3:GetObject") {
 		return nil, fmt.Errorf("access denied reading s3://%s/%s", obj.Bucket, obj.Key)
 	}
-	if !s.authorizeServiceS3As(c, pszServicePrincipal, bucket, "", "s3:ListBucket") {
+	if !s.authorizeServiceS3As(c, principal, bucket, "", "s3:ListBucket") {
 		return nil, fmt.Errorf("access denied listing %s", p)
 	}
 	if obj, err := s.s3.GetObject(bucket, key); err == nil && key != "" && !strings.HasSuffix(key, "/") {
@@ -77,7 +82,7 @@ func (s *Server) pszReadS3(c s3Caller, p string) ([]pszS3File, error) {
 	var files []pszS3File
 	total := 0
 	for _, k := range keys {
-		if !s.authorizeServiceS3As(c, pszServicePrincipal, bucket, k, "s3:GetObject") {
+		if !s.authorizeServiceS3As(c, principal, bucket, k, "s3:GetObject") {
 			return nil, fmt.Errorf("access denied reading s3://%s/%s", bucket, k)
 		}
 		obj, err := s.s3.GetObject(bucket, k)
