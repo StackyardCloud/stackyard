@@ -573,6 +573,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
+    "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
+    "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
+    "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
@@ -2278,6 +2281,13 @@ SERVICE_ALIASES = {
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
+    "budgets": "budgets",
+    "awsbudgets": "budgets",
+    "costoptimizationhub": "costoptimizationhub",
+    "cost-optimization-hub": "costoptimizationhub",
+    "bcmdataexports": "bcmdataexports",
+    "bcm-data-exports": "bcmdataexports",
+    "dataexports": "bcmdataexports",
     "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3260,6 +3270,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "textract": {},
     "wafregional": {},
     "pi": {},
+    "budgets": {},
+    "costoptimizationhub": {},
+    "bcmdataexports": {},
     "servicecatalog": {},
     "migrationhub": {},
     "opensearchserverless": {},
@@ -38108,6 +38121,196 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+BUD_ACCOUNT = "123456789012"
+BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
+
+
+def bud_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "budgets", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def bud_budget(name: str, amount: str = "100") -> dict:
+    return {"BudgetName": name, "BudgetLimit": {"Amount": amount, "Unit": "USD"}, "TimeUnit": "MONTHLY", "BudgetType": "COST"}
+
+
+def bud_note(threshold: float = 80.0) -> dict:
+    return {"NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": threshold, "ThresholdType": "PERCENTAGE"}
+
+
+def bud_new_budget(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], subscribers: list | None = None) -> str:
+    """A budget of its own with one 80% notification."""
+    name = f"stackyard-budget-{time.time_ns()}"
+    bud_cli(aws_bin, endpoint_url, region, env, "create-budget", {
+        "AccountId": BUD_ACCOUNT, "Budget": bud_budget(name),
+        "NotificationsWithSubscribers": [{"Notification": bud_note(), "Subscribers": subscribers or [BUD_EMAIL]}],
+    })
+    return name
+
+
+def bud_action_payload(name: str) -> dict:
+    return {
+        "AccountId": BUD_ACCOUNT, "BudgetName": name, "NotificationType": "ACTUAL", "ActionType": "APPLY_IAM_POLICY",
+        "ActionThreshold": {"ActionThresholdValue": 90.0, "ActionThresholdType": "PERCENTAGE"},
+        "Definition": {"IamActionDefinition": {"PolicyArn": "arn:aws:iam::aws:policy/AWSDenyAll", "Roles": ["stackyard-dev"]}},
+        "ExecutionRoleArn": f"arn:aws:iam::{BUD_ACCOUNT}:role/stackyard-budgets", "ApprovalModel": "MANUAL",
+        "Subscribers": [BUD_EMAIL],
+    }
+
+
+def bud_new_action(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    return str(bud_cli(aws_bin, endpoint_url, region, env, "create-budget-action", bud_action_payload(name)).get("ActionId") or "")
+
+
+def budgets_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Budgets operation at real budgets, notifications and actions.
+    Destructive operations get a budget or action of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("budgets", {})
+    if not state.get("budget"):
+        state["budget"] = bud_new_budget(aws_bin, endpoint_url, region, env)
+        state["action"] = bud_new_action(aws_bin, endpoint_url, region, env, state["budget"])
+    shared, action = str(state["budget"]), str(state["action"])
+    acct = {"AccountId": BUD_ACCOUNT}
+    on_shared = {**acct, "BudgetName": shared}
+    new = lambda subs=None: bud_new_budget(aws_bin, endpoint_url, region, env, subs)  # noqa: E731
+    if op in {"DescribeBudgets", "DescribeBudgetNotificationsForAccount", "DescribeBudgetActionsForAccount"}:
+        return acct
+    if op == "CreateBudget":
+        name = f"stackyard-budget-{time.time_ns()}"
+        return {**acct, "Budget": bud_budget(name), "ResourceTags": [{"Key": "team", "Value": "finance"}],
+                "NotificationsWithSubscribers": [{"Notification": bud_note(), "Subscribers": [BUD_EMAIL]}]}
+    if op in {"DescribeBudget", "DescribeNotificationsForBudget", "DescribeBudgetPerformanceHistory", "DescribeBudgetActionsForBudget"}:
+        return dict(on_shared)
+    if op == "UpdateBudget":
+        return {**acct, "NewBudget": bud_budget(shared, "150")}
+    if op == "DeleteBudget":
+        return {**acct, "BudgetName": new()}
+    if op == "CreateNotification":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(100.0), "Subscribers": [BUD_EMAIL]}
+    if op == "UpdateNotification":
+        return {**acct, "BudgetName": new(), "OldNotification": bud_note(), "NewNotification": bud_note(95.0)}
+    if op == "DeleteNotification":
+        return {**acct, "BudgetName": new(), "Notification": bud_note()}
+    if op == "DescribeSubscribersForNotification":
+        return {**on_shared, "Notification": bud_note()}
+    other = {"SubscriptionType": "EMAIL", "Address": "ops@example.com"}
+    if op == "CreateSubscriber":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(), "Subscriber": other}
+    if op == "UpdateSubscriber":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(), "OldSubscriber": BUD_EMAIL, "NewSubscriber": other}
+    if op == "DeleteSubscriber":
+        return {**acct, "BudgetName": new([BUD_EMAIL, other]), "Notification": bud_note(), "Subscriber": other}
+    if op == "CreateBudgetAction":
+        return bud_action_payload(new())
+    if op in {"DescribeBudgetAction", "DescribeBudgetActionHistories"}:
+        return {**on_shared, "ActionId": action}
+    if op == "UpdateBudgetAction":
+        return {**on_shared, "ActionId": action, "ApprovalModel": "AUTOMATIC",
+                "ActionThreshold": {"ActionThresholdValue": 95.0, "ActionThresholdType": "PERCENTAGE"}}
+    if op == "DeleteBudgetAction":
+        return {**on_shared, "ActionId": bud_new_action(aws_bin, endpoint_url, region, env, shared)}
+    if op == "ExecuteBudgetAction":
+        name = new()
+        return {**acct, "BudgetName": name, "ActionId": bud_new_action(aws_bin, endpoint_url, region, env, name),
+                "ExecutionType": "APPROVE_BUDGET_ACTION"}
+    arn = f"arn:aws:budgets::{BUD_ACCOUNT}:budget/{shared}"
+    if op == "TagResource":
+        return {"ResourceARN": arn, "ResourceTags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "ResourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return payload
+
+
+def costoptimizationhub_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Enroll the account first: recommendations are served only while Active."""
+    op = endpoint.operation
+    if op == "UpdateEnrollmentStatus":
+        return {"status": "Active"}
+    run_aws_json(aws_bin, endpoint_url, region, "cost-optimization-hub", "update-enrollment-status", env, ["--status", "Active"])
+    if op == "GetRecommendation":
+        return {"recommendationId": "coh-ec2-rightsize-0001"}
+    if op == "ListRecommendations":
+        return {"includeAllRecommendations": True, "orderBy": {"dimension": "EstimatedMonthlySavings", "order": "Desc"},
+                "filter": {"regions": ["us-east-1", "eu-west-1"]}}
+    if op == "ListRecommendationSummaries":
+        return {"groupBy": "ResourceType", "metrics": ["SavingsPercentage"]}
+    if op == "ListEfficiencyMetrics":
+        return {"granularity": "Daily", "timePeriod": {"start": "2026-01-01", "end": "2026-01-08"}, "groupBy": "Region"}
+    if op == "ListEnrollmentStatuses":
+        return {"includeOrganizationInfo": False}
+    if op == "UpdatePreferences":
+        return {"savingsEstimationMode": "AfterDiscounts", "preferredCommitment": {"term": "ThreeYears", "paymentOption": "AllUpfront"}}
+    return {}
+
+
+def bcmde_export(name: str, bucket: str) -> dict:
+    return {
+        "Name": name, "Description": "Stackyard coverage export",
+        "DataQuery": {
+            "QueryStatement": "SELECT line_item_usage_account_id, line_item_unblended_cost, line_item_resource_id FROM COST_AND_USAGE_REPORT",
+            "TableConfigurations": {"COST_AND_USAGE_REPORT": {"TIME_GRANULARITY": "DAILY", "INCLUDE_RESOURCES": "TRUE"}},
+        },
+        "DestinationConfigurations": {"S3Destination": {
+            "S3Bucket": bucket, "S3Prefix": "exports", "S3Region": "us-east-1",
+            "S3OutputConfigurations": {"OutputType": "CUSTOM", "Format": "TEXT_OR_CSV", "Compression": "GZIP", "Overwrite": "OVERWRITE_REPORT"},
+        }},
+        "RefreshCadence": {"Frequency": "SYNCHRONOUS"},
+    }
+
+
+def bcmde_new_export(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str, name: str = "") -> str:
+    name = name or f"stackyard-export-{time.time_ns()}"
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-data-exports", "create-export", env,
+                        ["--cli-input-json", json.dumps({"Export": bcmde_export(name, bucket)})])
+    return str((data or {}).get("ExportArn") or "") if isinstance(data, dict) else ""
+
+
+def bcmdataexports_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A bucket and a shared export; DeleteExport gets an export of its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("bcmdataexports", {})
+    if not state.get("export"):
+        bucket = f"stackyard-exports-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        state["bucket"], state["name"] = bucket, f"stackyard-export-{time.time_ns()}"
+        state["export"] = bcmde_new_export(aws_bin, endpoint_url, region, env, bucket, state["name"])
+    bucket, arn, name = str(state["bucket"]), str(state["export"]), str(state["name"])
+    if op == "CreateExport":
+        return {"Export": bcmde_export(f"stackyard-export-{time.time_ns()}", bucket), "ResourceTags": [{"Key": "team", "Value": "finance"}]}
+    if op == "UpdateExport":
+        export = bcmde_export(name, bucket)
+        export["Description"] = "updated by Stackyard coverage"
+        return {"ExportArn": arn, "Export": export}
+    if op == "DeleteExport":
+        return {"ExportArn": bcmde_new_export(aws_bin, endpoint_url, region, env, bucket)}
+    if op in {"GetExport", "ListExecutions"}:
+        return {"ExportArn": arn}
+    if op == "GetExecution":
+        data = run_aws_json(aws_bin, endpoint_url, region, "bcm-data-exports", "list-executions", env, ["--export-arn", arn])
+        executions = (data.get("Executions") if isinstance(data, dict) else None) or [{}]
+        return {"ExportArn": arn, "ExecutionId": str(executions[0].get("ExecutionId") or "")}
+    if op == "GetTable":
+        return {"TableName": "COST_AND_USAGE_REPORT", "TableProperties": {"INCLUDE_RESOURCES": "TRUE"}}
+    if op in {"ListExports", "ListTables"}:
+        return {}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "ResourceTags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "ResourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": arn}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -38119,6 +38322,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "budgets":
+        return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "costoptimizationhub":
+        return costoptimizationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmdataexports":
+        return bcmdataexports_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorad":
         return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
