@@ -192,6 +192,33 @@ window.AWS_SERVICE_CATALOG = [
     docsHref: "../../../index.html#textract",
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
   },  {
+    id: "forecast",
+    name: "Forecast",
+    category: "integration",
+    summary: "Emulate Forecast datasets, import jobs, dataset groups, predictors and auto predictors with accuracy metrics, forecasts, exports, explainability, monitors with evaluations, what-if analyses and forecasts, resource trees and tags.",
+    docsHref: "../../../index.html#forecast",
+    exampleHref: "../../../../examples/aws/forecast/docker-compose.yml"
+  },
+
+  {
+    id: "forecastquery",
+    name: "Forecast Query",
+    category: "integration",
+    summary: "Query predictions from Forecast forecasts and what-if forecasts: one series per forecast type over the predictor's horizon and frequency, filtered by target time series attributes and a date window.",
+    docsHref: "../../../index.html#forecastquery",
+    exampleHref: "../../../../examples/aws/forecastquery/docker-compose.yml"
+  },
+
+  {
+    id: "frauddetector",
+    name: "Fraud Detector",
+    category: "integration",
+    summary: "Emulate Fraud Detector variables, entity types, labels, outcomes, event types, detectors with versioned rules, models and model versions, external models, lists, events, predictions with rule evaluation, batch jobs, KMS settings and tags.",
+    docsHref: "../../../index.html#frauddetector",
+    exampleHref: "../../../../examples/aws/frauddetector/docker-compose.yml"
+  },
+
+  {
     id: "wafregional",
     name: "WAF Classic Regional",
     category: "security",
@@ -225,12 +252,60 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "geomaps",
+    name: "Location Maps V2",
+    category: "integration",
+    summary: "Emulate MapLibre style descriptors, vector, satellite and DEM tiles, sprites, glyphs and static map images as small, valid placeholder payloads with model-checked parameters.",
+    docsHref: "../../../index.html#geomaps",
+    exampleHref: "../../../../examples/aws/geo-maps/docker-compose.yml"
+  },
+  {
+    id: "geoplaces",
+    name: "Location Places V2",
+    category: "integration",
+    summary: "Emulate geocoding, reverse geocoding, text and nearby search, autocomplete and suggestions over a deterministic built-in gazetteer of cities, landmarks and addresses.",
+    docsHref: "../../../index.html#geoplaces",
+    exampleHref: "../../../../examples/aws/geo-places/docker-compose.yml"
+  },
+  {
+    id: "georoutes",
+    name: "Location Routes V2",
+    category: "integration",
+    summary: "Emulate routes, route matrices, isolines, waypoint optimization and road snapping with deterministic great-circle geometry and flexible polylines.",
+    docsHref: "../../../index.html#georoutes",
+    exampleHref: "../../../../examples/aws/geo-routes/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",
     summary: "Emulate Performance Insights for RDS and DocumentDB instances: deterministic db.load and OS/DB counter metrics, dimension keys by SQL, wait event, user and host, analysis reports with insights and recommendations, and tags.",
     docsHref: "../../../index.html#pi",
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
+  },
+  {
+    id: "cloudsearch",
+    name: "CloudSearch",
+    category: "integration",
+    summary: "Emulate CloudSearch domains: index fields of every type, expressions, analysis schemes and suggesters deployed by IndexDocuments, plus scaling, availability, endpoint and access-policy options.",
+    docsHref: "../../../index.html#cloudsearch",
+    exampleHref: "../../../../examples/aws/cloudsearch/docker-compose.yml"
+  },
+  {
+    id: "cloudsearchdomain",
+    name: "CloudSearch Domain",
+    category: "integration",
+    summary: "Emulate CloudSearch document upload, search and suggest against domains created with CloudSearch: simple and structured queries, filters, sorting, cursors, facets, stats, highlights, expressions and fuzzy suggestions.",
+    docsHref: "../../../index.html#cloudsearchdomain",
+    exampleHref: "../../../../examples/aws/cloudsearch-domain/docker-compose.yml"
+  },
+  {
+    id: "kendraranking",
+    name: "Kendra Intelligent Ranking",
+    category: "integration",
+    summary: "Emulate Kendra Intelligent Ranking rescore execution plans with deterministic term-overlap rescoring, document groups and tags.",
+    docsHref: "../../../index.html#kendraranking",
+    exampleHref: "../../../../examples/aws/kendra-ranking/docker-compose.yml"
   },
   {
     id: "servicecatalog",
@@ -1047,6 +1122,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan and validate workspace, entity, component, scene, and sync APIs for digital twin workflows.",
     docsHref: "../../../index.html#iot-twinmaker",
     exampleHref: "../../../../examples/aws/iot-twinmaker/docker-compose.yml"
+  },
+  {
+    id: "iot-secure-tunneling",
+    name: "IoT Secure Tunneling",
+    category: "integration",
+    summary: "Emulate tunnels with one-time source and destination access tokens, token rotation, lifetime-based auto-close, close and delete, listing by thing and tags.",
+    docsHref: "../../../index.html#iot-secure-tunneling",
+    exampleHref: "../../../../examples/aws/iot-secure-tunneling/docker-compose.yml"
+  },
+  {
+    id: "iot-device-advisor",
+    name: "IoT Device Advisor",
+    category: "integration",
+    summary: "Emulate versioned suite definitions, suite runs that progress to PASS with per-test results, stop, qualification reports, the test endpoint and tags.",
+    docsHref: "../../../index.html#iot-device-advisor",
+    exampleHref: "../../../../examples/aws/iot-device-advisor/docker-compose.yml"
+  },
+  {
+    id: "iot-things-graph",
+    name: "IoT Things Graph",
+    category: "integration",
+    summary: "Emulate GraphQL entity uploads into a versioned namespace, thing associations, flow and system templates with revisions, system instance deployments, flow executions and tags.",
+    docsHref: "../../../index.html#iot-things-graph",
+    exampleHref: "../../../../examples/aws/iot-things-graph/docker-compose.yml"
   },
   {
     id: "keyspaces",

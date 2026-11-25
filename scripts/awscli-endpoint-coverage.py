@@ -156,6 +156,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/savingsplans_ops.go",
     },
     "location": {"cli": "location", "ops_file": REPO_ROOT / "internal/server/location_ops.go"},
+    "geomaps": {"cli": "geo-maps", "ops_file": REPO_ROOT / "internal/server/geomaps_ops.go"},
+    "geoplaces": {"cli": "geo-places", "ops_file": REPO_ROOT / "internal/server/geoplaces_ops.go"},
+    "georoutes": {"cli": "geo-routes", "ops_file": REPO_ROOT / "internal/server/georoutes_ops.go"},
     "kinesisvideostreams": {
         "cli": "kinesisvideo",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
@@ -572,7 +575,13 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
+    "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
+    "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
+    "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
+    "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
+    "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
+    "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
@@ -584,6 +593,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
     "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
     "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
+    "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
+    "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
+    "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -961,6 +973,12 @@ SERVICE_ALIASES = {
     "awskinesisdatastreams": "kinesis",
     "aws kinesis data streams": "kinesis",
     "location": "location",
+    "geomaps": "geomaps",
+    "geo-maps": "geomaps",
+    "geoplaces": "geoplaces",
+    "geo-places": "geoplaces",
+    "georoutes": "georoutes",
+    "geo-routes": "georoutes",
     "locationservice": "location",
     "location service": "location",
     "amazonlocation": "location",
@@ -2299,11 +2317,31 @@ SERVICE_ALIASES = {
     "mailmanager": "mailmanager",
     "mail-manager": "mailmanager",
     "sesmailmanager": "mailmanager",
+    "iotsecuretunneling": "iotsecuretunneling",
+    "iot-secure-tunneling": "iotsecuretunneling",
+    "iotdeviceadvisor": "iotdeviceadvisor",
+    "iot-device-advisor": "iotdeviceadvisor",
+    "iotthingsgraph": "iotthingsgraph",
+    "iot-things-graph": "iotthingsgraph",
     "amazontextract": "textract",
     "wafregional": "wafregional",
+    "forecast": "forecast",
+    "amazonforecast": "forecast",
+    "forecastquery": "forecastquery",
+    "amazonforecastquery": "forecastquery",
+    "frauddetector": "frauddetector",
+    "amazonfrauddetector": "frauddetector",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
+    "cloudsearch": "cloudsearch",
+    "amazoncloudsearch": "cloudsearch",
+    "cloudsearchdomain": "cloudsearchdomain",
+    "cloudsearch-domain": "cloudsearchdomain",
+    "amazoncloudsearchdomain": "cloudsearchdomain",
+    "kendraranking": "kendraranking",
+    "kendra-ranking": "kendraranking",
+    "amazonkendraintelligentranking": "kendraranking",
     "budgets": "budgets",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
@@ -3292,10 +3330,18 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53domains": {},
     "textract": {},
     "wafregional": {},
+    "forecast": {},
+    "frauddetector": {},
     "pi": {},
+    "cloudsearch": {},
+    "cloudsearchdomain": {},
+    "kendraranking": {},
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "geomaps": {},
+    "geoplaces": {},
+    "georoutes": {},
     "servicecatalog": {},
     "migrationhub": {},
     "personalize": {},
@@ -3304,6 +3350,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pinpointemail": {},
     "pinpointsmsvoice": {},
     "mailmanager": {},
+    "iotsecuretunneling": {},
+    "iotdeviceadvisor": {},
+    "iotthingsgraph": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -13587,6 +13636,10 @@ def generate_cli_input_payload(
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
         return {"OutputFormat": "mp3", "Text": "hello", "VoiceId": "Joanna"}, None
+    if endpoint.service == "geomaps":
+        # Every geo-maps command streams a blob to an outfile, so the CLI needs
+        # its members as flags even to print a skeleton.
+        return dict(GEOMAPS_PAYLOADS[endpoint.operation]), None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -38150,6 +38203,489 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+FC_ROLE = "arn:aws:iam::123456789012:role/stackyard-forecast"
+FC_DEST = {"S3Config": {"Path": "s3://stackyard-forecast-cov/out/", "RoleArn": FC_ROLE}}
+FC_SCHEMA = {"Attributes": [{"AttributeName": "item_id", "AttributeType": "string"},
+                            {"AttributeName": "timestamp", "AttributeType": "timestamp"},
+                            {"AttributeName": "demand", "AttributeType": "float"}]}
+
+
+def fc_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict, cli: str = "forecast") -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, cli, pascal_to_kebab(op), env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def fc_unique(prefix: str) -> str:
+    return f"{prefix}_{time.time_ns()}"
+
+
+def fc_wait(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, arn: str) -> str:
+    """Describe an async resource until it reports ACTIVE (the second read)."""
+    describe = "DescribeAutoPredictor" if kind == "Predictor" else "Describe" + kind
+    for _ in range(3):
+        if fc_call(aws_bin, endpoint_url, region, env, describe, {kind + "Arn": arn}).get("Status") == "ACTIVE":
+            break
+    return arn
+
+
+def fc_create_args(kind: str, fx: dict) -> tuple[str, dict]:
+    """The create operation and arguments for a new resource of kind."""
+    name = fc_unique("cov")
+    if kind == "Dataset":
+        return "CreateDataset", {"DatasetName": name, "Domain": "RETAIL", "DatasetType": "TARGET_TIME_SERIES", "DataFrequency": "D", "Schema": FC_SCHEMA}
+    if kind == "DatasetGroup":
+        return "CreateDatasetGroup", {"DatasetGroupName": name, "Domain": "RETAIL"}
+    if kind == "DatasetImportJob":
+        return "CreateDatasetImportJob", {"DatasetImportJobName": name, "DatasetArn": fx["Dataset"],
+                                          "DataSource": {"S3Config": {"Path": "s3://stackyard-forecast-cov/demand.csv", "RoleArn": FC_ROLE}}}
+    if kind == "Predictor":
+        return "CreateAutoPredictor", {"PredictorName": name, "ForecastHorizon": 7, "ForecastFrequency": "D",
+                                       "DataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}}
+    if kind == "Forecast":
+        return "CreateForecast", {"ForecastName": name, "PredictorArn": fx["Predictor"]}
+    if kind == "ForecastExportJob":
+        return "CreateForecastExportJob", {"ForecastExportJobName": name, "ForecastArn": fx["Forecast"], "Destination": FC_DEST}
+    if kind == "PredictorBacktestExportJob":
+        return "CreatePredictorBacktestExportJob", {"PredictorBacktestExportJobName": name, "PredictorArn": fx["Predictor"], "Destination": FC_DEST}
+    if kind == "Explainability":
+        return "CreateExplainability", {"ExplainabilityName": name, "ResourceArn": fx["Forecast"],
+                                        "ExplainabilityConfig": {"TimeSeriesGranularity": "ALL", "TimePointGranularity": "ALL"}}
+    if kind == "ExplainabilityExport":
+        return "CreateExplainabilityExport", {"ExplainabilityExportName": name, "ExplainabilityArn": fx["Explainability"], "Destination": FC_DEST}
+    if kind == "Monitor":
+        return "CreateMonitor", {"MonitorName": name, "ResourceArn": fx["own_predictor"]()}
+    if kind == "WhatIfAnalysis":
+        return "CreateWhatIfAnalysis", {"WhatIfAnalysisName": name, "ForecastArn": fx["Forecast"]}
+    if kind == "WhatIfForecast":
+        return "CreateWhatIfForecast", {"WhatIfForecastName": name, "WhatIfAnalysisArn": fx["WhatIfAnalysis"],
+                                        "TimeSeriesTransformations": [{"Action": {"AttributeName": "price", "Operation": "MULTIPLY", "Value": 0.9}}]}
+    return "CreateWhatIfForecastExport", {"WhatIfForecastExportName": name, "WhatIfForecastArns": [fx["WhatIfForecast"]], "Destination": FC_DEST}
+
+
+FC_KINDS = ["Dataset", "DatasetGroup", "DatasetImportJob", "Predictor", "Forecast", "ForecastExportJob",
+            "PredictorBacktestExportJob", "Explainability", "ExplainabilityExport", "Monitor", "WhatIfAnalysis",
+            "WhatIfForecast", "WhatIfForecastExport"]
+FC_FIXTURE_KINDS = ["Dataset", "DatasetImportJob", "DatasetGroup", "Predictor", "Forecast", "Explainability", "Monitor",
+                    "WhatIfAnalysis", "WhatIfForecast"]
+
+
+def fc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ACTIVE pipeline: dataset with data, group, auto predictor, forecast,
+    explainability, monitor, what-if analysis and what-if forecast."""
+    state = RUNTIME_STATE.setdefault("forecast", {})
+    if state.get("WhatIfForecast"):
+        return state
+
+    def make(kind: str) -> str:
+        op, args = fc_create_args(kind, state)
+        if kind == "DatasetGroup":
+            args["DatasetArns"] = [state["Dataset"]]
+        arn = str(fc_call(aws_bin, endpoint_url, region, env, op, args).get(kind + "Arn") or "")
+        return fc_wait(aws_bin, endpoint_url, region, env, kind, arn) if arn and kind not in ("Dataset", "DatasetGroup") else arn
+
+    state["own_predictor"] = lambda: make("Predictor")
+    state["make"] = make
+    for kind in FC_FIXTURE_KINDS:
+        state[kind] = make(kind)
+    return state
+
+
+def forecast_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates and describes get fixtures; deletes, stops and updates get
+    resources of their own."""
+    op = endpoint.operation
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if op == "CreatePredictor":
+        return {"PredictorName": fc_unique("cov"), "AlgorithmArn": "arn:aws:forecast:::algorithm/ETS", "ForecastHorizon": 7,
+                "InputDataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}, "FeaturizationConfig": {"ForecastFrequency": "D"}}
+    if op == "CreateAutoPredictor":
+        return fc_create_args("Predictor", fx)[1]
+    if op == "DescribeAutoPredictor" or op == "DescribePredictor" or op == "GetAccuracyMetrics":
+        return {"PredictorArn": fx["Predictor"]}
+    for prefix in ("Create", "Describe", "Delete"):
+        kind = op[len(prefix):]
+        if not op.startswith(prefix) or kind not in FC_KINDS:
+            continue
+        if prefix == "Create":
+            return fc_create_args(kind, fx)[1]
+        if prefix == "Describe" and kind in fx:
+            return {kind + "Arn": fx[kind]}
+        return {kind + "Arn": fx["make"](kind)}
+    if op == "DeleteResourceTree":
+        return {"ResourceArn": fx["make"]("DatasetGroup")}
+    if op == "UpdateDatasetGroup":
+        return {"DatasetGroupArn": fx["make"]("DatasetGroup"), "DatasetArns": [fx["Dataset"]]}
+    if op == "StopResource":
+        # An ACTIVE monitor stops deterministically; an in-progress job may
+        # settle before a slow CLI call reaches it.
+        return {"ResourceArn": fx["make"]("Monitor")}
+    if op == "ResumeResource":
+        monitor = fx["make"]("Monitor")
+        fc_call(aws_bin, endpoint_url, region, env, "StopResource", {"ResourceArn": monitor})
+        return {"ResourceArn": monitor}
+    if op == "ListMonitorEvaluations":
+        return {"MonitorArn": fx["Monitor"]}
+    if op == "TagResource":
+        return {"ResourceArn": fx["Dataset"], "Tags": [{"Key": "env", "Value": "cov"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["Dataset"], "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["Dataset"]}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+def forecastquery_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Queries read the Forecast checks' ACTIVE forecast and what-if forecast."""
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if endpoint.operation == "QueryWhatIfForecast":
+        return {"WhatIfForecastArn": fx["WhatIfForecast"], "Filters": {"item_id": "sku_1"}}
+    return {"ForecastArn": fx["Forecast"], "Filters": {"item_id": "sku_1"}}
+
+
+FRD_ROLE = "arn:aws:iam::123456789012:role/stackyard-frauddetector"
+
+
+def frd_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="frauddetector")
+
+
+def frd_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Variables, entity type, labels, outcome, event type, detector with an
+    ACTIVE version, an ACTIVE model version, external model, list, a sent
+    event, a scored prediction and batch jobs. Names are unique per run."""
+    state = RUNTIME_STATE.setdefault("frauddetector", {})
+    if state.get("detector"):
+        return state
+    call = lambda op, args: frd_call(aws_bin, endpoint_url, region, env, op, args)
+    s = str(time.time_ns())
+    fx = {"s": s, "amount": f"amount_{s}", "email": f"email_{s}", "entity": f"cust_{s}", "fraud": f"fraud_{s}",
+          "outcome": f"block_{s}", "event_type": f"payment_{s}", "detector": f"det_{s}", "rule": f"big_{s}",
+          "model": f"mdl_{s}", "endpoint": f"ep_{s}", "list": f"lst_{s}", "event": f"ev_{s}"}
+    call("CreateVariable", {"name": fx["amount"], "dataType": "FLOAT", "dataSource": "EVENT", "defaultValue": "0.0"})
+    call("CreateVariable", {"name": fx["email"], "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "unknown"})
+    call("PutEntityType", {"name": fx["entity"]})
+    call("PutLabel", {"name": fx["fraud"]})
+    call("PutOutcome", {"name": fx["outcome"]})
+    call("PutEventType", {"name": fx["event_type"], "eventVariables": [fx["amount"], fx["email"]], "labels": [fx["fraud"]], "entityTypes": [fx["entity"]]})
+    call("PutDetector", {"detectorId": fx["detector"], "eventTypeName": fx["event_type"]})
+    call("CreateRule", {"ruleId": fx["rule"], "detectorId": fx["detector"], "expression": f"${fx['amount']} > 100",
+                        "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+    fx["rule_ref"] = {"detectorId": fx["detector"], "ruleId": fx["rule"], "ruleVersion": "1"}
+    call("CreateDetectorVersion", {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]})
+    call("UpdateDetectorVersionStatus", {"detectorId": fx["detector"], "detectorVersionId": "1", "status": "ACTIVE"})
+    call("CreateModel", {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+    fx["model_ref"] = {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    call("CreateModelVersion", frd_model_version_args(fx))
+    for _ in range(2):
+        call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": "1.0"})
+    call("UpdateModelVersionStatus", {**fx["model_ref"], "modelVersionNumber": "1.0", "status": "ACTIVE"})
+    call("PutExternalModel", frd_external_model_args(fx, fx["endpoint"]))
+    call("CreateList", {"name": fx["list"], "elements": ["a@example.com"]})
+    call("SendEvent", frd_event_args(fx, fx["event"]))
+    call("GetEventPrediction", {**frd_event_args(fx, fc_unique("pred")), "detectorId": fx["detector"]})
+    preds = call("ListEventPredictions", {"detectorId": {"value": fx["detector"]}}).get("eventPredictionSummaries") or [{}]
+    fx["prediction"] = preds[0]
+    fx["detector_arn"] = f"arn:aws:frauddetector:{region}:123456789012:detector/{fx['detector']}"
+    state.update(fx)
+    return state
+
+
+def frd_model_version_args(fx: dict) -> dict:
+    return {**fx["model_ref"], "trainingDataSource": "EXTERNAL_EVENTS",
+            "trainingDataSchema": {"modelVariables": [fx["amount"], fx["email"]]},
+            "externalEventsDetail": {"dataLocation": "s3://stackyard-fd-cov/train.csv", "dataAccessRoleArn": FRD_ROLE}}
+
+
+def frd_external_model_args(fx: dict, endpoint_name: str) -> dict:
+    return {"modelEndpoint": endpoint_name, "modelSource": "SAGEMAKER", "invokeModelEndpointRoleArn": FRD_ROLE,
+            "inputConfiguration": {"useEventVariables": True, "eventTypeName": fx["event_type"], "format": "APPLICATION_JSON"},
+            "outputConfiguration": {"format": "APPLICATION_JSONLINES", "jsonKeyToVariableMap": {"score": fx["amount"]}},
+            "modelEndpointStatus": "ASSOCIATED"}
+
+
+def frd_event_args(fx: dict, event_id: str) -> dict:
+    return {"eventId": event_id, "eventTypeName": fx["event_type"], "eventTimestamp": "2026-11-24T10:00:00Z",
+            "entities": [{"entityType": fx["entity"], "entityId": "c1"}], "eventVariables": {fx["amount"]: "250"}}
+
+
+def frauddetector_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = frd_fixture(aws_bin, endpoint_url, region, env)
+    call = lambda o, args: frd_call(aws_bin, endpoint_url, region, env, o, args)
+    new = fc_unique("cov")
+    job = lambda kind: {"jobId": new, "inputPath": "s3://stackyard-fd-cov/in.csv", "outputPath": "s3://stackyard-fd-cov/out/",
+                        "eventTypeName": fx["event_type"], "iamRoleArn": FRD_ROLE,
+                        **({"detectorName": fx["detector"]} if kind == "BatchPredictionJob" else {})}
+
+    def own_event_type() -> str:
+        call("PutEventType", {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]]})
+        return new
+
+    def own_draft(detector: str) -> str:
+        return str(call("CreateDetectorVersion", {"detectorId": detector, "rules": []}).get("detectorVersionId") or "")
+
+    simple = {
+        "CreateVariable": lambda: {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"},
+        "BatchCreateVariable": lambda: {"variableEntries": [{"name": new, "dataType": "INTEGER", "dataSource": "EVENT", "defaultValue": "0"}]},
+        "BatchGetVariable": lambda: {"names": [fx["amount"], fx["email"]]},
+        "UpdateVariable": lambda: {"name": fx["email"], "description": "customer email"},
+        "GetVariables": lambda: {},
+        "PutEntityType": lambda: {"name": new}, "PutLabel": lambda: {"name": new}, "PutOutcome": lambda: {"name": new},
+        "PutEventType": lambda: {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]], "labels": [fx["fraud"]]},
+        "PutDetector": lambda: {"detectorId": new, "eventTypeName": fx["event_type"]},
+        "DescribeDetector": lambda: {"detectorId": fx["detector"]},
+        "CreateDetectorVersion": lambda: {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]},
+        "GetDetectorVersion": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1"},
+        "UpdateDetectorVersionMetadata": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1", "description": "coverage"},
+        "CreateRule": lambda: {"ruleId": new, "detectorId": fx["detector"], "expression": f"${fx['email']} == \"x\"", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleVersion": lambda: {"rule": fx["rule_ref"], "expression": f"${fx['amount']} > 200", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleMetadata": lambda: {"rule": fx["rule_ref"], "description": "coverage"},
+        "GetRules": lambda: {"detectorId": fx["detector"]},
+        "CreateModel": lambda: {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]},
+        "UpdateModel": lambda: {**fx["model_ref"], "description": "coverage"},
+        "CreateModelVersion": lambda: frd_model_version_args(fx),
+        "UpdateModelVersion": lambda: {**fx["model_ref"], "majorVersionNumber": "1"},
+        "GetModelVersion": lambda: {**fx["model_ref"], "modelVersionNumber": "1.0"},
+        "PutExternalModel": lambda: frd_external_model_args(fx, new),
+        "CreateList": lambda: {"name": new, "elements": ["b@example.com"]},
+        "UpdateList": lambda: {"name": fx["list"], "elements": ["c@example.com"], "updateMode": "APPEND"},
+        "GetListElements": lambda: {"name": fx["list"]},
+        "PutKMSEncryptionKey": lambda: {"kmsEncryptionKeyArn": "DEFAULT"},
+        "SendEvent": lambda: frd_event_args(fx, new),
+        "GetEvent": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"]},
+        "UpdateEventLabel": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"], "assignedLabel": fx["fraud"], "labelTimestamp": "2026-11-24T11:00:00Z"},
+        "GetEventPrediction": lambda: {**frd_event_args(fx, new), "detectorId": fx["detector"]},
+        "GetEventPredictionMetadata": lambda: {k: fx["prediction"].get(k, "") for k in ("eventId", "eventTypeName", "detectorId", "detectorVersionId", "predictionTimestamp")},
+        "CreateBatchImportJob": lambda: job("BatchImportJob"),
+        "CreateBatchPredictionJob": lambda: job("BatchPredictionJob"),
+        "TagResource": lambda: {"resourceARN": fx["detector_arn"], "tags": [{"key": "env", "value": "cov"}]},
+        "UntagResource": lambda: {"resourceARN": fx["detector_arn"], "tagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"resourceARN": fx["detector_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op in ("DeleteVariable",):
+        call("CreateVariable", {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"})
+        return {"name": new}
+    if op in ("DeleteEntityType", "DeleteLabel", "DeleteOutcome"):
+        call("Put" + op[len("Delete"):], {"name": new})
+        return {"name": new}
+    if op == "DeleteEventType":
+        return {"name": own_event_type()}
+    if op in ("DeleteEventsByEventType", "GetDeleteEventsByEventTypeStatus"):
+        name = own_event_type()
+        if op == "GetDeleteEventsByEventTypeStatus":
+            call("DeleteEventsByEventType", {"eventTypeName": name})
+        return {"eventTypeName": name}
+    if op == "DeleteDetector":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new}
+    if op in ("DeleteDetectorVersion", "UpdateDetectorVersion"):
+        ver = own_draft(fx["detector"])
+        if op == "UpdateDetectorVersion":
+            return {"detectorId": fx["detector"], "detectorVersionId": ver, "externalModelEndpoints": [fx["endpoint"]], "rules": [fx["rule_ref"]]}
+        return {"detectorId": fx["detector"], "detectorVersionId": ver}
+    if op == "UpdateDetectorVersionStatus":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new, "detectorVersionId": own_draft(new), "status": "ACTIVE"}
+    if op == "DeleteRule":
+        call("CreateRule", {"ruleId": new, "detectorId": fx["detector"], "expression": "1 == 1", "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+        return {"rule": {"detectorId": fx["detector"], "ruleId": new, "ruleVersion": "1"}}
+    if op == "DeleteModel":
+        call("CreateModel", {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+        return {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    if op in ("DeleteModelVersion", "UpdateModelVersionStatus"):
+        ver = str(call("CreateModelVersion", frd_model_version_args(fx)).get("modelVersionNumber") or "")
+        if op == "DeleteModelVersion":
+            return {**fx["model_ref"], "modelVersionNumber": ver}
+        for _ in range(2):
+            call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": ver})
+        return {**fx["model_ref"], "modelVersionNumber": ver, "status": "ACTIVE"}
+    if op == "DeleteExternalModel":
+        call("PutExternalModel", frd_external_model_args(fx, new))
+        return {"modelEndpoint": new}
+    if op == "DeleteList":
+        call("CreateList", {"name": new})
+        return {"name": new}
+    if op == "DeleteEvent":
+        call("SendEvent", frd_event_args(fx, new))
+        return {"eventId": new, "eventTypeName": fx["event_type"]}
+    for kind in ("BatchImportJob", "BatchPredictionJob"):
+        if op in ("Cancel" + kind, "Delete" + kind):
+            call("Create" + kind, job(kind))
+            return {"jobId": new}
+    if op.startswith("Get") or op.startswith("List") or op.startswith("Describe"):
+        return {}
+    return payload
+
+
+CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
+CS_DOCS = [
+    {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
+    {"type": "add", "id": "doc2", "fields": {"title": "Star Trek", "genre": "scifi", "year": 1979}},
+    {"type": "add", "id": "doc3", "fields": {"title": "Casablanca", "genre": "drama", "year": 1942}},
+]
+
+
+def cs_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "cloudsearch", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def cs_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def cs_new_domain(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = cs_unique("sycs-")
+    cs_cli(aws_bin, endpoint_url, region, env, "create-domain", {"DomainName": name})
+    return name
+
+
+def cs_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A domain with title/genre/year fields and a title suggester, indexed
+    and loaded with three documents."""
+    state = RUNTIME_STATE.setdefault("cloudsearch", {})
+    if state.get("domain"):
+        return state
+    domain = cs_new_domain(aws_bin, endpoint_url, region, env)
+    for field in (
+        {"IndexFieldName": "title", "IndexFieldType": "text"},
+        {"IndexFieldName": "genre", "IndexFieldType": "literal", "LiteralOptions": {"FacetEnabled": True}},
+        {"IndexFieldName": "year", "IndexFieldType": "int"},
+    ):
+        cs_cli(aws_bin, endpoint_url, region, env, "define-index-field", {"DomainName": domain, "IndexField": field})
+    cs_cli(aws_bin, endpoint_url, region, env, "define-suggester", {"DomainName": domain, "Suggester": {
+        "SuggesterName": "title_suggest", "DocumentSuggesterOptions": {"SourceField": "title"}}})
+    cs_cli(aws_bin, endpoint_url, region, env, "index-documents", {"DomainName": domain})
+    run_aws_json(aws_bin, f"{endpoint_url.rstrip('/')}/{domain}", region, "cloudsearchdomain", "upload-documents", env, [
+        "--cli-input-json", json.dumps({"documents": base64.b64encode(json.dumps(CS_DOCS).encode()).decode(), "contentType": "application/json"}),
+    ])
+    state["domain"] = domain
+    return state
+
+
+def cloudsearch_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point CloudSearch configuration operations at a real domain; creates and
+    deletes get resources of their own."""
+    op = endpoint.operation
+    if op == "ListDomainNames":
+        return {}
+    if op == "CreateDomain":
+        return {"DomainName": cs_unique("sycs-")}
+    if op == "DeleteDomain":
+        return {"DomainName": cs_new_domain(aws_bin, endpoint_url, region, env)}
+    domain = cs_fixture(aws_bin, endpoint_url, region, env)["domain"]
+    base = {"DomainName": domain}
+    if op == "DescribeDomains":
+        return {"DomainNames": [domain]}
+    if op == "DefineIndexField":
+        return {**base, "IndexField": {"IndexFieldName": cs_unique("f"), "IndexFieldType": "int", "IntOptions": {"DefaultValue": 0}}}
+    if op == "DeleteIndexField":
+        name = cs_unique("f")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-index-field", {**base, "IndexField": {"IndexFieldName": name, "IndexFieldType": "double"}})
+        return {**base, "IndexFieldName": name}
+    if op == "DefineExpression":
+        return {**base, "Expression": {"ExpressionName": "popularity", "ExpressionValue": "_score*2"}}
+    if op == "DeleteExpression":
+        name = cs_unique("e")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-expression", {**base, "Expression": {"ExpressionName": name, "ExpressionValue": "year"}})
+        return {**base, "ExpressionName": name}
+    if op == "DefineAnalysisScheme":
+        return {**base, "AnalysisScheme": {"AnalysisSchemeName": "sy_en", "AnalysisSchemeLanguage": "en",
+                                            "AnalysisOptions": {"Stopwords": "[\"the\"]", "AlgorithmicStemming": "light"}}}
+    if op == "DeleteAnalysisScheme":
+        name = cs_unique("a")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-analysis-scheme", {**base, "AnalysisScheme": {"AnalysisSchemeName": name, "AnalysisSchemeLanguage": "fr"}})
+        return {**base, "AnalysisSchemeName": name}
+    if op == "DefineSuggester":
+        return {**base, "Suggester": {"SuggesterName": "title_suggest", "DocumentSuggesterOptions": {"SourceField": "title", "FuzzyMatching": "low"}}}
+    if op == "DeleteSuggester":
+        name = cs_unique("s")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-suggester", {**base, "Suggester": {"SuggesterName": name, "DocumentSuggesterOptions": {"SourceField": "genre"}}})
+        return {**base, "SuggesterName": name}
+    if op == "UpdateAvailabilityOptions":
+        return {**base, "MultiAZ": True}
+    if op == "UpdateDomainEndpointOptions":
+        return {**base, "DomainEndpointOptions": {"EnforceHTTPS": True, "TLSSecurityPolicy": "Policy-Min-TLS-1-2-2019-07"}}
+    if op == "UpdateScalingParameters":
+        return {**base, "ScalingParameters": {"DesiredInstanceType": "search.medium", "DesiredReplicationCount": 1}}
+    if op == "UpdateServiceAccessPolicies":
+        return {**base, "AccessPolicies": CS_POLICY}
+    return base
+
+
+def cloudsearchdomain_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    return f"{endpoint_url.rstrip('/')}/{cs_fixture(aws_bin, endpoint_url, region, env)['domain']}"
+
+
+def cloudsearchdomain_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Search, suggest and upload against the CloudSearch fixture domain."""
+    cs_fixture(aws_bin, endpoint_url, region, env)
+    op = endpoint.operation
+    if op == "Search":
+        return {"query": "star", "return": "title,year,_score", "facet": json.dumps({"genre": {}}), "stats": json.dumps({"year": {}}), "sort": "year asc"}
+    if op == "Suggest":
+        return {"query": "sta", "suggester": "title_suggest", "size": 5}
+    if op == "UploadDocuments":
+        batch = [{"type": "add", "id": cs_unique("doc"), "fields": {"title": "Stackyard Coverage", "year": 2026}}]
+        return {"documents": base64.b64encode(json.dumps(batch).encode()).decode(), "contentType": "application/json"}
+    return payload
+
+
+def kdr_new_plan(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "kendra-ranking", "create-rescore-execution-plan", env, ["--name", cs_unique("stackyard-")])
+    return str((data or {}).get("Id") or "") if isinstance(data, dict) else ""
+
+
+def kendraranking_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Kendra Intelligent Ranking operations at a real plan; deletes get
+    a plan of their own."""
+    op = endpoint.operation
+    if op == "CreateRescoreExecutionPlan":
+        return {"Name": cs_unique("stackyard-"), "Description": "coverage", "CapacityUnits": {"RescoreCapacityUnits": 1},
+                "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "ListRescoreExecutionPlans":
+        return {"MaxResults": 10}
+    if op == "DeleteRescoreExecutionPlan":
+        return {"Id": kdr_new_plan(aws_bin, endpoint_url, region, env)}
+    state = RUNTIME_STATE.setdefault("kendraranking", {})
+    if not state.get("plan"):
+        state["plan"] = kdr_new_plan(aws_bin, endpoint_url, region, env)
+    plan = str(state["plan"])
+    arn = f"arn:aws:kendra-ranking:{region}:123456789012:rescore-execution-plan/{plan}"
+    if op == "DescribeRescoreExecutionPlan":
+        return {"Id": plan}
+    if op == "UpdateRescoreExecutionPlan":
+        return {"Id": plan, "Description": "updated by coverage", "CapacityUnits": {"RescoreCapacityUnits": 2}}
+    if op == "Rescore":
+        return {"RescoreExecutionPlanId": plan, "SearchQuery": "stackyard search", "Documents": [
+            {"Id": "d1", "Title": "Stackyard search", "Body": "Local cloud search emulator", "OriginalScore": 1.0},
+            {"Id": "d2", "TokenizedBody": ["unrelated", "text"], "OriginalScore": 2.0},
+        ]}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return payload
+
+
 PSZ_BUCKET = "stackyard-personalize"
 PSZ_ROLE = "arn:aws:iam::123456789012:role/stackyard-personalize"
 PSZ_RECIPE = "arn:aws:personalize:::recipe/"
@@ -38811,6 +39347,273 @@ def mailmanager_hydrate_payload(
 
 
 
+IOT_BATCH_ACCOUNT = "123456789012"
+IST_THING = "sy-tunnel-thing"
+IDA_THING_ARN = f"arn:aws:iot:us-east-1:{IOT_BATCH_ACCOUNT}:thing/sy-advisor-thing"
+IDA_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-device-advisor"
+IDA_ROOT_GROUP = json.dumps({"configuration": {}, "tests": [{"name": "MQTT Connect", "configuration": {}, "tests": [
+    {"name": "MQTT_Connect", "configuration": {}, "test": {"id": "MQTT_Connect", "version": "0.0.0"}}]}]})
+ITG_NS = f"urn:tdm:us-east-1/{IOT_BATCH_ACCOUNT}/default:"
+ITG_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-things-graph"
+ITG_ENTITIES = (
+    f'type Camera @deviceModel(id: "{ITG_NS}deviceModel:Camera", capability: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type Capture @capability(id: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type MyCamera @device(id: "{ITG_NS}device:MyCamera", deviceModel: "{ITG_NS}deviceModel:Camera") {{ignore:void}}\n'
+)
+
+
+def iot_batch_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def iotsecuretunneling_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point tunnel operations at a fixture tunnel; CloseTunnel gets its own."""
+    op = endpoint.operation
+
+    def open_tunnel() -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotsecuretunneling", "OpenTunnel", {
+            "description": "stackyard coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+            "timeoutConfig": {"maxLifetimeTimeoutMinutes": 60}, "tags": [{"key": "team", "value": "coverage"}]})
+
+    state = RUNTIME_STATE.setdefault("iotsecuretunneling", {})
+    if not state.get("tunnel"):
+        state["tunnel"] = open_tunnel()
+    tunnel = state["tunnel"]
+    tid, arn = tunnel.get("tunnelId", ""), tunnel.get("tunnelArn", "")
+    if op == "OpenTunnel":
+        return {"description": "coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+                "timeoutConfig": {"maxLifetimeTimeoutMinutes": 30}, "tags": [{"key": "team", "value": "coverage"}]}
+    if op == "CloseTunnel":
+        return {"tunnelId": open_tunnel().get("tunnelId", ""), "delete": True}
+    if op == "DescribeTunnel":
+        return {"tunnelId": tid}
+    if op == "RotateTunnelAccessToken":
+        return {"tunnelId": tid, "clientMode": "ALL", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]}}
+    if op == "ListTunnels":
+        return {"thingName": IST_THING, "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+def iotdeviceadvisor_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Device Advisor operations at fixture suites and runs; creates and
+    destructive operations get suites of their own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotdeviceadvisor", name, args)
+
+    def config(name: str, qualification: bool = False) -> dict:
+        return {"suiteDefinitionName": name, "rootGroup": "" if qualification else IDA_ROOT_GROUP,
+                "devicePermissionRoleArn": IDA_ROLE, "intendedForQualification": qualification,
+                "devices": [{"thingArn": IDA_THING_ARN}], "protocol": "MqttV5"}
+
+    def suite(qualification: bool = False) -> str:
+        return call("CreateSuiteDefinition", {"suiteDefinitionConfiguration": config("sy-suite", qualification),
+                                              "tags": {"team": "coverage"}}).get("suiteDefinitionId", "")
+
+    run_cfg = {"primaryDevice": {"thingArn": IDA_THING_ARN}}
+
+    def run(suite_id: str) -> str:
+        return call("StartSuiteRun", {"suiteDefinitionId": suite_id, "suiteRunConfiguration": run_cfg}).get("suiteRunId", "")
+
+    state = RUNTIME_STATE.setdefault("iotdeviceadvisor", {})
+    if not state.get("suite"):
+        sid = suite()
+        rid = run(sid)
+        qid = suite(True)
+        qrid = run(qid)
+        for _ in range(2):  # PENDING -> RUNNING -> PASS
+            call("GetSuiteRun", {"suiteDefinitionId": qid, "suiteRunId": qrid})
+        arn = call("GetSuiteDefinition", {"suiteDefinitionId": sid}).get("suiteDefinitionArn", "")
+        state.update({"suite": sid, "run": rid, "qsuite": qid, "qrun": qrid, "arn": arn})
+    sid, rid, arn = state["suite"], state["run"], state["arn"]
+    if op == "CreateSuiteDefinition":
+        return {"suiteDefinitionConfiguration": config("sy-created"), "tags": {"team": "coverage"}}
+    if op == "UpdateSuiteDefinition":
+        return {"suiteDefinitionId": sid, "suiteDefinitionConfiguration": config("sy-updated")}
+    if op == "DeleteSuiteDefinition":
+        return {"suiteDefinitionId": suite()}
+    if op == "GetSuiteDefinition":
+        return {"suiteDefinitionId": sid}
+    if op == "ListSuiteDefinitions":
+        return {"maxResults": 10}
+    if op == "StartSuiteRun":
+        return {"suiteDefinitionId": suite(), "suiteRunConfiguration": run_cfg, "tags": {"team": "coverage"}}
+    if op == "StopSuiteRun":
+        new = suite()
+        return {"suiteDefinitionId": new, "suiteRunId": run(new)}
+    if op == "GetSuiteRun":
+        return {"suiteDefinitionId": sid, "suiteRunId": rid}
+    if op == "GetSuiteRunReport":
+        return {"suiteDefinitionId": state["qsuite"], "suiteRunId": state["qrun"]}
+    if op == "ListSuiteRuns":
+        return {"suiteDefinitionId": sid, "maxResults": 10}
+    if op == "GetEndpoint":
+        return {"thingArn": IDA_THING_ARN, "authenticationMethod": "X509ClientCertificate"}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+class ItgFixture:
+    """Things Graph documents with run-unique ids (servers are reused between runs)."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def call(self, op: str, args: dict) -> dict:
+        return iot_batch_call(*self.args, "iotthingsgraph", op, args)
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"{prefix}{self.run}x{self.count}"
+
+    def upload(self) -> str:
+        return self.call("UploadEntityDefinitions", {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}}).get("uploadId", "")
+
+    def flow(self) -> tuple[str, dict]:
+        fid = f"{ITG_NS}Workflow:{self.name('Flow')}"
+        text = f'{{ query F @workflowType(id: "{fid}") {{ variables {{ cam @property(id: "{ITG_NS}deviceModel:Camera") }} }} }}'
+        return fid, {"language": "GRAPHQL", "text": text}
+
+    def system(self, flow_id: str) -> tuple[str, dict]:
+        sid = f"{ITG_NS}System:{self.name('Sys')}"
+        text = (f'{{ type S @systemType(id: "{sid}") {{ camera: Camera @thing(id: "{ITG_NS}deviceModel:Camera") '
+                f'flow: Workflow @workflow(id: "{flow_id}") }} }}')
+        return sid, {"language": "GRAPHQL", "text": text}
+
+    def instance_args(self, system_id: str) -> dict:
+        iid = f"{ITG_NS}Deployment:{self.name('Dep')}"
+        text = f'query D @deployment(id: "{iid}", systemId: "{system_id}") {{ camera(deviceId: "sy-graph-thing") }}'
+        return {"definition": {"language": "GRAPHQL", "text": text}, "target": "CLOUD", "flowActionsRoleArn": ITG_ROLE,
+                "tags": [{"key": "team", "value": "coverage"}]}
+
+    def create_flow(self) -> str:
+        fid, definition = self.flow()
+        self.call("CreateFlowTemplate", {"definition": definition})
+        return fid
+
+    def create_system(self, flow_id: str) -> str:
+        sid, definition = self.system(flow_id)
+        self.call("CreateSystemTemplate", {"definition": definition})
+        return sid
+
+    def create_instance(self, system_id: str) -> str:
+        return (self.call("CreateSystemInstance", self.instance_args(system_id)).get("summary") or {}).get("id", "")
+
+    def deployed(self, system_id: str) -> str:
+        iid = self.create_instance(system_id)
+        self.call("DeploySystemInstance", {"id": iid})
+        self.call("GetSystemInstance", {"id": iid})  # settles DEPLOYED_IN_TARGET
+        return iid
+
+
+def iotthingsgraph_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Things Graph operations at a cached flow, system and deployed
+    instance. Entities are re-uploaded first because DeleteNamespace (also
+    covered) drops them."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotthingsgraph", {})
+    fx: ItgFixture | None = state.get("fx")
+    if fx is None:
+        fx = ItgFixture(aws_bin, endpoint_url, region, env)
+        fx.upload()
+        flow = fx.create_flow()
+        system = fx.create_system(flow)
+        inst = fx.deployed(system)
+        execs = fx.call("SearchFlowExecutions", {"systemInstanceId": inst}).get("summaries") or [{}]
+        arn = ((fx.call("GetSystemInstance", {"id": inst}).get("description") or {}).get("summary") or {}).get("arn", "")
+        state.update({"fx": fx, "flow": flow, "system": system, "inst": inst, "arn": arn,
+                      "execution": execs[0].get("flowExecutionId", "")})
+    if op not in {"DeleteNamespace", "GetNamespaceDeletionStatus"}:
+        fx.upload()
+    device = f"{ITG_NS}device:MyCamera"
+    flow, system, inst, arn = state["flow"], state["system"], state["inst"], state["arn"]
+    if op == "UploadEntityDefinitions":
+        return {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}, "syncWithPublicNamespace": False}
+    if op == "GetUploadStatus":
+        return {"uploadId": fx.upload()}
+    if op == "DescribeNamespace":
+        return {}
+    if op == "DeleteNamespace":
+        return {}
+    if op == "GetNamespaceDeletionStatus":
+        fx.call("DeleteNamespace", {})
+        return {}
+    if op == "GetEntities":
+        return {"ids": [device]}
+    if op == "SearchEntities":
+        return {"entityTypes": ["DEVICE", "DEVICE_MODEL"], "maxResults": 10}
+    if op == "AssociateEntityToThing":
+        return {"thingName": "sy-graph-thing", "entityId": device}
+    if op == "DissociateEntityFromThing":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-dissociate", "entityId": device})
+        return {"thingName": "sy-graph-dissociate", "entityType": "DEVICE"}
+    if op == "SearchThings":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-thing", "entityId": device})
+        return {"entityId": device}
+    if op == "CreateFlowTemplate":
+        return {"definition": fx.flow()[1]}
+    if op == "UpdateFlowTemplate":
+        return {"id": flow, "definition": {"language": "GRAPHQL", "text": (fx.call("GetFlowTemplate", {"id": flow}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetFlowTemplate", "GetFlowTemplateRevisions"}:
+        return {"id": flow}
+    if op in {"DeleteFlowTemplate", "DeprecateFlowTemplate"}:
+        return {"id": fx.create_flow()}
+    if op == "SearchFlowTemplates":
+        return {"filters": [{"name": "DEVICE_MODEL_ID", "value": [f"{ITG_NS}deviceModel:Camera"]}], "maxResults": 10}
+    if op == "CreateSystemTemplate":
+        return {"definition": fx.system(flow)[1]}
+    if op == "UpdateSystemTemplate":
+        return {"id": system, "definition": {"language": "GRAPHQL", "text": (fx.call("GetSystemTemplate", {"id": system}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetSystemTemplate", "GetSystemTemplateRevisions"}:
+        return {"id": system}
+    if op in {"DeleteSystemTemplate", "DeprecateSystemTemplate"}:
+        return {"id": fx.create_system(flow)}
+    if op == "SearchSystemTemplates":
+        return {"filters": [{"name": "FLOW_TEMPLATE_ID", "value": [flow]}], "maxResults": 10}
+    if op == "CreateSystemInstance":
+        return fx.instance_args(system)
+    if op == "GetSystemInstance":
+        return {"id": inst}
+    if op in {"DeploySystemInstance", "DeleteSystemInstance"}:
+        return {"id": fx.create_instance(system)}
+    if op == "UndeploySystemInstance":
+        return {"id": fx.deployed(system)}
+    if op == "SearchSystemInstances":
+        return {"filters": [{"name": "SYSTEM_TEMPLATE_ID", "value": [system]}], "maxResults": 10}
+    if op == "SearchFlowExecutions":
+        return {"systemInstanceId": inst, "maxResults": 10}
+    if op == "ListFlowExecutionMessages":
+        return {"flowExecutionId": state["execution"], "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn, "maxResults": 10}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
 
@@ -39001,6 +39804,38 @@ def bcmdataexports_hydrate_payload(
     return payload
 
 
+GEOMAPS_PAYLOADS: dict[str, dict] = {
+    "GetGlyphs": {"FontStack": "Amazon Ember Regular", "FontUnicodeRange": "0-255.pbf"},
+    "GetSprites": {"FileName": "sprites.png", "Style": "Standard", "ColorScheme": "Light", "Variant": "Default"},
+    "GetStaticMap": {"FileName": "map", "Width": 256, "Height": 256, "Center": "2.2945,48.8583", "Zoom": 10},
+    "GetStyleDescriptor": {"Style": "Standard", "ColorScheme": "Light"},
+    "GetTile": {"Tileset": "vector.basemap", "Z": "1", "X": "0", "Y": "0"},
+}
+
+GEOPLACES_PAYLOADS: dict[str, dict] = {
+    "Autocomplete": {"QueryText": "Seat", "MaxResults": 5},
+    "Geocode": {"QueryText": "Space Needle", "AdditionalFeatures": ["TimeZone"]},
+    "GetPlace": {"PlaceId": "stackyard-place-space-needle"},
+    "ReverseGeocode": {"QueryPosition": [-122.3493, 47.6205]},
+    "SearchNearby": {"QueryPosition": [-122.34, 47.61], "QueryRadius": 5000},
+    "SearchText": {"QueryText": "tower", "BiasPosition": [2.35, 48.85]},
+    "Suggest": {"QueryText": "museum", "BiasPosition": [2.35, 48.85]},
+}
+
+GEOROUTES_PAYLOADS: dict[str, dict] = {
+    "CalculateIsolines": {"Origin": [-122.33, 47.6], "Thresholds": {"Time": [600]}},
+    "CalculateRouteMatrix": {
+        "Origins": [{"Position": [-122.33, 47.6]}], "Destinations": [{"Position": [-122.35, 47.62]}],
+        "RoutingBoundary": {"Unbounded": True},
+    },
+    "CalculateRoutes": {"Origin": [-122.33, 47.6], "Destination": [-122.35, 47.62]},
+    "OptimizeWaypoints": {"Origin": [-122.33, 47.6], "Waypoints": [{"Id": "stop-a", "Position": [-122.35, 47.62]}]},
+    "SnapToRoads": {"TracePoints": [{"Position": [-122.33, 47.6]}, {"Position": [-122.331, 47.601]}]},
+}
+
+GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -39018,6 +39853,22 @@ def hydrate_payload_with_service_state(
         return pinpointsmsvoice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "mailmanager":
         return mailmanager_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "forecast":
+        return forecast_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "forecastquery":
+        return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "frauddetector":
+        return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotsecuretunneling":
+        return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotdeviceadvisor":
+        return iotdeviceadvisor_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotthingsgraph":
+        return iotthingsgraph_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in GEO_STANDALONE_PAYLOADS:
+        # Stateless APIs: each operation gets a fixed request that hits the
+        # built-in gazetteer or geometry.
+        return dict(GEO_STANDALONE_PAYLOADS[endpoint.service].get(endpoint.operation, payload))
     if endpoint.service == "personalize":
         return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeevents":
@@ -39062,6 +39913,12 @@ def hydrate_payload_with_service_state(
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "wafregional":
         return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloudsearch":
+        return cloudsearch_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloudsearchdomain":
+        return cloudsearchdomain_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "kendraranking":
+        return kendraranking_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pi":
         return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalog":
@@ -61315,6 +62172,9 @@ def run_endpoint(
         env=env,
     )
     cli_endpoint_url = endpoint_url
+    if endpoint.service == "cloudsearchdomain":
+        # The data plane is per domain: Stackyard takes the domain as a path prefix.
+        cli_endpoint_url = cloudsearchdomain_endpoint(aws_bin, endpoint_url, region, env)
     if endpoint.service == "s3control" and s3control_should_use_endpoint_alias(endpoint_url, endpoint.cli_operation):
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
     if endpoint.service == "mediastoredata":
@@ -61508,7 +62368,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
