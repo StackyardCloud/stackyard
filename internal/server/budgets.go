@@ -29,6 +29,10 @@ const (
 type budErr struct {
 	status    int
 	code, msg string
+	// extra holds members an error shape requires besides its message
+	// (e.g. resourceId and resourceType); only services with their own
+	// error writer emit them.
+	extra map[string]string
 }
 
 func budErrorf(code, format string, args ...any) *budErr {
@@ -57,6 +61,10 @@ type budJSONAPI struct {
 	prefix, signing, contentType, invalidCode string
 	model                                     func() *awsmodels.Model
 	handlers                                  map[string]budHandler
+	// write and writeError, when set, replace the default response and error
+	// writers (services whose error shapes differ from Budgets').
+	write      func(w http.ResponseWriter, body []byte)
+	writeError func(w http.ResponseWriter, e *budErr)
 }
 
 var budAPI = &budJSONAPI{
@@ -155,6 +163,10 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 		}
 	}
 	body, _ := json.Marshal(model.Conform(shapes.Output, out))
+	if api.write != nil {
+		api.write(w, body)
+		return true
+	}
 	w.Header().Set("Content-Type", api.contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
@@ -162,6 +174,10 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 }
 
 func budRespondError(w http.ResponseWriter, api *budJSONAPI, e *budErr) {
+	if api.writeError != nil {
+		api.writeError(w, e)
+		return
+	}
 	body, _ := json.Marshal(map[string]string{"__type": e.code, "Message": e.msg})
 	w.Header().Set("Content-Type", api.contentType)
 	w.Header().Set("X-Amzn-ErrorType", e.code)

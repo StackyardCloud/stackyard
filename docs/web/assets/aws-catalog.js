@@ -252,6 +252,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "applicationcostprofiler",
+    name: "Application Cost Profiler",
+    category: "integration",
+    summary: "Emulate tenant cost reporting: report definitions delivering to S3, and usage imports that write each tenant's share of shared resources as CSV reports.",
+    docsHref: "../../../index.html#applicationcostprofiler",
+    exampleHref: "../../../../examples/aws/application-cost-profiler/docker-compose.yml"
+  },
+  {
+    id: "bcmdashboards",
+    name: "Billing and Cost Management Dashboards",
+    category: "integration",
+    summary: "Emulate billing dashboards: widgets with checked Cost Explorer-style queries, scheduled reports whose health follows their dashboard, resource policies and tags.",
+    docsHref: "../../../index.html#bcmdashboards",
+    exampleHref: "../../../../examples/aws/bcm-dashboards/docker-compose.yml"
+  },
+  {
+    id: "bcmpricingcalculator",
+    name: "Pricing Calculator",
+    category: "integration",
+    summary: "Emulate cost estimates from a deterministic price catalog: bill scenarios with usage and Reserved Instance or Savings Plans commitments, bill estimates with line items, and workload estimates.",
+    docsHref: "../../../index.html#bcmpricingcalculator",
+    exampleHref: "../../../../examples/aws/bcm-pricing-calculator/docker-compose.yml"
+  },
+  {
     id: "geomaps",
     name: "Location Maps V2",
     category: "integration",

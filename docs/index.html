@@ -316,6 +316,9 @@
         <a href="#budgets">Budgets</a>
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
+        <a href="#applicationcostprofiler">Application Cost Profiler</a>
+        <a href="#bcmdashboards">Billing and Cost Management Dashboards</a>
+        <a href="#bcmpricingcalculator">Pricing Calculator</a>
         <a href="#pi">Performance Insights</a>
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
@@ -26203,6 +26206,136 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateExport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="applicationcostprofiler" class="service">
+
+        <div class="service-header">
+        <h2>AWS Application Cost Profiler</h2>
+        <p>SigV4 signed with service <code>application-cost-profiler</code>. REST JSON API under <code>/reportDefinition</code> and <code>/importApplicationUsage</code>. Report definitions (at most 50) name a destination bucket and prefix in Stackyard's S3; the bucket must exist. ImportApplicationUsage reads a CSV usage file (ApplicationId, TenantId, TenantDesc, ResourceId, StartTime, EndTime; at most 1 MiB and 10,000 rows) from S3 and writes, for every definition, each tenant's usage hours and share of each resource to <code>prefix/reportId/YYYY/MM/DD/importId.csv</code> (MONTHLY: <code>YYYY/MM</code>) plus a JSON manifest. PARQUET definitions get the manifest only.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: application-cost-profiler</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Application Cost Profiler API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteReportDefinition</code></td></tr>
+        <tr><td><code>GetReportDefinition</code></td></tr>
+        <tr><td><code>ImportApplicationUsage</code></td></tr>
+        <tr><td><code>ListReportDefinitions</code></td></tr>
+        <tr><td><code>PutReportDefinition</code></td></tr>
+        <tr><td><code>UpdateReportDefinition</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="bcmdashboards" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Dashboards</h2>
+        <p>SigV4 signed with service <code>bcm-dashboards</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMDashboardsService.*</code>. Dashboards hold up to 20 widgets on a six-column grid; each widget's Cost Explorer-style query (cost and usage, Savings Plans and reservation coverage or utilization) is checked and stored: one query kind and one display per config, ABSOLUTE ISO 8601 or RELATIVE ISO 8601 duration time ranges in order, at most two group-bys on real dimensions, filters with one operator per level. Stackyard does not compute costs. Scheduled reports take cron or rate schedules, idempotent client tokens and unique names; their health is derived on every read (DASHBOARD_NOT_FOUND, WIDGET_ID_NOT_FOUND) and an unhealthy report is not triggered by ExecuteScheduledReport. Resource policies and tags on dashboard and report ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-dashboards</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Dashboards API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDashboard</code></td></tr>
+        <tr><td><code>CreateScheduledReport</code></td></tr>
+        <tr><td><code>DeleteDashboard</code></td></tr>
+        <tr><td><code>DeleteScheduledReport</code></td></tr>
+        <tr><td><code>ExecuteScheduledReport</code></td></tr>
+        <tr><td><code>GetDashboard</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>GetScheduledReport</code></td></tr>
+        <tr><td><code>ListDashboards</code></td></tr>
+        <tr><td><code>ListScheduledReports</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDashboard</code></td></tr>
+        <tr><td><code>UpdateScheduledReport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="bcmpricingcalculator" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Pricing Calculator</h2>
+        <p>SigV4 signed with service <code>bcm-pricing-calculator</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMPricingCalculator.*</code>. Prices come from a small built-in us-east-1 catalog (EC2, EBS, S3, Lambda, RDS, DynamoDB, CloudWatch) plus three Reserved Instance offerings, so estimates are deterministic. Bill scenarios cover the current month and hold usage modifications (hourly amounts from a start hour) and commitment modifications; batch entries fail individually (unknown price, foreign account, duplicate key). A bill estimate snapshots its scenario and prices it: on-demand usage, Reserved Instances covering matching instance hours, Compute Savings Plans covering eligible spend at a 28% discount. It is IN_PROGRESS, with its scenario LOCKED, until the next request. Workload estimates price usage lines and are UPDATING until the next request after a change. Rate types follow the account's preferences (disallowedRate otherwise). Tags on scenario, estimate and workload ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-pricing-calculator</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Pricing Calculator API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchCreateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchCreateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchDeleteWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchUpdateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>CreateBillEstimate</code></td></tr>
+        <tr><td><code>CreateBillScenario</code></td></tr>
+        <tr><td><code>CreateWorkloadEstimate</code></td></tr>
+        <tr><td><code>DeleteBillEstimate</code></td></tr>
+        <tr><td><code>DeleteBillScenario</code></td></tr>
+        <tr><td><code>DeleteWorkloadEstimate</code></td></tr>
+        <tr><td><code>GetBillEstimate</code></td></tr>
+        <tr><td><code>GetBillScenario</code></td></tr>
+        <tr><td><code>GetPreferences</code></td></tr>
+        <tr><td><code>GetUsageLinesEstimatedCost</code></td></tr>
+        <tr><td><code>GetWorkloadEstimate</code></td></tr>
+        <tr><td><code>ListBillEstimateCommitments</code></td></tr>
+        <tr><td><code>ListBillEstimateInputCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateInputUsageModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateLineItems</code></td></tr>
+        <tr><td><code>ListBillEstimates</code></td></tr>
+        <tr><td><code>ListBillScenarioCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillScenarioUsageModifications</code></td></tr>
+        <tr><td><code>ListBillScenarios</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>ListWorkloadEstimates</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateBillEstimate</code></td></tr>
+        <tr><td><code>UpdateBillScenario</code></td></tr>
+        <tr><td><code>UpdatePreferences</code></td></tr>
+        <tr><td><code>UpdateWorkloadEstimate</code></td></tr>
         </tbody>
         </table>
         </details>
