@@ -40,6 +40,15 @@ func (s *Server) handleConnectRESTRouter(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 
+	if out, cerr, handled := s.cnpConnectOp(action, payload, pathParams); handled {
+		if cerr != nil {
+			respondConnectError(w, cerr.status, cerr.code, cerr.msg)
+		} else {
+			respondConnectJSON(w, http.StatusOK, out)
+		}
+		return true
+	}
+
 	response := s.connect.Handle(action, payload, pathParams, r.URL.Query())
 	if response == nil {
 		response = map[string]any{}

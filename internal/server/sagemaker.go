@@ -39,6 +39,10 @@ func (s *Server) handleSageMakerJSONRouter(w http.ResponseWriter, r *http.Reques
 		return true
 	}
 
+	if s.serveSageMakerResource(w, action, payload) {
+		return true
+	}
+
 	if action == "CreateEndpointConfig" {
 		if msg := sagemakerAsyncInferenceConfigError(payload); msg != "" {
 			respondSageMakerError(w, http.StatusBadRequest, "ValidationException", msg)
