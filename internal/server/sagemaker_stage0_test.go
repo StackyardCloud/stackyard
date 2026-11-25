@@ -107,6 +107,12 @@ func TestSageMakerStage0AllCatalogActionsDoNotReturnNotImplemented(t *testing.T)
 		if resp.StatusCode == http.StatusNotImplemented || strings.Contains(body, "NotImplemented") {
 			t.Fatalf("%s unexpectedly returned NotImplemented: status=%d body=%s", op.Name, resp.StatusCode, body)
 		}
+		// The stateful operations (sagemaker_resources.go) validate their
+		// input, so an empty request is a 400 for those that need members.
+		if _, stateful := sagemakerResourceHandlers[op.Name]; stateful && resp.StatusCode == http.StatusBadRequest &&
+			strings.Contains(body, "ValidationException") {
+			continue
+		}
 		if resp.StatusCode >= http.StatusBadRequest {
 			t.Fatalf("%s unexpectedly returned status=%d body=%s", op.Name, resp.StatusCode, body)
 		}

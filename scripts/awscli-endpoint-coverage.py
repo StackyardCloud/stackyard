@@ -139,6 +139,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "workspacesweb": {"cli": "workspaces-web", "ops_file": REPO_ROOT / "internal/server/workspacesweb_ops.go"},
     "sagemaker": {"cli": "sagemaker", "ops_file": REPO_ROOT / "internal/server/sagemaker_ops.go"},
     "sagemakerruntime": {"cli": "sagemaker-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerruntime_ops.go"},
+    "sagemakerfeaturestoreruntime": {"cli": "sagemaker-featurestore-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerfeaturestoreruntime_ops.go"},
+    "sagemakermetrics": {"cli": "sagemaker-metrics", "ops_file": REPO_ROOT / "internal/server/sagemakermetrics_ops.go"},
+    "sagemakeredge": {"cli": "sagemaker-edge", "ops_file": REPO_ROOT / "internal/server/sagemakeredge_ops.go"},
     "simspaceweaver": {
         "cli": "simspaceweaver",
         "ops_file": REPO_ROOT / "internal/server/simspaceweaver_ops.go",
@@ -1116,6 +1119,15 @@ SERVICE_ALIASES = {
     "runtime.sagemaker": "sagemakerruntime",
     "amazonsagemakerruntime": "sagemakerruntime",
     "amazon sagemaker runtime": "sagemakerruntime",
+    "sagemakerfeaturestoreruntime": "sagemakerfeaturestoreruntime",
+    "sagemaker-featurestore-runtime": "sagemakerfeaturestoreruntime",
+    "featurestore-runtime.sagemaker": "sagemakerfeaturestoreruntime",
+    "sagemakermetrics": "sagemakermetrics",
+    "sagemaker-metrics": "sagemakermetrics",
+    "metrics.sagemaker": "sagemakermetrics",
+    "sagemakeredge": "sagemakeredge",
+    "sagemaker-edge": "sagemakeredge",
+    "edge.sagemaker": "sagemakeredge",
     "simspaceweaver": "simspaceweaver",
     "simspace-weaver": "simspaceweaver",
     "simspace weaver": "simspaceweaver",
@@ -3352,6 +3364,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "transcribestreaming": {},
     "sagemaker": {},
     "sagemakerruntime": {},
+    "sagemakerfeaturestoreruntime": {},
+    "sagemakermetrics": {},
+    "sagemakeredge": {},
     "simspaceweaver": {},
     "supplychain": {},
     "tnb": {},
@@ -7579,7 +7594,7 @@ def invoke_raw_endpoint(
         signing_service = "chatbot"
     elif endpoint.service == "iotgreengrass":
         signing_service = "greengrass"
-    elif endpoint.service == "sagemakerruntime":
+    elif endpoint.service in {"sagemakerruntime", "sagemakerfeaturestoreruntime", "sagemakermetrics", "sagemakeredge"}:
         signing_service = "sagemaker"
     elif endpoint.service == "augmentedai":
         signing_service = "sagemaker"
@@ -14003,6 +14018,9 @@ def prune_payload_to_required(endpoint: Endpoint, payload):
 
 def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
     allowed = {
+        # Errors (min 1 item) is omitted when every metric is stored, so a
+        # successful put prints nothing.
+        ("sagemakermetrics", "BatchPutMetrics"),
         ("autoscalingplans", "DeleteScalingPlan"),
         ("autoscalingplans", "UpdateScalingPlan"),
         ("batch", "CancelJob"),
@@ -38856,6 +38874,223 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+SMX_ROLE = "arn:aws:iam::123456789012:role/stackyard-sagemaker"
+SMX_FEATURES = [
+    {"FeatureName": "customer_id", "FeatureType": "String"},
+    {"FeatureName": "event_time", "FeatureType": "Fractional"},
+    {"FeatureName": "score", "FeatureType": "Fractional"},
+]
+
+
+class SmxFixture:
+    """SageMaker feature groups, device fleets, devices, edge deployment plans
+    and trial components created through the CLI, named uniquely per run
+    (servers are reused between the contract and io runs)."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict) -> dict:
+        aws_bin, endpoint_url, region, env = self.args
+        cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+        return run_aws_json(aws_bin, endpoint_url, region, "sagemaker", cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+    def group_args(self) -> dict:
+        return {"FeatureGroupName": self.name("fg"), "RecordIdentifierFeatureName": "customer_id",
+                "EventTimeFeatureName": "event_time", "FeatureDefinitions": SMX_FEATURES,
+                "OnlineStoreConfig": {"EnableOnlineStore": True}}
+
+    def group(self) -> str:
+        args = self.group_args()
+        self.call("CreateFeatureGroup", args)
+        return args["FeatureGroupName"]
+
+    def fleet(self) -> str:
+        name = self.name("fleet")
+        self.call("CreateDeviceFleet", {"DeviceFleetName": name, "OutputConfig": {"S3OutputLocation": "s3://stackyard-edge/out"}})
+        return name
+
+    def device(self, fleet: str) -> str:
+        name = self.name("dev")
+        self.call("RegisterDevices", {"DeviceFleetName": fleet, "Devices": [{"DeviceName": name}]})
+        return name
+
+    def plan_args(self, fleet: str) -> dict:
+        return {"EdgeDeploymentPlanName": self.name("plan"), "DeviceFleetName": fleet,
+                "ModelConfigs": [{"ModelHandle": "detector", "EdgePackagingJobName": "stackyard-pkg"}],
+                "Stages": [{"StageName": "all", "DeviceSelectionConfig": {"DeviceSubsetType": "PERCENTAGE", "Percentage": 100}}]}
+
+    def plan(self, fleet: str, start: bool = False) -> str:
+        args = self.plan_args(fleet)
+        self.call("CreateEdgeDeploymentPlan", args)
+        if start:
+            self.call("StartEdgeDeploymentStage", {"EdgeDeploymentPlanName": args["EdgeDeploymentPlanName"], "StageName": "all"})
+        return args["EdgeDeploymentPlanName"]
+
+    def component(self) -> str:
+        name = self.name("tc")
+        self.call("CreateTrialComponent", {"TrialComponentName": name})
+        return name
+
+
+def sagemaker_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached set of SageMaker resources shared by the SageMaker, Feature
+    Store Runtime, Metrics and Edge payloads."""
+    state = RUNTIME_STATE.setdefault("sagemaker", {})
+    if state.get("smx"):
+        return state
+    fx = SmxFixture(aws_bin, endpoint_url, region, env)
+    group, fleet = fx.group(), fx.fleet()
+    device = fx.device(fleet)
+    plan = fx.plan(fleet, start=True)
+    component = fx.component()
+    record = "customer-1"
+    smfs_put(aws_bin, endpoint_url, region, env, group, record, time.time())
+    run_aws_json(aws_bin, endpoint_url, region, "sagemaker-metrics", "batch-put-metrics", env, ["--cli-input-json", json.dumps(
+        {"TrialComponentName": component, "MetricData": [{"MetricName": "loss", "Timestamp": time.time(), "Step": 1, "Value": 0.5}]})])
+    state.update({"smx": fx, "group": group, "fleet": fleet, "device": device, "plan": plan,
+                  "component": component, "record": record})
+    return state
+
+
+def smfs_put(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], group: str, record: str, at: float) -> None:
+    run_aws_json(aws_bin, endpoint_url, region, "sagemaker-featurestore-runtime", "put-record", env, ["--cli-input-json", json.dumps(
+        {"FeatureGroupName": group, "Record": [{"FeatureName": "customer_id", "ValueAsString": record},
+                                               {"FeatureName": "event_time", "ValueAsString": str(at)}]})])
+
+
+SMX_STATEFUL_OPS = {
+    "CreateFeatureGroup", "DescribeFeatureGroup", "UpdateFeatureGroup", "DeleteFeatureGroup", "ListFeatureGroups",
+    "CreateDeviceFleet", "DescribeDeviceFleet", "UpdateDeviceFleet", "DeleteDeviceFleet", "ListDeviceFleets",
+    "RegisterDevices", "DeregisterDevices", "DescribeDevice", "ListDevices", "UpdateDevices",
+    "CreateEdgeDeploymentPlan", "DescribeEdgeDeploymentPlan", "DeleteEdgeDeploymentPlan",
+    "StartEdgeDeploymentStage", "StopEdgeDeploymentStage",
+    "CreateTrialComponent", "DescribeTrialComponent", "DeleteTrialComponent", "ListTrialComponents",
+}
+
+
+def sagemaker_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """The SageMaker operations backed by real state get model-valid payloads
+    that point at the cached fixture; creates and destructive operations get
+    resources of their own. Every other operation keeps the generic payload."""
+    op = endpoint.operation
+    if op not in SMX_STATEFUL_OPS:
+        return payload
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    fx: SmxFixture = st["smx"]
+    fleet_out = {"S3OutputLocation": "s3://stackyard-edge/out"}
+    simple = {
+        "DescribeFeatureGroup": {"FeatureGroupName": st["group"]},
+        "ListFeatureGroups": {"MaxResults": 10},
+        "DescribeDeviceFleet": {"DeviceFleetName": st["fleet"]},
+        "ListDeviceFleets": {"MaxResults": 10},
+        "DescribeDevice": {"DeviceName": st["device"], "DeviceFleetName": st["fleet"]},
+        "ListDevices": {"DeviceFleetName": st["fleet"]},
+        "DescribeEdgeDeploymentPlan": {"EdgeDeploymentPlanName": st["plan"]},
+        "DescribeTrialComponent": {"TrialComponentName": st["component"]},
+        "ListTrialComponents": {"MaxResults": 10},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "CreateFeatureGroup":
+        return {**fx.group_args(), "Description": "coverage", "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UpdateFeatureGroup":
+        return {"FeatureGroupName": fx.group(), "FeatureAdditions": [{"FeatureName": "city", "FeatureType": "String"}]}
+    if op == "DeleteFeatureGroup":
+        return {"FeatureGroupName": fx.group()}
+    if op == "CreateDeviceFleet":
+        return {"DeviceFleetName": fx.name("fleet"), "OutputConfig": fleet_out, "RoleArn": SMX_ROLE, "EnableIotRoleAlias": True}
+    if op == "UpdateDeviceFleet":
+        return {"DeviceFleetName": st["fleet"], "OutputConfig": fleet_out, "Description": "coverage"}
+    if op == "DeleteDeviceFleet":
+        return {"DeviceFleetName": fx.fleet()}
+    if op == "RegisterDevices":
+        return {"DeviceFleetName": st["fleet"], "Devices": [{"DeviceName": fx.name("dev"), "Description": "coverage"}]}
+    if op == "DeregisterDevices":
+        return {"DeviceFleetName": st["fleet"], "DeviceNames": [fx.device(st["fleet"])]}
+    if op == "UpdateDevices":
+        return {"DeviceFleetName": st["fleet"], "Devices": [{"DeviceName": st["device"], "Description": "coverage"}]}
+    if op == "CreateEdgeDeploymentPlan":
+        return fx.plan_args(st["fleet"])
+    if op == "DeleteEdgeDeploymentPlan":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"])}
+    if op == "StartEdgeDeploymentStage":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"]), "StageName": "all"}
+    if op == "StopEdgeDeploymentStage":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"], start=True), "StageName": "all"}
+    if op == "CreateTrialComponent":
+        return {"TrialComponentName": fx.name("tc"), "Parameters": {"lr": {"NumberValue": 0.1}}}
+    if op == "DeleteTrialComponent":
+        return {"TrialComponentName": fx.component()}
+    return payload
+
+
+def sagemakerfeaturestoreruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Read and write records of the fixture's online feature group."""
+    op = endpoint.operation
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    group, record, now = st["group"], st["record"], time.time()
+    row = [{"FeatureName": "customer_id", "ValueAsString": record}, {"FeatureName": "event_time", "ValueAsString": str(now)}]
+    if op == "PutRecord":
+        return {"FeatureGroupName": group, "Record": row + [{"FeatureName": "score", "ValueAsString": "0.5"}]}
+    if op == "GetRecord":
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": record}
+    if op == "UpdateRecord":
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": record,
+                "Features": [{"FeatureName": "score", "ValueAsString": "0.75"}]}
+    if op == "ListRecords":
+        return {"FeatureGroupName": group, "MaxResults": 10}
+    if op == "DeleteRecord":
+        doomed = st["smx"].name("rec")
+        smfs_put(aws_bin, endpoint_url, region, env, group, doomed, now)
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": doomed, "EventTime": str(now + 1)}
+    if op == "BatchGetRecord":
+        return {"Identifiers": [{"FeatureGroupName": group, "RecordIdentifiersValueAsString": [record]}]}
+    if op == "BatchWriteRecord":
+        return {"Entries": [{"FeatureGroupName": group, "Record": row}]}
+    return payload
+
+
+def sagemakermetrics_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Put and query metrics of the fixture's trial component."""
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    if endpoint.operation == "BatchPutMetrics":
+        return {"TrialComponentName": st["component"],
+                "MetricData": [{"MetricName": "loss", "Timestamp": time.time(), "Step": 2, "Value": 0.25}]}
+    if endpoint.operation == "BatchGetMetrics":
+        arn = f"arn:aws:sagemaker:us-east-1:123456789012:experiment-trial-component/{st['component']}"
+        return {"MetricQueries": [{"MetricName": "loss", "ResourceArn": arn, "MetricStat": "Avg",
+                                   "Period": "IterationNumber", "XAxisType": "IterationNumber"}]}
+    return payload
+
+
+def sagemakeredge_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Act as the edge agent of the fixture's registered device."""
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    device = {"DeviceName": st["device"], "DeviceFleetName": st["fleet"]}
+    if endpoint.operation == "SendHeartbeat":
+        return {**device, "AgentVersion": "1.0",
+                "Models": [{"ModelName": "detector", "ModelVersion": "1", "LatestInference": time.time()}],
+                "AgentMetrics": [{"Dimension": "cpu", "MetricName": "utilization", "Value": 0.5, "Timestamp": time.time()}]}
+    if endpoint.operation in {"GetDeployments", "GetDeviceRegistration"}:
+        return device
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -38866,6 +39101,15 @@ def hydrate_payload_with_service_state(
 ):
     if not isinstance(payload, dict):
         return payload
+
+    if endpoint.service == "sagemaker":
+        payload = sagemaker_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakerfeaturestoreruntime":
+        return sagemakerfeaturestoreruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakermetrics":
+        return sagemakermetrics_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakeredge":
+        return sagemakeredge_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
     if endpoint.service in GEO_STANDALONE_PAYLOADS:
         # Stateless APIs: each operation gets a fixed request that hits the
