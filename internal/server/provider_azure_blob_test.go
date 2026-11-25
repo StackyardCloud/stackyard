@@ -211,3 +211,19 @@ func TestAzurePaginationForContainersAndBlobs(t *testing.T) {
 		t.Fatalf("expected non-empty blob next marker")
 	}
 }
+
+// Unknown Azure routes fall through to the blob router; methods it does not
+// emulate must say so instead of returning a fake 200.
+func TestAzureBlobRouterUnsupportedMethodNotImplemented(t *testing.T) {
+	t.Parallel()
+	ts := newAzureResourcesTestServer(t)
+	headers := azureResourcesTestHeaders()
+	for _, tc := range []struct{ method, path string }{
+		{http.MethodPost, "/azure/subscriptions/" + azureResourcesTestSubscription + "/providers/Microsoft.Bogus/widgets?api-version=2024-01-01"},
+		{http.MethodDelete, "/azure/devstoreaccount1/container/blob.txt"},
+		{http.MethodPatch, "/azure/devstoreaccount1/container?restype=container"},
+	} {
+		resp := providerContractRequest(t, ts, tc.method, tc.path, nil, headers)
+		azureResourcesExpectStatus(t, resp, http.StatusNotImplemented)
+	}
+}

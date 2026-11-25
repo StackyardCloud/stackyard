@@ -272,12 +272,12 @@ func TestProviderContract_AzureUnsupportedOperationReturnsNotImplemented(t *test
 	}
 
 	resp := providerContractRequest(t, ts, http.MethodDelete, "/azure/devstoreaccount1/ingress?restype=container", nil, authHeaders)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 for unsupported Azure operation, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
+	if resp.StatusCode != http.StatusNotImplemented {
+		t.Fatalf("expected 501 for unsupported Azure operation, got %d body=%s", resp.StatusCode, string(providerContractBody(t, resp)))
 	}
 	body := providerContractJSONMap(t, resp)
-	if body["status"] != "ok" {
-		t.Fatalf("expected success status, got %#v", body["error"])
+	if body["error"] != "NotImplemented" {
+		t.Fatalf("expected NotImplemented error, got %#v", body)
 	}
 	if body["provider"] != providerAzure {
 		t.Fatalf("expected provider %q, got %#v", providerAzure, body["provider"])
