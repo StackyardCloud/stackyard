@@ -57,6 +57,8 @@ type budJSONAPI struct {
 	prefix, signing, contentType, invalidCode string
 	model                                     func() *awsmodels.Model
 	handlers                                  map[string]budHandler
+	// respondError, when set, writes the service's own error shape.
+	respondError func(w http.ResponseWriter, e *budErr)
 }
 
 var budAPI = &budJSONAPI{
@@ -162,6 +164,10 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 }
 
 func budRespondError(w http.ResponseWriter, api *budJSONAPI, e *budErr) {
+	if api.respondError != nil {
+		api.respondError(w, e)
+		return
+	}
 	body, _ := json.Marshal(map[string]string{"__type": e.code, "Message": e.msg})
 	w.Header().Set("Content-Type", api.contentType)
 	w.Header().Set("X-Amzn-ErrorType", e.code)

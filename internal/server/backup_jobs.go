@@ -382,6 +382,14 @@ func (st *backupStore) startBackupJob(s *Server, in map[string]any) (any, *bedro
 	if opt, _ := bkMap(st.regionSettings, "ResourceTypeOptInPreference")[resourceType].(bool); !opt {
 		return nil, bkRequest("resource type " + resourceType + " is not opted in for this Region")
 	}
+	if resourceType == "VirtualMachine" {
+		// Lock order: Backup's store (held here) before Backup gateway's.
+		name, known := s.backupGateway.vmName(resourceARN)
+		if !known {
+			return nil, bkNotFound("virtual machine", resourceARN)
+		}
+		resourceName = name
+	}
 	lc := bkMap(in, "Lifecycle")
 	if err := bkCheckLifecycle(lc); err != nil {
 		return nil, err

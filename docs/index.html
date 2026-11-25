@@ -113,6 +113,9 @@
         <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrockagent">Agents for Amazon Bedrock</a>
         <a href="#backup">AWS Backup</a>
+        <a href="#outposts">AWS Outposts</a>
+        <a href="#snow-device-management">AWS Snow Device Management</a>
+        <a href="#backup-gateway">AWS Backup gateway</a>
         <a href="#bedrockagentruntime">Agents for Amazon Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
@@ -4729,6 +4732,161 @@
         <ul>
                 <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="outposts" class="service">
+
+        <div class="service-header">
+        <h2>AWS Outposts</h2>
+        <p>SigV4 signed with service <code>outposts</code>. REST JSON API. Sites keep operating and shipping addresses and rack physical properties; outposts belong to a site. Quotes size racks or servers from requested EC2 capacity (vCPUs per family) against a five-item catalog, price every requested term and payment option, and report ordering requirements (outpost, addresses, country). Orders, from a quote option or line items, advance RECEIVED, PENDING, PROCESSING, INSTALLING, FULFILLED one step per GetOrder; fulfilment installs one compute asset per unit and starts the subscription. Capacity tasks re-slot instance pools on the assets (REQUESTED, IN_PROGRESS, COMPLETED per read; FAILED when the pools don't fit) and can be cancelled. Billing lists subscriptions and renewals; private connectivity, connections to assets, decommissioning (blocked by orders in flight) and tags on site and outpost ARNs. Address and rack changes are refused while hardware ships.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: outposts</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Outposts API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelCapacityTask</code></td></tr>
+        <tr><td><code>CancelOrder</code></td></tr>
+        <tr><td><code>CreateOrder</code></td></tr>
+        <tr><td><code>CreateOutpost</code></td></tr>
+        <tr><td><code>CreatePrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>CreateQuote</code></td></tr>
+        <tr><td><code>CreateRenewal</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>DeleteOutpost</code></td></tr>
+        <tr><td><code>DeleteQuote</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>GetCapacityTask</code></td></tr>
+        <tr><td><code>GetCatalogItem</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetOrder</code></td></tr>
+        <tr><td><code>GetOutpost</code></td></tr>
+        <tr><td><code>GetOutpostBillingInformation</code></td></tr>
+        <tr><td><code>GetOutpostInstanceTypes</code></td></tr>
+        <tr><td><code>GetOutpostSupportedInstanceTypes</code></td></tr>
+        <tr><td><code>GetPrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>GetQuote</code></td></tr>
+        <tr><td><code>GetRenewalPricing</code></td></tr>
+        <tr><td><code>GetSite</code></td></tr>
+        <tr><td><code>GetSiteAddress</code></td></tr>
+        <tr><td><code>ListAssetInstances</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListBlockingInstancesForCapacityTask</code></td></tr>
+        <tr><td><code>ListCapacityTasks</code></td></tr>
+        <tr><td><code>ListCatalogItems</code></td></tr>
+        <tr><td><code>ListOrderableInstanceTypes</code></td></tr>
+        <tr><td><code>ListOrders</code></td></tr>
+        <tr><td><code>ListOutposts</code></td></tr>
+        <tr><td><code>ListQuotes</code></td></tr>
+        <tr><td><code>ListSites</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartCapacityTask</code></td></tr>
+        <tr><td><code>StartConnection</code></td></tr>
+        <tr><td><code>StartOutpostDecommission</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateOutpost</code></td></tr>
+        <tr><td><code>UpdateQuote</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateSiteAddress</code></td></tr>
+        <tr><td><code>UpdateSiteRackPhysicalProperties</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="snow-device-management" class="service">
+
+        <div class="service-header">
+        <h2>AWS Snow Device Management</h2>
+        <p>SigV4 signed with service <code>snow-device-management</code>. REST JSON API. Managed devices are the Snowball jobs that are not cancelled (one device per job, typed from the job's Snowball type), each with capacities, network interfaces and one EC2 instance. Tasks run <code>reboot</code> or <code>unlock</code> on their targets: every execution goes QUEUED, IN_PROGRESS, SUCCEEDED one step per read (FAILED if the device leaves management), an unlock moves the device through UNLOCKING to UNLOCKED, and the task completes when all executions finish. CancelTask cancels open executions; client tokens are idempotent. Tags on task and managed device ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: snow-device-management</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Snow Device Management API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTask</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DescribeDevice</code></td></tr>
+        <tr><td><code>DescribeDeviceEc2Instances</code></td></tr>
+        <tr><td><code>DescribeExecution</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>ListDeviceResources</code></td></tr>
+        <tr><td><code>ListDevices</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="backup-gateway" class="service">
+
+        <div class="service-header">
+        <h2>AWS Backup gateway</h2>
+        <p>SigV4 signed with service <code>backup-gateway</code>. JSON 1.0 API with <code>X-Amz-Target: BackupOnPremises_v20210101.*</code>. Gateways associate with one imported hypervisor (and block its deletion), keep a maintenance window (weekly or monthly), a bandwidth rate limit schedule (overlaps refused) and a software version that UpdateGatewaySoftwareNow advances. Imported hypervisors go PENDING to ONLINE on their next read; a metadata sync runs CREATED, RUNNING, SUCCEEDED one step per GetHypervisor and discovers the host's virtual machines, which carry the hypervisor's VMware tag mappings. VMs are AWS Backup resources: StartBackupJob takes their names from here and LastBackupDate comes from their latest completed recovery point. Hypervisor credentials are never stored or returned.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: backup-gateway</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Backup gateway API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateGatewayToServer</code></td></tr>
+        <tr><td><code>CreateGateway</code></td></tr>
+        <tr><td><code>DeleteGateway</code></td></tr>
+        <tr><td><code>DeleteHypervisor</code></td></tr>
+        <tr><td><code>DisassociateGatewayFromServer</code></td></tr>
+        <tr><td><code>GetBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>GetGateway</code></td></tr>
+        <tr><td><code>GetHypervisor</code></td></tr>
+        <tr><td><code>GetHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>GetVirtualMachine</code></td></tr>
+        <tr><td><code>ImportHypervisorConfiguration</code></td></tr>
+        <tr><td><code>ListGateways</code></td></tr>
+        <tr><td><code>ListHypervisors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVirtualMachines</code></td></tr>
+        <tr><td><code>PutBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>PutHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>PutMaintenanceStartTime</code></td></tr>
+        <tr><td><code>StartVirtualMachinesMetadataSync</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>TestHypervisorConfiguration</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateGatewayInformation</code></td></tr>
+        <tr><td><code>UpdateGatewaySoftwareNow</code></td></tr>
+        <tr><td><code>UpdateHypervisor</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
