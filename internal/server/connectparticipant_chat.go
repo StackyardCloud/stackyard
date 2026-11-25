@@ -233,7 +233,7 @@ func (st *cnpStore) getTranscript(req cnpRequest) (map[string]any, *cnpErr) {
 	} else {
 		hi = n
 		if pos >= 0 {
-			hi = pos + 1
+			hi = min(pos+1, n) // pos can be n when AbsoluteTime is after every item
 		}
 		if tok := cnpStr(req.in, "NextToken"); tok != "" {
 			v, err := strconv.ParseInt(tok, 10, 32)
@@ -284,8 +284,11 @@ func (chat *cnpChat) startPosition(sp map[string]any) (int, *cnpErr) {
 		}
 		return n, nil
 	}
-	recent := int(sp["MostRecent"].(float64))
-	return max(n-1-recent, 0), nil
+	recent, ok := sp["MostRecent"].(float64)
+	if !ok || recent < 0 {
+		return 0, cnpValidation("StartPosition takes exactly one of Id, AbsoluteTime and MostRecent")
+	}
+	return max(n-1-int(recent), 0), nil
 }
 
 func (st *cnpStore) getAuthenticationURL(req cnpRequest) (map[string]any, *cnpErr) {

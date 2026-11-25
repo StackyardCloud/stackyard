@@ -269,8 +269,12 @@ func (st *cncStore) updateRelatedItem(in map[string]any) (map[string]any, *cncEr
 			}
 		}
 		content = map[string]any{kind: cncCopy(m)}
-	default:
+	case "comment":
 		content = map[string]any{kind: cncCopy(m)}
+	default:
+		// RelatedItemUpdateContent only has comment, custom and sla; contact,
+		// file and connectCase content is validated at creation and can't change.
+		return nil, cncValidation("content can only update a comment, custom or sla related item")
 	}
 	raw, _ := json.Marshal(content)
 	size := len(raw) + 128

@@ -153,6 +153,15 @@ func TestConnectParticipantStage1ChatFlow(t *testing.T) {
 	if !strings.Contains(string(desc), `"CHAT"`) {
 		t.Fatalf("DescribeContact: %s", desc)
 	}
+	// A start time after every item scans backward from the end instead of
+	// indexing past it; an unknown StartPosition member is a 400, not a panic.
+	late := cnpOK(t, ts, "/participant/transcript", conn, `{"StartPosition":{"AbsoluteTime":"2999-01-01T00:00:00Z"},"MaxResults":2}`)
+	if len(late["Transcript"].([]any)) != 2 {
+		t.Fatalf("late start position: %v", late)
+	}
+	if status, _ := cnpCall(t, ts, http.MethodPost, "/participant/transcript", conn, `{"StartPosition":{"Bogus":1}}`); status != http.StatusBadRequest {
+		t.Fatalf("unknown StartPosition member: status %d", status)
+	}
 	if status, _ := cnpCall(t, ts, http.MethodPost, "/participant/transcript", conn, `{"NextToken":"99999999999"}`); status != http.StatusBadRequest {
 		t.Fatalf("bad next token: %d", status)
 	}

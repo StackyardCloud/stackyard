@@ -521,16 +521,24 @@ func (st *cncStore) startMergeCases(in map[string]any) (map[string]any, *cncErr)
 		v, set := cfg[key].(bool)
 		return key != "" && (!set || v)
 	}
-	moved := 0
+	moved, movedBytes := 0, 0
 	for _, ri := range secondary.related {
 		if keep(ri.typ) {
 			moved++
+			movedBytes += ri.size
 		}
 	}
 	if len(primary.related)+moved > cncMaxRelated {
 		return nil, cncQuota("a case holds at most %d related items", cncMaxRelated)
 	}
+	if primary.fieldBytes+primary.relatedBytes+movedBytes > cncMaxCaseBytes {
+		return nil, cncQuota("a case holds at most %d bytes of fields and related items", cncMaxCaseBytes)
+	}
+	// Count the incoming items while the field updates are checked against
+	// the per-case cap, so fields plus moved items can't exceed it together.
+	primary.relatedBytes += movedBytes
 	auditFields, err := st.setFieldsLocked(d, primary, updates)
+	primary.relatedBytes -= movedBytes
 	if err != nil {
 		return nil, err
 	}
