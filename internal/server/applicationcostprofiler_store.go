@@ -183,6 +183,10 @@ type acpUsage struct {
 func (s *Server) acpImport(in map[string]any) (map[string]any, *budErr) {
 	src := budMap(in, "sourceS3Location")
 	bucket, key := budStr(src, "bucket"), budStr(src, "key")
+	caller := s3CallerIn(in)
+	if !s.authorizeServiceS3As(caller, acpServicePrincipal, bucket, key, "s3:GetObject") {
+		return nil, acpErrorf("AccessDeniedException", "access denied reading s3://%s/%s", bucket, key)
+	}
 	obj, err := s.s3.GetObject(bucket, key)
 	if err != nil {
 		return nil, acpInvalid("unable to read s3://%s/%s", bucket, key)
@@ -207,7 +211,7 @@ func (s *Server) acpImport(in map[string]any) (map[string]any, *budErr) {
 	report := acpReport(usage)
 	for _, d := range defs {
 		// A bucket deleted since the definition was saved just misses this delivery.
-		_ = s.acpDeliver(d, importID, report, now)
+		_ = s.acpDeliver(caller, d, importID, report, now)
 	}
 	return map[string]any{"importId": importID}, nil
 }
@@ -323,21 +327,35 @@ func acpReportPrefix(d *acpDefinition, now time.Time) string {
 // acpDeliver writes a manifest and, for CSV definitions, the report itself.
 // ponytail: PARQUET definitions get only the manifest; encode Parquet when
 // a consumer needs the rows.
-func (s *Server) acpDeliver(d *acpDefinition, importID string, report []byte, now time.Time) error {
+const acpServicePrincipal = "application-cost-profiler.amazonaws.com"
+
+func (s *Server) acpDeliver(caller s3Caller, d *acpDefinition, importID string, report []byte, now time.Time) error {
 	base := acpReportPrefix(d, now)
+	csvKey, manifestKey := base+"/"+importID+".csv", base+"/"+importID+"-manifest.json"
+	keys := []string{manifestKey}
+	if d.format == "CSV" {
+		keys = append(keys, csvKey)
+	}
+	// Authorize every object actually written, before writing any of them: a
+	// destination whose policy denies the caller or the service misses this
+	// delivery, like a bucket deleted since the definition was saved.
+	for _, key := range keys {
+		if !s.authorizeServiceS3As(caller, acpServicePrincipal, d.bucket, key, "s3:PutObject") {
+			return fmt.Errorf("access denied writing s3://%s/%s", d.bucket, key)
+		}
+	}
 	var files []string
 	if d.format == "CSV" {
-		key := base + "/" + importID + ".csv"
-		if _, err := s.s3.PutObject(d.bucket, key, "text/csv", report, nil, "", ""); err != nil {
+		if _, err := s.s3.PutObject(d.bucket, csvKey, "text/csv", report, nil, "", ""); err != nil {
 			return fmt.Errorf("write report: %w", err)
 		}
-		files = append(files, key)
+		files = append(files, csvKey)
 	}
 	manifest, _ := json.Marshal(map[string]any{
 		"reportId": d.id, "importId": importID, "format": d.format, "reportFrequency": d.frequency,
 		"generatedAt": now.Format(time.RFC3339), "reportFiles": files,
 	})
-	if _, err := s.s3.PutObject(d.bucket, base+"/"+importID+"-manifest.json", "application/json", manifest, nil, "", ""); err != nil {
+	if _, err := s.s3.PutObject(d.bucket, manifestKey, "application/json", manifest, nil, "", ""); err != nil {
 		return fmt.Errorf("write manifest: %w", err)
 	}
 	return nil

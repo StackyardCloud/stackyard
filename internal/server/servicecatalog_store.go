@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
@@ -191,12 +192,12 @@ type svcatHandler func(st *serviceCatalogStore, s *Server, in map[string]any, pr
 
 var svcatHandlers map[string]svcatHandler
 
-func (st *serviceCatalogStore) handle(s *Server, op, outShape string, in map[string]any) (any, *svcatError) {
+func (st *serviceCatalogStore) handle(s *Server, r *http.Request, op, outShape string, in map[string]any) (any, *svcatError) {
 	h := svcatHandlers[op]
 	if h == nil {
 		return nil, svcatInvalid("operation %s has no handler", op)
 	}
-	pre := s.svcatPrefetch(op, in)
+	pre := s.svcatPrefetch(r, op, in)
 	st.mu.Lock()
 	st.settleLocked()
 	out, err := h(st, s, in, pre)
@@ -217,7 +218,7 @@ func (st *serviceCatalogStore) handle(s *Server, op, outShape string, in map[str
 }
 
 // svcatPrefetch reads S3 objects and CloudFormation stacks a request names.
-func (s *Server) svcatPrefetch(op string, in map[string]any) *svcatPre {
+func (s *Server) svcatPrefetch(r *http.Request, op string, in map[string]any) *svcatPre {
 	pre := &svcatPre{}
 	var info map[string]any
 	switch op {
@@ -232,7 +233,7 @@ func (s *Server) svcatPrefetch(op string, in map[string]any) *svcatPre {
 		return pre
 	}
 	if u := svcatStr(info, "LoadTemplateFromURL"); u != "" {
-		pre.template, pre.templateErr = s.svcatFetchTemplate(u)
+		pre.template, pre.templateErr = s.svcatFetchTemplate(r, u)
 	} else if id := svcatStr(info, "ImportFromPhysicalId"); id != "" {
 		if pre.stackName, pre.stackFound = s.svcatFindStack(id); !pre.stackFound {
 			pre.templateErr = svcatInvalid("ImportFromPhysicalId %s is not a CloudFormation stack", id)
@@ -245,7 +246,7 @@ func (s *Server) svcatPrefetch(op string, in map[string]any) *svcatPre {
 // svcatFetchTemplate loads a template from Stackyard's S3. Virtual-hosted
 // (bucket.s3[.region].amazonaws.com/key) and path-style (host/bucket/key)
 // URLs are both accepted.
-func (s *Server) svcatFetchTemplate(raw string) ([]byte, *svcatError) {
+func (s *Server) svcatFetchTemplate(r *http.Request, raw string) ([]byte, *svcatError) {
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" {
 		return nil, svcatInvalid("LoadTemplateFromURL %q is not a URL", raw)
@@ -259,6 +260,9 @@ func (s *Server) svcatFetchTemplate(raw string) ([]byte, *svcatError) {
 	}
 	if bucket == "" || key == "" {
 		return nil, svcatInvalid("LoadTemplateFromURL %q doesn't name an S3 object", raw)
+	}
+	if !s.authorizeServiceS3(r, "servicecatalog.amazonaws.com", bucket, key, "s3:GetObject") {
+		return nil, svcatInvalid("LoadTemplateFromURL: access denied reading s3://%s/%s", bucket, key)
 	}
 	obj, err := s.s3.GetObject(bucket, key)
 	if err != nil {

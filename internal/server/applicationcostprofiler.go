@@ -107,7 +107,7 @@ func (s *Server) handleApplicationCostProfilerRESTRouter(w http.ResponseWriter, 
 		acpRespondError(w, err)
 		return true
 	}
-	out, err := s.acpDispatch(op, in)
+	out, err := s.acpDispatch(op, s.withS3Caller(in, r))
 	if err != nil {
 		acpRespondError(w, err)
 		return true

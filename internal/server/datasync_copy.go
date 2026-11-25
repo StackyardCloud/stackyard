@@ -21,6 +21,18 @@ func (st *dsyStore) transfer(s *Server, e *dsyExec) *dsyErr {
 		// file content in Stackyard to copy.
 		return nil
 	}
+	denied := func(action, bucket, key string) *dsyErr {
+		if s.authorizeServiceS3As(e.caller, "datasync.amazonaws.com", bucket, key, action) {
+			return nil
+		}
+		return &dsyErr{code: "AccessDenied", msg: "access denied: " + action + " on s3://" + bucket + "/" + key}
+	}
+	if err := denied("s3:ListBucket", srcBucket, ""); err != nil {
+		return err
+	}
+	if err := denied("s3:ListBucket", dstBucket, ""); err != nil {
+		return err
+	}
 	objects, err := s.s3.ListObjects(srcBucket, srcPrefix)
 	if err != nil {
 		return &dsyErr{code: "SourceUnavailable", msg: "source bucket " + srcBucket + " is unavailable"}
@@ -71,6 +83,14 @@ func (st *dsyStore) transfer(s *Server, e *dsyExec) *dsyErr {
 		metadata = map[string]string{}
 	}
 	for _, j := range jobs {
+		if err := denied("s3:GetObject", srcBucket, j.srcKey); err != nil {
+			return err
+		}
+		if err := denied("s3:PutObject", dstBucket, j.dstKey); err != nil {
+			return err
+		}
+	}
+	for _, j := range jobs {
 		obj, err := s.s3.CopyObject(srcBucket, j.srcKey, dstBucket, j.dstKey, metadata, "", "", storageClass)
 		if err != nil {
 			return &dsyErr{code: "CopyFailed", msg: "copying " + j.srcKey + " failed: " + err.Error()}
@@ -82,6 +102,9 @@ func (st *dsyStore) transfer(s *Server, e *dsyExec) *dsyErr {
 	if e.options["PreserveDeletedFiles"] == "REMOVE" {
 		for _, d := range existing {
 			if rel := strings.TrimPrefix(d.Key, dstPrefix); !sourceRel[rel] && dsyIncluded("/"+rel, e.includes, e.excludes) {
+				if err := denied("s3:DeleteObject", dstBucket, d.Key); err != nil {
+					return err
+				}
 				if err := s.s3.DeleteObject(dstBucket, d.Key); err == nil {
 					e.counts["FilesDeleted"]++
 				}

@@ -52,7 +52,7 @@ func (s *Server) handleServiceCatalogJSONRouter(w http.ResponseWriter, r *http.R
 	// Conform drops members the input shape doesn't define, so callers can't
 	// reach the store's own fields.
 	conformed, _ := model.Conform(shapes.Input, in).(map[string]any)
-	out, rerr := s.serviceCatalog.handle(s, op, shapes.Output, conformed)
+	out, rerr := s.serviceCatalog.handle(s, r, op, shapes.Output, conformed)
 	if rerr != nil {
 		respondServiceCatalogError(w, http.StatusBadRequest, rerr.code, rerr.msg)
 		return true
