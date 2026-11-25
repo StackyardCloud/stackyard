@@ -1043,6 +1043,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
   },
   {
+    id: "pinpointemail",
+    name: "Amazon Pinpoint Email",
+    category: "integration",
+    summary: "Pinpoint Email on SESv2's account state: identities with DKIM, feedback and MAIL FROM settings, configuration sets with delivery, reputation, sending and tracking options and event destinations, dedicated IPs and pools, the deliverability dashboard with domain statistics and campaigns from sent mail, test reports, SendEmail (Simple, Raw or Template) with the send quota, and tags.",
+    docsHref: "../../../index.html#pinpointemail",
+    exampleHref: "../../../../examples/aws/pinpoint-email/docker-compose.yml"
+  },
+  {
+    id: "pinpointsmsvoice",
+    name: "Amazon Pinpoint SMS and Voice",
+    category: "integration",
+    summary: "Version 1 voice API: configuration sets with CloudWatch Logs, Kinesis Data Firehose or SNS event destinations, and voice messages (plain text, call instructions or SSML) validated against E.164 numbers and their configuration set.",
+    docsHref: "../../../index.html#pinpointsmsvoice",
+    exampleHref: "../../../../examples/aws/pinpoint-sms-voice/docker-compose.yml"
+  },
+  {
+    id: "mailmanager",
+    name: "Amazon SES Mail Manager",
+    category: "integration",
+    summary: "Archives filled by SESv2 and Pinpoint Email sends through configuration sets with archiving options, with searches, message content and downloads, and exports to S3; address lists with members and CSV/JSON imports through a pre-signed upload URL; ingress points, SMTP relays, rule sets and traffic policies with checked references; add-on subscriptions and instances; tags.",
+    docsHref: "../../../index.html#mailmanager",
+    exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
