@@ -21,6 +21,7 @@ import copy
 import datetime
 import fnmatch
 import hashlib
+import io
 import json
 import os
 import re
@@ -31,6 +32,7 @@ import sys
 import tempfile
 import time
 import uuid
+import zipfile
 import xml.etree.ElementTree as xml_etree
 from dataclasses import dataclass
 from pathlib import Path
@@ -582,6 +584,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
+    "codegurusecurity": {"cli": "codeguru-security", "ops_file": REPO_ROOT / "internal/server/codegurusecurity_ops.go"},
+    "cloud9": {"cli": "cloud9", "ops_file": REPO_ROOT / "internal/server/cloud9_ops.go"},
+    "invoicing": {"cli": "invoicing", "ops_file": REPO_ROOT / "internal/server/invoicing_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
     "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
@@ -2374,6 +2379,12 @@ SERVICE_ALIASES = {
     "contactlens": "connectcontactlens",
     "amazonconnectcontactlens": "connectcontactlens",
     "budgets": "budgets",
+    "codegurusecurity": "codegurusecurity",
+    "codeguru-security": "codegurusecurity",
+    "cloud9": "cloud9",
+    "awscloud9": "cloud9",
+    "invoicing": "invoicing",
+    "awsinvoicing": "invoicing",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
     "cost-optimization-hub": "costoptimizationhub",
@@ -3384,6 +3395,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "connectparticipant": {},
     "connectcontactlens": {},
     "budgets": {},
+    "codegurusecurity": {},
+    "cloud9": {},
+    "invoicing": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
     "applicationcostprofiler": {},
@@ -15174,7 +15188,17 @@ def ec2_seed_runtime_state(
     _capture("describe-transit-gateway-route-tables")
     _capture("describe-client-vpn-endpoints")
     _capture("describe-launch-templates")
-    _capture("describe-instances")
+    # Seed only live instances EC2 owns: instances other services launched
+    # (tagged aws:*, such as Cloud9's) or terminated ones can't stand in for
+    # the instance the seed launches and attaches a volume to.
+    live = run_aws_json(aws_bin, endpoint_url, region, "ec2", "describe-instances", env)
+    if isinstance(live, dict):
+        for reservation in live.get("Reservations") or []:
+            for instance in reservation.get("Instances") or []:
+                run_state = (instance.get("State") or {}).get("Name")
+                managed = any(str(t.get("Key") or "").startswith("aws:") for t in instance.get("Tags") or [])
+                if run_state not in {"terminated", "shutting-down"} and not managed:
+                    ec2_record_runtime_payload(instance)
     _capture("describe-images")
     _capture("describe-coip-pools")
     _capture("describe-instance-event-windows")
@@ -40796,6 +40820,249 @@ def taxsettings_hydrate_payload(
     return {}
 
 
+C9_OWNER_ROOT = "arn:aws:iam::123456789012:root"
+
+
+def c9_new_env(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "cloud9", "create-environment-ec2", env, [
+        "--name", f"stackyard-c9-{time.time_ns()}", "--instance-type", "t3.small", "--image-id", "amazonlinux-2023-x86_64",
+    ])
+    return str((data or {}).get("environmentId") or "") if isinstance(data, dict) else ""
+
+
+def c9_add_member(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], env_id: str) -> str:
+    user = f"arn:aws:iam::123456789012:user/stackyard-{time.time_ns()}"
+    run_aws_json(aws_bin, endpoint_url, region, "cloud9", "create-environment-membership", env, [
+        "--environment-id", env_id, "--user-arn", user, "--permissions", "read-only",
+    ])
+    return user
+
+
+def cloud9_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared EC2 environment; deletes and membership changes get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("cloud9", {})
+    if not state.get("env"):
+        state["env"] = c9_new_env(aws_bin, endpoint_url, region, env)
+    shared = str(state["env"])
+    arn = f"arn:aws:cloud9:us-east-1:123456789012:environment:{shared}"
+    if op == "CreateEnvironmentEC2":
+        return {"name": f"stackyard-c9-{time.time_ns()}", "description": "Stackyard coverage", "instanceType": "t3.small",
+                "imageId": "resolve:ssm:/aws/service/cloud9/amis/amazonlinux-2023-x86_64", "automaticStopTimeMinutes": 30,
+                "connectionType": "CONNECT_SSM", "tags": [{"Key": "team", "Value": "dev"}]}
+    if op == "DeleteEnvironment":
+        return {"environmentId": c9_new_env(aws_bin, endpoint_url, region, env)}
+    if op in {"DescribeEnvironmentStatus"}:
+        return {"environmentId": shared}
+    if op == "DescribeEnvironments":
+        return {"environmentIds": [shared]}
+    if op == "ListEnvironments":
+        return {"maxResults": 25}
+    if op == "UpdateEnvironment":
+        return {"environmentId": shared, "description": "updated by Stackyard coverage", "managedCredentialsAction": "DISABLE"}
+    if op == "CreateEnvironmentMembership":
+        return {"environmentId": shared, "userArn": f"arn:aws:iam::123456789012:user/stackyard-{time.time_ns()}", "permissions": "read-write"}
+    if op == "UpdateEnvironmentMembership":
+        return {"environmentId": shared, "userArn": c9_add_member(aws_bin, endpoint_url, region, env, shared), "permissions": "read-write"}
+    if op == "DeleteEnvironmentMembership":
+        return {"environmentId": shared, "userArn": c9_add_member(aws_bin, endpoint_url, region, env, shared)}
+    if op == "DescribeEnvironmentMemberships":
+        return {"environmentId": shared, "permissions": ["owner", "read-write", "read-only"]}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return payload
+
+
+def invc_account() -> str:
+    """A 12-digit account no other invoice unit links (units may not share accounts)."""
+    return f"{time.time_ns() % 10**12:012d}"
+
+
+def invc_new_unit(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    acct = invc_account()
+    data = run_aws_json(aws_bin, endpoint_url, region, "invoicing", "create-invoice-unit", env, ["--cli-input-json", json.dumps({
+        "Name": f"stackyard-unit-{time.time_ns()}", "InvoiceReceiver": acct, "Rule": {"LinkedAccounts": [acct]},
+    })])
+    return str((data or {}).get("InvoiceUnitArn") or "") if isinstance(data, dict) else ""
+
+
+def invc_preference(buyer: str) -> dict:
+    return {
+        "ProcurementPortalName": "COUPA", "BuyerDomain": "NetworkID", "BuyerIdentifier": buyer,
+        "SupplierDomain": "NetworkID", "SupplierIdentifier": "CP0000001000",
+        "ProcurementPortalSharedSecret": "coverage-secret", "EinvoiceDeliveryEnabled": True,
+        "EinvoiceDeliveryPreference": {
+            "EinvoiceDeliveryDocumentTypes": ["AWS_CLOUD_INVOICE"], "EinvoiceDeliveryAttachmentTypes": ["INVOICE_PDF"],
+            "Protocol": "CXML", "ConnectionTestingMethod": "PROD_ENV_DOLLAR_TEST", "EinvoiceDeliveryActivationDate": "2026-12-01T00:00:00Z",
+            "PurchaseOrderDataSources": [{"EinvoiceDeliveryDocumentType": "AWS_CLOUD_INVOICE", "PurchaseOrderDataSourceType": "PURCHASE_ORDER_NOT_REQUIRED"}],
+        },
+        "PurchaseOrderRetrievalEnabled": True, "Contacts": [{"Name": "Billing", "Email": "billing@example.com"}],
+    }
+
+
+def invc_new_preference(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "invoicing", "create-procurement-portal-preference", env,
+                        ["--cli-input-json", json.dumps(invc_preference(f"buyer-{time.time_ns()}"))])
+    return str((data or {}).get("ProcurementPortalPreferenceArn") or "") if isinstance(data, dict) else ""
+
+
+def invc_validation_code(arn: str, sends: int) -> str:
+    """The code SendProcurementPortalValidation 'emails' (see invoicing_portal.go)."""
+    digest = hashlib.sha256(f"{arn}#{sends}".encode()).digest()
+    return f"{int.from_bytes(digest[:4], 'big') % 1_000_000:06d}"
+
+
+def invoicing_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared invoice unit and portal preference; destructive operations get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("invoicing", {})
+    if not state.get("unit"):
+        state["unit"] = invc_new_unit(aws_bin, endpoint_url, region, env)
+        state["pref"] = invc_new_preference(aws_bin, endpoint_url, region, env)
+    unit, pref = str(state["unit"]), str(state["pref"])
+    if op == "CreateInvoiceUnit":
+        acct = invc_account()
+        return {"Name": f"stackyard-unit-{time.time_ns()}", "InvoiceReceiver": acct, "Description": "Stackyard coverage",
+                "Rule": {"LinkedAccounts": [acct]}, "ResourceTags": [{"Key": "team", "Value": "finance"}]}
+    if op == "GetInvoiceUnit":
+        return {"InvoiceUnitArn": unit}
+    if op == "UpdateInvoiceUnit":
+        return {"InvoiceUnitArn": unit, "Description": f"updated {time.time_ns()}", "TaxInheritanceDisabled": True}
+    if op == "DeleteInvoiceUnit":
+        return {"InvoiceUnitArn": invc_new_unit(aws_bin, endpoint_url, region, env)}
+    if op == "ListInvoiceUnits":
+        return {"MaxResults": 100}
+    if op == "BatchGetInvoiceProfile":
+        return {"AccountIds": ["123456789012"]}
+    if op == "ListInvoiceSummaries":
+        return {"Selector": {"ResourceType": "ACCOUNT_ID", "Value": "123456789012"}, "MaxResults": 10}
+    if op == "GetInvoicePDF":
+        return {"InvoiceId": "INV-123456789012-202601"}
+    if op == "CreateProcurementPortalPreference":
+        return {**invc_preference(f"buyer-{time.time_ns()}"), "ResourceTags": [{"Key": "team", "Value": "finance"}]}
+    if op == "GetProcurementPortalPreference":
+        return {"ProcurementPortalPreferenceArn": pref}
+    if op == "PutProcurementPortalPreference":
+        body = invc_preference("unused")
+        for key in ("ProcurementPortalName", "BuyerDomain", "BuyerIdentifier", "SupplierDomain", "SupplierIdentifier"):
+            body.pop(key)
+        return {**body, "ProcurementPortalPreferenceArn": pref, "Selector": {"InvoiceUnitArns": [unit]}}
+    if op == "DeleteProcurementPortalPreference":
+        return {"ProcurementPortalPreferenceArn": invc_new_preference(aws_bin, endpoint_url, region, env)}
+    if op == "SendProcurementPortalValidation":
+        return {"ProcurementPortalPreferenceArn": pref}
+    if op == "VerifyProcurementPortalValidation":
+        arn = invc_new_preference(aws_bin, endpoint_url, region, env)
+        run_aws_json(aws_bin, endpoint_url, region, "invoicing", "send-procurement-portal-validation", env,
+                     ["--procurement-portal-preference-arn", arn])
+        return {"ProcurementPortalPreferenceArn": arn, "Code": invc_validation_code(arn, 1)}
+    if op == "UpdateProcurementPortalPreferenceStatus":
+        return {"ProcurementPortalPreferenceArn": pref, "EinvoiceDeliveryPreferenceStatus": "SUSPENDED",
+                "EinvoiceDeliveryPreferenceStatusReason": "paused by Stackyard coverage"}
+    if op in {"ListProcurementPortals", "ListProcurementPortalPreferences"}:
+        return {"MaxResults": 10}
+    if op == "ListProcurementPortalSuppliers":
+        return {"PortalIdentifier": "coupa"}
+    if op == "TagResource":
+        return {"ResourceArn": unit, "ResourceTags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": unit, "ResourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": unit}
+    return payload
+
+
+CGS_SAMPLE_SOURCE = (
+    'import hashlib, os\n'
+    'password = "coverage-only"\n'
+    'def run(cmd):\n'
+    '    os.system(cmd)  # TODO validate cmd\n'
+    '    return hashlib.md5(cmd.encode()).hexdigest()\n'
+)
+
+
+def cgs_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], scan: str) -> str:
+    """Create an upload URL for scan and PUT a small zip of sample code to it."""
+    data = run_aws_json(aws_bin, endpoint_url, region, "codeguru-security", "create-upload-url", env, ["--scan-name", scan])
+    if not isinstance(data, dict) or not data.get("s3Url"):
+        return ""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("app/main.py", CGS_SAMPLE_SOURCE)
+    req = urlrequest.Request(str(data["s3Url"]), data=buf.getvalue(), method="PUT", headers={"Content-Type": "application/zip"})
+    try:
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            resp.read()
+    except (urlerror.URLError, OSError) as exc:
+        print(f"codeguru-security upload failed: {exc}", file=sys.stderr)
+    return str(data.get("codeArtifactId") or "")
+
+
+def cgs_finished_scan(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """A scan over the sample code, waited on until its run finishes."""
+    scan = f"stackyard-scan-{time.time_ns()}"
+    artifact = cgs_upload(aws_bin, endpoint_url, region, env, scan)
+    run_aws_json(aws_bin, endpoint_url, region, "codeguru-security", "create-scan", env, [
+        "--scan-name", scan, "--resource-id", json.dumps({"codeArtifactId": artifact}), "--analysis-type", "All",
+    ])
+    for _ in range(40):
+        data = run_aws_json(aws_bin, endpoint_url, region, "codeguru-security", "get-scan", env, ["--scan-name", scan])
+        if isinstance(data, dict) and data.get("scanState") != "InProgress":
+            break
+        time.sleep(0.25)
+    return scan
+
+
+def codegurusecurity_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A finished scan over uploaded sample code; CreateScan gets a scan and upload of its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("codegurusecurity", {})
+    if not state.get("scan"):
+        state["scan"] = cgs_finished_scan(aws_bin, endpoint_url, region, env)
+    scan = str(state["scan"])
+    arn = f"arn:aws:codeguru-security:us-east-1:123456789012:scans/{scan}"
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    if op == "CreateUploadUrl":
+        return {"scanName": f"stackyard-scan-{time.time_ns()}"}
+    if op == "CreateScan":
+        name = f"stackyard-scan-{time.time_ns()}"
+        return {"scanName": name, "resourceId": {"codeArtifactId": cgs_upload(aws_bin, endpoint_url, region, env, name)},
+                "scanType": "Standard", "analysisType": "Security", "tags": {"team": "appsec"}}
+    if op in {"GetScan", "GetFindings"}:
+        return {"scanName": scan}
+    if op == "BatchGetFindings":
+        data = run_aws_json(aws_bin, endpoint_url, region, "codeguru-security", "get-findings", env, ["--scan-name", scan])
+        findings = (data.get("findings") if isinstance(data, dict) else None) or [{}]
+        return {"findingIdentifiers": [{"scanName": scan, "findingId": str(findings[0].get("id") or "missing")}]}
+    if op == "ListScans":
+        return {"maxResults": 50}
+    if op == "ListFindingsMetrics":
+        return {"startDate": (today - datetime.timedelta(days=7)).isoformat(), "endDate": today.isoformat()}
+    if op == "GetMetricsSummary":
+        return {"date": today.isoformat()}
+    if op == "GetAccountConfiguration":
+        return {}
+    if op == "UpdateAccountConfiguration":
+        return {"encryptionConfig": {}}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -40864,6 +41131,12 @@ def hydrate_payload_with_service_state(
         return freetier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "taxsettings":
         return taxsettings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "codegurusecurity":
+        return codegurusecurity_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloud9":
+        return cloud9_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "invoicing":
+        return invoicing_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "budgets":
         return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "costoptimizationhub":

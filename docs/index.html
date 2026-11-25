@@ -129,6 +129,7 @@
         <a href="#codestarconnections">CodeStar Connections</a>
         <a href="#codebuild">CodeBuild</a>
         <a href="#codecatalyst">CodeCatalyst</a>
+        <a href="#codegurusecurity">CodeGuru Security</a>
         <a href="#codeguru">CodeGuru Reviewer</a>
         <a href="#codeguru-profiler">CodeGuru Profiler</a>
         <a href="#codedeploy">CodeDeploy</a>
@@ -138,6 +139,7 @@
         <a href="#qdeveloper">AWS Q Developer</a>
         <a href="#qbusiness">Amazon Q Business</a>
         <a href="#organizations">Organizations</a>
+        <a href="#cloud9">Cloud9</a>
         <a href="#cloudcontrolapi">Cloud Control API</a>
         <a href="#controlcatalog">Control Catalog</a>
         <a href="#controltower">Control Tower</a>
@@ -321,6 +323,7 @@
         <a href="#textract">Textract</a>
         <a href="#budgets">Budgets</a>
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
+        <a href="#invoicing">Invoicing</a>
         <a href="#bcmdataexports">Data Exports</a>
         <a href="#applicationcostprofiler">Application Cost Profiler</a>
         <a href="#bcmdashboards">Billing and Cost Management Dashboards</a>
@@ -6637,6 +6640,47 @@
         </details>
         </section>
 
+        <section id="codegurusecurity" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CodeGuru Security</h2>
+        <p>SigV4 signed with service <code>codeguru-security</code>. REST JSON API (<code>/scans</code>, <code>/findings/{scanName}</code>, <code>/metrics/*</code>, <code>/uploadUrl</code>, <code>/tags/{resourceArn}</code>); only requests signed for codeguru-security are claimed, so CodeGuru Reviewer and Profiler keep their paths. CreateUploadUrl returns a one-hour URL on Stackyard that takes a <code>PUT</code> of an <code>application/zip</code> body of up to 4 MiB; up to 200 source files (256 KiB each, 2 MiB in all) are scanned by built-in detectors: hardcoded AWS keys (Critical), hardcoded passwords, eval, shell command injection and disabled TLS verification (High), MD5/SHA-1 (Medium), cleartext HTTP URLs (Low) and, for analysisType All, TODO/FIXME notes (Info). CreateScan runs over an uploaded artifact for its scan name: InProgress for two seconds, then Successful (Failed when nothing was uploaded); a second run while one is in progress is a ConflictException. Findings keep their first-seen time across runs and those that disappear are reported Closed; GetFindings, BatchGetFindings, ListFindingsMetrics (daily new/closed/open counts and mean time to close) and GetMetricsSummary read them. UpdateAccountConfiguration takes a KMS key that must exist in Stackyard KMS. The API reference was retired with the service; operations follow the AWS CLI 2.42.1 model. All 13 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: codeguru-security</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon CodeGuru Security API action catalog. See <code>internal/server/codegurusecurity_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchGetFindings</code></td></tr>
+        <tr><td><code>CreateScan</code></td></tr>
+        <tr><td><code>CreateUploadUrl</code></td></tr>
+        <tr><td><code>GetAccountConfiguration</code></td></tr>
+        <tr><td><code>GetFindings</code></td></tr>
+        <tr><td><code>GetMetricsSummary</code></td></tr>
+        <tr><td><code>GetScan</code></td></tr>
+        <tr><td><code>ListFindingsMetrics</code></td></tr>
+        <tr><td><code>ListScans</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAccountConfiguration</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>codegurusecurity</code>: <code>docker compose -f examples/aws/codeguru-security/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="codeguru" class="service">
 
         <div class="service-header">
@@ -7452,6 +7496,47 @@
         </details>
         </section>
 
+        <section id="cloud9" class="service">
+
+        <div class="service-header">
+        <h2>AWS Cloud9</h2>
+        <p>SigV4 signed with service <code>cloud9</code>. JSON 1.1 API with <code>X-Amz-Target: AWSCloud9WorkspaceManagementService.*</code>. CreateEnvironmentEC2 checks the image alias (or its <code>resolve:ssm:/aws/service/cloud9/amis/...</code> path) and, when given, that the subnet exists in the EC2 store, then launches one instance there tagged <code>aws:cloud9:environment</code>. Environments report <code>creating</code> / CREATING for two seconds, then DescribeEnvironmentStatus follows the instance: <code>ready</code> while running, <code>stopping</code>/<code>stopped</code> when stopped through EC2, <code>error</code> once it is terminated. DeleteEnvironment terminates the instance and reports <code>deleting</code> / DELETING for two seconds. Names are unique per owner (ConflictException), <code>clientRequestToken</code> is idempotent and <code>dryRun</code> checks without creating. Memberships: the owner plus up to 8 read-only/read-write members; the owner can't be changed or removed. UpdateEnvironment renames, re-describes and enables or disables managed credentials. Up to 100 environments and 50 tags (no <code>aws:</code> keys) each. All 13 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloud9</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Cloud9 API action catalog. See <code>internal/server/cloud9_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateEnvironmentEC2</code></td></tr>
+        <tr><td><code>CreateEnvironmentMembership</code></td></tr>
+        <tr><td><code>DeleteEnvironment</code></td></tr>
+        <tr><td><code>DeleteEnvironmentMembership</code></td></tr>
+        <tr><td><code>DescribeEnvironmentMemberships</code></td></tr>
+        <tr><td><code>DescribeEnvironmentStatus</code></td></tr>
+        <tr><td><code>DescribeEnvironments</code></td></tr>
+        <tr><td><code>ListEnvironments</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateEnvironment</code></td></tr>
+        <tr><td><code>UpdateEnvironmentMembership</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>cloud9</code>: <code>docker compose -f examples/aws/cloud9/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="cloudcontrolapi" class="service">
 
         <div class="service-header">
@@ -26612,6 +26697,55 @@
         </details>
         </section>
 
+        <section id="invoicing" class="service">
+
+        <div class="service-header">
+        <h2>AWS Invoicing</h2>
+        <p>SigV4 signed with service <code>invoicing</code>. JSON 1.0 API with <code>X-Amz-Target: Invoicing.*</code>; requests the generic cost-management router serves (<code>AWSBillingAndCostManagement.*</code>, signed <code>ce</code>) keep going there. Invoice units keep their last five revisions, so GetInvoiceUnit and ListInvoiceUnits honour <code>AsOf</code>; names are unique and a linked account belongs to one unit (ValidationException with reasons such as <code>accountMembershipError</code>). Invoices are derived, not stored: every issued billing period (issued on the 2nd of the next month) has <code>INV-&lt;account&gt;-&lt;yyyymm&gt;</code> plus one <code>INV-&lt;account&gt;-&lt;yyyymm&gt;-&lt;unit id&gt;</code> per invoice unit the account receives, with amounts derived from the ID. GetInvoicePDF returns a signed one-hour URL on Stackyard that serves the invoice as a one-page PDF. BatchGetInvoiceProfile answers for the payer and accounts named by invoice units. Procurement portal preferences (Coupa, SAP Business Network) check suppliers, test environments and selected invoice units, start enabled features at PENDING_VERIFICATION, and are verified with the code SendProcurementPortalValidation "sends": the first four bytes of SHA-256(<code>&lt;preference ARN&gt;#&lt;send count&gt;</code>) as a big-endian integer modulo 1,000,000, zero-padded to six digits. ACTIVE and the TEST_* statuses need a verified connection (ConflictException). Shared secrets are stored but never returned. All 21 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: invoicing</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Invoicing API action catalog. See <code>internal/server/invoicing_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchGetInvoiceProfile</code></td></tr>
+        <tr><td><code>CreateInvoiceUnit</code></td></tr>
+        <tr><td><code>CreateProcurementPortalPreference</code></td></tr>
+        <tr><td><code>DeleteInvoiceUnit</code></td></tr>
+        <tr><td><code>DeleteProcurementPortalPreference</code></td></tr>
+        <tr><td><code>GetInvoicePDF</code></td></tr>
+        <tr><td><code>GetInvoiceUnit</code></td></tr>
+        <tr><td><code>GetProcurementPortalPreference</code></td></tr>
+        <tr><td><code>ListInvoiceSummaries</code></td></tr>
+        <tr><td><code>ListInvoiceUnits</code></td></tr>
+        <tr><td><code>ListProcurementPortalPreferences</code></td></tr>
+        <tr><td><code>ListProcurementPortalSuppliers</code></td></tr>
+        <tr><td><code>ListProcurementPortals</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutProcurementPortalPreference</code></td></tr>
+        <tr><td><code>SendProcurementPortalValidation</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateInvoiceUnit</code></td></tr>
+        <tr><td><code>UpdateProcurementPortalPreferenceStatus</code></td></tr>
+        <tr><td><code>VerifyProcurementPortalValidation</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>invoicing</code>: <code>docker compose -f examples/aws/invoicing/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
         <section id="bcmdataexports" class="service">
 
         <div class="service-header">
