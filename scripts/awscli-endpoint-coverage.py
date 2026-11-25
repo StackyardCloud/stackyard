@@ -572,6 +572,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
+    "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
+    "personalizeevents": {"cli": "personalize-events", "ops_file": REPO_ROOT / "internal/server/personalizeevents_ops.go"},
+    "personalizeruntime": {"cli": "personalize-runtime", "ops_file": REPO_ROOT / "internal/server/personalizeruntime_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2262,6 +2265,14 @@ SERVICE_ALIASES = {
     "mgh": "migrationhub",
     "awsmigrationhub": "migrationhub",
     "aws migration hub": "migrationhub",
+    "personalize": "personalize",
+    "amazonpersonalize": "personalize",
+    "personalizeevents": "personalizeevents",
+    "personalize-events": "personalizeevents",
+    "amazonpersonalizeevents": "personalizeevents",
+    "personalizeruntime": "personalizeruntime",
+    "personalize-runtime": "personalizeruntime",
+    "amazonpersonalizeruntime": "personalizeruntime",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
@@ -3248,6 +3259,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pi": {},
     "servicecatalog": {},
     "migrationhub": {},
+    "personalize": {},
+    "personalizeevents": {},
+    "personalizeruntime": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -37912,6 +37926,316 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+PSZ_BUCKET = "stackyard-personalize"
+PSZ_ROLE = "arn:aws:iam::123456789012:role/stackyard-personalize"
+PSZ_RECIPE = "arn:aws:personalize:::recipe/"
+PSZ_INTER_FIELDS = [("USER_ID", "string"), ("ITEM_ID", "string"), ("EVENT_TYPE", "string"), ("TIMESTAMP", "long")]
+PSZ_SCHEMAS = {
+    "Interactions": PSZ_INTER_FIELDS,
+    "Items": [("ITEM_ID", "string"), ("GENRE", ["null", "string"])],
+    "Users": [("USER_ID", "string"), ("AGE", ["null", "int"])],
+    "Actions": [("ACTION_ID", "string"), ("VALUE", ["null", "int"])],
+    "Action_Interactions": [("USER_ID", "string"), ("ACTION_ID", "string"), ("EVENT_TYPE", "string"), ("TIMESTAMP", "long")],
+}
+PSZ_FILES = {
+    "interactions.csv": "USER_ID,ITEM_ID,EVENT_TYPE,TIMESTAMP\nu1,i1,click,1700000000\nu1,i2,click,1700000001\nu2,i1,purchase,1700000002\nu2,i3,click,1700000003\n",
+    "delete.csv": "USER_ID\nu-forget\n",
+    "batch-users.jsonl": '{"userId": "u1"}\n{"userId": "u2"}\n',
+    "batch-items.jsonl": '{"itemId": "i1"}\n',
+}
+
+
+def psz_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict, cli_service: str = "personalize") -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def psz_schema(fields: list) -> str:
+    return json.dumps({"type": "record", "name": "Stackyard", "namespace": "com.amazonaws.personalize.schema",
+                       "fields": [{"name": n, "type": t} for n, t in fields], "version": "1.0"})
+
+
+class PszFixture:
+    """Creates Personalize resources through the CLI and waits for them to settle."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict) -> dict:
+        return psz_call(*self.args, op, args)
+
+    def wait(self, kind: str, arn: str, want: str = "ACTIVE") -> str:
+        """Describe until the resource reports want (Stackyard settles async resources on read)."""
+        key = kind[0].lower() + kind[1:]
+        arn_key = {"DatasetImportJob": "datasetImportJobArn", "DatasetExportJob": "datasetExportJobArn",
+                   "DataDeletionJob": "dataDeletionJobArn"}.get(kind, key + "Arn")
+        for _ in range(4):
+            status = (self.call(f"Describe{kind}", {arn_key: arn}).get(key) or {}).get("status")
+            if status == want:
+                break
+        return arn
+
+    def group(self, domain: str = "") -> str:
+        args = {"name": self.name("dsg")}
+        if domain:
+            args["domain"] = domain
+        return self.wait("DatasetGroup", self.call("CreateDatasetGroup", args).get("datasetGroupArn", ""))
+
+    def schema(self, typ: str, domain: str = "") -> str:
+        args = {"name": self.name("schema"), "schema": psz_schema(PSZ_SCHEMAS[typ])}
+        if domain:
+            args["domain"] = domain
+        return self.call("CreateSchema", args).get("schemaArn", "")
+
+    def dataset(self, group: str, typ: str, domain: str = "") -> str:
+        arn = self.call("CreateDataset", {"name": self.name("ds"), "schemaArn": self.schema(typ, domain),
+                                          "datasetGroupArn": group, "datasetType": typ}).get("datasetArn", "")
+        return self.wait("Dataset", arn)
+
+    def solution(self, group: str, recipe: str) -> str:
+        arn = self.call("CreateSolution", {"name": self.name("sol"), "datasetGroupArn": group,
+                                           "recipeArn": PSZ_RECIPE + recipe}).get("solutionArn", "")
+        return self.wait("Solution", arn)
+
+    def version(self, solution: str) -> str:
+        return self.wait("SolutionVersion", self.call("CreateSolutionVersion", {"solutionArn": solution}).get("solutionVersionArn", ""))
+
+    def campaign(self, version: str) -> str:
+        arn = self.call("CreateCampaign", {"name": self.name("camp"), "solutionVersionArn": version,
+                                           "campaignConfig": {"enableMetadataWithRecommendations": True}}).get("campaignArn", "")
+        return self.wait("Campaign", arn)
+
+    def recommender(self, group: str) -> str:
+        arn = self.call("CreateRecommender", {"name": self.name("rec"), "datasetGroupArn": group,
+                                              "recipeArn": PSZ_RECIPE + "aws-ecomm-popular-items-by-views"}).get("recommenderArn", "")
+        return self.wait("Recommender", arn)
+
+    def filter(self, group: str) -> str:
+        arn = self.call("CreateFilter", {"name": self.name("filter"), "datasetGroupArn": group,
+                                         "filterExpression": "EXCLUDE ItemID WHERE Items.GENRE IN ($GENRE)"}).get("filterArn", "")
+        return self.wait("Filter", arn)
+
+    def metric_attribution(self, group: str) -> str:
+        arn = self.call("CreateMetricAttribution", {
+            "name": self.name("ma"), "datasetGroupArn": group,
+            "metrics": [{"eventType": "click", "metricName": "clicks", "expression": "SAMPLECOUNT()"}],
+            "metricsOutputConfig": {"roleArn": PSZ_ROLE, "s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/metrics/"}},
+        }).get("metricAttributionArn", "")
+        return self.wait("MetricAttribution", arn)
+
+    def job_io(self, source: str) -> dict:
+        return {"jobInput": {"s3DataSource": {"path": f"s3://{PSZ_BUCKET}/{source}"}},
+                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/out/"}}, "roleArn": PSZ_ROLE}
+
+
+def personalize_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached Personalize setup: a dataset group with every dataset type,
+    imported interactions, an event tracker, a filter, a metric attribution,
+    trained user-personalization, ranking, segmentation and next-best-action
+    versions with campaigns, a domain group with a recommender, and one of
+    each job."""
+    state = RUNTIME_STATE.setdefault("personalize", {})
+    if state.get("fx"):
+        return state
+    fx = PszFixture(aws_bin, endpoint_url, region, env)
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, PSZ_BUCKET, track_as_primary=False)
+    for key, body in PSZ_FILES.items():
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, PSZ_BUCKET, key, body.encode())
+    group = fx.group()
+    datasets = {typ: fx.dataset(group, typ) for typ in PSZ_SCHEMAS}
+    imp = fx.call("CreateDatasetImportJob", {"jobName": fx.name("import"), "datasetArn": datasets["Interactions"],
+                                             "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/interactions.csv"},
+                                             "roleArn": PSZ_ROLE}).get("datasetImportJobArn", "")
+    fx.wait("DatasetImportJob", imp)
+    tracker = fx.call("CreateEventTracker", {"name": fx.name("tracker"), "datasetGroupArn": group})
+    solutions = {r: fx.solution(group, r) for r in ("aws-user-personalization", "aws-personalized-ranking", "aws-item-affinity", "aws-next-best-action")}
+    versions = {r: fx.version(arn) for r, arn in solutions.items()}
+    campaigns = {r: fx.campaign(versions[r]) for r in ("aws-user-personalization", "aws-personalized-ranking", "aws-next-best-action")}
+    domain_group = fx.group("ECOMMERCE")
+    fx.dataset(domain_group, "Interactions", "ECOMMERCE")
+    export = fx.call("CreateDatasetExportJob", {"jobName": fx.name("export"), "datasetArn": datasets["Interactions"], "roleArn": PSZ_ROLE,
+                                                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/export/"}}}).get("datasetExportJobArn", "")
+    deletion = fx.call("CreateDataDeletionJob", {"jobName": fx.name("delete"), "datasetGroupArn": group, "roleArn": PSZ_ROLE,
+                                                 "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/delete.csv"}}).get("dataDeletionJobArn", "")
+    batch = fx.call("CreateBatchInferenceJob", {"jobName": fx.name("batch"), "solutionVersionArn": versions["aws-user-personalization"],
+                                                **fx.job_io("batch-users.jsonl")}).get("batchInferenceJobArn", "")
+    segment = fx.call("CreateBatchSegmentJob", {"jobName": fx.name("segment"), "solutionVersionArn": versions["aws-item-affinity"],
+                                                **fx.job_io("batch-items.jsonl")}).get("batchSegmentJobArn", "")
+    state.update({
+        "fx": fx, "group": group, "datasets": datasets, "import": imp, "tracker": tracker.get("eventTrackerArn", ""),
+        "trackingId": tracker.get("trackingId", ""), "filter": fx.filter(group), "ma": fx.metric_attribution(group),
+        "solutions": solutions, "versions": versions, "campaigns": campaigns, "domain_group": domain_group,
+        "recommender": fx.recommender(domain_group), "export": export, "deletion": deletion, "batch": batch, "segment": segment,
+        "inter_schema": fx.schema("Interactions"),
+    })
+    return state
+
+
+def personalize_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Personalize operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    fx: PszFixture = st["fx"]
+    group, ds = st["group"], st["datasets"]
+    up = st["versions"]["aws-user-personalization"]
+    sol = st["solutions"]["aws-user-personalization"]
+    camp = st["campaigns"]["aws-user-personalization"]
+    describe = {
+        "DescribeDatasetGroup": {"datasetGroupArn": group}, "DescribeDataset": {"datasetArn": ds["Interactions"]},
+        "DescribeSchema": {"schemaArn": st["inter_schema"]}, "DescribeDatasetImportJob": {"datasetImportJobArn": st["import"]},
+        "DescribeDatasetExportJob": {"datasetExportJobArn": st["export"]}, "DescribeDataDeletionJob": {"dataDeletionJobArn": st["deletion"]},
+        "DescribeEventTracker": {"eventTrackerArn": st["tracker"]}, "DescribeFilter": {"filterArn": st["filter"]},
+        "DescribeSolution": {"solutionArn": sol}, "DescribeSolutionVersion": {"solutionVersionArn": up},
+        "DescribeCampaign": {"campaignArn": camp}, "DescribeRecommender": {"recommenderArn": st["recommender"]},
+        "DescribeMetricAttribution": {"metricAttributionArn": st["ma"]}, "DescribeBatchInferenceJob": {"batchInferenceJobArn": st["batch"]},
+        "DescribeBatchSegmentJob": {"batchSegmentJobArn": st["segment"]},
+        "DescribeAlgorithm": {"algorithmArn": "arn:aws:personalize:::algorithm/aws-user-personalization"},
+        "DescribeFeatureTransformation": {"featureTransformationArn": "arn:aws:personalize:::feature-transformation/aws-user-personalization"},
+        "DescribeRecipe": {"recipeArn": PSZ_RECIPE + "aws-user-personalization"},
+        "GetSolutionMetrics": {"solutionVersionArn": up},
+        "ListDatasets": {"datasetGroupArn": group}, "ListDatasetImportJobs": {"datasetArn": ds["Interactions"]},
+        "ListDatasetExportJobs": {"datasetArn": ds["Interactions"]}, "ListDataDeletionJobs": {"datasetGroupArn": group},
+        "ListEventTrackers": {"datasetGroupArn": group}, "ListFilters": {"datasetGroupArn": group},
+        "ListSolutions": {"datasetGroupArn": group}, "ListSolutionVersions": {"solutionArn": sol},
+        "ListCampaigns": {"solutionArn": sol}, "ListRecommenders": {"datasetGroupArn": st["domain_group"]},
+        "ListMetricAttributions": {"datasetGroupArn": group}, "ListMetricAttributionMetrics": {"metricAttributionArn": st["ma"]},
+        "ListBatchInferenceJobs": {"solutionVersionArn": up}, "ListBatchSegmentJobs": {"solutionVersionArn": st["versions"]["aws-item-affinity"]},
+        "ListRecipes": {"recipeProvider": "SERVICE"}, "ListDatasetGroups": {}, "ListSchemas": {},
+        "ListTagsForResource": {"resourceArn": group},
+        "TagResource": {"resourceArn": group, "tags": [{"tagKey": "team", "tagValue": "coverage"}]},
+        "UntagResource": {"resourceArn": group, "tagKeys": ["team"]},
+    }
+    if op in describe:
+        return describe[op]
+    if op == "CreateDatasetGroup":
+        return {"name": fx.name("dsg"), "tags": [{"tagKey": "team", "tagValue": "coverage"}]}
+    if op == "CreateSchema":
+        return {"name": fx.name("schema"), "schema": psz_schema(PSZ_SCHEMAS["Items"])}
+    if op == "CreateDataset":
+        return {"name": fx.name("ds"), "schemaArn": fx.schema("Users"), "datasetGroupArn": fx.group(), "datasetType": "Users"}
+    if op == "CreateDatasetImportJob":
+        return {"jobName": fx.name("import"), "datasetArn": ds["Interactions"], "importMode": "INCREMENTAL", "roleArn": PSZ_ROLE,
+                "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/interactions.csv"}}
+    if op == "CreateDatasetExportJob":
+        return {"jobName": fx.name("export"), "datasetArn": ds["Interactions"], "ingestionMode": "ALL", "roleArn": PSZ_ROLE,
+                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/export/"}}}
+    if op == "CreateDataDeletionJob":
+        return {"jobName": fx.name("delete"), "datasetGroupArn": group, "roleArn": PSZ_ROLE,
+                "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/delete.csv"}}
+    if op == "CreateEventTracker":
+        return {"name": fx.name("tracker"), "datasetGroupArn": fx.group()}
+    if op == "CreateFilter":
+        return {"name": fx.name("filter"), "datasetGroupArn": group,
+                "filterExpression": 'EXCLUDE ItemID WHERE Interactions.EVENT_TYPE IN ("purchase")'}
+    if op == "CreateMetricAttribution":
+        return {"name": fx.name("ma"), "datasetGroupArn": fx.group(),
+                "metrics": [{"eventType": "click", "metricName": "clicks", "expression": "SAMPLECOUNT()"}],
+                "metricsOutputConfig": {"roleArn": PSZ_ROLE}}
+    if op == "CreateRecommender":
+        return {"name": fx.name("rec"), "datasetGroupArn": st["domain_group"], "recipeArn": PSZ_RECIPE + "aws-ecomm-recommended-for-you"}
+    if op == "CreateSolution":
+        return {"name": fx.name("sol"), "datasetGroupArn": group, "recipeArn": PSZ_RECIPE + "aws-sims"}
+    if op == "CreateSolutionVersion":
+        return {"solutionArn": fx.solution(group, "aws-user-personalization"), "trainingMode": "FULL"}
+    if op == "CreateCampaign":
+        return {"name": fx.name("camp"), "solutionVersionArn": up, "minProvisionedTPS": 1}
+    if op == "CreateBatchInferenceJob":
+        return {"jobName": fx.name("batch"), "solutionVersionArn": up, "numResults": 5, **fx.job_io("batch-users.jsonl")}
+    if op == "CreateBatchSegmentJob":
+        return {"jobName": fx.name("segment"), "solutionVersionArn": st["versions"]["aws-item-affinity"], **fx.job_io("batch-items.jsonl")}
+    if op == "DeleteCampaign":
+        return {"campaignArn": fx.call("CreateCampaign", {"name": fx.name("camp"), "solutionVersionArn": up}).get("campaignArn", "")}
+    if op == "DeleteDataset":
+        return {"datasetArn": fx.dataset(fx.group(), "Users")}
+    if op == "DeleteDatasetGroup":
+        return {"datasetGroupArn": fx.group()}
+    if op == "DeleteEventTracker":
+        return {"eventTrackerArn": fx.call("CreateEventTracker", {"name": fx.name("tracker"), "datasetGroupArn": fx.group()}).get("eventTrackerArn", "")}
+    if op == "DeleteFilter":
+        return {"filterArn": fx.filter(group)}
+    if op == "DeleteMetricAttribution":
+        return {"metricAttributionArn": fx.metric_attribution(fx.group())}
+    if op == "DeleteRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"])}
+    if op == "DeleteSchema":
+        return {"schemaArn": fx.schema("Items")}
+    if op == "DeleteSolution":
+        return {"solutionArn": fx.solution(group, "aws-sims")}
+    if op == "StartRecommender":
+        rec = fx.recommender(st["domain_group"])
+        fx.call("StopRecommender", {"recommenderArn": rec})
+        fx.wait("Recommender", rec, "INACTIVE")
+        return {"recommenderArn": rec}
+    if op == "StopRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"])}
+    if op == "StopSolutionVersionCreation":
+        solution = fx.solution(group, "aws-user-personalization")
+        return {"solutionVersionArn": fx.call("CreateSolutionVersion", {"solutionArn": solution}).get("solutionVersionArn", "")}
+    if op == "UpdateCampaign":
+        return {"campaignArn": fx.campaign(up), "minProvisionedTPS": 2, "campaignConfig": {"enableMetadataWithRecommendations": True}}
+    if op == "UpdateDataset":
+        return {"datasetArn": ds["Interactions"], "schemaArn": fx.schema("Interactions")}
+    if op == "UpdateMetricAttribution":
+        return {"metricAttributionArn": fx.metric_attribution(fx.group()),
+                "addMetrics": [{"eventType": "purchase", "metricName": "purchases", "expression": "SAMPLECOUNT()"}],
+                "removeMetrics": ["clicks"]}
+    if op == "UpdateRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"]), "recommenderConfig": {"minRecommendationRequestsPerSecond": 2}}
+    if op == "UpdateSolution":
+        return {"solutionArn": fx.solution(group, "aws-user-personalization"), "performAutoTraining": True,
+                "solutionUpdateConfig": {"autoTrainingConfig": {"schedulingExpression": "rate(7 days)"}}}
+    return payload
+
+
+def personalizeevents_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Send events and records to the Personalize fixture's tracker and datasets."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    ds, now = st["datasets"], time.time()
+    if op == "PutEvents":
+        return {"trackingId": st["trackingId"], "userId": "u1", "sessionId": "session-1",
+                "eventList": [{"eventId": "e1", "eventType": "click", "itemId": "i4", "sentAt": now, "properties": '{"numberOfRatings": "3"}'}]}
+    if op == "PutActionInteractions":
+        return {"trackingId": st["trackingId"], "actionInteractions": [
+            {"actionId": "a1", "userId": "u1", "sessionId": "session-1", "timestamp": now, "eventType": "Taken"}]}
+    if op == "PutItems":
+        return {"datasetArn": ds["Items"], "items": [{"itemId": "i4", "properties": '{"genre": "drama"}'}]}
+    if op == "PutUsers":
+        return {"datasetArn": ds["Users"], "users": [{"userId": "u1", "properties": '{"age": 31}'}]}
+    if op == "PutActions":
+        return {"datasetArn": ds["Actions"], "actions": [{"actionId": "a1", "properties": '{"value": 10}'}]}
+    return payload
+
+
+def personalizeruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Ask the Personalize fixture's campaigns for recommendations."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    camps = st["campaigns"]
+    if op == "GetRecommendations":
+        return {"campaignArn": camps["aws-user-personalization"], "userId": "u1", "numResults": 5,
+                "filterArn": st["filter"], "filterValues": {"GENRE": '"drama"'}, "context": {"DEVICE": "mobile"}}
+    if op == "GetPersonalizedRanking":
+        return {"campaignArn": camps["aws-personalized-ranking"], "userId": "u1", "inputList": ["i1", "i2", "i3"]}
+    if op == "GetActionRecommendations":
+        return {"campaignArn": camps["aws-next-best-action"], "userId": "u1", "numResults": 3}
+    return payload
+
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -37923,6 +38247,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "personalize":
+        return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "personalizeevents":
+        return personalizeevents_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "personalizeruntime":
+        return personalizeruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorad":
         return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
