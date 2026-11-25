@@ -587,6 +587,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
     "personalizeevents": {"cli": "personalize-events", "ops_file": REPO_ROOT / "internal/server/personalizeevents_ops.go"},
     "personalizeruntime": {"cli": "personalize-runtime", "ops_file": REPO_ROOT / "internal/server/personalizeruntime_ops.go"},
+    "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
+    "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
+    "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2299,6 +2302,12 @@ SERVICE_ALIASES = {
     "personalizeruntime": "personalizeruntime",
     "personalize-runtime": "personalizeruntime",
     "amazonpersonalizeruntime": "personalizeruntime",
+    "iotsecuretunneling": "iotsecuretunneling",
+    "iot-secure-tunneling": "iotsecuretunneling",
+    "iotdeviceadvisor": "iotdeviceadvisor",
+    "iot-device-advisor": "iotdeviceadvisor",
+    "iotthingsgraph": "iotthingsgraph",
+    "iot-things-graph": "iotthingsgraph",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
@@ -3315,6 +3324,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "personalize": {},
     "personalizeevents": {},
     "personalizeruntime": {},
+    "iotsecuretunneling": {},
+    "iotdeviceadvisor": {},
+    "iotthingsgraph": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -38634,6 +38646,273 @@ def personalizeruntime_hydrate_payload(
 
 
 
+IOT_BATCH_ACCOUNT = "123456789012"
+IST_THING = "sy-tunnel-thing"
+IDA_THING_ARN = f"arn:aws:iot:us-east-1:{IOT_BATCH_ACCOUNT}:thing/sy-advisor-thing"
+IDA_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-device-advisor"
+IDA_ROOT_GROUP = json.dumps({"configuration": {}, "tests": [{"name": "MQTT Connect", "configuration": {}, "tests": [
+    {"name": "MQTT_Connect", "configuration": {}, "test": {"id": "MQTT_Connect", "version": "0.0.0"}}]}]})
+ITG_NS = f"urn:tdm:us-east-1/{IOT_BATCH_ACCOUNT}/default:"
+ITG_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-things-graph"
+ITG_ENTITIES = (
+    f'type Camera @deviceModel(id: "{ITG_NS}deviceModel:Camera", capability: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type Capture @capability(id: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type MyCamera @device(id: "{ITG_NS}device:MyCamera", deviceModel: "{ITG_NS}deviceModel:Camera") {{ignore:void}}\n'
+)
+
+
+def iot_batch_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def iotsecuretunneling_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point tunnel operations at a fixture tunnel; CloseTunnel gets its own."""
+    op = endpoint.operation
+
+    def open_tunnel() -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotsecuretunneling", "OpenTunnel", {
+            "description": "stackyard coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+            "timeoutConfig": {"maxLifetimeTimeoutMinutes": 60}, "tags": [{"key": "team", "value": "coverage"}]})
+
+    state = RUNTIME_STATE.setdefault("iotsecuretunneling", {})
+    if not state.get("tunnel"):
+        state["tunnel"] = open_tunnel()
+    tunnel = state["tunnel"]
+    tid, arn = tunnel.get("tunnelId", ""), tunnel.get("tunnelArn", "")
+    if op == "OpenTunnel":
+        return {"description": "coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+                "timeoutConfig": {"maxLifetimeTimeoutMinutes": 30}, "tags": [{"key": "team", "value": "coverage"}]}
+    if op == "CloseTunnel":
+        return {"tunnelId": open_tunnel().get("tunnelId", ""), "delete": True}
+    if op == "DescribeTunnel":
+        return {"tunnelId": tid}
+    if op == "RotateTunnelAccessToken":
+        return {"tunnelId": tid, "clientMode": "ALL", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]}}
+    if op == "ListTunnels":
+        return {"thingName": IST_THING, "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+def iotdeviceadvisor_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Device Advisor operations at fixture suites and runs; creates and
+    destructive operations get suites of their own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotdeviceadvisor", name, args)
+
+    def config(name: str, qualification: bool = False) -> dict:
+        return {"suiteDefinitionName": name, "rootGroup": "" if qualification else IDA_ROOT_GROUP,
+                "devicePermissionRoleArn": IDA_ROLE, "intendedForQualification": qualification,
+                "devices": [{"thingArn": IDA_THING_ARN}], "protocol": "MqttV5"}
+
+    def suite(qualification: bool = False) -> str:
+        return call("CreateSuiteDefinition", {"suiteDefinitionConfiguration": config("sy-suite", qualification),
+                                              "tags": {"team": "coverage"}}).get("suiteDefinitionId", "")
+
+    run_cfg = {"primaryDevice": {"thingArn": IDA_THING_ARN}}
+
+    def run(suite_id: str) -> str:
+        return call("StartSuiteRun", {"suiteDefinitionId": suite_id, "suiteRunConfiguration": run_cfg}).get("suiteRunId", "")
+
+    state = RUNTIME_STATE.setdefault("iotdeviceadvisor", {})
+    if not state.get("suite"):
+        sid = suite()
+        rid = run(sid)
+        qid = suite(True)
+        qrid = run(qid)
+        for _ in range(2):  # PENDING -> RUNNING -> PASS
+            call("GetSuiteRun", {"suiteDefinitionId": qid, "suiteRunId": qrid})
+        arn = call("GetSuiteDefinition", {"suiteDefinitionId": sid}).get("suiteDefinitionArn", "")
+        state.update({"suite": sid, "run": rid, "qsuite": qid, "qrun": qrid, "arn": arn})
+    sid, rid, arn = state["suite"], state["run"], state["arn"]
+    if op == "CreateSuiteDefinition":
+        return {"suiteDefinitionConfiguration": config("sy-created"), "tags": {"team": "coverage"}}
+    if op == "UpdateSuiteDefinition":
+        return {"suiteDefinitionId": sid, "suiteDefinitionConfiguration": config("sy-updated")}
+    if op == "DeleteSuiteDefinition":
+        return {"suiteDefinitionId": suite()}
+    if op == "GetSuiteDefinition":
+        return {"suiteDefinitionId": sid}
+    if op == "ListSuiteDefinitions":
+        return {"maxResults": 10}
+    if op == "StartSuiteRun":
+        return {"suiteDefinitionId": suite(), "suiteRunConfiguration": run_cfg, "tags": {"team": "coverage"}}
+    if op == "StopSuiteRun":
+        new = suite()
+        return {"suiteDefinitionId": new, "suiteRunId": run(new)}
+    if op == "GetSuiteRun":
+        return {"suiteDefinitionId": sid, "suiteRunId": rid}
+    if op == "GetSuiteRunReport":
+        return {"suiteDefinitionId": state["qsuite"], "suiteRunId": state["qrun"]}
+    if op == "ListSuiteRuns":
+        return {"suiteDefinitionId": sid, "maxResults": 10}
+    if op == "GetEndpoint":
+        return {"thingArn": IDA_THING_ARN, "authenticationMethod": "X509ClientCertificate"}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+class ItgFixture:
+    """Things Graph documents with run-unique ids (servers are reused between runs)."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def call(self, op: str, args: dict) -> dict:
+        return iot_batch_call(*self.args, "iotthingsgraph", op, args)
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"{prefix}{self.run}x{self.count}"
+
+    def upload(self) -> str:
+        return self.call("UploadEntityDefinitions", {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}}).get("uploadId", "")
+
+    def flow(self) -> tuple[str, dict]:
+        fid = f"{ITG_NS}Workflow:{self.name('Flow')}"
+        text = f'{{ query F @workflowType(id: "{fid}") {{ variables {{ cam @property(id: "{ITG_NS}deviceModel:Camera") }} }} }}'
+        return fid, {"language": "GRAPHQL", "text": text}
+
+    def system(self, flow_id: str) -> tuple[str, dict]:
+        sid = f"{ITG_NS}System:{self.name('Sys')}"
+        text = (f'{{ type S @systemType(id: "{sid}") {{ camera: Camera @thing(id: "{ITG_NS}deviceModel:Camera") '
+                f'flow: Workflow @workflow(id: "{flow_id}") }} }}')
+        return sid, {"language": "GRAPHQL", "text": text}
+
+    def instance_args(self, system_id: str) -> dict:
+        iid = f"{ITG_NS}Deployment:{self.name('Dep')}"
+        text = f'query D @deployment(id: "{iid}", systemId: "{system_id}") {{ camera(deviceId: "sy-graph-thing") }}'
+        return {"definition": {"language": "GRAPHQL", "text": text}, "target": "CLOUD", "flowActionsRoleArn": ITG_ROLE,
+                "tags": [{"key": "team", "value": "coverage"}]}
+
+    def create_flow(self) -> str:
+        fid, definition = self.flow()
+        self.call("CreateFlowTemplate", {"definition": definition})
+        return fid
+
+    def create_system(self, flow_id: str) -> str:
+        sid, definition = self.system(flow_id)
+        self.call("CreateSystemTemplate", {"definition": definition})
+        return sid
+
+    def create_instance(self, system_id: str) -> str:
+        return (self.call("CreateSystemInstance", self.instance_args(system_id)).get("summary") or {}).get("id", "")
+
+    def deployed(self, system_id: str) -> str:
+        iid = self.create_instance(system_id)
+        self.call("DeploySystemInstance", {"id": iid})
+        self.call("GetSystemInstance", {"id": iid})  # settles DEPLOYED_IN_TARGET
+        return iid
+
+
+def iotthingsgraph_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Things Graph operations at a cached flow, system and deployed
+    instance. Entities are re-uploaded first because DeleteNamespace (also
+    covered) drops them."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotthingsgraph", {})
+    fx: ItgFixture | None = state.get("fx")
+    if fx is None:
+        fx = ItgFixture(aws_bin, endpoint_url, region, env)
+        fx.upload()
+        flow = fx.create_flow()
+        system = fx.create_system(flow)
+        inst = fx.deployed(system)
+        execs = fx.call("SearchFlowExecutions", {"systemInstanceId": inst}).get("summaries") or [{}]
+        arn = ((fx.call("GetSystemInstance", {"id": inst}).get("description") or {}).get("summary") or {}).get("arn", "")
+        state.update({"fx": fx, "flow": flow, "system": system, "inst": inst, "arn": arn,
+                      "execution": execs[0].get("flowExecutionId", "")})
+    if op not in {"DeleteNamespace", "GetNamespaceDeletionStatus"}:
+        fx.upload()
+    device = f"{ITG_NS}device:MyCamera"
+    flow, system, inst, arn = state["flow"], state["system"], state["inst"], state["arn"]
+    if op == "UploadEntityDefinitions":
+        return {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}, "syncWithPublicNamespace": False}
+    if op == "GetUploadStatus":
+        return {"uploadId": fx.upload()}
+    if op == "DescribeNamespace":
+        return {}
+    if op == "DeleteNamespace":
+        return {}
+    if op == "GetNamespaceDeletionStatus":
+        fx.call("DeleteNamespace", {})
+        return {}
+    if op == "GetEntities":
+        return {"ids": [device]}
+    if op == "SearchEntities":
+        return {"entityTypes": ["DEVICE", "DEVICE_MODEL"], "maxResults": 10}
+    if op == "AssociateEntityToThing":
+        return {"thingName": "sy-graph-thing", "entityId": device}
+    if op == "DissociateEntityFromThing":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-dissociate", "entityId": device})
+        return {"thingName": "sy-graph-dissociate", "entityType": "DEVICE"}
+    if op == "SearchThings":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-thing", "entityId": device})
+        return {"entityId": device}
+    if op == "CreateFlowTemplate":
+        return {"definition": fx.flow()[1]}
+    if op == "UpdateFlowTemplate":
+        return {"id": flow, "definition": {"language": "GRAPHQL", "text": (fx.call("GetFlowTemplate", {"id": flow}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetFlowTemplate", "GetFlowTemplateRevisions"}:
+        return {"id": flow}
+    if op in {"DeleteFlowTemplate", "DeprecateFlowTemplate"}:
+        return {"id": fx.create_flow()}
+    if op == "SearchFlowTemplates":
+        return {"filters": [{"name": "DEVICE_MODEL_ID", "value": [f"{ITG_NS}deviceModel:Camera"]}], "maxResults": 10}
+    if op == "CreateSystemTemplate":
+        return {"definition": fx.system(flow)[1]}
+    if op == "UpdateSystemTemplate":
+        return {"id": system, "definition": {"language": "GRAPHQL", "text": (fx.call("GetSystemTemplate", {"id": system}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetSystemTemplate", "GetSystemTemplateRevisions"}:
+        return {"id": system}
+    if op in {"DeleteSystemTemplate", "DeprecateSystemTemplate"}:
+        return {"id": fx.create_system(flow)}
+    if op == "SearchSystemTemplates":
+        return {"filters": [{"name": "FLOW_TEMPLATE_ID", "value": [flow]}], "maxResults": 10}
+    if op == "CreateSystemInstance":
+        return fx.instance_args(system)
+    if op == "GetSystemInstance":
+        return {"id": inst}
+    if op in {"DeploySystemInstance", "DeleteSystemInstance"}:
+        return {"id": fx.create_instance(system)}
+    if op == "UndeploySystemInstance":
+        return {"id": fx.deployed(system)}
+    if op == "SearchSystemInstances":
+        return {"filters": [{"name": "SYSTEM_TEMPLATE_ID", "value": [system]}], "maxResults": 10}
+    if op == "SearchFlowExecutions":
+        return {"systemInstanceId": inst, "maxResults": 10}
+    if op == "ListFlowExecutionMessages":
+        return {"flowExecutionId": state["execution"], "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn, "maxResults": 10}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
 
@@ -38867,6 +39146,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "iotsecuretunneling":
+        return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotdeviceadvisor":
+        return iotdeviceadvisor_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotthingsgraph":
+        return iotthingsgraph_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in GEO_STANDALONE_PAYLOADS:
         # Stateless APIs: each operation gets a fixed request that hits the
         # built-in gazetteer or geometry.

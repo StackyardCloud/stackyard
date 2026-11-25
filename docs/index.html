@@ -207,6 +207,9 @@
         <a href="#iot-greengrass">IoT Greengrass</a>
         <a href="#iot-sitewise">IoT SiteWise</a>
         <a href="#iot-twinmaker">IoT TwinMaker</a>
+        <a href="#iot-secure-tunneling">IoT Secure Tunneling</a>
+        <a href="#iot-device-advisor">IoT Device Advisor</a>
+        <a href="#iot-things-graph">IoT Things Graph</a>
         <a href="#glue">AWS Glue</a>
         <a href="#keyspaces">Keyspaces</a>
         <a href="#kms">KMS</a>
@@ -15601,6 +15604,135 @@
         <li><code>iot-twinmaker</code>: <code>docker compose -f examples/aws/iot-twinmaker/docker-compose.yml up --build</code></li>
         <li><code>iot-twinmaker</code>: <code>docker compose -f examples/aws/iot-twinmaker/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="iot-secure-tunneling" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Secure Tunneling</h2>
+        <p>SigV4 signed with service <code>IoTSecuredTunneling</code>. JSON 1.1 API with <code>X-Amz-Target: IoTSecuredTunneling.*</code>. Tunnels open with fresh source and destination access tokens that are returned only by OpenTunnel and RotateTunnelAccessToken and never stored or described. A tunnel closes itself when its maximum lifetime (1 to 720 minutes, default 720) runs out; CloseTunnel closes it early and, with <code>delete</code>, removes it. Rotation can target the source, the destination (optionally with a new destination config) or both. No proxy runs, so both connection states stay DISCONNECTED. At most 300 open and 1000 stored tunnels; tags on tunnel ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: IoTSecuredTunneling</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Secure Tunneling API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CloseTunnel</code></td></tr>
+        <tr><td><code>DescribeTunnel</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTunnels</code></td></tr>
+        <tr><td><code>OpenTunnel</code></td></tr>
+        <tr><td><code>RotateTunnelAccessToken</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="iot-device-advisor" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Core Device Advisor</h2>
+        <p>SigV4 signed with service <code>iotdeviceadvisor</code>. REST JSON API. Suite definitions are versioned (v1, v2, ...) and read their test groups and cases from the <code>rootGroup</code> document; qualification suites without one get the qualification group. Suite runs take their tests from the chosen version (or <code>selectedTestList</code>), refuse a second concurrent run unless <code>parallelRun</code>, and advance PENDING, RUNNING, PASS one step per read (StopSuiteRun: STOPPING, STOPPED). Passed qualification runs have a report link. GetEndpoint returns the account test endpoint. Deleting a suite deletes its runs. Tags on suite definition and suite run ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotdeviceadvisor</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Core Device Advisor API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateSuiteDefinition</code></td></tr>
+        <tr><td><code>DeleteSuiteDefinition</code></td></tr>
+        <tr><td><code>GetEndpoint</code></td></tr>
+        <tr><td><code>GetSuiteDefinition</code></td></tr>
+        <tr><td><code>GetSuiteRun</code></td></tr>
+        <tr><td><code>GetSuiteRunReport</code></td></tr>
+        <tr><td><code>ListSuiteDefinitions</code></td></tr>
+        <tr><td><code>ListSuiteRuns</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartSuiteRun</code></td></tr>
+        <tr><td><code>StopSuiteRun</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateSuiteDefinition</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="iot-things-graph" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Things Graph</h2>
+        <p>SigV4 signed with service <code>iotthingsgraph</code>. JSON 1.1 API with <code>X-Amz-Target: IotThingsGraphFrontEndService.*</code>. The account namespace (<code>us-east-1/123456789012/default</code>) holds entities uploaded as GraphQL (TDM) documents: devices, device models, capabilities and the other entity types, read from their <code>@device(id: ...)</code> style annotations. Uploads report IN_PROGRESS then SUCCEEDED (or FAILED with reasons) and bump the namespace version. Devices associate with things, and things can be searched by device or device model. Flow (<code>@workflowType</code>) and system (<code>@systemType</code>) templates keep revisions, require the ids they reference to exist, can be deprecated, and cannot be deleted while in use. System instances (<code>@deployment</code>) deploy to CLOUD or GREENGRASS, settle DEPLOY_IN_PROGRESS to DEPLOYED_IN_TARGET on the next read, and cloud deployments record a flow execution with messages per flow. AWS has retired the service; operations follow the AWS CLI 2.42.1 model.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotthingsgraph</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Things Graph API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateEntityToThing</code></td></tr>
+        <tr><td><code>CreateFlowTemplate</code></td></tr>
+        <tr><td><code>CreateSystemInstance</code></td></tr>
+        <tr><td><code>CreateSystemTemplate</code></td></tr>
+        <tr><td><code>DeleteFlowTemplate</code></td></tr>
+        <tr><td><code>DeleteNamespace</code></td></tr>
+        <tr><td><code>DeleteSystemInstance</code></td></tr>
+        <tr><td><code>DeleteSystemTemplate</code></td></tr>
+        <tr><td><code>DeploySystemInstance</code></td></tr>
+        <tr><td><code>DeprecateFlowTemplate</code></td></tr>
+        <tr><td><code>DeprecateSystemTemplate</code></td></tr>
+        <tr><td><code>DescribeNamespace</code></td></tr>
+        <tr><td><code>DissociateEntityFromThing</code></td></tr>
+        <tr><td><code>GetEntities</code></td></tr>
+        <tr><td><code>GetFlowTemplate</code></td></tr>
+        <tr><td><code>GetFlowTemplateRevisions</code></td></tr>
+        <tr><td><code>GetNamespaceDeletionStatus</code></td></tr>
+        <tr><td><code>GetSystemInstance</code></td></tr>
+        <tr><td><code>GetSystemTemplate</code></td></tr>
+        <tr><td><code>GetSystemTemplateRevisions</code></td></tr>
+        <tr><td><code>GetUploadStatus</code></td></tr>
+        <tr><td><code>ListFlowExecutionMessages</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>SearchEntities</code></td></tr>
+        <tr><td><code>SearchFlowExecutions</code></td></tr>
+        <tr><td><code>SearchFlowTemplates</code></td></tr>
+        <tr><td><code>SearchSystemInstances</code></td></tr>
+        <tr><td><code>SearchSystemTemplates</code></td></tr>
+        <tr><td><code>SearchThings</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UndeploySystemInstance</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateFlowTemplate</code></td></tr>
+        <tr><td><code>UpdateSystemTemplate</code></td></tr>
+        <tr><td><code>UploadEntityDefinitions</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
