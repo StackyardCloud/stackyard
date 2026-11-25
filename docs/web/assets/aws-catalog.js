@@ -532,6 +532,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/connect/docker-compose.yml"
   },
   {
+    id: "connectcases",
+    name: "Connect Cases",
+    category: "integration",
+    summary: "Emulate Connect Cases domains, fields, layouts, templates, case rules, cases with audit history, related items, search and merges.",
+    docsHref: "../../../index.html#connectcases",
+    exampleHref: "../../../../examples/aws/connect-cases/docker-compose.yml"
+  },
+  {
+    id: "connectparticipant",
+    name: "Connect Participant",
+    category: "integration",
+    summary: "Emulate Connect customer chat: participant connections, messages, events, read receipts, attachments, transcripts and disconnects.",
+    docsHref: "../../../index.html#connectparticipant",
+    exampleHref: "../../../../examples/aws/connect-participant/docker-compose.yml"
+  },
+  {
+    id: "connectcontactlens",
+    name: "Connect Contact Lens",
+    category: "integration",
+    summary: "Emulate Contact Lens real-time analysis segments over Connect chat transcripts, with sentiment and issue detection.",
+    docsHref: "../../../index.html#connectcontactlens",
+    exampleHref: "../../../../examples/aws/connect-contact-lens/docker-compose.yml"
+  },
+  {
     id: "dlm",
     name: "Data Lifecycle Manager",
     category: "integration",

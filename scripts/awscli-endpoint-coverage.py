@@ -582,6 +582,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
     "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
+    "connectcases": {"cli": "connectcases", "ops_file": REPO_ROOT / "internal/server/connectcases_ops.go"},
+    "connectparticipant": {"cli": "connectparticipant", "ops_file": REPO_ROOT / "internal/server/connectparticipant_ops.go"},
+    "connectcontactlens": {"cli": "connect-contact-lens", "ops_file": REPO_ROOT / "internal/server/connectcontactlens_ops.go"},
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
@@ -2342,6 +2345,16 @@ SERVICE_ALIASES = {
     "kendraranking": "kendraranking",
     "kendra-ranking": "kendraranking",
     "amazonkendraintelligentranking": "kendraranking",
+    "connectcases": "connectcases",
+    "connect-cases": "connectcases",
+    "amazonconnectcases": "connectcases",
+    "connectparticipant": "connectparticipant",
+    "connect-participant": "connectparticipant",
+    "amazonconnectparticipantservice": "connectparticipant",
+    "connectcontactlens": "connectcontactlens",
+    "connect-contact-lens": "connectcontactlens",
+    "contactlens": "connectcontactlens",
+    "amazonconnectcontactlens": "connectcontactlens",
     "budgets": "budgets",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
@@ -3336,6 +3349,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "cloudsearch": {},
     "cloudsearchdomain": {},
     "kendraranking": {},
+    "connectcases": {},
+    "connectparticipant": {},
+    "connectcontactlens": {},
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
@@ -39804,6 +39820,271 @@ def bcmdataexports_hydrate_payload(
     return payload
 
 
+def cnx_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def cnx_chat(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Start a Connect chat contact and connect its customer; returns ids and the
+    connection token."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connect", "start-chat-contact", env, [
+        "--cli-input-json", json.dumps({
+            "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+            "ParticipantDetails": {"DisplayName": "Coverage"},
+            "InitialMessage": {"ContentType": "text/plain", "Content": "my order is broken, thanks for the help"},
+        }),
+    ]) or {}
+    token = str(started.get("ParticipantToken") or "")
+    conn = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "create-participant-connection", env, [
+        "--participant-token", token, "--type", "CONNECTION_CREDENTIALS", "--connect-participant",
+    ]) or {}
+    creds = conn.get("ConnectionCredentials") if isinstance(conn.get("ConnectionCredentials"), dict) else {}
+    return {"contact": str(started.get("ContactId") or ""), "participant_token": token,
+            "connection": str(creds.get("ConnectionToken") or "")}
+
+
+def cnp_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connection: str) -> str:
+    """Start and upload a five-byte attachment; returns its id."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "start-attachment-upload", env, [
+        "--cli-input-json", json.dumps({"ConnectionToken": connection, "ContentType": "text/plain",
+                                        "AttachmentSizeInBytes": 5, "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}),
+    ]) or {}
+    meta = started.get("UploadMetadata") if isinstance(started.get("UploadMetadata"), dict) else {}
+    url = str(meta.get("Url") or "")
+    if url:
+        req = urlrequest.Request(url, data=b"hello", method="PUT", headers={"Content-Type": "text/plain"})
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            resp.read()
+    return str(started.get("AttachmentId") or "")
+
+
+def connectparticipant_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Drive Connect Participant against a real chat contact; DisconnectParticipant
+    gets a chat of its own."""
+    op = endpoint.operation
+    if op == "DisconnectParticipant":
+        return {"ConnectionToken": cnx_chat(aws_bin, endpoint_url, region, env)["connection"], "ClientToken": cnx_unique("dc-")}
+    state = RUNTIME_STATE.setdefault("connectparticipant", {})
+    if not state.get("connection"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    conn = str(state["connection"])
+    session = "123e4567-e89b-12d3-a456-426614174000"
+    if op == "CreateParticipantConnection":
+        return {"ParticipantToken": state["participant_token"], "Type": ["CONNECTION_CREDENTIALS"], "ConnectParticipant": True}
+    if op == "SendMessage":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "Content": "hello from coverage", "ClientToken": cnx_unique("m-")}
+    if op == "SendEvent":
+        return {"ConnectionToken": conn, "ContentType": "application/vnd.amazonaws.connect.event.typing", "ClientToken": cnx_unique("e-")}
+    if op == "GetTranscript":
+        return {"ConnectionToken": conn, "MaxResults": 10, "ScanDirection": "FORWARD", "SortOrder": "ASCENDING"}
+    if op == "StartAttachmentUpload":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "AttachmentSizeInBytes": 5,
+                "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}
+    if op == "CompleteAttachmentUpload":
+        return {"ConnectionToken": conn, "AttachmentIds": [cnp_upload(aws_bin, endpoint_url, region, env, conn)], "ClientToken": cnx_unique("c-")}
+    if op == "GetAttachment":
+        att = cnp_upload(aws_bin, endpoint_url, region, env, conn)
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "complete-attachment-upload", env, [
+            "--connection-token", conn, "--attachment-ids", att, "--client-token", cnx_unique("c-"),
+        ])
+        return {"ConnectionToken": conn, "AttachmentId": att, "UrlExpiryInSeconds": 60}
+    if op == "GetAuthenticationUrl":
+        return {"ConnectionToken": conn, "SessionId": session, "RedirectUri": "https://example.com/callback"}
+    if op == "CancelParticipantAuthentication":
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "get-authentication-url", env, [
+            "--connection-token", conn, "--session-id", session, "--redirect-uri", "https://example.com/callback",
+        ])
+        return {"ConnectionToken": conn, "SessionId": session}
+    if op == "DescribeView":
+        return {"ConnectionToken": conn, "ViewToken": "arn:aws:connect:us-east-1:aws:view/form"}
+    return payload
+
+
+def connect_chat_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Connect's chat operations validate their input: start a chat on the seeded
+    instance, and add a bot to a real chat."""
+    if endpoint.operation == "StartChatContact":
+        return {**payload, "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+                "ParticipantDetails": {"DisplayName": "Coverage"},
+                "InitialMessage": {"ContentType": "text/plain", "Content": "hello"}}
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    return {**payload, "InstanceId": "instance-000001", "ContactId": chat["contact"],
+            "ParticipantDetails": {"ParticipantRole": "CUSTOM_BOT", "DisplayName": "Coverage bot"}}
+
+
+def connectcontactlens_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Analyze the messages of a real chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcontactlens", {})
+    if not state.get("contact"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    return {"InstanceId": "instance-000001", "ContactId": state["contact"], "MaxResults": 10}
+
+
+def cnc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "connectcases", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def cnc_case(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict, title: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case", {
+        "domainId": state["domain"], "templateId": state["template"],
+        "fields": [{"id": "title", "value": {"stringValue": title}}, {"id": state["field"], "value": {"doubleValue": 2}}],
+    }).get("caseId") or "")
+
+
+def cnc_comment(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str, case: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {
+        "domainId": domain, "caseId": case, "type": "Comment", "content": {"comment": {"body": "coverage", "contentType": "Text/Plain"}},
+    }).get("relatedItemId") or "")
+
+
+def cnc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A domain with a Number and a SingleSelect field, a layout, a case rule,
+    a template and a case linked to a chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcases", {})
+    if state.get("case"):
+        return state
+    domain = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sycases-")}).get("domainId") or "")
+    field = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "priority", "type": "Number"}).get("fieldId") or "")
+    tier = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "tier", "type": "SingleSelect"}).get("fieldId") or "")
+    cnc_cli(aws_bin, endpoint_url, region, env, "batch-put-field-options", {"domainId": domain, "fieldId": tier, "options": [{"name": "Gold", "value": "gold", "active": True}]})
+    layout = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {"domainId": domain, "name": "main", "content": {"basic": {
+        "topPanel": {"sections": [{"fieldGroup": {"name": "summary", "fields": [{"id": "title"}, {"id": field}]}}]}}}}).get("layoutId") or "")
+    rule = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {"domainId": domain, "name": "tier hidden", "rule": {
+        "hidden": {"defaultValue": False, "conditions": [{"equalTo": {"operandOne": {"fieldId": "status"}, "operandTwo": {"stringValue": "closed"}, "result": True}}]}}}).get("caseRuleId") or "")
+    template = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {"domainId": domain, "name": "default",
+        "layoutConfiguration": {"defaultLayout": layout}, "requiredFields": [{"fieldId": "title"}],
+        "rules": [{"caseRuleId": rule, "fieldId": tier}]}).get("templateId") or "")
+    state.update({"domain": domain, "field": field, "tier": tier, "layout": layout, "rule": rule, "template": template})
+    state["case"] = cnc_case(aws_bin, endpoint_url, region, env, state, "Printer broken")
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    state["contact_arn"] = f"arn:aws:connect:{region}:123456789012:instance/instance-000001/contact/{chat['contact']}"
+    cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {"domainId": domain, "caseId": state["case"], "type": "Contact",
+                                                                       "content": {"contact": {"contactArn": state["contact_arn"]}}})
+    state["comment"] = cnc_comment(aws_bin, endpoint_url, region, env, domain, state["case"])
+    return state
+
+
+def connectcases_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Connect Cases operations at a real domain; deletes and merges get
+    resources of their own."""
+    op = endpoint.operation
+    if op == "CreateDomain":
+        return {"name": cnx_unique("sycases-")}
+    if op == "ListDomains":
+        return {"maxResults": 10}
+    if op == "DeleteDomain":
+        return {"domainId": str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sydel-")}).get("domainId") or "")}
+    s = cnc_fixture(aws_bin, endpoint_url, region, env)
+    d, case = s["domain"], s["case"]
+    base = {"domainId": d}
+    domain_arn = f"arn:aws:cases:{region}:123456789012:domain/{d}"
+    if op == "CreateField":
+        return {**base, "name": cnx_unique("f"), "type": "Text", "description": "coverage", "attributes": {"text": {"isMultiline": True}}}
+    if op == "UpdateField":
+        return {**base, "fieldId": s["field"], "description": "updated"}
+    if op == "DeleteField":
+        fid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {**base, "name": cnx_unique("del"), "type": "Boolean"}).get("fieldId") or "")
+        return {**base, "fieldId": fid}
+    if op == "BatchGetField":
+        return {**base, "fields": [{"id": s["field"]}, {"id": "title"}]}
+    if op == "ListFields":
+        return {**base, "maxResults": 50}
+    if op == "BatchPutFieldOptions":
+        return {**base, "fieldId": s["tier"], "options": [{"name": "Silver", "value": "silver", "active": True}]}
+    if op == "ListFieldOptions":
+        return {**base, "fieldId": s["tier"], "maxResults": 10}
+    if op == "CreateLayout":
+        return {**base, "name": cnx_unique("l"), "content": {"basic": {"moreInfo": {"sections": [{"fieldGroup": {"fields": [{"id": "status"}]}}]}}}}
+    if op in ("GetLayout", "UpdateLayout"):
+        extra = {"name": cnx_unique("main-")} if op == "UpdateLayout" else {}
+        return {**base, "layoutId": s["layout"], **extra}
+    if op == "DeleteLayout":
+        lid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {**base, "name": cnx_unique("dl"), "content": {"basic": {}}}).get("layoutId") or "")
+        return {**base, "layoutId": lid}
+    if op == "ListLayouts":
+        return {**base, "maxResults": 10}
+    if op == "CreateTemplate":
+        return {**base, "name": cnx_unique("t"), "status": "Active", "tagPropagationConfigurations": [{"resourceType": "Cases", "tagMap": {"team": "coverage"}}]}
+    if op in ("GetTemplate", "UpdateTemplate"):
+        extra = {"description": "updated by coverage"} if op == "UpdateTemplate" else {}
+        return {**base, "templateId": s["template"], **extra}
+    if op == "DeleteTemplate":
+        tid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {**base, "name": cnx_unique("dt")}).get("templateId") or "")
+        return {**base, "templateId": tid}
+    if op == "ListTemplates":
+        return {**base, "maxResults": 10, "status": ["Active"]}
+    if op == "CreateCaseRule":
+        return {**base, "name": cnx_unique("r"), "rule": {"required": {"defaultValue": False, "conditions": []}}}
+    if op == "UpdateCaseRule":
+        return {**base, "caseRuleId": s["rule"], "description": "updated"}
+    if op == "DeleteCaseRule":
+        rid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {**base, "name": cnx_unique("dr"),
+              "rule": {"required": {"defaultValue": True, "conditions": []}}}).get("caseRuleId") or "")
+        return {**base, "caseRuleId": rid}
+    if op == "BatchGetCaseRule":
+        return {**base, "caseRules": [{"id": s["rule"]}]}
+    if op == "ListCaseRules":
+        return {**base, "maxResults": 10}
+    if op == "CreateCase":
+        return {**base, "templateId": s["template"], "clientToken": cnx_unique("ct-"), "tags": {"env": "coverage"},
+                "fields": [{"id": "title", "value": {"stringValue": "Coverage case"}}, {"id": s["tier"], "value": {"stringValue": "gold"}}]}
+    if op == "GetCase":
+        return {**base, "caseId": case, "fields": [{"id": "title"}, {"id": "status"}, {"id": "reference_number"}]}
+    if op == "UpdateCase":
+        return {**base, "caseId": case, "fields": [{"id": s["field"], "value": {"doubleValue": 5}}], "performedBy": {"customEntity": "coverage"}}
+    if op == "DeleteCase":
+        return {**base, "caseId": cnc_case(aws_bin, endpoint_url, region, env, s, "to delete")}
+    if op == "BatchUpdateCase":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "fields": [{"fieldIdentifier": {"name": "priority"}, "value": {"doubleValue": 3}}], "title": "Printer broken"}
+    if op == "GetCaseAuditEvents":
+        return {**base, "caseId": case, "maxResults": 10}
+    if op == "SearchCases":
+        return {**base, "searchTerm": "printer", "fields": [{"id": "title"}], "sorts": [{"fieldId": "title", "sortOrder": "Asc"}],
+                "filter": {"field": {"greaterThanOrEqualTo": {"id": s["field"], "value": {"doubleValue": 1}}}}}
+    if op == "CreateRelatedItem":
+        return {**base, "caseId": case, "type": "Comment", "content": {"comment": {"body": "hello", "contentType": "Text/Plain"}}}
+    if op == "BatchCreateRelatedItem":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "content": {"comment": {"body": "batch", "contentType": "Text/Plain"}}}
+    if op == "UpdateRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": s["comment"], "content": {"comment": {"body": "edited", "contentType": "Text/Plain"}}}
+    if op == "DeleteRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": cnc_comment(aws_bin, endpoint_url, region, env, d, case)}
+    if op == "SearchRelatedItems":
+        return {**base, "caseId": case, "maxResults": 10, "filters": [{"comment": {}}]}
+    if op == "SearchAllRelatedItems":
+        return {**base, "maxResults": 10, "sorts": [{"sortProperty": "AssociationTime", "sortOrder": "Desc"}]}
+    if op == "ListCasesForContact":
+        return {**base, "contactArn": s["contact_arn"]}
+    if op in ("StartMergeCases", "GetMergeCasesStatus"):
+        primary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge primary")
+        secondary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge secondary")
+        merge = {**base, "caseId": primary, "secondaryCaseIds": [secondary]}
+        if op == "StartMergeCases":
+            return merge
+        cnc_cli(aws_bin, endpoint_url, region, env, "start-merge-cases", merge)
+        return {**base, "caseId": primary}
+    if op == "PutCaseEventConfiguration":
+        return {**base, "eventBridge": {"enabled": True, "includedData": {"caseData": {"fields": [{"id": "title"}]}, "relatedItemData": {"includeContent": True}}}}
+    if op in ("GetCaseEventConfiguration", "GetDomain"):
+        return base
+    if op == "TagResource":
+        return {"arn": domain_arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"arn": domain_arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"arn": domain_arn}
+    return payload
+
+
 GEOMAPS_PAYLOADS: dict[str, dict] = {
     "GetGlyphs": {"FontStack": "Amazon Ember Regular", "FontUnicodeRange": "0-255.pbf"},
     "GetSprites": {"FileName": "sprites.png", "Style": "Standard", "ColorScheme": "Light", "Variant": "Default"},
@@ -39847,6 +40128,14 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "connect" and endpoint.operation in {"StartChatContact", "CreateParticipant"}:
+        return connect_chat_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcases":
+        return connectcases_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectparticipant":
+        return connectparticipant_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcontactlens":
+        return connectcontactlens_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointemail":
         return pinpointemail_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointsmsvoice":
