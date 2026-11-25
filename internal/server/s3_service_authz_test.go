@@ -298,3 +298,30 @@ func TestTextractJobTokenRetryRechecksInput(t *testing.T) {
 		t.Fatalf("retry after deny: want AccessDeniedException, got %d %v", status, out)
 	}
 }
+
+// Application Cost Profiler reads the usage file and writes reports on the
+// caller's behalf.
+func TestApplicationCostProfilerServiceS3Authz(t *testing.T) {
+	for _, tc := range svcAuthzCases(acpServicePrincipal) {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, ts := newBudTestServer(t)
+			svcAuthzBucket(t, srv, "acp-reports", "")
+			acpCall(t, ts, http.MethodPost, "/reportDefinition", acpDefJSON("daily", "acp-reports", "CSV", "DAILY"))
+			usage := "ApplicationId,TenantId,TenantDesc,ResourceId,StartTime,EndTime\napp,a,Tenant A,i-1,2026-01-01T00:00:00Z,2026-01-01T03:00:00Z\n"
+			svcAuthzBucket(t, srv, "acp-usage", tc.principal)
+			if _, err := srv.s3.PutObject("acp-usage", "usage.csv", "text/csv", []byte(usage), nil, "", ""); err != nil {
+				t.Fatal(err)
+			}
+			status, out := acpCall(t, ts, http.MethodPost, "/importApplicationUsage", `{"sourceS3Location":{"bucket":"acp-usage","key":"usage.csv"}}`)
+			if tc.principal == "" {
+				if status != http.StatusOK {
+					t.Fatalf("want 200, got %d %v", status, out)
+				}
+				return
+			}
+			if status != http.StatusForbidden || out["__code"] != "AccessDeniedException" {
+				t.Fatalf("want AccessDeniedException, got %d %v", status, out)
+			}
+		})
+	}
+}

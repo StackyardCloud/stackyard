@@ -183,6 +183,10 @@ type acpUsage struct {
 func (s *Server) acpImport(in map[string]any) (map[string]any, *budErr) {
 	src := budMap(in, "sourceS3Location")
 	bucket, key := budStr(src, "bucket"), budStr(src, "key")
+	caller := s3CallerIn(in)
+	if !s.authorizeServiceS3As(caller, acpServicePrincipal, bucket, key, "s3:GetObject") {
+		return nil, acpErrorf("AccessDeniedException", "access denied reading s3://%s/%s", bucket, key)
+	}
 	obj, err := s.s3.GetObject(bucket, key)
 	if err != nil {
 		return nil, acpInvalid("unable to read s3://%s/%s", bucket, key)
@@ -207,7 +211,7 @@ func (s *Server) acpImport(in map[string]any) (map[string]any, *budErr) {
 	report := acpReport(usage)
 	for _, d := range defs {
 		// A bucket deleted since the definition was saved just misses this delivery.
-		_ = s.acpDeliver(d, importID, report, now)
+		_ = s.acpDeliver(caller, d, importID, report, now)
 	}
 	return map[string]any{"importId": importID}, nil
 }
@@ -323,7 +327,14 @@ func acpReportPrefix(d *acpDefinition, now time.Time) string {
 // acpDeliver writes a manifest and, for CSV definitions, the report itself.
 // ponytail: PARQUET definitions get only the manifest; encode Parquet when
 // a consumer needs the rows.
-func (s *Server) acpDeliver(d *acpDefinition, importID string, report []byte, now time.Time) error {
+const acpServicePrincipal = "application-cost-profiler.amazonaws.com"
+
+func (s *Server) acpDeliver(caller s3Caller, d *acpDefinition, importID string, report []byte, now time.Time) error {
+	// A destination whose policy denies the caller or the service misses this
+	// delivery, like a bucket deleted since the definition was saved.
+	if !s.authorizeServiceS3As(caller, acpServicePrincipal, d.bucket, d.prefix, "s3:PutObject") {
+		return fmt.Errorf("access denied writing to s3://%s", d.bucket)
+	}
 	base := acpReportPrefix(d, now)
 	var files []string
 	if d.format == "CSV" {
