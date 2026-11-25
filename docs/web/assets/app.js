@@ -218,6 +218,33 @@ const SERVICE_CATALOG = [
   },
 
   {
+    id: "lookoutequipment",
+    name: "Lookout for Equipment",
+    category: "integration",
+    summary: "Emulate Lookout for Equipment datasets with S3 sensor-data ingestion and sensor statistics, labels, model training and versions, resource policies, retraining and inference schedulers with executions and events, and tags.",
+    docsHref: "../../../index.html#lookoutequipment",
+    exampleHref: "../../../../examples/aws/lookoutequipment/docker-compose.yml"
+  },
+
+  {
+    id: "machinelearning",
+    name: "Machine Learning",
+    category: "integration",
+    summary: "Emulate Amazon Machine Learning data sources from S3, RDS and Redshift, model training, evaluations, batch predictions written to S3, realtime endpoints with Predict, and tags.",
+    docsHref: "../../../index.html#machinelearning",
+    exampleHref: "../../../../examples/aws/machinelearning/docker-compose.yml"
+  },
+
+  {
+    id: "sagemakergeospatial",
+    name: "SageMaker Geospatial",
+    category: "integration",
+    summary: "Emulate SageMaker geospatial raster collections and scene search, earth observation jobs with tiles and S3 exports, vector enrichment jobs over S3 CSVs, and tags.",
+    docsHref: "../../../index.html#sagemakergeospatial",
+    exampleHref: "../../../../examples/aws/sagemaker-geospatial/docker-compose.yml"
+  },
+
+  {
     id: "wafregional",
     name: "WAF Classic Regional",
     category: "security",

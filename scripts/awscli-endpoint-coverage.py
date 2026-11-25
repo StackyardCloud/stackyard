@@ -578,6 +578,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
+    "lookoutequipment": {"cli": "lookoutequipment", "ops_file": REPO_ROOT / "internal/server/lookoutequipment_ops.go"},
+    "machinelearning": {"cli": "machinelearning", "ops_file": REPO_ROOT / "internal/server/machinelearning_ops.go"},
+    "sagemakergeospatial": {"cli": "sagemaker-geospatial", "ops_file": REPO_ROOT / "internal/server/sagemakergeospatial_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
@@ -2319,6 +2322,14 @@ SERVICE_ALIASES = {
     "amazonforecastquery": "forecastquery",
     "frauddetector": "frauddetector",
     "amazonfrauddetector": "frauddetector",
+    "lookoutequipment": "lookoutequipment",
+    "amazonlookoutforequipment": "lookoutequipment",
+    "machinelearning": "machinelearning",
+    "machine learning": "machinelearning",
+    "amazonmachinelearning": "machinelearning",
+    "sagemakergeospatial": "sagemakergeospatial",
+    "sagemaker-geospatial": "sagemakergeospatial",
+    "sagemaker geospatial": "sagemakergeospatial",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -3320,6 +3331,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "forecast": {},
     "frauddetector": {},
+    "lookoutequipment": {},
+    "machinelearning": {},
+    "sagemakergeospatial": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
@@ -13617,6 +13631,10 @@ def generate_cli_input_payload(
         # get-code-binding-source streams a zip, so the CLI needs its members as
         # flags plus an outfile even to print a skeleton.
         return {"RegistryName": "", "SchemaName": "", "Language": "Python36"}, None
+    if (endpoint.service, endpoint.operation) == ("sagemakergeospatial", "GetTile"):
+        # get-tile streams a PNG to an outfile, so the CLI needs its members as
+        # flags even to print a skeleton; hydration points it at a real job.
+        return {"Arn": "", "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0}, None
     if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
@@ -38512,6 +38530,357 @@ def frauddetector_hydrate_payload(
     return payload
 
 
+AML_BUCKET = "stackyard-ml-cov"
+AML_ROLE = "arn:aws:iam::123456789012:role/stackyard-ml"
+AML_SCHEMA = json.dumps({"version": "1.0", "targetAttributeName": "y", "dataFormat": "CSV", "dataFileContainsHeader": True,
+                         "attributes": [{"attributeName": "x", "attributeType": "NUMERIC"}, {"attributeName": "y", "attributeType": "BINARY"}]})
+AML_KINDS = {"DataSource": "DataSourceId", "MLModel": "MLModelId", "Evaluation": "EvaluationId", "BatchPrediction": "BatchPredictionId"}
+
+
+def aml_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="machinelearning")
+
+
+class AmlFixture:
+    """Amazon ML resources created through the CLI; each settles on read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return aml_call(*self.args, op, args)
+
+    def make(self, kind: str, wait: bool = True, **refs: str) -> str:
+        new = fc_unique("cov")
+        args = {AML_KINDS[kind]: new}
+        if kind == "DataSource":
+            self.call("CreateDataSourceFromS3", {**args, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}})
+        elif kind == "MLModel":
+            self.call("CreateMLModel", {**args, "MLModelType": "BINARY", "TrainingDataSourceId": refs["ds"]})
+        elif kind == "Evaluation":
+            self.call("CreateEvaluation", {**args, "MLModelId": refs["model"], "EvaluationDataSourceId": refs["ds"]})
+        else:
+            self.call("CreateBatchPrediction", {**args, "MLModelId": refs["model"], "BatchPredictionDataSourceId": refs["ds"],
+                                                "OutputUri": f"s3://{AML_BUCKET}/out/"})
+        for _ in range(3 if wait else 0):
+            if self.call("Get" + kind, args).get("Status") == "COMPLETED":
+                break
+        return new
+
+
+def aml_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED data source, model (with a READY realtime endpoint),
+    evaluation and batch prediction."""
+    state = RUNTIME_STATE.setdefault("machinelearning", {})
+    if state.get("model"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, AML_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, AML_BUCKET, "train.csv", b"x,y\n1,0\n2,1\n3,1\n")
+    fx = AmlFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["ds"] = fx.make("DataSource")
+    state["model"] = fx.make("MLModel", ds=state["ds"])
+    fx.call("CreateRealtimeEndpoint", {"MLModelId": state["model"]})
+    state["evaluation"] = fx.make("Evaluation", ds=state["ds"], model=state["model"])
+    state["batch"] = fx.make("BatchPrediction", ds=state["ds"], model=state["model"])
+    return state
+
+
+def machinelearning_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates get fresh IDs over the fixture; deletes get resources of their own."""
+    op = endpoint.operation
+    fx = aml_fixture(aws_bin, endpoint_url, region, env)
+    make = fx["fx"].make
+    new = fc_unique("cov")
+    db = {"Username": "stackyard", "Password": "stackyard-pw"}
+    simple = {
+        "CreateDataSourceFromS3": lambda: {"DataSourceId": new, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}},
+        "CreateDataSourceFromRDS": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "RDSData": {
+            "DatabaseInformation": {"InstanceIdentifier": "stackyard-db", "DatabaseName": "ml"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/", "ResourceRole": "DataPipelineDefaultResourceRole",
+            "ServiceRole": "DataPipelineDefaultRole", "SubnetId": "subnet-0123456789", "SecurityGroupIds": ["sg-0123456789"]}},
+        "CreateDataSourceFromRedshift": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "DataSpec": {
+            "DatabaseInformation": {"DatabaseName": "ml", "ClusterIdentifier": "stackyard"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/"}},
+        "CreateMLModel": lambda: {"MLModelId": new, "MLModelType": "REGRESSION", "TrainingDataSourceId": fx["ds"]},
+        "CreateEvaluation": lambda: {"EvaluationId": new, "MLModelId": fx["model"], "EvaluationDataSourceId": fx["ds"]},
+        "CreateBatchPrediction": lambda: {"BatchPredictionId": new, "MLModelId": fx["model"], "BatchPredictionDataSourceId": fx["ds"],
+                                          "OutputUri": f"s3://{AML_BUCKET}/out/"},
+        "CreateRealtimeEndpoint": lambda: {"MLModelId": fx["model"]},
+        "Predict": lambda: {"MLModelId": fx["model"], "Record": {"x": "2"}, "PredictEndpoint": endpoint_url},
+        "UpdateMLModel": lambda: {"MLModelId": fx["model"], "MLModelName": "coverage", "ScoreThreshold": 0.6},
+        "UpdateDataSource": lambda: {"DataSourceId": fx["ds"], "DataSourceName": "coverage"},
+        "UpdateEvaluation": lambda: {"EvaluationId": fx["evaluation"], "EvaluationName": "coverage"},
+        "UpdateBatchPrediction": lambda: {"BatchPredictionId": fx["batch"], "BatchPredictionName": "coverage"},
+        "AddTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "Tags": [{"Key": "env", "Value": "cov"}]},
+        "DeleteTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "TagKeys": ["env"]},
+        "DescribeTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel"},
+        "GetDataSource": lambda: {"DataSourceId": fx["ds"], "Verbose": True},
+        "GetMLModel": lambda: {"MLModelId": fx["model"], "Verbose": True},
+        "GetEvaluation": lambda: {"EvaluationId": fx["evaluation"]},
+        "GetBatchPrediction": lambda: {"BatchPredictionId": fx["batch"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteRealtimeEndpoint":
+        model = make("MLModel", ds=fx["ds"])
+        fx["fx"].call("CreateRealtimeEndpoint", {"MLModelId": model})
+        return {"MLModelId": model}
+    if op == "DeleteDataSource":
+        return {"DataSourceId": make("DataSource")}
+    if op == "DeleteMLModel":
+        return {"MLModelId": make("MLModel", wait=False, ds=fx["ds"])}
+    if op in ("DeleteEvaluation", "DeleteBatchPrediction"):
+        kind = op[len("Delete"):]
+        return {AML_KINDS[kind]: make(kind, wait=False, ds=fx["ds"], model=fx["model"])}
+    if op.startswith("Describe"):
+        return {}
+    return payload
+
+
+LKE_BUCKET = "stackyard-lookout-cov"
+LKE_ROLE = "arn:aws:iam::123456789012:role/stackyard-lookout"
+LKE_CSV = b"Timestamp,temp,pressure\n2024-01-01T00:00:00Z,1.5,3\n2024-01-01T00:05:00Z,1.7,4\n2024-01-01T00:10:00Z,1.6,4\n"
+
+
+def lke_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="lookoutequipment")
+
+
+class LkeFixture:
+    """Lookout for Equipment resources created through the CLI; async work
+    settles on the second read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return lke_call(*self.args, op, {**args, "ClientToken": fc_unique("tok")} if op.startswith(("Create", "Start", "Import", "Put")) and op not in ("StartInferenceScheduler", "StartRetrainingScheduler") else args)
+
+    def wait(self, op: str, args: dict, key: str, want: str) -> None:
+        for _ in range(3):
+            if self.call(op, args).get(key) == want:
+                return
+
+    def dataset(self) -> tuple[str, str, str]:
+        name = fc_unique("ds")
+        arn = str(self.call("CreateDataset", {"DatasetName": name}).get("DatasetArn") or "")
+        job = str(self.call("StartDataIngestionJob", {"DatasetName": name, "RoleArn": LKE_ROLE,
+                                                      "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}}).get("JobId") or "")
+        self.wait("DescribeDataIngestionJob", {"JobId": job}, "Status", "SUCCESS")
+        return name, arn, job
+
+    def model(self, dataset: str) -> str:
+        name = fc_unique("model")
+        self.call("CreateModel", {"ModelName": name, "DatasetName": dataset, "RoleArn": LKE_ROLE})
+        self.wait("DescribeModel", {"ModelName": name}, "Status", "SUCCESS")
+        return name
+
+    def retrainer(self, model: str, stopped: bool) -> str:
+        self.call("CreateRetrainingScheduler", {"ModelName": model, "RetrainingFrequency": "P30D", "LookbackWindow": "P360D"})
+        self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopRetrainingScheduler", {"ModelName": model})
+            self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "STOPPED")
+        return model
+
+    def scheduler(self, model: str, stopped: bool) -> str:
+        name = fc_unique("sched")
+        self.call("CreateInferenceScheduler", {"ModelName": model, "InferenceSchedulerName": name, "DataUploadFrequency": "PT5M",
+                                               "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                               "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                               "RoleArn": LKE_ROLE})
+        self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopInferenceScheduler", {"InferenceSchedulerName": name})
+            self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "STOPPED")
+        return name
+
+
+def lke_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ingested dataset, a label group with a label, a trained model with a
+    resource policy and a retraining scheduler, and a RUNNING inference scheduler."""
+    state = RUNTIME_STATE.setdefault("lookoutequipment", {})
+    if state.get("scheduler"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, LKE_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, LKE_BUCKET, "pump/pump1/sensors.csv", LKE_CSV)
+    fx = LkeFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["dataset"], state["dataset_arn"], state["job"] = fx.dataset()
+    state["group"] = fc_unique("labels")
+    fx.call("CreateLabelGroup", {"LabelGroupName": state["group"], "FaultCodes": ["F1"]})
+    state["label"] = str(fx.call("CreateLabel", {"LabelGroupName": state["group"], "StartTime": 1704067200, "EndTime": 1704070800,
+                                                 "Rating": "ANOMALY", "FaultCode": "F1"}).get("LabelId") or "")
+    state["model"] = fx.model(state["dataset"])
+    model = fx.call("DescribeModel", {"ModelName": state["model"]})
+    state["model_arn"], state["version_arn"] = model.get("ModelArn", ""), model.get("ActiveModelVersionArn", "")
+    fx.call("PutResourcePolicy", {"ResourceArn": state["model_arn"], "ResourcePolicy": json.dumps({"Version": "2012-10-17", "Statement": []})})
+    fx.retrainer(state["model"], stopped=False)
+    state["scheduler"] = fx.scheduler(state["model"], stopped=False)
+    return state
+
+
+def lookoutequipment_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Reads use the fixture; creates get fresh names; deletes, starts and
+    stops get resources of their own."""
+    op = endpoint.operation
+    fx = lke_fixture(aws_bin, endpoint_url, region, env)
+    f = fx["fx"]
+    new = fc_unique("cov")
+    token = {"ClientToken": fc_unique("tok")}
+    policy = json.dumps({"Version": "2012-10-17", "Statement": []})
+    simple = {
+        "CreateDataset": lambda: {"DatasetName": new, **token},
+        "DescribeDataset": lambda: {"DatasetName": fx["dataset"]},
+        "ImportDataset": lambda: {"SourceDatasetArn": fx["dataset_arn"], "DatasetName": new, **token},
+        "StartDataIngestionJob": lambda: {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new), "RoleArn": LKE_ROLE,
+                                          "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}, **token},
+        "DescribeDataIngestionJob": lambda: {"JobId": fx["job"]},
+        "ListSensorStatistics": lambda: {"DatasetName": fx["dataset"]},
+        "CreateLabelGroup": lambda: {"LabelGroupName": new, "FaultCodes": ["F1"], **token},
+        "DescribeLabelGroup": lambda: {"LabelGroupName": fx["group"]},
+        "UpdateLabelGroup": lambda: {"LabelGroupName": fx["group"], "FaultCodes": ["F1", "F2"]},
+        "CreateLabel": lambda: {"LabelGroupName": fx["group"], "StartTime": 1704074400, "EndTime": 1704078000, "Rating": "NO_ANOMALY", **token},
+        "DescribeLabel": lambda: {"LabelGroupName": fx["group"], "LabelId": fx["label"]},
+        "ListLabels": lambda: {"LabelGroupName": fx["group"]},
+        "CreateModel": lambda: {"ModelName": new, "DatasetName": fx["dataset"], "RoleArn": LKE_ROLE, **token},
+        "DescribeModel": lambda: {"ModelName": fx["model"]},
+        "UpdateModel": lambda: {"ModelName": fx["model"], "RoleArn": LKE_ROLE},
+        "DescribeModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "ListModelVersions": lambda: {"ModelName": fx["model"]},
+        "ImportModelVersion": lambda: {"SourceModelVersionArn": fx["version_arn"], "ModelName": new, "DatasetName": fx["dataset"], **token},
+        "UpdateActiveModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "PutResourcePolicy": lambda: {"ResourceArn": fx["model_arn"], "ResourcePolicy": policy, **token},
+        "DescribeResourcePolicy": lambda: {"ResourceArn": fx["model_arn"]},
+        "DescribeRetrainingScheduler": lambda: {"ModelName": fx["model"]},
+        "UpdateRetrainingScheduler": lambda: {"ModelName": fx["model"], "PromoteMode": "MANUAL"},
+        "CreateInferenceScheduler": lambda: {"ModelName": fx["model"], "InferenceSchedulerName": new, "DataUploadFrequency": "PT10M",
+                                             "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                             "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                             "RoleArn": LKE_ROLE, **token},
+        "DescribeInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "UpdateInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"], "DataDelayOffsetInMinutes": 2},
+        "ListInferenceExecutions": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "ListInferenceEvents": lambda: {"InferenceSchedulerName": fx["scheduler"], "IntervalStartTime": 1704067200, "IntervalEndTime": 4102444800},
+        "TagResource": lambda: {"ResourceArn": fx["dataset_arn"], "Tags": [{"Key": "env", "Value": "cov"}]},
+        "UntagResource": lambda: {"ResourceArn": fx["dataset_arn"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["dataset_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteDataset":
+        return {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new)}
+    if op == "DeleteLabelGroup":
+        f.call("CreateLabelGroup", {"LabelGroupName": new})
+        return {"LabelGroupName": new}
+    if op == "DeleteLabel":
+        label = f.call("CreateLabel", {"LabelGroupName": fx["group"], "StartTime": 1704081600, "EndTime": 1704085200, "Rating": "NEUTRAL"})
+        return {"LabelGroupName": fx["group"], "LabelId": label.get("LabelId", "")}
+    if op == "DeleteModel":
+        return {"ModelName": f.model(fx["dataset"])}
+    if op == "DeleteResourcePolicy":
+        model = f.model(fx["dataset"])
+        arn = f.call("DescribeModel", {"ModelName": model}).get("ModelArn", "")
+        f.call("PutResourcePolicy", {"ResourceArn": arn, "ResourcePolicy": policy})
+        return {"ResourceArn": arn}
+    if op == "CreateRetrainingScheduler":
+        return {"ModelName": f.model(fx["dataset"]), "RetrainingFrequency": "P30D", "LookbackWindow": "P180D", **token}
+    if op in ("StartRetrainingScheduler", "DeleteRetrainingScheduler"):
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=True)}
+    if op == "StopRetrainingScheduler":
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=False)}
+    if op in ("StartInferenceScheduler", "DeleteInferenceScheduler"):
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=True)}
+    if op == "StopInferenceScheduler":
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=False)}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+SGEO_BUCKET = "stackyard-geospatial-cov"
+SGEO_ROLE = "arn:aws:iam::123456789012:role/stackyard-geospatial"
+SGEO_SENTINEL = "arn:aws:sagemaker-geospatial:us-west-2:378778860802:raster-data-collection/public/nmqj48dcu3g7ayw8"
+SGEO_AOI = {"AreaOfInterestGeometry": {"PolygonGeometry": {"Coordinates": [[[-122.4, 47.5], [-122.2, 47.5], [-122.2, 47.7], [-122.4, 47.7], [-122.4, 47.5]]]}}}
+SGEO_RANGE = {"StartTime": 1672531200, "EndTime": 1675209600}
+
+
+def sgeo_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="sagemaker-geospatial")
+
+
+def sgeo_eoj_args() -> dict:
+    return {"Name": fc_unique("eo"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"RasterDataCollectionQuery": {"RasterDataCollectionArn": SGEO_SENTINEL, "TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+            "JobConfig": {"BandMathConfig": {"PredefinedIndices": ["ndvi"]}}}
+
+
+def sgeo_vej_args() -> dict:
+    return {"Name": fc_unique("ve"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"DocumentType": "CSV", "DataSourceConfig": {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/in/points.csv"}}},
+            "JobConfig": {"ReverseGeocodingConfig": {"XAttributeName": "lon", "YAttributeName": "lat"}}}
+
+
+def sgeo_job(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, settle: bool = True) -> str:
+    """Starts an earth observation (eo) or vector enrichment (ve) job and reads it until COMPLETED."""
+    call = lambda op, args: sgeo_call(aws_bin, endpoint_url, region, env, op, args)
+    name = "EarthObservationJob" if kind == "eo" else "VectorEnrichmentJob"
+    arn = str(call("Start" + name, sgeo_eoj_args() if kind == "eo" else sgeo_vej_args()).get("Arn") or "")
+    for _ in range(3 if settle else 0):
+        if call("Get" + name, {"Arn": arn}).get("Status") == "COMPLETED":
+            break
+    return arn
+
+
+def sgeo_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED earth observation job and vector enrichment job, with an export bucket."""
+    state = RUNTIME_STATE.setdefault("sagemakergeospatial", {})
+    if state.get("ve"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, SGEO_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, SGEO_BUCKET, "in/points.csv", b"id,lon,lat\n1,-122.33,47.61\n2,-122.30,47.60\n")
+    state["eo"] = sgeo_job(aws_bin, endpoint_url, region, env, "eo")
+    state["ve"] = sgeo_job(aws_bin, endpoint_url, region, env, "ve")
+    return state
+
+
+def sagemakergeospatial_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = sgeo_fixture(aws_bin, endpoint_url, region, env)
+    job = lambda kind, settle=True: sgeo_job(aws_bin, endpoint_url, region, env, kind, settle)
+    out = {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/export/"}}
+    simple = {
+        "StartEarthObservationJob": sgeo_eoj_args,
+        "StartVectorEnrichmentJob": sgeo_vej_args,
+        "GetEarthObservationJob": lambda: {"Arn": fx["eo"]},
+        "GetVectorEnrichmentJob": lambda: {"Arn": fx["ve"]},
+        "ExportEarthObservationJob": lambda: {"Arn": fx["eo"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "ExportVectorEnrichmentJob": lambda: {"Arn": fx["ve"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "StopEarthObservationJob": lambda: {"Arn": job("eo", False)},
+        "StopVectorEnrichmentJob": lambda: {"Arn": job("ve", False)},
+        "DeleteEarthObservationJob": lambda: {"Arn": job("eo")},
+        "DeleteVectorEnrichmentJob": lambda: {"Arn": job("ve")},
+        "GetRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL},
+        "SearchRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL, "RasterDataCollectionQuery": {"TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+        "GetTile": lambda: {"Arn": fx["eo"], "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0},
+        "TagResource": lambda: {"ResourceArn": fx["eo"], "Tags": {"env": "cov"}},
+        "UntagResource": lambda: {"ResourceArn": fx["eo"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["eo"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
 CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
 CS_DOCS = [
     {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
@@ -39487,6 +39856,12 @@ def hydrate_payload_with_service_state(
         return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "frauddetector":
         return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "machinelearning":
+        return machinelearning_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "lookoutequipment":
+        return lookoutequipment_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakergeospatial":
+        return sagemakergeospatial_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotsecuretunneling":
         return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotdeviceadvisor":
@@ -61996,7 +62371,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource"), ("sagemakergeospatial", "GetTile")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

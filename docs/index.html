@@ -320,6 +320,9 @@
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
         <a href="#frauddetector">Fraud Detector</a>
+        <a href="#lookoutequipment">Lookout for Equipment</a>
+        <a href="#machinelearning">Machine Learning</a>
+        <a href="#sagemakergeospatial">SageMaker Geospatial</a>
         <a href="#cloudsearch">CloudSearch</a>
         <a href="#cloudsearchdomain">CloudSearch Domain</a>
         <a href="#kendraranking">Kendra Intelligent Ranking</a>
@@ -26464,6 +26467,186 @@
         <summary>Examples</summary>
         <ul>
         <li><code>frauddetector</code>: <code>docker compose -f examples/aws/frauddetector/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="lookoutequipment" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Lookout for Equipment</h2>
+        <p>SigV4 signed with service <code>lookoutequipment</code>. JSON 1.0 API with <code>X-Amz-Target: AWSLookoutEquipmentFrontendService.*</code>. Datasets with inline schemas, data ingestion jobs that read sensor CSVs from Stackyard's S3 (one sensor per column, with real missing, invalid and duplicate-timestamp counts in the data quality summary and per-sensor statistics), dataset imports, label groups and labels, models whose training creates version 1 and activates it, model version imports and UpdateActiveModelVersion, resource policies with revision checks, retraining schedulers and inference schedulers (PENDING -&gt; RUNNING, STOPPING -&gt; STOPPED; deletes need a stopped scheduler), inference executions derived from each RUNNING spell at the upload frequency and inference events for the anomalous ones, and tags. Async work settles on the read after it is first seen (or after three seconds). Model metrics and inference verdicts are deterministic placeholders. All 49 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: lookoutequipment</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Lookout for Equipment API action catalog. See <code>internal/server/lookoutequipment_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDataset</code></td></tr>
+        <tr><td><code>CreateInferenceScheduler</code></td></tr>
+        <tr><td><code>CreateLabel</code></td></tr>
+        <tr><td><code>CreateLabelGroup</code></td></tr>
+        <tr><td><code>CreateModel</code></td></tr>
+        <tr><td><code>CreateRetrainingScheduler</code></td></tr>
+        <tr><td><code>DeleteDataset</code></td></tr>
+        <tr><td><code>DeleteInferenceScheduler</code></td></tr>
+        <tr><td><code>DeleteLabel</code></td></tr>
+        <tr><td><code>DeleteLabelGroup</code></td></tr>
+        <tr><td><code>DeleteModel</code></td></tr>
+        <tr><td><code>DeleteResourcePolicy</code></td></tr>
+        <tr><td><code>DeleteRetrainingScheduler</code></td></tr>
+        <tr><td><code>DescribeDataIngestionJob</code></td></tr>
+        <tr><td><code>DescribeDataset</code></td></tr>
+        <tr><td><code>DescribeInferenceScheduler</code></td></tr>
+        <tr><td><code>DescribeLabel</code></td></tr>
+        <tr><td><code>DescribeLabelGroup</code></td></tr>
+        <tr><td><code>DescribeModel</code></td></tr>
+        <tr><td><code>DescribeModelVersion</code></td></tr>
+        <tr><td><code>DescribeResourcePolicy</code></td></tr>
+        <tr><td><code>DescribeRetrainingScheduler</code></td></tr>
+        <tr><td><code>ImportDataset</code></td></tr>
+        <tr><td><code>ImportModelVersion</code></td></tr>
+        <tr><td><code>ListDataIngestionJobs</code></td></tr>
+        <tr><td><code>ListDatasets</code></td></tr>
+        <tr><td><code>ListInferenceEvents</code></td></tr>
+        <tr><td><code>ListInferenceExecutions</code></td></tr>
+        <tr><td><code>ListInferenceSchedulers</code></td></tr>
+        <tr><td><code>ListLabelGroups</code></td></tr>
+        <tr><td><code>ListLabels</code></td></tr>
+        <tr><td><code>ListModelVersions</code></td></tr>
+        <tr><td><code>ListModels</code></td></tr>
+        <tr><td><code>ListRetrainingSchedulers</code></td></tr>
+        <tr><td><code>ListSensorStatistics</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutResourcePolicy</code></td></tr>
+        <tr><td><code>StartDataIngestionJob</code></td></tr>
+        <tr><td><code>StartInferenceScheduler</code></td></tr>
+        <tr><td><code>StartRetrainingScheduler</code></td></tr>
+        <tr><td><code>StopInferenceScheduler</code></td></tr>
+        <tr><td><code>StopRetrainingScheduler</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateActiveModelVersion</code></td></tr>
+        <tr><td><code>UpdateInferenceScheduler</code></td></tr>
+        <tr><td><code>UpdateLabelGroup</code></td></tr>
+        <tr><td><code>UpdateModel</code></td></tr>
+        <tr><td><code>UpdateRetrainingScheduler</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>lookoutequipment</code>: <code>docker compose -f examples/aws/lookoutequipment/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="machinelearning" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Machine Learning</h2>
+        <p>SigV4 signed with service <code>machinelearning</code>. JSON 1.1 API with <code>X-Amz-Target: AmazonML_20141212.*</code>. Data sources from S3 (size, file and record counts read from Stackyard's S3; the schema inline or from S3), RDS and Redshift; binary, regression and multiclass ML models; evaluations with performance metrics; batch predictions that score every input row and write gzipped results to the output S3 location; realtime endpoints whose URL is this server, and Predict through them. Resources go PENDING -&gt; INPROGRESS -&gt; COMPLETED one step per read (FAILED when an input is unusable), wait for what they read, and keep DELETED status after deletion. Repeated creates are idempotent; different parameters raise IdempotentParameterMismatchException. Describe* filters, sorts and pages; tags are limited to ten per resource. Scores are deterministic placeholders. All 28 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: machinelearning</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Machine Learning API action catalog. See <code>internal/server/machinelearning_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AddTags</code></td></tr>
+        <tr><td><code>CreateBatchPrediction</code></td></tr>
+        <tr><td><code>CreateDataSourceFromRDS</code></td></tr>
+        <tr><td><code>CreateDataSourceFromRedshift</code></td></tr>
+        <tr><td><code>CreateDataSourceFromS3</code></td></tr>
+        <tr><td><code>CreateEvaluation</code></td></tr>
+        <tr><td><code>CreateMLModel</code></td></tr>
+        <tr><td><code>CreateRealtimeEndpoint</code></td></tr>
+        <tr><td><code>DeleteBatchPrediction</code></td></tr>
+        <tr><td><code>DeleteDataSource</code></td></tr>
+        <tr><td><code>DeleteEvaluation</code></td></tr>
+        <tr><td><code>DeleteMLModel</code></td></tr>
+        <tr><td><code>DeleteRealtimeEndpoint</code></td></tr>
+        <tr><td><code>DeleteTags</code></td></tr>
+        <tr><td><code>DescribeBatchPredictions</code></td></tr>
+        <tr><td><code>DescribeDataSources</code></td></tr>
+        <tr><td><code>DescribeEvaluations</code></td></tr>
+        <tr><td><code>DescribeMLModels</code></td></tr>
+        <tr><td><code>DescribeTags</code></td></tr>
+        <tr><td><code>GetBatchPrediction</code></td></tr>
+        <tr><td><code>GetDataSource</code></td></tr>
+        <tr><td><code>GetEvaluation</code></td></tr>
+        <tr><td><code>GetMLModel</code></td></tr>
+        <tr><td><code>Predict</code></td></tr>
+        <tr><td><code>UpdateBatchPrediction</code></td></tr>
+        <tr><td><code>UpdateDataSource</code></td></tr>
+        <tr><td><code>UpdateEvaluation</code></td></tr>
+        <tr><td><code>UpdateMLModel</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>machinelearning</code>: <code>docker compose -f examples/aws/machinelearning/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="sagemakergeospatial" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker geospatial capabilities</h2>
+        <p>SigV4 signed with service <code>sagemaker-geospatial</code>. REST JSON API. The public raster data collections (Sentinel-2 L2A, Landsat Collection 2 Level-2, Copernicus DEM) and a deterministic scene catalog for SearchRasterDataCollection (one scene per revisit period, footprints over the area of interest, property filters and band filters, paging). Earth observation jobs over a collection or a previous job's output, with output bands derived from the job configuration; vector enrichment jobs (reverse geocoding, map matching) that check their CSV input in Stackyard's S3. Jobs go INITIALIZING -&gt; IN_PROGRESS -&gt; COMPLETED (or FAILED) one step per read, stop to STOPPED, and refuse deletion while busy. Exports write a manifest and band tiles (earth observation) or the enriched CSV (vector enrichment) to S3; GetTile returns PNG tiles. Only requests signed for sagemaker-geospatial are claimed, so SageMaker and SageMaker Runtime keep theirs. Imagery and geocoding results are deterministic placeholders. All 19 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker-geospatial</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon SageMaker geospatial capabilities API action catalog. See <code>internal/server/sagemakergeospatial_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteEarthObservationJob</code></td></tr>
+        <tr><td><code>DeleteVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>ExportEarthObservationJob</code></td></tr>
+        <tr><td><code>ExportVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>GetEarthObservationJob</code></td></tr>
+        <tr><td><code>GetRasterDataCollection</code></td></tr>
+        <tr><td><code>GetTile</code></td></tr>
+        <tr><td><code>GetVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>ListEarthObservationJobs</code></td></tr>
+        <tr><td><code>ListRasterDataCollections</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVectorEnrichmentJobs</code></td></tr>
+        <tr><td><code>SearchRasterDataCollection</code></td></tr>
+        <tr><td><code>StartEarthObservationJob</code></td></tr>
+        <tr><td><code>StartVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>StopEarthObservationJob</code></td></tr>
+        <tr><td><code>StopVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-geospatial</code>: <code>docker compose -f examples/aws/sagemaker-geospatial/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
