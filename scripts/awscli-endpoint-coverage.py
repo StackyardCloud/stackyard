@@ -582,6 +582,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
+    "account": {"cli": "account", "ops_file": REPO_ROOT / "internal/server/account_ops.go"},
+    "freetier": {"cli": "freetier", "ops_file": REPO_ROOT / "internal/server/freetier_ops.go"},
+    "taxsettings": {"cli": "taxsettings", "ops_file": REPO_ROOT / "internal/server/taxsettings_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
@@ -2319,6 +2322,13 @@ SERVICE_ALIASES = {
     "bcmdataexports": "bcmdataexports",
     "bcm-data-exports": "bcmdataexports",
     "dataexports": "bcmdataexports",
+    "account": "account",
+    "awsaccount": "account",
+    "accountmanagement": "account",
+    "freetier": "freetier",
+    "awsfreetier": "freetier",
+    "taxsettings": "taxsettings",
+    "tax-settings": "taxsettings",
     "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3307,6 +3317,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "account": {},
+    "freetier": {},
+    "taxsettings": {},
     "geomaps": {},
     "geoplaces": {},
     "georoutes": {},
@@ -38856,6 +38869,150 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+ACCT_MEMBER = "210987654321"
+ACCT_CALLER = "123456789012"
+
+
+def acct_otp(account: str, value: str) -> str:
+    """The one-time code Stackyard derives for a primary email or phone number."""
+    return hashlib.sha256(f"{account}:{value}".encode()).hexdigest()[:6].upper()
+
+
+def acct_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], service: str, op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, service, op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def acct_contact_info(phone: str) -> dict:
+    return {"FullName": "Stackyard Coverage", "AddressLine1": "1 Main St", "City": "Seattle", "StateOrRegion": "WA",
+            "PostalCode": "98101", "CountryCode": "US", "PhoneNumber": phone}
+
+
+def account_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each Account operation the state it reads: contacts, a contact
+    record with a fresh phone number, a started email update for the member
+    account, or an opt-in Region. Names are unique per run."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "account", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    member = {"AccountId": ACCT_MEMBER}
+    contact = {"Name": "Coverage Contact", "Title": "Ops", "EmailAddress": "ops@example.com", "PhoneNumber": "+1 206 555 0100"}
+    if op in {"GetAccountInformation", "GetGovCloudAccountInformation", "ListRegions"}:
+        return {}
+    if op == "PutAccountName":
+        return {"AccountName": f"stackyard-{stamp[-8:]}"}
+    if op == "PutAlternateContact":
+        return {**contact, "AlternateContactType": "SECURITY"}
+    if op in {"GetAlternateContact", "DeleteAlternateContact"}:
+        kind = "BILLING" if op == "GetAlternateContact" else "OPERATIONS"
+        cli("put-alternate-contact", {**contact, "AlternateContactType": kind})
+        return {"AlternateContactType": kind}
+    phone = f"+1 206 555 {stamp[-4:]}"
+    if op == "PutContactInformation":
+        return {"ContactInformation": acct_contact_info(phone)}
+    if op in {"GetContactInformation", "SendPhoneNumberVerification", "VerifyPhoneNumber"}:
+        cli("put-contact-information", {"ContactInformation": acct_contact_info(phone)})
+        if op == "VerifyPhoneNumber":
+            cli("send-phone-number-verification", {})
+            return {"Otp": acct_otp(ACCT_CALLER, phone)}
+        return {}
+    email = f"member-{stamp}@example.com"
+    if op == "GetPrimaryEmail":
+        return dict(member)
+    if op == "StartPrimaryEmailUpdate":
+        return {**member, "PrimaryEmail": email}
+    if op in {"AcceptPrimaryEmailUpdate", "GetPrimaryEmailUpdateStatus"}:
+        cli("start-primary-email-update", {**member, "PrimaryEmail": email})
+        if op == "AcceptPrimaryEmailUpdate":
+            return {**member, "PrimaryEmail": email, "Otp": acct_otp(ACCT_MEMBER, email)}
+        return dict(member)
+    if op == "GetRegionOptStatus":
+        return {"RegionName": "us-east-1"}
+    if op == "EnableRegion":
+        return {"RegionName": "af-south-1"}
+    if op == "DisableRegion":
+        # Enable, let the change settle (two reads), then opt back out.
+        cli("enable-region", {"RegionName": "eu-south-2"})
+        for _ in range(2):
+            cli("get-region-opt-status", {"RegionName": "eu-south-2"})
+        return {"RegionName": "eu-south-2"}
+    return payload
+
+
+def freetier_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    if op == "GetAccountActivity":
+        data = acct_cli(aws_bin, endpoint_url, region, env, "freetier", "list-account-activities", {})
+        activities = data.get("activities") or [{}]
+        return {"activityId": str(activities[0].get("activityId") or ""), "languageCode": "en-US"}
+    if op == "UpgradeAccountPlan":
+        return {"accountPlanType": "PAID"}
+    if op == "GetFreeTierUsage":
+        return {"filter": {"Dimensions": {"Key": "FREE_TIER_TYPE", "Values": ["Always Free"], "MatchOptions": ["EQUALS"]}}, "maxResults": 10}
+    if op == "ListAccountActivities":
+        return {"maxResults": 10}
+    return {}
+
+
+TAXS_ADDRESS = {"addressLine1": "Hauptstr. 1", "city": "Berlin", "postalCode": "10115", "countryCode": "DE"}
+
+
+def taxs_entry(doc: bool = False) -> dict:
+    entry = {"registrationId": "DE123456789", "registrationType": "VAT", "legalName": "Stackyard GmbH", "legalAddress": TAXS_ADDRESS}
+    if doc:
+        content = base64.b64encode(b"Stackyard VAT certificate").decode()
+        entry["verificationDetails"] = {"taxRegistrationDocuments": [{"file": {"fileName": "vat.pdf", "fileContent": content}}]}
+    return entry
+
+
+def taxsettings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Registrations for the caller and the Organizations member account,
+    a document written back to a bucket of its own, supplemental
+    registrations and exemptions."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "taxsettings", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    if op == "PutTaxRegistration":
+        return {"taxRegistrationEntry": taxs_entry()}
+    if op == "BatchPutTaxRegistration":
+        return {"accountIds": [ACCT_MEMBER], "taxRegistrationEntry": taxs_entry(doc=True)}
+    if op in {"GetTaxRegistration", "PutTaxInheritance"}:
+        cli("put-tax-registration", {"taxRegistrationEntry": taxs_entry()})
+        return {} if op == "GetTaxRegistration" else {"heritageStatus": "OptIn"}
+    if op in {"DeleteTaxRegistration", "BatchDeleteTaxRegistration"}:
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry()})
+        return {"accountId": ACCT_MEMBER} if op == "DeleteTaxRegistration" else {"accountIds": [ACCT_MEMBER]}
+    if op == "GetTaxRegistrationDocument":
+        bucket = f"stackyard-tax-docs-{stamp}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry(doc=True)})
+        reg = cli("get-tax-registration", {"accountId": ACCT_MEMBER}).get("taxRegistration") or {}
+        meta = (reg.get("taxDocumentMetadatas") or [{}])[0]
+        return {"taxDocumentMetadata": meta, "destinationS3Location": {"bucket": bucket, "prefix": "documents"}}
+    supp = {"registrationId": f"MY-{stamp}", "registrationType": "VAT", "legalName": "Stackyard Sdn Bhd",
+            "address": {"postalCode": "50000", "countryCode": "MY"}}
+    if op == "PutSupplementalTaxRegistration":
+        return {"taxRegistrationEntry": supp}
+    if op == "DeleteSupplementalTaxRegistration":
+        put = cli("put-supplemental-tax-registration", {"taxRegistrationEntry": supp})
+        return {"authorityId": str(put.get("authorityId") or "")}
+    if op == "PutTaxExemption":
+        cert = base64.b64encode(b"resale certificate").decode()
+        return {"accountIds": [ACCT_CALLER], "authority": {"country": "US", "state": "CA"}, "exemptionType": "Resale",
+                "exemptionCertificate": {"documentName": "resale.pdf", "documentFile": cert}}
+    if op == "BatchGetTaxExemptions":
+        return {"accountIds": [ACCT_CALLER, ACCT_MEMBER]}
+    if op in {"ListTaxRegistrations", "ListSupplementalTaxRegistrations", "ListTaxExemptions"}:
+        return {"maxResults": 10}
+    return {}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -38877,6 +39034,12 @@ def hydrate_payload_with_service_state(
         return personalizeevents_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeruntime":
         return personalizeruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "account":
+        return account_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "freetier":
+        return freetier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "taxsettings":
+        return taxsettings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "budgets":
         return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "costoptimizationhub":
