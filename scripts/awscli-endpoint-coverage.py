@@ -38303,6 +38303,11 @@ def kendraranking_hydrate_payload(
         return {"ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
     if op == "UntagResource":
         return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return payload
+
+
 PSZ_BUCKET = "stackyard-personalize"
 PSZ_ROLE = "arn:aws:iam::123456789012:role/stackyard-personalize"
 PSZ_RECIPE = "arn:aws:personalize:::recipe/"
