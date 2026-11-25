@@ -213,6 +213,12 @@ func TestConnectParticipantStage1Attachments(t *testing.T) {
 	if status, _ := cnpCall(t, ts, http.MethodPost, "/participant/start-attachment-upload", conn, fmt.Sprintf(`{"ContentType":"text/plain","AttachmentSizeInBytes":%d,"AttachmentName":"a.txt","ClientToken":"t"}`, cnpMaxAttachment+1)); status != http.StatusBadRequest {
 		t.Fatalf("oversized attachment: %d", status)
 	}
+	// Negative or fractional sizes would shrink the store-wide byte budget.
+	for _, bad := range []string{"-1048576", "0", "2.5"} {
+		if status, _ := cnpCall(t, ts, http.MethodPost, "/participant/start-attachment-upload", conn, `{"ContentType":"text/plain","AttachmentSizeInBytes":`+bad+`,"AttachmentName":"a.txt","ClientToken":"bad`+bad+`"}`); status != http.StatusBadRequest {
+			t.Fatalf("AttachmentSizeInBytes %s: status %d", bad, status)
+		}
+	}
 	start := cnpOK(t, ts, "/participant/start-attachment-upload", conn, `{"ContentType":"text/plain","AttachmentSizeInBytes":5,"AttachmentName":"a.txt","ClientToken":"t"}`)
 	id := start["AttachmentId"].(string)
 	upload := start["UploadMetadata"].(map[string]any)["Url"].(string)
