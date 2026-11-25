@@ -156,6 +156,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/savingsplans_ops.go",
     },
     "location": {"cli": "location", "ops_file": REPO_ROOT / "internal/server/location_ops.go"},
+    "geomaps": {"cli": "geo-maps", "ops_file": REPO_ROOT / "internal/server/geomaps_ops.go"},
+    "geoplaces": {"cli": "geo-places", "ops_file": REPO_ROOT / "internal/server/geoplaces_ops.go"},
+    "georoutes": {"cli": "geo-routes", "ops_file": REPO_ROOT / "internal/server/georoutes_ops.go"},
     "kinesisvideostreams": {
         "cli": "kinesisvideo",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
@@ -573,6 +576,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
+    "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
+    "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
+    "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
@@ -961,6 +967,12 @@ SERVICE_ALIASES = {
     "awskinesisdatastreams": "kinesis",
     "aws kinesis data streams": "kinesis",
     "location": "location",
+    "geomaps": "geomaps",
+    "geo-maps": "geomaps",
+    "geoplaces": "geoplaces",
+    "geo-places": "geoplaces",
+    "georoutes": "georoutes",
+    "geo-routes": "georoutes",
     "locationservice": "location",
     "location service": "location",
     "amazonlocation": "location",
@@ -2301,6 +2313,14 @@ SERVICE_ALIASES = {
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
+    "cloudsearch": "cloudsearch",
+    "amazoncloudsearch": "cloudsearch",
+    "cloudsearchdomain": "cloudsearchdomain",
+    "cloudsearch-domain": "cloudsearchdomain",
+    "amazoncloudsearchdomain": "cloudsearchdomain",
+    "kendraranking": "kendraranking",
+    "kendra-ranking": "kendraranking",
+    "amazonkendraintelligentranking": "kendraranking",
     "budgets": "budgets",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
@@ -3290,9 +3310,15 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "textract": {},
     "wafregional": {},
     "pi": {},
+    "cloudsearch": {},
+    "cloudsearchdomain": {},
+    "kendraranking": {},
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "geomaps": {},
+    "geoplaces": {},
+    "georoutes": {},
     "servicecatalog": {},
     "migrationhub": {},
     "personalize": {},
@@ -13584,6 +13610,10 @@ def generate_cli_input_payload(
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
         return {"OutputFormat": "mp3", "Text": "hello", "VoiceId": "Joanna"}, None
+    if endpoint.service == "geomaps":
+        # Every geo-maps command streams a blob to an outfile, so the CLI needs
+        # its members as flags even to print a skeleton.
+        return dict(GEOMAPS_PAYLOADS[endpoint.operation]), None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -38147,6 +38177,165 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
+CS_DOCS = [
+    {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
+    {"type": "add", "id": "doc2", "fields": {"title": "Star Trek", "genre": "scifi", "year": 1979}},
+    {"type": "add", "id": "doc3", "fields": {"title": "Casablanca", "genre": "drama", "year": 1942}},
+]
+
+
+def cs_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "cloudsearch", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def cs_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def cs_new_domain(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = cs_unique("sycs-")
+    cs_cli(aws_bin, endpoint_url, region, env, "create-domain", {"DomainName": name})
+    return name
+
+
+def cs_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A domain with title/genre/year fields and a title suggester, indexed
+    and loaded with three documents."""
+    state = RUNTIME_STATE.setdefault("cloudsearch", {})
+    if state.get("domain"):
+        return state
+    domain = cs_new_domain(aws_bin, endpoint_url, region, env)
+    for field in (
+        {"IndexFieldName": "title", "IndexFieldType": "text"},
+        {"IndexFieldName": "genre", "IndexFieldType": "literal", "LiteralOptions": {"FacetEnabled": True}},
+        {"IndexFieldName": "year", "IndexFieldType": "int"},
+    ):
+        cs_cli(aws_bin, endpoint_url, region, env, "define-index-field", {"DomainName": domain, "IndexField": field})
+    cs_cli(aws_bin, endpoint_url, region, env, "define-suggester", {"DomainName": domain, "Suggester": {
+        "SuggesterName": "title_suggest", "DocumentSuggesterOptions": {"SourceField": "title"}}})
+    cs_cli(aws_bin, endpoint_url, region, env, "index-documents", {"DomainName": domain})
+    run_aws_json(aws_bin, f"{endpoint_url.rstrip('/')}/{domain}", region, "cloudsearchdomain", "upload-documents", env, [
+        "--cli-input-json", json.dumps({"documents": base64.b64encode(json.dumps(CS_DOCS).encode()).decode(), "contentType": "application/json"}),
+    ])
+    state["domain"] = domain
+    return state
+
+
+def cloudsearch_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point CloudSearch configuration operations at a real domain; creates and
+    deletes get resources of their own."""
+    op = endpoint.operation
+    if op == "ListDomainNames":
+        return {}
+    if op == "CreateDomain":
+        return {"DomainName": cs_unique("sycs-")}
+    if op == "DeleteDomain":
+        return {"DomainName": cs_new_domain(aws_bin, endpoint_url, region, env)}
+    domain = cs_fixture(aws_bin, endpoint_url, region, env)["domain"]
+    base = {"DomainName": domain}
+    if op == "DescribeDomains":
+        return {"DomainNames": [domain]}
+    if op == "DefineIndexField":
+        return {**base, "IndexField": {"IndexFieldName": cs_unique("f"), "IndexFieldType": "int", "IntOptions": {"DefaultValue": 0}}}
+    if op == "DeleteIndexField":
+        name = cs_unique("f")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-index-field", {**base, "IndexField": {"IndexFieldName": name, "IndexFieldType": "double"}})
+        return {**base, "IndexFieldName": name}
+    if op == "DefineExpression":
+        return {**base, "Expression": {"ExpressionName": "popularity", "ExpressionValue": "_score*2"}}
+    if op == "DeleteExpression":
+        name = cs_unique("e")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-expression", {**base, "Expression": {"ExpressionName": name, "ExpressionValue": "year"}})
+        return {**base, "ExpressionName": name}
+    if op == "DefineAnalysisScheme":
+        return {**base, "AnalysisScheme": {"AnalysisSchemeName": "sy_en", "AnalysisSchemeLanguage": "en",
+                                            "AnalysisOptions": {"Stopwords": "[\"the\"]", "AlgorithmicStemming": "light"}}}
+    if op == "DeleteAnalysisScheme":
+        name = cs_unique("a")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-analysis-scheme", {**base, "AnalysisScheme": {"AnalysisSchemeName": name, "AnalysisSchemeLanguage": "fr"}})
+        return {**base, "AnalysisSchemeName": name}
+    if op == "DefineSuggester":
+        return {**base, "Suggester": {"SuggesterName": "title_suggest", "DocumentSuggesterOptions": {"SourceField": "title", "FuzzyMatching": "low"}}}
+    if op == "DeleteSuggester":
+        name = cs_unique("s")
+        cs_cli(aws_bin, endpoint_url, region, env, "define-suggester", {**base, "Suggester": {"SuggesterName": name, "DocumentSuggesterOptions": {"SourceField": "genre"}}})
+        return {**base, "SuggesterName": name}
+    if op == "UpdateAvailabilityOptions":
+        return {**base, "MultiAZ": True}
+    if op == "UpdateDomainEndpointOptions":
+        return {**base, "DomainEndpointOptions": {"EnforceHTTPS": True, "TLSSecurityPolicy": "Policy-Min-TLS-1-2-2019-07"}}
+    if op == "UpdateScalingParameters":
+        return {**base, "ScalingParameters": {"DesiredInstanceType": "search.medium", "DesiredReplicationCount": 1}}
+    if op == "UpdateServiceAccessPolicies":
+        return {**base, "AccessPolicies": CS_POLICY}
+    return base
+
+
+def cloudsearchdomain_endpoint(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    return f"{endpoint_url.rstrip('/')}/{cs_fixture(aws_bin, endpoint_url, region, env)['domain']}"
+
+
+def cloudsearchdomain_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Search, suggest and upload against the CloudSearch fixture domain."""
+    cs_fixture(aws_bin, endpoint_url, region, env)
+    op = endpoint.operation
+    if op == "Search":
+        return {"query": "star", "return": "title,year,_score", "facet": json.dumps({"genre": {}}), "stats": json.dumps({"year": {}}), "sort": "year asc"}
+    if op == "Suggest":
+        return {"query": "sta", "suggester": "title_suggest", "size": 5}
+    if op == "UploadDocuments":
+        batch = [{"type": "add", "id": cs_unique("doc"), "fields": {"title": "Stackyard Coverage", "year": 2026}}]
+        return {"documents": base64.b64encode(json.dumps(batch).encode()).decode(), "contentType": "application/json"}
+    return payload
+
+
+def kdr_new_plan(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    data = run_aws_json(aws_bin, endpoint_url, region, "kendra-ranking", "create-rescore-execution-plan", env, ["--name", cs_unique("stackyard-")])
+    return str((data or {}).get("Id") or "") if isinstance(data, dict) else ""
+
+
+def kendraranking_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Kendra Intelligent Ranking operations at a real plan; deletes get
+    a plan of their own."""
+    op = endpoint.operation
+    if op == "CreateRescoreExecutionPlan":
+        return {"Name": cs_unique("stackyard-"), "Description": "coverage", "CapacityUnits": {"RescoreCapacityUnits": 1},
+                "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "ListRescoreExecutionPlans":
+        return {"MaxResults": 10}
+    if op == "DeleteRescoreExecutionPlan":
+        return {"Id": kdr_new_plan(aws_bin, endpoint_url, region, env)}
+    state = RUNTIME_STATE.setdefault("kendraranking", {})
+    if not state.get("plan"):
+        state["plan"] = kdr_new_plan(aws_bin, endpoint_url, region, env)
+    plan = str(state["plan"])
+    arn = f"arn:aws:kendra-ranking:{region}:123456789012:rescore-execution-plan/{plan}"
+    if op == "DescribeRescoreExecutionPlan":
+        return {"Id": plan}
+    if op == "UpdateRescoreExecutionPlan":
+        return {"Id": plan, "Description": "updated by coverage", "CapacityUnits": {"RescoreCapacityUnits": 2}}
+    if op == "Rescore":
+        return {"RescoreExecutionPlanId": plan, "SearchQuery": "stackyard search", "Documents": [
+            {"Id": "d1", "Title": "Stackyard search", "Body": "Local cloud search emulator", "OriginalScore": 1.0},
+            {"Id": "d2", "TokenizedBody": ["unrelated", "text"], "OriginalScore": 2.0},
+        ]}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    return payload
+
+
 PSZ_BUCKET = "stackyard-personalize"
 PSZ_ROLE = "arn:aws:iam::123456789012:role/stackyard-personalize"
 PSZ_RECIPE = "arn:aws:personalize:::recipe/"
@@ -38914,6 +39103,38 @@ def bcmdataexports_hydrate_payload(
     return payload
 
 
+GEOMAPS_PAYLOADS: dict[str, dict] = {
+    "GetGlyphs": {"FontStack": "Amazon Ember Regular", "FontUnicodeRange": "0-255.pbf"},
+    "GetSprites": {"FileName": "sprites.png", "Style": "Standard", "ColorScheme": "Light", "Variant": "Default"},
+    "GetStaticMap": {"FileName": "map", "Width": 256, "Height": 256, "Center": "2.2945,48.8583", "Zoom": 10},
+    "GetStyleDescriptor": {"Style": "Standard", "ColorScheme": "Light"},
+    "GetTile": {"Tileset": "vector.basemap", "Z": "1", "X": "0", "Y": "0"},
+}
+
+GEOPLACES_PAYLOADS: dict[str, dict] = {
+    "Autocomplete": {"QueryText": "Seat", "MaxResults": 5},
+    "Geocode": {"QueryText": "Space Needle", "AdditionalFeatures": ["TimeZone"]},
+    "GetPlace": {"PlaceId": "stackyard-place-space-needle"},
+    "ReverseGeocode": {"QueryPosition": [-122.3493, 47.6205]},
+    "SearchNearby": {"QueryPosition": [-122.34, 47.61], "QueryRadius": 5000},
+    "SearchText": {"QueryText": "tower", "BiasPosition": [2.35, 48.85]},
+    "Suggest": {"QueryText": "museum", "BiasPosition": [2.35, 48.85]},
+}
+
+GEOROUTES_PAYLOADS: dict[str, dict] = {
+    "CalculateIsolines": {"Origin": [-122.33, 47.6], "Thresholds": {"Time": [600]}},
+    "CalculateRouteMatrix": {
+        "Origins": [{"Position": [-122.33, 47.6]}], "Destinations": [{"Position": [-122.35, 47.62]}],
+        "RoutingBoundary": {"Unbounded": True},
+    },
+    "CalculateRoutes": {"Origin": [-122.33, 47.6], "Destination": [-122.35, 47.62]},
+    "OptimizeWaypoints": {"Origin": [-122.33, 47.6], "Waypoints": [{"Id": "stop-a", "Position": [-122.35, 47.62]}]},
+    "SnapToRoads": {"TracePoints": [{"Position": [-122.33, 47.6]}, {"Position": [-122.331, 47.601]}]},
+}
+
+GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -38931,6 +39152,10 @@ def hydrate_payload_with_service_state(
         return iotdeviceadvisor_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotthingsgraph":
         return iotthingsgraph_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service in GEO_STANDALONE_PAYLOADS:
+        # Stateless APIs: each operation gets a fixed request that hits the
+        # built-in gazetteer or geometry.
+        return dict(GEO_STANDALONE_PAYLOADS[endpoint.service].get(endpoint.operation, payload))
     if endpoint.service == "personalize":
         return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeevents":
@@ -38975,6 +39200,12 @@ def hydrate_payload_with_service_state(
         return textract_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "wafregional":
         return wafregional_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloudsearch":
+        return cloudsearch_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "cloudsearchdomain":
+        return cloudsearchdomain_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "kendraranking":
+        return kendraranking_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pi":
         return pi_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "servicecatalog":
@@ -61228,6 +61459,9 @@ def run_endpoint(
         env=env,
     )
     cli_endpoint_url = endpoint_url
+    if endpoint.service == "cloudsearchdomain":
+        # The data plane is per domain: Stackyard takes the domain as a path prefix.
+        cli_endpoint_url = cloudsearchdomain_endpoint(aws_bin, endpoint_url, region, env)
     if endpoint.service == "s3control" and s3control_should_use_endpoint_alias(endpoint_url, endpoint.cli_operation):
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
     if endpoint.service == "mediastoredata":
@@ -61421,7 +61655,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

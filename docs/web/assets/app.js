@@ -224,12 +224,60 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "geomaps",
+    name: "Location Maps V2",
+    category: "integration",
+    summary: "Emulate MapLibre style descriptors, vector, satellite and DEM tiles, sprites, glyphs and static map images as small, valid placeholder payloads with model-checked parameters.",
+    docsHref: "../../../index.html#geomaps",
+    exampleHref: "../../../../examples/aws/geo-maps/docker-compose.yml"
+  },
+  {
+    id: "geoplaces",
+    name: "Location Places V2",
+    category: "integration",
+    summary: "Emulate geocoding, reverse geocoding, text and nearby search, autocomplete and suggestions over a deterministic built-in gazetteer of cities, landmarks and addresses.",
+    docsHref: "../../../index.html#geoplaces",
+    exampleHref: "../../../../examples/aws/geo-places/docker-compose.yml"
+  },
+  {
+    id: "georoutes",
+    name: "Location Routes V2",
+    category: "integration",
+    summary: "Emulate routes, route matrices, isolines, waypoint optimization and road snapping with deterministic great-circle geometry and flexible polylines.",
+    docsHref: "../../../index.html#georoutes",
+    exampleHref: "../../../../examples/aws/geo-routes/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",
     summary: "Emulate Performance Insights for RDS and DocumentDB instances: deterministic db.load and OS/DB counter metrics, dimension keys by SQL, wait event, user and host, analysis reports with insights and recommendations, and tags.",
     docsHref: "../../../index.html#pi",
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
+  },
+  {
+    id: "cloudsearch",
+    name: "CloudSearch",
+    category: "integration",
+    summary: "Emulate CloudSearch domains: index fields of every type, expressions, analysis schemes and suggesters deployed by IndexDocuments, plus scaling, availability, endpoint and access-policy options.",
+    docsHref: "../../../index.html#cloudsearch",
+    exampleHref: "../../../../examples/aws/cloudsearch/docker-compose.yml"
+  },
+  {
+    id: "cloudsearchdomain",
+    name: "CloudSearch Domain",
+    category: "integration",
+    summary: "Emulate CloudSearch document upload, search and suggest against domains created with CloudSearch: simple and structured queries, filters, sorting, cursors, facets, stats, highlights, expressions and fuzzy suggestions.",
+    docsHref: "../../../index.html#cloudsearchdomain",
+    exampleHref: "../../../../examples/aws/cloudsearch-domain/docker-compose.yml"
+  },
+  {
+    id: "kendraranking",
+    name: "Kendra Intelligent Ranking",
+    category: "integration",
+    summary: "Emulate Kendra Intelligent Ranking rescore execution plans with deterministic term-overlap rescoring, document groups and tags.",
+    docsHref: "../../../index.html#kendraranking",
+    exampleHref: "../../../../examples/aws/kendra-ranking/docker-compose.yml"
   },
   {
     id: "servicecatalog",
