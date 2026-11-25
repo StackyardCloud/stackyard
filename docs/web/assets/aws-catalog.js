@@ -257,6 +257,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
   },
   {
+    id: "cloudsearch",
+    name: "CloudSearch",
+    category: "integration",
+    summary: "Emulate CloudSearch domains: index fields of every type, expressions, analysis schemes and suggesters deployed by IndexDocuments, plus scaling, availability, endpoint and access-policy options.",
+    docsHref: "../../../index.html#cloudsearch",
+    exampleHref: "../../../../examples/aws/cloudsearch/docker-compose.yml"
+  },
+  {
+    id: "cloudsearchdomain",
+    name: "CloudSearch Domain",
+    category: "integration",
+    summary: "Emulate CloudSearch document upload, search and suggest against domains created with CloudSearch: simple and structured queries, filters, sorting, cursors, facets, stats, highlights, expressions and fuzzy suggestions.",
+    docsHref: "../../../index.html#cloudsearchdomain",
+    exampleHref: "../../../../examples/aws/cloudsearch-domain/docker-compose.yml"
+  },
+  {
+    id: "kendraranking",
+    name: "Kendra Intelligent Ranking",
+    category: "integration",
+    summary: "Emulate Kendra Intelligent Ranking rescore execution plans with deterministic term-overlap rescoring, document groups and tags.",
+    docsHref: "../../../index.html#kendraranking",
+    exampleHref: "../../../../examples/aws/kendra-ranking/docker-compose.yml"
+  },
+  {
     id: "servicecatalog",
     name: "Service Catalog",
     category: "integration",
@@ -969,6 +993,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
+    id: "personalize",
+    name: "Amazon Personalize",
+    category: "integration",
+    summary: "Dataset groups (custom or ECOMMERCE / VIDEO_ON_DEMAND domain), Avro schemas, datasets fed by S3 imports and Personalize Events, solutions and versions, campaigns, recommenders, filters, metric attributions, and export, data deletion, batch inference and batch segment jobs.",
+    docsHref: "../../../index.html#personalize",
+    exampleHref: "../../../../examples/aws/personalize/docker-compose.yml"
+  },
+  {
+    id: "personalizeevents",
+    name: "Amazon Personalize Events",
+    category: "integration",
+    summary: "Stream interaction events and action interactions through an event tracker, and add items, users and actions to Personalize datasets.",
+    docsHref: "../../../index.html#personalizeevents",
+    exampleHref: "../../../../examples/aws/personalize-events/docker-compose.yml"
+  },
+  {
+    id: "personalizeruntime",
+    name: "Amazon Personalize Runtime",
+    category: "integration",
+    summary: "Deterministic recommendations, personalized rankings and next-best actions from Personalize campaigns and recommenders over the dataset group's current data.",
+    docsHref: "../../../index.html#personalizeruntime",
+    exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
@@ -1512,6 +1560,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan staged emulation for channel groups, channels, origin endpoints, harvest jobs, policy controls, resets, and tagging APIs.",
     docsHref: "../../../index.html#mediapackage",
     exampleHref: "../../../../examples/aws/mediapackage/docker-compose.yml"
+  },
+  {
+    id: "mediastore",
+    name: "Elemental MediaStore",
+    category: "integration",
+    summary: "Containers with endpoints, container/CORS/lifecycle/metric policies, access logging and tags.",
+    docsHref: "../../../index.html#mediastore",
+    exampleHref: "../../../../examples/aws/mediastore/docker-compose.yml"
+  },
+  {
+    id: "mediastoredata",
+    name: "Elemental MediaStore Data",
+    category: "integration",
+    summary: "Store and serve objects in MediaStore containers with byte ranges and folder listings.",
+    docsHref: "../../../index.html#mediastoredata",
+    exampleHref: "../../../../examples/aws/mediastore-data/docker-compose.yml"
+  },
+  {
+    id: "mediapackagevod",
+    name: "Elemental MediaPackage VOD",
+    category: "integration",
+    summary: "Packaging groups, CMAF/DASH/HLS/MSS packaging configurations and S3-sourced assets with egress endpoints.",
+    docsHref: "../../../index.html#mediapackagevod",
+    exampleHref: "../../../../examples/aws/mediapackage-vod/docker-compose.yml"
   },
   {
     id: "mediaconnect",
