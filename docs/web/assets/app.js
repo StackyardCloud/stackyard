@@ -944,6 +944,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
+    id: "personalize",
+    name: "Amazon Personalize",
+    category: "integration",
+    summary: "Dataset groups (custom or ECOMMERCE / VIDEO_ON_DEMAND domain), Avro schemas, datasets fed by S3 imports and Personalize Events, solutions and versions, campaigns, recommenders, filters, metric attributions, and export, data deletion, batch inference and batch segment jobs.",
+    docsHref: "../../../index.html#personalize",
+    exampleHref: "../../../../examples/aws/personalize/docker-compose.yml"
+  },
+  {
+    id: "personalizeevents",
+    name: "Amazon Personalize Events",
+    category: "integration",
+    summary: "Stream interaction events and action interactions through an event tracker, and add items, users and actions to Personalize datasets.",
+    docsHref: "../../../index.html#personalizeevents",
+    exampleHref: "../../../../examples/aws/personalize-events/docker-compose.yml"
+  },
+  {
+    id: "personalizeruntime",
+    name: "Amazon Personalize Runtime",
+    category: "integration",
+    summary: "Deterministic recommendations, personalized rankings and next-best actions from Personalize campaigns and recommenders over the dataset group's current data.",
+    docsHref: "../../../index.html#personalizeruntime",
+    exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",

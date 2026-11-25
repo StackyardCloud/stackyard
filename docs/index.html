@@ -183,6 +183,9 @@
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
         <a href="#pipes">EventBridge Pipes</a>
+        <a href="#personalize">Amazon Personalize</a>
+        <a href="#personalizeevents">Amazon Personalize Events</a>
+        <a href="#personalizeruntime">Amazon Personalize Runtime</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -13278,6 +13281,172 @@
         <summary>Examples</summary>
         <ul>
         <li><code>pipes</code>: <code>docker compose -f examples/aws/pipes/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="personalize" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize</h2>
+        <p>SigV4 signed with service <code>personalize</code>. JSON 1.1 API (<code>X-Amz-Target: AmazonPersonalize.*</code>), validated against the service model. Dataset groups (optionally ECOMMERCE or VIDEO_ON_DEMAND), Avro record schemas checked for the fields each dataset type needs, one dataset per type per group, event trackers (one per group), filters, solutions with AutoML, HPO and auto-training settings, solution versions, campaigns, domain recommenders (start/stop), and metric attributions. Async resources report <code>CREATE IN_PROGRESS</code> (or the matching update/stop/start status) on their first Describe and settle to <code>ACTIVE</code> on the next; dependants require <code>ACTIVE</code> (<code>ResourceInUseException</code> otherwise). Import jobs read CSV from Stackyard's S3 (FULL or INCREMENTAL); export jobs write CSV of bulk, put or all records; data deletion jobs remove users and their interactions; batch inference and batch segment jobs read JSON lines from S3 and write <code>.out</code> files. Jobs whose S3 input or output bucket is missing settle to <code>CREATE FAILED</code> with a reason. Filters support <code>INCLUDE|EXCLUDE ItemID|UserID|ActionID WHERE Dataset.FIELD op values [AND ...]</code> with <code>$PARAM</code> placeholders. The managed recipe, algorithm and feature transformation catalogs are built in; deletes are refused while dependants exist; tags on every resource. All 71 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateBatchInferenceJob</code></td></tr>
+        <tr><td><code>CreateBatchSegmentJob</code></td></tr>
+        <tr><td><code>CreateCampaign</code></td></tr>
+        <tr><td><code>CreateDataDeletionJob</code></td></tr>
+        <tr><td><code>CreateDataset</code></td></tr>
+        <tr><td><code>CreateDatasetExportJob</code></td></tr>
+        <tr><td><code>CreateDatasetGroup</code></td></tr>
+        <tr><td><code>CreateDatasetImportJob</code></td></tr>
+        <tr><td><code>CreateEventTracker</code></td></tr>
+        <tr><td><code>CreateFilter</code></td></tr>
+        <tr><td><code>CreateMetricAttribution</code></td></tr>
+        <tr><td><code>CreateRecommender</code></td></tr>
+        <tr><td><code>CreateSchema</code></td></tr>
+        <tr><td><code>CreateSolution</code></td></tr>
+        <tr><td><code>CreateSolutionVersion</code></td></tr>
+        <tr><td><code>DeleteCampaign</code></td></tr>
+        <tr><td><code>DeleteDataset</code></td></tr>
+        <tr><td><code>DeleteDatasetGroup</code></td></tr>
+        <tr><td><code>DeleteEventTracker</code></td></tr>
+        <tr><td><code>DeleteFilter</code></td></tr>
+        <tr><td><code>DeleteMetricAttribution</code></td></tr>
+        <tr><td><code>DeleteRecommender</code></td></tr>
+        <tr><td><code>DeleteSchema</code></td></tr>
+        <tr><td><code>DeleteSolution</code></td></tr>
+        <tr><td><code>DescribeAlgorithm</code></td></tr>
+        <tr><td><code>DescribeBatchInferenceJob</code></td></tr>
+        <tr><td><code>DescribeBatchSegmentJob</code></td></tr>
+        <tr><td><code>DescribeCampaign</code></td></tr>
+        <tr><td><code>DescribeDataDeletionJob</code></td></tr>
+        <tr><td><code>DescribeDataset</code></td></tr>
+        <tr><td><code>DescribeDatasetExportJob</code></td></tr>
+        <tr><td><code>DescribeDatasetGroup</code></td></tr>
+        <tr><td><code>DescribeDatasetImportJob</code></td></tr>
+        <tr><td><code>DescribeEventTracker</code></td></tr>
+        <tr><td><code>DescribeFeatureTransformation</code></td></tr>
+        <tr><td><code>DescribeFilter</code></td></tr>
+        <tr><td><code>DescribeMetricAttribution</code></td></tr>
+        <tr><td><code>DescribeRecipe</code></td></tr>
+        <tr><td><code>DescribeRecommender</code></td></tr>
+        <tr><td><code>DescribeSchema</code></td></tr>
+        <tr><td><code>DescribeSolution</code></td></tr>
+        <tr><td><code>DescribeSolutionVersion</code></td></tr>
+        <tr><td><code>GetSolutionMetrics</code></td></tr>
+        <tr><td><code>ListBatchInferenceJobs</code></td></tr>
+        <tr><td><code>ListBatchSegmentJobs</code></td></tr>
+        <tr><td><code>ListCampaigns</code></td></tr>
+        <tr><td><code>ListDataDeletionJobs</code></td></tr>
+        <tr><td><code>ListDatasetExportJobs</code></td></tr>
+        <tr><td><code>ListDatasetGroups</code></td></tr>
+        <tr><td><code>ListDatasetImportJobs</code></td></tr>
+        <tr><td><code>ListDatasets</code></td></tr>
+        <tr><td><code>ListEventTrackers</code></td></tr>
+        <tr><td><code>ListFilters</code></td></tr>
+        <tr><td><code>ListMetricAttributionMetrics</code></td></tr>
+        <tr><td><code>ListMetricAttributions</code></td></tr>
+        <tr><td><code>ListRecipes</code></td></tr>
+        <tr><td><code>ListRecommenders</code></td></tr>
+        <tr><td><code>ListSchemas</code></td></tr>
+        <tr><td><code>ListSolutionVersions</code></td></tr>
+        <tr><td><code>ListSolutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartRecommender</code></td></tr>
+        <tr><td><code>StopRecommender</code></td></tr>
+        <tr><td><code>StopSolutionVersionCreation</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateCampaign</code></td></tr>
+        <tr><td><code>UpdateDataset</code></td></tr>
+        <tr><td><code>UpdateMetricAttribution</code></td></tr>
+        <tr><td><code>UpdateRecommender</code></td></tr>
+        <tr><td><code>UpdateSolution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize</code>: <code>docker compose -f examples/aws/personalize/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="personalizeevents" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize Events</h2>
+        <p>SigV4 signed with service <code>personalize</code> (shared with Personalize; claimed by the <code>/events</code>, <code>/items</code>, <code>/users</code>, <code>/actions</code> and <code>/action-interactions</code> paths). PutEvents and PutActionInteractions resolve the tracking ID to an event tracker created through Personalize and append to its dataset group's Interactions or Action interactions dataset (event types Taken, Not taken and Viewed for actions). PutItems, PutUsers and PutActions upsert records in a dataset of the matching type; camelCase properties must map to schema fields. Up to 10 records per call (model limits), 20,000 records and 20,000 interactions kept per dataset. Records feed Personalize Runtime recommendations and dataset exports. All 5 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>PutActionInteractions</code></td></tr>
+        <tr><td><code>PutActions</code></td></tr>
+        <tr><td><code>PutEvents</code></td></tr>
+        <tr><td><code>PutItems</code></td></tr>
+        <tr><td><code>PutUsers</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize-events</code>: <code>docker compose -f examples/aws/personalize-events/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="personalizeruntime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize Runtime</h2>
+        <p>SigV4 signed with service <code>personalize</code> (claimed by the <code>/recommendations</code>, <code>/personalize-ranking</code> and <code>/action-recommendations</code> paths). Requests resolve against ACTIVE campaigns and recommenders created through Personalize; the recipe type decides which API applies. Scores are deterministic (a hash of the model, user and item blended with interaction popularity, or co-occurrence for related-items recipes) and normalized to sum to 1. Filters and filter values, promotions, and metadata columns (with <code>enableMetadataWithRecommendations</code>) are applied from the group's Items dataset and interactions. All 3 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetActionRecommendations</code></td></tr>
+        <tr><td><code>GetPersonalizedRanking</code></td></tr>
+        <tr><td><code>GetRecommendations</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize-runtime</code>: <code>docker compose -f examples/aws/personalize-runtime/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
