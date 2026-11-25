@@ -224,6 +224,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "geomaps",
+    name: "Location Maps V2",
+    category: "integration",
+    summary: "Emulate MapLibre style descriptors, vector, satellite and DEM tiles, sprites, glyphs and static map images as small, valid placeholder payloads with model-checked parameters.",
+    docsHref: "../../../index.html#geomaps",
+    exampleHref: "../../../../examples/aws/geo-maps/docker-compose.yml"
+  },
+  {
+    id: "geoplaces",
+    name: "Location Places V2",
+    category: "integration",
+    summary: "Emulate geocoding, reverse geocoding, text and nearby search, autocomplete and suggestions over a deterministic built-in gazetteer of cities, landmarks and addresses.",
+    docsHref: "../../../index.html#geoplaces",
+    exampleHref: "../../../../examples/aws/geo-places/docker-compose.yml"
+  },
+  {
+    id: "georoutes",
+    name: "Location Routes V2",
+    category: "integration",
+    summary: "Emulate routes, route matrices, isolines, waypoint optimization and road snapping with deterministic great-circle geometry and flexible polylines.",
+    docsHref: "../../../index.html#georoutes",
+    exampleHref: "../../../../examples/aws/geo-routes/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",

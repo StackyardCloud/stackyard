@@ -156,6 +156,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
         "ops_file": REPO_ROOT / "internal/server/savingsplans_ops.go",
     },
     "location": {"cli": "location", "ops_file": REPO_ROOT / "internal/server/location_ops.go"},
+    "geomaps": {"cli": "geo-maps", "ops_file": REPO_ROOT / "internal/server/geomaps_ops.go"},
+    "geoplaces": {"cli": "geo-places", "ops_file": REPO_ROOT / "internal/server/geoplaces_ops.go"},
+    "georoutes": {"cli": "geo-routes", "ops_file": REPO_ROOT / "internal/server/georoutes_ops.go"},
     "kinesisvideostreams": {
         "cli": "kinesisvideo",
         "ops_file": REPO_ROOT / "internal/server/kinesisvideostreams_ops.go",
@@ -961,6 +964,12 @@ SERVICE_ALIASES = {
     "awskinesisdatastreams": "kinesis",
     "aws kinesis data streams": "kinesis",
     "location": "location",
+    "geomaps": "geomaps",
+    "geo-maps": "geomaps",
+    "geoplaces": "geoplaces",
+    "geo-places": "geoplaces",
+    "georoutes": "georoutes",
+    "geo-routes": "georoutes",
     "locationservice": "location",
     "location service": "location",
     "amazonlocation": "location",
@@ -3298,6 +3307,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "geomaps": {},
+    "geoplaces": {},
+    "georoutes": {},
     "servicecatalog": {},
     "migrationhub": {},
     "personalize": {},
@@ -13586,6 +13598,10 @@ def generate_cli_input_payload(
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
         return {"OutputFormat": "mp3", "Text": "hello", "VoiceId": "Joanna"}, None
+    if endpoint.service == "geomaps":
+        # Every geo-maps command streams a blob to an outfile, so the CLI needs
+        # its members as flags even to print a skeleton.
+        return dict(GEOMAPS_PAYLOADS[endpoint.operation]), None
     if (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS:
         # These blob-output commands demand their required members as flags (plus
         # an outfile) even to print a skeleton; hydration fills in real values.
@@ -38808,6 +38824,38 @@ def bcmdataexports_hydrate_payload(
     return payload
 
 
+GEOMAPS_PAYLOADS: dict[str, dict] = {
+    "GetGlyphs": {"FontStack": "Amazon Ember Regular", "FontUnicodeRange": "0-255.pbf"},
+    "GetSprites": {"FileName": "sprites.png", "Style": "Standard", "ColorScheme": "Light", "Variant": "Default"},
+    "GetStaticMap": {"FileName": "map", "Width": 256, "Height": 256, "Center": "2.2945,48.8583", "Zoom": 10},
+    "GetStyleDescriptor": {"Style": "Standard", "ColorScheme": "Light"},
+    "GetTile": {"Tileset": "vector.basemap", "Z": "1", "X": "0", "Y": "0"},
+}
+
+GEOPLACES_PAYLOADS: dict[str, dict] = {
+    "Autocomplete": {"QueryText": "Seat", "MaxResults": 5},
+    "Geocode": {"QueryText": "Space Needle", "AdditionalFeatures": ["TimeZone"]},
+    "GetPlace": {"PlaceId": "stackyard-place-space-needle"},
+    "ReverseGeocode": {"QueryPosition": [-122.3493, 47.6205]},
+    "SearchNearby": {"QueryPosition": [-122.34, 47.61], "QueryRadius": 5000},
+    "SearchText": {"QueryText": "tower", "BiasPosition": [2.35, 48.85]},
+    "Suggest": {"QueryText": "museum", "BiasPosition": [2.35, 48.85]},
+}
+
+GEOROUTES_PAYLOADS: dict[str, dict] = {
+    "CalculateIsolines": {"Origin": [-122.33, 47.6], "Thresholds": {"Time": [600]}},
+    "CalculateRouteMatrix": {
+        "Origins": [{"Position": [-122.33, 47.6]}], "Destinations": [{"Position": [-122.35, 47.62]}],
+        "RoutingBoundary": {"Unbounded": True},
+    },
+    "CalculateRoutes": {"Origin": [-122.33, 47.6], "Destination": [-122.35, 47.62]},
+    "OptimizeWaypoints": {"Origin": [-122.33, 47.6], "Waypoints": [{"Id": "stop-a", "Position": [-122.35, 47.62]}]},
+    "SnapToRoads": {"TracePoints": [{"Position": [-122.33, 47.6]}, {"Position": [-122.331, 47.601]}]},
+}
+
+GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -38819,6 +38867,10 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service in GEO_STANDALONE_PAYLOADS:
+        # Stateless APIs: each operation gets a fixed request that hits the
+        # built-in gazetteer or geometry.
+        return dict(GEO_STANDALONE_PAYLOADS[endpoint.service].get(endpoint.operation, payload))
     if endpoint.service == "personalize":
         return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeevents":
@@ -61318,7 +61370,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
