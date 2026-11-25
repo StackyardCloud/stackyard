@@ -51,6 +51,7 @@ type EmailTemplate struct {
 
 type ConfigurationSet struct {
 	Name              string
+	ArchiveArn        string
 	EventDestinations map[string]map[string]any
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -476,6 +477,20 @@ func (s *Service) DeleteConfigurationSet(name string) bool {
 	}
 	delete(s.configSets, name)
 	return true
+}
+
+// PutConfigurationSetArchivingOptions sets (or, with "", clears) the Mail
+// Manager archive that messages sent through the configuration set go to.
+func (s *Service) PutConfigurationSetArchivingOptions(name, archiveArn string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cfg, ok := s.configSets[strings.TrimSpace(name)]
+	if !ok {
+		return ErrNotFound
+	}
+	cfg.ArchiveArn = strings.TrimSpace(archiveArn)
+	cfg.UpdatedAt = time.Now().UTC()
+	return nil
 }
 
 func (s *Service) UpsertConfigurationSetEventDestination(configSet, destination string, payload map[string]any) error {
