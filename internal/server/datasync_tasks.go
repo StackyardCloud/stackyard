@@ -41,6 +41,7 @@ type dsyExec struct {
 	options  map[string]any
 	includes []any
 	excludes []any
+	caller   s3Caller       // who started the execution; authorizes its S3 access
 	extra    map[string]any // ManifestConfig, TaskReportConfig, TaskMode
 	start    time.Time
 	launched time.Time
@@ -325,6 +326,7 @@ func dsyStartTaskExecution(s *Server, in map[string]any) (map[string]any, *dsyEr
 		return nil, oerr
 	}
 	e := &dsyExec{task: t.arn, options: opts, counts: map[string]float64{}, tags: map[string]string{}, start: time.Now().UTC(), extra: map[string]any{}}
+	e.caller = s3CallerIn(in)
 	e.includes, _ = t.attrs["Includes"].([]any)
 	e.excludes, _ = t.attrs["Excludes"].([]any)
 	if v, ok := in["Includes"].([]any); ok {

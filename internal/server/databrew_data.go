@@ -48,7 +48,9 @@ func (t *dbwTable) grow(n int) error {
 
 // dbwLoadTable reads up to limit rows (the last ones with fromEnd) of an S3
 // dataset in CSV or JSON. Other sources and formats aren't executed.
-func (s *Server) dbwLoadTable(dataset map[string]any, limit int, fromEnd bool) (*dbwTable, error) {
+const dbwServicePrincipal = "databrew.amazonaws.com"
+
+func (s *Server) dbwLoadTable(c s3Caller, dataset map[string]any, limit int, fromEnd bool) (*dbwTable, error) {
 	if dbwStr(dataset, "Source") != "S3" {
 		return nil, fmt.Errorf("only S3 datasets are read by Stackyard (dataset %s is %s)", dbwStr(dataset, "Name"), dbwStr(dataset, "Source"))
 	}
@@ -58,6 +60,9 @@ func (s *Server) dbwLoadTable(dataset map[string]any, limit int, fromEnd bool) (
 	if obj, err := s.s3.GetObject(bucket, key); err == nil && key != "" && !strings.HasSuffix(key, "/") {
 		keys = []string{obj.Key}
 	} else {
+		if !s.authorizeServiceS3As(c, dbwServicePrincipal, bucket, "", "s3:ListBucket") {
+			return nil, fmt.Errorf("access denied listing s3://%s/%s", bucket, key)
+		}
 		objs, err := s.s3.ListObjects(bucket, key)
 		if err != nil {
 			return nil, fmt.Errorf("s3://%s/%s can't be listed", bucket, key)
@@ -85,6 +90,9 @@ func (s *Server) dbwLoadTable(dataset map[string]any, limit int, fromEnd bool) (
 	t := &dbwTable{}
 	total := 0
 	for _, k := range keys {
+		if !s.authorizeServiceS3As(c, dbwServicePrincipal, bucket, k, "s3:GetObject") {
+			return nil, fmt.Errorf("access denied reading s3://%s/%s", bucket, k)
+		}
 		obj, err := s.s3.GetObject(bucket, k)
 		if err != nil {
 			return nil, fmt.Errorf("s3://%s/%s can't be read", bucket, k)
@@ -472,7 +480,7 @@ func (t *dbwTable) profile(dataset string) map[string]any {
 // dbwRunJob does a run's work: load the dataset, apply the recipe (RECIPE) or
 // profile it (PROFILE), and write the result to S3. A returned error fails the
 // run with that message.
-func (s *Server) dbwRunJob(spec *dbwJobSpec, runID string, started time.Time) error {
+func (s *Server) dbwRunJob(c s3Caller, spec *dbwJobSpec, runID string, started time.Time) error {
 	job := spec.job
 	limit := dbwMaxRows
 	if dbwStr(job, "Type") == "PROFILE" {
@@ -485,7 +493,7 @@ func (s *Server) dbwRunJob(spec *dbwJobSpec, runID string, started time.Time) er
 	} else if dbwStr(js, "Mode") == "FULL_DATASET" {
 		limit = dbwMaxRows
 	}
-	table, err := s.dbwLoadTable(spec.dataset, limit, false)
+	table, err := s.dbwLoadTable(c, spec.dataset, limit, false)
 	if err != nil {
 		return err
 	}
@@ -494,6 +502,9 @@ func (s *Server) dbwRunJob(spec *dbwJobSpec, runID string, started time.Time) er
 		loc := dbwMap(dbwList(job, "Outputs")[0], "Location")
 		body, _ := json.MarshalIndent(table.profile(dbwStr(job, "DatasetName")), "", "  ")
 		key := dbwPrefix(dbwStr(loc, "Key")) + dbwStr(job, "DatasetName") + "_" + runID + ".json"
+		if !s.authorizeServiceS3As(c, dbwServicePrincipal, dbwStr(loc, "Bucket"), key, "s3:PutObject") {
+			return fmt.Errorf("access denied writing s3://%s/%s", dbwStr(loc, "Bucket"), key)
+		}
 		_, perr := s.s3.PutObject(dbwStr(loc, "Bucket"), key, "application/json", body, nil, "", "")
 		return perr
 	}
@@ -530,6 +541,9 @@ func (s *Server) dbwRunJob(spec *dbwJobSpec, runID string, started time.Time) er
 			return fmt.Errorf("output format %s isn't written by Stackyard (use CSV or JSON)", o.format)
 		}
 		key := dbwPrefix(dbwStr(loc, "Key")) + name + "_" + stamp + "_part00000." + ext
+		if !s.authorizeServiceS3As(c, dbwServicePrincipal, dbwStr(loc, "Bucket"), key, "s3:PutObject") {
+			return fmt.Errorf("access denied writing s3://%s/%s", dbwStr(loc, "Bucket"), key)
+		}
 		if _, perr := s.s3.PutObject(dbwStr(loc, "Bucket"), key, ctype, body, nil, "", ""); perr != nil {
 			return perr
 		}

@@ -105,18 +105,29 @@ func (st *textractStore) addJob(job *txJob, result *txResult, token, hash string
 }
 
 // readJob advances a job one step per read: IN_PROGRESS, then SUCCEEDED.
-func (st *textractStore) readJob(api, id string) (*txJob, string, *txErr) {
+func (st *textractStore) readJob(api, id string) (*txJob, string, string, *txErr) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
 	job := st.jobs[id]
 	if job == nil || job.api != api {
-		return nil, "", txError("InvalidJobIdException", "Request has invalid Job Id")
+		return nil, "", "", txError("InvalidJobIdException", "Request has invalid Job Id")
 	}
 	job.reads++
 	if job.reads == 1 {
-		return job, "IN_PROGRESS", nil
+		return job, "IN_PROGRESS", "", nil
 	}
-	return job, "SUCCEEDED", nil
+	if job.failure != "" {
+		return job, "FAILED", job.failure, nil
+	}
+	return job, "SUCCEEDED", "", nil
+}
+
+// failJob records why job failed and returns the reason.
+func (st *textractStore) failJob(job *txJob, reason string) string {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	job.failure = reason
+	return reason
 }
 
 // markNotified reports whether the caller should run job's completion side
@@ -336,7 +347,7 @@ func (st *textractStore) listAdapters(in map[string]any) (map[string]any, *txErr
 func (s *Server) txCreateAdapterVersion(in map[string]any) (map[string]any, *txErr) {
 	dataset := txMap(in, "DatasetConfig")
 	if manifest := txMap(dataset, "ManifestS3Object"); manifest != nil {
-		if _, err := s.txS3Bytes(manifest, txAsyncMaxBytes); err != nil {
+		if _, err := s.txS3Bytes(s3CallerIn(in), manifest, txAsyncMaxBytes); err != nil {
 			return nil, err
 		}
 	} else {

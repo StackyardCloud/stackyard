@@ -139,6 +139,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "workspacesweb": {"cli": "workspaces-web", "ops_file": REPO_ROOT / "internal/server/workspacesweb_ops.go"},
     "sagemaker": {"cli": "sagemaker", "ops_file": REPO_ROOT / "internal/server/sagemaker_ops.go"},
     "sagemakerruntime": {"cli": "sagemaker-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerruntime_ops.go"},
+    "sagemakerfeaturestoreruntime": {"cli": "sagemaker-featurestore-runtime", "ops_file": REPO_ROOT / "internal/server/sagemakerfeaturestoreruntime_ops.go"},
+    "sagemakermetrics": {"cli": "sagemaker-metrics", "ops_file": REPO_ROOT / "internal/server/sagemakermetrics_ops.go"},
+    "sagemakeredge": {"cli": "sagemaker-edge", "ops_file": REPO_ROOT / "internal/server/sagemakeredge_ops.go"},
     "simspaceweaver": {
         "cli": "simspaceweaver",
         "ops_file": REPO_ROOT / "internal/server/simspaceweaver_ops.go",
@@ -578,13 +581,28 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
+    "lookoutequipment": {"cli": "lookoutequipment", "ops_file": REPO_ROOT / "internal/server/lookoutequipment_ops.go"},
+    "machinelearning": {"cli": "machinelearning", "ops_file": REPO_ROOT / "internal/server/machinelearning_ops.go"},
+    "sagemakergeospatial": {"cli": "sagemaker-geospatial", "ops_file": REPO_ROOT / "internal/server/sagemakergeospatial_ops.go"},
+    "outposts": {"cli": "outposts", "ops_file": REPO_ROOT / "internal/server/outposts_ops.go"},
+    "snowdevicemanagement": {"cli": "snow-device-management", "ops_file": REPO_ROOT / "internal/server/snowdevicemanagement_ops.go"},
+    "backupgateway": {"cli": "backup-gateway", "ops_file": REPO_ROOT / "internal/server/backupgateway_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
     "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
+    "connectcases": {"cli": "connectcases", "ops_file": REPO_ROOT / "internal/server/connectcases_ops.go"},
+    "connectparticipant": {"cli": "connectparticipant", "ops_file": REPO_ROOT / "internal/server/connectparticipant_ops.go"},
+    "connectcontactlens": {"cli": "connect-contact-lens", "ops_file": REPO_ROOT / "internal/server/connectcontactlens_ops.go"},
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
+    "applicationcostprofiler": {"cli": "applicationcostprofiler", "ops_file": REPO_ROOT / "internal/server/applicationcostprofiler_ops.go"},
+    "bcmdashboards": {"cli": "bcm-dashboards", "ops_file": REPO_ROOT / "internal/server/bcmdashboards_ops.go"},
+    "bcmpricingcalculator": {"cli": "bcm-pricing-calculator", "ops_file": REPO_ROOT / "internal/server/bcmpricingcalculator_ops.go"},
+    "account": {"cli": "account", "ops_file": REPO_ROOT / "internal/server/account_ops.go"},
+    "freetier": {"cli": "freetier", "ops_file": REPO_ROOT / "internal/server/freetier_ops.go"},
+    "taxsettings": {"cli": "taxsettings", "ops_file": REPO_ROOT / "internal/server/taxsettings_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
@@ -596,6 +614,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "mturk": {"cli": "mturk", "ops_file": REPO_ROOT / "internal/server/mturk_ops.go"},
     "workdocs": {"cli": "workdocs", "ops_file": REPO_ROOT / "internal/server/workdocs_ops.go"},
     "repostspace": {"cli": "repostspace", "ops_file": REPO_ROOT / "internal/server/repostspace_ops.go"},
+    "chimesdkmeetings": {"cli": "chime-sdk-meetings", "ops_file": REPO_ROOT / "internal/server/chimesdkmeetings_ops.go"},
+    "chimesdkmessaging": {"cli": "chime-sdk-messaging", "ops_file": REPO_ROOT / "internal/server/chimesdkmessaging_ops.go"},
+    "chimesdkmediapipelines": {"cli": "chime-sdk-media-pipelines", "ops_file": REPO_ROOT / "internal/server/chimesdkmediapipelines_ops.go"},
     "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
     "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
     "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
@@ -1128,6 +1149,15 @@ SERVICE_ALIASES = {
     "runtime.sagemaker": "sagemakerruntime",
     "amazonsagemakerruntime": "sagemakerruntime",
     "amazon sagemaker runtime": "sagemakerruntime",
+    "sagemakerfeaturestoreruntime": "sagemakerfeaturestoreruntime",
+    "sagemaker-featurestore-runtime": "sagemakerfeaturestoreruntime",
+    "featurestore-runtime.sagemaker": "sagemakerfeaturestoreruntime",
+    "sagemakermetrics": "sagemakermetrics",
+    "sagemaker-metrics": "sagemakermetrics",
+    "metrics.sagemaker": "sagemakermetrics",
+    "sagemakeredge": "sagemakeredge",
+    "sagemaker-edge": "sagemakeredge",
+    "edge.sagemaker": "sagemakeredge",
     "simspaceweaver": "simspaceweaver",
     "simspace-weaver": "simspaceweaver",
     "simspace weaver": "simspaceweaver",
@@ -2328,6 +2358,15 @@ SERVICE_ALIASES = {
     "repostspace": "repostspace",
     "repost-space": "repostspace",
     "repostprivate": "repostspace",
+    "chimesdkmeetings": "chimesdkmeetings",
+    "chime-sdk-meetings": "chimesdkmeetings",
+    "amazonchimesdkmeetings": "chimesdkmeetings",
+    "chimesdkmessaging": "chimesdkmessaging",
+    "chime-sdk-messaging": "chimesdkmessaging",
+    "amazonchimesdkmessaging": "chimesdkmessaging",
+    "chimesdkmediapipelines": "chimesdkmediapipelines",
+    "chime-sdk-media-pipelines": "chimesdkmediapipelines",
+    "amazonchimesdkmediapipelines": "chimesdkmediapipelines",
     "iotsecuretunneling": "iotsecuretunneling",
     "iot-secure-tunneling": "iotsecuretunneling",
     "iotdeviceadvisor": "iotdeviceadvisor",
@@ -2342,6 +2381,20 @@ SERVICE_ALIASES = {
     "amazonforecastquery": "forecastquery",
     "frauddetector": "frauddetector",
     "amazonfrauddetector": "frauddetector",
+    "lookoutequipment": "lookoutequipment",
+    "amazonlookoutforequipment": "lookoutequipment",
+    "machinelearning": "machinelearning",
+    "machine learning": "machinelearning",
+    "amazonmachinelearning": "machinelearning",
+    "sagemakergeospatial": "sagemakergeospatial",
+    "sagemaker-geospatial": "sagemakergeospatial",
+    "sagemaker geospatial": "sagemakergeospatial",
+    "outposts": "outposts",
+    "awsoutposts": "outposts",
+    "snowdevicemanagement": "snowdevicemanagement",
+    "snow-device-management": "snowdevicemanagement",
+    "backupgateway": "backupgateway",
+    "backup-gateway": "backupgateway",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -2353,6 +2406,16 @@ SERVICE_ALIASES = {
     "kendraranking": "kendraranking",
     "kendra-ranking": "kendraranking",
     "amazonkendraintelligentranking": "kendraranking",
+    "connectcases": "connectcases",
+    "connect-cases": "connectcases",
+    "amazonconnectcases": "connectcases",
+    "connectparticipant": "connectparticipant",
+    "connect-participant": "connectparticipant",
+    "amazonconnectparticipantservice": "connectparticipant",
+    "connectcontactlens": "connectcontactlens",
+    "connect-contact-lens": "connectcontactlens",
+    "contactlens": "connectcontactlens",
+    "amazonconnectcontactlens": "connectcontactlens",
     "budgets": "budgets",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
@@ -2360,6 +2423,19 @@ SERVICE_ALIASES = {
     "bcmdataexports": "bcmdataexports",
     "bcm-data-exports": "bcmdataexports",
     "dataexports": "bcmdataexports",
+    "applicationcostprofiler": "applicationcostprofiler",
+    "application-cost-profiler": "applicationcostprofiler",
+    "bcmdashboards": "bcmdashboards",
+    "bcm-dashboards": "bcmdashboards",
+    "bcmpricingcalculator": "bcmpricingcalculator",
+    "bcm-pricing-calculator": "bcmpricingcalculator",
+    "account": "account",
+    "awsaccount": "account",
+    "accountmanagement": "account",
+    "freetier": "freetier",
+    "awsfreetier": "freetier",
+    "taxsettings": "taxsettings",
+    "tax-settings": "taxsettings",
     "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3343,13 +3419,28 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "forecast": {},
     "frauddetector": {},
+    "lookoutequipment": {},
+    "machinelearning": {},
+    "sagemakergeospatial": {},
+    "outposts": {},
+    "snowdevicemanagement": {},
+    "backupgateway": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
     "kendraranking": {},
+    "connectcases": {},
+    "connectparticipant": {},
+    "connectcontactlens": {},
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "applicationcostprofiler": {},
+    "bcmdashboards": {},
+    "bcmpricingcalculator": {},
+    "account": {},
+    "freetier": {},
+    "taxsettings": {},
     "geomaps": {},
     "geoplaces": {},
     "georoutes": {},
@@ -3364,6 +3455,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "mturk": {},
     "workdocs": {},
     "repostspace": {},
+    "chimesdkmeetings": {},
+    "chimesdkmessaging": {},
+    "chimesdkmediapipelines": {},
     "iotsecuretunneling": {},
     "iotdeviceadvisor": {},
     "iotthingsgraph": {},
@@ -3404,6 +3498,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "transcribestreaming": {},
     "sagemaker": {},
     "sagemakerruntime": {},
+    "sagemakerfeaturestoreruntime": {},
+    "sagemakermetrics": {},
+    "sagemakeredge": {},
     "simspaceweaver": {},
     "supplychain": {},
     "tnb": {},
@@ -7631,7 +7728,7 @@ def invoke_raw_endpoint(
         signing_service = "chatbot"
     elif endpoint.service == "iotgreengrass":
         signing_service = "greengrass"
-    elif endpoint.service == "sagemakerruntime":
+    elif endpoint.service in {"sagemakerruntime", "sagemakerfeaturestoreruntime", "sagemakermetrics", "sagemakeredge"}:
         signing_service = "sagemaker"
     elif endpoint.service == "augmentedai":
         signing_service = "sagemaker"
@@ -13646,6 +13743,10 @@ def generate_cli_input_payload(
         # get-code-binding-source streams a zip, so the CLI needs its members as
         # flags plus an outfile even to print a skeleton.
         return {"RegistryName": "", "SchemaName": "", "Language": "Python36"}, None
+    if (endpoint.service, endpoint.operation) == ("sagemakergeospatial", "GetTile"):
+        # get-tile streams a PNG to an outfile, so the CLI needs its members as
+        # flags even to print a skeleton; hydration points it at a real job.
+        return {"Arn": "", "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0}, None
     if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
@@ -14055,6 +14156,9 @@ def prune_payload_to_required(endpoint: Endpoint, payload):
 
 def output_schema_allows_empty_stdout(endpoint: Endpoint) -> bool:
     allowed = {
+        # Errors (min 1 item) is omitted when every metric is stored, so a
+        # successful put prints nothing.
+        ("sagemakermetrics", "BatchPutMetrics"),
         ("autoscalingplans", "DeleteScalingPlan"),
         ("autoscalingplans", "UpdateScalingPlan"),
         ("batch", "CancelJob"),
@@ -38541,6 +38645,357 @@ def frauddetector_hydrate_payload(
     return payload
 
 
+AML_BUCKET = "stackyard-ml-cov"
+AML_ROLE = "arn:aws:iam::123456789012:role/stackyard-ml"
+AML_SCHEMA = json.dumps({"version": "1.0", "targetAttributeName": "y", "dataFormat": "CSV", "dataFileContainsHeader": True,
+                         "attributes": [{"attributeName": "x", "attributeType": "NUMERIC"}, {"attributeName": "y", "attributeType": "BINARY"}]})
+AML_KINDS = {"DataSource": "DataSourceId", "MLModel": "MLModelId", "Evaluation": "EvaluationId", "BatchPrediction": "BatchPredictionId"}
+
+
+def aml_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="machinelearning")
+
+
+class AmlFixture:
+    """Amazon ML resources created through the CLI; each settles on read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return aml_call(*self.args, op, args)
+
+    def make(self, kind: str, wait: bool = True, **refs: str) -> str:
+        new = fc_unique("cov")
+        args = {AML_KINDS[kind]: new}
+        if kind == "DataSource":
+            self.call("CreateDataSourceFromS3", {**args, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}})
+        elif kind == "MLModel":
+            self.call("CreateMLModel", {**args, "MLModelType": "BINARY", "TrainingDataSourceId": refs["ds"]})
+        elif kind == "Evaluation":
+            self.call("CreateEvaluation", {**args, "MLModelId": refs["model"], "EvaluationDataSourceId": refs["ds"]})
+        else:
+            self.call("CreateBatchPrediction", {**args, "MLModelId": refs["model"], "BatchPredictionDataSourceId": refs["ds"],
+                                                "OutputUri": f"s3://{AML_BUCKET}/out/"})
+        for _ in range(3 if wait else 0):
+            if self.call("Get" + kind, args).get("Status") == "COMPLETED":
+                break
+        return new
+
+
+def aml_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED data source, model (with a READY realtime endpoint),
+    evaluation and batch prediction."""
+    state = RUNTIME_STATE.setdefault("machinelearning", {})
+    if state.get("model"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, AML_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, AML_BUCKET, "train.csv", b"x,y\n1,0\n2,1\n3,1\n")
+    fx = AmlFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["ds"] = fx.make("DataSource")
+    state["model"] = fx.make("MLModel", ds=state["ds"])
+    fx.call("CreateRealtimeEndpoint", {"MLModelId": state["model"]})
+    state["evaluation"] = fx.make("Evaluation", ds=state["ds"], model=state["model"])
+    state["batch"] = fx.make("BatchPrediction", ds=state["ds"], model=state["model"])
+    return state
+
+
+def machinelearning_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates get fresh IDs over the fixture; deletes get resources of their own."""
+    op = endpoint.operation
+    fx = aml_fixture(aws_bin, endpoint_url, region, env)
+    make = fx["fx"].make
+    new = fc_unique("cov")
+    db = {"Username": "stackyard", "Password": "stackyard-pw"}
+    simple = {
+        "CreateDataSourceFromS3": lambda: {"DataSourceId": new, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}},
+        "CreateDataSourceFromRDS": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "RDSData": {
+            "DatabaseInformation": {"InstanceIdentifier": "stackyard-db", "DatabaseName": "ml"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/", "ResourceRole": "DataPipelineDefaultResourceRole",
+            "ServiceRole": "DataPipelineDefaultRole", "SubnetId": "subnet-0123456789", "SecurityGroupIds": ["sg-0123456789"]}},
+        "CreateDataSourceFromRedshift": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "DataSpec": {
+            "DatabaseInformation": {"DatabaseName": "ml", "ClusterIdentifier": "stackyard"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/"}},
+        "CreateMLModel": lambda: {"MLModelId": new, "MLModelType": "REGRESSION", "TrainingDataSourceId": fx["ds"]},
+        "CreateEvaluation": lambda: {"EvaluationId": new, "MLModelId": fx["model"], "EvaluationDataSourceId": fx["ds"]},
+        "CreateBatchPrediction": lambda: {"BatchPredictionId": new, "MLModelId": fx["model"], "BatchPredictionDataSourceId": fx["ds"],
+                                          "OutputUri": f"s3://{AML_BUCKET}/out/"},
+        "CreateRealtimeEndpoint": lambda: {"MLModelId": fx["model"]},
+        "Predict": lambda: {"MLModelId": fx["model"], "Record": {"x": "2"}, "PredictEndpoint": endpoint_url},
+        "UpdateMLModel": lambda: {"MLModelId": fx["model"], "MLModelName": "coverage", "ScoreThreshold": 0.6},
+        "UpdateDataSource": lambda: {"DataSourceId": fx["ds"], "DataSourceName": "coverage"},
+        "UpdateEvaluation": lambda: {"EvaluationId": fx["evaluation"], "EvaluationName": "coverage"},
+        "UpdateBatchPrediction": lambda: {"BatchPredictionId": fx["batch"], "BatchPredictionName": "coverage"},
+        "AddTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "Tags": [{"Key": "env", "Value": "cov"}]},
+        "DeleteTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "TagKeys": ["env"]},
+        "DescribeTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel"},
+        "GetDataSource": lambda: {"DataSourceId": fx["ds"], "Verbose": True},
+        "GetMLModel": lambda: {"MLModelId": fx["model"], "Verbose": True},
+        "GetEvaluation": lambda: {"EvaluationId": fx["evaluation"]},
+        "GetBatchPrediction": lambda: {"BatchPredictionId": fx["batch"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteRealtimeEndpoint":
+        model = make("MLModel", ds=fx["ds"])
+        fx["fx"].call("CreateRealtimeEndpoint", {"MLModelId": model})
+        return {"MLModelId": model}
+    if op == "DeleteDataSource":
+        return {"DataSourceId": make("DataSource")}
+    if op == "DeleteMLModel":
+        return {"MLModelId": make("MLModel", wait=False, ds=fx["ds"])}
+    if op in ("DeleteEvaluation", "DeleteBatchPrediction"):
+        kind = op[len("Delete"):]
+        return {AML_KINDS[kind]: make(kind, wait=False, ds=fx["ds"], model=fx["model"])}
+    if op.startswith("Describe"):
+        return {}
+    return payload
+
+
+LKE_BUCKET = "stackyard-lookout-cov"
+LKE_ROLE = "arn:aws:iam::123456789012:role/stackyard-lookout"
+LKE_CSV = b"Timestamp,temp,pressure\n2024-01-01T00:00:00Z,1.5,3\n2024-01-01T00:05:00Z,1.7,4\n2024-01-01T00:10:00Z,1.6,4\n"
+
+
+def lke_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="lookoutequipment")
+
+
+class LkeFixture:
+    """Lookout for Equipment resources created through the CLI; async work
+    settles on the second read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return lke_call(*self.args, op, {**args, "ClientToken": fc_unique("tok")} if op.startswith(("Create", "Start", "Import", "Put")) and op not in ("StartInferenceScheduler", "StartRetrainingScheduler") else args)
+
+    def wait(self, op: str, args: dict, key: str, want: str) -> None:
+        for _ in range(3):
+            if self.call(op, args).get(key) == want:
+                return
+
+    def dataset(self) -> tuple[str, str, str]:
+        name = fc_unique("ds")
+        arn = str(self.call("CreateDataset", {"DatasetName": name}).get("DatasetArn") or "")
+        job = str(self.call("StartDataIngestionJob", {"DatasetName": name, "RoleArn": LKE_ROLE,
+                                                      "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}}).get("JobId") or "")
+        self.wait("DescribeDataIngestionJob", {"JobId": job}, "Status", "SUCCESS")
+        return name, arn, job
+
+    def model(self, dataset: str) -> str:
+        name = fc_unique("model")
+        self.call("CreateModel", {"ModelName": name, "DatasetName": dataset, "RoleArn": LKE_ROLE})
+        self.wait("DescribeModel", {"ModelName": name}, "Status", "SUCCESS")
+        return name
+
+    def retrainer(self, model: str, stopped: bool) -> str:
+        self.call("CreateRetrainingScheduler", {"ModelName": model, "RetrainingFrequency": "P30D", "LookbackWindow": "P360D"})
+        self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopRetrainingScheduler", {"ModelName": model})
+            self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "STOPPED")
+        return model
+
+    def scheduler(self, model: str, stopped: bool) -> str:
+        name = fc_unique("sched")
+        self.call("CreateInferenceScheduler", {"ModelName": model, "InferenceSchedulerName": name, "DataUploadFrequency": "PT5M",
+                                               "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                               "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                               "RoleArn": LKE_ROLE})
+        self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopInferenceScheduler", {"InferenceSchedulerName": name})
+            self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "STOPPED")
+        return name
+
+
+def lke_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ingested dataset, a label group with a label, a trained model with a
+    resource policy and a retraining scheduler, and a RUNNING inference scheduler."""
+    state = RUNTIME_STATE.setdefault("lookoutequipment", {})
+    if state.get("scheduler"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, LKE_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, LKE_BUCKET, "pump/pump1/sensors.csv", LKE_CSV)
+    fx = LkeFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["dataset"], state["dataset_arn"], state["job"] = fx.dataset()
+    state["group"] = fc_unique("labels")
+    fx.call("CreateLabelGroup", {"LabelGroupName": state["group"], "FaultCodes": ["F1"]})
+    state["label"] = str(fx.call("CreateLabel", {"LabelGroupName": state["group"], "StartTime": 1704067200, "EndTime": 1704070800,
+                                                 "Rating": "ANOMALY", "FaultCode": "F1"}).get("LabelId") or "")
+    state["model"] = fx.model(state["dataset"])
+    model = fx.call("DescribeModel", {"ModelName": state["model"]})
+    state["model_arn"], state["version_arn"] = model.get("ModelArn", ""), model.get("ActiveModelVersionArn", "")
+    fx.call("PutResourcePolicy", {"ResourceArn": state["model_arn"], "ResourcePolicy": json.dumps({"Version": "2012-10-17", "Statement": []})})
+    fx.retrainer(state["model"], stopped=False)
+    state["scheduler"] = fx.scheduler(state["model"], stopped=False)
+    return state
+
+
+def lookoutequipment_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Reads use the fixture; creates get fresh names; deletes, starts and
+    stops get resources of their own."""
+    op = endpoint.operation
+    fx = lke_fixture(aws_bin, endpoint_url, region, env)
+    f = fx["fx"]
+    new = fc_unique("cov")
+    token = {"ClientToken": fc_unique("tok")}
+    policy = json.dumps({"Version": "2012-10-17", "Statement": []})
+    simple = {
+        "CreateDataset": lambda: {"DatasetName": new, **token},
+        "DescribeDataset": lambda: {"DatasetName": fx["dataset"]},
+        "ImportDataset": lambda: {"SourceDatasetArn": fx["dataset_arn"], "DatasetName": new, **token},
+        "StartDataIngestionJob": lambda: {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new), "RoleArn": LKE_ROLE,
+                                          "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}, **token},
+        "DescribeDataIngestionJob": lambda: {"JobId": fx["job"]},
+        "ListSensorStatistics": lambda: {"DatasetName": fx["dataset"]},
+        "CreateLabelGroup": lambda: {"LabelGroupName": new, "FaultCodes": ["F1"], **token},
+        "DescribeLabelGroup": lambda: {"LabelGroupName": fx["group"]},
+        "UpdateLabelGroup": lambda: {"LabelGroupName": fx["group"], "FaultCodes": ["F1", "F2"]},
+        "CreateLabel": lambda: {"LabelGroupName": fx["group"], "StartTime": 1704074400, "EndTime": 1704078000, "Rating": "NO_ANOMALY", **token},
+        "DescribeLabel": lambda: {"LabelGroupName": fx["group"], "LabelId": fx["label"]},
+        "ListLabels": lambda: {"LabelGroupName": fx["group"]},
+        "CreateModel": lambda: {"ModelName": new, "DatasetName": fx["dataset"], "RoleArn": LKE_ROLE, **token},
+        "DescribeModel": lambda: {"ModelName": fx["model"]},
+        "UpdateModel": lambda: {"ModelName": fx["model"], "RoleArn": LKE_ROLE},
+        "DescribeModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "ListModelVersions": lambda: {"ModelName": fx["model"]},
+        "ImportModelVersion": lambda: {"SourceModelVersionArn": fx["version_arn"], "ModelName": new, "DatasetName": fx["dataset"], **token},
+        "UpdateActiveModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "PutResourcePolicy": lambda: {"ResourceArn": fx["model_arn"], "ResourcePolicy": policy, **token},
+        "DescribeResourcePolicy": lambda: {"ResourceArn": fx["model_arn"]},
+        "DescribeRetrainingScheduler": lambda: {"ModelName": fx["model"]},
+        "UpdateRetrainingScheduler": lambda: {"ModelName": fx["model"], "PromoteMode": "MANUAL"},
+        "CreateInferenceScheduler": lambda: {"ModelName": fx["model"], "InferenceSchedulerName": new, "DataUploadFrequency": "PT10M",
+                                             "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                             "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                             "RoleArn": LKE_ROLE, **token},
+        "DescribeInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "UpdateInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"], "DataDelayOffsetInMinutes": 2},
+        "ListInferenceExecutions": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "ListInferenceEvents": lambda: {"InferenceSchedulerName": fx["scheduler"], "IntervalStartTime": 1704067200, "IntervalEndTime": 4102444800},
+        "TagResource": lambda: {"ResourceArn": fx["dataset_arn"], "Tags": [{"Key": "env", "Value": "cov"}]},
+        "UntagResource": lambda: {"ResourceArn": fx["dataset_arn"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["dataset_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteDataset":
+        return {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new)}
+    if op == "DeleteLabelGroup":
+        f.call("CreateLabelGroup", {"LabelGroupName": new})
+        return {"LabelGroupName": new}
+    if op == "DeleteLabel":
+        label = f.call("CreateLabel", {"LabelGroupName": fx["group"], "StartTime": 1704081600, "EndTime": 1704085200, "Rating": "NEUTRAL"})
+        return {"LabelGroupName": fx["group"], "LabelId": label.get("LabelId", "")}
+    if op == "DeleteModel":
+        return {"ModelName": f.model(fx["dataset"])}
+    if op == "DeleteResourcePolicy":
+        model = f.model(fx["dataset"])
+        arn = f.call("DescribeModel", {"ModelName": model}).get("ModelArn", "")
+        f.call("PutResourcePolicy", {"ResourceArn": arn, "ResourcePolicy": policy})
+        return {"ResourceArn": arn}
+    if op == "CreateRetrainingScheduler":
+        return {"ModelName": f.model(fx["dataset"]), "RetrainingFrequency": "P30D", "LookbackWindow": "P180D", **token}
+    if op in ("StartRetrainingScheduler", "DeleteRetrainingScheduler"):
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=True)}
+    if op == "StopRetrainingScheduler":
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=False)}
+    if op in ("StartInferenceScheduler", "DeleteInferenceScheduler"):
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=True)}
+    if op == "StopInferenceScheduler":
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=False)}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+SGEO_BUCKET = "stackyard-geospatial-cov"
+SGEO_ROLE = "arn:aws:iam::123456789012:role/stackyard-geospatial"
+SGEO_SENTINEL = "arn:aws:sagemaker-geospatial:us-west-2:378778860802:raster-data-collection/public/nmqj48dcu3g7ayw8"
+SGEO_AOI = {"AreaOfInterestGeometry": {"PolygonGeometry": {"Coordinates": [[[-122.4, 47.5], [-122.2, 47.5], [-122.2, 47.7], [-122.4, 47.7], [-122.4, 47.5]]]}}}
+SGEO_RANGE = {"StartTime": 1672531200, "EndTime": 1675209600}
+
+
+def sgeo_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="sagemaker-geospatial")
+
+
+def sgeo_eoj_args() -> dict:
+    return {"Name": fc_unique("eo"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"RasterDataCollectionQuery": {"RasterDataCollectionArn": SGEO_SENTINEL, "TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+            "JobConfig": {"BandMathConfig": {"PredefinedIndices": ["ndvi"]}}}
+
+
+def sgeo_vej_args() -> dict:
+    return {"Name": fc_unique("ve"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"DocumentType": "CSV", "DataSourceConfig": {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/in/points.csv"}}},
+            "JobConfig": {"ReverseGeocodingConfig": {"XAttributeName": "lon", "YAttributeName": "lat"}}}
+
+
+def sgeo_job(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, settle: bool = True) -> str:
+    """Starts an earth observation (eo) or vector enrichment (ve) job and reads it until COMPLETED."""
+    call = lambda op, args: sgeo_call(aws_bin, endpoint_url, region, env, op, args)
+    name = "EarthObservationJob" if kind == "eo" else "VectorEnrichmentJob"
+    arn = str(call("Start" + name, sgeo_eoj_args() if kind == "eo" else sgeo_vej_args()).get("Arn") or "")
+    for _ in range(3 if settle else 0):
+        if call("Get" + name, {"Arn": arn}).get("Status") == "COMPLETED":
+            break
+    return arn
+
+
+def sgeo_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED earth observation job and vector enrichment job, with an export bucket."""
+    state = RUNTIME_STATE.setdefault("sagemakergeospatial", {})
+    if state.get("ve"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, SGEO_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, SGEO_BUCKET, "in/points.csv", b"id,lon,lat\n1,-122.33,47.61\n2,-122.30,47.60\n")
+    state["eo"] = sgeo_job(aws_bin, endpoint_url, region, env, "eo")
+    state["ve"] = sgeo_job(aws_bin, endpoint_url, region, env, "ve")
+    return state
+
+
+def sagemakergeospatial_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = sgeo_fixture(aws_bin, endpoint_url, region, env)
+    job = lambda kind, settle=True: sgeo_job(aws_bin, endpoint_url, region, env, kind, settle)
+    out = {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/export/"}}
+    simple = {
+        "StartEarthObservationJob": sgeo_eoj_args,
+        "StartVectorEnrichmentJob": sgeo_vej_args,
+        "GetEarthObservationJob": lambda: {"Arn": fx["eo"]},
+        "GetVectorEnrichmentJob": lambda: {"Arn": fx["ve"]},
+        "ExportEarthObservationJob": lambda: {"Arn": fx["eo"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "ExportVectorEnrichmentJob": lambda: {"Arn": fx["ve"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "StopEarthObservationJob": lambda: {"Arn": job("eo", False)},
+        "StopVectorEnrichmentJob": lambda: {"Arn": job("ve", False)},
+        "DeleteEarthObservationJob": lambda: {"Arn": job("eo")},
+        "DeleteVectorEnrichmentJob": lambda: {"Arn": job("ve")},
+        "GetRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL},
+        "SearchRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL, "RasterDataCollectionQuery": {"TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+        "GetTile": lambda: {"Arn": fx["eo"], "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0},
+        "TagResource": lambda: {"ResourceArn": fx["eo"], "Tags": {"env": "cov"}},
+        "UntagResource": lambda: {"ResourceArn": fx["eo"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["eo"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
 CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
 CS_DOCS = [
     {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
@@ -39818,6 +40273,271 @@ def bcmdataexports_hydrate_payload(
     return payload
 
 
+def cnx_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def cnx_chat(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Start a Connect chat contact and connect its customer; returns ids and the
+    connection token."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connect", "start-chat-contact", env, [
+        "--cli-input-json", json.dumps({
+            "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+            "ParticipantDetails": {"DisplayName": "Coverage"},
+            "InitialMessage": {"ContentType": "text/plain", "Content": "my order is broken, thanks for the help"},
+        }),
+    ]) or {}
+    token = str(started.get("ParticipantToken") or "")
+    conn = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "create-participant-connection", env, [
+        "--participant-token", token, "--type", "CONNECTION_CREDENTIALS", "--connect-participant",
+    ]) or {}
+    creds = conn.get("ConnectionCredentials") if isinstance(conn.get("ConnectionCredentials"), dict) else {}
+    return {"contact": str(started.get("ContactId") or ""), "participant_token": token,
+            "connection": str(creds.get("ConnectionToken") or "")}
+
+
+def cnp_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connection: str) -> str:
+    """Start and upload a five-byte attachment; returns its id."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "start-attachment-upload", env, [
+        "--cli-input-json", json.dumps({"ConnectionToken": connection, "ContentType": "text/plain",
+                                        "AttachmentSizeInBytes": 5, "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}),
+    ]) or {}
+    meta = started.get("UploadMetadata") if isinstance(started.get("UploadMetadata"), dict) else {}
+    url = str(meta.get("Url") or "")
+    if url:
+        req = urlrequest.Request(url, data=b"hello", method="PUT", headers={"Content-Type": "text/plain"})
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            resp.read()
+    return str(started.get("AttachmentId") or "")
+
+
+def connectparticipant_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Drive Connect Participant against a real chat contact; DisconnectParticipant
+    gets a chat of its own."""
+    op = endpoint.operation
+    if op == "DisconnectParticipant":
+        return {"ConnectionToken": cnx_chat(aws_bin, endpoint_url, region, env)["connection"], "ClientToken": cnx_unique("dc-")}
+    state = RUNTIME_STATE.setdefault("connectparticipant", {})
+    if not state.get("connection"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    conn = str(state["connection"])
+    session = "123e4567-e89b-12d3-a456-426614174000"
+    if op == "CreateParticipantConnection":
+        return {"ParticipantToken": state["participant_token"], "Type": ["CONNECTION_CREDENTIALS"], "ConnectParticipant": True}
+    if op == "SendMessage":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "Content": "hello from coverage", "ClientToken": cnx_unique("m-")}
+    if op == "SendEvent":
+        return {"ConnectionToken": conn, "ContentType": "application/vnd.amazonaws.connect.event.typing", "ClientToken": cnx_unique("e-")}
+    if op == "GetTranscript":
+        return {"ConnectionToken": conn, "MaxResults": 10, "ScanDirection": "FORWARD", "SortOrder": "ASCENDING"}
+    if op == "StartAttachmentUpload":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "AttachmentSizeInBytes": 5,
+                "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}
+    if op == "CompleteAttachmentUpload":
+        return {"ConnectionToken": conn, "AttachmentIds": [cnp_upload(aws_bin, endpoint_url, region, env, conn)], "ClientToken": cnx_unique("c-")}
+    if op == "GetAttachment":
+        att = cnp_upload(aws_bin, endpoint_url, region, env, conn)
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "complete-attachment-upload", env, [
+            "--connection-token", conn, "--attachment-ids", att, "--client-token", cnx_unique("c-"),
+        ])
+        return {"ConnectionToken": conn, "AttachmentId": att, "UrlExpiryInSeconds": 60}
+    if op == "GetAuthenticationUrl":
+        return {"ConnectionToken": conn, "SessionId": session, "RedirectUri": "https://example.com/callback"}
+    if op == "CancelParticipantAuthentication":
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "get-authentication-url", env, [
+            "--connection-token", conn, "--session-id", session, "--redirect-uri", "https://example.com/callback",
+        ])
+        return {"ConnectionToken": conn, "SessionId": session}
+    if op == "DescribeView":
+        return {"ConnectionToken": conn, "ViewToken": "arn:aws:connect:us-east-1:aws:view/form"}
+    return payload
+
+
+def connect_chat_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Connect's chat operations validate their input: start a chat on the seeded
+    instance, and add a bot to a real chat."""
+    if endpoint.operation == "StartChatContact":
+        return {**payload, "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+                "ParticipantDetails": {"DisplayName": "Coverage"},
+                "InitialMessage": {"ContentType": "text/plain", "Content": "hello"}}
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    return {**payload, "InstanceId": "instance-000001", "ContactId": chat["contact"],
+            "ParticipantDetails": {"ParticipantRole": "CUSTOM_BOT", "DisplayName": "Coverage bot"}}
+
+
+def connectcontactlens_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Analyze the messages of a real chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcontactlens", {})
+    if not state.get("contact"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    return {"InstanceId": "instance-000001", "ContactId": state["contact"], "MaxResults": 10}
+
+
+def cnc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "connectcases", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def cnc_case(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict, title: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case", {
+        "domainId": state["domain"], "templateId": state["template"],
+        "fields": [{"id": "title", "value": {"stringValue": title}}, {"id": state["field"], "value": {"doubleValue": 2}}],
+    }).get("caseId") or "")
+
+
+def cnc_comment(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str, case: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {
+        "domainId": domain, "caseId": case, "type": "Comment", "content": {"comment": {"body": "coverage", "contentType": "Text/Plain"}},
+    }).get("relatedItemId") or "")
+
+
+def cnc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A domain with a Number and a SingleSelect field, a layout, a case rule,
+    a template and a case linked to a chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcases", {})
+    if state.get("case"):
+        return state
+    domain = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sycases-")}).get("domainId") or "")
+    field = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "priority", "type": "Number"}).get("fieldId") or "")
+    tier = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "tier", "type": "SingleSelect"}).get("fieldId") or "")
+    cnc_cli(aws_bin, endpoint_url, region, env, "batch-put-field-options", {"domainId": domain, "fieldId": tier, "options": [{"name": "Gold", "value": "gold", "active": True}]})
+    layout = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {"domainId": domain, "name": "main", "content": {"basic": {
+        "topPanel": {"sections": [{"fieldGroup": {"name": "summary", "fields": [{"id": "title"}, {"id": field}]}}]}}}}).get("layoutId") or "")
+    rule = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {"domainId": domain, "name": "tier hidden", "rule": {
+        "hidden": {"defaultValue": False, "conditions": [{"equalTo": {"operandOne": {"fieldId": "status"}, "operandTwo": {"stringValue": "closed"}, "result": True}}]}}}).get("caseRuleId") or "")
+    template = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {"domainId": domain, "name": "default",
+        "layoutConfiguration": {"defaultLayout": layout}, "requiredFields": [{"fieldId": "title"}],
+        "rules": [{"caseRuleId": rule, "fieldId": tier}]}).get("templateId") or "")
+    state.update({"domain": domain, "field": field, "tier": tier, "layout": layout, "rule": rule, "template": template})
+    state["case"] = cnc_case(aws_bin, endpoint_url, region, env, state, "Printer broken")
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    state["contact_arn"] = f"arn:aws:connect:{region}:123456789012:instance/instance-000001/contact/{chat['contact']}"
+    cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {"domainId": domain, "caseId": state["case"], "type": "Contact",
+                                                                       "content": {"contact": {"contactArn": state["contact_arn"]}}})
+    state["comment"] = cnc_comment(aws_bin, endpoint_url, region, env, domain, state["case"])
+    return state
+
+
+def connectcases_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Connect Cases operations at a real domain; deletes and merges get
+    resources of their own."""
+    op = endpoint.operation
+    if op == "CreateDomain":
+        return {"name": cnx_unique("sycases-")}
+    if op == "ListDomains":
+        return {"maxResults": 10}
+    if op == "DeleteDomain":
+        return {"domainId": str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sydel-")}).get("domainId") or "")}
+    s = cnc_fixture(aws_bin, endpoint_url, region, env)
+    d, case = s["domain"], s["case"]
+    base = {"domainId": d}
+    domain_arn = f"arn:aws:cases:{region}:123456789012:domain/{d}"
+    if op == "CreateField":
+        return {**base, "name": cnx_unique("f"), "type": "Text", "description": "coverage", "attributes": {"text": {"isMultiline": True}}}
+    if op == "UpdateField":
+        return {**base, "fieldId": s["field"], "description": "updated"}
+    if op == "DeleteField":
+        fid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {**base, "name": cnx_unique("del"), "type": "Boolean"}).get("fieldId") or "")
+        return {**base, "fieldId": fid}
+    if op == "BatchGetField":
+        return {**base, "fields": [{"id": s["field"]}, {"id": "title"}]}
+    if op == "ListFields":
+        return {**base, "maxResults": 50}
+    if op == "BatchPutFieldOptions":
+        return {**base, "fieldId": s["tier"], "options": [{"name": "Silver", "value": "silver", "active": True}]}
+    if op == "ListFieldOptions":
+        return {**base, "fieldId": s["tier"], "maxResults": 10}
+    if op == "CreateLayout":
+        return {**base, "name": cnx_unique("l"), "content": {"basic": {"moreInfo": {"sections": [{"fieldGroup": {"fields": [{"id": "status"}]}}]}}}}
+    if op in ("GetLayout", "UpdateLayout"):
+        extra = {"name": cnx_unique("main-")} if op == "UpdateLayout" else {}
+        return {**base, "layoutId": s["layout"], **extra}
+    if op == "DeleteLayout":
+        lid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {**base, "name": cnx_unique("dl"), "content": {"basic": {}}}).get("layoutId") or "")
+        return {**base, "layoutId": lid}
+    if op == "ListLayouts":
+        return {**base, "maxResults": 10}
+    if op == "CreateTemplate":
+        return {**base, "name": cnx_unique("t"), "status": "Active", "tagPropagationConfigurations": [{"resourceType": "Cases", "tagMap": {"team": "coverage"}}]}
+    if op in ("GetTemplate", "UpdateTemplate"):
+        extra = {"description": "updated by coverage"} if op == "UpdateTemplate" else {}
+        return {**base, "templateId": s["template"], **extra}
+    if op == "DeleteTemplate":
+        tid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {**base, "name": cnx_unique("dt")}).get("templateId") or "")
+        return {**base, "templateId": tid}
+    if op == "ListTemplates":
+        return {**base, "maxResults": 10, "status": ["Active"]}
+    if op == "CreateCaseRule":
+        return {**base, "name": cnx_unique("r"), "rule": {"required": {"defaultValue": False, "conditions": []}}}
+    if op == "UpdateCaseRule":
+        return {**base, "caseRuleId": s["rule"], "description": "updated"}
+    if op == "DeleteCaseRule":
+        rid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {**base, "name": cnx_unique("dr"),
+              "rule": {"required": {"defaultValue": True, "conditions": []}}}).get("caseRuleId") or "")
+        return {**base, "caseRuleId": rid}
+    if op == "BatchGetCaseRule":
+        return {**base, "caseRules": [{"id": s["rule"]}]}
+    if op == "ListCaseRules":
+        return {**base, "maxResults": 10}
+    if op == "CreateCase":
+        return {**base, "templateId": s["template"], "clientToken": cnx_unique("ct-"), "tags": {"env": "coverage"},
+                "fields": [{"id": "title", "value": {"stringValue": "Coverage case"}}, {"id": s["tier"], "value": {"stringValue": "gold"}}]}
+    if op == "GetCase":
+        return {**base, "caseId": case, "fields": [{"id": "title"}, {"id": "status"}, {"id": "reference_number"}]}
+    if op == "UpdateCase":
+        return {**base, "caseId": case, "fields": [{"id": s["field"], "value": {"doubleValue": 5}}], "performedBy": {"customEntity": "coverage"}}
+    if op == "DeleteCase":
+        return {**base, "caseId": cnc_case(aws_bin, endpoint_url, region, env, s, "to delete")}
+    if op == "BatchUpdateCase":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "fields": [{"fieldIdentifier": {"name": "priority"}, "value": {"doubleValue": 3}}], "title": "Printer broken"}
+    if op == "GetCaseAuditEvents":
+        return {**base, "caseId": case, "maxResults": 10}
+    if op == "SearchCases":
+        return {**base, "searchTerm": "printer", "fields": [{"id": "title"}], "sorts": [{"fieldId": "title", "sortOrder": "Asc"}],
+                "filter": {"field": {"greaterThanOrEqualTo": {"id": s["field"], "value": {"doubleValue": 1}}}}}
+    if op == "CreateRelatedItem":
+        return {**base, "caseId": case, "type": "Comment", "content": {"comment": {"body": "hello", "contentType": "Text/Plain"}}}
+    if op == "BatchCreateRelatedItem":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "content": {"comment": {"body": "batch", "contentType": "Text/Plain"}}}
+    if op == "UpdateRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": s["comment"], "content": {"comment": {"body": "edited", "contentType": "Text/Plain"}}}
+    if op == "DeleteRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": cnc_comment(aws_bin, endpoint_url, region, env, d, case)}
+    if op == "SearchRelatedItems":
+        return {**base, "caseId": case, "maxResults": 10, "filters": [{"comment": {}}]}
+    if op == "SearchAllRelatedItems":
+        return {**base, "maxResults": 10, "sorts": [{"sortProperty": "AssociationTime", "sortOrder": "Desc"}]}
+    if op == "ListCasesForContact":
+        return {**base, "contactArn": s["contact_arn"]}
+    if op in ("StartMergeCases", "GetMergeCasesStatus"):
+        primary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge primary")
+        secondary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge secondary")
+        merge = {**base, "caseId": primary, "secondaryCaseIds": [secondary]}
+        if op == "StartMergeCases":
+            return merge
+        cnc_cli(aws_bin, endpoint_url, region, env, "start-merge-cases", merge)
+        return {**base, "caseId": primary}
+    if op == "PutCaseEventConfiguration":
+        return {**base, "eventBridge": {"enabled": True, "includedData": {"caseData": {"fields": [{"id": "title"}]}, "relatedItemData": {"includeContent": True}}}}
+    if op in ("GetCaseEventConfiguration", "GetDomain"):
+        return base
+    if op == "TagResource":
+        return {"arn": domain_arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"arn": domain_arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"arn": domain_arn}
+    return payload
+
+
 GEOMAPS_PAYLOADS: dict[str, dict] = {
     "GetGlyphs": {"FontStack": "Amazon Ember Regular", "FontUnicodeRange": "0-255.pbf"},
     "GetSprites": {"FileName": "sprites.png", "Style": "Standard", "ColorScheme": "Light", "Variant": "Default"},
@@ -40200,6 +40920,1227 @@ def repostspace_hydrate_payload(
     return payload
 
 
+CHIME_ACCOUNT = "123456789012"
+CHIME_REGION_ARN = f"arn:aws:chime:us-east-1:{CHIME_ACCOUNT}:"
+
+
+def cmtg_meeting(fx: MsgFixture) -> dict:
+    name = fx.name("mtg")
+    return fx.call("CreateMeeting", {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name}, "chime-sdk-meetings").get("Meeting", {})
+
+
+def chimesdkmeetings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Meetings: a cached meeting with one attendee; creates and
+    destructive operations get meetings or attendees of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmeetings", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-meetings")
+        meeting = cmtg_meeting(fx)
+        attendee = fx.call("CreateAttendee", {"MeetingId": meeting.get("MeetingId", ""), "ExternalUserId": fx.name("user")}).get("Attendee", {})
+        state.update({"fx": fx, "meeting": meeting, "attendee": attendee.get("AttendeeId", "")})
+    fx: MsgFixture = state["fx"]
+    mid, arn, aid = state["meeting"].get("MeetingId", ""), state["meeting"].get("MeetingArn", ""), state["attendee"]
+    caps = {"Audio": "SendReceive", "Video": "Receive", "Content": "Receive"}
+    transcription = {"EngineTranscribeSettings": {"LanguageCode": "en-US"}}
+
+    def fresh_attendee() -> str:
+        return fx.call("CreateAttendee", {"MeetingId": mid, "ExternalUserId": fx.name("user")}).get("Attendee", {}).get("AttendeeId", "")
+
+    if op in ("CreateMeeting", "CreateMeetingWithAttendees"):
+        name = fx.name("mtg")
+        out = {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name, "Tags": [{"Key": "team", "Value": "coverage"}]}
+        if op == "CreateMeetingWithAttendees":
+            out["Attendees"] = [{"ExternalUserId": fx.name("user")}]
+        return out
+    if op in ("GetMeeting", "ListAttendees"):
+        return {"MeetingId": mid}
+    if op == "DeleteMeeting":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", "")}
+    if op == "CreateAttendee":
+        return {"MeetingId": mid, "ExternalUserId": fx.name("user"), "Capabilities": caps}
+    if op == "BatchCreateAttendee":
+        return {"MeetingId": mid, "Attendees": [{"ExternalUserId": fx.name("user")}, {"ExternalUserId": fx.name("user")}]}
+    if op == "GetAttendee":
+        return {"MeetingId": mid, "AttendeeId": aid}
+    if op == "UpdateAttendeeCapabilities":
+        return {"MeetingId": mid, "AttendeeId": aid, "Capabilities": caps}
+    if op == "DeleteAttendee":
+        return {"MeetingId": mid, "AttendeeId": fresh_attendee()}
+    if op == "BatchUpdateAttendeeCapabilitiesExcept":
+        return {"MeetingId": mid, "ExcludedAttendeeIds": [{"AttendeeId": aid}], "Capabilities": caps}
+    if op == "StartMeetingTranscription":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", ""), "TranscriptionConfiguration": transcription}
+    if op == "StopMeetingTranscription":
+        other = cmtg_meeting(fx).get("MeetingId", "")
+        fx.call("StartMeetingTranscription", {"MeetingId": other, "TranscriptionConfiguration": transcription})
+        return {"MeetingId": other}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "owner", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["owner"]}
+    return payload
+
+
+def cmsg_processors() -> list:
+    return [{"Name": "filter", "ExecutionOrder": 1, "FallbackAction": "CONTINUE",
+             "Configuration": {"Lambda": {"ResourceArn": f"arn:aws:lambda:us-east-1:{CHIME_ACCOUNT}:function:filter", "InvocationType": "ASYNC"}}}]
+
+
+def chimesdkmessaging_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An app instance of its own with users alice (moderator) and bob
+    (member), a channel holding one of bob's messages and a ban, an elastic
+    channel, a channel flow associated with a second channel, and streaming
+    configurations."""
+    state = RUNTIME_STATE.setdefault("chimesdkmessaging", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-messaging")
+    app = CHIME_REGION_ARN + "app-instance/" + fx.name("app")
+    alice, bob = app + "/user/alice", app + "/user/bob"
+    state.update({"fx": fx, "app": app, "alice": alice, "bob": bob})
+    state["channel"] = chimesdkmessaging_channel(state)
+    fx.call("CreateChannelBan", {"ChannelArn": state["channel"], "MemberArn": app + "/user/banned", "ChimeBearer": alice})
+    state["message"] = chimesdkmessaging_message(state, state["channel"])
+    state["elastic"] = fx.call("CreateChannel", {"AppInstanceArn": app, "Name": "elastic", "ClientRequestToken": fx.name("tok"), "ChimeBearer": alice,
+                                                  "ElasticChannelConfiguration": {"MaximumSubChannels": 2, "TargetMembershipsPerSubChannel": 2, "MinimumMembershipPercentage": 10}}).get("ChannelArn", "")
+    fx.call("CreateChannelMembership", {"ChannelArn": state["elastic"], "MemberArn": bob, "Type": "DEFAULT", "ChimeBearer": alice})
+    state["flow"] = chimesdkmessaging_flow(state)
+    state["flowed"] = chimesdkmessaging_channel(state)
+    fx.call("AssociateChannelFlow", {"ChannelArn": state["flowed"], "ChannelFlowArn": state["flow"], "ChimeBearer": alice})
+    fx.call("PutMessagingStreamingConfigurations", {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()})
+    return state
+
+
+def cmsg_streaming() -> list:
+    return [{"DataType": "ChannelMessage", "ResourceArn": f"arn:aws:kinesis:us-east-1:{CHIME_ACCOUNT}:stream/chat"}]
+
+
+def chimesdkmessaging_channel(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannel", {"AppInstanceArn": state["app"], "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"),
+                                     "MemberArns": [state["bob"]], "ChimeBearer": state["alice"]}).get("ChannelArn", "")
+
+
+def chimesdkmessaging_message(state: dict, channel: str) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("SendChannelMessage", {"ChannelArn": channel, "Content": "hello", "Type": "STANDARD", "Persistence": "PERSISTENT",
+                                          "ClientRequestToken": fx.name("tok"), "ChimeBearer": state["bob"]}).get("MessageId", "")
+
+
+def chimesdkmessaging_flow(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannelFlow", {"AppInstanceArn": state["app"], "Name": "filter", "Processors": cmsg_processors(),
+                                         "ClientRequestToken": fx.name("tok")}).get("ChannelFlowArn", "")
+
+
+def chimesdkmessaging_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Messaging: calls act as alice (the moderator) or bob (a
+    member) of the cached fixture; creates and destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    st = chimesdkmessaging_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    app, alice, bob, ch, flow = st["app"], st["alice"], st["bob"], st["channel"], st["flow"]
+
+    def newcomer() -> str:
+        return app + "/user/" + fx.name("user")
+
+    fixed = {
+        "DescribeChannel": {"ChannelArn": ch, "ChimeBearer": alice},
+        "UpdateChannel": {"ChannelArn": ch, "Name": "renamed", "Mode": "UNRESTRICTED", "Metadata": "coverage", "ChimeBearer": alice},
+        "ListChannels": {"AppInstanceArn": app, "ChimeBearer": alice},
+        "SearchChannels": {"Fields": [{"Key": "MEMBERS", "Values": [bob], "Operator": "INCLUDES"}], "ChimeBearer": alice},
+        "PutChannelExpirationSettings": {"ChannelArn": ch, "ChimeBearer": alice, "ExpirationSettings": {"ExpirationDays": 30, "ExpirationCriterion": "LAST_MESSAGE_TIMESTAMP"}},
+        "ListSubChannels": {"ChannelArn": st["elastic"], "ChimeBearer": alice},
+        "ListChannelMembershipsForAppInstanceUser": {"AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "DescribeChannelMembershipForAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "ListChannelsModeratedByAppInstanceUser": {"AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelModeratedByAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelMembership": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": alice},
+        "ListChannelMemberships": {"ChannelArn": ch, "ChimeBearer": alice},
+        "GetChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob},
+        "PutChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob, "Preferences": {"PushNotifications": {"AllowNotifications": "ALL"}}},
+        "DescribeChannelModerator": {"ChannelArn": ch, "ChannelModeratorArn": alice, "ChimeBearer": alice},
+        "ListChannelModerators": {"ChannelArn": ch, "ChimeBearer": alice},
+        "DescribeChannelBan": {"ChannelArn": ch, "MemberArn": app + "/user/banned", "ChimeBearer": alice},
+        "ListChannelBans": {"ChannelArn": ch, "ChimeBearer": alice},
+        "SendChannelMessage": {"ChannelArn": ch, "Content": "hi", "Type": "STANDARD", "Persistence": "PERSISTENT", "ClientRequestToken": fx.name("tok"), "ChimeBearer": bob},
+        "GetChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "GetChannelMessageStatus": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "ListChannelMessages": {"ChannelArn": ch, "ChimeBearer": bob},
+        "UpdateChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "Content": "hello again", "ChimeBearer": bob},
+        "UpdateChannelReadMarker": {"ChannelArn": ch, "ChimeBearer": bob},
+        "DescribeChannelFlow": {"ChannelFlowArn": flow},
+        "UpdateChannelFlow": {"ChannelFlowArn": flow, "Name": "filter-2", "Processors": cmsg_processors()},
+        "ListChannelFlows": {"AppInstanceArn": app},
+        "ListChannelsAssociatedWithChannelFlow": {"ChannelFlowArn": flow},
+        "PutMessagingStreamingConfigurations": {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()},
+        "GetMessagingStreamingConfigurations": {"AppInstanceArn": app},
+        "GetMessagingSessionEndpoint": {},
+        "ListTagsForResource": {"ResourceARN": ch},
+        "TagResource": {"ResourceARN": ch, "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": ch, "TagKeys": ["owner"]},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateChannel":
+        return {"AppInstanceArn": app, "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"), "Privacy": "PRIVATE",
+                "MemberArns": [bob], "Tags": [{"Key": "team", "Value": "coverage"}], "ChimeBearer": alice}
+    if op == "DeleteChannel":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChimeBearer": alice}
+    if op == "CreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "Type": "DEFAULT", "ChimeBearer": alice}
+    if op == "BatchCreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArns": [newcomer(), newcomer()], "ChimeBearer": alice}
+    if op == "DeleteChannelMembership":
+        who = newcomer()
+        fx.call("CreateChannelMembership", {"ChannelArn": ch, "MemberArn": who, "Type": "DEFAULT", "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelModerator":
+        return {"ChannelArn": ch, "ChannelModeratorArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelModerator":
+        who = newcomer()
+        fx.call("CreateChannelModerator", {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelBan":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelBan":
+        who = newcomer()
+        fx.call("CreateChannelBan", {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "DeleteChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": alice}
+    if op == "RedactChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": bob}
+    if op == "CreateChannelFlow":
+        return {"AppInstanceArn": app, "Name": "filter", "Processors": cmsg_processors(), "ClientRequestToken": fx.name("tok"),
+                "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "DeleteChannelFlow":
+        return {"ChannelFlowArn": chimesdkmessaging_flow(st)}
+    if op == "AssociateChannelFlow":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "DisassociateChannelFlow":
+        other = chimesdkmessaging_channel(st)
+        fx.call("AssociateChannelFlow", {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice})
+        return {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "ChannelFlowCallback":
+        pending = chimesdkmessaging_message(st, st["flowed"])
+        return {"CallbackId": uuid.uuid4().hex, "ChannelArn": st["flowed"], "ChannelMessage": {"MessageId": pending, "Content": "processed"}}
+    if op == "DeleteMessagingStreamingConfigurations":
+        return {"AppInstanceArn": app}
+    return payload
+
+
+def cmpl_wait(fx: MsgFixture, op: str, args: dict, path: list, want: str) -> dict:
+    """Read a resource until the field at path reports want (Stackyard settles async state on read)."""
+    out: dict = {}
+    for _ in range(8):
+        out = fx.call(op, args)
+        value = out
+        for key in path:
+            value = value.get(key, {}) if isinstance(value, dict) else {}
+        if value == want:
+            break
+        time.sleep(0.5)
+    return out
+
+
+def cmpl_config(name: str) -> dict:
+    return {
+        "MediaInsightsPipelineConfigurationName": name, "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+        "Elements": cmpl_elements(), "Tags": [{"Key": "team", "Value": "coverage"}],
+    }
+
+
+def cmpl_elements() -> list:
+    return [{"Type": "VoiceAnalyticsProcessor", "VoiceAnalyticsProcessorConfiguration": {"SpeakerSearchStatus": "Enabled", "VoiceToneAnalysisStatus": "Enabled"}},
+            {"Type": "SnsTopicSink", "SnsTopicSinkConfiguration": {"InsightsTarget": f"arn:aws:sns:us-east-1:{CHIME_ACCOUNT}:insights"}}]
+
+
+def cmpl_kvs_source() -> dict:
+    return {"MediaEncoding": "pcm", "MediaSampleRate": 8000,
+            "Streams": [{"StreamArn": f"arn:aws:kinesisvideo:us-east-1:{CHIME_ACCOUNT}:stream/call/1", "StreamChannelDefinition": {"NumberOfChannels": 1}}]}
+
+
+def chimesdkmediapipelines_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Media Pipelines: a meeting created through chime-sdk-meetings,
+    a capture pipeline on it, an ACTIVE Kinesis video stream pool, a media
+    insights configuration with voice analytics, an insights pipeline and one
+    task of each kind; creates and destructive operations get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmediapipelines", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-media-pipelines")
+        state["fx"] = fx
+        state["meeting"] = cmtg_meeting(fx).get("MeetingArn", "")
+        state["capture"] = cmpl_capture(state)
+        state["pool"] = cmpl_pool(state)
+        state["config"] = fx.name("cfg")
+        state["config_arn"] = fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(state["config"])).get(
+            "MediaInsightsPipelineConfiguration", {}).get("MediaInsightsPipelineConfigurationArn", "")
+        state["insights"] = cmpl_insights(state)
+        state["speaker"] = cmpl_task(state, "StartSpeakerSearchTask")
+        state["voice"] = cmpl_task(state, "StartVoiceToneAnalysisTask")
+    fx: MsgFixture = state["fx"]
+    capture, pool, insights = state["capture"], state["pool"], state["insights"]
+    s3 = {"S3BucketSinkConfiguration": {"Destination": "arn:aws:s3:::coverage-artifacts"}, "Type": "S3Bucket"}
+
+    fixed = {
+        "GetMediaCapturePipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "GetMediaPipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "ListMediaCapturePipelines": {}, "ListMediaPipelines": {}, "ListMediaInsightsPipelineConfigurations": {},
+        "ListMediaPipelineKinesisVideoStreamPools": {},
+        "GetMediaInsightsPipelineConfiguration": {"Identifier": state["config"]},
+        "UpdateMediaInsightsPipelineConfiguration": {"Identifier": state["config"], "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+                                                     "Elements": cmpl_elements()},
+        "GetMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolName"]},
+        "UpdateMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolArn"], "StreamConfiguration": {"DataRetentionInHours": 48}},
+        "GetSpeakerSearchTask": {"Identifier": insights, "SpeakerSearchTaskId": state["speaker"]},
+        "GetVoiceToneAnalysisTask": {"Identifier": insights, "VoiceToneAnalysisTaskId": state["voice"]},
+        "StartSpeakerSearchTask": {"Identifier": insights, "VoiceProfileDomainArn": CHIME_REGION_ARN + "voice-profile-domain/coverage"},
+        "StartVoiceToneAnalysisTask": {"Identifier": insights, "LanguageCode": "en-US"},
+        "ListTagsForResource": {"ResourceARN": capture["MediaPipelineArn"]},
+        "TagResource": {"ResourceARN": capture["MediaPipelineArn"], "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": capture["MediaPipelineArn"], "TagKeys": ["owner"]},
+        "CreateMediaConcatenationPipeline": {
+            "Sources": [{"Type": "MediaCapturePipeline", "MediaCapturePipelineSourceConfiguration": {
+                "MediaPipelineArn": capture["MediaPipelineArn"], "ChimeSdkMeetingConfiguration": {"ArtifactsConfiguration": {
+                    "Audio": {"State": "Enabled"}, "Video": {"State": "Enabled"}, "Content": {"State": "Disabled"}, "DataChannel": {"State": "Enabled"},
+                    "TranscriptionMessages": {"State": "Enabled"}, "MeetingEvents": {"State": "Enabled"}, "CompositedVideo": {"State": "Disabled"}}}}}],
+            "Sinks": [s3]},
+        "CreateMediaLiveConnectorPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "ChimeSdkMeetingLiveConnectorConfiguration": {"Arn": state["meeting"], "MuxType": "AudioWithActiveSpeakerVideo"}}],
+            "Sinks": [{"SinkType": "RTMP", "RTMPConfiguration": {"Url": "rtmps://live.example.com/app/key", "AudioChannels": "Stereo"}}]},
+        "CreateMediaStreamPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"]}],
+            "Sinks": [{"SinkArn": pool["PoolArn"], "SinkType": "KinesisVideoStreamPool", "ReservedStreamCapacity": 1, "MediaStreamType": "IndividualAudio"}]},
+        "CreateMediaInsightsPipeline": {"MediaInsightsPipelineConfigurationArn": state["config_arn"], "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateMediaCapturePipeline":
+        return {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket", "SinkArn": "arn:aws:s3:::coverage-captures",
+                "ClientRequestToken": fx.name("tok"), "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op in ("DeleteMediaCapturePipeline", "DeleteMediaPipeline"):
+        return {"MediaPipelineId": cmpl_capture(state)["MediaPipelineId"]}
+    if op == "CreateMediaInsightsPipelineConfiguration":
+        return cmpl_config(fx.name("cfg"))
+    if op == "DeleteMediaInsightsPipelineConfiguration":
+        name = fx.name("cfg")
+        fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(name))
+        return {"Identifier": name}
+    if op == "CreateMediaPipelineKinesisVideoStreamPool":
+        return {"PoolName": fx.name("pool"), "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}}
+    if op == "DeleteMediaPipelineKinesisVideoStreamPool":
+        return {"Identifier": cmpl_pool(state, wait=False)["PoolName"]}
+    if op == "UpdateMediaInsightsPipelineStatus":
+        return {"Identifier": cmpl_insights(state), "UpdateStatus": "Pause"}
+    if op == "StopSpeakerSearchTask":
+        return {"Identifier": insights, "SpeakerSearchTaskId": cmpl_task(state, "StartSpeakerSearchTask")}
+    if op == "StopVoiceToneAnalysisTask":
+        return {"Identifier": insights, "VoiceToneAnalysisTaskId": cmpl_task(state, "StartVoiceToneAnalysisTask")}
+    return payload
+
+
+def cmpl_capture(state: dict) -> dict:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaCapturePipeline", {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket",
+                                                   "SinkArn": "arn:aws:s3:::coverage-captures"}).get("MediaCapturePipeline", {})
+
+
+def cmpl_pool(state: dict, wait: bool = True) -> dict:
+    fx: MsgFixture = state["fx"]
+    name = fx.name("pool")
+    fx.call("CreateMediaPipelineKinesisVideoStreamPool", {"PoolName": name, "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}})
+    if not wait:
+        return {"PoolName": name}
+    out = cmpl_wait(fx, "GetMediaPipelineKinesisVideoStreamPool", {"Identifier": name}, ["KinesisVideoStreamPoolConfiguration", "PoolStatus"], "ACTIVE")
+    return out.get("KinesisVideoStreamPoolConfiguration", {})
+
+
+def cmpl_insights(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaInsightsPipeline", {"MediaInsightsPipelineConfigurationArn": state["config_arn"],
+                                                    "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()}).get("MediaInsightsPipeline", {}).get("MediaPipelineId", "")
+
+
+def cmpl_task(state: dict, op: str) -> str:
+    fx: MsgFixture = state["fx"]
+    args = {"Identifier": state["insights"]}
+    if op == "StartSpeakerSearchTask":
+        args["VoiceProfileDomainArn"] = CHIME_REGION_ARN + "voice-profile-domain/coverage"
+        return fx.call(op, args).get("SpeakerSearchTask", {}).get("SpeakerSearchTaskId", "")
+    args["LanguageCode"] = "en-US"
+    return fx.call(op, args).get("VoiceToneAnalysisTask", {}).get("VoiceToneAnalysisTaskId", "")
+
+
+EDGE_ACCOUNT = "123456789012"
+EDGE_ADDRESS = {"ContactName": "Stackyard Ops", "ContactPhoneNumber": "+15555550100", "AddressLine1": "1 Main St",
+                "City": "Seattle", "StateOrRegion": "WA", "PostalCode": "98101", "CountryCode": "US"}
+
+
+def edge_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def outposts_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Outposts operations at a fixture site and outpost with installed
+    hardware; creates, deletes and capacity tasks get resources of their own.
+    Names are run-unique because servers are reused between runs."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "outposts", name, args)
+
+    def site() -> str:
+        counter[0] += 1
+        return call("CreateSite", {"Name": f"sy-site-{run}-{counter[0]}", "OperatingAddress": EDGE_ADDRESS,
+                                   "ShippingAddress": EDGE_ADDRESS}).get("Site", {}).get("SiteId", "")
+
+    def outpost(site_id: str) -> str:
+        return call("CreateOutpost", {"Name": f"sy-outpost-{run}", "SiteId": site_id}).get("Outpost", {}).get("OutpostId", "")
+
+    def order(outpost_id: str) -> str:
+        return call("CreateOrder", {"OutpostIdentifier": outpost_id, "PaymentOption": "ALL_UPFRONT",
+                                    "LineItems": [{"CatalogItemId": "OR-RACKM5A", "Quantity": 1}]}).get("Order", {}).get("OrderId", "")
+
+    def fulfilled(site_id: str) -> str:
+        oid = outpost(site_id)
+        order_id = order(oid)
+        for _ in range(4):  # RECEIVED -> ... -> FULFILLED
+            call("GetOrder", {"OrderId": order_id})
+        return oid
+
+    state = RUNTIME_STATE.setdefault("outposts", {})
+    if not state.get("outpost"):
+        sid = site()
+        oid = outpost(sid)
+        order_id = order(oid)
+        for _ in range(4):
+            call("GetOrder", {"OrderId": order_id})
+        asset = (call("ListAssets", {"OutpostIdentifier": oid}).get("Assets") or [{}])[0].get("AssetId", "")
+        task = call("StartCapacityTask", {"OutpostIdentifier": oid, "InstancePools": [{"InstanceType": "m5.xlarge", "Count": 8}]})
+        tid = task.get("CapacityTaskId", "")
+        for _ in range(2):  # REQUESTED -> IN_PROGRESS -> COMPLETED
+            call("GetCapacityTask", {"OutpostIdentifier": oid, "CapacityTaskId": tid})
+        call("CreatePrivateConnectivityConfig", {"OutpostId": oid, "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]})
+        quote = call("CreateQuote", {"OutpostIdentifier": oid, "CountryCode": "US",
+                                     "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "m5", "Quantity": 96}]}).get("Quote", {})
+        conn = call("StartConnection", {"AssetId": asset, "ClientPublicKey": "A" * 43 + "=", "NetworkInterfaceDeviceIndex": 0})
+        state.update({"site": sid, "outpost": oid, "order": order_id, "asset": asset, "task": tid,
+                      "quote": quote.get("QuoteId", ""), "connection": conn.get("ConnectionId", "")})
+    sid, oid = state["site"], state["outpost"]
+    arn = f"arn:aws:outposts:us-east-1:{EDGE_ACCOUNT}:outpost/{oid}"
+    rack = {"PowerDrawKva": "POWER_10_KVA", "PowerPhase": "THREE_PHASE", "PowerConnector": "IEC309", "PowerFeedDrop": "ABOVE_RACK",
+            "UplinkGbps": "UPLINK_10G", "UplinkCount": "UPLINK_COUNT_2", "FiberOpticCableType": "SINGLE_MODE",
+            "OpticalStandard": "OPTIC_10GBASE_LR", "MaximumSupportedWeightLbs": "MAX_1400_LBS"}
+    fixed = {
+        "CreateSite": lambda: {"Name": f"sy-created-{run}", "Description": "coverage", "OperatingAddress": EDGE_ADDRESS,
+                               "RackPhysicalProperties": rack, "Tags": {"team": "coverage"}},
+        "GetSite": lambda: {"SiteId": sid},
+        "UpdateSite": lambda: {"SiteId": sid, "Notes": "updated by coverage"},
+        "DeleteSite": lambda: {"SiteId": site()},
+        "GetSiteAddress": lambda: {"SiteId": sid, "AddressType": "OPERATING_ADDRESS"},
+        "UpdateSiteAddress": lambda: {"SiteId": sid, "AddressType": "SHIPPING_ADDRESS", "Address": EDGE_ADDRESS},
+        "UpdateSiteRackPhysicalProperties": lambda: dict(rack, SiteId=sid),
+        "ListSites": lambda: {"MaxResults": 10},
+        "CreateOutpost": lambda: {"Name": f"sy-created-{run}", "SiteId": sid, "Tags": {"team": "coverage"}},
+        "GetOutpost": lambda: {"OutpostId": oid},
+        "UpdateOutpost": lambda: {"OutpostId": oid, "Description": "updated by coverage"},
+        "DeleteOutpost": lambda: {"OutpostId": outpost(sid)},
+        "StartOutpostDecommission": lambda: {"OutpostIdentifier": outpost(sid)},
+        "ListOutposts": lambda: {"MaxResults": 10},
+        "CreatePrivateConnectivityConfig": lambda: {"OutpostId": outpost(sid), "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]},
+        "GetPrivateConnectivityConfig": lambda: {"OutpostId": oid},
+        "CreateQuote": lambda: {"OutpostIdentifier": oid, "CountryCode": "US", "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "c5", "Quantity": 48}]},
+        "GetQuote": lambda: {"QuoteIdentifier": state["quote"]},
+        "UpdateQuote": lambda: {"QuoteIdentifier": state["quote"], "Description": "updated by coverage"},
+        "DeleteQuote": lambda: {"QuoteIdentifier": call("CreateQuote", {"CountryCode": "US", "RequestedCapacities": [
+            {"QuoteCapacityType": "EBS", "Unit": "TB", "Quantity": 10}]}).get("Quote", {}).get("QuoteId", "")},
+        "ListQuotes": lambda: {"MaxResults": 10},
+        "CreateOrder": lambda: {"OutpostIdentifier": oid, "PaymentOption": "NO_UPFRONT", "PaymentTerm": "ONE_YEAR",
+                                "LineItems": [{"CatalogItemId": "OR-RACKC5A", "Quantity": 1}]},
+        "GetOrder": lambda: {"OrderId": state["order"]},
+        "CancelOrder": lambda: {"OrderId": order(oid)},
+        "ListOrders": lambda: {"OutpostIdentifierFilter": oid},
+        "ListAssets": lambda: {"OutpostIdentifier": oid},
+        "ListAssetInstances": lambda: {"OutpostIdentifier": oid},
+        "GetOutpostInstanceTypes": lambda: {"OutpostId": oid},
+        "GetOutpostSupportedInstanceTypes": lambda: {"OutpostIdentifier": oid, "AssetId": state["asset"]},
+        "StartCapacityTask": lambda: {"OutpostIdentifier": fulfilled(sid), "InstancePools": [{"InstanceType": "m5.large", "Count": 4}]},
+        "CancelCapacityTask": lambda: (lambda o: {"OutpostIdentifier": o, "CapacityTaskId": call("StartCapacityTask", {
+            "OutpostIdentifier": o, "InstancePools": [{"InstanceType": "m5.large", "Count": 2}]}).get("CapacityTaskId", "")})(fulfilled(sid)),
+        "GetCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListBlockingInstancesForCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListCapacityTasks": lambda: {"OutpostIdentifierFilter": oid},
+        "StartConnection": lambda: {"AssetId": state["asset"], "ClientPublicKey": "B" * 43 + "=", "NetworkInterfaceDeviceIndex": 1},
+        "GetConnection": lambda: {"ConnectionId": state["connection"]},
+        "GetOutpostBillingInformation": lambda: {"OutpostIdentifier": oid},
+        "GetRenewalPricing": lambda: {"OutpostIdentifier": oid},
+        "CreateRenewal": lambda: {"OutpostIdentifier": oid, "PaymentOption": "ALL_UPFRONT", "PaymentTerm": "THREE_YEARS", "ClientToken": f"sy-{run}"},
+        "GetCatalogItem": lambda: {"CatalogItemId": "OR-RACKM5A"},
+        "ListCatalogItems": lambda: {"ItemClassFilter": ["RACK"]},
+        "ListOrderableInstanceTypes": lambda: {"OutpostGenerationFilter": "GENERATION_2"},
+        "ListTagsForResource": lambda: {"ResourceArn": arn},
+        "TagResource": lambda: {"ResourceArn": arn, "Tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"ResourceArn": arn, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def snowdevicemanagement_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Managed devices are Snowball jobs: create one, then point device and
+    task operations at it; CancelTask gets a task of its own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "snow-device-management", name, args)
+
+    def task() -> dict:
+        return call("CreateTask", {"command": {"reboot": {}}, "targets": [state["device"]], "tags": {"team": "coverage"}})
+
+    state = RUNTIME_STATE.setdefault("snowdevicemanagement", {})
+    if not state.get("device"):
+        job = edge_call(aws_bin, endpoint_url, region, env, "snowball", "CreateJob",
+                        {"JobType": "IMPORT", "SnowballType": "EDGE", "Description": "snow device management coverage"}).get("JobId", "")
+        device = (call("ListDevices", {"jobId": job}).get("devices") or [{}])[0].get("managedDeviceId", "")
+        state.update({"job": job, "device": device})
+        instance = (call("ListDeviceResources", {"managedDeviceId": device}).get("resources") or [{}])[0].get("id", "")
+        state.update({"instance": instance, "task": task()})
+    dev, tid, tarn = state["device"], state["task"].get("taskId", ""), state["task"].get("taskArn", "")
+    fixed = {
+        "ListDevices": lambda: {"jobId": state["job"], "maxResults": 10},
+        "DescribeDevice": lambda: {"managedDeviceId": dev},
+        "ListDeviceResources": lambda: {"managedDeviceId": dev, "type": "AWS::EC2::Instance"},
+        "DescribeDeviceEc2Instances": lambda: {"managedDeviceId": dev, "instanceIds": [state["instance"]]},
+        "CreateTask": lambda: {"command": {"unlock": {}}, "targets": [dev], "description": "coverage unlock"},
+        "DescribeTask": lambda: {"taskId": tid},
+        "CancelTask": lambda: {"taskId": task().get("taskId", "")},
+        "ListTasks": lambda: {"maxResults": 10},
+        "DescribeExecution": lambda: {"taskId": tid, "managedDeviceId": dev},
+        "ListExecutions": lambda: {"taskId": tid},
+        "ListTagsForResource": lambda: {"resourceArn": tarn},
+        "TagResource": lambda: {"resourceArn": tarn, "tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"resourceArn": tarn, "tagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def backupgateway_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Backup gateway operations at a fixture gateway associated with an
+    imported hypervisor whose VMs are synced; creates and deletes get their own."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "backup-gateway", name, args)
+
+    def gateway() -> str:
+        return call("CreateGateway", {"ActivationKey": f"SY-{run}", "GatewayDisplayName": f"sy-gw-{run}",
+                                      "GatewayType": "BACKUP_VM"}).get("GatewayArn", "")
+
+    def hypervisor() -> str:
+        counter[0] += 1
+        return call("ImportHypervisorConfiguration", {"Name": f"sy-hv-{run}", "Host": f"vcenter-{run}-{counter[0]}.example.com"}).get("HypervisorArn", "")
+
+    state = RUNTIME_STATE.setdefault("backupgateway", {})
+    if not state.get("gateway"):
+        gw, hv = gateway(), hypervisor()
+        for _ in range(3):  # PENDING -> ONLINE, sync CREATED -> RUNNING -> SUCCEEDED
+            call("GetHypervisor", {"HypervisorArn": hv})
+        vm = (call("ListVirtualMachines", {"HypervisorArn": hv}).get("VirtualMachines") or [{}])[0].get("ResourceArn", "")
+        call("AssociateGatewayToServer", {"GatewayArn": gw, "ServerArn": hv})
+        state.update({"gateway": gw, "hypervisor": hv, "vm": vm})
+    gw, hv = state["gateway"], state["hypervisor"]
+    fixed = {
+        "CreateGateway": lambda: {"ActivationKey": f"SY-NEW-{run}", "GatewayDisplayName": "sy-created", "GatewayType": "BACKUP_VM",
+                                  "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "DeleteGateway": lambda: {"GatewayArn": gateway()},
+        "GetGateway": lambda: {"GatewayArn": gw},
+        "ListGateways": lambda: {"MaxResults": 10},
+        "UpdateGatewayInformation": lambda: {"GatewayArn": gw, "GatewayDisplayName": "sy-renamed"},
+        "UpdateGatewaySoftwareNow": lambda: {"GatewayArn": gw},
+        "AssociateGatewayToServer": lambda: {"GatewayArn": gateway(), "ServerArn": hv},
+        "DisassociateGatewayFromServer": lambda: (lambda g: (call("AssociateGatewayToServer", {"GatewayArn": g, "ServerArn": hv}), {"GatewayArn": g})[1])(gateway()),
+        "PutMaintenanceStartTime": lambda: {"GatewayArn": gw, "HourOfDay": 3, "MinuteOfHour": 30, "DayOfWeek": 6},
+        "PutBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw, "BandwidthRateLimitIntervals": [
+            {"AverageUploadRateLimitInBitsPerSec": 104857600, "StartHourOfDay": 9, "StartMinuteOfHour": 0,
+             "EndHourOfDay": 17, "EndMinuteOfHour": 0, "DaysOfWeek": [1, 2, 3, 4, 5]}]},
+        "GetBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw},
+        "TestHypervisorConfiguration": lambda: {"GatewayArn": gw, "Host": "vcenter.example.com", "Username": "backup", "Password": "Coverage-Only-1"},
+        "ImportHypervisorConfiguration": lambda: {"Name": "sy-imported", "Host": f"esxi-{run}.example.com", "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "GetHypervisor": lambda: {"HypervisorArn": hv},
+        "ListHypervisors": lambda: {"MaxResults": 10},
+        "UpdateHypervisor": lambda: {"HypervisorArn": hv, "Name": "sy-renamed"},
+        "DeleteHypervisor": lambda: {"HypervisorArn": hypervisor()},
+        "PutHypervisorPropertyMappings": lambda: {"HypervisorArn": hv, "IamRoleArn": f"arn:aws:iam::{EDGE_ACCOUNT}:role/stackyard-bgw",
+                                                  "VmwareToAwsTagMappings": [{"VmwareCategory": "tier", "VmwareTagName": "gold", "AwsTagKey": "tier", "AwsTagValue": "gold"}]},
+        "GetHypervisorPropertyMappings": lambda: {"HypervisorArn": hv},
+        "StartVirtualMachinesMetadataSync": lambda: {"HypervisorArn": hv},
+        "GetVirtualMachine": lambda: {"ResourceArn": state["vm"]},
+        "ListVirtualMachines": lambda: {"HypervisorArn": hv},
+        "ListTagsForResource": lambda: {"ResourceArn": gw},
+        "TagResource": lambda: {"ResourceARN": gw, "Tags": [{"Key": "env", "Value": "coverage"}]},
+        "UntagResource": lambda: {"ResourceARN": gw, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def acp_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "applicationcostprofiler", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def acp_definition(report_id: str, bucket: str) -> dict:
+    return {
+        "reportId": report_id, "reportDescription": "Stackyard coverage report", "reportFrequency": "DAILY",
+        "format": "CSV", "destinationS3Location": {"bucket": bucket, "prefix": "tenant-reports"},
+    }
+
+
+def acp_new_definition(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str) -> str:
+    report_id = f"stackyard-report-{time.time_ns()}"
+    acp_cli(aws_bin, endpoint_url, region, env, "put-report-definition", acp_definition(report_id, bucket))
+    return report_id
+
+
+def applicationcostprofiler_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A bucket holding a usage file and a shared report definition; DeleteReportDefinition gets its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("applicationcostprofiler", {})
+    if not state.get("report"):
+        bucket = f"stackyard-acp-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        usage = "ApplicationId,TenantId,TenantDesc,ResourceId,StartTime,EndTime\n" \
+                "app-1,tenant-a,Tenant A,i-0abc,2026-01-01T00:00:00Z,2026-01-01T06:00:00Z\n" \
+                "app-1,tenant-b,Tenant B,i-0abc,2026-01-01T00:00:00Z,2026-01-01T02:00:00Z\n"
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write(usage)
+            usage_path = fh.name
+        try:
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env,
+                         ["--bucket", bucket, "--key", "usage/usage.csv", "--body", usage_path])
+        finally:
+            os.unlink(usage_path)
+        state["bucket"] = bucket
+        state["report"] = acp_new_definition(aws_bin, endpoint_url, region, env, bucket)
+    bucket, report = str(state["bucket"]), str(state["report"])
+    if op == "PutReportDefinition":
+        return acp_definition(f"stackyard-report-{time.time_ns()}", bucket)
+    if op == "UpdateReportDefinition":
+        updated = acp_definition(report, bucket)
+        updated["reportFrequency"] = "MONTHLY"
+        return updated
+    if op == "GetReportDefinition":
+        return {"reportId": report}
+    if op == "DeleteReportDefinition":
+        return {"reportId": acp_new_definition(aws_bin, endpoint_url, region, env, bucket)}
+    if op == "ListReportDefinitions":
+        return {}
+    if op == "ImportApplicationUsage":
+        return {"sourceS3Location": {"bucket": bucket, "key": "usage/usage.csv"}}
+    return payload
+
+
+def bcmd_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-dashboards", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+BCMD_WIDGET_ID = "0123456789abcdef0123456789abcdef"
+
+
+def bcmd_widgets() -> list:
+    return [{
+        "id": BCMD_WIDGET_ID, "title": "Monthly cost by service", "width": 4, "height": 4,
+        "configs": [{
+            "queryParameters": {"costAndUsage": {
+                "metrics": ["UnblendedCost"], "granularity": "MONTHLY",
+                "timeRange": {"startTime": {"type": "RELATIVE", "value": "-P3M"}, "endTime": {"type": "RELATIVE", "value": "P0D"}},
+                "groupBy": [{"key": "SERVICE", "type": "DIMENSION"}],
+                "filter": {"dimensions": {"key": "REGION", "values": ["us-east-1"]}},
+            }},
+            "displayConfig": {"graph": {"default": {"visualType": "BAR"}}},
+        }],
+    }]
+
+
+def bcmd_new_dashboard(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-dashboard-{time.time_ns()}"
+    return str(bcmd_cli(aws_bin, endpoint_url, region, env, "create-dashboard", {"name": name, "widgets": bcmd_widgets()}).get("arn") or "")
+
+
+def bcmd_report(dashboard: str) -> dict:
+    return {
+        "name": f"stackyard-report-{time.time_ns()}", "dashboardArn": dashboard,
+        "scheduledReportExecutionRoleArn": "arn:aws:iam::123456789012:role/stackyard-reports",
+        "scheduleConfig": {"scheduleExpression": "cron(0 8 ? * MON *)", "scheduleExpressionTimeZone": "UTC", "state": "ENABLED"},
+        "widgetIds": [BCMD_WIDGET_ID],
+    }
+
+
+def bcmd_new_report(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dashboard: str) -> str:
+    return str(bcmd_cli(aws_bin, endpoint_url, region, env, "create-scheduled-report", {"scheduledReport": bcmd_report(dashboard)}).get("arn") or "")
+
+
+def bcmdashboards_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared dashboard and scheduled report; deletes get resources of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("bcmdashboards", {})
+    if not state.get("report"):
+        state["dashboard"] = bcmd_new_dashboard(aws_bin, endpoint_url, region, env)
+        state["report"] = bcmd_new_report(aws_bin, endpoint_url, region, env, str(state["dashboard"]))
+    dashboard, report = str(state["dashboard"]), str(state["report"])
+    if op == "CreateDashboard":
+        return {"name": f"stackyard-dashboard-{time.time_ns()}", "description": "Stackyard coverage dashboard",
+                "widgets": bcmd_widgets(), "resourceTags": [{"key": "team", "value": "finance"}]}
+    if op in {"GetDashboard"}:
+        return {"arn": dashboard}
+    if op == "UpdateDashboard":
+        return {"arn": dashboard, "name": f"stackyard-dashboard-{time.time_ns()}", "description": "updated", "widgets": bcmd_widgets()}
+    if op == "DeleteDashboard":
+        return {"arn": bcmd_new_dashboard(aws_bin, endpoint_url, region, env)}
+    if op == "GetResourcePolicy":
+        return {"resourceArn": dashboard}
+    if op in {"ListDashboards", "ListScheduledReports"}:
+        return {}
+    if op == "CreateScheduledReport":
+        return {"scheduledReport": bcmd_report(dashboard), "clientToken": f"stackyard-{time.time_ns()}"}
+    if op == "GetScheduledReport":
+        return {"arn": report}
+    if op == "UpdateScheduledReport":
+        return {"arn": report, "description": "updated by Stackyard coverage", "scheduleConfig": {"state": "DISABLED"}}
+    if op == "ExecuteScheduledReport":
+        return {"arn": report, "dryRun": False}
+    if op == "DeleteScheduledReport":
+        return {"arn": bcmd_new_report(aws_bin, endpoint_url, region, env, dashboard)}
+    if op == "TagResource":
+        return {"resourceArn": dashboard, "resourceTags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": dashboard, "resourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": dashboard}
+    return payload
+
+
+BCMPC_ACCOUNT = "123456789012"
+BCMPC_RI_OFFERING = "7d1e2f3a-4b5c-4d6e-8f9a-0b1c2d3e4f5a"
+
+
+def bcmpc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-pricing-calculator", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def bcmpc_month_start() -> str:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now.strftime("%Y-%m-01T00:00:00Z")
+
+
+def bcmpc_usage_entry(key: str) -> dict:
+    return {"serviceCode": "AmazonEC2", "usageType": "BoxUsage:m5.large", "operation": "RunInstances", "key": key,
+            "usageAccountId": BCMPC_ACCOUNT, "amounts": [{"startHour": bcmpc_month_start(), "amount": 2.0}]}
+
+
+def bcmpc_commit_entry(key: str) -> dict:
+    return {"key": key, "usageAccountId": BCMPC_ACCOUNT, "commitmentAction": {
+        "addReservedInstanceAction": {"reservedInstancesOfferingId": BCMPC_RI_OFFERING, "instanceCount": 1}}}
+
+
+def bcmpc_workload_entry(key: str) -> dict:
+    return {"serviceCode": "AmazonS3", "usageType": "TimedStorage-ByteHrs", "operation": "StandardStorage", "key": key,
+            "usageAccountId": BCMPC_ACCOUNT, "amount": 500.0}
+
+
+def bcmpc_new(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> str:
+    return str(bcmpc_cli(aws_bin, endpoint_url, region, env, op, payload).get("id") or "")
+
+
+def bcmpc_new_item(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> str:
+    items = bcmpc_cli(aws_bin, endpoint_url, region, env, op, payload).get("items") or [{}]
+    return str(items[0].get("id") or "")
+
+
+def bcmpricingcalculator_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared scenario (with usage and an RI), a bill estimate of it and a workload estimate.
+    Deletes get resources of their own; a new estimate completes on the next request."""
+    op = endpoint.operation
+    call = lambda o, p: bcmpc_new(aws_bin, endpoint_url, region, env, o, p)  # noqa: E731
+    item = lambda o, p: bcmpc_new_item(aws_bin, endpoint_url, region, env, o, p)  # noqa: E731
+    state = RUNTIME_STATE.setdefault("bcmpricingcalculator", {})
+    if not state.get("workload"):
+        scenario = call("create-bill-scenario", {"name": f"stackyard-scenario-{time.time_ns()}"})
+        item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("web")]})
+        item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("ri")]})
+        state["scenario"] = scenario
+        state["estimate"] = call("create-bill-estimate", {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"})
+        workload = call("create-workload-estimate", {"name": f"stackyard-workload-{time.time_ns()}"})
+        item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("s3")]})
+        state["workload"] = workload
+    scenario, estimate, workload = str(state["scenario"]), str(state["estimate"]), str(state["workload"])
+    arn = f"arn:aws:bcm-pricing-calculator::{BCMPC_ACCOUNT}:bill-scenario/{scenario}"
+    if op == "GetPreferences":
+        return {}
+    if op == "UpdatePreferences":
+        rates = ["BEFORE_DISCOUNTS", "AFTER_DISCOUNTS", "AFTER_DISCOUNTS_AND_COMMITMENTS"]
+        return {"standaloneAccountRateTypeSelections": rates, "managementAccountRateTypeSelections": rates}
+    if op == "CreateBillScenario":
+        return {"name": f"stackyard-scenario-{time.time_ns()}", "tags": {"team": "finance"}}
+    if op == "GetBillScenario":
+        return {"identifier": scenario}
+    if op == "UpdateBillScenario":
+        return {"identifier": scenario, "name": f"stackyard-scenario-{time.time_ns()}"}
+    if op == "DeleteBillScenario":
+        return {"identifier": call("create-bill-scenario", {"name": f"stackyard-scenario-{time.time_ns()}"})}
+    if op in {"ListBillScenarios", "ListBillEstimates", "ListWorkloadEstimates"}:
+        return {}
+    if op == "BatchCreateBillScenarioUsageModification":
+        return {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("api")]}
+    if op == "BatchUpdateBillScenarioUsageModification":
+        mod = item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("upd")]})
+        return {"billScenarioId": scenario, "usageModifications": [{"id": mod, "group": "web", "amounts": [{"startHour": bcmpc_month_start(), "amount": 3.0}]}]}
+    if op == "BatchDeleteBillScenarioUsageModification":
+        mod = item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("del")]})
+        return {"billScenarioId": scenario, "ids": [mod]}
+    if op in {"ListBillScenarioUsageModifications", "ListBillScenarioCommitmentModifications"}:
+        return {"billScenarioId": scenario}
+    if op == "BatchCreateBillScenarioCommitmentModification":
+        return {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("ri2")]}
+    if op == "BatchUpdateBillScenarioCommitmentModification":
+        mod = item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("upd")]})
+        return {"billScenarioId": scenario, "commitmentModifications": [{"id": mod, "group": "reserved"}]}
+    if op == "BatchDeleteBillScenarioCommitmentModification":
+        mod = item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("del")]})
+        return {"billScenarioId": scenario, "ids": [mod]}
+    if op == "CreateBillEstimate":
+        return {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"}
+    if op == "GetBillEstimate":
+        return {"identifier": estimate}
+    if op == "UpdateBillEstimate":
+        return {"identifier": estimate, "name": f"stackyard-estimate-{time.time_ns()}"}
+    if op == "DeleteBillEstimate":
+        return {"identifier": call("create-bill-estimate", {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"})}
+    if op in {"ListBillEstimateLineItems", "ListBillEstimateCommitments", "ListBillEstimateInputUsageModifications",
+              "ListBillEstimateInputCommitmentModifications"}:
+        return {"billEstimateId": estimate}
+    if op == "CreateWorkloadEstimate":
+        return {"name": f"stackyard-workload-{time.time_ns()}", "rateType": "BEFORE_DISCOUNTS"}
+    if op == "GetWorkloadEstimate":
+        return {"identifier": workload}
+    if op == "UpdateWorkloadEstimate":
+        return {"identifier": workload, "name": f"stackyard-workload-{time.time_ns()}"}
+    if op == "DeleteWorkloadEstimate":
+        return {"identifier": call("create-workload-estimate", {"name": f"stackyard-workload-{time.time_ns()}"})}
+    if op == "BatchCreateWorkloadEstimateUsage":
+        return {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("s3b")]}
+    if op == "BatchUpdateWorkloadEstimateUsage":
+        line = item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("upd")]})
+        return {"workloadEstimateId": workload, "usage": [{"id": line, "amount": 750.0}]}
+    if op == "BatchDeleteWorkloadEstimateUsage":
+        line = item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("del")]})
+        return {"workloadEstimateId": workload, "ids": [line]}
+    if op == "ListWorkloadEstimateUsage":
+        return {"workloadEstimateId": workload}
+    if op == "GetUsageLinesEstimatedCost":
+        return {"rateType": "BEFORE_DISCOUNTS", "usage": [
+            {"serviceCode": "AWSLambda", "usageType": "Request", "operation": "Invoke", "key": "lambda", "amount": 1000000.0},
+            {"serviceCode": "AmazonEC2", "usageType": "BoxUsage:t3.micro", "operation": "RunInstances", "key": "ec2", "amount": 730.0},
+        ]}
+    if op == "TagResource":
+        return {"arn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"arn": arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"arn": arn}
+    return payload
+
+
+SMX_ROLE = "arn:aws:iam::123456789012:role/stackyard-sagemaker"
+SMX_FEATURES = [
+    {"FeatureName": "customer_id", "FeatureType": "String"},
+    {"FeatureName": "event_time", "FeatureType": "Fractional"},
+    {"FeatureName": "score", "FeatureType": "Fractional"},
+]
+
+
+class SmxFixture:
+    """SageMaker feature groups, device fleets, devices, edge deployment plans
+    and trial components created through the CLI, named uniquely per run
+    (servers are reused between the contract and io runs)."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict) -> dict:
+        aws_bin, endpoint_url, region, env = self.args
+        cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+        return run_aws_json(aws_bin, endpoint_url, region, "sagemaker", cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+    def group_args(self) -> dict:
+        return {"FeatureGroupName": self.name("fg"), "RecordIdentifierFeatureName": "customer_id",
+                "EventTimeFeatureName": "event_time", "FeatureDefinitions": SMX_FEATURES,
+                "OnlineStoreConfig": {"EnableOnlineStore": True}}
+
+    def group(self) -> str:
+        args = self.group_args()
+        self.call("CreateFeatureGroup", args)
+        return args["FeatureGroupName"]
+
+    def fleet(self) -> str:
+        name = self.name("fleet")
+        self.call("CreateDeviceFleet", {"DeviceFleetName": name, "OutputConfig": {"S3OutputLocation": "s3://stackyard-edge/out"}})
+        return name
+
+    def device(self, fleet: str) -> str:
+        name = self.name("dev")
+        self.call("RegisterDevices", {"DeviceFleetName": fleet, "Devices": [{"DeviceName": name}]})
+        return name
+
+    def plan_args(self, fleet: str) -> dict:
+        return {"EdgeDeploymentPlanName": self.name("plan"), "DeviceFleetName": fleet,
+                "ModelConfigs": [{"ModelHandle": "detector", "EdgePackagingJobName": "stackyard-pkg"}],
+                "Stages": [{"StageName": "all", "DeviceSelectionConfig": {"DeviceSubsetType": "PERCENTAGE", "Percentage": 100}}]}
+
+    def plan(self, fleet: str, start: bool = False) -> str:
+        args = self.plan_args(fleet)
+        self.call("CreateEdgeDeploymentPlan", args)
+        if start:
+            self.call("StartEdgeDeploymentStage", {"EdgeDeploymentPlanName": args["EdgeDeploymentPlanName"], "StageName": "all"})
+        return args["EdgeDeploymentPlanName"]
+
+    def component(self) -> str:
+        name = self.name("tc")
+        self.call("CreateTrialComponent", {"TrialComponentName": name})
+        return name
+
+
+def sagemaker_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached set of SageMaker resources shared by the SageMaker, Feature
+    Store Runtime, Metrics and Edge payloads."""
+    state = RUNTIME_STATE.setdefault("sagemaker", {})
+    if state.get("smx"):
+        return state
+    fx = SmxFixture(aws_bin, endpoint_url, region, env)
+    group, fleet = fx.group(), fx.fleet()
+    device = fx.device(fleet)
+    plan = fx.plan(fleet, start=True)
+    component = fx.component()
+    record = "customer-1"
+    smfs_put(aws_bin, endpoint_url, region, env, group, record, time.time())
+    run_aws_json(aws_bin, endpoint_url, region, "sagemaker-metrics", "batch-put-metrics", env, ["--cli-input-json", json.dumps(
+        {"TrialComponentName": component, "MetricData": [{"MetricName": "loss", "Timestamp": time.time(), "Step": 1, "Value": 0.5}]})])
+    state.update({"smx": fx, "group": group, "fleet": fleet, "device": device, "plan": plan,
+                  "component": component, "record": record})
+    return state
+
+
+def smfs_put(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], group: str, record: str, at: float) -> None:
+    run_aws_json(aws_bin, endpoint_url, region, "sagemaker-featurestore-runtime", "put-record", env, ["--cli-input-json", json.dumps(
+        {"FeatureGroupName": group, "Record": [{"FeatureName": "customer_id", "ValueAsString": record},
+                                               {"FeatureName": "event_time", "ValueAsString": str(at)}]})])
+
+
+SMX_STATEFUL_OPS = {
+    "CreateFeatureGroup", "DescribeFeatureGroup", "UpdateFeatureGroup", "DeleteFeatureGroup", "ListFeatureGroups",
+    "CreateDeviceFleet", "DescribeDeviceFleet", "UpdateDeviceFleet", "DeleteDeviceFleet", "ListDeviceFleets",
+    "RegisterDevices", "DeregisterDevices", "DescribeDevice", "ListDevices", "UpdateDevices",
+    "CreateEdgeDeploymentPlan", "DescribeEdgeDeploymentPlan", "DeleteEdgeDeploymentPlan",
+    "StartEdgeDeploymentStage", "StopEdgeDeploymentStage",
+    "CreateTrialComponent", "DescribeTrialComponent", "DeleteTrialComponent", "ListTrialComponents",
+}
+
+
+def sagemaker_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """The SageMaker operations backed by real state get model-valid payloads
+    that point at the cached fixture; creates and destructive operations get
+    resources of their own. Every other operation keeps the generic payload."""
+    op = endpoint.operation
+    if op not in SMX_STATEFUL_OPS:
+        return payload
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    fx: SmxFixture = st["smx"]
+    fleet_out = {"S3OutputLocation": "s3://stackyard-edge/out"}
+    simple = {
+        "DescribeFeatureGroup": {"FeatureGroupName": st["group"]},
+        "ListFeatureGroups": {"MaxResults": 10},
+        "DescribeDeviceFleet": {"DeviceFleetName": st["fleet"]},
+        "ListDeviceFleets": {"MaxResults": 10},
+        "DescribeDevice": {"DeviceName": st["device"], "DeviceFleetName": st["fleet"]},
+        "ListDevices": {"DeviceFleetName": st["fleet"]},
+        "DescribeEdgeDeploymentPlan": {"EdgeDeploymentPlanName": st["plan"]},
+        "DescribeTrialComponent": {"TrialComponentName": st["component"]},
+        "ListTrialComponents": {"MaxResults": 10},
+    }
+    if op in simple:
+        return simple[op]
+    if op == "CreateFeatureGroup":
+        return {**fx.group_args(), "Description": "coverage", "Tags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UpdateFeatureGroup":
+        return {"FeatureGroupName": fx.group(), "FeatureAdditions": [{"FeatureName": "city", "FeatureType": "String"}]}
+    if op == "DeleteFeatureGroup":
+        return {"FeatureGroupName": fx.group()}
+    if op == "CreateDeviceFleet":
+        return {"DeviceFleetName": fx.name("fleet"), "OutputConfig": fleet_out, "RoleArn": SMX_ROLE, "EnableIotRoleAlias": True}
+    if op == "UpdateDeviceFleet":
+        return {"DeviceFleetName": st["fleet"], "OutputConfig": fleet_out, "Description": "coverage"}
+    if op == "DeleteDeviceFleet":
+        return {"DeviceFleetName": fx.fleet()}
+    if op == "RegisterDevices":
+        return {"DeviceFleetName": st["fleet"], "Devices": [{"DeviceName": fx.name("dev"), "Description": "coverage"}]}
+    if op == "DeregisterDevices":
+        return {"DeviceFleetName": st["fleet"], "DeviceNames": [fx.device(st["fleet"])]}
+    if op == "UpdateDevices":
+        return {"DeviceFleetName": st["fleet"], "Devices": [{"DeviceName": st["device"], "Description": "coverage"}]}
+    if op == "CreateEdgeDeploymentPlan":
+        return fx.plan_args(st["fleet"])
+    if op == "DeleteEdgeDeploymentPlan":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"])}
+    if op == "StartEdgeDeploymentStage":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"]), "StageName": "all"}
+    if op == "StopEdgeDeploymentStage":
+        return {"EdgeDeploymentPlanName": fx.plan(st["fleet"], start=True), "StageName": "all"}
+    if op == "CreateTrialComponent":
+        return {"TrialComponentName": fx.name("tc"), "Parameters": {"lr": {"NumberValue": 0.1}}}
+    if op == "DeleteTrialComponent":
+        return {"TrialComponentName": fx.component()}
+    return payload
+
+
+def sagemakerfeaturestoreruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Read and write records of the fixture's online feature group."""
+    op = endpoint.operation
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    group, record, now = st["group"], st["record"], time.time()
+    row = [{"FeatureName": "customer_id", "ValueAsString": record}, {"FeatureName": "event_time", "ValueAsString": str(now)}]
+    if op == "PutRecord":
+        return {"FeatureGroupName": group, "Record": row + [{"FeatureName": "score", "ValueAsString": "0.5"}]}
+    if op == "GetRecord":
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": record}
+    if op == "UpdateRecord":
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": record,
+                "Features": [{"FeatureName": "score", "ValueAsString": "0.75"}]}
+    if op == "ListRecords":
+        return {"FeatureGroupName": group, "MaxResults": 10}
+    if op == "DeleteRecord":
+        doomed = st["smx"].name("rec")
+        smfs_put(aws_bin, endpoint_url, region, env, group, doomed, now)
+        return {"FeatureGroupName": group, "RecordIdentifierValueAsString": doomed, "EventTime": str(now + 1)}
+    if op == "BatchGetRecord":
+        return {"Identifiers": [{"FeatureGroupName": group, "RecordIdentifiersValueAsString": [record]}]}
+    if op == "BatchWriteRecord":
+        return {"Entries": [{"FeatureGroupName": group, "Record": row}]}
+    return payload
+
+
+def sagemakermetrics_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Put and query metrics of the fixture's trial component."""
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    if endpoint.operation == "BatchPutMetrics":
+        return {"TrialComponentName": st["component"],
+                "MetricData": [{"MetricName": "loss", "Timestamp": time.time(), "Step": 2, "Value": 0.25}]}
+    if endpoint.operation == "BatchGetMetrics":
+        arn = f"arn:aws:sagemaker:us-east-1:123456789012:experiment-trial-component/{st['component']}"
+        return {"MetricQueries": [{"MetricName": "loss", "ResourceArn": arn, "MetricStat": "Avg",
+                                   "Period": "IterationNumber", "XAxisType": "IterationNumber"}]}
+    return payload
+
+
+def sagemakeredge_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Act as the edge agent of the fixture's registered device."""
+    st = sagemaker_fixture(aws_bin, endpoint_url, region, env)
+    device = {"DeviceName": st["device"], "DeviceFleetName": st["fleet"]}
+    if endpoint.operation == "SendHeartbeat":
+        return {**device, "AgentVersion": "1.0",
+                "Models": [{"ModelName": "detector", "ModelVersion": "1", "LatestInference": time.time()}],
+                "AgentMetrics": [{"Dimension": "cpu", "MetricName": "utilization", "Value": 0.5, "Timestamp": time.time()}]}
+    if endpoint.operation in {"GetDeployments", "GetDeviceRegistration"}:
+        return device
+    return payload
+
+
+ACCT_MEMBER = "210987654321"
+ACCT_CALLER = "123456789012"
+
+
+def acct_otp(account: str, value: str) -> str:
+    """The one-time code Stackyard derives for a primary email or phone number."""
+    return hashlib.sha256(f"{account}:{value}".encode()).hexdigest()[:6].upper()
+
+
+def acct_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], service: str, op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, service, op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def acct_contact_info(phone: str) -> dict:
+    return {"FullName": "Stackyard Coverage", "AddressLine1": "1 Main St", "City": "Seattle", "StateOrRegion": "WA",
+            "PostalCode": "98101", "CountryCode": "US", "PhoneNumber": phone}
+
+
+def account_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each Account operation the state it reads: contacts, a contact
+    record with a fresh phone number, a started email update for the member
+    account, or an opt-in Region. Names are unique per run."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "account", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    member = {"AccountId": ACCT_MEMBER}
+    contact = {"Name": "Coverage Contact", "Title": "Ops", "EmailAddress": "ops@example.com", "PhoneNumber": "+1 206 555 0100"}
+    if op in {"GetAccountInformation", "GetGovCloudAccountInformation", "ListRegions"}:
+        return {}
+    if op == "PutAccountName":
+        return {"AccountName": f"stackyard-{stamp[-8:]}"}
+    if op == "PutAlternateContact":
+        return {**contact, "AlternateContactType": "SECURITY"}
+    if op in {"GetAlternateContact", "DeleteAlternateContact"}:
+        kind = "BILLING" if op == "GetAlternateContact" else "OPERATIONS"
+        cli("put-alternate-contact", {**contact, "AlternateContactType": kind})
+        return {"AlternateContactType": kind}
+    phone = f"+1 206 555 {stamp[-4:]}"
+    if op == "PutContactInformation":
+        return {"ContactInformation": acct_contact_info(phone)}
+    if op in {"GetContactInformation", "SendPhoneNumberVerification", "VerifyPhoneNumber"}:
+        cli("put-contact-information", {"ContactInformation": acct_contact_info(phone)})
+        if op == "VerifyPhoneNumber":
+            cli("send-phone-number-verification", {})
+            return {"Otp": acct_otp(ACCT_CALLER, phone)}
+        return {}
+    email = f"member-{stamp}@example.com"
+    if op == "GetPrimaryEmail":
+        return dict(member)
+    if op == "StartPrimaryEmailUpdate":
+        return {**member, "PrimaryEmail": email}
+    if op in {"AcceptPrimaryEmailUpdate", "GetPrimaryEmailUpdateStatus"}:
+        cli("start-primary-email-update", {**member, "PrimaryEmail": email})
+        if op == "AcceptPrimaryEmailUpdate":
+            return {**member, "PrimaryEmail": email, "Otp": acct_otp(ACCT_MEMBER, email)}
+        return dict(member)
+    if op == "GetRegionOptStatus":
+        return {"RegionName": "us-east-1"}
+    if op == "EnableRegion":
+        return {"RegionName": "af-south-1"}
+    if op == "DisableRegion":
+        # Enable, let the change settle (two reads), then opt back out.
+        cli("enable-region", {"RegionName": "eu-south-2"})
+        for _ in range(2):
+            cli("get-region-opt-status", {"RegionName": "eu-south-2"})
+        return {"RegionName": "eu-south-2"}
+    return payload
+
+
+def freetier_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    if op == "GetAccountActivity":
+        data = acct_cli(aws_bin, endpoint_url, region, env, "freetier", "list-account-activities", {})
+        activities = data.get("activities") or [{}]
+        return {"activityId": str(activities[0].get("activityId") or ""), "languageCode": "en-US"}
+    if op == "UpgradeAccountPlan":
+        return {"accountPlanType": "PAID"}
+    if op == "GetFreeTierUsage":
+        return {"filter": {"Dimensions": {"Key": "FREE_TIER_TYPE", "Values": ["Always Free"], "MatchOptions": ["EQUALS"]}}, "maxResults": 10}
+    if op == "ListAccountActivities":
+        return {"maxResults": 10}
+    return {}
+
+
+TAXS_ADDRESS = {"addressLine1": "Hauptstr. 1", "city": "Berlin", "postalCode": "10115", "countryCode": "DE"}
+
+
+def taxs_entry(doc: bool = False) -> dict:
+    entry = {"registrationId": "DE123456789", "registrationType": "VAT", "legalName": "Stackyard GmbH", "legalAddress": TAXS_ADDRESS}
+    if doc:
+        content = base64.b64encode(b"Stackyard VAT certificate").decode()
+        entry["verificationDetails"] = {"taxRegistrationDocuments": [{"file": {"fileName": "vat.pdf", "fileContent": content}}]}
+    return entry
+
+
+def taxsettings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Registrations for the caller and the Organizations member account,
+    a document written back to a bucket of its own, supplemental
+    registrations and exemptions."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "taxsettings", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    if op == "PutTaxRegistration":
+        return {"taxRegistrationEntry": taxs_entry()}
+    if op == "BatchPutTaxRegistration":
+        return {"accountIds": [ACCT_MEMBER], "taxRegistrationEntry": taxs_entry(doc=True)}
+    if op in {"GetTaxRegistration", "PutTaxInheritance"}:
+        cli("put-tax-registration", {"taxRegistrationEntry": taxs_entry()})
+        return {} if op == "GetTaxRegistration" else {"heritageStatus": "OptIn"}
+    if op in {"DeleteTaxRegistration", "BatchDeleteTaxRegistration"}:
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry()})
+        return {"accountId": ACCT_MEMBER} if op == "DeleteTaxRegistration" else {"accountIds": [ACCT_MEMBER]}
+    if op == "GetTaxRegistrationDocument":
+        bucket = f"stackyard-tax-docs-{stamp}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry(doc=True)})
+        reg = cli("get-tax-registration", {"accountId": ACCT_MEMBER}).get("taxRegistration") or {}
+        meta = (reg.get("taxDocumentMetadatas") or [{}])[0]
+        return {"taxDocumentMetadata": meta, "destinationS3Location": {"bucket": bucket, "prefix": "documents"}}
+    supp = {"registrationId": f"MY-{stamp}", "registrationType": "VAT", "legalName": "Stackyard Sdn Bhd",
+            "address": {"postalCode": "50000", "countryCode": "MY"}}
+    if op == "PutSupplementalTaxRegistration":
+        return {"taxRegistrationEntry": supp}
+    if op == "DeleteSupplementalTaxRegistration":
+        put = cli("put-supplemental-tax-registration", {"taxRegistrationEntry": supp})
+        return {"authorityId": str(put.get("authorityId") or "")}
+    if op == "PutTaxExemption":
+        cert = base64.b64encode(b"resale certificate").decode()
+        return {"accountIds": [ACCT_CALLER], "authority": {"country": "US", "state": "CA"}, "exemptionType": "Resale",
+                "exemptionCertificate": {"documentName": "resale.pdf", "documentFile": cert}}
+    if op == "BatchGetTaxExemptions":
+        return {"accountIds": [ACCT_CALLER, ACCT_MEMBER]}
+    if op in {"ListTaxRegistrations", "ListSupplementalTaxRegistrations", "ListTaxExemptions"}:
+        return {"maxResults": 10}
+    return {}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -40217,6 +42158,41 @@ def hydrate_payload_with_service_state(
         return workdocs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "repostspace":
         return repostspace_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmeetings":
+        return chimesdkmeetings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmessaging":
+        return chimesdkmessaging_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmediapipelines":
+        return chimesdkmediapipelines_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "outposts":
+        return outposts_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "snowdevicemanagement":
+        return snowdevicemanagement_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "backupgateway":
+        return backupgateway_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "applicationcostprofiler":
+        return applicationcostprofiler_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmdashboards":
+        return bcmdashboards_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmpricingcalculator":
+        return bcmpricingcalculator_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemaker":
+        payload = sagemaker_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakerfeaturestoreruntime":
+        return sagemakerfeaturestoreruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakermetrics":
+        return sagemakermetrics_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakeredge":
+        return sagemakeredge_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+
+    if endpoint.service == "connect" and endpoint.operation in {"StartChatContact", "CreateParticipant"}:
+        return connect_chat_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcases":
+        return connectcases_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectparticipant":
+        return connectparticipant_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcontactlens":
+        return connectcontactlens_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointemail":
         return pinpointemail_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pinpointsmsvoice":
@@ -40229,6 +42205,12 @@ def hydrate_payload_with_service_state(
         return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "frauddetector":
         return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "machinelearning":
+        return machinelearning_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "lookoutequipment":
+        return lookoutequipment_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakergeospatial":
+        return sagemakergeospatial_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotsecuretunneling":
         return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotdeviceadvisor":
@@ -40245,6 +42227,12 @@ def hydrate_payload_with_service_state(
         return personalizeevents_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeruntime":
         return personalizeruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "account":
+        return account_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "freetier":
+        return freetier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "taxsettings":
+        return taxsettings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "budgets":
         return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "costoptimizationhub":
@@ -62738,7 +64726,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource"), ("sagemakergeospatial", "GetTile")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

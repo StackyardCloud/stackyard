@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
 
 type organizationsStore struct {
@@ -141,7 +142,11 @@ func (s *organizationsStore) Handle(action string, payload map[string]any) map[s
 	if strings.HasPrefix(action, "List") {
 		switch action {
 		case "ListAccounts", "ListAccountsForParent", "ListAccountsWithInvalidEffectivePolicy":
-			return map[string]any{"Accounts": []any{map[string]any{"Id": "123456789012", "Arn": "arn:aws:organizations::123456789012:account/o-stackyard/123456789012", "Name": "stackyard-management", "Email": "owner@example.com", "Status": "ACTIVE"}}, "NextToken": ""}
+			accounts := make([]any, 0, len(organizationsAccounts))
+			for _, a := range organizationsAccounts {
+				accounts = append(accounts, map[string]any{"Id": a.ID, "Arn": "arn:aws:organizations::123456789012:account/o-stackyard/" + a.ID, "Name": a.Name, "Email": a.Email, "Status": "ACTIVE"})
+			}
+			return map[string]any{"Accounts": accounts, "NextToken": ""}
 		case "ListRoots":
 			return map[string]any{"Roots": []any{map[string]any{"Id": "r-root", "Arn": "arn:aws:organizations::123456789012:root/o-stackyard/r-root", "Name": "Root"}}, "NextToken": ""}
 		case "ListOrganizationalUnitsForParent":
@@ -235,4 +240,33 @@ func organizationsDefaultHandshake(idSuffix string) map[string]any {
 		},
 		"Resources": []any{},
 	}
+}
+
+// organizationsAccount is one account the organization reports: the
+// management account and the member CreateAccount status says it created.
+type organizationsAccount struct {
+	ID, Name, Email string
+	Management      bool
+	GovCloudID      string // linked GovCloud (US) account, if any
+	Joined          time.Time
+}
+
+var organizationsAccounts = []organizationsAccount{
+	{ID: "123456789012", Name: "stackyard-management", Email: "owner@example.com", Management: true, GovCloudID: "123456789013",
+		Joined: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
+	{ID: "210987654321", Name: "stackyard-created-account", Email: "member@example.com",
+		Joined: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)},
+}
+
+// account resolves an account ID against the organization. Other stores
+// (Account, Tax Settings) call it before taking their own lock.
+func (s *organizationsStore) account(id string) (organizationsAccount, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, a := range organizationsAccounts {
+		if a.ID == id {
+			return a, true
+		}
+	}
+	return organizationsAccount{}, false
 }
