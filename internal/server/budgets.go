@@ -60,7 +60,10 @@ type budJSONAPI struct {
 	prefix, signing, contentType, invalidCode string
 	model                                     func() *awsmodels.Model
 	handlers                                  map[string]budHandler
-	maxBody                                   int64 // 0: budMaxBody
+	// write, when set, replaces the default success writer (services whose
+	// response envelope differs from Budgets').
+	write   func(w http.ResponseWriter, body []byte)
+	maxBody int64 // 0: budMaxBody
 	// respondError writes errors in the service's own exception shape
 	// (nil: budRespondError).
 	respondError func(http.ResponseWriter, *budErr)
@@ -181,6 +184,10 @@ func (s *Server) budRun(w http.ResponseWriter, r *http.Request, api *budJSONAPI,
 		}
 	}
 	body, _ := json.Marshal(model.Conform(shapes.Output, out))
+	if api.write != nil {
+		api.write(w, body)
+		return
+	}
 	w.Header().Set("Content-Type", api.contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
