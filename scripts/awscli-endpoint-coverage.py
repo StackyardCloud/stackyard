@@ -581,6 +581,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
     "personalizeevents": {"cli": "personalize-events", "ops_file": REPO_ROOT / "internal/server/personalizeevents_ops.go"},
     "personalizeruntime": {"cli": "personalize-runtime", "ops_file": REPO_ROOT / "internal/server/personalizeruntime_ops.go"},
+    "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
+    "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
+    "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2287,6 +2290,15 @@ SERVICE_ALIASES = {
     "personalizeruntime": "personalizeruntime",
     "personalize-runtime": "personalizeruntime",
     "amazonpersonalizeruntime": "personalizeruntime",
+    "pinpointemail": "pinpointemail",
+    "pinpoint-email": "pinpointemail",
+    "amazonpinpointemail": "pinpointemail",
+    "pinpointsmsvoice": "pinpointsmsvoice",
+    "pinpoint-sms-voice": "pinpointsmsvoice",
+    "amazonpinpointsmsvoice": "pinpointsmsvoice",
+    "mailmanager": "mailmanager",
+    "mail-manager": "mailmanager",
+    "sesmailmanager": "mailmanager",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
@@ -3289,6 +3301,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "personalize": {},
     "personalizeevents": {},
     "personalizeruntime": {},
+    "pinpointemail": {},
+    "pinpointsmsvoice": {},
+    "mailmanager": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -38444,6 +38459,357 @@ def personalizeruntime_hydrate_payload(
     return payload
 
 
+MSG_ACCOUNT = "123456789012"
+MSG_SES_ARN = f"arn:aws:ses:us-east-1:{MSG_ACCOUNT}:"
+MSG_DOMAIN = "example.com"
+MSG_FROM = "billing@example.com"
+MSG_SIMPLE = {"Simple": {"Subject": {"Data": "Stackyard receipt"}, "Body": {"Text": {"Data": "Thanks for your order."}}}}
+
+
+class MsgFixture:
+    """Unique names and CLI calls for the Pinpoint Email, Pinpoint SMS Voice and Mail Manager fixtures."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.cli_service = cli_service
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict, cli_service: str = "") -> dict:
+        return psz_call(*self.args, op, args, cli_service or self.cli_service)
+
+
+def msg_window(days: int = 1) -> tuple[str, str]:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return ((now - datetime.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ"), (now + datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
+def pinpointemail_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A verified domain, a dedicated IP pool, a configuration set with an SNS
+    event destination, the dashboard tracking the domain, one sent email and
+    one test report."""
+    state = RUNTIME_STATE.setdefault("pinpointemail", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "pinpoint-email")
+    fx.call("CreateEmailIdentity", {"EmailIdentity": MSG_DOMAIN})
+    pool, cfg = fx.name("pool"), fx.name("cfg")
+    fx.call("CreateDedicatedIpPool", {"PoolName": pool})
+    fx.call("CreateConfigurationSet", {"ConfigurationSetName": cfg, "Tags": [{"Key": "team", "Value": "coverage"}]})
+    fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": cfg, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()})
+    fx.call("PutDeliverabilityDashboardOption", {"DashboardEnabled": True, "SubscribedDomains": [{"Domain": MSG_DOMAIN}]})
+    fx.call("SendEmail", {"FromEmailAddress": MSG_FROM, "Destination": {"ToAddresses": ["customer@example.org"]}, "Content": MSG_SIMPLE})
+    report = fx.call("CreateDeliverabilityTestReport", {"ReportName": fx.name("report"), "FromEmailAddress": MSG_FROM, "Content": MSG_SIMPLE}).get("ReportId", "")
+    start, end = msg_window()
+    camps = fx.call("ListDomainDeliverabilityCampaigns", {"SubscribedDomain": MSG_DOMAIN, "StartDate": start, "EndDate": end})
+    campaign = ((camps.get("DomainDeliverabilityCampaigns") or [{}])[0]).get("CampaignId", "")
+    state.update({"fx": fx, "pool": pool, "cfg": cfg, "report": report, "campaign": campaign})
+    return state
+
+
+def fx_sns_destination() -> dict:
+    return {"Enabled": True, "MatchingEventTypes": ["SEND", "BOUNCE"], "SnsDestination": {"TopicArn": f"arn:aws:sns:us-east-1:{MSG_ACCOUNT}:mail-events"}}
+
+
+def pinpointemail_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Pinpoint Email operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = pinpointemail_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    cfg, pool = st["cfg"], st["pool"]
+    start, end = msg_window()
+    cfg_arn = MSG_SES_ARN + "configuration-set/" + cfg
+
+    def fresh_cfg() -> str:
+        name = fx.name("cfg")
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": name})
+        return name
+
+    fixed = {
+        "GetAccount": {}, "GetDedicatedIps": {}, "GetDeliverabilityDashboardOptions": {}, "ListConfigurationSets": {},
+        "ListDedicatedIpPools": {}, "ListDeliverabilityTestReports": {}, "ListEmailIdentities": {},
+        "GetBlacklistReports": {"BlacklistItemNames": ["198.51.100.10", MSG_DOMAIN]},
+        "GetConfigurationSet": {"ConfigurationSetName": cfg}, "GetConfigurationSetEventDestinations": {"ConfigurationSetName": cfg},
+        "GetDedicatedIp": {"Ip": "198.51.100.10"}, "GetDeliverabilityTestReport": {"ReportId": st["report"]},
+        "GetDomainDeliverabilityCampaign": {"CampaignId": st["campaign"]},
+        "GetDomainStatisticsReport": {"Domain": MSG_DOMAIN, "StartDate": start, "EndDate": end},
+        "ListDomainDeliverabilityCampaigns": {"SubscribedDomain": MSG_DOMAIN, "StartDate": start, "EndDate": end},
+        "GetEmailIdentity": {"EmailIdentity": MSG_DOMAIN}, "ListTagsForResource": {"ResourceArn": cfg_arn},
+        "TagResource": {"ResourceArn": cfg_arn, "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": cfg_arn, "TagKeys": ["owner"]},
+        "PutAccountDedicatedIpWarmupAttributes": {"AutoWarmupEnabled": True}, "PutAccountSendingAttributes": {"SendingEnabled": True},
+        "PutConfigurationSetDeliveryOptions": {"ConfigurationSetName": cfg, "TlsPolicy": "OPTIONAL", "SendingPoolName": pool},
+        "PutConfigurationSetReputationOptions": {"ConfigurationSetName": cfg, "ReputationMetricsEnabled": True},
+        "PutConfigurationSetSendingOptions": {"ConfigurationSetName": cfg, "SendingEnabled": True},
+        "PutConfigurationSetTrackingOptions": {"ConfigurationSetName": cfg, "CustomRedirectDomain": "click." + MSG_DOMAIN},
+        "PutDedicatedIpInPool": {"Ip": "198.51.100.11", "DestinationPoolName": pool},
+        "PutDedicatedIpWarmupAttributes": {"Ip": "198.51.100.12", "WarmupPercentage": 50},
+        "PutDeliverabilityDashboardOption": {"DashboardEnabled": True, "SubscribedDomains": [{"Domain": MSG_DOMAIN, "InboxPlacementTrackingOption": {"Global": True}}]},
+        "PutEmailIdentityDkimAttributes": {"EmailIdentity": MSG_DOMAIN, "SigningEnabled": True},
+        "PutEmailIdentityFeedbackAttributes": {"EmailIdentity": MSG_DOMAIN, "EmailForwardingEnabled": True},
+        "PutEmailIdentityMailFromAttributes": {"EmailIdentity": MSG_DOMAIN, "MailFromDomain": "mail." + MSG_DOMAIN, "BehaviorOnMxFailure": "USE_DEFAULT_VALUE"},
+        "SendEmail": {"FromEmailAddress": MSG_FROM, "Destination": {"ToAddresses": ["customer@example.org"]}, "Content": MSG_SIMPLE, "ConfigurationSetName": cfg},
+        "UpdateConfigurationSetEventDestination": {"ConfigurationSetName": cfg, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()},
+        "CreateDeliverabilityTestReport": {"ReportName": fx.name("report"), "FromEmailAddress": MSG_FROM, "Content": MSG_SIMPLE},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateConfigurationSet":
+        return {"ConfigurationSetName": fx.name("cfg"), "SendingOptions": {"SendingEnabled": True}, "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "CreateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": fresh_cfg(), "EventDestinationName": "sns", "EventDestination": fx_sns_destination()}
+    if op == "CreateDedicatedIpPool":
+        return {"PoolName": fx.name("pool")}
+    if op == "CreateEmailIdentity":
+        return {"EmailIdentity": fx.name("id") + "." + MSG_DOMAIN}
+    if op == "DeleteConfigurationSet":
+        return {"ConfigurationSetName": fresh_cfg()}
+    if op == "DeleteConfigurationSetEventDestination":
+        name = fresh_cfg()
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": name, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()})
+        return {"ConfigurationSetName": name, "EventDestinationName": "sns"}
+    if op == "DeleteDedicatedIpPool":
+        name = fx.name("pool")
+        fx.call("CreateDedicatedIpPool", {"PoolName": name})
+        return {"PoolName": name}
+    if op == "DeleteEmailIdentity":
+        name = fx.name("id") + "." + MSG_DOMAIN
+        fx.call("CreateEmailIdentity", {"EmailIdentity": name})
+        return {"EmailIdentity": name}
+    return payload
+
+
+def pinpointsmsvoice_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Pinpoint SMS Voice (v1): a cached configuration set with a CloudWatch
+    Logs event destination; creates and deletes get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("pinpointsmsvoice", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "pinpoint-sms-voice")
+        state.update({"fx": fx, "set": fx.name("set")})
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": state["set"]})
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": state["set"], "EventDestinationName": "logs", "EventDestination": ppsv_destination()})
+    fx, name = state["fx"], state["set"]
+
+    def fresh_set() -> str:
+        new = fx.name("set")
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": new})
+        return new
+
+    if op == "CreateConfigurationSet":
+        return {"ConfigurationSetName": fx.name("set")}
+    if op == "CreateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": fresh_set(), "EventDestinationName": "logs", "EventDestination": ppsv_destination()}
+    if op == "DeleteConfigurationSet":
+        return {"ConfigurationSetName": fresh_set()}
+    if op == "DeleteConfigurationSetEventDestination":
+        new = fresh_set()
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": new, "EventDestinationName": "logs", "EventDestination": ppsv_destination()})
+        return {"ConfigurationSetName": new, "EventDestinationName": "logs"}
+    if op == "GetConfigurationSetEventDestinations":
+        return {"ConfigurationSetName": name}
+    if op == "UpdateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": name, "EventDestinationName": "logs", "EventDestination": ppsv_destination()}
+    if op == "ListConfigurationSets":
+        return {"PageSize": "10"}
+    if op == "SendVoiceMessage":
+        return {"OriginationPhoneNumber": "+12065550100", "DestinationPhoneNumber": "+12065550199", "ConfigurationSetName": name,
+                "CallerId": "+12065550100",
+                "Content": {"PlainTextMessage": {"LanguageCode": "en-US", "VoiceId": "Joanna", "Text": "Your code is 1 2 3 4."}}}
+    return payload
+
+
+def ppsv_destination() -> dict:
+    return {"Enabled": True, "MatchingEventTypes": ["ANSWERED", "FAILED"],
+            "CloudWatchLogsDestination": {"IamRoleArn": f"arn:aws:iam::{MSG_ACCOUNT}:role/voice", "LogGroupArn": f"arn:aws:logs:us-east-1:{MSG_ACCOUNT}:log-group:voice"}}
+
+
+MMGR_BUCKET = "stackyard-mailmanager"
+
+
+def mailmanager_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An archive fed by an SESv2 configuration set, an address list with an
+    imported member, a relay, a traffic policy, a rule set, an ingress point,
+    an add-on subscription and instance, a search and an export."""
+    state = RUNTIME_STATE.setdefault("mailmanager", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "mailmanager")
+    archive = fx.call("CreateArchive", {"ArchiveName": fx.name("archive")}).get("ArchiveId", "")
+    archive_arn = fx.call("GetArchive", {"ArchiveId": archive}).get("ArchiveArn", "")
+    cfg = fx.name("cfg")
+    fx.call("CreateEmailIdentity", {"EmailIdentity": MSG_DOMAIN}, "sesv2")
+    fx.call("CreateConfigurationSet", {"ConfigurationSetName": cfg}, "sesv2")
+    fx.call("PutConfigurationSetArchivingOptions", {"ConfigurationSetName": cfg, "ArchiveArn": archive_arn}, "sesv2")
+    fx.call("SendEmail", {"FromEmailAddress": MSG_FROM, "ConfigurationSetName": cfg, "Destination": {"ToAddresses": ["customer@example.org"]},
+                          "Content": MSG_SIMPLE}, "sesv2")
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, MMGR_BUCKET, track_as_primary=False)
+    address_list = fx.call("CreateAddressList", {"AddressListName": fx.name("list")}).get("AddressListId", "")
+    fx.call("RegisterMemberToAddressList", {"AddressListId": address_list, "Address": "vip@example.org"})
+    job = fx.call("CreateAddressListImportJob", {"AddressListId": address_list, "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "CSV"}})
+    req = urlrequest.Request(job.get("PreSignedUrl", ""), data=b"address\nimported@example.org\n", method="PUT")
+    with urlrequest.urlopen(req, timeout=10) as resp:
+        resp.read()
+    fx.call("StartAddressListImportJob", {"JobId": job.get("JobId", "")})
+    state.update({"fx": fx, "archive": archive, "archive_arn": archive_arn, "list": address_list, "job": job.get("JobId", "")})
+    state["list_arn"] = fx.call("GetAddressList", {"AddressListId": address_list}).get("AddressListArn", "")
+    state["relay"] = mmgr_relay(fx)
+    state["policy"] = mmgr_policy(fx)
+    state["rule_set"] = mmgr_rule_set(fx, state)
+    state["ingress"] = mmgr_ingress(fx, state)
+    state["sub"] = fx.call("CreateAddonSubscription", {"AddonName": fx.name("addon").upper().replace("-", "_")}).get("AddonSubscriptionId", "")
+    state["inst"] = fx.call("CreateAddonInstance", {"AddonSubscriptionId": state["sub"]}).get("AddonInstanceId", "")
+    state["search"] = mmgr_search(fx, archive)
+    state["message"] = ((fx.call("GetArchiveSearchResults", {"SearchId": state["search"]}).get("Rows") or [{}])[0]).get("ArchivedMessageId", "")
+    state["export"] = mmgr_export(fx, archive)
+    return state
+
+
+def mmgr_relay(fx: MsgFixture) -> str:
+    return fx.call("CreateRelay", {"RelayName": fx.name("relay"), "ServerName": "smtp.example.com", "ServerPort": 587,
+                                   "Authentication": {"NoAuthentication": {}}}).get("RelayId", "")
+
+
+def mmgr_policy(fx: MsgFixture) -> str:
+    return fx.call("CreateTrafficPolicy", {
+        "TrafficPolicyName": fx.name("policy"), "DefaultAction": "DENY",
+        "PolicyStatements": [{"Action": "ALLOW", "Conditions": [{"IpExpression": {"Evaluate": {"Attribute": "SENDER_IP"}, "Operator": "CIDR_MATCHES", "Values": ["10.0.0.0/8"]}}]}],
+    }).get("TrafficPolicyId", "")
+
+
+def mmgr_rules(st: dict) -> list:
+    return [{"Name": "archive-vip",
+             "Conditions": [{"BooleanExpression": {"Evaluate": {"IsInAddressList": {"Attribute": "RECIPIENT", "AddressLists": [st["list_arn"]]}}, "Operator": "IS_TRUE"}}],
+             "Actions": [{"Archive": {"TargetArchive": st["archive"]}}]}]
+
+
+def mmgr_rule_set(fx: MsgFixture, st: dict) -> str:
+    return fx.call("CreateRuleSet", {"RuleSetName": fx.name("rules"), "Rules": mmgr_rules(st)}).get("RuleSetId", "")
+
+
+def mmgr_ingress(fx: MsgFixture, st: dict) -> str:
+    return fx.call("CreateIngressPoint", {"IngressPointName": fx.name("ingress"), "Type": "OPEN", "RuleSetId": st["rule_set"],
+                                          "TrafficPolicyId": st["policy"]}).get("IngressPointId", "")
+
+
+def mmgr_span() -> dict:
+    now = time.time()
+    return {"FromTimestamp": int(now - 86400), "ToTimestamp": int(now + 3600)}
+
+
+def mmgr_search(fx: MsgFixture, archive: str) -> str:
+    return fx.call("StartArchiveSearch", {"ArchiveId": archive, "MaxResults": 10, **mmgr_span()}).get("SearchId", "")
+
+
+def mmgr_export(fx: MsgFixture, archive: str) -> str:
+    return fx.call("StartArchiveExport", {"ArchiveId": archive, **mmgr_span(),
+                                          "ExportDestinationConfiguration": {"S3": {"S3Location": f"s3://{MMGR_BUCKET}/exports"}}}).get("ExportId", "")
+
+
+def mailmanager_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Mail Manager operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = mailmanager_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    page = {"PageSize": 10}
+
+    def fresh_list() -> str:
+        return fx.call("CreateAddressList", {"AddressListName": fx.name("list")}).get("AddressListId", "")
+
+    fixed = {
+        "GetAddonInstance": {"AddonInstanceId": st["inst"]}, "GetAddonSubscription": {"AddonSubscriptionId": st["sub"]},
+        "GetAddressList": {"AddressListId": st["list"]}, "GetAddressListImportJob": {"JobId": st["job"]},
+        "GetArchive": {"ArchiveId": st["archive"]}, "GetArchiveExport": {"ExportId": st["export"]},
+        "GetArchiveMessage": {"ArchivedMessageId": st["message"]}, "GetArchiveMessageContent": {"ArchivedMessageId": st["message"]},
+        "GetArchiveSearch": {"SearchId": st["search"]}, "GetArchiveSearchResults": {"SearchId": st["search"]},
+        "GetIngressPoint": {"IngressPointId": st["ingress"], "IncludeTrustStoreContents": "EXCLUDE"},
+        "GetMemberOfAddressList": {"AddressListId": st["list"], "Address": "vip@example.org"},
+        "GetRelay": {"RelayId": st["relay"]}, "GetRuleSet": {"RuleSetId": st["rule_set"]}, "GetTrafficPolicy": {"TrafficPolicyId": st["policy"]},
+        "ListAddonInstances": page, "ListAddonSubscriptions": page, "ListAddressLists": page, "ListArchives": page,
+        "ListIngressPoints": page, "ListRelays": page, "ListRuleSets": page, "ListTrafficPolicies": page,
+        "ListAddressListImportJobs": {"AddressListId": st["list"], **page}, "ListArchiveExports": {"ArchiveId": st["archive"], **page},
+        "ListArchiveSearches": {"ArchiveId": st["archive"], **page},
+        "ListMembersOfAddressList": {"AddressListId": st["list"], "Filter": {"AddressPrefix": "v"}, **page},
+        "ListTagsForResource": {"ResourceArn": st["archive_arn"]},
+        "TagResource": {"ResourceArn": st["archive_arn"], "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": st["archive_arn"], "TagKeys": ["team"]},
+        "UpdateArchive": {"ArchiveId": st["archive"], "Retention": {"RetentionPeriod": "ONE_YEAR"}},
+        "UpdateIngressPoint": {"IngressPointId": st["ingress"], "StatusToUpdate": "ACTIVE", "RuleSetId": st["rule_set"]},
+        "UpdateRelay": {"RelayId": st["relay"], "ServerPort": 465},
+        "UpdateRuleSet": {"RuleSetId": st["rule_set"], "Rules": mmgr_rules(st)},
+        "UpdateTrafficPolicy": {"TrafficPolicyId": st["policy"], "DefaultAction": "ALLOW", "MaxMessageSizeBytes": 10485760},
+        "StartArchiveSearch": {"ArchiveId": st["archive"], "MaxResults": 10, **mmgr_span()},
+        "StartArchiveExport": {"ArchiveId": st["archive"], **mmgr_span(), "IncludeMetadata": True,
+                               "ExportDestinationConfiguration": {"S3": {"S3Location": f"s3://{MMGR_BUCKET}/exports"}}},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateAddonSubscription":
+        return {"AddonName": fx.name("addon").upper().replace("-", "_")}
+    if op == "CreateAddonInstance":
+        return {"AddonSubscriptionId": st["sub"]}
+    if op == "CreateAddressList":
+        return {"AddressListName": fx.name("list"), "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "CreateAddressListImportJob":
+        return {"AddressListId": st["list"], "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "JSON"}}
+    if op == "CreateArchive":
+        return {"ArchiveName": fx.name("archive"), "Retention": {"RetentionPeriod": "THREE_MONTHS"}}
+    if op == "CreateIngressPoint":
+        return {"IngressPointName": fx.name("ingress"), "Type": "AUTH", "RuleSetId": st["rule_set"], "TrafficPolicyId": st["policy"],
+                "IngressPointConfiguration": {"SecretArn": f"arn:aws:secretsmanager:us-east-1:{MSG_ACCOUNT}:secret:smtp"}}
+    if op == "CreateRelay":
+        return {"RelayName": fx.name("relay"), "ServerName": "smtp.example.com", "ServerPort": 25, "Authentication": {"NoAuthentication": {}}}
+    if op == "CreateRuleSet":
+        return {"RuleSetName": fx.name("rules"), "Rules": mmgr_rules(st)}
+    if op == "CreateTrafficPolicy":
+        return {"TrafficPolicyName": fx.name("policy"), "DefaultAction": "ALLOW", "PolicyStatements": [{"Action": "DENY", "Conditions": [
+            {"StringExpression": {"Evaluate": {"Attribute": "RECIPIENT"}, "Operator": "ENDS_WITH", "Values": ["@spam.example"]}}]}]}
+    if op == "DeleteAddonInstance":
+        return {"AddonInstanceId": fx.call("CreateAddonInstance", {"AddonSubscriptionId": st["sub"]}).get("AddonInstanceId", "")}
+    if op == "DeleteAddonSubscription":
+        return {"AddonSubscriptionId": fx.call("CreateAddonSubscription", {"AddonName": fx.name("addon").upper().replace("-", "_")}).get("AddonSubscriptionId", "")}
+    if op == "DeleteAddressList":
+        return {"AddressListId": fresh_list()}
+    if op == "DeleteArchive":
+        return {"ArchiveId": fx.call("CreateArchive", {"ArchiveName": fx.name("archive")}).get("ArchiveId", "")}
+    if op == "DeleteIngressPoint":
+        return {"IngressPointId": mmgr_ingress(fx, st)}
+    if op == "DeleteRelay":
+        return {"RelayId": mmgr_relay(fx)}
+    if op == "DeleteRuleSet":
+        return {"RuleSetId": mmgr_rule_set(fx, st)}
+    if op == "DeleteTrafficPolicy":
+        return {"TrafficPolicyId": mmgr_policy(fx)}
+    if op == "DeregisterMemberFromAddressList":
+        new = fresh_list()
+        fx.call("RegisterMemberToAddressList", {"AddressListId": new, "Address": "gone@example.org"})
+        return {"AddressListId": new, "Address": "gone@example.org"}
+    if op == "RegisterMemberToAddressList":
+        return {"AddressListId": st["list"], "Address": fx.name("member") + "@example.org"}
+    if op in ("StartAddressListImportJob", "StopAddressListImportJob"):
+        job = fx.call("CreateAddressListImportJob", {"AddressListId": st["list"], "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "CSV"}}).get("JobId", "")
+        if op == "StopAddressListImportJob":
+            fx.call("StartAddressListImportJob", {"JobId": job})
+        return {"JobId": job}
+    if op == "StopArchiveSearch":
+        return {"SearchId": mmgr_search(fx, st["archive"])}
+    if op == "StopArchiveExport":
+        return {"ExportId": mmgr_export(fx, st["archive"])}
+    return payload
+
+
 
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
@@ -38646,6 +39012,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "pinpointemail":
+        return pinpointemail_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pinpointsmsvoice":
+        return pinpointsmsvoice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mailmanager":
+        return mailmanager_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalize":
         return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeevents":

@@ -186,6 +186,9 @@
         <a href="#personalize">Amazon Personalize</a>
         <a href="#personalizeevents">Amazon Personalize Events</a>
         <a href="#personalizeruntime">Amazon Personalize Runtime</a>
+        <a href="#pinpointemail">Amazon Pinpoint Email</a>
+        <a href="#pinpointsmsvoice">Amazon Pinpoint SMS and Voice</a>
+        <a href="#mailmanager">Amazon SES Mail Manager</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -13447,6 +13450,204 @@
         <summary>Examples</summary>
         <ul>
         <li><code>personalize-runtime</code>: <code>docker compose -f examples/aws/personalize-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="pinpointemail" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Pinpoint Email</h2>
+        <p>SigV4 signed with service <code>ses</code>. Pinpoint Email on SESv2's account state: identities with DKIM, feedback and MAIL FROM settings, configuration sets with delivery, reputation, sending and tracking options and event destinations, dedicated IPs and pools, the deliverability dashboard with domain statistics and campaigns from sent mail, test reports, SendEmail (Simple, Raw or Template) with the send quota, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ses</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Pinpoint Email action catalog (42 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConfigurationSet</code></td></tr>
+        <tr><td><code>CreateConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>CreateDedicatedIpPool</code></td></tr>
+        <tr><td><code>CreateDeliverabilityTestReport</code></td></tr>
+        <tr><td><code>CreateEmailIdentity</code></td></tr>
+        <tr><td><code>DeleteConfigurationSet</code></td></tr>
+        <tr><td><code>DeleteConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>DeleteDedicatedIpPool</code></td></tr>
+        <tr><td><code>DeleteEmailIdentity</code></td></tr>
+        <tr><td><code>GetAccount</code></td></tr>
+        <tr><td><code>GetBlacklistReports</code></td></tr>
+        <tr><td><code>GetConfigurationSet</code></td></tr>
+        <tr><td><code>GetConfigurationSetEventDestinations</code></td></tr>
+        <tr><td><code>GetDedicatedIp</code></td></tr>
+        <tr><td><code>GetDedicatedIps</code></td></tr>
+        <tr><td><code>GetDeliverabilityDashboardOptions</code></td></tr>
+        <tr><td><code>GetDeliverabilityTestReport</code></td></tr>
+        <tr><td><code>GetDomainDeliverabilityCampaign</code></td></tr>
+        <tr><td><code>GetDomainStatisticsReport</code></td></tr>
+        <tr><td><code>GetEmailIdentity</code></td></tr>
+        <tr><td><code>ListConfigurationSets</code></td></tr>
+        <tr><td><code>ListDedicatedIpPools</code></td></tr>
+        <tr><td><code>ListDeliverabilityTestReports</code></td></tr>
+        <tr><td><code>ListDomainDeliverabilityCampaigns</code></td></tr>
+        <tr><td><code>ListEmailIdentities</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutAccountDedicatedIpWarmupAttributes</code></td></tr>
+        <tr><td><code>PutAccountSendingAttributes</code></td></tr>
+        <tr><td><code>PutConfigurationSetDeliveryOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetReputationOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetSendingOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetTrackingOptions</code></td></tr>
+        <tr><td><code>PutDedicatedIpInPool</code></td></tr>
+        <tr><td><code>PutDedicatedIpWarmupAttributes</code></td></tr>
+        <tr><td><code>PutDeliverabilityDashboardOption</code></td></tr>
+        <tr><td><code>PutEmailIdentityDkimAttributes</code></td></tr>
+        <tr><td><code>PutEmailIdentityFeedbackAttributes</code></td></tr>
+        <tr><td><code>PutEmailIdentityMailFromAttributes</code></td></tr>
+        <tr><td><code>SendEmail</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateConfigurationSetEventDestination</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pinpoint-email</code>: <code>docker compose -f examples/aws/pinpoint-email/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="pinpointsmsvoice" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Pinpoint SMS and Voice</h2>
+        <p>SigV4 signed with service <code>sms-voice</code>. Version 1 voice API: configuration sets with CloudWatch Logs, Kinesis Data Firehose or SNS event destinations, and voice messages (plain text, call instructions or SSML) validated against E.164 numbers and their configuration set.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sms-voice</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Pinpoint SMS and Voice action catalog (8 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConfigurationSet</code></td></tr>
+        <tr><td><code>CreateConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>DeleteConfigurationSet</code></td></tr>
+        <tr><td><code>DeleteConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>GetConfigurationSetEventDestinations</code></td></tr>
+        <tr><td><code>ListConfigurationSets</code></td></tr>
+        <tr><td><code>SendVoiceMessage</code></td></tr>
+        <tr><td><code>UpdateConfigurationSetEventDestination</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pinpoint-sms-voice</code>: <code>docker compose -f examples/aws/pinpoint-sms-voice/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="mailmanager" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SES Mail Manager</h2>
+        <p>SigV4 signed with service <code>ses</code>. Archives filled by SESv2 and Pinpoint Email sends through configuration sets with archiving options, with searches, message content and downloads, and exports to S3; address lists with members and CSV/JSON imports through a pre-signed upload URL; ingress points, SMTP relays, rule sets and traffic policies with checked references; add-on subscriptions and instances; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ses</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon SES Mail Manager action catalog (60 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateAddonInstance</code></td></tr>
+        <tr><td><code>CreateAddonSubscription</code></td></tr>
+        <tr><td><code>CreateAddressList</code></td></tr>
+        <tr><td><code>CreateAddressListImportJob</code></td></tr>
+        <tr><td><code>CreateArchive</code></td></tr>
+        <tr><td><code>CreateIngressPoint</code></td></tr>
+        <tr><td><code>CreateRelay</code></td></tr>
+        <tr><td><code>CreateRuleSet</code></td></tr>
+        <tr><td><code>CreateTrafficPolicy</code></td></tr>
+        <tr><td><code>DeleteAddonInstance</code></td></tr>
+        <tr><td><code>DeleteAddonSubscription</code></td></tr>
+        <tr><td><code>DeleteAddressList</code></td></tr>
+        <tr><td><code>DeleteArchive</code></td></tr>
+        <tr><td><code>DeleteIngressPoint</code></td></tr>
+        <tr><td><code>DeleteRelay</code></td></tr>
+        <tr><td><code>DeleteRuleSet</code></td></tr>
+        <tr><td><code>DeleteTrafficPolicy</code></td></tr>
+        <tr><td><code>DeregisterMemberFromAddressList</code></td></tr>
+        <tr><td><code>GetAddonInstance</code></td></tr>
+        <tr><td><code>GetAddonSubscription</code></td></tr>
+        <tr><td><code>GetAddressList</code></td></tr>
+        <tr><td><code>GetAddressListImportJob</code></td></tr>
+        <tr><td><code>GetArchive</code></td></tr>
+        <tr><td><code>GetArchiveExport</code></td></tr>
+        <tr><td><code>GetArchiveMessage</code></td></tr>
+        <tr><td><code>GetArchiveMessageContent</code></td></tr>
+        <tr><td><code>GetArchiveSearch</code></td></tr>
+        <tr><td><code>GetArchiveSearchResults</code></td></tr>
+        <tr><td><code>GetIngressPoint</code></td></tr>
+        <tr><td><code>GetMemberOfAddressList</code></td></tr>
+        <tr><td><code>GetRelay</code></td></tr>
+        <tr><td><code>GetRuleSet</code></td></tr>
+        <tr><td><code>GetTrafficPolicy</code></td></tr>
+        <tr><td><code>ListAddonInstances</code></td></tr>
+        <tr><td><code>ListAddonSubscriptions</code></td></tr>
+        <tr><td><code>ListAddressListImportJobs</code></td></tr>
+        <tr><td><code>ListAddressLists</code></td></tr>
+        <tr><td><code>ListArchiveExports</code></td></tr>
+        <tr><td><code>ListArchiveSearches</code></td></tr>
+        <tr><td><code>ListArchives</code></td></tr>
+        <tr><td><code>ListIngressPoints</code></td></tr>
+        <tr><td><code>ListMembersOfAddressList</code></td></tr>
+        <tr><td><code>ListRelays</code></td></tr>
+        <tr><td><code>ListRuleSets</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTrafficPolicies</code></td></tr>
+        <tr><td><code>RegisterMemberToAddressList</code></td></tr>
+        <tr><td><code>StartAddressListImportJob</code></td></tr>
+        <tr><td><code>StartArchiveExport</code></td></tr>
+        <tr><td><code>StartArchiveSearch</code></td></tr>
+        <tr><td><code>StopAddressListImportJob</code></td></tr>
+        <tr><td><code>StopArchiveExport</code></td></tr>
+        <tr><td><code>StopArchiveSearch</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateArchive</code></td></tr>
+        <tr><td><code>UpdateIngressPoint</code></td></tr>
+        <tr><td><code>UpdateRelay</code></td></tr>
+        <tr><td><code>UpdateRuleSet</code></td></tr>
+        <tr><td><code>UpdateTrafficPolicy</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mailmanager</code>: <code>docker compose -f examples/aws/mailmanager/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
