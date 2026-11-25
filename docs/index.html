@@ -301,6 +301,9 @@
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
+        <a href="#budgets">Budgets</a>
+        <a href="#costoptimizationhub">Cost Optimization Hub</a>
+        <a href="#bcmdataexports">Data Exports</a>
         <a href="#pi">Performance Insights</a>
         <a href="#wafregional">WAF Classic Regional</a>
         <a href="#route53resolver">Route 53 Resolver</a>
@@ -25680,6 +25683,124 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateAdapter</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="budgets" class="service">
+
+        <div class="service-header">
+        <h2>AWS Budgets</h2>
+        <p>SigV4 signed with service <code>budgets</code>. JSON 1.1 API with <code>X-Amz-Target: AWSBudgetServiceGateway.*</code>. Budgets are keyed by account and name: COST, USAGE, RI and Savings Plans budgets with limits, planned limits (MONTHLY and QUARTERLY), auto-adjusting COST budgets, cost filters or filter expressions, default cost types and a default end of 2087-06-15. Notifications (at most 10 per budget) hold up to 10 email and one SNS subscriber. Budget actions check that their definition matches the action type and move through approve, reverse, reset and retry with a recorded history. Stackyard records no billing data, so actual and forecasted spend are zero and actions record their effect without changing IAM, Organizations or SSM. Tags on budget and budget-action ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: budgets</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Budgets API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateBudget</code></td></tr>
+        <tr><td><code>CreateBudgetAction</code></td></tr>
+        <tr><td><code>CreateNotification</code></td></tr>
+        <tr><td><code>CreateSubscriber</code></td></tr>
+        <tr><td><code>DeleteBudget</code></td></tr>
+        <tr><td><code>DeleteBudgetAction</code></td></tr>
+        <tr><td><code>DeleteNotification</code></td></tr>
+        <tr><td><code>DeleteSubscriber</code></td></tr>
+        <tr><td><code>DescribeBudget</code></td></tr>
+        <tr><td><code>DescribeBudgetAction</code></td></tr>
+        <tr><td><code>DescribeBudgetActionHistories</code></td></tr>
+        <tr><td><code>DescribeBudgetActionsForAccount</code></td></tr>
+        <tr><td><code>DescribeBudgetActionsForBudget</code></td></tr>
+        <tr><td><code>DescribeBudgetNotificationsForAccount</code></td></tr>
+        <tr><td><code>DescribeBudgetPerformanceHistory</code></td></tr>
+        <tr><td><code>DescribeBudgets</code></td></tr>
+        <tr><td><code>DescribeNotificationsForBudget</code></td></tr>
+        <tr><td><code>DescribeSubscribersForNotification</code></td></tr>
+        <tr><td><code>ExecuteBudgetAction</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateBudget</code></td></tr>
+        <tr><td><code>UpdateBudgetAction</code></td></tr>
+        <tr><td><code>UpdateNotification</code></td></tr>
+        <tr><td><code>UpdateSubscriber</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="costoptimizationhub" class="service">
+
+        <div class="service-header">
+        <h2>AWS Cost Optimization Hub</h2>
+        <p>SigV4 signed with service <code>cost-optimization-hub</code>. JSON 1.0 API with <code>X-Amz-Target: CostOptimizationHubService.*</code>. Enrollment status and preferences are stored. While the account is Active, recommendations come from a fixed, deterministic catalog (EC2 rightsizing, Graviton migration and stop, EBS upgrade, Lambda rightsizing, Compute Savings Plans and RDS Reserved Instance purchases) with filters, ordering, de-duplication unless includeAllRecommendations, summaries grouped by account, region, action, resource type, effort, restart or rollback, and daily or monthly efficiency metrics. Before enrollment, recommendation calls return AccessDeniedException.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cost-optimization-hub</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Cost Optimization Hub API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetPreferences</code></td></tr>
+        <tr><td><code>GetRecommendation</code></td></tr>
+        <tr><td><code>ListEfficiencyMetrics</code></td></tr>
+        <tr><td><code>ListEnrollmentStatuses</code></td></tr>
+        <tr><td><code>ListRecommendationSummaries</code></td></tr>
+        <tr><td><code>ListRecommendations</code></td></tr>
+        <tr><td><code>UpdateEnrollmentStatus</code></td></tr>
+        <tr><td><code>UpdatePreferences</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="bcmdataexports" class="service">
+
+        <div class="service-header">
+        <h2>AWS Data Exports</h2>
+        <p>SigV4 signed with service <code>bcm-data-exports</code>. JSON 1.1 API with <code>X-Amz-Target: AWSBillingAndCostManagementDataExports.*</code>. Exports take a <code>SELECT column, ... FROM TABLE</code> query checked against the table catalog (COST_AND_USAGE_REPORT, FOCUS_1_0_AWS, COST_OPTIMIZATION_RECOMMENDATIONS, CARBON_EMISSIONS) and its table properties; line_item_resource_id needs INCLUDE_RESOURCES=TRUE. Each create and update runs an execution that writes a manifest and, for CSV, a header-only GZIP or ZIP data file to the export's bucket in Stackyard's S3. A missing bucket leaves the export UNHEALTHY (INSUFFICIENT_PERMISSION) and the execution DELIVERY_FAILURE. Tags on export ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-data-exports</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Data Exports API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateExport</code></td></tr>
+        <tr><td><code>DeleteExport</code></td></tr>
+        <tr><td><code>GetExecution</code></td></tr>
+        <tr><td><code>GetExport</code></td></tr>
+        <tr><td><code>GetTable</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListExports</code></td></tr>
+        <tr><td><code>ListTables</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateExport</code></td></tr>
         </tbody>
         </table>
         </details>

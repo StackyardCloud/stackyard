@@ -200,6 +200,30 @@ const SERVICE_CATALOG = [
   },
 
   {
+    id: "budgets",
+    name: "Budgets",
+    category: "integration",
+    summary: "Emulate budgets with limits, planned limits, filters and cost types, notifications with email and SNS subscribers, budget actions with approve/reverse/reset and history, performance history and tags.",
+    docsHref: "../../../index.html#budgets",
+    exampleHref: "../../../../examples/aws/budgets/docker-compose.yml"
+  },
+  {
+    id: "costoptimizationhub",
+    name: "Cost Optimization Hub",
+    category: "integration",
+    summary: "Emulate enrollment and preferences, a deterministic catalog of rightsizing, Graviton, Savings Plans and Reserved Instance recommendations with filters, ordering and summaries, and efficiency metrics.",
+    docsHref: "../../../index.html#costoptimizationhub",
+    exampleHref: "../../../../examples/aws/cost-optimization-hub/docker-compose.yml"
+  },
+  {
+    id: "bcmdataexports",
+    name: "Data Exports",
+    category: "integration",
+    summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
+    docsHref: "../../../index.html#bcmdataexports",
+    exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",
