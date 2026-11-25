@@ -348,6 +348,9 @@
         <a href="#rekognition">Rekognition</a>
         <a href="#sagemaker">SageMaker</a>
         <a href="#sagemaker-runtime">SageMaker Runtime</a>
+        <a href="#sagemaker-featurestore-runtime">SageMaker Feature Store Runtime</a>
+        <a href="#sagemaker-metrics">SageMaker Metrics</a>
+        <a href="#sagemaker-edge">SageMaker Edge Manager</a>
         <a href="#simspaceweaver">SimSpace Weaver</a>
         <a href="#supplychain">Supply Chain</a>
         <a href="#savingsplans">Savings Plans</a>
@@ -21912,7 +21915,7 @@
 
         <div class="service-header">
         <h2>Amazon SageMaker</h2>
-        <p>SigV4 signed with service <code>sagemaker</code>. SageMaker control plane exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SageMaker.&lt;Action&gt;</code>. Current planning in Stackyard tracks staged implementation across all 379 documented actions and 728 documented API data types.</p>
+        <p>SigV4 signed with service <code>sagemaker</code>. SageMaker control plane exposes an AWS JSON 1.1 API over <code>POST /</code> with <code>Content-Type: application/x-amz-json-1.1</code> and <code>X-Amz-Target: SageMaker.&lt;Action&gt;</code>. Current planning in Stackyard tracks staged implementation across all 379 documented actions and 728 documented API data types. Feature groups, device fleets, devices, edge deployment plans and trial components keep real state (validated against the CLI 2.42.1 model) for SageMaker Feature Store Runtime, Edge Manager and Metrics.</p>
         </div>
         <div class="service-meta">
         <span class="meta-pill">SigV4: sagemaker</span>
@@ -21970,6 +21973,102 @@
         <summary>Examples</summary>
         <ul>
         <li><code>sagemaker-runtime</code>: <code>docker compose -f examples/aws/sagemaker-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-featurestore-runtime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Feature Store Runtime</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON API over <code>/FeatureGroup/{FeatureGroupName}</code> (PUT, GET, DELETE, <code>/Record</code>, <code>/ListRecords</code>), <code>/BatchGetRecord</code> and <code>/BatchWriteRecord</code>. Records live in the online store of feature groups created with SageMaker <code>CreateFeatureGroup</code>: feature names, Integral/Fractional/String types, List/Set/Vector collections, the record identifier and the event time are checked against the group's definitions; older events don't replace newer records; soft and hard deletes, TTL expiry (<code>ExpiresAt</code>) and <code>UpdateRecord</code> conflicts follow the API reference. The offline store is not emulated.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>7</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakerfeaturestoreruntime_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-featurestore-runtime</code>: <code>docker compose -f examples/aws/sagemaker-featurestore-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-metrics" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Metrics</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON API: <code>PUT /BatchPutMetrics</code> appends metric values to a trial component created with SageMaker (or a training job's <code>&lt;job&gt;-aws-training-job</code> component); <code>POST /BatchGetMetrics</code> returns Min, Max, Avg, Count, StdDev or Last per iteration or per one-minute, five-minute or one-hour window. <code>DescribeTrialComponent</code> reports the metric summaries.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>2</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakermetrics_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-metrics</code>: <code>docker compose -f examples/aws/sagemaker-metrics/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="sagemaker-edge" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker Edge Manager</h2>
+        <p>SigV4 signed with service <code>sagemaker</code>. REST JSON agent API over <code>POST /GetDeviceRegistration</code>, <code>/GetDeployments</code> and <code>/SendHeartbeat</code> for devices registered to SageMaker device fleets. Deployments come from in-progress stages of SageMaker edge deployment plans that select the device; heartbeats update <code>DescribeDevice</code> and the plan's per-stage success, pending and failed counts.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Catalog Coverage</summary>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Catalog</th>
+        <th>Count</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td>Supported Actions</td><td><code>3</code></td></tr>
+        </tbody>
+        </table>
+        <p class="note">Implementation catalog: <code>internal/server/sagemakeredge_ops.go</code>.</p>
+        </details>
+        <details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-edge</code>: <code>docker compose -f examples/aws/sagemaker-edge/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

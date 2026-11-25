@@ -96,6 +96,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
   },
   {
+    id: "sagemaker-featurestore-runtime",
+    name: "Amazon SageMaker Feature Store Runtime",
+    category: "integration",
+    summary: "Put, update, get, list, delete and batch-read/write records in the online store of feature groups created with SageMaker, checked against the group's feature definitions, event times and TTLs.",
+    docsHref: "../../../index.html#sagemaker-featurestore-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-featurestore-runtime/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-metrics",
+    name: "Amazon SageMaker Metrics",
+    category: "integration",
+    summary: "Log training metrics to SageMaker trial components (including a training job's) and query them by iteration or time window.",
+    docsHref: "../../../index.html#sagemaker-metrics",
+    exampleHref: "../../../../examples/aws/sagemaker-metrics/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-edge",
+    name: "Amazon SageMaker Edge Manager",
+    category: "integration",
+    summary: "Edge agent API for devices registered with SageMaker: registration checks, deployments from in-progress edge deployment stages, and heartbeats that record agent versions, models and deployment results.",
+    docsHref: "../../../index.html#sagemaker-edge",
+    exampleHref: "../../../../examples/aws/sagemaker-edge/docker-compose.yml"
+  },
+  {
     id: "batch",
     name: "Batch",
     category: "compute",
