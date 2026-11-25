@@ -330,25 +330,32 @@ func acpReportPrefix(d *acpDefinition, now time.Time) string {
 const acpServicePrincipal = "application-cost-profiler.amazonaws.com"
 
 func (s *Server) acpDeliver(caller s3Caller, d *acpDefinition, importID string, report []byte, now time.Time) error {
-	// A destination whose policy denies the caller or the service misses this
-	// delivery, like a bucket deleted since the definition was saved.
-	if !s.authorizeServiceS3As(caller, acpServicePrincipal, d.bucket, d.prefix, "s3:PutObject") {
-		return fmt.Errorf("access denied writing to s3://%s", d.bucket)
-	}
 	base := acpReportPrefix(d, now)
+	csvKey, manifestKey := base+"/"+importID+".csv", base+"/"+importID+"-manifest.json"
+	keys := []string{manifestKey}
+	if d.format == "CSV" {
+		keys = append(keys, csvKey)
+	}
+	// Authorize every object actually written, before writing any of them: a
+	// destination whose policy denies the caller or the service misses this
+	// delivery, like a bucket deleted since the definition was saved.
+	for _, key := range keys {
+		if !s.authorizeServiceS3As(caller, acpServicePrincipal, d.bucket, key, "s3:PutObject") {
+			return fmt.Errorf("access denied writing s3://%s/%s", d.bucket, key)
+		}
+	}
 	var files []string
 	if d.format == "CSV" {
-		key := base + "/" + importID + ".csv"
-		if _, err := s.s3.PutObject(d.bucket, key, "text/csv", report, nil, "", ""); err != nil {
+		if _, err := s.s3.PutObject(d.bucket, csvKey, "text/csv", report, nil, "", ""); err != nil {
 			return fmt.Errorf("write report: %w", err)
 		}
-		files = append(files, key)
+		files = append(files, csvKey)
 	}
 	manifest, _ := json.Marshal(map[string]any{
 		"reportId": d.id, "importId": importID, "format": d.format, "reportFrequency": d.frequency,
 		"generatedAt": now.Format(time.RFC3339), "reportFiles": files,
 	})
-	if _, err := s.s3.PutObject(d.bucket, base+"/"+importID+"-manifest.json", "application/json", manifest, nil, "", ""); err != nil {
+	if _, err := s.s3.PutObject(d.bucket, manifestKey, "application/json", manifest, nil, "", ""); err != nil {
 		return fmt.Errorf("write manifest: %w", err)
 	}
 	return nil

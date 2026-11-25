@@ -325,3 +325,27 @@ func TestApplicationCostProfilerServiceS3Authz(t *testing.T) {
 		})
 	}
 }
+
+// Report delivery authorizes each written key: a destination whose policy
+// denies the caller or the service gets no objects, and the import succeeds.
+func TestApplicationCostProfilerDeliveryServiceS3Authz(t *testing.T) {
+	for _, tc := range svcAuthzCases(acpServicePrincipal) {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, ts := newBudTestServer(t)
+			svcAuthzBucket(t, srv, "acp-out", tc.principal)
+			acpCall(t, ts, http.MethodPost, "/reportDefinition", acpDefJSON("daily", "acp-out", "CSV", "DAILY"))
+			svcAuthzBucket(t, srv, "acp-in", "")
+			usage := "ApplicationId,TenantId,TenantDesc,ResourceId,StartTime,EndTime\napp,a,Tenant A,i-1,2026-01-01T00:00:00Z,2026-01-01T03:00:00Z\n"
+			if _, err := srv.s3.PutObject("acp-in", "usage.csv", "text/csv", []byte(usage), nil, "", ""); err != nil {
+				t.Fatal(err)
+			}
+			if status, out := acpCall(t, ts, http.MethodPost, "/importApplicationUsage", `{"sourceS3Location":{"bucket":"acp-in","key":"usage.csv"}}`); status != http.StatusOK {
+				t.Fatalf("import: %d %v", status, out)
+			}
+			objs, _ := srv.s3.ListObjects("acp-out", "")
+			if want := map[bool]int{true: 2, false: 0}[tc.principal == ""]; len(objs) != want {
+				t.Fatalf("want %d report objects, got %d", want, len(objs))
+			}
+		})
+	}
+}
