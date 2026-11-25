@@ -29,6 +29,7 @@ const (
 type budErr struct {
 	status    int
 	code, msg string
+	extra     map[string]any // model-specific error members (reason, errorCode)
 }
 
 func budErrorf(code, format string, args ...any) *budErr {
@@ -38,6 +39,8 @@ func budErrorf(code, format string, args ...any) *budErr {
 		status = http.StatusNotFound
 	case "AccessDeniedException":
 		status = http.StatusForbidden
+	case "ConflictException":
+		status = http.StatusConflict
 	}
 	return &budErr{status: status, code: code, msg: fmt.Sprintf(format, args...)}
 }
@@ -57,6 +60,18 @@ type budJSONAPI struct {
 	prefix, signing, contentType, invalidCode string
 	model                                     func() *awsmodels.Model
 	handlers                                  map[string]budHandler
+	maxBody                                   int64 // 0: budMaxBody
+	// respondError writes errors in the service's own exception shape
+	// (nil: budRespondError).
+	respondError func(http.ResponseWriter, *budErr)
+}
+
+func (api *budJSONAPI) fail(w http.ResponseWriter, e *budErr) {
+	if api.respondError != nil {
+		api.respondError(w, e)
+		return
+	}
+	budRespondError(w, api, e)
 }
 
 var budAPI = &budJSONAPI{
@@ -110,19 +125,30 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 	if !ok {
 		return false
 	}
+	s.budRun(w, r, api, op, known[op])
+	return true
+}
+
+// budRun serves one claimed request for op: REST JSON routers that resolve op
+// from the path (Account, Tax Settings) share it with budServe.
+func (s *Server) budRun(w http.ResponseWriter, r *http.Request, api *budJSONAPI, op string, known bool) {
 	// A declared length bounds what net/http reads; refuse chunked bodies.
-	if r.ContentLength < 0 || r.ContentLength > budMaxBody {
-		budRespondError(w, api, budErrorf(api.invalidCode, "request body must declare a Content-Length of at most %d bytes", budMaxBody))
-		return true
+	limit := api.maxBody
+	if limit == 0 {
+		limit = budMaxBody
+	}
+	if r.ContentLength < 0 || r.ContentLength > limit {
+		api.fail(w, budErrorf(api.invalidCode, "request body must declare a Content-Length of at most %d bytes", limit))
+		return
 	}
 	if ok, status, code, msg, _ := s.validateSigV4WithService(r, api.signing); !ok {
-		budRespondError(w, api, &budErr{status: status, code: code, msg: msg})
-		return true
+		api.fail(w, &budErr{status: status, code: code, msg: msg})
+		return
 	}
 	h := api.handlers[op]
-	if !known[op] || h == nil {
-		budRespondError(w, api, budErrorf("UnknownOperationException", "unknown operation %s", op))
-		return true
+	if !known || h == nil {
+		api.fail(w, budErrorf("UnknownOperationException", "unknown operation %s", op))
+		return
 	}
 	raw, err := readBodyBytes(r)
 	in := map[string]any{}
@@ -130,22 +156,22 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 		err = json.Unmarshal(raw, &in)
 	}
 	if err != nil {
-		budRespondError(w, api, budErrorf("SerializationException", "invalid JSON body"))
-		return true
+		api.fail(w, budErrorf("SerializationException", "invalid JSON body"))
+		return
 	}
 	model := api.model()
 	shapes := model.Operations[op]
 	if problems := model.Validate(shapes.Input, in); len(problems) > 0 {
-		budRespondError(w, api, budErrorf(api.invalidCode, "%s", strings.Join(problems, "; ")))
-		return true
+		api.fail(w, budErrorf(api.invalidCode, "%s", strings.Join(problems, "; ")))
+		return
 	}
 	// Conform drops members the input shape doesn't define, so callers can't
 	// reach the store's own fields.
 	conformed, _ := model.Conform(shapes.Input, in).(map[string]any)
 	out, berr := h(s, conformed)
 	if berr != nil {
-		budRespondError(w, api, berr)
-		return true
+		api.fail(w, berr)
+		return
 	}
 	// Handlers return values built (or cloned) under their store lock, so
 	// nothing here is shared with stored records.
@@ -158,7 +184,6 @@ func (s *Server) budServe(w http.ResponseWriter, r *http.Request, api *budJSONAP
 	w.Header().Set("Content-Type", api.contentType)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
-	return true
 }
 
 func budRespondError(w http.ResponseWriter, api *budJSONAPI, e *budErr) {

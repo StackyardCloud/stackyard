@@ -216,6 +216,33 @@ window.AWS_SERVICE_CATALOG = [
     docsHref: "../../../index.html#textract",
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
   },  {
+    id: "forecast",
+    name: "Forecast",
+    category: "integration",
+    summary: "Emulate Forecast datasets, import jobs, dataset groups, predictors and auto predictors with accuracy metrics, forecasts, exports, explainability, monitors with evaluations, what-if analyses and forecasts, resource trees and tags.",
+    docsHref: "../../../index.html#forecast",
+    exampleHref: "../../../../examples/aws/forecast/docker-compose.yml"
+  },
+
+  {
+    id: "forecastquery",
+    name: "Forecast Query",
+    category: "integration",
+    summary: "Query predictions from Forecast forecasts and what-if forecasts: one series per forecast type over the predictor's horizon and frequency, filtered by target time series attributes and a date window.",
+    docsHref: "../../../index.html#forecastquery",
+    exampleHref: "../../../../examples/aws/forecastquery/docker-compose.yml"
+  },
+
+  {
+    id: "frauddetector",
+    name: "Fraud Detector",
+    category: "integration",
+    summary: "Emulate Fraud Detector variables, entity types, labels, outcomes, event types, detectors with versioned rules, models and model versions, external models, lists, events, predictions with rule evaluation, batch jobs, KMS settings and tags.",
+    docsHref: "../../../index.html#frauddetector",
+    exampleHref: "../../../../examples/aws/frauddetector/docker-compose.yml"
+  },
+
+  {
     id: "wafregional",
     name: "WAF Classic Regional",
     category: "security",
@@ -247,6 +274,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
     docsHref: "../../../index.html#bcmdataexports",
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
+    id: "account",
+    name: "Account",
+    category: "integration",
+    summary: "Emulate account name and state, alternate and contact information with phone verification, primary email updates with one-time codes, and Region opt-in status for the management and member accounts.",
+    docsHref: "../../../index.html#account",
+    exampleHref: "../../../../examples/aws/account/docker-compose.yml"
+  },
+  {
+    id: "freetier",
+    name: "Free Tier",
+    category: "integration",
+    summary: "Emulate the free account plan with credits and upgrade to paid, sign-up activities (the Budgets activity completes from Stackyard's Budgets), and a filterable free-tier usage catalog.",
+    docsHref: "../../../index.html#freetier",
+    exampleHref: "../../../../examples/aws/freetier/docker-compose.yml"
+  },
+  {
+    id: "taxsettings",
+    name: "Tax Settings",
+    category: "integration",
+    summary: "Emulate tax registrations for the caller and member accounts with S3-backed documents, supplemental VAT registrations, tax exemptions with Pending then Valid status, and tax inheritance.",
+    docsHref: "../../../index.html#taxsettings",
+    exampleHref: "../../../../examples/aws/taxsettings/docker-compose.yml"
   },
   {
     id: "geomaps",
@@ -527,6 +578,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan staged coverage for instance, user, flow, contact, workspace, search, and tagging APIs.",
     docsHref: "../../../index.html#connect",
     exampleHref: "../../../../examples/aws/connect/docker-compose.yml"
+  },
+  {
+    id: "connectcases",
+    name: "Connect Cases",
+    category: "integration",
+    summary: "Emulate Connect Cases domains, fields, layouts, templates, case rules, cases with audit history, related items, search and merges.",
+    docsHref: "../../../index.html#connectcases",
+    exampleHref: "../../../../examples/aws/connect-cases/docker-compose.yml"
+  },
+  {
+    id: "connectparticipant",
+    name: "Connect Participant",
+    category: "integration",
+    summary: "Emulate Connect customer chat: participant connections, messages, events, read receipts, attachments, transcripts and disconnects.",
+    docsHref: "../../../index.html#connectparticipant",
+    exampleHref: "../../../../examples/aws/connect-participant/docker-compose.yml"
+  },
+  {
+    id: "connectcontactlens",
+    name: "Connect Contact Lens",
+    category: "integration",
+    summary: "Emulate Contact Lens real-time analysis segments over Connect chat transcripts, with sentiment and issue detection.",
+    docsHref: "../../../index.html#connectcontactlens",
+    exampleHref: "../../../../examples/aws/connect-contact-lens/docker-compose.yml"
   },
   {
     id: "dlm",
@@ -1041,6 +1116,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
   },
   {
+    id: "pinpointemail",
+    name: "Amazon Pinpoint Email",
+    category: "integration",
+    summary: "Pinpoint Email on SESv2's account state: identities with DKIM, feedback and MAIL FROM settings, configuration sets with delivery, reputation, sending and tracking options and event destinations, dedicated IPs and pools, the deliverability dashboard with domain statistics and campaigns from sent mail, test reports, SendEmail (Simple, Raw or Template) with the send quota, and tags.",
+    docsHref: "../../../index.html#pinpointemail",
+    exampleHref: "../../../../examples/aws/pinpoint-email/docker-compose.yml"
+  },
+  {
+    id: "pinpointsmsvoice",
+    name: "Amazon Pinpoint SMS and Voice",
+    category: "integration",
+    summary: "Version 1 voice API: configuration sets with CloudWatch Logs, Kinesis Data Firehose or SNS event destinations, and voice messages (plain text, call instructions or SSML) validated against E.164 numbers and their configuration set.",
+    docsHref: "../../../index.html#pinpointsmsvoice",
+    exampleHref: "../../../../examples/aws/pinpoint-sms-voice/docker-compose.yml"
+  },
+  {
+    id: "mailmanager",
+    name: "Amazon SES Mail Manager",
+    category: "integration",
+    summary: "Archives filled by SESv2 and Pinpoint Email sends through configuration sets with archiving options, with searches, message content and downloads, and exports to S3; address lists with members and CSV/JSON imports through a pre-signed upload URL; ingress points, SMTP relays, rule sets and traffic policies with checked references; add-on subscriptions and instances; tags.",
+    docsHref: "../../../index.html#mailmanager",
+    exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
@@ -1095,6 +1194,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan and validate workspace, entity, component, scene, and sync APIs for digital twin workflows.",
     docsHref: "../../../index.html#iot-twinmaker",
     exampleHref: "../../../../examples/aws/iot-twinmaker/docker-compose.yml"
+  },
+  {
+    id: "iot-secure-tunneling",
+    name: "IoT Secure Tunneling",
+    category: "integration",
+    summary: "Emulate tunnels with one-time source and destination access tokens, token rotation, lifetime-based auto-close, close and delete, listing by thing and tags.",
+    docsHref: "../../../index.html#iot-secure-tunneling",
+    exampleHref: "../../../../examples/aws/iot-secure-tunneling/docker-compose.yml"
+  },
+  {
+    id: "iot-device-advisor",
+    name: "IoT Device Advisor",
+    category: "integration",
+    summary: "Emulate versioned suite definitions, suite runs that progress to PASS with per-test results, stop, qualification reports, the test endpoint and tags.",
+    docsHref: "../../../index.html#iot-device-advisor",
+    exampleHref: "../../../../examples/aws/iot-device-advisor/docker-compose.yml"
+  },
+  {
+    id: "iot-things-graph",
+    name: "IoT Things Graph",
+    category: "integration",
+    summary: "Emulate GraphQL entity uploads into a versioned namespace, thing associations, flow and system templates with revisions, system instance deployments, flow executions and tags.",
+    docsHref: "../../../index.html#iot-things-graph",
+    exampleHref: "../../../../examples/aws/iot-things-graph/docker-compose.yml"
   },
   {
     id: "keyspaces",

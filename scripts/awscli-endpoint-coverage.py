@@ -578,18 +578,33 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
+    "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
+    "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
+    "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
     "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
+    "connectcases": {"cli": "connectcases", "ops_file": REPO_ROOT / "internal/server/connectcases_ops.go"},
+    "connectparticipant": {"cli": "connectparticipant", "ops_file": REPO_ROOT / "internal/server/connectparticipant_ops.go"},
+    "connectcontactlens": {"cli": "connect-contact-lens", "ops_file": REPO_ROOT / "internal/server/connectcontactlens_ops.go"},
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
+    "account": {"cli": "account", "ops_file": REPO_ROOT / "internal/server/account_ops.go"},
+    "freetier": {"cli": "freetier", "ops_file": REPO_ROOT / "internal/server/freetier_ops.go"},
+    "taxsettings": {"cli": "taxsettings", "ops_file": REPO_ROOT / "internal/server/taxsettings_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
     "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
     "personalizeevents": {"cli": "personalize-events", "ops_file": REPO_ROOT / "internal/server/personalizeevents_ops.go"},
     "personalizeruntime": {"cli": "personalize-runtime", "ops_file": REPO_ROOT / "internal/server/personalizeruntime_ops.go"},
+    "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
+    "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
+    "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
+    "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
+    "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
+    "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2311,8 +2326,29 @@ SERVICE_ALIASES = {
     "personalizeruntime": "personalizeruntime",
     "personalize-runtime": "personalizeruntime",
     "amazonpersonalizeruntime": "personalizeruntime",
+    "pinpointemail": "pinpointemail",
+    "pinpoint-email": "pinpointemail",
+    "amazonpinpointemail": "pinpointemail",
+    "pinpointsmsvoice": "pinpointsmsvoice",
+    "pinpoint-sms-voice": "pinpointsmsvoice",
+    "amazonpinpointsmsvoice": "pinpointsmsvoice",
+    "mailmanager": "mailmanager",
+    "mail-manager": "mailmanager",
+    "sesmailmanager": "mailmanager",
+    "iotsecuretunneling": "iotsecuretunneling",
+    "iot-secure-tunneling": "iotsecuretunneling",
+    "iotdeviceadvisor": "iotdeviceadvisor",
+    "iot-device-advisor": "iotdeviceadvisor",
+    "iotthingsgraph": "iotthingsgraph",
+    "iot-things-graph": "iotthingsgraph",
     "amazontextract": "textract",
     "wafregional": "wafregional",
+    "forecast": "forecast",
+    "amazonforecast": "forecast",
+    "forecastquery": "forecastquery",
+    "amazonforecastquery": "forecastquery",
+    "frauddetector": "frauddetector",
+    "amazonfrauddetector": "frauddetector",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -2324,6 +2360,16 @@ SERVICE_ALIASES = {
     "kendraranking": "kendraranking",
     "kendra-ranking": "kendraranking",
     "amazonkendraintelligentranking": "kendraranking",
+    "connectcases": "connectcases",
+    "connect-cases": "connectcases",
+    "amazonconnectcases": "connectcases",
+    "connectparticipant": "connectparticipant",
+    "connect-participant": "connectparticipant",
+    "amazonconnectparticipantservice": "connectparticipant",
+    "connectcontactlens": "connectcontactlens",
+    "connect-contact-lens": "connectcontactlens",
+    "contactlens": "connectcontactlens",
+    "amazonconnectcontactlens": "connectcontactlens",
     "budgets": "budgets",
     "awsbudgets": "budgets",
     "costoptimizationhub": "costoptimizationhub",
@@ -2331,6 +2377,13 @@ SERVICE_ALIASES = {
     "bcmdataexports": "bcmdataexports",
     "bcm-data-exports": "bcmdataexports",
     "dataexports": "bcmdataexports",
+    "account": "account",
+    "awsaccount": "account",
+    "accountmanagement": "account",
+    "freetier": "freetier",
+    "awsfreetier": "freetier",
+    "taxsettings": "taxsettings",
+    "tax-settings": "taxsettings",
     "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3312,13 +3365,21 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53domains": {},
     "textract": {},
     "wafregional": {},
+    "forecast": {},
+    "frauddetector": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
     "kendraranking": {},
+    "connectcases": {},
+    "connectparticipant": {},
+    "connectcontactlens": {},
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "account": {},
+    "freetier": {},
+    "taxsettings": {},
     "geomaps": {},
     "geoplaces": {},
     "georoutes": {},
@@ -3327,6 +3388,12 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "personalize": {},
     "personalizeevents": {},
     "personalizeruntime": {},
+    "pinpointemail": {},
+    "pinpointsmsvoice": {},
+    "mailmanager": {},
+    "iotsecuretunneling": {},
+    "iotdeviceadvisor": {},
+    "iotthingsgraph": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -38183,6 +38250,330 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+FC_ROLE = "arn:aws:iam::123456789012:role/stackyard-forecast"
+FC_DEST = {"S3Config": {"Path": "s3://stackyard-forecast-cov/out/", "RoleArn": FC_ROLE}}
+FC_SCHEMA = {"Attributes": [{"AttributeName": "item_id", "AttributeType": "string"},
+                            {"AttributeName": "timestamp", "AttributeType": "timestamp"},
+                            {"AttributeName": "demand", "AttributeType": "float"}]}
+
+
+def fc_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict, cli: str = "forecast") -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, cli, pascal_to_kebab(op), env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def fc_unique(prefix: str) -> str:
+    return f"{prefix}_{time.time_ns()}"
+
+
+def fc_wait(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, arn: str) -> str:
+    """Describe an async resource until it reports ACTIVE (the second read)."""
+    describe = "DescribeAutoPredictor" if kind == "Predictor" else "Describe" + kind
+    for _ in range(3):
+        if fc_call(aws_bin, endpoint_url, region, env, describe, {kind + "Arn": arn}).get("Status") == "ACTIVE":
+            break
+    return arn
+
+
+def fc_create_args(kind: str, fx: dict) -> tuple[str, dict]:
+    """The create operation and arguments for a new resource of kind."""
+    name = fc_unique("cov")
+    if kind == "Dataset":
+        return "CreateDataset", {"DatasetName": name, "Domain": "RETAIL", "DatasetType": "TARGET_TIME_SERIES", "DataFrequency": "D", "Schema": FC_SCHEMA}
+    if kind == "DatasetGroup":
+        return "CreateDatasetGroup", {"DatasetGroupName": name, "Domain": "RETAIL"}
+    if kind == "DatasetImportJob":
+        return "CreateDatasetImportJob", {"DatasetImportJobName": name, "DatasetArn": fx["Dataset"],
+                                          "DataSource": {"S3Config": {"Path": "s3://stackyard-forecast-cov/demand.csv", "RoleArn": FC_ROLE}}}
+    if kind == "Predictor":
+        return "CreateAutoPredictor", {"PredictorName": name, "ForecastHorizon": 7, "ForecastFrequency": "D",
+                                       "DataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}}
+    if kind == "Forecast":
+        return "CreateForecast", {"ForecastName": name, "PredictorArn": fx["Predictor"]}
+    if kind == "ForecastExportJob":
+        return "CreateForecastExportJob", {"ForecastExportJobName": name, "ForecastArn": fx["Forecast"], "Destination": FC_DEST}
+    if kind == "PredictorBacktestExportJob":
+        return "CreatePredictorBacktestExportJob", {"PredictorBacktestExportJobName": name, "PredictorArn": fx["Predictor"], "Destination": FC_DEST}
+    if kind == "Explainability":
+        return "CreateExplainability", {"ExplainabilityName": name, "ResourceArn": fx["Forecast"],
+                                        "ExplainabilityConfig": {"TimeSeriesGranularity": "ALL", "TimePointGranularity": "ALL"}}
+    if kind == "ExplainabilityExport":
+        return "CreateExplainabilityExport", {"ExplainabilityExportName": name, "ExplainabilityArn": fx["Explainability"], "Destination": FC_DEST}
+    if kind == "Monitor":
+        return "CreateMonitor", {"MonitorName": name, "ResourceArn": fx["own_predictor"]()}
+    if kind == "WhatIfAnalysis":
+        return "CreateWhatIfAnalysis", {"WhatIfAnalysisName": name, "ForecastArn": fx["Forecast"]}
+    if kind == "WhatIfForecast":
+        return "CreateWhatIfForecast", {"WhatIfForecastName": name, "WhatIfAnalysisArn": fx["WhatIfAnalysis"],
+                                        "TimeSeriesTransformations": [{"Action": {"AttributeName": "price", "Operation": "MULTIPLY", "Value": 0.9}}]}
+    return "CreateWhatIfForecastExport", {"WhatIfForecastExportName": name, "WhatIfForecastArns": [fx["WhatIfForecast"]], "Destination": FC_DEST}
+
+
+FC_KINDS = ["Dataset", "DatasetGroup", "DatasetImportJob", "Predictor", "Forecast", "ForecastExportJob",
+            "PredictorBacktestExportJob", "Explainability", "ExplainabilityExport", "Monitor", "WhatIfAnalysis",
+            "WhatIfForecast", "WhatIfForecastExport"]
+FC_FIXTURE_KINDS = ["Dataset", "DatasetImportJob", "DatasetGroup", "Predictor", "Forecast", "Explainability", "Monitor",
+                    "WhatIfAnalysis", "WhatIfForecast"]
+
+
+def fc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ACTIVE pipeline: dataset with data, group, auto predictor, forecast,
+    explainability, monitor, what-if analysis and what-if forecast."""
+    state = RUNTIME_STATE.setdefault("forecast", {})
+    if state.get("WhatIfForecast"):
+        return state
+
+    def make(kind: str) -> str:
+        op, args = fc_create_args(kind, state)
+        if kind == "DatasetGroup":
+            args["DatasetArns"] = [state["Dataset"]]
+        arn = str(fc_call(aws_bin, endpoint_url, region, env, op, args).get(kind + "Arn") or "")
+        return fc_wait(aws_bin, endpoint_url, region, env, kind, arn) if arn and kind not in ("Dataset", "DatasetGroup") else arn
+
+    state["own_predictor"] = lambda: make("Predictor")
+    state["make"] = make
+    for kind in FC_FIXTURE_KINDS:
+        state[kind] = make(kind)
+    return state
+
+
+def forecast_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates and describes get fixtures; deletes, stops and updates get
+    resources of their own."""
+    op = endpoint.operation
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if op == "CreatePredictor":
+        return {"PredictorName": fc_unique("cov"), "AlgorithmArn": "arn:aws:forecast:::algorithm/ETS", "ForecastHorizon": 7,
+                "InputDataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}, "FeaturizationConfig": {"ForecastFrequency": "D"}}
+    if op == "CreateAutoPredictor":
+        return fc_create_args("Predictor", fx)[1]
+    if op == "DescribeAutoPredictor" or op == "DescribePredictor" or op == "GetAccuracyMetrics":
+        return {"PredictorArn": fx["Predictor"]}
+    for prefix in ("Create", "Describe", "Delete"):
+        kind = op[len(prefix):]
+        if not op.startswith(prefix) or kind not in FC_KINDS:
+            continue
+        if prefix == "Create":
+            return fc_create_args(kind, fx)[1]
+        if prefix == "Describe" and kind in fx:
+            return {kind + "Arn": fx[kind]}
+        return {kind + "Arn": fx["make"](kind)}
+    if op == "DeleteResourceTree":
+        return {"ResourceArn": fx["make"]("DatasetGroup")}
+    if op == "UpdateDatasetGroup":
+        return {"DatasetGroupArn": fx["make"]("DatasetGroup"), "DatasetArns": [fx["Dataset"]]}
+    if op == "StopResource":
+        # An ACTIVE monitor stops deterministically; an in-progress job may
+        # settle before a slow CLI call reaches it.
+        return {"ResourceArn": fx["make"]("Monitor")}
+    if op == "ResumeResource":
+        monitor = fx["make"]("Monitor")
+        fc_call(aws_bin, endpoint_url, region, env, "StopResource", {"ResourceArn": monitor})
+        return {"ResourceArn": monitor}
+    if op == "ListMonitorEvaluations":
+        return {"MonitorArn": fx["Monitor"]}
+    if op == "TagResource":
+        return {"ResourceArn": fx["Dataset"], "Tags": [{"Key": "env", "Value": "cov"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["Dataset"], "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["Dataset"]}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+def forecastquery_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Queries read the Forecast checks' ACTIVE forecast and what-if forecast."""
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if endpoint.operation == "QueryWhatIfForecast":
+        return {"WhatIfForecastArn": fx["WhatIfForecast"], "Filters": {"item_id": "sku_1"}}
+    return {"ForecastArn": fx["Forecast"], "Filters": {"item_id": "sku_1"}}
+
+
+FRD_ROLE = "arn:aws:iam::123456789012:role/stackyard-frauddetector"
+
+
+def frd_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="frauddetector")
+
+
+def frd_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Variables, entity type, labels, outcome, event type, detector with an
+    ACTIVE version, an ACTIVE model version, external model, list, a sent
+    event, a scored prediction and batch jobs. Names are unique per run."""
+    state = RUNTIME_STATE.setdefault("frauddetector", {})
+    if state.get("detector"):
+        return state
+    call = lambda op, args: frd_call(aws_bin, endpoint_url, region, env, op, args)
+    s = str(time.time_ns())
+    fx = {"s": s, "amount": f"amount_{s}", "email": f"email_{s}", "entity": f"cust_{s}", "fraud": f"fraud_{s}",
+          "outcome": f"block_{s}", "event_type": f"payment_{s}", "detector": f"det_{s}", "rule": f"big_{s}",
+          "model": f"mdl_{s}", "endpoint": f"ep_{s}", "list": f"lst_{s}", "event": f"ev_{s}"}
+    call("CreateVariable", {"name": fx["amount"], "dataType": "FLOAT", "dataSource": "EVENT", "defaultValue": "0.0"})
+    call("CreateVariable", {"name": fx["email"], "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "unknown"})
+    call("PutEntityType", {"name": fx["entity"]})
+    call("PutLabel", {"name": fx["fraud"]})
+    call("PutOutcome", {"name": fx["outcome"]})
+    call("PutEventType", {"name": fx["event_type"], "eventVariables": [fx["amount"], fx["email"]], "labels": [fx["fraud"]], "entityTypes": [fx["entity"]]})
+    call("PutDetector", {"detectorId": fx["detector"], "eventTypeName": fx["event_type"]})
+    call("CreateRule", {"ruleId": fx["rule"], "detectorId": fx["detector"], "expression": f"${fx['amount']} > 100",
+                        "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+    fx["rule_ref"] = {"detectorId": fx["detector"], "ruleId": fx["rule"], "ruleVersion": "1"}
+    call("CreateDetectorVersion", {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]})
+    call("UpdateDetectorVersionStatus", {"detectorId": fx["detector"], "detectorVersionId": "1", "status": "ACTIVE"})
+    call("CreateModel", {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+    fx["model_ref"] = {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    call("CreateModelVersion", frd_model_version_args(fx))
+    for _ in range(2):
+        call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": "1.0"})
+    call("UpdateModelVersionStatus", {**fx["model_ref"], "modelVersionNumber": "1.0", "status": "ACTIVE"})
+    call("PutExternalModel", frd_external_model_args(fx, fx["endpoint"]))
+    call("CreateList", {"name": fx["list"], "elements": ["a@example.com"]})
+    call("SendEvent", frd_event_args(fx, fx["event"]))
+    call("GetEventPrediction", {**frd_event_args(fx, fc_unique("pred")), "detectorId": fx["detector"]})
+    preds = call("ListEventPredictions", {"detectorId": {"value": fx["detector"]}}).get("eventPredictionSummaries") or [{}]
+    fx["prediction"] = preds[0]
+    fx["detector_arn"] = f"arn:aws:frauddetector:{region}:123456789012:detector/{fx['detector']}"
+    state.update(fx)
+    return state
+
+
+def frd_model_version_args(fx: dict) -> dict:
+    return {**fx["model_ref"], "trainingDataSource": "EXTERNAL_EVENTS",
+            "trainingDataSchema": {"modelVariables": [fx["amount"], fx["email"]]},
+            "externalEventsDetail": {"dataLocation": "s3://stackyard-fd-cov/train.csv", "dataAccessRoleArn": FRD_ROLE}}
+
+
+def frd_external_model_args(fx: dict, endpoint_name: str) -> dict:
+    return {"modelEndpoint": endpoint_name, "modelSource": "SAGEMAKER", "invokeModelEndpointRoleArn": FRD_ROLE,
+            "inputConfiguration": {"useEventVariables": True, "eventTypeName": fx["event_type"], "format": "APPLICATION_JSON"},
+            "outputConfiguration": {"format": "APPLICATION_JSONLINES", "jsonKeyToVariableMap": {"score": fx["amount"]}},
+            "modelEndpointStatus": "ASSOCIATED"}
+
+
+def frd_event_args(fx: dict, event_id: str) -> dict:
+    return {"eventId": event_id, "eventTypeName": fx["event_type"], "eventTimestamp": "2026-11-24T10:00:00Z",
+            "entities": [{"entityType": fx["entity"], "entityId": "c1"}], "eventVariables": {fx["amount"]: "250"}}
+
+
+def frauddetector_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = frd_fixture(aws_bin, endpoint_url, region, env)
+    call = lambda o, args: frd_call(aws_bin, endpoint_url, region, env, o, args)
+    new = fc_unique("cov")
+    job = lambda kind: {"jobId": new, "inputPath": "s3://stackyard-fd-cov/in.csv", "outputPath": "s3://stackyard-fd-cov/out/",
+                        "eventTypeName": fx["event_type"], "iamRoleArn": FRD_ROLE,
+                        **({"detectorName": fx["detector"]} if kind == "BatchPredictionJob" else {})}
+
+    def own_event_type() -> str:
+        call("PutEventType", {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]]})
+        return new
+
+    def own_draft(detector: str) -> str:
+        return str(call("CreateDetectorVersion", {"detectorId": detector, "rules": []}).get("detectorVersionId") or "")
+
+    simple = {
+        "CreateVariable": lambda: {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"},
+        "BatchCreateVariable": lambda: {"variableEntries": [{"name": new, "dataType": "INTEGER", "dataSource": "EVENT", "defaultValue": "0"}]},
+        "BatchGetVariable": lambda: {"names": [fx["amount"], fx["email"]]},
+        "UpdateVariable": lambda: {"name": fx["email"], "description": "customer email"},
+        "GetVariables": lambda: {},
+        "PutEntityType": lambda: {"name": new}, "PutLabel": lambda: {"name": new}, "PutOutcome": lambda: {"name": new},
+        "PutEventType": lambda: {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]], "labels": [fx["fraud"]]},
+        "PutDetector": lambda: {"detectorId": new, "eventTypeName": fx["event_type"]},
+        "DescribeDetector": lambda: {"detectorId": fx["detector"]},
+        "CreateDetectorVersion": lambda: {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]},
+        "GetDetectorVersion": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1"},
+        "UpdateDetectorVersionMetadata": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1", "description": "coverage"},
+        "CreateRule": lambda: {"ruleId": new, "detectorId": fx["detector"], "expression": f"${fx['email']} == \"x\"", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleVersion": lambda: {"rule": fx["rule_ref"], "expression": f"${fx['amount']} > 200", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleMetadata": lambda: {"rule": fx["rule_ref"], "description": "coverage"},
+        "GetRules": lambda: {"detectorId": fx["detector"]},
+        "CreateModel": lambda: {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]},
+        "UpdateModel": lambda: {**fx["model_ref"], "description": "coverage"},
+        "CreateModelVersion": lambda: frd_model_version_args(fx),
+        "UpdateModelVersion": lambda: {**fx["model_ref"], "majorVersionNumber": "1"},
+        "GetModelVersion": lambda: {**fx["model_ref"], "modelVersionNumber": "1.0"},
+        "PutExternalModel": lambda: frd_external_model_args(fx, new),
+        "CreateList": lambda: {"name": new, "elements": ["b@example.com"]},
+        "UpdateList": lambda: {"name": fx["list"], "elements": ["c@example.com"], "updateMode": "APPEND"},
+        "GetListElements": lambda: {"name": fx["list"]},
+        "PutKMSEncryptionKey": lambda: {"kmsEncryptionKeyArn": "DEFAULT"},
+        "SendEvent": lambda: frd_event_args(fx, new),
+        "GetEvent": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"]},
+        "UpdateEventLabel": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"], "assignedLabel": fx["fraud"], "labelTimestamp": "2026-11-24T11:00:00Z"},
+        "GetEventPrediction": lambda: {**frd_event_args(fx, new), "detectorId": fx["detector"]},
+        "GetEventPredictionMetadata": lambda: {k: fx["prediction"].get(k, "") for k in ("eventId", "eventTypeName", "detectorId", "detectorVersionId", "predictionTimestamp")},
+        "CreateBatchImportJob": lambda: job("BatchImportJob"),
+        "CreateBatchPredictionJob": lambda: job("BatchPredictionJob"),
+        "TagResource": lambda: {"resourceARN": fx["detector_arn"], "tags": [{"key": "env", "value": "cov"}]},
+        "UntagResource": lambda: {"resourceARN": fx["detector_arn"], "tagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"resourceARN": fx["detector_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op in ("DeleteVariable",):
+        call("CreateVariable", {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"})
+        return {"name": new}
+    if op in ("DeleteEntityType", "DeleteLabel", "DeleteOutcome"):
+        call("Put" + op[len("Delete"):], {"name": new})
+        return {"name": new}
+    if op == "DeleteEventType":
+        return {"name": own_event_type()}
+    if op in ("DeleteEventsByEventType", "GetDeleteEventsByEventTypeStatus"):
+        name = own_event_type()
+        if op == "GetDeleteEventsByEventTypeStatus":
+            call("DeleteEventsByEventType", {"eventTypeName": name})
+        return {"eventTypeName": name}
+    if op == "DeleteDetector":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new}
+    if op in ("DeleteDetectorVersion", "UpdateDetectorVersion"):
+        ver = own_draft(fx["detector"])
+        if op == "UpdateDetectorVersion":
+            return {"detectorId": fx["detector"], "detectorVersionId": ver, "externalModelEndpoints": [fx["endpoint"]], "rules": [fx["rule_ref"]]}
+        return {"detectorId": fx["detector"], "detectorVersionId": ver}
+    if op == "UpdateDetectorVersionStatus":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new, "detectorVersionId": own_draft(new), "status": "ACTIVE"}
+    if op == "DeleteRule":
+        call("CreateRule", {"ruleId": new, "detectorId": fx["detector"], "expression": "1 == 1", "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+        return {"rule": {"detectorId": fx["detector"], "ruleId": new, "ruleVersion": "1"}}
+    if op == "DeleteModel":
+        call("CreateModel", {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+        return {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    if op in ("DeleteModelVersion", "UpdateModelVersionStatus"):
+        ver = str(call("CreateModelVersion", frd_model_version_args(fx)).get("modelVersionNumber") or "")
+        if op == "DeleteModelVersion":
+            return {**fx["model_ref"], "modelVersionNumber": ver}
+        for _ in range(2):
+            call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": ver})
+        return {**fx["model_ref"], "modelVersionNumber": ver, "status": "ACTIVE"}
+    if op == "DeleteExternalModel":
+        call("PutExternalModel", frd_external_model_args(fx, new))
+        return {"modelEndpoint": new}
+    if op == "DeleteList":
+        call("CreateList", {"name": new})
+        return {"name": new}
+    if op == "DeleteEvent":
+        call("SendEvent", frd_event_args(fx, new))
+        return {"eventId": new, "eventTypeName": fx["event_type"]}
+    for kind in ("BatchImportJob", "BatchPredictionJob"):
+        if op in ("Cancel" + kind, "Delete" + kind):
+            call("Create" + kind, job(kind))
+            return {"jobId": new}
+    if op.startswith("Get") or op.startswith("List") or op.startswith("Describe"):
+        return {}
+    return payload
+
+
 CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
 CS_DOCS = [
     {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
@@ -38651,6 +39042,624 @@ def personalizeruntime_hydrate_payload(
     return payload
 
 
+MSG_ACCOUNT = "123456789012"
+MSG_SES_ARN = f"arn:aws:ses:us-east-1:{MSG_ACCOUNT}:"
+MSG_DOMAIN = "example.com"
+MSG_FROM = "billing@example.com"
+MSG_SIMPLE = {"Simple": {"Subject": {"Data": "Stackyard receipt"}, "Body": {"Text": {"Data": "Thanks for your order."}}}}
+
+
+class MsgFixture:
+    """Unique names and CLI calls for the Pinpoint Email, Pinpoint SMS Voice and Mail Manager fixtures."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.cli_service = cli_service
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict, cli_service: str = "") -> dict:
+        return psz_call(*self.args, op, args, cli_service or self.cli_service)
+
+
+def msg_window(days: int = 1) -> tuple[str, str]:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return ((now - datetime.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ"), (now + datetime.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
+def pinpointemail_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A verified domain, a dedicated IP pool, a configuration set with an SNS
+    event destination, the dashboard tracking the domain, one sent email and
+    one test report."""
+    state = RUNTIME_STATE.setdefault("pinpointemail", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "pinpoint-email")
+    fx.call("CreateEmailIdentity", {"EmailIdentity": MSG_DOMAIN})
+    pool, cfg = fx.name("pool"), fx.name("cfg")
+    fx.call("CreateDedicatedIpPool", {"PoolName": pool})
+    fx.call("CreateConfigurationSet", {"ConfigurationSetName": cfg, "Tags": [{"Key": "team", "Value": "coverage"}]})
+    fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": cfg, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()})
+    fx.call("PutDeliverabilityDashboardOption", {"DashboardEnabled": True, "SubscribedDomains": [{"Domain": MSG_DOMAIN}]})
+    fx.call("SendEmail", {"FromEmailAddress": MSG_FROM, "Destination": {"ToAddresses": ["customer@example.org"]}, "Content": MSG_SIMPLE})
+    report = fx.call("CreateDeliverabilityTestReport", {"ReportName": fx.name("report"), "FromEmailAddress": MSG_FROM, "Content": MSG_SIMPLE}).get("ReportId", "")
+    start, end = msg_window()
+    camps = fx.call("ListDomainDeliverabilityCampaigns", {"SubscribedDomain": MSG_DOMAIN, "StartDate": start, "EndDate": end})
+    campaign = ((camps.get("DomainDeliverabilityCampaigns") or [{}])[0]).get("CampaignId", "")
+    state.update({"fx": fx, "pool": pool, "cfg": cfg, "report": report, "campaign": campaign})
+    return state
+
+
+def fx_sns_destination() -> dict:
+    return {"Enabled": True, "MatchingEventTypes": ["SEND", "BOUNCE"], "SnsDestination": {"TopicArn": f"arn:aws:sns:us-east-1:{MSG_ACCOUNT}:mail-events"}}
+
+
+def pinpointemail_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Pinpoint Email operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = pinpointemail_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    cfg, pool = st["cfg"], st["pool"]
+    start, end = msg_window()
+    cfg_arn = MSG_SES_ARN + "configuration-set/" + cfg
+
+    def fresh_cfg() -> str:
+        name = fx.name("cfg")
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": name})
+        return name
+
+    fixed = {
+        "GetAccount": {}, "GetDedicatedIps": {}, "GetDeliverabilityDashboardOptions": {}, "ListConfigurationSets": {},
+        "ListDedicatedIpPools": {}, "ListDeliverabilityTestReports": {}, "ListEmailIdentities": {},
+        "GetBlacklistReports": {"BlacklistItemNames": ["198.51.100.10", MSG_DOMAIN]},
+        "GetConfigurationSet": {"ConfigurationSetName": cfg}, "GetConfigurationSetEventDestinations": {"ConfigurationSetName": cfg},
+        "GetDedicatedIp": {"Ip": "198.51.100.10"}, "GetDeliverabilityTestReport": {"ReportId": st["report"]},
+        "GetDomainDeliverabilityCampaign": {"CampaignId": st["campaign"]},
+        "GetDomainStatisticsReport": {"Domain": MSG_DOMAIN, "StartDate": start, "EndDate": end},
+        "ListDomainDeliverabilityCampaigns": {"SubscribedDomain": MSG_DOMAIN, "StartDate": start, "EndDate": end},
+        "GetEmailIdentity": {"EmailIdentity": MSG_DOMAIN}, "ListTagsForResource": {"ResourceArn": cfg_arn},
+        "TagResource": {"ResourceArn": cfg_arn, "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": cfg_arn, "TagKeys": ["owner"]},
+        "PutAccountDedicatedIpWarmupAttributes": {"AutoWarmupEnabled": True}, "PutAccountSendingAttributes": {"SendingEnabled": True},
+        "PutConfigurationSetDeliveryOptions": {"ConfigurationSetName": cfg, "TlsPolicy": "OPTIONAL", "SendingPoolName": pool},
+        "PutConfigurationSetReputationOptions": {"ConfigurationSetName": cfg, "ReputationMetricsEnabled": True},
+        "PutConfigurationSetSendingOptions": {"ConfigurationSetName": cfg, "SendingEnabled": True},
+        "PutConfigurationSetTrackingOptions": {"ConfigurationSetName": cfg, "CustomRedirectDomain": "click." + MSG_DOMAIN},
+        "PutDedicatedIpInPool": {"Ip": "198.51.100.11", "DestinationPoolName": pool},
+        "PutDedicatedIpWarmupAttributes": {"Ip": "198.51.100.12", "WarmupPercentage": 50},
+        "PutDeliverabilityDashboardOption": {"DashboardEnabled": True, "SubscribedDomains": [{"Domain": MSG_DOMAIN, "InboxPlacementTrackingOption": {"Global": True}}]},
+        "PutEmailIdentityDkimAttributes": {"EmailIdentity": MSG_DOMAIN, "SigningEnabled": True},
+        "PutEmailIdentityFeedbackAttributes": {"EmailIdentity": MSG_DOMAIN, "EmailForwardingEnabled": True},
+        "PutEmailIdentityMailFromAttributes": {"EmailIdentity": MSG_DOMAIN, "MailFromDomain": "mail." + MSG_DOMAIN, "BehaviorOnMxFailure": "USE_DEFAULT_VALUE"},
+        "SendEmail": {"FromEmailAddress": MSG_FROM, "Destination": {"ToAddresses": ["customer@example.org"]}, "Content": MSG_SIMPLE, "ConfigurationSetName": cfg},
+        "UpdateConfigurationSetEventDestination": {"ConfigurationSetName": cfg, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()},
+        "CreateDeliverabilityTestReport": {"ReportName": fx.name("report"), "FromEmailAddress": MSG_FROM, "Content": MSG_SIMPLE},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateConfigurationSet":
+        return {"ConfigurationSetName": fx.name("cfg"), "SendingOptions": {"SendingEnabled": True}, "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "CreateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": fresh_cfg(), "EventDestinationName": "sns", "EventDestination": fx_sns_destination()}
+    if op == "CreateDedicatedIpPool":
+        return {"PoolName": fx.name("pool")}
+    if op == "CreateEmailIdentity":
+        return {"EmailIdentity": fx.name("id") + "." + MSG_DOMAIN}
+    if op == "DeleteConfigurationSet":
+        return {"ConfigurationSetName": fresh_cfg()}
+    if op == "DeleteConfigurationSetEventDestination":
+        name = fresh_cfg()
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": name, "EventDestinationName": "sns", "EventDestination": fx_sns_destination()})
+        return {"ConfigurationSetName": name, "EventDestinationName": "sns"}
+    if op == "DeleteDedicatedIpPool":
+        name = fx.name("pool")
+        fx.call("CreateDedicatedIpPool", {"PoolName": name})
+        return {"PoolName": name}
+    if op == "DeleteEmailIdentity":
+        name = fx.name("id") + "." + MSG_DOMAIN
+        fx.call("CreateEmailIdentity", {"EmailIdentity": name})
+        return {"EmailIdentity": name}
+    return payload
+
+
+def pinpointsmsvoice_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Pinpoint SMS Voice (v1): a cached configuration set with a CloudWatch
+    Logs event destination; creates and deletes get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("pinpointsmsvoice", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "pinpoint-sms-voice")
+        state.update({"fx": fx, "set": fx.name("set")})
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": state["set"]})
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": state["set"], "EventDestinationName": "logs", "EventDestination": ppsv_destination()})
+    fx, name = state["fx"], state["set"]
+
+    def fresh_set() -> str:
+        new = fx.name("set")
+        fx.call("CreateConfigurationSet", {"ConfigurationSetName": new})
+        return new
+
+    if op == "CreateConfigurationSet":
+        return {"ConfigurationSetName": fx.name("set")}
+    if op == "CreateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": fresh_set(), "EventDestinationName": "logs", "EventDestination": ppsv_destination()}
+    if op == "DeleteConfigurationSet":
+        return {"ConfigurationSetName": fresh_set()}
+    if op == "DeleteConfigurationSetEventDestination":
+        new = fresh_set()
+        fx.call("CreateConfigurationSetEventDestination", {"ConfigurationSetName": new, "EventDestinationName": "logs", "EventDestination": ppsv_destination()})
+        return {"ConfigurationSetName": new, "EventDestinationName": "logs"}
+    if op == "GetConfigurationSetEventDestinations":
+        return {"ConfigurationSetName": name}
+    if op == "UpdateConfigurationSetEventDestination":
+        return {"ConfigurationSetName": name, "EventDestinationName": "logs", "EventDestination": ppsv_destination()}
+    if op == "ListConfigurationSets":
+        return {"PageSize": "10"}
+    if op == "SendVoiceMessage":
+        return {"OriginationPhoneNumber": "+12065550100", "DestinationPhoneNumber": "+12065550199", "ConfigurationSetName": name,
+                "CallerId": "+12065550100",
+                "Content": {"PlainTextMessage": {"LanguageCode": "en-US", "VoiceId": "Joanna", "Text": "Your code is 1 2 3 4."}}}
+    return payload
+
+
+def ppsv_destination() -> dict:
+    return {"Enabled": True, "MatchingEventTypes": ["ANSWERED", "FAILED"],
+            "CloudWatchLogsDestination": {"IamRoleArn": f"arn:aws:iam::{MSG_ACCOUNT}:role/voice", "LogGroupArn": f"arn:aws:logs:us-east-1:{MSG_ACCOUNT}:log-group:voice"}}
+
+
+MMGR_BUCKET = "stackyard-mailmanager"
+
+
+def mailmanager_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An archive fed by an SESv2 configuration set, an address list with an
+    imported member, a relay, a traffic policy, a rule set, an ingress point,
+    an add-on subscription and instance, a search and an export."""
+    state = RUNTIME_STATE.setdefault("mailmanager", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "mailmanager")
+    archive = fx.call("CreateArchive", {"ArchiveName": fx.name("archive")}).get("ArchiveId", "")
+    archive_arn = fx.call("GetArchive", {"ArchiveId": archive}).get("ArchiveArn", "")
+    cfg = fx.name("cfg")
+    fx.call("CreateEmailIdentity", {"EmailIdentity": MSG_DOMAIN}, "sesv2")
+    fx.call("CreateConfigurationSet", {"ConfigurationSetName": cfg}, "sesv2")
+    fx.call("PutConfigurationSetArchivingOptions", {"ConfigurationSetName": cfg, "ArchiveArn": archive_arn}, "sesv2")
+    fx.call("SendEmail", {"FromEmailAddress": MSG_FROM, "ConfigurationSetName": cfg, "Destination": {"ToAddresses": ["customer@example.org"]},
+                          "Content": MSG_SIMPLE}, "sesv2")
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, MMGR_BUCKET, track_as_primary=False)
+    address_list = fx.call("CreateAddressList", {"AddressListName": fx.name("list")}).get("AddressListId", "")
+    fx.call("RegisterMemberToAddressList", {"AddressListId": address_list, "Address": "vip@example.org"})
+    job = fx.call("CreateAddressListImportJob", {"AddressListId": address_list, "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "CSV"}})
+    req = urlrequest.Request(job.get("PreSignedUrl", ""), data=b"address\nimported@example.org\n", method="PUT")
+    with urlrequest.urlopen(req, timeout=10) as resp:
+        resp.read()
+    fx.call("StartAddressListImportJob", {"JobId": job.get("JobId", "")})
+    state.update({"fx": fx, "archive": archive, "archive_arn": archive_arn, "list": address_list, "job": job.get("JobId", "")})
+    state["list_arn"] = fx.call("GetAddressList", {"AddressListId": address_list}).get("AddressListArn", "")
+    state["relay"] = mmgr_relay(fx)
+    state["policy"] = mmgr_policy(fx)
+    state["rule_set"] = mmgr_rule_set(fx, state)
+    state["ingress"] = mmgr_ingress(fx, state)
+    state["sub"] = fx.call("CreateAddonSubscription", {"AddonName": fx.name("addon").upper().replace("-", "_")}).get("AddonSubscriptionId", "")
+    state["inst"] = fx.call("CreateAddonInstance", {"AddonSubscriptionId": state["sub"]}).get("AddonInstanceId", "")
+    state["search"] = mmgr_search(fx, archive)
+    state["message"] = ((fx.call("GetArchiveSearchResults", {"SearchId": state["search"]}).get("Rows") or [{}])[0]).get("ArchivedMessageId", "")
+    state["export"] = mmgr_export(fx, archive)
+    return state
+
+
+def mmgr_relay(fx: MsgFixture) -> str:
+    return fx.call("CreateRelay", {"RelayName": fx.name("relay"), "ServerName": "smtp.example.com", "ServerPort": 587,
+                                   "Authentication": {"NoAuthentication": {}}}).get("RelayId", "")
+
+
+def mmgr_policy(fx: MsgFixture) -> str:
+    return fx.call("CreateTrafficPolicy", {
+        "TrafficPolicyName": fx.name("policy"), "DefaultAction": "DENY",
+        "PolicyStatements": [{"Action": "ALLOW", "Conditions": [{"IpExpression": {"Evaluate": {"Attribute": "SENDER_IP"}, "Operator": "CIDR_MATCHES", "Values": ["10.0.0.0/8"]}}]}],
+    }).get("TrafficPolicyId", "")
+
+
+def mmgr_rules(st: dict) -> list:
+    return [{"Name": "archive-vip",
+             "Conditions": [{"BooleanExpression": {"Evaluate": {"IsInAddressList": {"Attribute": "RECIPIENT", "AddressLists": [st["list_arn"]]}}, "Operator": "IS_TRUE"}}],
+             "Actions": [{"Archive": {"TargetArchive": st["archive"]}}]}]
+
+
+def mmgr_rule_set(fx: MsgFixture, st: dict) -> str:
+    return fx.call("CreateRuleSet", {"RuleSetName": fx.name("rules"), "Rules": mmgr_rules(st)}).get("RuleSetId", "")
+
+
+def mmgr_ingress(fx: MsgFixture, st: dict) -> str:
+    return fx.call("CreateIngressPoint", {"IngressPointName": fx.name("ingress"), "Type": "OPEN", "RuleSetId": st["rule_set"],
+                                          "TrafficPolicyId": st["policy"]}).get("IngressPointId", "")
+
+
+def mmgr_span() -> dict:
+    now = time.time()
+    return {"FromTimestamp": int(now - 86400), "ToTimestamp": int(now + 3600)}
+
+
+def mmgr_search(fx: MsgFixture, archive: str) -> str:
+    return fx.call("StartArchiveSearch", {"ArchiveId": archive, "MaxResults": 10, **mmgr_span()}).get("SearchId", "")
+
+
+def mmgr_export(fx: MsgFixture, archive: str) -> str:
+    return fx.call("StartArchiveExport", {"ArchiveId": archive, **mmgr_span(),
+                                          "ExportDestinationConfiguration": {"S3": {"S3Location": f"s3://{MMGR_BUCKET}/exports"}}}).get("ExportId", "")
+
+
+def mailmanager_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Mail Manager operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = mailmanager_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    page = {"PageSize": 10}
+
+    def fresh_list() -> str:
+        return fx.call("CreateAddressList", {"AddressListName": fx.name("list")}).get("AddressListId", "")
+
+    fixed = {
+        "GetAddonInstance": {"AddonInstanceId": st["inst"]}, "GetAddonSubscription": {"AddonSubscriptionId": st["sub"]},
+        "GetAddressList": {"AddressListId": st["list"]}, "GetAddressListImportJob": {"JobId": st["job"]},
+        "GetArchive": {"ArchiveId": st["archive"]}, "GetArchiveExport": {"ExportId": st["export"]},
+        "GetArchiveMessage": {"ArchivedMessageId": st["message"]}, "GetArchiveMessageContent": {"ArchivedMessageId": st["message"]},
+        "GetArchiveSearch": {"SearchId": st["search"]}, "GetArchiveSearchResults": {"SearchId": st["search"]},
+        "GetIngressPoint": {"IngressPointId": st["ingress"], "IncludeTrustStoreContents": "EXCLUDE"},
+        "GetMemberOfAddressList": {"AddressListId": st["list"], "Address": "vip@example.org"},
+        "GetRelay": {"RelayId": st["relay"]}, "GetRuleSet": {"RuleSetId": st["rule_set"]}, "GetTrafficPolicy": {"TrafficPolicyId": st["policy"]},
+        "ListAddonInstances": page, "ListAddonSubscriptions": page, "ListAddressLists": page, "ListArchives": page,
+        "ListIngressPoints": page, "ListRelays": page, "ListRuleSets": page, "ListTrafficPolicies": page,
+        "ListAddressListImportJobs": {"AddressListId": st["list"], **page}, "ListArchiveExports": {"ArchiveId": st["archive"], **page},
+        "ListArchiveSearches": {"ArchiveId": st["archive"], **page},
+        "ListMembersOfAddressList": {"AddressListId": st["list"], "Filter": {"AddressPrefix": "v"}, **page},
+        "ListTagsForResource": {"ResourceArn": st["archive_arn"]},
+        "TagResource": {"ResourceArn": st["archive_arn"], "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "UntagResource": {"ResourceArn": st["archive_arn"], "TagKeys": ["team"]},
+        "UpdateArchive": {"ArchiveId": st["archive"], "Retention": {"RetentionPeriod": "ONE_YEAR"}},
+        "UpdateIngressPoint": {"IngressPointId": st["ingress"], "StatusToUpdate": "ACTIVE", "RuleSetId": st["rule_set"]},
+        "UpdateRelay": {"RelayId": st["relay"], "ServerPort": 465},
+        "UpdateRuleSet": {"RuleSetId": st["rule_set"], "Rules": mmgr_rules(st)},
+        "UpdateTrafficPolicy": {"TrafficPolicyId": st["policy"], "DefaultAction": "ALLOW", "MaxMessageSizeBytes": 10485760},
+        "StartArchiveSearch": {"ArchiveId": st["archive"], "MaxResults": 10, **mmgr_span()},
+        "StartArchiveExport": {"ArchiveId": st["archive"], **mmgr_span(), "IncludeMetadata": True,
+                               "ExportDestinationConfiguration": {"S3": {"S3Location": f"s3://{MMGR_BUCKET}/exports"}}},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateAddonSubscription":
+        return {"AddonName": fx.name("addon").upper().replace("-", "_")}
+    if op == "CreateAddonInstance":
+        return {"AddonSubscriptionId": st["sub"]}
+    if op == "CreateAddressList":
+        return {"AddressListName": fx.name("list"), "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "CreateAddressListImportJob":
+        return {"AddressListId": st["list"], "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "JSON"}}
+    if op == "CreateArchive":
+        return {"ArchiveName": fx.name("archive"), "Retention": {"RetentionPeriod": "THREE_MONTHS"}}
+    if op == "CreateIngressPoint":
+        return {"IngressPointName": fx.name("ingress"), "Type": "AUTH", "RuleSetId": st["rule_set"], "TrafficPolicyId": st["policy"],
+                "IngressPointConfiguration": {"SecretArn": f"arn:aws:secretsmanager:us-east-1:{MSG_ACCOUNT}:secret:smtp"}}
+    if op == "CreateRelay":
+        return {"RelayName": fx.name("relay"), "ServerName": "smtp.example.com", "ServerPort": 25, "Authentication": {"NoAuthentication": {}}}
+    if op == "CreateRuleSet":
+        return {"RuleSetName": fx.name("rules"), "Rules": mmgr_rules(st)}
+    if op == "CreateTrafficPolicy":
+        return {"TrafficPolicyName": fx.name("policy"), "DefaultAction": "ALLOW", "PolicyStatements": [{"Action": "DENY", "Conditions": [
+            {"StringExpression": {"Evaluate": {"Attribute": "RECIPIENT"}, "Operator": "ENDS_WITH", "Values": ["@spam.example"]}}]}]}
+    if op == "DeleteAddonInstance":
+        return {"AddonInstanceId": fx.call("CreateAddonInstance", {"AddonSubscriptionId": st["sub"]}).get("AddonInstanceId", "")}
+    if op == "DeleteAddonSubscription":
+        return {"AddonSubscriptionId": fx.call("CreateAddonSubscription", {"AddonName": fx.name("addon").upper().replace("-", "_")}).get("AddonSubscriptionId", "")}
+    if op == "DeleteAddressList":
+        return {"AddressListId": fresh_list()}
+    if op == "DeleteArchive":
+        return {"ArchiveId": fx.call("CreateArchive", {"ArchiveName": fx.name("archive")}).get("ArchiveId", "")}
+    if op == "DeleteIngressPoint":
+        return {"IngressPointId": mmgr_ingress(fx, st)}
+    if op == "DeleteRelay":
+        return {"RelayId": mmgr_relay(fx)}
+    if op == "DeleteRuleSet":
+        return {"RuleSetId": mmgr_rule_set(fx, st)}
+    if op == "DeleteTrafficPolicy":
+        return {"TrafficPolicyId": mmgr_policy(fx)}
+    if op == "DeregisterMemberFromAddressList":
+        new = fresh_list()
+        fx.call("RegisterMemberToAddressList", {"AddressListId": new, "Address": "gone@example.org"})
+        return {"AddressListId": new, "Address": "gone@example.org"}
+    if op == "RegisterMemberToAddressList":
+        return {"AddressListId": st["list"], "Address": fx.name("member") + "@example.org"}
+    if op in ("StartAddressListImportJob", "StopAddressListImportJob"):
+        job = fx.call("CreateAddressListImportJob", {"AddressListId": st["list"], "Name": fx.name("job"), "ImportDataFormat": {"ImportDataType": "CSV"}}).get("JobId", "")
+        if op == "StopAddressListImportJob":
+            fx.call("StartAddressListImportJob", {"JobId": job})
+        return {"JobId": job}
+    if op == "StopArchiveSearch":
+        return {"SearchId": mmgr_search(fx, st["archive"])}
+    if op == "StopArchiveExport":
+        return {"ExportId": mmgr_export(fx, st["archive"])}
+    return payload
+
+
+
+IOT_BATCH_ACCOUNT = "123456789012"
+IST_THING = "sy-tunnel-thing"
+IDA_THING_ARN = f"arn:aws:iot:us-east-1:{IOT_BATCH_ACCOUNT}:thing/sy-advisor-thing"
+IDA_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-device-advisor"
+IDA_ROOT_GROUP = json.dumps({"configuration": {}, "tests": [{"name": "MQTT Connect", "configuration": {}, "tests": [
+    {"name": "MQTT_Connect", "configuration": {}, "test": {"id": "MQTT_Connect", "version": "0.0.0"}}]}]})
+ITG_NS = f"urn:tdm:us-east-1/{IOT_BATCH_ACCOUNT}/default:"
+ITG_ROLE = f"arn:aws:iam::{IOT_BATCH_ACCOUNT}:role/stackyard-things-graph"
+ITG_ENTITIES = (
+    f'type Camera @deviceModel(id: "{ITG_NS}deviceModel:Camera", capability: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type Capture @capability(id: "{ITG_NS}capability:Capture") {{ignore:void}}\n'
+    f'type MyCamera @device(id: "{ITG_NS}device:MyCamera", deviceModel: "{ITG_NS}deviceModel:Camera") {{ignore:void}}\n'
+)
+
+
+def iot_batch_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def iotsecuretunneling_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point tunnel operations at a fixture tunnel; CloseTunnel gets its own."""
+    op = endpoint.operation
+
+    def open_tunnel() -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotsecuretunneling", "OpenTunnel", {
+            "description": "stackyard coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+            "timeoutConfig": {"maxLifetimeTimeoutMinutes": 60}, "tags": [{"key": "team", "value": "coverage"}]})
+
+    state = RUNTIME_STATE.setdefault("iotsecuretunneling", {})
+    if not state.get("tunnel"):
+        state["tunnel"] = open_tunnel()
+    tunnel = state["tunnel"]
+    tid, arn = tunnel.get("tunnelId", ""), tunnel.get("tunnelArn", "")
+    if op == "OpenTunnel":
+        return {"description": "coverage", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]},
+                "timeoutConfig": {"maxLifetimeTimeoutMinutes": 30}, "tags": [{"key": "team", "value": "coverage"}]}
+    if op == "CloseTunnel":
+        return {"tunnelId": open_tunnel().get("tunnelId", ""), "delete": True}
+    if op == "DescribeTunnel":
+        return {"tunnelId": tid}
+    if op == "RotateTunnelAccessToken":
+        return {"tunnelId": tid, "clientMode": "ALL", "destinationConfig": {"thingName": IST_THING, "services": ["SSH"]}}
+    if op == "ListTunnels":
+        return {"thingName": IST_THING, "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+def iotdeviceadvisor_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Device Advisor operations at fixture suites and runs; creates and
+    destructive operations get suites of their own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, "iotdeviceadvisor", name, args)
+
+    def config(name: str, qualification: bool = False) -> dict:
+        return {"suiteDefinitionName": name, "rootGroup": "" if qualification else IDA_ROOT_GROUP,
+                "devicePermissionRoleArn": IDA_ROLE, "intendedForQualification": qualification,
+                "devices": [{"thingArn": IDA_THING_ARN}], "protocol": "MqttV5"}
+
+    def suite(qualification: bool = False) -> str:
+        return call("CreateSuiteDefinition", {"suiteDefinitionConfiguration": config("sy-suite", qualification),
+                                              "tags": {"team": "coverage"}}).get("suiteDefinitionId", "")
+
+    run_cfg = {"primaryDevice": {"thingArn": IDA_THING_ARN}}
+
+    def run(suite_id: str) -> str:
+        return call("StartSuiteRun", {"suiteDefinitionId": suite_id, "suiteRunConfiguration": run_cfg}).get("suiteRunId", "")
+
+    state = RUNTIME_STATE.setdefault("iotdeviceadvisor", {})
+    if not state.get("suite"):
+        sid = suite()
+        rid = run(sid)
+        qid = suite(True)
+        qrid = run(qid)
+        for _ in range(2):  # PENDING -> RUNNING -> PASS
+            call("GetSuiteRun", {"suiteDefinitionId": qid, "suiteRunId": qrid})
+        arn = call("GetSuiteDefinition", {"suiteDefinitionId": sid}).get("suiteDefinitionArn", "")
+        state.update({"suite": sid, "run": rid, "qsuite": qid, "qrun": qrid, "arn": arn})
+    sid, rid, arn = state["suite"], state["run"], state["arn"]
+    if op == "CreateSuiteDefinition":
+        return {"suiteDefinitionConfiguration": config("sy-created"), "tags": {"team": "coverage"}}
+    if op == "UpdateSuiteDefinition":
+        return {"suiteDefinitionId": sid, "suiteDefinitionConfiguration": config("sy-updated")}
+    if op == "DeleteSuiteDefinition":
+        return {"suiteDefinitionId": suite()}
+    if op == "GetSuiteDefinition":
+        return {"suiteDefinitionId": sid}
+    if op == "ListSuiteDefinitions":
+        return {"maxResults": 10}
+    if op == "StartSuiteRun":
+        return {"suiteDefinitionId": suite(), "suiteRunConfiguration": run_cfg, "tags": {"team": "coverage"}}
+    if op == "StopSuiteRun":
+        new = suite()
+        return {"suiteDefinitionId": new, "suiteRunId": run(new)}
+    if op == "GetSuiteRun":
+        return {"suiteDefinitionId": sid, "suiteRunId": rid}
+    if op == "GetSuiteRunReport":
+        return {"suiteDefinitionId": state["qsuite"], "suiteRunId": state["qrun"]}
+    if op == "ListSuiteRuns":
+        return {"suiteDefinitionId": sid, "maxResults": 10}
+    if op == "GetEndpoint":
+        return {"thingArn": IDA_THING_ARN, "authenticationMethod": "X509ClientCertificate"}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
+
+class ItgFixture:
+    """Things Graph documents with run-unique ids (servers are reused between runs)."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def call(self, op: str, args: dict) -> dict:
+        return iot_batch_call(*self.args, "iotthingsgraph", op, args)
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"{prefix}{self.run}x{self.count}"
+
+    def upload(self) -> str:
+        return self.call("UploadEntityDefinitions", {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}}).get("uploadId", "")
+
+    def flow(self) -> tuple[str, dict]:
+        fid = f"{ITG_NS}Workflow:{self.name('Flow')}"
+        text = f'{{ query F @workflowType(id: "{fid}") {{ variables {{ cam @property(id: "{ITG_NS}deviceModel:Camera") }} }} }}'
+        return fid, {"language": "GRAPHQL", "text": text}
+
+    def system(self, flow_id: str) -> tuple[str, dict]:
+        sid = f"{ITG_NS}System:{self.name('Sys')}"
+        text = (f'{{ type S @systemType(id: "{sid}") {{ camera: Camera @thing(id: "{ITG_NS}deviceModel:Camera") '
+                f'flow: Workflow @workflow(id: "{flow_id}") }} }}')
+        return sid, {"language": "GRAPHQL", "text": text}
+
+    def instance_args(self, system_id: str) -> dict:
+        iid = f"{ITG_NS}Deployment:{self.name('Dep')}"
+        text = f'query D @deployment(id: "{iid}", systemId: "{system_id}") {{ camera(deviceId: "sy-graph-thing") }}'
+        return {"definition": {"language": "GRAPHQL", "text": text}, "target": "CLOUD", "flowActionsRoleArn": ITG_ROLE,
+                "tags": [{"key": "team", "value": "coverage"}]}
+
+    def create_flow(self) -> str:
+        fid, definition = self.flow()
+        self.call("CreateFlowTemplate", {"definition": definition})
+        return fid
+
+    def create_system(self, flow_id: str) -> str:
+        sid, definition = self.system(flow_id)
+        self.call("CreateSystemTemplate", {"definition": definition})
+        return sid
+
+    def create_instance(self, system_id: str) -> str:
+        return (self.call("CreateSystemInstance", self.instance_args(system_id)).get("summary") or {}).get("id", "")
+
+    def deployed(self, system_id: str) -> str:
+        iid = self.create_instance(system_id)
+        self.call("DeploySystemInstance", {"id": iid})
+        self.call("GetSystemInstance", {"id": iid})  # settles DEPLOYED_IN_TARGET
+        return iid
+
+
+def iotthingsgraph_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Things Graph operations at a cached flow, system and deployed
+    instance. Entities are re-uploaded first because DeleteNamespace (also
+    covered) drops them."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotthingsgraph", {})
+    fx: ItgFixture | None = state.get("fx")
+    if fx is None:
+        fx = ItgFixture(aws_bin, endpoint_url, region, env)
+        fx.upload()
+        flow = fx.create_flow()
+        system = fx.create_system(flow)
+        inst = fx.deployed(system)
+        execs = fx.call("SearchFlowExecutions", {"systemInstanceId": inst}).get("summaries") or [{}]
+        arn = ((fx.call("GetSystemInstance", {"id": inst}).get("description") or {}).get("summary") or {}).get("arn", "")
+        state.update({"fx": fx, "flow": flow, "system": system, "inst": inst, "arn": arn,
+                      "execution": execs[0].get("flowExecutionId", "")})
+    if op not in {"DeleteNamespace", "GetNamespaceDeletionStatus"}:
+        fx.upload()
+    device = f"{ITG_NS}device:MyCamera"
+    flow, system, inst, arn = state["flow"], state["system"], state["inst"], state["arn"]
+    if op == "UploadEntityDefinitions":
+        return {"document": {"language": "GRAPHQL", "text": ITG_ENTITIES}, "syncWithPublicNamespace": False}
+    if op == "GetUploadStatus":
+        return {"uploadId": fx.upload()}
+    if op == "DescribeNamespace":
+        return {}
+    if op == "DeleteNamespace":
+        return {}
+    if op == "GetNamespaceDeletionStatus":
+        fx.call("DeleteNamespace", {})
+        return {}
+    if op == "GetEntities":
+        return {"ids": [device]}
+    if op == "SearchEntities":
+        return {"entityTypes": ["DEVICE", "DEVICE_MODEL"], "maxResults": 10}
+    if op == "AssociateEntityToThing":
+        return {"thingName": "sy-graph-thing", "entityId": device}
+    if op == "DissociateEntityFromThing":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-dissociate", "entityId": device})
+        return {"thingName": "sy-graph-dissociate", "entityType": "DEVICE"}
+    if op == "SearchThings":
+        fx.call("AssociateEntityToThing", {"thingName": "sy-graph-thing", "entityId": device})
+        return {"entityId": device}
+    if op == "CreateFlowTemplate":
+        return {"definition": fx.flow()[1]}
+    if op == "UpdateFlowTemplate":
+        return {"id": flow, "definition": {"language": "GRAPHQL", "text": (fx.call("GetFlowTemplate", {"id": flow}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetFlowTemplate", "GetFlowTemplateRevisions"}:
+        return {"id": flow}
+    if op in {"DeleteFlowTemplate", "DeprecateFlowTemplate"}:
+        return {"id": fx.create_flow()}
+    if op == "SearchFlowTemplates":
+        return {"filters": [{"name": "DEVICE_MODEL_ID", "value": [f"{ITG_NS}deviceModel:Camera"]}], "maxResults": 10}
+    if op == "CreateSystemTemplate":
+        return {"definition": fx.system(flow)[1]}
+    if op == "UpdateSystemTemplate":
+        return {"id": system, "definition": {"language": "GRAPHQL", "text": (fx.call("GetSystemTemplate", {"id": system}).get("description") or {}).get("definition", {}).get("text", "")}}
+    if op in {"GetSystemTemplate", "GetSystemTemplateRevisions"}:
+        return {"id": system}
+    if op in {"DeleteSystemTemplate", "DeprecateSystemTemplate"}:
+        return {"id": fx.create_system(flow)}
+    if op == "SearchSystemTemplates":
+        return {"filters": [{"name": "FLOW_TEMPLATE_ID", "value": [flow]}], "maxResults": 10}
+    if op == "CreateSystemInstance":
+        return fx.instance_args(system)
+    if op == "GetSystemInstance":
+        return {"id": inst}
+    if op in {"DeploySystemInstance", "DeleteSystemInstance"}:
+        return {"id": fx.create_instance(system)}
+    if op == "UndeploySystemInstance":
+        return {"id": fx.deployed(system)}
+    if op == "SearchSystemInstances":
+        return {"filters": [{"name": "SYSTEM_TEMPLATE_ID", "value": [system]}], "maxResults": 10}
+    if op == "SearchFlowExecutions":
+        return {"systemInstanceId": inst, "maxResults": 10}
+    if op == "ListFlowExecutionMessages":
+        return {"flowExecutionId": state["execution"], "maxResults": 10}
+    if op == "ListTagsForResource":
+        return {"resourceArn": arn, "maxResults": 10}
+    if op == "TagResource":
+        return {"resourceArn": arn, "tags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": arn, "tagKeys": ["env"]}
+    return payload
+
 
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
@@ -38839,6 +39848,271 @@ def bcmdataexports_hydrate_payload(
         return {"ResourceArn": arn, "ResourceTagKeys": ["env"]}
     if op == "ListTagsForResource":
         return {"ResourceArn": arn}
+    return payload
+
+
+def cnx_unique(prefix: str) -> str:
+    return f"{prefix}{time.time_ns() % 10**12}"
+
+
+def cnx_chat(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Start a Connect chat contact and connect its customer; returns ids and the
+    connection token."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connect", "start-chat-contact", env, [
+        "--cli-input-json", json.dumps({
+            "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+            "ParticipantDetails": {"DisplayName": "Coverage"},
+            "InitialMessage": {"ContentType": "text/plain", "Content": "my order is broken, thanks for the help"},
+        }),
+    ]) or {}
+    token = str(started.get("ParticipantToken") or "")
+    conn = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "create-participant-connection", env, [
+        "--participant-token", token, "--type", "CONNECTION_CREDENTIALS", "--connect-participant",
+    ]) or {}
+    creds = conn.get("ConnectionCredentials") if isinstance(conn.get("ConnectionCredentials"), dict) else {}
+    return {"contact": str(started.get("ContactId") or ""), "participant_token": token,
+            "connection": str(creds.get("ConnectionToken") or "")}
+
+
+def cnp_upload(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], connection: str) -> str:
+    """Start and upload a five-byte attachment; returns its id."""
+    started = run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "start-attachment-upload", env, [
+        "--cli-input-json", json.dumps({"ConnectionToken": connection, "ContentType": "text/plain",
+                                        "AttachmentSizeInBytes": 5, "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}),
+    ]) or {}
+    meta = started.get("UploadMetadata") if isinstance(started.get("UploadMetadata"), dict) else {}
+    url = str(meta.get("Url") or "")
+    if url:
+        req = urlrequest.Request(url, data=b"hello", method="PUT", headers={"Content-Type": "text/plain"})
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            resp.read()
+    return str(started.get("AttachmentId") or "")
+
+
+def connectparticipant_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Drive Connect Participant against a real chat contact; DisconnectParticipant
+    gets a chat of its own."""
+    op = endpoint.operation
+    if op == "DisconnectParticipant":
+        return {"ConnectionToken": cnx_chat(aws_bin, endpoint_url, region, env)["connection"], "ClientToken": cnx_unique("dc-")}
+    state = RUNTIME_STATE.setdefault("connectparticipant", {})
+    if not state.get("connection"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    conn = str(state["connection"])
+    session = "123e4567-e89b-12d3-a456-426614174000"
+    if op == "CreateParticipantConnection":
+        return {"ParticipantToken": state["participant_token"], "Type": ["CONNECTION_CREDENTIALS"], "ConnectParticipant": True}
+    if op == "SendMessage":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "Content": "hello from coverage", "ClientToken": cnx_unique("m-")}
+    if op == "SendEvent":
+        return {"ConnectionToken": conn, "ContentType": "application/vnd.amazonaws.connect.event.typing", "ClientToken": cnx_unique("e-")}
+    if op == "GetTranscript":
+        return {"ConnectionToken": conn, "MaxResults": 10, "ScanDirection": "FORWARD", "SortOrder": "ASCENDING"}
+    if op == "StartAttachmentUpload":
+        return {"ConnectionToken": conn, "ContentType": "text/plain", "AttachmentSizeInBytes": 5,
+                "AttachmentName": "notes.txt", "ClientToken": cnx_unique("att-")}
+    if op == "CompleteAttachmentUpload":
+        return {"ConnectionToken": conn, "AttachmentIds": [cnp_upload(aws_bin, endpoint_url, region, env, conn)], "ClientToken": cnx_unique("c-")}
+    if op == "GetAttachment":
+        att = cnp_upload(aws_bin, endpoint_url, region, env, conn)
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "complete-attachment-upload", env, [
+            "--connection-token", conn, "--attachment-ids", att, "--client-token", cnx_unique("c-"),
+        ])
+        return {"ConnectionToken": conn, "AttachmentId": att, "UrlExpiryInSeconds": 60}
+    if op == "GetAuthenticationUrl":
+        return {"ConnectionToken": conn, "SessionId": session, "RedirectUri": "https://example.com/callback"}
+    if op == "CancelParticipantAuthentication":
+        run_aws_json(aws_bin, endpoint_url, region, "connectparticipant", "get-authentication-url", env, [
+            "--connection-token", conn, "--session-id", session, "--redirect-uri", "https://example.com/callback",
+        ])
+        return {"ConnectionToken": conn, "SessionId": session}
+    if op == "DescribeView":
+        return {"ConnectionToken": conn, "ViewToken": "arn:aws:connect:us-east-1:aws:view/form"}
+    return payload
+
+
+def connect_chat_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Connect's chat operations validate their input: start a chat on the seeded
+    instance, and add a bot to a real chat."""
+    if endpoint.operation == "StartChatContact":
+        return {**payload, "InstanceId": "instance-000001", "ContactFlowId": "contact-flow-000001",
+                "ParticipantDetails": {"DisplayName": "Coverage"},
+                "InitialMessage": {"ContentType": "text/plain", "Content": "hello"}}
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    return {**payload, "InstanceId": "instance-000001", "ContactId": chat["contact"],
+            "ParticipantDetails": {"ParticipantRole": "CUSTOM_BOT", "DisplayName": "Coverage bot"}}
+
+
+def connectcontactlens_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Analyze the messages of a real chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcontactlens", {})
+    if not state.get("contact"):
+        state.update(cnx_chat(aws_bin, endpoint_url, region, env))
+    return {"InstanceId": "instance-000001", "ContactId": state["contact"], "MaxResults": 10}
+
+
+def cnc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "connectcases", op, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def cnc_case(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], state: dict, title: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case", {
+        "domainId": state["domain"], "templateId": state["template"],
+        "fields": [{"id": "title", "value": {"stringValue": title}}, {"id": state["field"], "value": {"doubleValue": 2}}],
+    }).get("caseId") or "")
+
+
+def cnc_comment(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], domain: str, case: str) -> str:
+    return str(cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {
+        "domainId": domain, "caseId": case, "type": "Comment", "content": {"comment": {"body": "coverage", "contentType": "Text/Plain"}},
+    }).get("relatedItemId") or "")
+
+
+def cnc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A domain with a Number and a SingleSelect field, a layout, a case rule,
+    a template and a case linked to a chat contact."""
+    state = RUNTIME_STATE.setdefault("connectcases", {})
+    if state.get("case"):
+        return state
+    domain = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sycases-")}).get("domainId") or "")
+    field = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "priority", "type": "Number"}).get("fieldId") or "")
+    tier = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {"domainId": domain, "name": "tier", "type": "SingleSelect"}).get("fieldId") or "")
+    cnc_cli(aws_bin, endpoint_url, region, env, "batch-put-field-options", {"domainId": domain, "fieldId": tier, "options": [{"name": "Gold", "value": "gold", "active": True}]})
+    layout = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {"domainId": domain, "name": "main", "content": {"basic": {
+        "topPanel": {"sections": [{"fieldGroup": {"name": "summary", "fields": [{"id": "title"}, {"id": field}]}}]}}}}).get("layoutId") or "")
+    rule = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {"domainId": domain, "name": "tier hidden", "rule": {
+        "hidden": {"defaultValue": False, "conditions": [{"equalTo": {"operandOne": {"fieldId": "status"}, "operandTwo": {"stringValue": "closed"}, "result": True}}]}}}).get("caseRuleId") or "")
+    template = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {"domainId": domain, "name": "default",
+        "layoutConfiguration": {"defaultLayout": layout}, "requiredFields": [{"fieldId": "title"}],
+        "rules": [{"caseRuleId": rule, "fieldId": tier}]}).get("templateId") or "")
+    state.update({"domain": domain, "field": field, "tier": tier, "layout": layout, "rule": rule, "template": template})
+    state["case"] = cnc_case(aws_bin, endpoint_url, region, env, state, "Printer broken")
+    chat = cnx_chat(aws_bin, endpoint_url, region, env)
+    state["contact_arn"] = f"arn:aws:connect:{region}:123456789012:instance/instance-000001/contact/{chat['contact']}"
+    cnc_cli(aws_bin, endpoint_url, region, env, "create-related-item", {"domainId": domain, "caseId": state["case"], "type": "Contact",
+                                                                       "content": {"contact": {"contactArn": state["contact_arn"]}}})
+    state["comment"] = cnc_comment(aws_bin, endpoint_url, region, env, domain, state["case"])
+    return state
+
+
+def connectcases_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Connect Cases operations at a real domain; deletes and merges get
+    resources of their own."""
+    op = endpoint.operation
+    if op == "CreateDomain":
+        return {"name": cnx_unique("sycases-")}
+    if op == "ListDomains":
+        return {"maxResults": 10}
+    if op == "DeleteDomain":
+        return {"domainId": str(cnc_cli(aws_bin, endpoint_url, region, env, "create-domain", {"name": cnx_unique("sydel-")}).get("domainId") or "")}
+    s = cnc_fixture(aws_bin, endpoint_url, region, env)
+    d, case = s["domain"], s["case"]
+    base = {"domainId": d}
+    domain_arn = f"arn:aws:cases:{region}:123456789012:domain/{d}"
+    if op == "CreateField":
+        return {**base, "name": cnx_unique("f"), "type": "Text", "description": "coverage", "attributes": {"text": {"isMultiline": True}}}
+    if op == "UpdateField":
+        return {**base, "fieldId": s["field"], "description": "updated"}
+    if op == "DeleteField":
+        fid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-field", {**base, "name": cnx_unique("del"), "type": "Boolean"}).get("fieldId") or "")
+        return {**base, "fieldId": fid}
+    if op == "BatchGetField":
+        return {**base, "fields": [{"id": s["field"]}, {"id": "title"}]}
+    if op == "ListFields":
+        return {**base, "maxResults": 50}
+    if op == "BatchPutFieldOptions":
+        return {**base, "fieldId": s["tier"], "options": [{"name": "Silver", "value": "silver", "active": True}]}
+    if op == "ListFieldOptions":
+        return {**base, "fieldId": s["tier"], "maxResults": 10}
+    if op == "CreateLayout":
+        return {**base, "name": cnx_unique("l"), "content": {"basic": {"moreInfo": {"sections": [{"fieldGroup": {"fields": [{"id": "status"}]}}]}}}}
+    if op in ("GetLayout", "UpdateLayout"):
+        extra = {"name": cnx_unique("main-")} if op == "UpdateLayout" else {}
+        return {**base, "layoutId": s["layout"], **extra}
+    if op == "DeleteLayout":
+        lid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-layout", {**base, "name": cnx_unique("dl"), "content": {"basic": {}}}).get("layoutId") or "")
+        return {**base, "layoutId": lid}
+    if op == "ListLayouts":
+        return {**base, "maxResults": 10}
+    if op == "CreateTemplate":
+        return {**base, "name": cnx_unique("t"), "status": "Active", "tagPropagationConfigurations": [{"resourceType": "Cases", "tagMap": {"team": "coverage"}}]}
+    if op in ("GetTemplate", "UpdateTemplate"):
+        extra = {"description": "updated by coverage"} if op == "UpdateTemplate" else {}
+        return {**base, "templateId": s["template"], **extra}
+    if op == "DeleteTemplate":
+        tid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-template", {**base, "name": cnx_unique("dt")}).get("templateId") or "")
+        return {**base, "templateId": tid}
+    if op == "ListTemplates":
+        return {**base, "maxResults": 10, "status": ["Active"]}
+    if op == "CreateCaseRule":
+        return {**base, "name": cnx_unique("r"), "rule": {"required": {"defaultValue": False, "conditions": []}}}
+    if op == "UpdateCaseRule":
+        return {**base, "caseRuleId": s["rule"], "description": "updated"}
+    if op == "DeleteCaseRule":
+        rid = str(cnc_cli(aws_bin, endpoint_url, region, env, "create-case-rule", {**base, "name": cnx_unique("dr"),
+              "rule": {"required": {"defaultValue": True, "conditions": []}}}).get("caseRuleId") or "")
+        return {**base, "caseRuleId": rid}
+    if op == "BatchGetCaseRule":
+        return {**base, "caseRules": [{"id": s["rule"]}]}
+    if op == "ListCaseRules":
+        return {**base, "maxResults": 10}
+    if op == "CreateCase":
+        return {**base, "templateId": s["template"], "clientToken": cnx_unique("ct-"), "tags": {"env": "coverage"},
+                "fields": [{"id": "title", "value": {"stringValue": "Coverage case"}}, {"id": s["tier"], "value": {"stringValue": "gold"}}]}
+    if op == "GetCase":
+        return {**base, "caseId": case, "fields": [{"id": "title"}, {"id": "status"}, {"id": "reference_number"}]}
+    if op == "UpdateCase":
+        return {**base, "caseId": case, "fields": [{"id": s["field"], "value": {"doubleValue": 5}}], "performedBy": {"customEntity": "coverage"}}
+    if op == "DeleteCase":
+        return {**base, "caseId": cnc_case(aws_bin, endpoint_url, region, env, s, "to delete")}
+    if op == "BatchUpdateCase":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "fields": [{"fieldIdentifier": {"name": "priority"}, "value": {"doubleValue": 3}}], "title": "Printer broken"}
+    if op == "GetCaseAuditEvents":
+        return {**base, "caseId": case, "maxResults": 10}
+    if op == "SearchCases":
+        return {**base, "searchTerm": "printer", "fields": [{"id": "title"}], "sorts": [{"fieldId": "title", "sortOrder": "Asc"}],
+                "filter": {"field": {"greaterThanOrEqualTo": {"id": s["field"], "value": {"doubleValue": 1}}}}}
+    if op == "CreateRelatedItem":
+        return {**base, "caseId": case, "type": "Comment", "content": {"comment": {"body": "hello", "contentType": "Text/Plain"}}}
+    if op == "BatchCreateRelatedItem":
+        return {**base, "cases": [{"caseIdentifier": {"caseId": case}}], "content": {"comment": {"body": "batch", "contentType": "Text/Plain"}}}
+    if op == "UpdateRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": s["comment"], "content": {"comment": {"body": "edited", "contentType": "Text/Plain"}}}
+    if op == "DeleteRelatedItem":
+        return {**base, "caseId": case, "relatedItemId": cnc_comment(aws_bin, endpoint_url, region, env, d, case)}
+    if op == "SearchRelatedItems":
+        return {**base, "caseId": case, "maxResults": 10, "filters": [{"comment": {}}]}
+    if op == "SearchAllRelatedItems":
+        return {**base, "maxResults": 10, "sorts": [{"sortProperty": "AssociationTime", "sortOrder": "Desc"}]}
+    if op == "ListCasesForContact":
+        return {**base, "contactArn": s["contact_arn"]}
+    if op in ("StartMergeCases", "GetMergeCasesStatus"):
+        primary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge primary")
+        secondary = cnc_case(aws_bin, endpoint_url, region, env, s, "merge secondary")
+        merge = {**base, "caseId": primary, "secondaryCaseIds": [secondary]}
+        if op == "StartMergeCases":
+            return merge
+        cnc_cli(aws_bin, endpoint_url, region, env, "start-merge-cases", merge)
+        return {**base, "caseId": primary}
+    if op == "PutCaseEventConfiguration":
+        return {**base, "eventBridge": {"enabled": True, "includedData": {"caseData": {"fields": [{"id": "title"}]}, "relatedItemData": {"includeContent": True}}}}
+    if op in ("GetCaseEventConfiguration", "GetDomain"):
+        return base
+    if op == "TagResource":
+        return {"arn": domain_arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"arn": domain_arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"arn": domain_arn}
     return payload
 
 
@@ -39091,6 +40365,150 @@ def sagemakeredge_hydrate_payload(
     return payload
 
 
+ACCT_MEMBER = "210987654321"
+ACCT_CALLER = "123456789012"
+
+
+def acct_otp(account: str, value: str) -> str:
+    """The one-time code Stackyard derives for a primary email or phone number."""
+    return hashlib.sha256(f"{account}:{value}".encode()).hexdigest()[:6].upper()
+
+
+def acct_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], service: str, op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, service, op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def acct_contact_info(phone: str) -> dict:
+    return {"FullName": "Stackyard Coverage", "AddressLine1": "1 Main St", "City": "Seattle", "StateOrRegion": "WA",
+            "PostalCode": "98101", "CountryCode": "US", "PhoneNumber": phone}
+
+
+def account_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Give each Account operation the state it reads: contacts, a contact
+    record with a fresh phone number, a started email update for the member
+    account, or an opt-in Region. Names are unique per run."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "account", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    member = {"AccountId": ACCT_MEMBER}
+    contact = {"Name": "Coverage Contact", "Title": "Ops", "EmailAddress": "ops@example.com", "PhoneNumber": "+1 206 555 0100"}
+    if op in {"GetAccountInformation", "GetGovCloudAccountInformation", "ListRegions"}:
+        return {}
+    if op == "PutAccountName":
+        return {"AccountName": f"stackyard-{stamp[-8:]}"}
+    if op == "PutAlternateContact":
+        return {**contact, "AlternateContactType": "SECURITY"}
+    if op in {"GetAlternateContact", "DeleteAlternateContact"}:
+        kind = "BILLING" if op == "GetAlternateContact" else "OPERATIONS"
+        cli("put-alternate-contact", {**contact, "AlternateContactType": kind})
+        return {"AlternateContactType": kind}
+    phone = f"+1 206 555 {stamp[-4:]}"
+    if op == "PutContactInformation":
+        return {"ContactInformation": acct_contact_info(phone)}
+    if op in {"GetContactInformation", "SendPhoneNumberVerification", "VerifyPhoneNumber"}:
+        cli("put-contact-information", {"ContactInformation": acct_contact_info(phone)})
+        if op == "VerifyPhoneNumber":
+            cli("send-phone-number-verification", {})
+            return {"Otp": acct_otp(ACCT_CALLER, phone)}
+        return {}
+    email = f"member-{stamp}@example.com"
+    if op == "GetPrimaryEmail":
+        return dict(member)
+    if op == "StartPrimaryEmailUpdate":
+        return {**member, "PrimaryEmail": email}
+    if op in {"AcceptPrimaryEmailUpdate", "GetPrimaryEmailUpdateStatus"}:
+        cli("start-primary-email-update", {**member, "PrimaryEmail": email})
+        if op == "AcceptPrimaryEmailUpdate":
+            return {**member, "PrimaryEmail": email, "Otp": acct_otp(ACCT_MEMBER, email)}
+        return dict(member)
+    if op == "GetRegionOptStatus":
+        return {"RegionName": "us-east-1"}
+    if op == "EnableRegion":
+        return {"RegionName": "af-south-1"}
+    if op == "DisableRegion":
+        # Enable, let the change settle (two reads), then opt back out.
+        cli("enable-region", {"RegionName": "eu-south-2"})
+        for _ in range(2):
+            cli("get-region-opt-status", {"RegionName": "eu-south-2"})
+        return {"RegionName": "eu-south-2"}
+    return payload
+
+
+def freetier_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    if op == "GetAccountActivity":
+        data = acct_cli(aws_bin, endpoint_url, region, env, "freetier", "list-account-activities", {})
+        activities = data.get("activities") or [{}]
+        return {"activityId": str(activities[0].get("activityId") or ""), "languageCode": "en-US"}
+    if op == "UpgradeAccountPlan":
+        return {"accountPlanType": "PAID"}
+    if op == "GetFreeTierUsage":
+        return {"filter": {"Dimensions": {"Key": "FREE_TIER_TYPE", "Values": ["Always Free"], "MatchOptions": ["EQUALS"]}}, "maxResults": 10}
+    if op == "ListAccountActivities":
+        return {"maxResults": 10}
+    return {}
+
+
+TAXS_ADDRESS = {"addressLine1": "Hauptstr. 1", "city": "Berlin", "postalCode": "10115", "countryCode": "DE"}
+
+
+def taxs_entry(doc: bool = False) -> dict:
+    entry = {"registrationId": "DE123456789", "registrationType": "VAT", "legalName": "Stackyard GmbH", "legalAddress": TAXS_ADDRESS}
+    if doc:
+        content = base64.b64encode(b"Stackyard VAT certificate").decode()
+        entry["verificationDetails"] = {"taxRegistrationDocuments": [{"file": {"fileName": "vat.pdf", "fileContent": content}}]}
+    return entry
+
+
+def taxsettings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Registrations for the caller and the Organizations member account,
+    a document written back to a bucket of its own, supplemental
+    registrations and exemptions."""
+    op = endpoint.operation
+    cli = lambda o, p: acct_cli(aws_bin, endpoint_url, region, env, "taxsettings", o, p)  # noqa: E731
+    stamp = str(time.time_ns())
+    if op == "PutTaxRegistration":
+        return {"taxRegistrationEntry": taxs_entry()}
+    if op == "BatchPutTaxRegistration":
+        return {"accountIds": [ACCT_MEMBER], "taxRegistrationEntry": taxs_entry(doc=True)}
+    if op in {"GetTaxRegistration", "PutTaxInheritance"}:
+        cli("put-tax-registration", {"taxRegistrationEntry": taxs_entry()})
+        return {} if op == "GetTaxRegistration" else {"heritageStatus": "OptIn"}
+    if op in {"DeleteTaxRegistration", "BatchDeleteTaxRegistration"}:
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry()})
+        return {"accountId": ACCT_MEMBER} if op == "DeleteTaxRegistration" else {"accountIds": [ACCT_MEMBER]}
+    if op == "GetTaxRegistrationDocument":
+        bucket = f"stackyard-tax-docs-{stamp}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        cli("put-tax-registration", {"accountId": ACCT_MEMBER, "taxRegistrationEntry": taxs_entry(doc=True)})
+        reg = cli("get-tax-registration", {"accountId": ACCT_MEMBER}).get("taxRegistration") or {}
+        meta = (reg.get("taxDocumentMetadatas") or [{}])[0]
+        return {"taxDocumentMetadata": meta, "destinationS3Location": {"bucket": bucket, "prefix": "documents"}}
+    supp = {"registrationId": f"MY-{stamp}", "registrationType": "VAT", "legalName": "Stackyard Sdn Bhd",
+            "address": {"postalCode": "50000", "countryCode": "MY"}}
+    if op == "PutSupplementalTaxRegistration":
+        return {"taxRegistrationEntry": supp}
+    if op == "DeleteSupplementalTaxRegistration":
+        put = cli("put-supplemental-tax-registration", {"taxRegistrationEntry": supp})
+        return {"authorityId": str(put.get("authorityId") or "")}
+    if op == "PutTaxExemption":
+        cert = base64.b64encode(b"resale certificate").decode()
+        return {"accountIds": [ACCT_CALLER], "authority": {"country": "US", "state": "CA"}, "exemptionType": "Resale",
+                "exemptionCertificate": {"documentName": "resale.pdf", "documentFile": cert}}
+    if op == "BatchGetTaxExemptions":
+        return {"accountIds": [ACCT_CALLER, ACCT_MEMBER]}
+    if op in {"ListTaxRegistrations", "ListSupplementalTaxRegistrations", "ListTaxExemptions"}:
+        return {"maxResults": 10}
+    return {}
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -39111,6 +40529,32 @@ def hydrate_payload_with_service_state(
     if endpoint.service == "sagemakeredge":
         return sagemakeredge_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
 
+    if endpoint.service == "connect" and endpoint.operation in {"StartChatContact", "CreateParticipant"}:
+        return connect_chat_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcases":
+        return connectcases_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectparticipant":
+        return connectparticipant_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "connectcontactlens":
+        return connectcontactlens_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pinpointemail":
+        return pinpointemail_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "pinpointsmsvoice":
+        return pinpointsmsvoice_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mailmanager":
+        return mailmanager_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "forecast":
+        return forecast_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "forecastquery":
+        return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "frauddetector":
+        return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotsecuretunneling":
+        return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotdeviceadvisor":
+        return iotdeviceadvisor_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotthingsgraph":
+        return iotthingsgraph_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service in GEO_STANDALONE_PAYLOADS:
         # Stateless APIs: each operation gets a fixed request that hits the
         # built-in gazetteer or geometry.
@@ -39121,6 +40565,12 @@ def hydrate_payload_with_service_state(
         return personalizeevents_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "personalizeruntime":
         return personalizeruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "account":
+        return account_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "freetier":
+        return freetier_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "taxsettings":
+        return taxsettings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "budgets":
         return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "costoptimizationhub":
