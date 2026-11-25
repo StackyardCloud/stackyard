@@ -98,6 +98,9 @@
         <a href="#smsvoicev2">End User Messaging SMS</a>
         <a href="#social-messaging">End User Messaging Social</a>
         <a href="#location">Location Service</a>
+        <a href="#geomaps">Location Maps V2</a>
+        <a href="#geoplaces">Location Places V2</a>
+        <a href="#georoutes">Location Routes V2</a>
         <a href="#app-mesh">App Mesh</a>
         <a href="#appsync">AppSync</a>
         <a href="#arc-region-switch">ARC Region Switch</a>
@@ -183,6 +186,9 @@
         <a href="#entity-resolution">Entity Resolution</a>
         <a href="#eventbridge">EventBridge</a>
         <a href="#pipes">EventBridge Pipes</a>
+        <a href="#personalize">Amazon Personalize</a>
+        <a href="#personalizeevents">Amazon Personalize Events</a>
+        <a href="#personalizeruntime">Amazon Personalize Runtime</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -201,6 +207,9 @@
         <a href="#iot-greengrass">IoT Greengrass</a>
         <a href="#iot-sitewise">IoT SiteWise</a>
         <a href="#iot-twinmaker">IoT TwinMaker</a>
+        <a href="#iot-secure-tunneling">IoT Secure Tunneling</a>
+        <a href="#iot-device-advisor">IoT Device Advisor</a>
+        <a href="#iot-things-graph">IoT Things Graph</a>
         <a href="#glue">AWS Glue</a>
         <a href="#keyspaces">Keyspaces</a>
         <a href="#kms">KMS</a>
@@ -272,6 +281,9 @@
         <a href="#ivs-chat">Amazon IVS Chat</a>
         <a href="#ivs-chatmessaging">Amazon IVS Chat Messaging</a>
         <a href="#mediapackage">Elemental MediaPackage V2</a>
+        <a href="#mediastore">Elemental MediaStore</a>
+        <a href="#mediastoredata">Elemental MediaStore Data</a>
+        <a href="#mediapackagevod">Elemental MediaPackage VOD</a>
         <a href="#mediatailor">Elemental MediaTailor</a>
         <a href="#mediaconnect">Elemental MediaConnect</a>
         <a href="#ground-station">Ground Station</a>
@@ -301,10 +313,16 @@
         <a href="#route53domains">Route 53 Domains</a>
         <a href="#servicecatalog">Service Catalog</a>
         <a href="#textract">Textract</a>
+        <a href="#budgets">Budgets</a>
+        <a href="#costoptimizationhub">Cost Optimization Hub</a>
+        <a href="#bcmdataexports">Data Exports</a>
         <a href="#pi">Performance Insights</a>
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
         <a href="#frauddetector">Fraud Detector</a>
+        <a href="#cloudsearch">CloudSearch</a>
+        <a href="#cloudsearchdomain">CloudSearch Domain</a>
+        <a href="#kendraranking">Kendra Intelligent Ranking</a>
         <a href="#wafregional">WAF Classic Regional</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
@@ -3603,6 +3621,95 @@
         <li><code>location</code>: <code>docker compose -f examples/aws/location/docker-compose.yml up --build</code></li>
         <li><code>location</code>: <code>docker compose -f examples/aws/location/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="geomaps" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Maps V2</h2>
+        <p>SigV4 signed with service <code>geo-maps</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key (<code>?key=</code>) on a <code>maps.geo.*</code> or <code>geo-maps.*</code> host. Stateless and deterministic: MapLibre style descriptors (version 8) that point back at Stackyard, Mapbox vector tiles holding one empty layer, solid JPEG satellite tiles and terrain-RGB PNG DEM tiles, a one-icon sprite sheet (1x and @2x, PNG and JSON index), glyph PBFs with the requested font stack and range, and static maps rendered as JPEG at the requested size. Path and query members are validated against the model (enums, patterns, ranges, tile coordinates within the zoom level, 256-codepoint glyph ranges, mutually exclusive static-map anchors).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-maps</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Maps V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetGlyphs</code></td></tr>
+        <tr><td><code>GetSprites</code></td></tr>
+        <tr><td><code>GetStaticMap</code></td></tr>
+        <tr><td><code>GetStyleDescriptor</code></td></tr>
+        <tr><td><code>GetTile</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="geoplaces" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Places V2</h2>
+        <p>SigV4 signed with service <code>geo-places</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key. Answers come from a small built-in gazetteer of cities, landmarks and addresses on several continents: token-prefix text matching, structured geocoding by address component, reverse geocoding and nearby search by great-circle distance with radius, bounding-box, circle, country, place-type and category filters, offset NextToken paging, category query suggestions whose QueryId feeds SearchText, highlights, and time zones, contacts and access points on request.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-places</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Places V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>Autocomplete</code></td></tr>
+        <tr><td><code>Geocode</code></td></tr>
+        <tr><td><code>GetPlace</code></td></tr>
+        <tr><td><code>ReverseGeocode</code></td></tr>
+        <tr><td><code>SearchNearby</code></td></tr>
+        <tr><td><code>SearchText</code></td></tr>
+        <tr><td><code>Suggest</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="georoutes" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Location Service Routes V2</h2>
+        <p>SigV4 signed with service <code>geo-routes</code>. REST JSON API under <code>/v2/</code>, signed with SigV4 or called with an API key. No road network: routes run in straight great-circle segments through their waypoints (pass-through waypoints stay within a leg) at a fixed speed per travel mode, with FlexiblePolyline or Simple geometry and departure/arrival times. Route matrices (up to 100 x 100) honour circle, auto-circle, bounding-box and polygon routing boundaries; isolines are circles per distance or time threshold; waypoint optimization (up to 50 stops) orders by nearest neighbour while honouring Before constraints and reports cycles as impeding waypoints; SnapToRoads keeps each trace point in place and flags out-of-sequence timestamps.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: geo-routes</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Location Service Routes V2 API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CalculateIsolines</code></td></tr>
+        <tr><td><code>CalculateRouteMatrix</code></td></tr>
+        <tr><td><code>CalculateRoutes</code></td></tr>
+        <tr><td><code>OptimizeWaypoints</code></td></tr>
+        <tr><td><code>SnapToRoads</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -13279,6 +13386,172 @@
         </details>
         </section>
 
+        <section id="personalize" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize</h2>
+        <p>SigV4 signed with service <code>personalize</code>. JSON 1.1 API (<code>X-Amz-Target: AmazonPersonalize.*</code>), validated against the service model. Dataset groups (optionally ECOMMERCE or VIDEO_ON_DEMAND), Avro record schemas checked for the fields each dataset type needs, one dataset per type per group, event trackers (one per group), filters, solutions with AutoML, HPO and auto-training settings, solution versions, campaigns, domain recommenders (start/stop), and metric attributions. Async resources report <code>CREATE IN_PROGRESS</code> (or the matching update/stop/start status) on their first Describe and settle to <code>ACTIVE</code> on the next; dependants require <code>ACTIVE</code> (<code>ResourceInUseException</code> otherwise). Import jobs read CSV from Stackyard's S3 (FULL or INCREMENTAL); export jobs write CSV of bulk, put or all records; data deletion jobs remove users and their interactions; batch inference and batch segment jobs read JSON lines from S3 and write <code>.out</code> files. Jobs whose S3 input or output bucket is missing settle to <code>CREATE FAILED</code> with a reason. Filters support <code>INCLUDE|EXCLUDE ItemID|UserID|ActionID WHERE Dataset.FIELD op values [AND ...]</code> with <code>$PARAM</code> placeholders. The managed recipe, algorithm and feature transformation catalogs are built in; deletes are refused while dependants exist; tags on every resource. All 71 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateBatchInferenceJob</code></td></tr>
+        <tr><td><code>CreateBatchSegmentJob</code></td></tr>
+        <tr><td><code>CreateCampaign</code></td></tr>
+        <tr><td><code>CreateDataDeletionJob</code></td></tr>
+        <tr><td><code>CreateDataset</code></td></tr>
+        <tr><td><code>CreateDatasetExportJob</code></td></tr>
+        <tr><td><code>CreateDatasetGroup</code></td></tr>
+        <tr><td><code>CreateDatasetImportJob</code></td></tr>
+        <tr><td><code>CreateEventTracker</code></td></tr>
+        <tr><td><code>CreateFilter</code></td></tr>
+        <tr><td><code>CreateMetricAttribution</code></td></tr>
+        <tr><td><code>CreateRecommender</code></td></tr>
+        <tr><td><code>CreateSchema</code></td></tr>
+        <tr><td><code>CreateSolution</code></td></tr>
+        <tr><td><code>CreateSolutionVersion</code></td></tr>
+        <tr><td><code>DeleteCampaign</code></td></tr>
+        <tr><td><code>DeleteDataset</code></td></tr>
+        <tr><td><code>DeleteDatasetGroup</code></td></tr>
+        <tr><td><code>DeleteEventTracker</code></td></tr>
+        <tr><td><code>DeleteFilter</code></td></tr>
+        <tr><td><code>DeleteMetricAttribution</code></td></tr>
+        <tr><td><code>DeleteRecommender</code></td></tr>
+        <tr><td><code>DeleteSchema</code></td></tr>
+        <tr><td><code>DeleteSolution</code></td></tr>
+        <tr><td><code>DescribeAlgorithm</code></td></tr>
+        <tr><td><code>DescribeBatchInferenceJob</code></td></tr>
+        <tr><td><code>DescribeBatchSegmentJob</code></td></tr>
+        <tr><td><code>DescribeCampaign</code></td></tr>
+        <tr><td><code>DescribeDataDeletionJob</code></td></tr>
+        <tr><td><code>DescribeDataset</code></td></tr>
+        <tr><td><code>DescribeDatasetExportJob</code></td></tr>
+        <tr><td><code>DescribeDatasetGroup</code></td></tr>
+        <tr><td><code>DescribeDatasetImportJob</code></td></tr>
+        <tr><td><code>DescribeEventTracker</code></td></tr>
+        <tr><td><code>DescribeFeatureTransformation</code></td></tr>
+        <tr><td><code>DescribeFilter</code></td></tr>
+        <tr><td><code>DescribeMetricAttribution</code></td></tr>
+        <tr><td><code>DescribeRecipe</code></td></tr>
+        <tr><td><code>DescribeRecommender</code></td></tr>
+        <tr><td><code>DescribeSchema</code></td></tr>
+        <tr><td><code>DescribeSolution</code></td></tr>
+        <tr><td><code>DescribeSolutionVersion</code></td></tr>
+        <tr><td><code>GetSolutionMetrics</code></td></tr>
+        <tr><td><code>ListBatchInferenceJobs</code></td></tr>
+        <tr><td><code>ListBatchSegmentJobs</code></td></tr>
+        <tr><td><code>ListCampaigns</code></td></tr>
+        <tr><td><code>ListDataDeletionJobs</code></td></tr>
+        <tr><td><code>ListDatasetExportJobs</code></td></tr>
+        <tr><td><code>ListDatasetGroups</code></td></tr>
+        <tr><td><code>ListDatasetImportJobs</code></td></tr>
+        <tr><td><code>ListDatasets</code></td></tr>
+        <tr><td><code>ListEventTrackers</code></td></tr>
+        <tr><td><code>ListFilters</code></td></tr>
+        <tr><td><code>ListMetricAttributionMetrics</code></td></tr>
+        <tr><td><code>ListMetricAttributions</code></td></tr>
+        <tr><td><code>ListRecipes</code></td></tr>
+        <tr><td><code>ListRecommenders</code></td></tr>
+        <tr><td><code>ListSchemas</code></td></tr>
+        <tr><td><code>ListSolutionVersions</code></td></tr>
+        <tr><td><code>ListSolutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartRecommender</code></td></tr>
+        <tr><td><code>StopRecommender</code></td></tr>
+        <tr><td><code>StopSolutionVersionCreation</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateCampaign</code></td></tr>
+        <tr><td><code>UpdateDataset</code></td></tr>
+        <tr><td><code>UpdateMetricAttribution</code></td></tr>
+        <tr><td><code>UpdateRecommender</code></td></tr>
+        <tr><td><code>UpdateSolution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize</code>: <code>docker compose -f examples/aws/personalize/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="personalizeevents" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize Events</h2>
+        <p>SigV4 signed with service <code>personalize</code> (shared with Personalize; claimed by the <code>/events</code>, <code>/items</code>, <code>/users</code>, <code>/actions</code> and <code>/action-interactions</code> paths). PutEvents and PutActionInteractions resolve the tracking ID to an event tracker created through Personalize and append to its dataset group's Interactions or Action interactions dataset (event types Taken, Not taken and Viewed for actions). PutItems, PutUsers and PutActions upsert records in a dataset of the matching type; camelCase properties must map to schema fields. Up to 10 records per call (model limits), 20,000 records and 20,000 interactions kept per dataset. Records feed Personalize Runtime recommendations and dataset exports. All 5 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>PutActionInteractions</code></td></tr>
+        <tr><td><code>PutActions</code></td></tr>
+        <tr><td><code>PutEvents</code></td></tr>
+        <tr><td><code>PutItems</code></td></tr>
+        <tr><td><code>PutUsers</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize-events</code>: <code>docker compose -f examples/aws/personalize-events/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="personalizeruntime" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Personalize Runtime</h2>
+        <p>SigV4 signed with service <code>personalize</code> (claimed by the <code>/recommendations</code>, <code>/personalize-ranking</code> and <code>/action-recommendations</code> paths). Requests resolve against ACTIVE campaigns and recommenders created through Personalize; the recipe type decides which API applies. Scores are deterministic (a hash of the model, user and item blended with interaction popularity, or co-occurrence for related-items recipes) and normalized to sum to 1. Filters and filter values, promotions, and metadata columns (with <code>enableMetadataWithRecommendations</code>) are applied from the group's Items dataset and interactions. All 3 actions are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: personalize</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: SDK action catalog</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetActionRecommendations</code></td></tr>
+        <tr><td><code>GetPersonalizedRanking</code></td></tr>
+        <tr><td><code>GetRecommendations</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>personalize-runtime</code>: <code>docker compose -f examples/aws/personalize-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="polly" class="service">
 
         <div class="service-header">
@@ -15334,6 +15607,135 @@
         <li><code>iot-twinmaker</code>: <code>docker compose -f examples/aws/iot-twinmaker/docker-compose.yml up --build</code></li>
         <li><code>iot-twinmaker</code>: <code>docker compose -f examples/aws/iot-twinmaker/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="iot-secure-tunneling" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Secure Tunneling</h2>
+        <p>SigV4 signed with service <code>IoTSecuredTunneling</code>. JSON 1.1 API with <code>X-Amz-Target: IoTSecuredTunneling.*</code>. Tunnels open with fresh source and destination access tokens that are returned only by OpenTunnel and RotateTunnelAccessToken and never stored or described. A tunnel closes itself when its maximum lifetime (1 to 720 minutes, default 720) runs out; CloseTunnel closes it early and, with <code>delete</code>, removes it. Rotation can target the source, the destination (optionally with a new destination config) or both. No proxy runs, so both connection states stay DISCONNECTED. At most 300 open and 1000 stored tunnels; tags on tunnel ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: IoTSecuredTunneling</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Secure Tunneling API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CloseTunnel</code></td></tr>
+        <tr><td><code>DescribeTunnel</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTunnels</code></td></tr>
+        <tr><td><code>OpenTunnel</code></td></tr>
+        <tr><td><code>RotateTunnelAccessToken</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="iot-device-advisor" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Core Device Advisor</h2>
+        <p>SigV4 signed with service <code>iotdeviceadvisor</code>. REST JSON API. Suite definitions are versioned (v1, v2, ...) and read their test groups and cases from the <code>rootGroup</code> document; qualification suites without one get the qualification group. Suite runs take their tests from the chosen version (or <code>selectedTestList</code>), refuse a second concurrent run unless <code>parallelRun</code>, and advance PENDING, RUNNING, PASS one step per read (StopSuiteRun: STOPPING, STOPPED). Passed qualification runs have a report link. GetEndpoint returns the account test endpoint. Deleting a suite deletes its runs. Tags on suite definition and suite run ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotdeviceadvisor</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Core Device Advisor API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateSuiteDefinition</code></td></tr>
+        <tr><td><code>DeleteSuiteDefinition</code></td></tr>
+        <tr><td><code>GetEndpoint</code></td></tr>
+        <tr><td><code>GetSuiteDefinition</code></td></tr>
+        <tr><td><code>GetSuiteRun</code></td></tr>
+        <tr><td><code>GetSuiteRunReport</code></td></tr>
+        <tr><td><code>ListSuiteDefinitions</code></td></tr>
+        <tr><td><code>ListSuiteRuns</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartSuiteRun</code></td></tr>
+        <tr><td><code>StopSuiteRun</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateSuiteDefinition</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="iot-things-graph" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Things Graph</h2>
+        <p>SigV4 signed with service <code>iotthingsgraph</code>. JSON 1.1 API with <code>X-Amz-Target: IotThingsGraphFrontEndService.*</code>. The account namespace (<code>us-east-1/123456789012/default</code>) holds entities uploaded as GraphQL (TDM) documents: devices, device models, capabilities and the other entity types, read from their <code>@device(id: ...)</code> style annotations. Uploads report IN_PROGRESS then SUCCEEDED (or FAILED with reasons) and bump the namespace version. Devices associate with things, and things can be searched by device or device model. Flow (<code>@workflowType</code>) and system (<code>@systemType</code>) templates keep revisions, require the ids they reference to exist, can be deprecated, and cannot be deleted while in use. System instances (<code>@deployment</code>) deploy to CLOUD or GREENGRASS, settle DEPLOY_IN_PROGRESS to DEPLOYED_IN_TARGET on the next read, and cloud deployments record a flow execution with messages per flow. AWS has retired the service; operations follow the AWS CLI 2.42.1 model.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotthingsgraph</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Things Graph API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateEntityToThing</code></td></tr>
+        <tr><td><code>CreateFlowTemplate</code></td></tr>
+        <tr><td><code>CreateSystemInstance</code></td></tr>
+        <tr><td><code>CreateSystemTemplate</code></td></tr>
+        <tr><td><code>DeleteFlowTemplate</code></td></tr>
+        <tr><td><code>DeleteNamespace</code></td></tr>
+        <tr><td><code>DeleteSystemInstance</code></td></tr>
+        <tr><td><code>DeleteSystemTemplate</code></td></tr>
+        <tr><td><code>DeploySystemInstance</code></td></tr>
+        <tr><td><code>DeprecateFlowTemplate</code></td></tr>
+        <tr><td><code>DeprecateSystemTemplate</code></td></tr>
+        <tr><td><code>DescribeNamespace</code></td></tr>
+        <tr><td><code>DissociateEntityFromThing</code></td></tr>
+        <tr><td><code>GetEntities</code></td></tr>
+        <tr><td><code>GetFlowTemplate</code></td></tr>
+        <tr><td><code>GetFlowTemplateRevisions</code></td></tr>
+        <tr><td><code>GetNamespaceDeletionStatus</code></td></tr>
+        <tr><td><code>GetSystemInstance</code></td></tr>
+        <tr><td><code>GetSystemTemplate</code></td></tr>
+        <tr><td><code>GetSystemTemplateRevisions</code></td></tr>
+        <tr><td><code>GetUploadStatus</code></td></tr>
+        <tr><td><code>ListFlowExecutionMessages</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>SearchEntities</code></td></tr>
+        <tr><td><code>SearchFlowExecutions</code></td></tr>
+        <tr><td><code>SearchFlowTemplates</code></td></tr>
+        <tr><td><code>SearchSystemInstances</code></td></tr>
+        <tr><td><code>SearchSystemTemplates</code></td></tr>
+        <tr><td><code>SearchThings</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UndeploySystemInstance</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateFlowTemplate</code></td></tr>
+        <tr><td><code>UpdateSystemTemplate</code></td></tr>
+        <tr><td><code>UploadEntityDefinitions</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -25688,6 +26090,124 @@
         </details>
         </section>
 
+        <section id="budgets" class="service">
+
+        <div class="service-header">
+        <h2>AWS Budgets</h2>
+        <p>SigV4 signed with service <code>budgets</code>. JSON 1.1 API with <code>X-Amz-Target: AWSBudgetServiceGateway.*</code>. Budgets are keyed by account and name: COST, USAGE, RI and Savings Plans budgets with limits, planned limits (MONTHLY and QUARTERLY), auto-adjusting COST budgets, cost filters or filter expressions, default cost types and a default end of 2087-06-15. Notifications (at most 10 per budget) hold up to 10 email and one SNS subscriber. Budget actions check that their definition matches the action type and move through approve, reverse, reset and retry with a recorded history. Stackyard records no billing data, so actual and forecasted spend are zero and actions record their effect without changing IAM, Organizations or SSM. Tags on budget and budget-action ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: budgets</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Budgets API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateBudget</code></td></tr>
+        <tr><td><code>CreateBudgetAction</code></td></tr>
+        <tr><td><code>CreateNotification</code></td></tr>
+        <tr><td><code>CreateSubscriber</code></td></tr>
+        <tr><td><code>DeleteBudget</code></td></tr>
+        <tr><td><code>DeleteBudgetAction</code></td></tr>
+        <tr><td><code>DeleteNotification</code></td></tr>
+        <tr><td><code>DeleteSubscriber</code></td></tr>
+        <tr><td><code>DescribeBudget</code></td></tr>
+        <tr><td><code>DescribeBudgetAction</code></td></tr>
+        <tr><td><code>DescribeBudgetActionHistories</code></td></tr>
+        <tr><td><code>DescribeBudgetActionsForAccount</code></td></tr>
+        <tr><td><code>DescribeBudgetActionsForBudget</code></td></tr>
+        <tr><td><code>DescribeBudgetNotificationsForAccount</code></td></tr>
+        <tr><td><code>DescribeBudgetPerformanceHistory</code></td></tr>
+        <tr><td><code>DescribeBudgets</code></td></tr>
+        <tr><td><code>DescribeNotificationsForBudget</code></td></tr>
+        <tr><td><code>DescribeSubscribersForNotification</code></td></tr>
+        <tr><td><code>ExecuteBudgetAction</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateBudget</code></td></tr>
+        <tr><td><code>UpdateBudgetAction</code></td></tr>
+        <tr><td><code>UpdateNotification</code></td></tr>
+        <tr><td><code>UpdateSubscriber</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="costoptimizationhub" class="service">
+
+        <div class="service-header">
+        <h2>AWS Cost Optimization Hub</h2>
+        <p>SigV4 signed with service <code>cost-optimization-hub</code>. JSON 1.0 API with <code>X-Amz-Target: CostOptimizationHubService.*</code>. Enrollment status and preferences are stored. While the account is Active, recommendations come from a fixed, deterministic catalog (EC2 rightsizing, Graviton migration and stop, EBS upgrade, Lambda rightsizing, Compute Savings Plans and RDS Reserved Instance purchases) with filters, ordering, de-duplication unless includeAllRecommendations, summaries grouped by account, region, action, resource type, effort, restart or rollback, and daily or monthly efficiency metrics. Before enrollment, recommendation calls return AccessDeniedException.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cost-optimization-hub</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Cost Optimization Hub API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetPreferences</code></td></tr>
+        <tr><td><code>GetRecommendation</code></td></tr>
+        <tr><td><code>ListEfficiencyMetrics</code></td></tr>
+        <tr><td><code>ListEnrollmentStatuses</code></td></tr>
+        <tr><td><code>ListRecommendationSummaries</code></td></tr>
+        <tr><td><code>ListRecommendations</code></td></tr>
+        <tr><td><code>UpdateEnrollmentStatus</code></td></tr>
+        <tr><td><code>UpdatePreferences</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="bcmdataexports" class="service">
+
+        <div class="service-header">
+        <h2>AWS Data Exports</h2>
+        <p>SigV4 signed with service <code>bcm-data-exports</code>. JSON 1.1 API with <code>X-Amz-Target: AWSBillingAndCostManagementDataExports.*</code>. Exports take a <code>SELECT column, ... FROM TABLE</code> query checked against the table catalog (COST_AND_USAGE_REPORT, FOCUS_1_0_AWS, COST_OPTIMIZATION_RECOMMENDATIONS, CARBON_EMISSIONS) and its table properties; line_item_resource_id needs INCLUDE_RESOURCES=TRUE. Each create and update runs an execution that writes a manifest and, for CSV, a header-only GZIP or ZIP data file to the export's bucket in Stackyard's S3. A missing bucket leaves the export UNHEALTHY (INSUFFICIENT_PERMISSION) and the execution DELIVERY_FAILURE. Tags on export ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-data-exports</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Data Exports API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateExport</code></td></tr>
+        <tr><td><code>DeleteExport</code></td></tr>
+        <tr><td><code>GetExecution</code></td></tr>
+        <tr><td><code>GetExport</code></td></tr>
+        <tr><td><code>GetTable</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListExports</code></td></tr>
+        <tr><td><code>ListTables</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateExport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
         <section id="pi" class="service">
 
         <div class="service-header">
@@ -25725,7 +26245,6 @@
         </table>
         </details>
         </section>
-
         <section id="forecast" class="service">
 
         <div class="service-header">
@@ -25817,7 +26336,6 @@
         </ul>
         </details>
         </section>
-
         <section id="forecastquery" class="service">
 
         <div class="service-header">
@@ -25848,7 +26366,6 @@
         </ul>
         </details>
         </section>
-
         <section id="frauddetector" class="service">
 
         <div class="service-header">
@@ -25948,6 +26465,116 @@
         <ul>
         <li><code>frauddetector</code>: <code>docker compose -f examples/aws/frauddetector/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="cloudsearch" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudSearch</h2>
+        <p>SigV4 signed with service <code>cloudsearch</code>. AWS Query API (<code>Action=...&amp;Version=2013-01-01</code> posted to <code>/</code>) with XML responses. Domains get doc- and search- endpoints, ARNs and scaling, availability, endpoint and access-policy options (validated policy JSON; partitions only on search.2xlarge). Index fields (all eleven types, dynamic <code>*</code> names, options checked against the type), expressions, analysis schemes and suggesters are versioned: defining or deleting one marks the domain RequiresIndexDocuments, and IndexDocuments deploys pending definitions (Active) and drops pending deletes. <code>Deployed=true</code> describes what is live.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudsearch</span>
+        <span class="meta-pill">API: Query (XML)</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon CloudSearch API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BuildSuggesters</code></td></tr>
+        <tr><td><code>CreateDomain</code></td></tr>
+        <tr><td><code>DefineAnalysisScheme</code></td></tr>
+        <tr><td><code>DefineExpression</code></td></tr>
+        <tr><td><code>DefineIndexField</code></td></tr>
+        <tr><td><code>DefineSuggester</code></td></tr>
+        <tr><td><code>DeleteAnalysisScheme</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteExpression</code></td></tr>
+        <tr><td><code>DeleteIndexField</code></td></tr>
+        <tr><td><code>DeleteSuggester</code></td></tr>
+        <tr><td><code>DescribeAnalysisSchemes</code></td></tr>
+        <tr><td><code>DescribeAvailabilityOptions</code></td></tr>
+        <tr><td><code>DescribeDomainEndpointOptions</code></td></tr>
+        <tr><td><code>DescribeDomains</code></td></tr>
+        <tr><td><code>DescribeExpressions</code></td></tr>
+        <tr><td><code>DescribeIndexFields</code></td></tr>
+        <tr><td><code>DescribeScalingParameters</code></td></tr>
+        <tr><td><code>DescribeServiceAccessPolicies</code></td></tr>
+        <tr><td><code>DescribeSuggesters</code></td></tr>
+        <tr><td><code>IndexDocuments</code></td></tr>
+        <tr><td><code>ListDomainNames</code></td></tr>
+        <tr><td><code>UpdateAvailabilityOptions</code></td></tr>
+        <tr><td><code>UpdateDomainEndpointOptions</code></td></tr>
+        <tr><td><code>UpdateScalingParameters</code></td></tr>
+        <tr><td><code>UpdateServiceAccessPolicies</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="cloudsearchdomain" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudSearch Domain</h2>
+        <p>SigV4 signed with service <code>cloudsearch</code>. The per-domain document and search service: AWS serves it on the domain's doc-/search- host, and Stackyard also takes the domain name as a path prefix, so an SDK endpoint of <code>http://localhost:4566/&lt;domain&gt;</code> works. JSON and XML batches (5 MB, 1 MB per document) are checked against the deployed index fields; storage is bounded per domain and store-wide. Search does in-memory term matching with the simple and structured parsers (lucene and dismax read as simple), <code>fq</code>, sort, start/cursor paging, return fields, facets, stats, highlights and arithmetic <code>expr</code>; suggest matches field prefixes with optional fuzzy matching.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudsearch</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon CloudSearch Domain API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>Search</code></td></tr>
+        <tr><td><code>Suggest</code></td></tr>
+        <tr><td><code>UploadDocuments</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="kendraranking" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kendra Intelligent Ranking</h2>
+        <p>SigV4 signed with service <code>kendra-ranking</code>. JSON 1.0 API with <code>X-Amz-Target: AWSKendraRerankingFrontendService.*</code>. Rescore execution plans report CREATING (or UPDATING after an update) on their first read, then ACTIVE; ClientToken makes create idempotent. Rescore ranks documents by query-term overlap, with title terms weighted double, documents sharing a GroupId sharing the group's best score and OriginalScore breaking ties. Tags on plan ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kendra-ranking</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Kendra Intelligent Ranking API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>DeleteRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>DescribeRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>ListRescoreExecutionPlans</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>Rescore</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateRescoreExecutionPlan</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -28857,6 +29484,139 @@
         <ul>
         <li><code>mediapackage</code>: <code>docker compose -f examples/aws/mediapackage/docker-compose.yml up --build</code></li>
         <li><code>mediapackage</code>: <code>docker compose -f examples/aws/mediapackage/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediastore" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaStore</h2>
+        <p>SigV4 signed with service <code>mediastore</code>. Containers with CREATING then ACTIVE status and per-container data endpoints; container, CORS, lifecycle and metric policies; access logging; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediastore</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaStore action catalog (21 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateContainer</code></td></tr>
+        <tr><td><code>DeleteContainer</code></td></tr>
+        <tr><td><code>DeleteContainerPolicy</code></td></tr>
+        <tr><td><code>DeleteCorsPolicy</code></td></tr>
+        <tr><td><code>DeleteLifecyclePolicy</code></td></tr>
+        <tr><td><code>DeleteMetricPolicy</code></td></tr>
+        <tr><td><code>DescribeContainer</code></td></tr>
+        <tr><td><code>GetContainerPolicy</code></td></tr>
+        <tr><td><code>GetCorsPolicy</code></td></tr>
+        <tr><td><code>GetLifecyclePolicy</code></td></tr>
+        <tr><td><code>GetMetricPolicy</code></td></tr>
+        <tr><td><code>ListContainers</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutContainerPolicy</code></td></tr>
+        <tr><td><code>PutCorsPolicy</code></td></tr>
+        <tr><td><code>PutLifecyclePolicy</code></td></tr>
+        <tr><td><code>PutMetricPolicy</code></td></tr>
+        <tr><td><code>StartAccessLogging</code></td></tr>
+        <tr><td><code>StopAccessLogging</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediastore</code>: <code>docker compose -f examples/aws/mediastore/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediastoredata" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaStore Data Plane</h2>
+        <p>SigV4 signed with service <code>mediastore</code>. Objects stored in MediaStore containers at the container endpoint (<code>/_stackyard/mediastore-data/&lt;id&gt;</code>): put, byte-range get, describe, delete and folder listing. Bodies need a declared Content-Length (25 MiB per object, 256 MiB in total).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediastore</span>
+        <span class="meta-pill">API: REST</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaStore Data Plane action catalog (5 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteObject</code></td></tr>
+        <tr><td><code>DescribeObject</code></td></tr>
+        <tr><td><code>GetObject</code></td></tr>
+        <tr><td><code>ListItems</code></td></tr>
+        <tr><td><code>PutObject</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediastore-data</code>: <code>docker compose -f examples/aws/mediastore-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediapackagevod" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaPackage VOD</h2>
+        <p>SigV4 signed with service <code>mediapackage-vod</code>. Packaging groups with CDN authorization and egress access logs, CMAF/DASH/HLS/MSS packaging configurations, and assets ingested from S3 sources with one egress endpoint per configuration; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediapackage-vod</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaPackage VOD action catalog (17 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ConfigureLogs</code></td></tr>
+        <tr><td><code>CreateAsset</code></td></tr>
+        <tr><td><code>CreatePackagingConfiguration</code></td></tr>
+        <tr><td><code>CreatePackagingGroup</code></td></tr>
+        <tr><td><code>DeleteAsset</code></td></tr>
+        <tr><td><code>DeletePackagingConfiguration</code></td></tr>
+        <tr><td><code>DeletePackagingGroup</code></td></tr>
+        <tr><td><code>DescribeAsset</code></td></tr>
+        <tr><td><code>DescribePackagingConfiguration</code></td></tr>
+        <tr><td><code>DescribePackagingGroup</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListPackagingConfigurations</code></td></tr>
+        <tr><td><code>ListPackagingGroups</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdatePackagingGroup</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediapackage-vod</code>: <code>docker compose -f examples/aws/mediapackage-vod/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

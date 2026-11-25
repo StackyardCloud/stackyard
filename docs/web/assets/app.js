@@ -227,12 +227,84 @@ const SERVICE_CATALOG = [
   },
 
   {
+    id: "budgets",
+    name: "Budgets",
+    category: "integration",
+    summary: "Emulate budgets with limits, planned limits, filters and cost types, notifications with email and SNS subscribers, budget actions with approve/reverse/reset and history, performance history and tags.",
+    docsHref: "../../../index.html#budgets",
+    exampleHref: "../../../../examples/aws/budgets/docker-compose.yml"
+  },
+  {
+    id: "costoptimizationhub",
+    name: "Cost Optimization Hub",
+    category: "integration",
+    summary: "Emulate enrollment and preferences, a deterministic catalog of rightsizing, Graviton, Savings Plans and Reserved Instance recommendations with filters, ordering and summaries, and efficiency metrics.",
+    docsHref: "../../../index.html#costoptimizationhub",
+    exampleHref: "../../../../examples/aws/cost-optimization-hub/docker-compose.yml"
+  },
+  {
+    id: "bcmdataexports",
+    name: "Data Exports",
+    category: "integration",
+    summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
+    docsHref: "../../../index.html#bcmdataexports",
+    exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
+    id: "geomaps",
+    name: "Location Maps V2",
+    category: "integration",
+    summary: "Emulate MapLibre style descriptors, vector, satellite and DEM tiles, sprites, glyphs and static map images as small, valid placeholder payloads with model-checked parameters.",
+    docsHref: "../../../index.html#geomaps",
+    exampleHref: "../../../../examples/aws/geo-maps/docker-compose.yml"
+  },
+  {
+    id: "geoplaces",
+    name: "Location Places V2",
+    category: "integration",
+    summary: "Emulate geocoding, reverse geocoding, text and nearby search, autocomplete and suggestions over a deterministic built-in gazetteer of cities, landmarks and addresses.",
+    docsHref: "../../../index.html#geoplaces",
+    exampleHref: "../../../../examples/aws/geo-places/docker-compose.yml"
+  },
+  {
+    id: "georoutes",
+    name: "Location Routes V2",
+    category: "integration",
+    summary: "Emulate routes, route matrices, isolines, waypoint optimization and road snapping with deterministic great-circle geometry and flexible polylines.",
+    docsHref: "../../../index.html#georoutes",
+    exampleHref: "../../../../examples/aws/geo-routes/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",
     summary: "Emulate Performance Insights for RDS and DocumentDB instances: deterministic db.load and OS/DB counter metrics, dimension keys by SQL, wait event, user and host, analysis reports with insights and recommendations, and tags.",
     docsHref: "../../../index.html#pi",
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
+  },
+  {
+    id: "cloudsearch",
+    name: "CloudSearch",
+    category: "integration",
+    summary: "Emulate CloudSearch domains: index fields of every type, expressions, analysis schemes and suggesters deployed by IndexDocuments, plus scaling, availability, endpoint and access-policy options.",
+    docsHref: "../../../index.html#cloudsearch",
+    exampleHref: "../../../../examples/aws/cloudsearch/docker-compose.yml"
+  },
+  {
+    id: "cloudsearchdomain",
+    name: "CloudSearch Domain",
+    category: "integration",
+    summary: "Emulate CloudSearch document upload, search and suggest against domains created with CloudSearch: simple and structured queries, filters, sorting, cursors, facets, stats, highlights, expressions and fuzzy suggestions.",
+    docsHref: "../../../index.html#cloudsearchdomain",
+    exampleHref: "../../../../examples/aws/cloudsearch-domain/docker-compose.yml"
+  },
+  {
+    id: "kendraranking",
+    name: "Kendra Intelligent Ranking",
+    category: "integration",
+    summary: "Emulate Kendra Intelligent Ranking rescore execution plans with deterministic term-overlap rescoring, document groups and tags.",
+    docsHref: "../../../index.html#kendraranking",
+    exampleHref: "../../../../examples/aws/kendra-ranking/docker-compose.yml"
   },
   {
     id: "servicecatalog",
@@ -947,6 +1019,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/pipes/docker-compose.yml"
   },
   {
+    id: "personalize",
+    name: "Amazon Personalize",
+    category: "integration",
+    summary: "Dataset groups (custom or ECOMMERCE / VIDEO_ON_DEMAND domain), Avro schemas, datasets fed by S3 imports and Personalize Events, solutions and versions, campaigns, recommenders, filters, metric attributions, and export, data deletion, batch inference and batch segment jobs.",
+    docsHref: "../../../index.html#personalize",
+    exampleHref: "../../../../examples/aws/personalize/docker-compose.yml"
+  },
+  {
+    id: "personalizeevents",
+    name: "Amazon Personalize Events",
+    category: "integration",
+    summary: "Stream interaction events and action interactions through an event tracker, and add items, users and actions to Personalize datasets.",
+    docsHref: "../../../index.html#personalizeevents",
+    exampleHref: "../../../../examples/aws/personalize-events/docker-compose.yml"
+  },
+  {
+    id: "personalizeruntime",
+    name: "Amazon Personalize Runtime",
+    category: "integration",
+    summary: "Deterministic recommendations, personalized rankings and next-best actions from Personalize campaigns and recommenders over the dataset group's current data.",
+    docsHref: "../../../index.html#personalizeruntime",
+    exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
@@ -1001,6 +1097,30 @@ const SERVICE_CATALOG = [
     summary: "Plan and validate workspace, entity, component, scene, and sync APIs for digital twin workflows.",
     docsHref: "../../../index.html#iot-twinmaker",
     exampleHref: "../../../../examples/aws/iot-twinmaker/docker-compose.yml"
+  },
+  {
+    id: "iot-secure-tunneling",
+    name: "IoT Secure Tunneling",
+    category: "integration",
+    summary: "Emulate tunnels with one-time source and destination access tokens, token rotation, lifetime-based auto-close, close and delete, listing by thing and tags.",
+    docsHref: "../../../index.html#iot-secure-tunneling",
+    exampleHref: "../../../../examples/aws/iot-secure-tunneling/docker-compose.yml"
+  },
+  {
+    id: "iot-device-advisor",
+    name: "IoT Device Advisor",
+    category: "integration",
+    summary: "Emulate versioned suite definitions, suite runs that progress to PASS with per-test results, stop, qualification reports, the test endpoint and tags.",
+    docsHref: "../../../index.html#iot-device-advisor",
+    exampleHref: "../../../../examples/aws/iot-device-advisor/docker-compose.yml"
+  },
+  {
+    id: "iot-things-graph",
+    name: "IoT Things Graph",
+    category: "integration",
+    summary: "Emulate GraphQL entity uploads into a versioned namespace, thing associations, flow and system templates with revisions, system instance deployments, flow executions and tags.",
+    docsHref: "../../../index.html#iot-things-graph",
+    exampleHref: "../../../../examples/aws/iot-things-graph/docker-compose.yml"
   },
   {
     id: "keyspaces",
@@ -1490,6 +1610,30 @@ const SERVICE_CATALOG = [
     summary: "Plan staged emulation for channel groups, channels, origin endpoints, harvest jobs, policy controls, resets, and tagging APIs.",
     docsHref: "../../../index.html#mediapackage",
     exampleHref: "../../../../examples/aws/mediapackage/docker-compose.yml"
+  },
+  {
+    id: "mediastore",
+    name: "Elemental MediaStore",
+    category: "integration",
+    summary: "Containers with endpoints, container/CORS/lifecycle/metric policies, access logging and tags.",
+    docsHref: "../../../index.html#mediastore",
+    exampleHref: "../../../../examples/aws/mediastore/docker-compose.yml"
+  },
+  {
+    id: "mediastoredata",
+    name: "Elemental MediaStore Data",
+    category: "integration",
+    summary: "Store and serve objects in MediaStore containers with byte ranges and folder listings.",
+    docsHref: "../../../index.html#mediastoredata",
+    exampleHref: "../../../../examples/aws/mediastore-data/docker-compose.yml"
+  },
+  {
+    id: "mediapackagevod",
+    name: "Elemental MediaPackage VOD",
+    category: "integration",
+    summary: "Packaging groups, CMAF/DASH/HLS/MSS packaging configurations and S3-sourced assets with egress endpoints.",
+    docsHref: "../../../index.html#mediapackagevod",
+    exampleHref: "../../../../examples/aws/mediapackage-vod/docker-compose.yml"
   },
   {
     id: "mediaconnect",
