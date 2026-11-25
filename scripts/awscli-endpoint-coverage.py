@@ -599,6 +599,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
     "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
     "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
+    "iotdataplane": {"cli": "iot-data", "ops_file": REPO_ROOT / "internal/server/iotdataplane_ops.go"},
+    "iotjobsdataplane": {"cli": "iot-jobs-data", "ops_file": REPO_ROOT / "internal/server/iotjobsdataplane_ops.go"},
+    "keyspacesstreams": {"cli": "keyspacesstreams", "ops_file": REPO_ROOT / "internal/server/keyspacesstreams_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2326,6 +2329,13 @@ SERVICE_ALIASES = {
     "iot-device-advisor": "iotdeviceadvisor",
     "iotthingsgraph": "iotthingsgraph",
     "iot-things-graph": "iotthingsgraph",
+    "iotdataplane": "iotdataplane",
+    "iot-data": "iotdataplane",
+    "iotdata": "iotdataplane",
+    "iotjobsdataplane": "iotjobsdataplane",
+    "iot-jobs-data": "iotjobsdataplane",
+    "keyspacesstreams": "keyspacesstreams",
+    "keyspaces-streams": "keyspacesstreams",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "forecast": "forecast",
@@ -3369,6 +3379,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "iotsecuretunneling": {},
     "iotdeviceadvisor": {},
     "iotthingsgraph": {},
+    "iotdataplane": {},
+    "iotjobsdataplane": {},
+    "keyspacesstreams": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -13640,6 +13653,10 @@ def generate_cli_input_payload(
         # get-object needs --path plus an outfile even to print a skeleton;
         # hydration points it at a real object.
         return {"Path": "stackyard"}, None
+    if (endpoint.service, endpoint.operation) in IOT_DATA_SHADOW_OPERATIONS:
+        # The shadow commands write their document to an outfile, so the CLI
+        # needs --thing-name (and --payload) as flags even to print a skeleton.
+        return {"thingName": "stackyard"}, None
     if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
@@ -39630,6 +39647,162 @@ def iotthingsgraph_hydrate_payload(
     return payload
 
 
+IOT_DATA_ACCOUNT = "123456789012"
+
+
+def iot_data_b64(value) -> str:
+    raw = value if isinstance(value, bytes) else json.dumps(value).encode("utf-8")
+    return base64.b64encode(raw).decode("ascii")
+
+
+def iot_data_connect(endpoint_url: str, client_id: str, subscriptions: list[dict]) -> bool:
+    """Connect a simulated MQTT client through Stackyard's stand-in for an MQTT
+    CONNECT, since no CLI call opens one."""
+    body = json.dumps({"clientId": client_id, "cleanSession": False, "keepAliveDuration": 60,
+                       "subscriptions": subscriptions}).encode("utf-8")
+    req = urlrequest.Request(endpoint_url.rstrip("/") + "/_stackyard/iot-data/connections", data=body,
+                             headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            return resp.status == 201
+    except (urlerror.URLError, OSError):
+        return False
+
+
+def iotdataplane_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point IoT Data operations at a run-unique thing, retained topic and
+    simulated client; destructive operations get resources of their own.
+    Shadows are seeded by publishing to their MQTT update topic."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotdataplane", {})
+
+    def publish(topic: str, doc, retain: bool = False) -> None:
+        args = {"topic": topic, "qos": 1, "retain": retain, "payload": iot_data_b64(doc)}
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot-data", "Publish", args)
+
+    if not state.get("run"):
+        run = f"{time.time_ns():x}"[-10:]
+        state.update({"run": run, "count": 0, "thing": f"sy-thing-{run}", "client": f"sy-client-{run}",
+                      "retained": f"sy/{run}/status"})
+        publish(f"$aws/things/{state['thing']}/shadow/update", {"state": {"desired": {"on": True}, "reported": {"on": False}}})
+        publish(f"$aws/things/{state['thing']}/shadow/name/config/update", {"state": {"reported": {"rate": 5}}})
+        publish(state["retained"], {"temperature": 21}, retain=True)
+        iot_data_connect(endpoint_url, state["client"], [{"topicFilter": f"sy/{run}/#", "qos": 1}])
+    state["count"] += 1
+    fresh = f"{state['run']}x{state['count']}"
+    thing, client = state["thing"], state["client"]
+    if op == "UpdateThingShadow":
+        return {"thingName": thing, "shadowName": "config", "payload": iot_data_b64({"state": {"desired": {"rate": 10}}})}
+    if op == "GetThingShadow":
+        return {"thingName": thing}
+    if op == "DeleteThingShadow":
+        doomed = f"sy-delete-{fresh}"
+        publish(f"$aws/things/{doomed}/shadow/update", {"state": {"reported": {"on": True}}})
+        return {"thingName": doomed}
+    if op == "ListNamedShadowsForThing":
+        return {"thingName": thing, "pageSize": 10}
+    if op == "Publish":
+        return {"topic": f"sy/{state['run']}/events", "qos": 1, "payload": iot_data_b64({"event": "boot"}),
+                "contentType": "application/json"}
+    if op == "GetRetainedMessage":
+        return {"topic": state["retained"]}
+    if op == "ListRetainedMessages":
+        return {"maxResults": 10}
+    if op == "GetConnection":
+        return {"clientId": client, "includeSocketInformation": True}
+    if op == "ListSubscriptions":
+        return {"clientId": client, "maxResults": 10}
+    if op == "SendDirectMessage":
+        return {"clientId": client, "topic": f"sy/{state['run']}/direct", "payload": iot_data_b64({"cmd": "ping"})}
+    if op == "DeleteConnection":
+        doomed = f"sy-client-{fresh}"
+        iot_data_connect(endpoint_url, doomed, [])
+        return {"clientId": doomed, "cleanSession": True}
+    return payload
+
+
+def iotjobsdataplane_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Create IoT jobs (and a command) through the IoT control plane for
+    run-unique things; operations that change an execution get a job of
+    their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotjobsdataplane", {})
+    if not state.get("run"):
+        state.update({"run": f"{time.time_ns():x}"[-10:], "count": 0})
+    state["count"] += 1
+    fresh = f"{state['run']}x{state['count']}"
+
+    def thing_arn(thing: str) -> str:
+        return f"arn:aws:iot:{region}:{IOT_DATA_ACCOUNT}:thing/{thing}"
+
+    def job(thing: str) -> str:
+        job_id = f"sy-job-{fresh}"
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot", "CreateJob", {
+            "jobId": job_id, "targets": [thing_arn(thing)], "document": json.dumps({"operation": "reboot"}),
+            "timeoutConfig": {"inProgressTimeoutInMinutes": 60}})
+        return job_id
+
+    thing = f"sy-device-{fresh}"
+    if op == "GetPendingJobExecutions":
+        job(thing)
+        return {"thingName": thing}
+    if op == "StartNextPendingJobExecution":
+        job(thing)
+        return {"thingName": thing, "statusDetails": {"step": "download"}, "stepTimeoutInMinutes": 10}
+    if op == "DescribeJobExecution":
+        return {"thingName": thing, "jobId": job(thing), "includeJobDocument": True}
+    if op == "UpdateJobExecution":
+        return {"thingName": thing, "jobId": job(thing), "status": "IN_PROGRESS", "statusDetails": {"step": "install"},
+                "expectedVersion": 1, "includeJobExecutionState": True, "includeJobDocument": True}
+    if op == "StartCommandExecution":
+        command = f"sy-command-{fresh}"
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot", "CreateCommand", {
+            "commandId": command, "payload": {"content": iot_data_b64({"action": "blink"}), "contentType": "application/json"}})
+        return {"targetArn": thing_arn(thing), "commandArn": f"arn:aws:iot:{region}:{IOT_DATA_ACCOUNT}:command/{command}",
+                "executionTimeoutSeconds": 60, "clientToken": f"sy-token-{fresh}"}
+    return payload
+
+
+def keyspacesstreams_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Create a Keyspaces table with CDC enabled and point the stream
+    operations at its stream, shard and a fresh iterator."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("keyspacesstreams", {})
+
+    def call(cli_service: str, name: str, args: dict) -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, cli_service, name, args)
+
+    if not state.get("stream"):
+        keyspace = f"sy_kss_{time.time_ns():x}"[-20:].lstrip("_")
+        call("keyspaces", "CreateKeyspace", {"keyspaceName": keyspace})
+        call("keyspaces", "CreateTable", {
+            "keyspaceName": keyspace, "tableName": "readings",
+            "schemaDefinition": {"allColumns": [{"name": "id", "type": "text"}, {"name": "value", "type": "int"}],
+                                 "partitionKeys": [{"name": "id"}]},
+            "cdcSpecification": {"status": "ENABLED", "viewType": "NEW_AND_OLD_IMAGES"}})
+        stream = call("keyspaces", "GetTable", {"keyspaceName": keyspace, "tableName": "readings"}).get("latestStreamArn", "")
+        shards = call("keyspacesstreams", "GetStream", {"streamArn": stream}).get("shards") or [{}]
+        state.update({"keyspace": keyspace, "stream": stream, "shard": shards[0].get("shardId", "")})
+    stream, shard = state["stream"], state["shard"]
+    if op == "ListStreams":
+        return {"keyspaceName": state["keyspace"], "maxResults": 10}
+    if op == "GetStream":
+        return {"streamArn": stream, "maxResults": 10}
+    if op == "GetShardIterator":
+        return {"streamArn": stream, "shardId": shard, "shardIteratorType": "TRIM_HORIZON"}
+    if op == "GetRecords":
+        it = call("keyspacesstreams", "GetShardIterator", {"streamArn": stream, "shardId": shard,
+                                                           "shardIteratorType": "LATEST"}).get("shardIterator", "")
+        return {"shardIterator": it, "maxResults": 100}
+    return payload
+
+
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
 
@@ -40148,6 +40321,12 @@ def hydrate_payload_with_service_state(
         return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "frauddetector":
         return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotdataplane":
+        return iotdataplane_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotjobsdataplane":
+        return iotjobsdataplane_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "keyspacesstreams":
+        return keyspacesstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotsecuretunneling":
         return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotdeviceadvisor":
@@ -60764,6 +60943,13 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+IOT_DATA_SHADOW_OPERATIONS = {
+    ("iotdataplane", "GetThingShadow"),
+    ("iotdataplane", "UpdateThingShadow"),
+    ("iotdataplane", "DeleteThingShadow"),
+}
+
+
 KVS_MEDIA_OUTFILE_OPERATIONS = {
     ("kinesisvideomedia", "GetMedia"),
     ("kinesisvideoarchivedmedia", "GetClip"),
@@ -62657,7 +62843,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in IOT_DATA_SHADOW_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

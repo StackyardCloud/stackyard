@@ -10,9 +10,10 @@ import (
 )
 
 type iotStore struct {
-	mu   sync.Mutex
-	next int64
-	tags map[string]map[string]string
+	mu       sync.Mutex
+	next     int64
+	tags     map[string]map[string]string
+	registry iotRegistry // jobs and commands, see iot_registry.go
 }
 
 func newIoTStore() *iotStore {

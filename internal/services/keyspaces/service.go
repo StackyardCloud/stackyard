@@ -62,6 +62,7 @@ type CreateTableInput struct {
 	ClientSideTimestamps     map[string]any
 	AutoScalingSpecification map[string]any
 	ReplicaSpecifications    []map[string]any
+	CdcSpecification         map[string]any
 }
 
 type UpdateTableInput struct {
@@ -76,6 +77,7 @@ type UpdateTableInput struct {
 	ClientSideTimestamps     map[string]any
 	AutoScalingSpecification map[string]any
 	ReplicaSpecifications    []map[string]any
+	CdcSpecification         map[string]any
 }
 
 type RestoreTableInput struct {
@@ -108,6 +110,8 @@ type Table struct {
 	ClientSideTimestamps     map[string]any
 	AutoScalingSpecification map[string]any
 	ReplicaSpecifications    []map[string]any
+	// Streams is the table's CDC stream history, oldest first (see cdc.go).
+	Streams []Stream
 }
 
 type TableSummary struct {
@@ -326,6 +330,9 @@ func (s *Service) CreateTable(input CreateTableInput) (string, error) {
 		val := *input.DefaultTimeToLive
 		table.DefaultTimeToLive = &val
 	}
+	if err := applyCDC(table, input.CdcSpecification, now); err != nil {
+		return "", err
+	}
 
 	s.tables[keyspaceName][tableName] = table
 	s.resourceTags[table.ResourceARN] = cloneStringMap(input.Tags)
@@ -432,6 +439,10 @@ func (s *Service) UpdateTable(input UpdateTableInput) (string, error) {
 	table, ok := keyspaceTables[tableName]
 	if !ok {
 		return "", ErrNotFound
+	}
+	// CDC is validated first so a refused change leaves the table untouched.
+	if err := applyCDC(table, input.CdcSpecification, time.Now().UTC()); err != nil {
+		return "", err
 	}
 
 	if len(input.AddColumns) > 0 {
@@ -563,6 +574,7 @@ func (s *Service) RestoreTable(input RestoreTableInput) (string, error) {
 	copied.ResourceARN = tableARN(targetKeyspaceName, targetTableName)
 	copied.CreationTimestamp = time.Now().UTC()
 	copied.Status = "ACTIVE"
+	copied.Streams = nil // a restored table starts without CDC
 
 	if input.CapacitySpecificationOverride != nil {
 		copied.CapacitySpecification = cloneMap(input.CapacitySpecificationOverride)
@@ -999,6 +1011,7 @@ func cloneTable(in *Table) Table {
 		val := *in.DefaultTimeToLive
 		out.DefaultTimeToLive = &val
 	}
+	out.Streams = append([]Stream(nil), in.Streams...)
 	return out
 }
 

@@ -133,6 +133,7 @@ func (s *Server) handleKeyspacesJSONRouter(w http.ResponseWriter, r *http.Reques
 			ClientSideTimestamps:     keyspacesMap(payload["clientSideTimestamps"]),
 			AutoScalingSpecification: keyspacesMap(payload["autoScalingSpecification"]),
 			ReplicaSpecifications:    keyspacesSliceOfMaps(payload["replicaSpecifications"]),
+			CdcSpecification:         keyspacesMap(payload["cdcSpecification"]),
 		})
 		if err != nil {
 			respondKeyspacesErrorForErr(w, err)
@@ -187,6 +188,10 @@ func (s *Server) handleKeyspacesJSONRouter(w http.ResponseWriter, r *http.Reques
 		if len(table.ReplicaSpecifications) > 0 {
 			response["replicaSpecifications"] = table.ReplicaSpecifications
 		}
+		if stream, ok := table.LatestStream(); ok {
+			response["latestStreamArn"] = stream.ARN
+			response["cdcSpecification"] = map[string]any{"status": stream.Status, "viewType": stream.ViewType}
+		}
 		respondKeyspacesJSON(w, http.StatusOK, response)
 		return true
 
@@ -228,6 +233,7 @@ func (s *Server) handleKeyspacesJSONRouter(w http.ResponseWriter, r *http.Reques
 			ClientSideTimestamps:     keyspacesMap(payload["clientSideTimestamps"]),
 			AutoScalingSpecification: keyspacesMap(payload["autoScalingSpecification"]),
 			ReplicaSpecifications:    keyspacesSliceOfMaps(payload["replicaSpecifications"]),
+			CdcSpecification:         keyspacesMap(payload["cdcSpecification"]),
 		})
 		if err != nil {
 			respondKeyspacesErrorForErr(w, err)
