@@ -1465,6 +1465,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/mediapackage/docker-compose.yml"
   },
   {
+    id: "mediastore",
+    name: "Elemental MediaStore",
+    category: "integration",
+    summary: "Containers with endpoints, container/CORS/lifecycle/metric policies, access logging and tags.",
+    docsHref: "../../../index.html#mediastore",
+    exampleHref: "../../../../examples/aws/mediastore/docker-compose.yml"
+  },
+  {
+    id: "mediastoredata",
+    name: "Elemental MediaStore Data",
+    category: "integration",
+    summary: "Store and serve objects in MediaStore containers with byte ranges and folder listings.",
+    docsHref: "../../../index.html#mediastoredata",
+    exampleHref: "../../../../examples/aws/mediastore-data/docker-compose.yml"
+  },
+  {
+    id: "mediapackagevod",
+    name: "Elemental MediaPackage VOD",
+    category: "integration",
+    summary: "Packaging groups, CMAF/DASH/HLS/MSS packaging configurations and S3-sourced assets with egress endpoints.",
+    docsHref: "../../../index.html#mediapackagevod",
+    exampleHref: "../../../../examples/aws/mediapackage-vod/docker-compose.yml"
+  },
+  {
     id: "mediaconnect",
     name: "Elemental MediaConnect",
     category: "integration",

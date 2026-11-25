@@ -396,6 +396,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
     "pcaconnectorscep": {"cli": "pca-connector-scep", "ops_file": REPO_ROOT / "internal/server/pcaconnectorscep_ops.go"},
+    "mediastore": {"cli": "mediastore", "ops_file": REPO_ROOT / "internal/server/mediastore_ops.go"},
+    "mediastoredata": {"cli": "mediastore-data", "ops_file": REPO_ROOT / "internal/server/mediastoredata_ops.go"},
+    "mediapackagevod": {"cli": "mediapackage-vod", "ops_file": REPO_ROOT / "internal/server/mediapackagevod_ops.go"},
     "serverlessrepo": {"cli": "serverlessrepo", "ops_file": REPO_ROOT / "internal/server/serverlessrepo_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
@@ -1951,6 +1954,14 @@ SERVICE_ALIASES = {
     "cloudwan": "networkmanager",
     "pcaconnectorscep": "pcaconnectorscep",
     "pca-connector-scep": "pcaconnectorscep",
+    "mediastore": "mediastore",
+    "awselementalmediastore": "mediastore",
+    "mediastoredata": "mediastoredata",
+    "mediastore-data": "mediastoredata",
+    "awselementalmediastoredataplane": "mediastoredata",
+    "mediapackagevod": "mediapackagevod",
+    "mediapackage-vod": "mediapackagevod",
+    "awselementalmediapackagevod": "mediapackagevod",
     "privatecaconnectorforscep": "pcaconnectorscep",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
@@ -3228,6 +3239,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53profiles": {},
     "networkmanager": {},
     "pcaconnectorscep": {},
+    "mediastore": {},
+    "mediastoredata": {},
+    "mediapackagevod": {},
     "serverlessrepo": {},
     "polly": {},
     "servicecatalogappregistry": {},
@@ -13515,6 +13529,10 @@ def generate_cli_input_payload(
         # recognize-utterance and put-session stream an audio body, so the CLI
         # needs explicit flags and an outfile even to print a skeleton.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("mediastoredata", "GetObject"):
+        # get-object needs --path plus an outfile even to print a skeleton;
+        # hydration points it at a real object.
+        return {"Path": "stackyard"}, None
     if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
@@ -35466,6 +35484,184 @@ def psc_new_challenge(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return str((data.get("Challenge") or {}).get("Arn") or "")
 
 
+MST_CORS = [{"AllowedOrigins": ["*"], "AllowedMethods": ["GET", "HEAD"], "AllowedHeaders": ["*"], "MaxAgeSeconds": 3000}]
+MST_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [
+    {"Sid": "stackyard", "Effect": "Allow", "Principal": "*", "Action": "mediastore:GetObject", "Resource": "*"}]})
+MST_LIFECYCLE = json.dumps({"rules": [{"definition": {"path": [{"prefix": "tmp/"}], "days_since_create": [{"numeric": [">", 7]}]}, "action": "EXPIRE"}]})
+MST_METRIC = {"ContainerLevelMetrics": "ENABLED", "MetricPolicyRules": [{"ObjectGroup": "live/", "ObjectGroupName": "live"}]}
+
+
+def mst_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    data = run_aws_json(aws_bin, endpoint_url, region, "mediastore", cli, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def mst_new_container(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], prefix: str = "stackyard-mst") -> dict:
+    """Create a container and describe it, which settles it to ACTIVE."""
+    name = f"{prefix}-{time.time_ns()}"
+    mst_call(aws_bin, endpoint_url, region, env, "CreateContainer", {"ContainerName": name})
+    return mst_call(aws_bin, endpoint_url, region, env, "DescribeContainer", {"ContainerName": name}).get("Container") or {"Name": name}
+
+
+def mediastore_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MediaStore operations at a real container. Gets and deletes of a
+    policy get it put first; DeleteContainer gets a container of its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("mediastore", {})
+    if not state.get("container"):
+        state["container"] = mst_new_container(aws_bin, endpoint_url, region, env)
+    container = state["container"]
+    name = {"ContainerName": str(container.get("Name") or "")}
+    policies = {
+        "ContainerPolicy": {"Policy": MST_POLICY}, "CorsPolicy": {"CorsPolicy": MST_CORS},
+        "LifecyclePolicy": {"LifecyclePolicy": MST_LIFECYCLE}, "MetricPolicy": {"MetricPolicy": MST_METRIC},
+    }
+    if op == "CreateContainer":
+        return {"ContainerName": f"stackyard-mst-new-{time.time_ns()}", "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "DeleteContainer":
+        return {"ContainerName": str(mst_new_container(aws_bin, endpoint_url, region, env, "stackyard-mst-del").get("Name") or "")}
+    if op == "ListContainers":
+        return {"MaxResults": 10}
+    for kind, body in policies.items():
+        if op == "Put" + kind:
+            return {**name, **body}
+        if op in ("Get" + kind, "Delete" + kind):
+            mst_call(aws_bin, endpoint_url, region, env, "Put" + kind, {**name, **body})
+            return name
+    arn = str(container.get("ARN") or "")
+    if op == "TagResource":
+        return {"Resource": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"Resource": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"Resource": arn}
+    return name  # DescribeContainer, Start/StopAccessLogging
+
+
+MSTD_FOLDER = "stackyard"
+
+
+def mstd_put(aws_bin: str, region: str, env: dict[str, str], data_endpoint: str, path: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="stackyard-mstd-") as tmp:
+        body = Path(tmp) / "body.txt"
+        body.write_bytes(b"stackyard mediastore object")
+        run_aws_json(aws_bin, data_endpoint, region, "mediastore-data", "put-object", env,
+                     ["--path", path, "--body", str(body), "--content-type", "text/plain"])
+
+
+def mediastoredata_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A MediaStore container (made through the mediastore CLI) holding one object."""
+    state = RUNTIME_STATE.setdefault("mediastoredata", {})
+    if not state.get("endpoint"):
+        container = mst_new_container(aws_bin, endpoint_url, region, env, "stackyard-mstd")
+        state["endpoint"] = str(container.get("Endpoint") or endpoint_url)
+        state["object"] = f"{MSTD_FOLDER}/seed.txt"
+        mstd_put(aws_bin, region, env, state["endpoint"], state["object"])
+    return state
+
+
+def mediastoredata_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    state = mediastoredata_fixture(aws_bin, endpoint_url, region, env)
+    if op == "PutObject":
+        body = base64.b64encode(b"stackyard mediastore put").decode("ascii")
+        return {"Path": f"{MSTD_FOLDER}/put-{time.time_ns()}.txt", "Body": body, "ContentType": "text/plain"}
+    if op == "DeleteObject":
+        path = f"{MSTD_FOLDER}/del-{time.time_ns()}.txt"
+        mstd_put(aws_bin, region, env, state["endpoint"], path)
+        return {"Path": path}
+    if op == "ListItems":
+        return {"Path": MSTD_FOLDER, "MaxResults": 100}
+    return {"Path": state["object"]}  # GetObject, DescribeObject
+
+
+MPVOD_ROLE = "arn:aws:iam::123456789012:role/stackyard-mediapackage-vod"
+MPVOD_HLS = {"HlsManifests": [{"ManifestName": "index", "AdMarkers": "NONE"}], "SegmentDurationSeconds": 6}
+
+
+def mpvod_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    data = run_aws_json(aws_bin, endpoint_url, region, "mediapackage-vod", cli, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def mpvod_source(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """An HLS source object in Stackyard's S3 for assets to ingest."""
+    state = RUNTIME_STATE.setdefault("mediapackagevod", {})
+    if not state.get("source"):
+        bucket = f"stackyard-mpvod-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        with tempfile.TemporaryDirectory(prefix="stackyard-mpvod-") as tmp:
+            body = Path(tmp) / "index.m3u8"
+            body.write_text("#EXTM3U\n#EXT-X-ENDLIST\n", encoding="utf-8")
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env,
+                         ["--bucket", bucket, "--key", "movie/index.m3u8", "--body", str(body)])
+        state["source"] = f"arn:aws:s3:::{bucket}/movie/index.m3u8"
+    return str(state["source"])
+
+
+def mpvod_new(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, group: str = "") -> str:
+    rid = f"stackyard-{kind}-{time.time_ns()}"
+    if kind == "group":
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreatePackagingGroup", {"Id": rid})
+    elif kind == "config":
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreatePackagingConfiguration", {"Id": rid, "PackagingGroupId": group, "HlsPackage": MPVOD_HLS})
+    else:
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreateAsset", {
+            "Id": rid, "PackagingGroupId": group, "SourceArn": mpvod_source(aws_bin, endpoint_url, region, env), "SourceRoleArn": MPVOD_ROLE})
+    return rid
+
+
+def mediapackagevod_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MediaPackage VOD operations at a real group, configuration and
+    asset; deletes get resources of their own (a group to delete is empty)."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("mediapackagevod", {})
+    if not state.get("group"):
+        state["group"] = mpvod_new(aws_bin, endpoint_url, region, env, "group")
+        state["config"] = mpvod_new(aws_bin, endpoint_url, region, env, "config", state["group"])
+        state["asset"] = mpvod_new(aws_bin, endpoint_url, region, env, "asset", state["group"])
+    group, unique = str(state["group"]), time.time_ns()
+    arn = f"arn:aws:mediapackage-vod:{region}:123456789012:packaging-groups/{group}"
+    if op == "CreatePackagingGroup":
+        return {"Id": f"stackyard-group-{unique}", "EgressAccessLogs": {}, "Tags": {"stackyard": "coverage"}}
+    if op == "CreatePackagingConfiguration":
+        return {"Id": f"stackyard-config-{unique}", "PackagingGroupId": group, "HlsPackage": MPVOD_HLS}
+    if op == "CreateAsset":
+        return {"Id": f"stackyard-asset-{unique}", "PackagingGroupId": group,
+                "SourceArn": mpvod_source(aws_bin, endpoint_url, region, env), "SourceRoleArn": MPVOD_ROLE}
+    if op in ("DescribePackagingGroup", "UpdatePackagingGroup"):
+        return {"Id": group}
+    if op == "ConfigureLogs":
+        return {"Id": group, "EgressAccessLogs": {"LogGroupName": "/aws/MediaPackage/VodEgressAccessLogs"}}
+    if op == "DescribePackagingConfiguration":
+        return {"Id": str(state["config"])}
+    if op == "DescribeAsset":
+        return {"Id": str(state["asset"])}
+    if op == "DeletePackagingGroup":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "group")}
+    if op == "DeletePackagingConfiguration":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "config", group)}
+    if op == "DeleteAsset":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "asset", group)}
+    if op in ("ListPackagingConfigurations", "ListAssets"):
+        return {"PackagingGroupId": group, "MaxResults": 10}
+    if op == "ListPackagingGroups":
+        return {"MaxResults": 10}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "TagKeys": ["stackyard"]}
+    return {"ResourceArn": arn}  # ListTagsForResource
+
+
 def pcaconnectorscep_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -37961,6 +38157,12 @@ def hydrate_payload_with_service_state(
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "migrationhub":
         return migrationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediastore":
+        return mediastore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediastoredata":
+        return mediastoredata_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediapackagevod":
+        return mediapackagevod_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorscep":
         return pcaconnectorscep_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
@@ -60204,6 +60406,9 @@ def run_endpoint(
     cli_endpoint_url = endpoint_url
     if endpoint.service == "s3control" and s3control_should_use_endpoint_alias(endpoint_url, endpoint.cli_operation):
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
+    if endpoint.service == "mediastoredata":
+        # Data plane calls go to the container's own endpoint.
+        cli_endpoint_url = mediastoredata_fixture(aws_bin, endpoint_url, region, env)["endpoint"]
     base_cmd = [
         *aws_cli_base_cmd(aws_bin, env),
         "--output",
@@ -60392,7 +60597,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

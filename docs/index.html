@@ -272,6 +272,9 @@
         <a href="#ivs-chat">Amazon IVS Chat</a>
         <a href="#ivs-chatmessaging">Amazon IVS Chat Messaging</a>
         <a href="#mediapackage">Elemental MediaPackage V2</a>
+        <a href="#mediastore">Elemental MediaStore</a>
+        <a href="#mediastoredata">Elemental MediaStore Data</a>
+        <a href="#mediapackagevod">Elemental MediaPackage VOD</a>
         <a href="#mediatailor">Elemental MediaTailor</a>
         <a href="#mediaconnect">Elemental MediaConnect</a>
         <a href="#ground-station">Ground Station</a>
@@ -28629,6 +28632,139 @@
         <ul>
         <li><code>mediapackage</code>: <code>docker compose -f examples/aws/mediapackage/docker-compose.yml up --build</code></li>
         <li><code>mediapackage</code>: <code>docker compose -f examples/aws/mediapackage/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediastore" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaStore</h2>
+        <p>SigV4 signed with service <code>mediastore</code>. Containers with CREATING then ACTIVE status and per-container data endpoints; container, CORS, lifecycle and metric policies; access logging; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediastore</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaStore action catalog (21 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateContainer</code></td></tr>
+        <tr><td><code>DeleteContainer</code></td></tr>
+        <tr><td><code>DeleteContainerPolicy</code></td></tr>
+        <tr><td><code>DeleteCorsPolicy</code></td></tr>
+        <tr><td><code>DeleteLifecyclePolicy</code></td></tr>
+        <tr><td><code>DeleteMetricPolicy</code></td></tr>
+        <tr><td><code>DescribeContainer</code></td></tr>
+        <tr><td><code>GetContainerPolicy</code></td></tr>
+        <tr><td><code>GetCorsPolicy</code></td></tr>
+        <tr><td><code>GetLifecyclePolicy</code></td></tr>
+        <tr><td><code>GetMetricPolicy</code></td></tr>
+        <tr><td><code>ListContainers</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutContainerPolicy</code></td></tr>
+        <tr><td><code>PutCorsPolicy</code></td></tr>
+        <tr><td><code>PutLifecyclePolicy</code></td></tr>
+        <tr><td><code>PutMetricPolicy</code></td></tr>
+        <tr><td><code>StartAccessLogging</code></td></tr>
+        <tr><td><code>StopAccessLogging</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediastore</code>: <code>docker compose -f examples/aws/mediastore/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediastoredata" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaStore Data Plane</h2>
+        <p>SigV4 signed with service <code>mediastore</code>. Objects stored in MediaStore containers at the container endpoint (<code>/_stackyard/mediastore-data/&lt;id&gt;</code>): put, byte-range get, describe, delete and folder listing. Bodies need a declared Content-Length (25 MiB per object, 256 MiB in total).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediastore</span>
+        <span class="meta-pill">API: REST</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaStore Data Plane action catalog (5 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteObject</code></td></tr>
+        <tr><td><code>DescribeObject</code></td></tr>
+        <tr><td><code>GetObject</code></td></tr>
+        <tr><td><code>ListItems</code></td></tr>
+        <tr><td><code>PutObject</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediastore-data</code>: <code>docker compose -f examples/aws/mediastore-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="mediapackagevod" class="service">
+
+        <div class="service-header">
+        <h2>AWS Elemental MediaPackage VOD</h2>
+        <p>SigV4 signed with service <code>mediapackage-vod</code>. Packaging groups with CDN authorization and egress access logs, CMAF/DASH/HLS/MSS packaging configurations, and assets ingested from S3 sources with one egress endpoint per configuration; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mediapackage-vod</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS Elemental MediaPackage VOD action catalog (17 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ConfigureLogs</code></td></tr>
+        <tr><td><code>CreateAsset</code></td></tr>
+        <tr><td><code>CreatePackagingConfiguration</code></td></tr>
+        <tr><td><code>CreatePackagingGroup</code></td></tr>
+        <tr><td><code>DeleteAsset</code></td></tr>
+        <tr><td><code>DeletePackagingConfiguration</code></td></tr>
+        <tr><td><code>DeletePackagingGroup</code></td></tr>
+        <tr><td><code>DescribeAsset</code></td></tr>
+        <tr><td><code>DescribePackagingConfiguration</code></td></tr>
+        <tr><td><code>DescribePackagingGroup</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListPackagingConfigurations</code></td></tr>
+        <tr><td><code>ListPackagingGroups</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdatePackagingGroup</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mediapackage-vod</code>: <code>docker compose -f examples/aws/mediapackage-vod/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
