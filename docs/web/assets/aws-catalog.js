@@ -233,6 +233,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/performance-insights/docker-compose.yml"
   },
   {
+    id: "cloudsearch",
+    name: "CloudSearch",
+    category: "integration",
+    summary: "Emulate CloudSearch domains: index fields of every type, expressions, analysis schemes and suggesters deployed by IndexDocuments, plus scaling, availability, endpoint and access-policy options.",
+    docsHref: "../../../index.html#cloudsearch",
+    exampleHref: "../../../../examples/aws/cloudsearch/docker-compose.yml"
+  },
+  {
+    id: "cloudsearchdomain",
+    name: "CloudSearch Domain",
+    category: "integration",
+    summary: "Emulate CloudSearch document upload, search and suggest against domains created with CloudSearch: simple and structured queries, filters, sorting, cursors, facets, stats, highlights, expressions and fuzzy suggestions.",
+    docsHref: "../../../index.html#cloudsearchdomain",
+    exampleHref: "../../../../examples/aws/cloudsearch-domain/docker-compose.yml"
+  },
+  {
+    id: "kendraranking",
+    name: "Kendra Intelligent Ranking",
+    category: "integration",
+    summary: "Emulate Kendra Intelligent Ranking rescore execution plans with deterministic term-overlap rescoring, document groups and tags.",
+    docsHref: "../../../index.html#kendraranking",
+    exampleHref: "../../../../examples/aws/kendra-ranking/docker-compose.yml"
+  },
+  {
     id: "servicecatalog",
     name: "Service Catalog",
     category: "integration",

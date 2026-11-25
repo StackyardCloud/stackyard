@@ -311,6 +311,9 @@
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
         <a href="#pi">Performance Insights</a>
+        <a href="#cloudsearch">CloudSearch</a>
+        <a href="#cloudsearchdomain">CloudSearch Domain</a>
+        <a href="#kendraranking">Kendra Intelligent Ranking</a>
         <a href="#wafregional">WAF Classic Regional</a>
         <a href="#route53resolver">Route 53 Resolver</a>
         <a href="#network-firewall">Network Firewall</a>
@@ -26011,6 +26014,116 @@
         <tr><td><code>ListTagsForResource</code></td></tr>
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="cloudsearch" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudSearch</h2>
+        <p>SigV4 signed with service <code>cloudsearch</code>. AWS Query API (<code>Action=...&amp;Version=2013-01-01</code> posted to <code>/</code>) with XML responses. Domains get doc- and search- endpoints, ARNs and scaling, availability, endpoint and access-policy options (validated policy JSON; partitions only on search.2xlarge). Index fields (all eleven types, dynamic <code>*</code> names, options checked against the type), expressions, analysis schemes and suggesters are versioned: defining or deleting one marks the domain RequiresIndexDocuments, and IndexDocuments deploys pending definitions (Active) and drops pending deletes. <code>Deployed=true</code> describes what is live.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudsearch</span>
+        <span class="meta-pill">API: Query (XML)</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon CloudSearch API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BuildSuggesters</code></td></tr>
+        <tr><td><code>CreateDomain</code></td></tr>
+        <tr><td><code>DefineAnalysisScheme</code></td></tr>
+        <tr><td><code>DefineExpression</code></td></tr>
+        <tr><td><code>DefineIndexField</code></td></tr>
+        <tr><td><code>DefineSuggester</code></td></tr>
+        <tr><td><code>DeleteAnalysisScheme</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteExpression</code></td></tr>
+        <tr><td><code>DeleteIndexField</code></td></tr>
+        <tr><td><code>DeleteSuggester</code></td></tr>
+        <tr><td><code>DescribeAnalysisSchemes</code></td></tr>
+        <tr><td><code>DescribeAvailabilityOptions</code></td></tr>
+        <tr><td><code>DescribeDomainEndpointOptions</code></td></tr>
+        <tr><td><code>DescribeDomains</code></td></tr>
+        <tr><td><code>DescribeExpressions</code></td></tr>
+        <tr><td><code>DescribeIndexFields</code></td></tr>
+        <tr><td><code>DescribeScalingParameters</code></td></tr>
+        <tr><td><code>DescribeServiceAccessPolicies</code></td></tr>
+        <tr><td><code>DescribeSuggesters</code></td></tr>
+        <tr><td><code>IndexDocuments</code></td></tr>
+        <tr><td><code>ListDomainNames</code></td></tr>
+        <tr><td><code>UpdateAvailabilityOptions</code></td></tr>
+        <tr><td><code>UpdateDomainEndpointOptions</code></td></tr>
+        <tr><td><code>UpdateScalingParameters</code></td></tr>
+        <tr><td><code>UpdateServiceAccessPolicies</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="cloudsearchdomain" class="service">
+
+        <div class="service-header">
+        <h2>Amazon CloudSearch Domain</h2>
+        <p>SigV4 signed with service <code>cloudsearch</code>. The per-domain document and search service: AWS serves it on the domain's doc-/search- host, and Stackyard also takes the domain name as a path prefix, so an SDK endpoint of <code>http://localhost:4566/&lt;domain&gt;</code> works. JSON and XML batches (5 MB, 1 MB per document) are checked against the deployed index fields; storage is bounded per domain and store-wide. Search does in-memory term matching with the simple and structured parsers (lucene and dismax read as simple), <code>fq</code>, sort, start/cursor paging, return fields, facets, stats, highlights and arithmetic <code>expr</code>; suggest matches field prefixes with optional fuzzy matching.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cloudsearch</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon CloudSearch Domain API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>Search</code></td></tr>
+        <tr><td><code>Suggest</code></td></tr>
+        <tr><td><code>UploadDocuments</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="kendraranking" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Kendra Intelligent Ranking</h2>
+        <p>SigV4 signed with service <code>kendra-ranking</code>. JSON 1.0 API with <code>X-Amz-Target: AWSKendraRerankingFrontendService.*</code>. Rescore execution plans report CREATING (or UPDATING after an update) on their first read, then ACTIVE; ClientToken makes create idempotent. Rescore ranks documents by query-term overlap, with title terms weighted double, documents sharing a GroupId sharing the group's best score and OriginalScore breaking ties. Tags on plan ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: kendra-ranking</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Kendra Intelligent Ranking API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>DeleteRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>DescribeRescoreExecutionPlan</code></td></tr>
+        <tr><td><code>ListRescoreExecutionPlans</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>Rescore</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateRescoreExecutionPlan</code></td></tr>
         </tbody>
         </table>
         </details>
