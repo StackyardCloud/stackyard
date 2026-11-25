@@ -1,0 +1,87 @@
+package server
+
+type personalizeOperation struct{ Name string }
+
+// Amazon Personalize operations sourced from:
+// https://docs.aws.amazon.com/personalize/latest/dg/API_Operations_Amazon_Personalize.html
+var personalizeOperations = []personalizeOperation{
+	{Name: "CreateBatchInferenceJob"},
+	{Name: "CreateBatchSegmentJob"},
+	{Name: "CreateCampaign"},
+	{Name: "CreateDataDeletionJob"},
+	{Name: "CreateDataset"},
+	{Name: "CreateDatasetExportJob"},
+	{Name: "CreateDatasetGroup"},
+	{Name: "CreateDatasetImportJob"},
+	{Name: "CreateEventTracker"},
+	{Name: "CreateFilter"},
+	{Name: "CreateMetricAttribution"},
+	{Name: "CreateRecommender"},
+	{Name: "CreateSchema"},
+	{Name: "CreateSolution"},
+	{Name: "CreateSolutionVersion"},
+	{Name: "DeleteCampaign"},
+	{Name: "DeleteDataset"},
+	{Name: "DeleteDatasetGroup"},
+	{Name: "DeleteEventTracker"},
+	{Name: "DeleteFilter"},
+	{Name: "DeleteMetricAttribution"},
+	{Name: "DeleteRecommender"},
+	{Name: "DeleteSchema"},
+	{Name: "DeleteSolution"},
+	{Name: "DescribeAlgorithm"},
+	{Name: "DescribeBatchInferenceJob"},
+	{Name: "DescribeBatchSegmentJob"},
+	{Name: "DescribeCampaign"},
+	{Name: "DescribeDataDeletionJob"},
+	{Name: "DescribeDataset"},
+	{Name: "DescribeDatasetExportJob"},
+	{Name: "DescribeDatasetGroup"},
+	{Name: "DescribeDatasetImportJob"},
+	{Name: "DescribeEventTracker"},
+	{Name: "DescribeFeatureTransformation"},
+	{Name: "DescribeFilter"},
+	{Name: "DescribeMetricAttribution"},
+	{Name: "DescribeRecipe"},
+	{Name: "DescribeRecommender"},
+	{Name: "DescribeSchema"},
+	{Name: "DescribeSolution"},
+	{Name: "DescribeSolutionVersion"},
+	{Name: "GetSolutionMetrics"},
+	{Name: "ListBatchInferenceJobs"},
+	{Name: "ListBatchSegmentJobs"},
+	{Name: "ListCampaigns"},
+	{Name: "ListDataDeletionJobs"},
+	{Name: "ListDatasetExportJobs"},
+	{Name: "ListDatasetGroups"},
+	{Name: "ListDatasetImportJobs"},
+	{Name: "ListDatasets"},
+	{Name: "ListEventTrackers"},
+	{Name: "ListFilters"},
+	{Name: "ListMetricAttributionMetrics"},
+	{Name: "ListMetricAttributions"},
+	{Name: "ListRecipes"},
+	{Name: "ListRecommenders"},
+	{Name: "ListSchemas"},
+	{Name: "ListSolutionVersions"},
+	{Name: "ListSolutions"},
+	{Name: "ListTagsForResource"},
+	{Name: "StartRecommender"},
+	{Name: "StopRecommender"},
+	{Name: "StopSolutionVersionCreation"},
+	{Name: "TagResource"},
+	{Name: "UntagResource"},
+	{Name: "UpdateCampaign"},
+	{Name: "UpdateDataset"},
+	{Name: "UpdateMetricAttribution"},
+	{Name: "UpdateRecommender"},
+	{Name: "UpdateSolution"},
+}
+
+var personalizeOperationByName = func() map[string]personalizeOperation {
+	out := make(map[string]personalizeOperation, len(personalizeOperations))
+	for _, op := range personalizeOperations {
+		out[op.Name] = op
+	}
+	return out
+}()

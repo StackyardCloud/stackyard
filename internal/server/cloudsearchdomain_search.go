@@ -281,8 +281,13 @@ type csdLexer struct {
 }
 
 const (
-	csdMaxDepth        = 32
-	csdMaxQueryBytes   = 8 << 10
+	csdMaxDepth      = 32
+	csdMaxQueryBytes = 8 << 10
+	// Search scans every document while holding the store lock, so the work a
+	// request can ask for is capped: terms per query, expressions and their size.
+	csdMaxQueryTerms   = 64
+	csdMaxExprs        = 20
+	csdMaxExprNodes    = 256
 	csdMaxSuggestQuery = 1 << 10
 )
 
@@ -461,6 +466,13 @@ func (st *csStore) search(domain string, p url.Values) (map[string]any, *csErr) 
 	if q == "" || len(q) > csdMaxQueryBytes {
 		return nil, csdSearchErr("q is required and can be at most %d bytes", csdMaxQueryBytes)
 	}
+	if fq, expr := p.Get("fq"), p.Get("expr"); len(fq) > csdMaxQueryBytes || len(expr) > csdMaxQueryBytes {
+		return nil, csdSearchErr("fq and expr can be at most %d bytes each", csdMaxQueryBytes)
+	}
+	// ponytail: words approximate terms (structured syntax counts its operators too); a cheap, conservative cap.
+	if n := len(strings.Fields(q)) + len(strings.Fields(p.Get("fq"))); n > csdMaxQueryTerms {
+		return nil, csdSearchErr("q and fq can have at most %d terms together", csdMaxQueryTerms)
+	}
 	size, err := csdIntParam(p, "size", csdDefaultSize, csdMaxSearchSize)
 	if err != nil {
 		return nil, err
@@ -478,8 +490,8 @@ func (st *csStore) search(domain string, p url.Values) (map[string]any, *csErr) 
 			return nil, err
 		}
 	}
-	st.mu.Lock()
-	defer st.mu.Unlock()
+	st.mu.RLock()
+	defer st.mu.RUnlock()
 	d, err := st.csdDomain(domain)
 	if err != nil {
 		return nil, err
@@ -880,8 +892,8 @@ func (st *csStore) suggest(domain string, p url.Values) (map[string]any, *csErr)
 	if err != nil {
 		return nil, err
 	}
-	st.mu.Lock()
-	defer st.mu.Unlock()
+	st.mu.RLock()
+	defer st.mu.RUnlock()
 	d, err := st.csdDomain(domain)
 	if err != nil {
 		return nil, err
@@ -903,7 +915,7 @@ func (st *csStore) suggest(domain string, p url.Values) (map[string]any, *csErr)
 	for id, doc := range d.docs {
 		for _, v := range doc.fields[source] {
 			lv := []rune(strings.ToLower(v))
-			if len(lv) < len(want) || csdLevenshtein(lv[:len(want)], want) > maxDist {
+			if len(lv) < len(want) || !csdWithinDistance(lv[:len(want)], want, maxDist) {
 				continue
 			}
 			var score int64
@@ -934,24 +946,43 @@ func (st *csStore) suggest(domain string, p url.Values) (map[string]any, *csErr)
 	}, nil
 }
 
-func csdLevenshtein(a, b []rune) int {
-	prev := make([]int, len(b)+1)
+// csdWithinDistance reports whether the edit distance between equal-length
+// a and b is at most k. Only cells within k of the diagonal can stay under k,
+// so it fills that band (O(len*k)) and stops once a whole row exceeds k.
+func csdWithinDistance(a, b []rune, k int) bool {
+	if k == 0 {
+		return string(a) == string(b)
+	}
+	const far = 1 << 30
+	prev, cur := make([]int, len(b)+1), make([]int, len(b)+1)
 	for j := range prev {
-		prev[j] = j
+		prev[j] = far
+		if j <= k {
+			prev[j] = j
+		}
 	}
 	for i := 1; i <= len(a); i++ {
-		cur := make([]int, len(b)+1)
-		cur[0] = i
-		for j := 1; j <= len(b); j++ {
+		for j := range cur {
+			cur[j] = far
+		}
+		if i <= k {
+			cur[0] = i
+		}
+		rowMin := cur[0]
+		for j := max(1, i-k); j <= min(len(b), i+k); j++ {
 			cost := 1
 			if a[i-1] == b[j-1] {
 				cost = 0
 			}
 			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+			rowMin = min(rowMin, cur[j])
 		}
-		prev = cur
+		if rowMin > k {
+			return false
+		}
+		prev, cur = cur, prev
 	}
-	return prev[len(b)]
+	return prev[len(b)] <= k
 }
 
 // ---- expressions ----
@@ -1011,6 +1042,9 @@ func csdExprParam(d *csDomain, raw string) (map[string]*csdExpr, *csErr) {
 		if json.Unmarshal([]byte(raw), &spec) != nil {
 			return nil, csdSearchErr("expr must be a JSON object of expression names and values")
 		}
+		if len(spec) > csdMaxExprs {
+			return nil, csdSearchErr("expr can define at most %d expressions", csdMaxExprs)
+		}
 		for k, v := range spec {
 			src[k] = v
 		}
@@ -1031,8 +1065,18 @@ func csdExprParam(d *csDomain, raw string) (map[string]*csdExpr, *csErr) {
 }
 
 type csdExprParser struct {
-	s string
-	i int
+	s     string
+	i     int
+	nodes int
+}
+
+// node counts one parsed node against csdMaxExprNodes; chains like
+// 1+1+1+... add nodes without nesting, so depth alone doesn't bound them.
+func (p *csdExprParser) node() *csErr {
+	if p.nodes++; p.nodes > csdMaxExprNodes {
+		return csdSearchErr("expression has more than %d terms", csdMaxExprNodes)
+	}
+	return nil
 }
 
 func (p *csdExprParser) skip() int {
@@ -1071,6 +1115,9 @@ func (p *csdExprParser) product(depth int) (*csdExpr, *csErr) {
 func (p *csdExprParser) unary(depth int) (*csdExpr, *csErr) {
 	if depth > csdMaxDepth {
 		return nil, csdSearchErr("nested too deeply")
+	}
+	if err := p.node(); err != nil {
+		return nil, err
 	}
 	if p.skip() >= len(p.s) {
 		return nil, csdSearchErr("unexpected end")

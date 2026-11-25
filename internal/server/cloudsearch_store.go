@@ -129,7 +129,7 @@ func csIntOr(m map[string]any, key string, def int) int {
 }
 
 type csStore struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	domains map[string]*csDomain
 }
 

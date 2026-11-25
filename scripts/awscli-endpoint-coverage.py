@@ -396,6 +396,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53profiles": {"cli": "route53profiles", "ops_file": REPO_ROOT / "internal/server/route53profiles_ops.go"},
     "networkmanager": {"cli": "networkmanager", "ops_file": REPO_ROOT / "internal/server/networkmanager_ops.go"},
     "pcaconnectorscep": {"cli": "pca-connector-scep", "ops_file": REPO_ROOT / "internal/server/pcaconnectorscep_ops.go"},
+    "mediastore": {"cli": "mediastore", "ops_file": REPO_ROOT / "internal/server/mediastore_ops.go"},
+    "mediastoredata": {"cli": "mediastore-data", "ops_file": REPO_ROOT / "internal/server/mediastoredata_ops.go"},
+    "mediapackagevod": {"cli": "mediapackage-vod", "ops_file": REPO_ROOT / "internal/server/mediapackagevod_ops.go"},
     "serverlessrepo": {"cli": "serverlessrepo", "ops_file": REPO_ROOT / "internal/server/serverlessrepo_ops.go"},
     "polly": {"cli": "polly", "ops_file": REPO_ROOT / "internal/server/polly_ops.go"},
     "servicecatalogappregistry": {"cli": "servicecatalog-appregistry", "ops_file": REPO_ROOT / "internal/server/servicecatalogappregistry_ops.go"},
@@ -573,8 +576,14 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
     "kendraranking": {"cli": "kendra-ranking", "ops_file": REPO_ROOT / "internal/server/kendraranking_ops.go"},
+    "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
+    "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
+    "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
+    "personalize": {"cli": "personalize", "ops_file": REPO_ROOT / "internal/server/personalize_ops.go"},
+    "personalizeevents": {"cli": "personalize-events", "ops_file": REPO_ROOT / "internal/server/personalizeevents_ops.go"},
+    "personalizeruntime": {"cli": "personalize-runtime", "ops_file": REPO_ROOT / "internal/server/personalizeruntime_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -1954,6 +1963,14 @@ SERVICE_ALIASES = {
     "cloudwan": "networkmanager",
     "pcaconnectorscep": "pcaconnectorscep",
     "pca-connector-scep": "pcaconnectorscep",
+    "mediastore": "mediastore",
+    "awselementalmediastore": "mediastore",
+    "mediastoredata": "mediastoredata",
+    "mediastore-data": "mediastoredata",
+    "awselementalmediastoredataplane": "mediastoredata",
+    "mediapackagevod": "mediapackagevod",
+    "mediapackage-vod": "mediapackagevod",
+    "awselementalmediapackagevod": "mediapackagevod",
     "privatecaconnectorforscep": "pcaconnectorscep",
     "route53-profiles": "route53profiles",
     "amazonroute53profiles": "route53profiles",
@@ -2265,6 +2282,14 @@ SERVICE_ALIASES = {
     "mgh": "migrationhub",
     "awsmigrationhub": "migrationhub",
     "aws migration hub": "migrationhub",
+    "personalize": "personalize",
+    "amazonpersonalize": "personalize",
+    "personalizeevents": "personalizeevents",
+    "personalize-events": "personalizeevents",
+    "amazonpersonalizeevents": "personalizeevents",
+    "personalizeruntime": "personalizeruntime",
+    "personalize-runtime": "personalizeruntime",
+    "amazonpersonalizeruntime": "personalizeruntime",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "waf-regional": "wafregional",
@@ -2278,6 +2303,13 @@ SERVICE_ALIASES = {
     "kendraranking": "kendraranking",
     "kendra-ranking": "kendraranking",
     "amazonkendraintelligentranking": "kendraranking",
+    "budgets": "budgets",
+    "awsbudgets": "budgets",
+    "costoptimizationhub": "costoptimizationhub",
+    "cost-optimization-hub": "costoptimizationhub",
+    "bcmdataexports": "bcmdataexports",
+    "bcm-data-exports": "bcmdataexports",
+    "dataexports": "bcmdataexports",
     "performanceinsights": "pi",
     "awscodeconnections": "codeconnections",
     "opensearchserverless": "opensearchserverless",
@@ -3239,6 +3271,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53profiles": {},
     "networkmanager": {},
     "pcaconnectorscep": {},
+    "mediastore": {},
+    "mediastoredata": {},
+    "mediapackagevod": {},
     "serverlessrepo": {},
     "polly": {},
     "servicecatalogappregistry": {},
@@ -3260,8 +3295,14 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "cloudsearch": {},
     "cloudsearchdomain": {},
     "kendraranking": {},
+    "budgets": {},
+    "costoptimizationhub": {},
+    "bcmdataexports": {},
     "servicecatalog": {},
     "migrationhub": {},
+    "personalize": {},
+    "personalizeevents": {},
+    "personalizeruntime": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -13529,6 +13570,10 @@ def generate_cli_input_payload(
         # recognize-utterance and put-session stream an audio body, so the CLI
         # needs explicit flags and an outfile even to print a skeleton.
         return {"botId": "", "botAliasId": "", "localeId": "", "sessionId": ""}, None
+    if (endpoint.service, endpoint.operation) == ("mediastoredata", "GetObject"):
+        # get-object needs --path plus an outfile even to print a skeleton;
+        # hydration points it at a real object.
+        return {"Path": "stackyard"}, None
     if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
@@ -35480,6 +35525,184 @@ def psc_new_challenge(aws_bin: str, endpoint_url: str, region: str, env: dict[st
     return str((data.get("Challenge") or {}).get("Arn") or "")
 
 
+MST_CORS = [{"AllowedOrigins": ["*"], "AllowedMethods": ["GET", "HEAD"], "AllowedHeaders": ["*"], "MaxAgeSeconds": 3000}]
+MST_POLICY = json.dumps({"Version": "2012-10-17", "Statement": [
+    {"Sid": "stackyard", "Effect": "Allow", "Principal": "*", "Action": "mediastore:GetObject", "Resource": "*"}]})
+MST_LIFECYCLE = json.dumps({"rules": [{"definition": {"path": [{"prefix": "tmp/"}], "days_since_create": [{"numeric": [">", 7]}]}, "action": "EXPIRE"}]})
+MST_METRIC = {"ContainerLevelMetrics": "ENABLED", "MetricPolicyRules": [{"ObjectGroup": "live/", "ObjectGroupName": "live"}]}
+
+
+def mst_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    data = run_aws_json(aws_bin, endpoint_url, region, "mediastore", cli, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def mst_new_container(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], prefix: str = "stackyard-mst") -> dict:
+    """Create a container and describe it, which settles it to ACTIVE."""
+    name = f"{prefix}-{time.time_ns()}"
+    mst_call(aws_bin, endpoint_url, region, env, "CreateContainer", {"ContainerName": name})
+    return mst_call(aws_bin, endpoint_url, region, env, "DescribeContainer", {"ContainerName": name}).get("Container") or {"Name": name}
+
+
+def mediastore_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MediaStore operations at a real container. Gets and deletes of a
+    policy get it put first; DeleteContainer gets a container of its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("mediastore", {})
+    if not state.get("container"):
+        state["container"] = mst_new_container(aws_bin, endpoint_url, region, env)
+    container = state["container"]
+    name = {"ContainerName": str(container.get("Name") or "")}
+    policies = {
+        "ContainerPolicy": {"Policy": MST_POLICY}, "CorsPolicy": {"CorsPolicy": MST_CORS},
+        "LifecyclePolicy": {"LifecyclePolicy": MST_LIFECYCLE}, "MetricPolicy": {"MetricPolicy": MST_METRIC},
+    }
+    if op == "CreateContainer":
+        return {"ContainerName": f"stackyard-mst-new-{time.time_ns()}", "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "DeleteContainer":
+        return {"ContainerName": str(mst_new_container(aws_bin, endpoint_url, region, env, "stackyard-mst-del").get("Name") or "")}
+    if op == "ListContainers":
+        return {"MaxResults": 10}
+    for kind, body in policies.items():
+        if op == "Put" + kind:
+            return {**name, **body}
+        if op in ("Get" + kind, "Delete" + kind):
+            mst_call(aws_bin, endpoint_url, region, env, "Put" + kind, {**name, **body})
+            return name
+    arn = str(container.get("ARN") or "")
+    if op == "TagResource":
+        return {"Resource": arn, "Tags": [{"Key": "stackyard", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"Resource": arn, "TagKeys": ["stackyard"]}
+    if op == "ListTagsForResource":
+        return {"Resource": arn}
+    return name  # DescribeContainer, Start/StopAccessLogging
+
+
+MSTD_FOLDER = "stackyard"
+
+
+def mstd_put(aws_bin: str, region: str, env: dict[str, str], data_endpoint: str, path: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="stackyard-mstd-") as tmp:
+        body = Path(tmp) / "body.txt"
+        body.write_bytes(b"stackyard mediastore object")
+        run_aws_json(aws_bin, data_endpoint, region, "mediastore-data", "put-object", env,
+                     ["--path", path, "--body", str(body), "--content-type", "text/plain"])
+
+
+def mediastoredata_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A MediaStore container (made through the mediastore CLI) holding one object."""
+    state = RUNTIME_STATE.setdefault("mediastoredata", {})
+    if not state.get("endpoint"):
+        container = mst_new_container(aws_bin, endpoint_url, region, env, "stackyard-mstd")
+        state["endpoint"] = str(container.get("Endpoint") or endpoint_url)
+        state["object"] = f"{MSTD_FOLDER}/seed.txt"
+        mstd_put(aws_bin, region, env, state["endpoint"], state["object"])
+    return state
+
+
+def mediastoredata_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    state = mediastoredata_fixture(aws_bin, endpoint_url, region, env)
+    if op == "PutObject":
+        body = base64.b64encode(b"stackyard mediastore put").decode("ascii")
+        return {"Path": f"{MSTD_FOLDER}/put-{time.time_ns()}.txt", "Body": body, "ContentType": "text/plain"}
+    if op == "DeleteObject":
+        path = f"{MSTD_FOLDER}/del-{time.time_ns()}.txt"
+        mstd_put(aws_bin, region, env, state["endpoint"], path)
+        return {"Path": path}
+    if op == "ListItems":
+        return {"Path": MSTD_FOLDER, "MaxResults": 100}
+    return {"Path": state["object"]}  # GetObject, DescribeObject
+
+
+MPVOD_ROLE = "arn:aws:iam::123456789012:role/stackyard-mediapackage-vod"
+MPVOD_HLS = {"HlsManifests": [{"ManifestName": "index", "AdMarkers": "NONE"}], "SegmentDurationSeconds": 6}
+
+
+def mpvod_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    data = run_aws_json(aws_bin, endpoint_url, region, "mediapackage-vod", cli, env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def mpvod_source(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    """An HLS source object in Stackyard's S3 for assets to ingest."""
+    state = RUNTIME_STATE.setdefault("mediapackagevod", {})
+    if not state.get("source"):
+        bucket = f"stackyard-mpvod-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        with tempfile.TemporaryDirectory(prefix="stackyard-mpvod-") as tmp:
+            body = Path(tmp) / "index.m3u8"
+            body.write_text("#EXTM3U\n#EXT-X-ENDLIST\n", encoding="utf-8")
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env,
+                         ["--bucket", bucket, "--key", "movie/index.m3u8", "--body", str(body)])
+        state["source"] = f"arn:aws:s3:::{bucket}/movie/index.m3u8"
+    return str(state["source"])
+
+
+def mpvod_new(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, group: str = "") -> str:
+    rid = f"stackyard-{kind}-{time.time_ns()}"
+    if kind == "group":
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreatePackagingGroup", {"Id": rid})
+    elif kind == "config":
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreatePackagingConfiguration", {"Id": rid, "PackagingGroupId": group, "HlsPackage": MPVOD_HLS})
+    else:
+        mpvod_call(aws_bin, endpoint_url, region, env, "CreateAsset", {
+            "Id": rid, "PackagingGroupId": group, "SourceArn": mpvod_source(aws_bin, endpoint_url, region, env), "SourceRoleArn": MPVOD_ROLE})
+    return rid
+
+
+def mediapackagevod_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MediaPackage VOD operations at a real group, configuration and
+    asset; deletes get resources of their own (a group to delete is empty)."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("mediapackagevod", {})
+    if not state.get("group"):
+        state["group"] = mpvod_new(aws_bin, endpoint_url, region, env, "group")
+        state["config"] = mpvod_new(aws_bin, endpoint_url, region, env, "config", state["group"])
+        state["asset"] = mpvod_new(aws_bin, endpoint_url, region, env, "asset", state["group"])
+    group, unique = str(state["group"]), time.time_ns()
+    arn = f"arn:aws:mediapackage-vod:{region}:123456789012:packaging-groups/{group}"
+    if op == "CreatePackagingGroup":
+        return {"Id": f"stackyard-group-{unique}", "EgressAccessLogs": {}, "Tags": {"stackyard": "coverage"}}
+    if op == "CreatePackagingConfiguration":
+        return {"Id": f"stackyard-config-{unique}", "PackagingGroupId": group, "HlsPackage": MPVOD_HLS}
+    if op == "CreateAsset":
+        return {"Id": f"stackyard-asset-{unique}", "PackagingGroupId": group,
+                "SourceArn": mpvod_source(aws_bin, endpoint_url, region, env), "SourceRoleArn": MPVOD_ROLE}
+    if op in ("DescribePackagingGroup", "UpdatePackagingGroup"):
+        return {"Id": group}
+    if op == "ConfigureLogs":
+        return {"Id": group, "EgressAccessLogs": {"LogGroupName": "/aws/MediaPackage/VodEgressAccessLogs"}}
+    if op == "DescribePackagingConfiguration":
+        return {"Id": str(state["config"])}
+    if op == "DescribeAsset":
+        return {"Id": str(state["asset"])}
+    if op == "DeletePackagingGroup":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "group")}
+    if op == "DeletePackagingConfiguration":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "config", group)}
+    if op == "DeleteAsset":
+        return {"Id": mpvod_new(aws_bin, endpoint_url, region, env, "asset", group)}
+    if op in ("ListPackagingConfigurations", "ListAssets"):
+        return {"PackagingGroupId": group, "MaxResults": 10}
+    if op == "ListPackagingGroups":
+        return {"MaxResults": 10}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "Tags": {"stackyard": "coverage"}}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "TagKeys": ["stackyard"]}
+    return {"ResourceArn": arn}  # ListTagsForResource
+
+
 def pcaconnectorscep_hydrate_payload(
     aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
 ) -> dict:
@@ -38080,8 +38303,503 @@ def kendraranking_hydrate_payload(
         return {"ResourceARN": arn, "Tags": [{"Key": "env", "Value": "coverage"}]}
     if op == "UntagResource":
         return {"ResourceARN": arn, "TagKeys": ["env"]}
+PSZ_BUCKET = "stackyard-personalize"
+PSZ_ROLE = "arn:aws:iam::123456789012:role/stackyard-personalize"
+PSZ_RECIPE = "arn:aws:personalize:::recipe/"
+PSZ_INTER_FIELDS = [("USER_ID", "string"), ("ITEM_ID", "string"), ("EVENT_TYPE", "string"), ("TIMESTAMP", "long")]
+PSZ_SCHEMAS = {
+    "Interactions": PSZ_INTER_FIELDS,
+    "Items": [("ITEM_ID", "string"), ("GENRE", ["null", "string"])],
+    "Users": [("USER_ID", "string"), ("AGE", ["null", "int"])],
+    "Actions": [("ACTION_ID", "string"), ("VALUE", ["null", "int"])],
+    "Action_Interactions": [("USER_ID", "string"), ("ACTION_ID", "string"), ("EVENT_TYPE", "string"), ("TIMESTAMP", "long")],
+}
+PSZ_FILES = {
+    "interactions.csv": "USER_ID,ITEM_ID,EVENT_TYPE,TIMESTAMP\nu1,i1,click,1700000000\nu1,i2,click,1700000001\nu2,i1,purchase,1700000002\nu2,i3,click,1700000003\n",
+    "delete.csv": "USER_ID\nu-forget\n",
+    "batch-users.jsonl": '{"userId": "u1"}\n{"userId": "u2"}\n',
+    "batch-items.jsonl": '{"itemId": "i1"}\n',
+}
+
+
+def psz_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict, cli_service: str = "personalize") -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def psz_schema(fields: list) -> str:
+    return json.dumps({"type": "record", "name": "Stackyard", "namespace": "com.amazonaws.personalize.schema",
+                       "fields": [{"name": n, "type": t} for n, t in fields], "version": "1.0"})
+
+
+class PszFixture:
+    """Creates Personalize resources through the CLI and waits for them to settle."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+        self.run = f"{time.time_ns():x}"[-10:]
+        self.count = 0
+
+    def name(self, prefix: str) -> str:
+        self.count += 1
+        return f"sy-{prefix}-{self.run}-{self.count}"
+
+    def call(self, op: str, args: dict) -> dict:
+        return psz_call(*self.args, op, args)
+
+    def wait(self, kind: str, arn: str, want: str = "ACTIVE") -> str:
+        """Describe until the resource reports want (Stackyard settles async resources on read)."""
+        key = kind[0].lower() + kind[1:]
+        arn_key = {"DatasetImportJob": "datasetImportJobArn", "DatasetExportJob": "datasetExportJobArn",
+                   "DataDeletionJob": "dataDeletionJobArn"}.get(kind, key + "Arn")
+        for _ in range(4):
+            status = (self.call(f"Describe{kind}", {arn_key: arn}).get(key) or {}).get("status")
+            if status == want:
+                break
+        return arn
+
+    def group(self, domain: str = "") -> str:
+        args = {"name": self.name("dsg")}
+        if domain:
+            args["domain"] = domain
+        return self.wait("DatasetGroup", self.call("CreateDatasetGroup", args).get("datasetGroupArn", ""))
+
+    def schema(self, typ: str, domain: str = "") -> str:
+        args = {"name": self.name("schema"), "schema": psz_schema(PSZ_SCHEMAS[typ])}
+        if domain:
+            args["domain"] = domain
+        return self.call("CreateSchema", args).get("schemaArn", "")
+
+    def dataset(self, group: str, typ: str, domain: str = "") -> str:
+        arn = self.call("CreateDataset", {"name": self.name("ds"), "schemaArn": self.schema(typ, domain),
+                                          "datasetGroupArn": group, "datasetType": typ}).get("datasetArn", "")
+        return self.wait("Dataset", arn)
+
+    def solution(self, group: str, recipe: str) -> str:
+        arn = self.call("CreateSolution", {"name": self.name("sol"), "datasetGroupArn": group,
+                                           "recipeArn": PSZ_RECIPE + recipe}).get("solutionArn", "")
+        return self.wait("Solution", arn)
+
+    def version(self, solution: str) -> str:
+        return self.wait("SolutionVersion", self.call("CreateSolutionVersion", {"solutionArn": solution}).get("solutionVersionArn", ""))
+
+    def campaign(self, version: str) -> str:
+        arn = self.call("CreateCampaign", {"name": self.name("camp"), "solutionVersionArn": version,
+                                           "campaignConfig": {"enableMetadataWithRecommendations": True}}).get("campaignArn", "")
+        return self.wait("Campaign", arn)
+
+    def recommender(self, group: str) -> str:
+        arn = self.call("CreateRecommender", {"name": self.name("rec"), "datasetGroupArn": group,
+                                              "recipeArn": PSZ_RECIPE + "aws-ecomm-popular-items-by-views"}).get("recommenderArn", "")
+        return self.wait("Recommender", arn)
+
+    def filter(self, group: str) -> str:
+        arn = self.call("CreateFilter", {"name": self.name("filter"), "datasetGroupArn": group,
+                                         "filterExpression": "EXCLUDE ItemID WHERE Items.GENRE IN ($GENRE)"}).get("filterArn", "")
+        return self.wait("Filter", arn)
+
+    def metric_attribution(self, group: str) -> str:
+        arn = self.call("CreateMetricAttribution", {
+            "name": self.name("ma"), "datasetGroupArn": group,
+            "metrics": [{"eventType": "click", "metricName": "clicks", "expression": "SAMPLECOUNT()"}],
+            "metricsOutputConfig": {"roleArn": PSZ_ROLE, "s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/metrics/"}},
+        }).get("metricAttributionArn", "")
+        return self.wait("MetricAttribution", arn)
+
+    def job_io(self, source: str) -> dict:
+        return {"jobInput": {"s3DataSource": {"path": f"s3://{PSZ_BUCKET}/{source}"}},
+                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/out/"}}, "roleArn": PSZ_ROLE}
+
+
+def personalize_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """One cached Personalize setup: a dataset group with every dataset type,
+    imported interactions, an event tracker, a filter, a metric attribution,
+    trained user-personalization, ranking, segmentation and next-best-action
+    versions with campaigns, a domain group with a recommender, and one of
+    each job."""
+    state = RUNTIME_STATE.setdefault("personalize", {})
+    if state.get("fx"):
+        return state
+    fx = PszFixture(aws_bin, endpoint_url, region, env)
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, PSZ_BUCKET, track_as_primary=False)
+    for key, body in PSZ_FILES.items():
+        s3_put_object_bytes(aws_bin, endpoint_url, region, env, PSZ_BUCKET, key, body.encode())
+    group = fx.group()
+    datasets = {typ: fx.dataset(group, typ) for typ in PSZ_SCHEMAS}
+    imp = fx.call("CreateDatasetImportJob", {"jobName": fx.name("import"), "datasetArn": datasets["Interactions"],
+                                             "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/interactions.csv"},
+                                             "roleArn": PSZ_ROLE}).get("datasetImportJobArn", "")
+    fx.wait("DatasetImportJob", imp)
+    tracker = fx.call("CreateEventTracker", {"name": fx.name("tracker"), "datasetGroupArn": group})
+    solutions = {r: fx.solution(group, r) for r in ("aws-user-personalization", "aws-personalized-ranking", "aws-item-affinity", "aws-next-best-action")}
+    versions = {r: fx.version(arn) for r, arn in solutions.items()}
+    campaigns = {r: fx.campaign(versions[r]) for r in ("aws-user-personalization", "aws-personalized-ranking", "aws-next-best-action")}
+    domain_group = fx.group("ECOMMERCE")
+    fx.dataset(domain_group, "Interactions", "ECOMMERCE")
+    export = fx.call("CreateDatasetExportJob", {"jobName": fx.name("export"), "datasetArn": datasets["Interactions"], "roleArn": PSZ_ROLE,
+                                                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/export/"}}}).get("datasetExportJobArn", "")
+    deletion = fx.call("CreateDataDeletionJob", {"jobName": fx.name("delete"), "datasetGroupArn": group, "roleArn": PSZ_ROLE,
+                                                 "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/delete.csv"}}).get("dataDeletionJobArn", "")
+    batch = fx.call("CreateBatchInferenceJob", {"jobName": fx.name("batch"), "solutionVersionArn": versions["aws-user-personalization"],
+                                                **fx.job_io("batch-users.jsonl")}).get("batchInferenceJobArn", "")
+    segment = fx.call("CreateBatchSegmentJob", {"jobName": fx.name("segment"), "solutionVersionArn": versions["aws-item-affinity"],
+                                                **fx.job_io("batch-items.jsonl")}).get("batchSegmentJobArn", "")
+    state.update({
+        "fx": fx, "group": group, "datasets": datasets, "import": imp, "tracker": tracker.get("eventTrackerArn", ""),
+        "trackingId": tracker.get("trackingId", ""), "filter": fx.filter(group), "ma": fx.metric_attribution(group),
+        "solutions": solutions, "versions": versions, "campaigns": campaigns, "domain_group": domain_group,
+        "recommender": fx.recommender(domain_group), "export": export, "deletion": deletion, "batch": batch, "segment": segment,
+        "inter_schema": fx.schema("Interactions"),
+    })
+    return state
+
+
+def personalize_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Personalize operations at the cached fixture; creates and
+    destructive operations get resources of their own."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    fx: PszFixture = st["fx"]
+    group, ds = st["group"], st["datasets"]
+    up = st["versions"]["aws-user-personalization"]
+    sol = st["solutions"]["aws-user-personalization"]
+    camp = st["campaigns"]["aws-user-personalization"]
+    describe = {
+        "DescribeDatasetGroup": {"datasetGroupArn": group}, "DescribeDataset": {"datasetArn": ds["Interactions"]},
+        "DescribeSchema": {"schemaArn": st["inter_schema"]}, "DescribeDatasetImportJob": {"datasetImportJobArn": st["import"]},
+        "DescribeDatasetExportJob": {"datasetExportJobArn": st["export"]}, "DescribeDataDeletionJob": {"dataDeletionJobArn": st["deletion"]},
+        "DescribeEventTracker": {"eventTrackerArn": st["tracker"]}, "DescribeFilter": {"filterArn": st["filter"]},
+        "DescribeSolution": {"solutionArn": sol}, "DescribeSolutionVersion": {"solutionVersionArn": up},
+        "DescribeCampaign": {"campaignArn": camp}, "DescribeRecommender": {"recommenderArn": st["recommender"]},
+        "DescribeMetricAttribution": {"metricAttributionArn": st["ma"]}, "DescribeBatchInferenceJob": {"batchInferenceJobArn": st["batch"]},
+        "DescribeBatchSegmentJob": {"batchSegmentJobArn": st["segment"]},
+        "DescribeAlgorithm": {"algorithmArn": "arn:aws:personalize:::algorithm/aws-user-personalization"},
+        "DescribeFeatureTransformation": {"featureTransformationArn": "arn:aws:personalize:::feature-transformation/aws-user-personalization"},
+        "DescribeRecipe": {"recipeArn": PSZ_RECIPE + "aws-user-personalization"},
+        "GetSolutionMetrics": {"solutionVersionArn": up},
+        "ListDatasets": {"datasetGroupArn": group}, "ListDatasetImportJobs": {"datasetArn": ds["Interactions"]},
+        "ListDatasetExportJobs": {"datasetArn": ds["Interactions"]}, "ListDataDeletionJobs": {"datasetGroupArn": group},
+        "ListEventTrackers": {"datasetGroupArn": group}, "ListFilters": {"datasetGroupArn": group},
+        "ListSolutions": {"datasetGroupArn": group}, "ListSolutionVersions": {"solutionArn": sol},
+        "ListCampaigns": {"solutionArn": sol}, "ListRecommenders": {"datasetGroupArn": st["domain_group"]},
+        "ListMetricAttributions": {"datasetGroupArn": group}, "ListMetricAttributionMetrics": {"metricAttributionArn": st["ma"]},
+        "ListBatchInferenceJobs": {"solutionVersionArn": up}, "ListBatchSegmentJobs": {"solutionVersionArn": st["versions"]["aws-item-affinity"]},
+        "ListRecipes": {"recipeProvider": "SERVICE"}, "ListDatasetGroups": {}, "ListSchemas": {},
+        "ListTagsForResource": {"resourceArn": group},
+        "TagResource": {"resourceArn": group, "tags": [{"tagKey": "team", "tagValue": "coverage"}]},
+        "UntagResource": {"resourceArn": group, "tagKeys": ["team"]},
+    }
+    if op in describe:
+        return describe[op]
+    if op == "CreateDatasetGroup":
+        return {"name": fx.name("dsg"), "tags": [{"tagKey": "team", "tagValue": "coverage"}]}
+    if op == "CreateSchema":
+        return {"name": fx.name("schema"), "schema": psz_schema(PSZ_SCHEMAS["Items"])}
+    if op == "CreateDataset":
+        return {"name": fx.name("ds"), "schemaArn": fx.schema("Users"), "datasetGroupArn": fx.group(), "datasetType": "Users"}
+    if op == "CreateDatasetImportJob":
+        return {"jobName": fx.name("import"), "datasetArn": ds["Interactions"], "importMode": "INCREMENTAL", "roleArn": PSZ_ROLE,
+                "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/interactions.csv"}}
+    if op == "CreateDatasetExportJob":
+        return {"jobName": fx.name("export"), "datasetArn": ds["Interactions"], "ingestionMode": "ALL", "roleArn": PSZ_ROLE,
+                "jobOutput": {"s3DataDestination": {"path": f"s3://{PSZ_BUCKET}/export/"}}}
+    if op == "CreateDataDeletionJob":
+        return {"jobName": fx.name("delete"), "datasetGroupArn": group, "roleArn": PSZ_ROLE,
+                "dataSource": {"dataLocation": f"s3://{PSZ_BUCKET}/delete.csv"}}
+    if op == "CreateEventTracker":
+        return {"name": fx.name("tracker"), "datasetGroupArn": fx.group()}
+    if op == "CreateFilter":
+        return {"name": fx.name("filter"), "datasetGroupArn": group,
+                "filterExpression": 'EXCLUDE ItemID WHERE Interactions.EVENT_TYPE IN ("purchase")'}
+    if op == "CreateMetricAttribution":
+        return {"name": fx.name("ma"), "datasetGroupArn": fx.group(),
+                "metrics": [{"eventType": "click", "metricName": "clicks", "expression": "SAMPLECOUNT()"}],
+                "metricsOutputConfig": {"roleArn": PSZ_ROLE}}
+    if op == "CreateRecommender":
+        return {"name": fx.name("rec"), "datasetGroupArn": st["domain_group"], "recipeArn": PSZ_RECIPE + "aws-ecomm-recommended-for-you"}
+    if op == "CreateSolution":
+        return {"name": fx.name("sol"), "datasetGroupArn": group, "recipeArn": PSZ_RECIPE + "aws-sims"}
+    if op == "CreateSolutionVersion":
+        return {"solutionArn": fx.solution(group, "aws-user-personalization"), "trainingMode": "FULL"}
+    if op == "CreateCampaign":
+        return {"name": fx.name("camp"), "solutionVersionArn": up, "minProvisionedTPS": 1}
+    if op == "CreateBatchInferenceJob":
+        return {"jobName": fx.name("batch"), "solutionVersionArn": up, "numResults": 5, **fx.job_io("batch-users.jsonl")}
+    if op == "CreateBatchSegmentJob":
+        return {"jobName": fx.name("segment"), "solutionVersionArn": st["versions"]["aws-item-affinity"], **fx.job_io("batch-items.jsonl")}
+    if op == "DeleteCampaign":
+        return {"campaignArn": fx.call("CreateCampaign", {"name": fx.name("camp"), "solutionVersionArn": up}).get("campaignArn", "")}
+    if op == "DeleteDataset":
+        return {"datasetArn": fx.dataset(fx.group(), "Users")}
+    if op == "DeleteDatasetGroup":
+        return {"datasetGroupArn": fx.group()}
+    if op == "DeleteEventTracker":
+        return {"eventTrackerArn": fx.call("CreateEventTracker", {"name": fx.name("tracker"), "datasetGroupArn": fx.group()}).get("eventTrackerArn", "")}
+    if op == "DeleteFilter":
+        return {"filterArn": fx.filter(group)}
+    if op == "DeleteMetricAttribution":
+        return {"metricAttributionArn": fx.metric_attribution(fx.group())}
+    if op == "DeleteRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"])}
+    if op == "DeleteSchema":
+        return {"schemaArn": fx.schema("Items")}
+    if op == "DeleteSolution":
+        return {"solutionArn": fx.solution(group, "aws-sims")}
+    if op == "StartRecommender":
+        rec = fx.recommender(st["domain_group"])
+        fx.call("StopRecommender", {"recommenderArn": rec})
+        fx.wait("Recommender", rec, "INACTIVE")
+        return {"recommenderArn": rec}
+    if op == "StopRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"])}
+    if op == "StopSolutionVersionCreation":
+        solution = fx.solution(group, "aws-user-personalization")
+        return {"solutionVersionArn": fx.call("CreateSolutionVersion", {"solutionArn": solution}).get("solutionVersionArn", "")}
+    if op == "UpdateCampaign":
+        return {"campaignArn": fx.campaign(up), "minProvisionedTPS": 2, "campaignConfig": {"enableMetadataWithRecommendations": True}}
+    if op == "UpdateDataset":
+        return {"datasetArn": ds["Interactions"], "schemaArn": fx.schema("Interactions")}
+    if op == "UpdateMetricAttribution":
+        return {"metricAttributionArn": fx.metric_attribution(fx.group()),
+                "addMetrics": [{"eventType": "purchase", "metricName": "purchases", "expression": "SAMPLECOUNT()"}],
+                "removeMetrics": ["clicks"]}
+    if op == "UpdateRecommender":
+        return {"recommenderArn": fx.recommender(st["domain_group"]), "recommenderConfig": {"minRecommendationRequestsPerSecond": 2}}
+    if op == "UpdateSolution":
+        return {"solutionArn": fx.solution(group, "aws-user-personalization"), "performAutoTraining": True,
+                "solutionUpdateConfig": {"autoTrainingConfig": {"schedulingExpression": "rate(7 days)"}}}
+    return payload
+
+
+def personalizeevents_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Send events and records to the Personalize fixture's tracker and datasets."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    ds, now = st["datasets"], time.time()
+    if op == "PutEvents":
+        return {"trackingId": st["trackingId"], "userId": "u1", "sessionId": "session-1",
+                "eventList": [{"eventId": "e1", "eventType": "click", "itemId": "i4", "sentAt": now, "properties": '{"numberOfRatings": "3"}'}]}
+    if op == "PutActionInteractions":
+        return {"trackingId": st["trackingId"], "actionInteractions": [
+            {"actionId": "a1", "userId": "u1", "sessionId": "session-1", "timestamp": now, "eventType": "Taken"}]}
+    if op == "PutItems":
+        return {"datasetArn": ds["Items"], "items": [{"itemId": "i4", "properties": '{"genre": "drama"}'}]}
+    if op == "PutUsers":
+        return {"datasetArn": ds["Users"], "users": [{"userId": "u1", "properties": '{"age": 31}'}]}
+    if op == "PutActions":
+        return {"datasetArn": ds["Actions"], "actions": [{"actionId": "a1", "properties": '{"value": 10}'}]}
+    return payload
+
+
+def personalizeruntime_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Ask the Personalize fixture's campaigns for recommendations."""
+    op = endpoint.operation
+    st = personalize_fixture(aws_bin, endpoint_url, region, env)
+    camps = st["campaigns"]
+    if op == "GetRecommendations":
+        return {"campaignArn": camps["aws-user-personalization"], "userId": "u1", "numResults": 5,
+                "filterArn": st["filter"], "filterValues": {"GENRE": '"drama"'}, "context": {"DEVICE": "mobile"}}
+    if op == "GetPersonalizedRanking":
+        return {"campaignArn": camps["aws-personalized-ranking"], "userId": "u1", "inputList": ["i1", "i2", "i3"]}
+    if op == "GetActionRecommendations":
+        return {"campaignArn": camps["aws-next-best-action"], "userId": "u1", "numResults": 3}
+    return payload
+
+
+
+BUD_ACCOUNT = "123456789012"
+BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
+
+
+def bud_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "budgets", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def bud_budget(name: str, amount: str = "100") -> dict:
+    return {"BudgetName": name, "BudgetLimit": {"Amount": amount, "Unit": "USD"}, "TimeUnit": "MONTHLY", "BudgetType": "COST"}
+
+
+def bud_note(threshold: float = 80.0) -> dict:
+    return {"NotificationType": "ACTUAL", "ComparisonOperator": "GREATER_THAN", "Threshold": threshold, "ThresholdType": "PERCENTAGE"}
+
+
+def bud_new_budget(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], subscribers: list | None = None) -> str:
+    """A budget of its own with one 80% notification."""
+    name = f"stackyard-budget-{time.time_ns()}"
+    bud_cli(aws_bin, endpoint_url, region, env, "create-budget", {
+        "AccountId": BUD_ACCOUNT, "Budget": bud_budget(name),
+        "NotificationsWithSubscribers": [{"Notification": bud_note(), "Subscribers": subscribers or [BUD_EMAIL]}],
+    })
+    return name
+
+
+def bud_action_payload(name: str) -> dict:
+    return {
+        "AccountId": BUD_ACCOUNT, "BudgetName": name, "NotificationType": "ACTUAL", "ActionType": "APPLY_IAM_POLICY",
+        "ActionThreshold": {"ActionThresholdValue": 90.0, "ActionThresholdType": "PERCENTAGE"},
+        "Definition": {"IamActionDefinition": {"PolicyArn": "arn:aws:iam::aws:policy/AWSDenyAll", "Roles": ["stackyard-dev"]}},
+        "ExecutionRoleArn": f"arn:aws:iam::{BUD_ACCOUNT}:role/stackyard-budgets", "ApprovalModel": "MANUAL",
+        "Subscribers": [BUD_EMAIL],
+    }
+
+
+def bud_new_action(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], name: str) -> str:
+    return str(bud_cli(aws_bin, endpoint_url, region, env, "create-budget-action", bud_action_payload(name)).get("ActionId") or "")
+
+
+def budgets_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point each Budgets operation at real budgets, notifications and actions.
+    Destructive operations get a budget or action of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("budgets", {})
+    if not state.get("budget"):
+        state["budget"] = bud_new_budget(aws_bin, endpoint_url, region, env)
+        state["action"] = bud_new_action(aws_bin, endpoint_url, region, env, state["budget"])
+    shared, action = str(state["budget"]), str(state["action"])
+    acct = {"AccountId": BUD_ACCOUNT}
+    on_shared = {**acct, "BudgetName": shared}
+    new = lambda subs=None: bud_new_budget(aws_bin, endpoint_url, region, env, subs)  # noqa: E731
+    if op in {"DescribeBudgets", "DescribeBudgetNotificationsForAccount", "DescribeBudgetActionsForAccount"}:
+        return acct
+    if op == "CreateBudget":
+        name = f"stackyard-budget-{time.time_ns()}"
+        return {**acct, "Budget": bud_budget(name), "ResourceTags": [{"Key": "team", "Value": "finance"}],
+                "NotificationsWithSubscribers": [{"Notification": bud_note(), "Subscribers": [BUD_EMAIL]}]}
+    if op in {"DescribeBudget", "DescribeNotificationsForBudget", "DescribeBudgetPerformanceHistory", "DescribeBudgetActionsForBudget"}:
+        return dict(on_shared)
+    if op == "UpdateBudget":
+        return {**acct, "NewBudget": bud_budget(shared, "150")}
+    if op == "DeleteBudget":
+        return {**acct, "BudgetName": new()}
+    if op == "CreateNotification":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(100.0), "Subscribers": [BUD_EMAIL]}
+    if op == "UpdateNotification":
+        return {**acct, "BudgetName": new(), "OldNotification": bud_note(), "NewNotification": bud_note(95.0)}
+    if op == "DeleteNotification":
+        return {**acct, "BudgetName": new(), "Notification": bud_note()}
+    if op == "DescribeSubscribersForNotification":
+        return {**on_shared, "Notification": bud_note()}
+    other = {"SubscriptionType": "EMAIL", "Address": "ops@example.com"}
+    if op == "CreateSubscriber":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(), "Subscriber": other}
+    if op == "UpdateSubscriber":
+        return {**acct, "BudgetName": new(), "Notification": bud_note(), "OldSubscriber": BUD_EMAIL, "NewSubscriber": other}
+    if op == "DeleteSubscriber":
+        return {**acct, "BudgetName": new([BUD_EMAIL, other]), "Notification": bud_note(), "Subscriber": other}
+    if op == "CreateBudgetAction":
+        return bud_action_payload(new())
+    if op in {"DescribeBudgetAction", "DescribeBudgetActionHistories"}:
+        return {**on_shared, "ActionId": action}
+    if op == "UpdateBudgetAction":
+        return {**on_shared, "ActionId": action, "ApprovalModel": "AUTOMATIC",
+                "ActionThreshold": {"ActionThresholdValue": 95.0, "ActionThresholdType": "PERCENTAGE"}}
+    if op == "DeleteBudgetAction":
+        return {**on_shared, "ActionId": bud_new_action(aws_bin, endpoint_url, region, env, shared)}
+    if op == "ExecuteBudgetAction":
+        name = new()
+        return {**acct, "BudgetName": name, "ActionId": bud_new_action(aws_bin, endpoint_url, region, env, name),
+                "ExecutionType": "APPROVE_BUDGET_ACTION"}
+    arn = f"arn:aws:budgets::{BUD_ACCOUNT}:budget/{shared}"
+    if op == "TagResource":
+        return {"ResourceARN": arn, "ResourceTags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "ResourceTagKeys": ["env"]}
     if op == "ListTagsForResource":
         return {"ResourceARN": arn}
+    return payload
+
+
+def costoptimizationhub_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Enroll the account first: recommendations are served only while Active."""
+    op = endpoint.operation
+    if op == "UpdateEnrollmentStatus":
+        return {"status": "Active"}
+    run_aws_json(aws_bin, endpoint_url, region, "cost-optimization-hub", "update-enrollment-status", env, ["--status", "Active"])
+    if op == "GetRecommendation":
+        return {"recommendationId": "coh-ec2-rightsize-0001"}
+    if op == "ListRecommendations":
+        return {"includeAllRecommendations": True, "orderBy": {"dimension": "EstimatedMonthlySavings", "order": "Desc"},
+                "filter": {"regions": ["us-east-1", "eu-west-1"]}}
+    if op == "ListRecommendationSummaries":
+        return {"groupBy": "ResourceType", "metrics": ["SavingsPercentage"]}
+    if op == "ListEfficiencyMetrics":
+        return {"granularity": "Daily", "timePeriod": {"start": "2026-01-01", "end": "2026-01-08"}, "groupBy": "Region"}
+    if op == "ListEnrollmentStatuses":
+        return {"includeOrganizationInfo": False}
+    if op == "UpdatePreferences":
+        return {"savingsEstimationMode": "AfterDiscounts", "preferredCommitment": {"term": "ThreeYears", "paymentOption": "AllUpfront"}}
+    return {}
+
+
+def bcmde_export(name: str, bucket: str) -> dict:
+    return {
+        "Name": name, "Description": "Stackyard coverage export",
+        "DataQuery": {
+            "QueryStatement": "SELECT line_item_usage_account_id, line_item_unblended_cost, line_item_resource_id FROM COST_AND_USAGE_REPORT",
+            "TableConfigurations": {"COST_AND_USAGE_REPORT": {"TIME_GRANULARITY": "DAILY", "INCLUDE_RESOURCES": "TRUE"}},
+        },
+        "DestinationConfigurations": {"S3Destination": {
+            "S3Bucket": bucket, "S3Prefix": "exports", "S3Region": "us-east-1",
+            "S3OutputConfigurations": {"OutputType": "CUSTOM", "Format": "TEXT_OR_CSV", "Compression": "GZIP", "Overwrite": "OVERWRITE_REPORT"},
+        }},
+        "RefreshCadence": {"Frequency": "SYNCHRONOUS"},
+    }
+
+
+def bcmde_new_export(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str, name: str = "") -> str:
+    name = name or f"stackyard-export-{time.time_ns()}"
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-data-exports", "create-export", env,
+                        ["--cli-input-json", json.dumps({"Export": bcmde_export(name, bucket)})])
+    return str((data or {}).get("ExportArn") or "") if isinstance(data, dict) else ""
+
+
+def bcmdataexports_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A bucket and a shared export; DeleteExport gets an export of its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("bcmdataexports", {})
+    if not state.get("export"):
+        bucket = f"stackyard-exports-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        state["bucket"], state["name"] = bucket, f"stackyard-export-{time.time_ns()}"
+        state["export"] = bcmde_new_export(aws_bin, endpoint_url, region, env, bucket, state["name"])
+    bucket, arn, name = str(state["bucket"]), str(state["export"]), str(state["name"])
+    if op == "CreateExport":
+        return {"Export": bcmde_export(f"stackyard-export-{time.time_ns()}", bucket), "ResourceTags": [{"Key": "team", "Value": "finance"}]}
+    if op == "UpdateExport":
+        export = bcmde_export(name, bucket)
+        export["Description"] = "updated by Stackyard coverage"
+        return {"ExportArn": arn, "Export": export}
+    if op == "DeleteExport":
+        return {"ExportArn": bcmde_new_export(aws_bin, endpoint_url, region, env, bucket)}
+    if op in {"GetExport", "ListExecutions"}:
+        return {"ExportArn": arn}
+    if op == "GetExecution":
+        data = run_aws_json(aws_bin, endpoint_url, region, "bcm-data-exports", "list-executions", env, ["--export-arn", arn])
+        executions = (data.get("Executions") if isinstance(data, dict) else None) or [{}]
+        return {"ExportArn": arn, "ExecutionId": str(executions[0].get("ExecutionId") or "")}
+    if op == "GetTable":
+        return {"TableName": "COST_AND_USAGE_REPORT", "TableProperties": {"INCLUDE_RESOURCES": "TRUE"}}
+    if op in {"ListExports", "ListTables"}:
+        return {}
+    if op == "TagResource":
+        return {"ResourceArn": arn, "ResourceTags": [{"Key": "env", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": arn, "ResourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": arn}
     return payload
 
 
@@ -38096,6 +38814,18 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "personalize":
+        return personalize_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "personalizeevents":
+        return personalizeevents_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "personalizeruntime":
+        return personalizeruntime_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "budgets":
+        return budgets_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "costoptimizationhub":
+        return costoptimizationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmdataexports":
+        return bcmdataexports_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorad":
         return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
@@ -38140,6 +38870,12 @@ def hydrate_payload_with_service_state(
         return servicecatalog_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "migrationhub":
         return migrationhub_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediastore":
+        return mediastore_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediastoredata":
+        return mediastoredata_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "mediapackagevod":
+        return mediapackagevod_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorscep":
         return pcaconnectorscep_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "route53profiles":
@@ -60386,6 +61122,9 @@ def run_endpoint(
         cli_endpoint_url = cloudsearchdomain_endpoint(aws_bin, endpoint_url, region, env)
     if endpoint.service == "s3control" and s3control_should_use_endpoint_alias(endpoint_url, endpoint.cli_operation):
         cli_endpoint_url = s3control_cli_endpoint_url(endpoint_url)
+    if endpoint.service == "mediastoredata":
+        # Data plane calls go to the container's own endpoint.
+        cli_endpoint_url = mediastoredata_fixture(aws_bin, endpoint_url, region, env)["endpoint"]
     base_cmd = [
         *aws_cli_base_cmd(aws_bin, env),
         "--output",
@@ -60574,7 +61313,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()
