@@ -127,16 +127,19 @@ func (s *Server) handleChimeSDKMessagingRESTRouter(w http.ResponseWriter, r *htt
 		return true
 	}
 	st := s.chimeSDKMessaging
-	st.mu.Lock()
-	out, cerr := cmsgHandlers[op.Name](st, in, bearer)
-	var body []byte
-	if cerr == nil && op.Code != http.StatusNoContent {
+	body, cerr := func() ([]byte, *chimeSDKErr) {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		out, cerr := cmsgHandlers[op.Name](st, in, bearer)
+		if cerr != nil || op.Code == http.StatusNoContent {
+			return nil, cerr
+		}
 		if out == nil {
 			out = map[string]any{}
 		}
-		body, _ = json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
-	}
-	st.mu.Unlock()
+		body, _ := json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
+		return body, nil
+	}()
 	if cerr != nil {
 		chimeSDKWriteError(w, cerr)
 		return true

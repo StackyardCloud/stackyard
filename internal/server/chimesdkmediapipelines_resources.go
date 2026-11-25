@@ -152,6 +152,10 @@ func (st *cmplStore) updateConfig(in map[string]any, _ map[string]bool) (map[str
 func (st *cmplStore) inUse(c *cmplConfig) bool {
 	for id := range c.pipelines {
 		p := st.pipelines[id]
+		if p == nil { // defensive: drop a stale reference rather than panic under the lock
+			delete(c.pipelines, id)
+			continue
+		}
 		st.refresh(p, nil)
 		if p.status != "Stopped" && p.status != "Failed" {
 			return true

@@ -65,16 +65,19 @@ func (s *Server) handleChimeSDKMeetingsRESTRouter(w http.ResponseWriter, r *http
 		return true
 	}
 	st := s.chimeSDKMeetings
-	st.mu.Lock()
-	out, cerr := cmtgHandlers[op.Name](st, in)
-	var body []byte
-	if cerr == nil && op.Code != http.StatusNoContent {
+	body, cerr := func() ([]byte, *chimeSDKErr) {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		out, cerr := cmtgHandlers[op.Name](st, in)
+		if cerr != nil || op.Code == http.StatusNoContent {
+			return nil, cerr
+		}
 		if out == nil {
 			out = map[string]any{}
 		}
-		body, _ = json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
-	}
-	st.mu.Unlock()
+		body, _ := json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
+		return body, nil
+	}()
 	if cerr != nil {
 		chimeSDKWriteError(w, cerr)
 		return true

@@ -122,16 +122,19 @@ func (s *Server) handleChimeSDKMediaPipelinesRESTRouter(w http.ResponseWriter, r
 	for _, arn := range refs {
 		alive[arn] = s.chimeSDKMeetings.meetingExists(arn)
 	}
-	st.mu.Lock()
-	out, cerr := cmplHandlers[op.Name](st, in, alive)
-	var body []byte
-	if cerr == nil && op.Code != http.StatusNoContent {
+	body, cerr := func() ([]byte, *chimeSDKErr) {
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		out, cerr := cmplHandlers[op.Name](st, in, alive)
+		if cerr != nil || op.Code == http.StatusNoContent {
+			return nil, cerr
+		}
 		if out == nil {
 			out = map[string]any{}
 		}
-		body, _ = json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
-	}
-	st.mu.Unlock()
+		body, _ := json.Marshal(model.Conform(model.Operations[op.Name].Output, out))
+		return body, nil
+	}()
 	if cerr != nil {
 		chimeSDKWriteError(w, cerr)
 		return true
@@ -409,9 +412,17 @@ func (st *cmplStore) createInsights(in map[string]any, alive map[string]bool) (m
 	if len(mmgrMap(in, "MediaInsightsRuntimeMetadata")) > cmplMaxMetadata {
 		return nil, chimeSDKBadRequest("MediaInsightsRuntimeMetadata can have at most %d entries.", cmplMaxMetadata)
 	}
-	p, _, cerr := st.newPipeline("insights", in, nil, alive)
+	p, existed, cerr := st.newPipeline("insights", in, nil, alive)
 	if cerr != nil {
 		return nil, cerr
+	}
+	if existed {
+		// A retried ClientRequestToken returns the original pipeline; it must
+		// not be re-pointed at another configuration.
+		if p.configName != c.name {
+			return nil, chimeSDKConflict("ClientRequestToken was already used for a pipeline of configuration %s.", p.configName)
+		}
+		return st.created("insights", p), nil
 	}
 	p.configName = c.name
 	c.pipelines[p.id] = struct{}{}

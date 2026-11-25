@@ -172,6 +172,12 @@ func TestChimeSDKMediaPipelinesStage1Insights(t *testing.T) {
 	plainArn := chimeSDKOK(t, ts, http.StatusCreated, http.MethodPost, "/media-insights-pipeline-configurations", plain, "")["MediaInsightsPipelineConfiguration"].(map[string]any)["MediaInsightsPipelineConfigurationArn"].(string)
 	plainID := chimeSDKOK(t, ts, http.StatusCreated, http.MethodPost, "/media-insights-pipelines", strings.Replace(insights, cfgArn, plainArn, 1), "")["MediaInsightsPipeline"].(map[string]any)["MediaPipelineId"].(string)
 	chimeSDKFail(t, ts, http.StatusBadRequest, "BadRequestException", http.MethodPost, "/media-insights-pipelines/"+plainID+"/voice-tone-analysis-tasks?operation=start", `{"LanguageCode":"en-US"}`, "")
+	// A ClientRequestToken reused for another configuration is a conflict,
+	// not a pipeline silently moved between configurations.
+	tok := strings.Replace(insights, `"MediaInsightsPipelineConfigurationArn"`, `"ClientRequestToken":"ins-1","MediaInsightsPipelineConfigurationArn"`, 1)
+	tokID := chimeSDKOK(t, ts, http.StatusCreated, http.MethodPost, "/media-insights-pipelines", tok, "")["MediaInsightsPipeline"].(map[string]any)["MediaPipelineId"].(string)
+	chimeSDKFail(t, ts, http.StatusConflict, "ConflictException", http.MethodPost, "/media-insights-pipelines", strings.Replace(tok, cfgArn, plainArn, 1), "")
+	chimeSDKOK(t, ts, http.StatusNoContent, http.MethodDelete, "/sdk-media-pipelines/"+tokID, "", "")
 
 	upd := strings.Replace(cmplTestConfig, `"MediaInsightsPipelineConfigurationName":"calls",`, "", 1)
 	if out := chimeSDKOK(t, ts, http.StatusOK, http.MethodPut, "/media-insights-pipeline-configurations/"+url.PathEscape(cfgArn), upd, ""); out["MediaInsightsPipelineConfiguration"].(map[string]any)["MediaInsightsPipelineConfigurationName"] != "calls" {
