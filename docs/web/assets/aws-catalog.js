@@ -252,6 +252,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "account",
+    name: "Account",
+    category: "integration",
+    summary: "Emulate account name and state, alternate and contact information with phone verification, primary email updates with one-time codes, and Region opt-in status for the management and member accounts.",
+    docsHref: "../../../index.html#account",
+    exampleHref: "../../../../examples/aws/account/docker-compose.yml"
+  },
+  {
+    id: "freetier",
+    name: "Free Tier",
+    category: "integration",
+    summary: "Emulate the free account plan with credits and upgrade to paid, sign-up activities (the Budgets activity completes from Stackyard's Budgets), and a filterable free-tier usage catalog.",
+    docsHref: "../../../index.html#freetier",
+    exampleHref: "../../../../examples/aws/freetier/docker-compose.yml"
+  },
+  {
+    id: "taxsettings",
+    name: "Tax Settings",
+    category: "integration",
+    summary: "Emulate tax registrations for the caller and member accounts with S3-backed documents, supplemental VAT registrations, tax exemptions with Pending then Valid status, and tax inheritance.",
+    docsHref: "../../../index.html#taxsettings",
+    exampleHref: "../../../../examples/aws/taxsettings/docker-compose.yml"
+  },
+  {
     id: "geomaps",
     name: "Location Maps V2",
     category: "integration",

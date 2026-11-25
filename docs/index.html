@@ -322,6 +322,9 @@
         <a href="#budgets">Budgets</a>
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
+        <a href="#account">Account</a>
+        <a href="#freetier">Free Tier</a>
+        <a href="#taxsettings">Tax Settings</a>
         <a href="#pi">Performance Insights</a>
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
@@ -26538,6 +26541,117 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateExport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="account" class="service">
+
+        <div class="service-header">
+        <h2>AWS Account</h2>
+        <p>SigV4 signed with service <code>account</code>. REST JSON API; every operation is <code>POST /&lt;operation&gt;</code> in lower camel case (for example <code>POST /getAccountInformation</code>). The caller (123456789012) is the Organizations management account; an AccountId parameter is resolved against the Organizations store's accounts (member 210987654321); the caller's own ID is refused with ValidationException and accounts outside the organization with AccessDeniedException. Account name, state and creation date; alternate contacts (BILLING, OPERATIONS, SECURITY); contact information with phone verification; primary email update for member accounts (StartPrimaryEmailUpdate -&gt; PENDING, AcceptPrimaryEmailUpdate with the one-time code -&gt; ACCEPTED, then COMPLETED); opt-in Regions move through ENABLING / DISABLING and report ENABLED / DISABLED on the following read; default Regions are ENABLED_BY_DEFAULT and can't be changed. Stackyard sends no email or SMS: the one-time code is the first 6 characters, upper-case hex, of SHA-256 of <code>&lt;accountId&gt;:&lt;new email&gt;</code> (email) or <code>&lt;accountId&gt;:&lt;phone number&gt;</code> (phone).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: account</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Account API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>DeleteAlternateContact</code></td></tr>
+        <tr><td><code>DisableRegion</code></td></tr>
+        <tr><td><code>EnableRegion</code></td></tr>
+        <tr><td><code>GetAccountInformation</code></td></tr>
+        <tr><td><code>GetAlternateContact</code></td></tr>
+        <tr><td><code>GetContactInformation</code></td></tr>
+        <tr><td><code>GetGovCloudAccountInformation</code></td></tr>
+        <tr><td><code>GetPrimaryEmail</code></td></tr>
+        <tr><td><code>GetPrimaryEmailUpdateStatus</code></td></tr>
+        <tr><td><code>GetRegionOptStatus</code></td></tr>
+        <tr><td><code>ListRegions</code></td></tr>
+        <tr><td><code>PutAccountName</code></td></tr>
+        <tr><td><code>PutAlternateContact</code></td></tr>
+        <tr><td><code>PutContactInformation</code></td></tr>
+        <tr><td><code>SendPhoneNumberVerification</code></td></tr>
+        <tr><td><code>StartPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>VerifyPhoneNumber</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="freetier" class="service">
+
+        <div class="service-header">
+        <h2>AWS Free Tier</h2>
+        <p>SigV4 signed with service <code>freetier</code>. JSON 1.0 API with <code>X-Amz-Target: AWSFreeTierService.*</code>. The account starts on the FREE plan with USD 100 of credits expiring six months after first use; UpgradeAccountPlan moves it to PAID (no downgrade). Five sign-up activities worth USD 20 each; the AWS Budgets activity completes when the account has a budget in Stackyard's Budgets and adds its credit. A fixed free-tier usage catalog filtered by Dimensions/And/Or/Not expressions, with pagination.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: freetier</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Free Tier API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetAccountActivity</code></td></tr>
+        <tr><td><code>GetAccountPlanState</code></td></tr>
+        <tr><td><code>GetFreeTierUsage</code></td></tr>
+        <tr><td><code>ListAccountActivities</code></td></tr>
+        <tr><td><code>UpgradeAccountPlan</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="taxsettings" class="service">
+
+        <div class="service-header">
+        <h2>Tax Settings</h2>
+        <p>SigV4 signed with service <code>tax</code>. REST JSON API; every operation is <code>POST /&lt;Operation&gt;</code>. Tax registrations for the caller and the Organizations member accounts (batch put/delete report per-account errors); verification documents supplied inline or read from Stackyard S3 are stored and GetTaxRegistrationDocument writes them to an S3 bucket; supplemental (VAT) registrations; tax exemptions against a fixed exemption-type catalog with Pending then Valid status; tax inheritance (OptIn/OptOut) that member accounts' exemption details report.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: tax</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Tax Settings API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchDeleteTaxRegistration</code></td></tr>
+        <tr><td><code>BatchGetTaxExemptions</code></td></tr>
+        <tr><td><code>BatchPutTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxExemptionTypes</code></td></tr>
+        <tr><td><code>GetTaxInheritance</code></td></tr>
+        <tr><td><code>GetTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxRegistrationDocument</code></td></tr>
+        <tr><td><code>ListSupplementalTaxRegistrations</code></td></tr>
+        <tr><td><code>ListTaxExemptions</code></td></tr>
+        <tr><td><code>ListTaxRegistrations</code></td></tr>
+        <tr><td><code>PutSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>PutTaxExemption</code></td></tr>
+        <tr><td><code>PutTaxInheritance</code></td></tr>
+        <tr><td><code>PutTaxRegistration</code></td></tr>
         </tbody>
         </table>
         </details>
