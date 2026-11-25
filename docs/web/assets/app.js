@@ -191,6 +191,33 @@ const SERVICE_CATALOG = [
     docsHref: "../../../index.html#textract",
     exampleHref: "../../../../examples/aws/textract/docker-compose.yml"
   },  {
+    id: "forecast",
+    name: "Forecast",
+    category: "integration",
+    summary: "Emulate Forecast datasets, import jobs, dataset groups, predictors and auto predictors with accuracy metrics, forecasts, exports, explainability, monitors with evaluations, what-if analyses and forecasts, resource trees and tags.",
+    docsHref: "../../../index.html#forecast",
+    exampleHref: "../../../../examples/aws/forecast/docker-compose.yml"
+  },
+
+  {
+    id: "forecastquery",
+    name: "Forecast Query",
+    category: "integration",
+    summary: "Query predictions from Forecast forecasts and what-if forecasts: one series per forecast type over the predictor's horizon and frequency, filtered by target time series attributes and a date window.",
+    docsHref: "../../../index.html#forecastquery",
+    exampleHref: "../../../../examples/aws/forecastquery/docker-compose.yml"
+  },
+
+  {
+    id: "frauddetector",
+    name: "Fraud Detector",
+    category: "integration",
+    summary: "Emulate Fraud Detector variables, entity types, labels, outcomes, event types, detectors with versioned rules, models and model versions, external models, lists, events, predictions with rule evaluation, batch jobs, KMS settings and tags.",
+    docsHref: "../../../index.html#frauddetector",
+    exampleHref: "../../../../examples/aws/frauddetector/docker-compose.yml"
+  },
+
+  {
     id: "wafregional",
     name: "WAF Classic Regional",
     category: "security",

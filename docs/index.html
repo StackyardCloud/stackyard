@@ -317,6 +317,9 @@
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
         <a href="#pi">Performance Insights</a>
+        <a href="#forecast">Forecast</a>
+        <a href="#forecastquery">Forecast Query</a>
+        <a href="#frauddetector">Fraud Detector</a>
         <a href="#cloudsearch">CloudSearch</a>
         <a href="#cloudsearchdomain">CloudSearch Domain</a>
         <a href="#kendraranking">Kendra Intelligent Ranking</a>
@@ -26240,6 +26243,228 @@
         <tr><td><code>UntagResource</code></td></tr>
         </tbody>
         </table>
+        </details>
+        </section>
+        <section id="forecast" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Forecast</h2>
+        <p>SigV4 signed with service <code>forecast</code>. JSON 1.1 API with <code>X-Amz-Target: AmazonForecast.*</code>. Datasets (schema checked for the domain's target field and timestamp), dataset groups (one dataset per type, same domain), dataset import jobs, legacy and auto predictors (retraining from a reference predictor, ExplainPredictor and MonitorConfig create their explainability and monitor), forecasts, forecast and backtest export jobs, explainability and its exports, monitors with evaluations for data imported after them, what-if analyses, what-if forecasts and their exports. Asynchronous resources report CREATE_IN_PROGRESS on their first Describe and ACTIVE after (or after three seconds); dependants need an ACTIVE parent (ResourceInUseException otherwise), deletes are refused while children exist, and DeleteResourceTree removes a resource with everything under it. StopResource stops in-progress resources and monitors, ResumeResource restarts monitors. Lists take model-checked Filters and NextToken paging; tags on every resource. No model is trained: accuracy metrics and monitor results are synthetic but deterministic per ARN. All 63 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: forecast</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Forecast API action catalog. See <code>internal/server/forecast_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateAutoPredictor</code></td></tr>
+        <tr><td><code>CreateDataset</code></td></tr>
+        <tr><td><code>CreateDatasetGroup</code></td></tr>
+        <tr><td><code>CreateDatasetImportJob</code></td></tr>
+        <tr><td><code>CreateExplainability</code></td></tr>
+        <tr><td><code>CreateExplainabilityExport</code></td></tr>
+        <tr><td><code>CreateForecast</code></td></tr>
+        <tr><td><code>CreateForecastExportJob</code></td></tr>
+        <tr><td><code>CreateMonitor</code></td></tr>
+        <tr><td><code>CreatePredictor</code></td></tr>
+        <tr><td><code>CreatePredictorBacktestExportJob</code></td></tr>
+        <tr><td><code>CreateWhatIfAnalysis</code></td></tr>
+        <tr><td><code>CreateWhatIfForecast</code></td></tr>
+        <tr><td><code>CreateWhatIfForecastExport</code></td></tr>
+        <tr><td><code>DeleteDataset</code></td></tr>
+        <tr><td><code>DeleteDatasetGroup</code></td></tr>
+        <tr><td><code>DeleteDatasetImportJob</code></td></tr>
+        <tr><td><code>DeleteExplainability</code></td></tr>
+        <tr><td><code>DeleteExplainabilityExport</code></td></tr>
+        <tr><td><code>DeleteForecast</code></td></tr>
+        <tr><td><code>DeleteForecastExportJob</code></td></tr>
+        <tr><td><code>DeleteMonitor</code></td></tr>
+        <tr><td><code>DeletePredictor</code></td></tr>
+        <tr><td><code>DeletePredictorBacktestExportJob</code></td></tr>
+        <tr><td><code>DeleteResourceTree</code></td></tr>
+        <tr><td><code>DeleteWhatIfAnalysis</code></td></tr>
+        <tr><td><code>DeleteWhatIfForecast</code></td></tr>
+        <tr><td><code>DeleteWhatIfForecastExport</code></td></tr>
+        <tr><td><code>DescribeAutoPredictor</code></td></tr>
+        <tr><td><code>DescribeDataset</code></td></tr>
+        <tr><td><code>DescribeDatasetGroup</code></td></tr>
+        <tr><td><code>DescribeDatasetImportJob</code></td></tr>
+        <tr><td><code>DescribeExplainability</code></td></tr>
+        <tr><td><code>DescribeExplainabilityExport</code></td></tr>
+        <tr><td><code>DescribeForecast</code></td></tr>
+        <tr><td><code>DescribeForecastExportJob</code></td></tr>
+        <tr><td><code>DescribeMonitor</code></td></tr>
+        <tr><td><code>DescribePredictor</code></td></tr>
+        <tr><td><code>DescribePredictorBacktestExportJob</code></td></tr>
+        <tr><td><code>DescribeWhatIfAnalysis</code></td></tr>
+        <tr><td><code>DescribeWhatIfForecast</code></td></tr>
+        <tr><td><code>DescribeWhatIfForecastExport</code></td></tr>
+        <tr><td><code>GetAccuracyMetrics</code></td></tr>
+        <tr><td><code>ListDatasetGroups</code></td></tr>
+        <tr><td><code>ListDatasetImportJobs</code></td></tr>
+        <tr><td><code>ListDatasets</code></td></tr>
+        <tr><td><code>ListExplainabilities</code></td></tr>
+        <tr><td><code>ListExplainabilityExports</code></td></tr>
+        <tr><td><code>ListForecastExportJobs</code></td></tr>
+        <tr><td><code>ListForecasts</code></td></tr>
+        <tr><td><code>ListMonitorEvaluations</code></td></tr>
+        <tr><td><code>ListMonitors</code></td></tr>
+        <tr><td><code>ListPredictorBacktestExportJobs</code></td></tr>
+        <tr><td><code>ListPredictors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListWhatIfAnalyses</code></td></tr>
+        <tr><td><code>ListWhatIfForecastExports</code></td></tr>
+        <tr><td><code>ListWhatIfForecasts</code></td></tr>
+        <tr><td><code>ResumeResource</code></td></tr>
+        <tr><td><code>StopResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDatasetGroup</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>forecast</code>: <code>docker compose -f examples/aws/forecast/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="forecastquery" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Forecast Query</h2>
+        <p>SigV4 signed with service <code>forecast</code>. JSON 1.1 API with <code>X-Amz-Target: AmazonForecastRuntime.*</code>. Reads the forecasts and what-if forecasts created through Forecast. A query needs an ACTIVE forecast, Filters whose keys are attributes of the dataset group's target time series, and optional StartDate/EndDate (yyyy-MM-ddTHH:mm:ss). Predictions hold one series per forecast type (p10, p50, p90, mean, ...) of ForecastHorizon points at the predictor's frequency, starting at the forecast's creation day. Values are synthetic but deterministic per forecast and filter set, with quantiles ordered low to high. Both operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: forecast</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Forecast Query API action catalog. See <code>internal/server/forecastquery_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>QueryForecast</code></td></tr>
+        <tr><td><code>QueryWhatIfForecast</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>forecastquery</code>: <code>docker compose -f examples/aws/forecastquery/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="frauddetector" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Fraud Detector</h2>
+        <p>SigV4 signed with service <code>frauddetector</code>. JSON 1.1 API with <code>X-Amz-Target: AWSHawksNestServiceFacade.*</code>. Variables (typed default values), entity types, labels, outcomes and event types that reference them; detectors with versions (DRAFT, ACTIVE with one active at a time, INACTIVE) built from versioned rules, model versions and external models; rules in a Detector PL subset ($variables, string and number literals, comparisons, and/or/not, parentheses) checked when created. GetEventPrediction evaluates the rules in FIRST_MATCHED or ALL_MATCHED mode, scores ACTIVE model versions deterministically into their &lt;model&gt;_insightscore variables, stores the event when ingestion is enabled and records the prediction for ListEventPredictions and GetEventPredictionMetadata. Models are not trained: versions report TRAINING_IN_PROGRESS once and TRAINING_COMPLETE after; batch import and prediction jobs complete the same way without reading S3. Resources in use (ConflictException) can't be deleted. All 73 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: frauddetector</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Fraud Detector API action catalog. See <code>internal/server/frauddetector_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateVariable</code></td></tr>
+        <tr><td><code>BatchGetVariable</code></td></tr>
+        <tr><td><code>CancelBatchImportJob</code></td></tr>
+        <tr><td><code>CancelBatchPredictionJob</code></td></tr>
+        <tr><td><code>CreateBatchImportJob</code></td></tr>
+        <tr><td><code>CreateBatchPredictionJob</code></td></tr>
+        <tr><td><code>CreateDetectorVersion</code></td></tr>
+        <tr><td><code>CreateList</code></td></tr>
+        <tr><td><code>CreateModel</code></td></tr>
+        <tr><td><code>CreateModelVersion</code></td></tr>
+        <tr><td><code>CreateRule</code></td></tr>
+        <tr><td><code>CreateVariable</code></td></tr>
+        <tr><td><code>DeleteBatchImportJob</code></td></tr>
+        <tr><td><code>DeleteBatchPredictionJob</code></td></tr>
+        <tr><td><code>DeleteDetector</code></td></tr>
+        <tr><td><code>DeleteDetectorVersion</code></td></tr>
+        <tr><td><code>DeleteEntityType</code></td></tr>
+        <tr><td><code>DeleteEvent</code></td></tr>
+        <tr><td><code>DeleteEventType</code></td></tr>
+        <tr><td><code>DeleteEventsByEventType</code></td></tr>
+        <tr><td><code>DeleteExternalModel</code></td></tr>
+        <tr><td><code>DeleteLabel</code></td></tr>
+        <tr><td><code>DeleteList</code></td></tr>
+        <tr><td><code>DeleteModel</code></td></tr>
+        <tr><td><code>DeleteModelVersion</code></td></tr>
+        <tr><td><code>DeleteOutcome</code></td></tr>
+        <tr><td><code>DeleteRule</code></td></tr>
+        <tr><td><code>DeleteVariable</code></td></tr>
+        <tr><td><code>DescribeDetector</code></td></tr>
+        <tr><td><code>DescribeModelVersions</code></td></tr>
+        <tr><td><code>GetBatchImportJobs</code></td></tr>
+        <tr><td><code>GetBatchPredictionJobs</code></td></tr>
+        <tr><td><code>GetDeleteEventsByEventTypeStatus</code></td></tr>
+        <tr><td><code>GetDetectorVersion</code></td></tr>
+        <tr><td><code>GetDetectors</code></td></tr>
+        <tr><td><code>GetEntityTypes</code></td></tr>
+        <tr><td><code>GetEvent</code></td></tr>
+        <tr><td><code>GetEventPrediction</code></td></tr>
+        <tr><td><code>GetEventPredictionMetadata</code></td></tr>
+        <tr><td><code>GetEventTypes</code></td></tr>
+        <tr><td><code>GetExternalModels</code></td></tr>
+        <tr><td><code>GetKMSEncryptionKey</code></td></tr>
+        <tr><td><code>GetLabels</code></td></tr>
+        <tr><td><code>GetListElements</code></td></tr>
+        <tr><td><code>GetListsMetadata</code></td></tr>
+        <tr><td><code>GetModelVersion</code></td></tr>
+        <tr><td><code>GetModels</code></td></tr>
+        <tr><td><code>GetOutcomes</code></td></tr>
+        <tr><td><code>GetRules</code></td></tr>
+        <tr><td><code>GetVariables</code></td></tr>
+        <tr><td><code>ListEventPredictions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutDetector</code></td></tr>
+        <tr><td><code>PutEntityType</code></td></tr>
+        <tr><td><code>PutEventType</code></td></tr>
+        <tr><td><code>PutExternalModel</code></td></tr>
+        <tr><td><code>PutKMSEncryptionKey</code></td></tr>
+        <tr><td><code>PutLabel</code></td></tr>
+        <tr><td><code>PutOutcome</code></td></tr>
+        <tr><td><code>SendEvent</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDetectorVersion</code></td></tr>
+        <tr><td><code>UpdateDetectorVersionMetadata</code></td></tr>
+        <tr><td><code>UpdateDetectorVersionStatus</code></td></tr>
+        <tr><td><code>UpdateEventLabel</code></td></tr>
+        <tr><td><code>UpdateList</code></td></tr>
+        <tr><td><code>UpdateModel</code></td></tr>
+        <tr><td><code>UpdateModelVersion</code></td></tr>
+        <tr><td><code>UpdateModelVersionStatus</code></td></tr>
+        <tr><td><code>UpdateRuleMetadata</code></td></tr>
+        <tr><td><code>UpdateRuleVersion</code></td></tr>
+        <tr><td><code>UpdateVariable</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>frauddetector</code>: <code>docker compose -f examples/aws/frauddetector/docker-compose.yml up --build</code></li>
+        </ul>
         </details>
         </section>
 
