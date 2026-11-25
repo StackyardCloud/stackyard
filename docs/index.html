@@ -192,6 +192,9 @@
         <a href="#pinpointemail">Amazon Pinpoint Email</a>
         <a href="#pinpointsmsvoice">Amazon Pinpoint SMS and Voice</a>
         <a href="#mailmanager">Amazon SES Mail Manager</a>
+        <a href="#mturk">Amazon Mechanical Turk</a>
+        <a href="#workdocs">Amazon WorkDocs</a>
+        <a href="#repostspace">AWS re:Post Private</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -13749,6 +13752,195 @@
         <summary>Examples</summary>
         <ul>
         <li><code>mailmanager</code>: <code>docker compose -f examples/aws/mailmanager/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="mturk" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Mechanical Turk</h2>
+        <p>SigV4 signed with service <code>mturk-requester</code>. Requester API with sandbox semantics: HIT types, HITs with QuestionForm, ExternalQuestion or HTMLQuestion content, qualification requirements and review policies; a real lifecycle (Assignable, Unassignable, Reviewable, Reviewing) driven by simulated workers who accept, submit and return assignments at Stackyard&#x27;s /_stackyard/mturk/ links; assignment deadlines and auto-approval; approve, reject (and override), bonuses with idempotency tokens, uploaded answer files behind short-lived download URLs; qualification types, requests, grants and revocations, system qualifications (locale, approval rate); worker blocks, notifications and a constant sandbox balance.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mturk-requester</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Mechanical Turk action catalog (39 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptQualificationRequest</code></td></tr>
+        <tr><td><code>ApproveAssignment</code></td></tr>
+        <tr><td><code>AssociateQualificationWithWorker</code></td></tr>
+        <tr><td><code>CreateAdditionalAssignmentsForHIT</code></td></tr>
+        <tr><td><code>CreateHIT</code></td></tr>
+        <tr><td><code>CreateHITType</code></td></tr>
+        <tr><td><code>CreateHITWithHITType</code></td></tr>
+        <tr><td><code>CreateQualificationType</code></td></tr>
+        <tr><td><code>CreateWorkerBlock</code></td></tr>
+        <tr><td><code>DeleteHIT</code></td></tr>
+        <tr><td><code>DeleteQualificationType</code></td></tr>
+        <tr><td><code>DeleteWorkerBlock</code></td></tr>
+        <tr><td><code>DisassociateQualificationFromWorker</code></td></tr>
+        <tr><td><code>GetAccountBalance</code></td></tr>
+        <tr><td><code>GetAssignment</code></td></tr>
+        <tr><td><code>GetFileUploadURL</code></td></tr>
+        <tr><td><code>GetHIT</code></td></tr>
+        <tr><td><code>GetQualificationScore</code></td></tr>
+        <tr><td><code>GetQualificationType</code></td></tr>
+        <tr><td><code>ListAssignmentsForHIT</code></td></tr>
+        <tr><td><code>ListBonusPayments</code></td></tr>
+        <tr><td><code>ListHITs</code></td></tr>
+        <tr><td><code>ListHITsForQualificationType</code></td></tr>
+        <tr><td><code>ListQualificationRequests</code></td></tr>
+        <tr><td><code>ListQualificationTypes</code></td></tr>
+        <tr><td><code>ListReviewPolicyResultsForHIT</code></td></tr>
+        <tr><td><code>ListReviewableHITs</code></td></tr>
+        <tr><td><code>ListWorkerBlocks</code></td></tr>
+        <tr><td><code>ListWorkersWithQualificationType</code></td></tr>
+        <tr><td><code>NotifyWorkers</code></td></tr>
+        <tr><td><code>RejectAssignment</code></td></tr>
+        <tr><td><code>RejectQualificationRequest</code></td></tr>
+        <tr><td><code>SendBonus</code></td></tr>
+        <tr><td><code>SendTestEventNotification</code></td></tr>
+        <tr><td><code>UpdateExpirationForHIT</code></td></tr>
+        <tr><td><code>UpdateHITReviewStatus</code></td></tr>
+        <tr><td><code>UpdateHITTypeOfHIT</code></td></tr>
+        <tr><td><code>UpdateNotificationSettings</code></td></tr>
+        <tr><td><code>UpdateQualificationType</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mturk</code>: <code>docker compose -f examples/aws/mturk/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="workdocs" class="service">
+
+        <div class="service-header">
+        <h2>Amazon WorkDocs</h2>
+        <p>SigV4 signed with service <code>workdocs</code>. One organization with an administrator and users (activation, power users, storage quotas), root folders, nested folders, documents uploaded to Stackyard-served pre-signed URLs and activated as versions (delete, restore, abort), downloads with constant content types, comments and replies, labels, custom metadata, sharing with users, groups and invites, shared-with-me listings, paths, search with filters, notification subscriptions and an activity feed.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: workdocs</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon WorkDocs action catalog (44 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AbortDocumentVersionUpload</code></td></tr>
+        <tr><td><code>ActivateUser</code></td></tr>
+        <tr><td><code>AddResourcePermissions</code></td></tr>
+        <tr><td><code>CreateComment</code></td></tr>
+        <tr><td><code>CreateCustomMetadata</code></td></tr>
+        <tr><td><code>CreateFolder</code></td></tr>
+        <tr><td><code>CreateLabels</code></td></tr>
+        <tr><td><code>CreateNotificationSubscription</code></td></tr>
+        <tr><td><code>CreateUser</code></td></tr>
+        <tr><td><code>DeactivateUser</code></td></tr>
+        <tr><td><code>DeleteComment</code></td></tr>
+        <tr><td><code>DeleteCustomMetadata</code></td></tr>
+        <tr><td><code>DeleteDocument</code></td></tr>
+        <tr><td><code>DeleteDocumentVersion</code></td></tr>
+        <tr><td><code>DeleteFolder</code></td></tr>
+        <tr><td><code>DeleteFolderContents</code></td></tr>
+        <tr><td><code>DeleteLabels</code></td></tr>
+        <tr><td><code>DeleteNotificationSubscription</code></td></tr>
+        <tr><td><code>DeleteUser</code></td></tr>
+        <tr><td><code>DescribeActivities</code></td></tr>
+        <tr><td><code>DescribeComments</code></td></tr>
+        <tr><td><code>DescribeDocumentVersions</code></td></tr>
+        <tr><td><code>DescribeFolderContents</code></td></tr>
+        <tr><td><code>DescribeGroups</code></td></tr>
+        <tr><td><code>DescribeNotificationSubscriptions</code></td></tr>
+        <tr><td><code>DescribeResourcePermissions</code></td></tr>
+        <tr><td><code>DescribeRootFolders</code></td></tr>
+        <tr><td><code>DescribeUsers</code></td></tr>
+        <tr><td><code>GetCurrentUser</code></td></tr>
+        <tr><td><code>GetDocument</code></td></tr>
+        <tr><td><code>GetDocumentPath</code></td></tr>
+        <tr><td><code>GetDocumentVersion</code></td></tr>
+        <tr><td><code>GetFolder</code></td></tr>
+        <tr><td><code>GetFolderPath</code></td></tr>
+        <tr><td><code>GetResources</code></td></tr>
+        <tr><td><code>InitiateDocumentVersionUpload</code></td></tr>
+        <tr><td><code>RemoveAllResourcePermissions</code></td></tr>
+        <tr><td><code>RemoveResourcePermission</code></td></tr>
+        <tr><td><code>RestoreDocumentVersions</code></td></tr>
+        <tr><td><code>SearchResources</code></td></tr>
+        <tr><td><code>UpdateDocument</code></td></tr>
+        <tr><td><code>UpdateDocumentVersion</code></td></tr>
+        <tr><td><code>UpdateFolder</code></td></tr>
+        <tr><td><code>UpdateUser</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>workdocs</code>: <code>docker compose -f examples/aws/workdocs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="repostspace" class="service">
+
+        <div class="service-header">
+        <h2>AWS re:Post Private</h2>
+        <p>SigV4 signed with service <code>repostspace</code>. Private re:Post spaces that provision (CREATING to CREATED) and delete (DELETING, then gone) over time, with unique subdomains, BASIC and STANDARD tiers, administrators, space roles, invites, channels that provision the same way with channel roles, and tags on space ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: repostspace</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS re:Post Private action catalog (19 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchAddChannelRoleToAccessors</code></td></tr>
+        <tr><td><code>BatchAddRole</code></td></tr>
+        <tr><td><code>BatchRemoveChannelRoleFromAccessors</code></td></tr>
+        <tr><td><code>BatchRemoveRole</code></td></tr>
+        <tr><td><code>CreateChannel</code></td></tr>
+        <tr><td><code>CreateSpace</code></td></tr>
+        <tr><td><code>DeleteSpace</code></td></tr>
+        <tr><td><code>DeregisterAdmin</code></td></tr>
+        <tr><td><code>GetChannel</code></td></tr>
+        <tr><td><code>GetSpace</code></td></tr>
+        <tr><td><code>ListChannels</code></td></tr>
+        <tr><td><code>ListSpaces</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>RegisterAdmin</code></td></tr>
+        <tr><td><code>SendInvites</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateChannel</code></td></tr>
+        <tr><td><code>UpdateSpace</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>repostspace</code>: <code>docker compose -f examples/aws/repostspace/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
