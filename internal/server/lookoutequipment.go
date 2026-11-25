@@ -35,7 +35,7 @@ func (s *Server) handleLookoutEquipmentJSONRouter(w http.ResponseWriter, r *http
 	}
 	var out any
 	if ferr == nil {
-		out, ferr = s.lkeRun(op, in)
+		out, ferr = s.lkeRun(op, s.withS3Caller(in, r))
 	}
 	if ferr != nil {
 		code := ferr.code

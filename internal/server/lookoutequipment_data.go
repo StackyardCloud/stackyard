@@ -60,10 +60,12 @@ func lkeComponent(key, prefix string) string {
 }
 
 // lkeReadIngestion reads every CSV under s3://bucket/prefix.
-func (s *Server) lkeReadIngestion(cfg map[string]any) lkeIngest {
+const lkeServicePrincipal = "lookoutequipment.amazonaws.com"
+
+func (s *Server) lkeReadIngestion(c s3Caller, cfg map[string]any) lkeIngest {
 	var res lkeIngest
 	bucket, prefix := fcStr(cfg, "Bucket"), fcStr(cfg, "Prefix")
-	files, err := s.pszReadS3("s3://" + bucket + "/" + prefix)
+	files, err := s.pszReadS3As(c, lkeServicePrincipal, "s3://"+bucket+"/"+prefix)
 	if err != nil {
 		res.failure = err.Error()
 		return res

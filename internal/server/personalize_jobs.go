@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const pszServicePrincipal = "personalize.amazonaws.com"
+
 // Import, export, data deletion and batch jobs. S3 is read before the
 // Personalize lock is taken and written after it is released; the two
 // stores' locks never nest. Job effects apply at creation; the job still
@@ -40,10 +42,22 @@ func pszS3Path(p string) (string, string, error) {
 }
 
 // pszReadS3 reads the object at p, or every object under the prefix p.
-func (s *Server) pszReadS3(p string) ([]pszS3File, error) {
+func (s *Server) pszReadS3(c s3Caller, p string) ([]pszS3File, error) {
+	return s.pszReadS3As(c, pszServicePrincipal, p)
+}
+
+// pszReadS3As is pszReadS3 for another service reading on the caller's behalf.
+func (s *Server) pszReadS3As(c s3Caller, principal, p string) ([]pszS3File, error) {
 	bucket, key, err := pszS3Path(p)
 	if err != nil {
 		return nil, err
+	}
+	if obj, err := s.s3.GetObject(bucket, key); err == nil && key != "" && !strings.HasSuffix(key, "/") &&
+		!s.authorizeServiceS3As(c, principal, bucket, key, "s3:GetObject") {
+		return nil, fmt.Errorf("access denied reading s3://%s/%s", obj.Bucket, obj.Key)
+	}
+	if !s.authorizeServiceS3As(c, principal, bucket, "", "s3:ListBucket") {
+		return nil, fmt.Errorf("access denied listing %s", p)
 	}
 	if obj, err := s.s3.GetObject(bucket, key); err == nil && key != "" && !strings.HasSuffix(key, "/") {
 		if len(obj.Body) > pszMaxInputBytes {
@@ -68,6 +82,9 @@ func (s *Server) pszReadS3(p string) ([]pszS3File, error) {
 	var files []pszS3File
 	total := 0
 	for _, k := range keys {
+		if !s.authorizeServiceS3As(c, principal, bucket, k, "s3:GetObject") {
+			return nil, fmt.Errorf("access denied reading s3://%s/%s", bucket, k)
+		}
 		obj, err := s.s3.GetObject(bucket, k)
 		if err != nil {
 			return nil, fmt.Errorf("s3://%s/%s can't be read", bucket, k)
@@ -92,15 +109,30 @@ func (s *Server) pszOutputProblem(p string) string {
 	return ""
 }
 
-func (s *Server) pszWriteS3(p, name string, body []byte) {
+// pszWriteS3 writes name under the prefix p as service acting for c, and
+// returns why the write was denied, or "".
+func (s *Server) pszWriteS3(c s3Caller, service, p, name string, body []byte) string {
 	bucket, key, err := pszS3Path(p)
 	if err != nil {
-		return
+		return ""
 	}
 	if key != "" && !strings.HasSuffix(key, "/") {
 		key += "/"
 	}
+	if !s.authorizeServiceS3As(c, service, bucket, key+name, "s3:PutObject") {
+		return fmt.Sprintf("access denied writing s3://%s/%s", bucket, key+name)
+	}
 	_, _ = s.s3.PutObject(bucket, key+name, "application/octet-stream", body, nil, "", "")
+	return ""
+}
+
+// failJob fails a job whose output couldn't be written after it was added.
+func (st *personalizeStore) failJob(arn, reason string) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if r := st.res[arn]; r != nil {
+		r.next, r.failure = []string{pszStatusFailed}, reason
+	}
 }
 
 // addJob registers a job; failure makes it settle to failedStatus.
@@ -129,7 +161,7 @@ func pszJobFields(in map[string]any, keys ...string) map[string]any {
 }
 
 func (s *Server) pszCreateImportJob(in map[string]any) (map[string]any, *pszErr) {
-	files, readErr := s.pszReadS3(pszStr(pszMap(in, "dataSource"), "dataLocation"))
+	files, readErr := s.pszReadS3(s3CallerIn(in), pszStr(pszMap(in, "dataSource"), "dataLocation"))
 	st := s.personalize
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -201,13 +233,15 @@ func (s *Server) pszCreateExportJob(in map[string]any) (map[string]any, *pszErr)
 		return nil, perr
 	}
 	if failure == "" {
-		s.pszWriteS3(dest, pszStr(in, "jobName")+".csv", body)
+		if denied := s.pszWriteS3(s3CallerIn(in), pszServicePrincipal, dest, pszStr(in, "jobName")+".csv", body); denied != "" {
+			s.personalize.failJob(arn, denied)
+		}
 	}
 	return map[string]any{"datasetExportJobArn": arn}, nil
 }
 
 func (s *Server) pszCreateDeletionJob(in map[string]any) (map[string]any, *pszErr) {
-	files, readErr := s.pszReadS3(pszStr(pszMap(in, "dataSource"), "dataLocation"))
+	files, readErr := s.pszReadS3(s3CallerIn(in), pszStr(pszMap(in, "dataSource"), "dataLocation"))
 	st := s.personalize
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -333,7 +367,7 @@ func pszIDs(scored []pszScored) ([]any, []any) {
 }
 
 func (s *Server) pszCreateBatchInferenceJob(in map[string]any) (map[string]any, *pszErr) {
-	files, readErr := s.pszReadS3(pszStr(pszMap(pszMap(in, "jobInput"), "s3DataSource"), "path"))
+	files, readErr := s.pszReadS3(s3CallerIn(in), pszStr(pszMap(pszMap(in, "jobInput"), "s3DataSource"), "path"))
 	dest := pszStr(pszMap(pszMap(in, "jobOutput"), "s3DataDestination"), "path")
 	outProblem := s.pszOutputProblem(dest)
 	outputs, arn, perr := func() ([]pszS3File, string, *pszErr) {
@@ -405,13 +439,16 @@ func (s *Server) pszCreateBatchInferenceJob(in map[string]any) (map[string]any, 
 		return nil, perr
 	}
 	for _, o := range outputs {
-		s.pszWriteS3(dest, o.key, o.body)
+		if denied := s.pszWriteS3(s3CallerIn(in), pszServicePrincipal, dest, o.key, o.body); denied != "" {
+			s.personalize.failJob(arn, denied)
+			break
+		}
 	}
 	return map[string]any{"batchInferenceJobArn": arn}, nil
 }
 
 func (s *Server) pszCreateBatchSegmentJob(in map[string]any) (map[string]any, *pszErr) {
-	files, readErr := s.pszReadS3(pszStr(pszMap(pszMap(in, "jobInput"), "s3DataSource"), "path"))
+	files, readErr := s.pszReadS3(s3CallerIn(in), pszStr(pszMap(pszMap(in, "jobInput"), "s3DataSource"), "path"))
 	dest := pszStr(pszMap(pszMap(in, "jobOutput"), "s3DataDestination"), "path")
 	outProblem := s.pszOutputProblem(dest)
 	outputs, arn, perr := func() ([]pszS3File, string, *pszErr) {
@@ -476,7 +513,10 @@ func (s *Server) pszCreateBatchSegmentJob(in map[string]any) (map[string]any, *p
 		return nil, perr
 	}
 	for _, o := range outputs {
-		s.pszWriteS3(dest, o.key, o.body)
+		if denied := s.pszWriteS3(s3CallerIn(in), pszServicePrincipal, dest, o.key, o.body); denied != "" {
+			s.personalize.failJob(arn, denied)
+			break
+		}
 	}
 	return map[string]any{"batchSegmentJobArn": arn}, nil
 }

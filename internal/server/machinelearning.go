@@ -35,7 +35,7 @@ func (s *Server) handleMachineLearningJSONRouter(w http.ResponseWriter, r *http.
 	if in == nil { // signature failure already written
 		return true
 	}
-	out, ferr := s.amlRun(op, in, amlEndpointBase(r))
+	out, ferr := s.amlRun(op, s.withS3Caller(in, r), amlEndpointBase(r))
 	if ferr != nil {
 		writeAMLJSON(w, http.StatusBadRequest, amlErrorBody(ferr), ferr.code)
 		return true

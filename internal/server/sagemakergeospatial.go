@@ -107,7 +107,7 @@ func (s *Server) handleSageMakerGeospatialRESTRouter(w http.ResponseWriter, r *h
 		_, _ = w.Write(tile)
 		return true
 	}
-	out, ferr := s.sgeoRun(op, in)
+	out, ferr := s.sgeoRun(op, s.withS3Caller(in, r))
 	if ferr != nil {
 		respondSGeoError(w, ferr)
 		return true

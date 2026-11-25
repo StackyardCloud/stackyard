@@ -85,7 +85,7 @@ func (s *Server) handleWAFRegionalJSONRouter(w http.ResponseWriter, r *http.Requ
 	var out any
 	var werr *wrErr
 	if op == "CreateWebACLMigrationStack" {
-		out, werr = s.wrMigrationStack(conformed)
+		out, werr = s.wrMigrationStack(r, conformed)
 	} else {
 		out, werr = s.wafRegional.run(h, conformed, shapes.Output)
 	}

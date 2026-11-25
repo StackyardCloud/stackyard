@@ -27,8 +27,10 @@ func sgeoVectorColumns(cfg map[string]any) []string {
 // sgeoReadVector reads and parses the CSV at uri, checking that cols exist
 // and that the last two (x and y) hold numbers. It returns the rows and the
 // column indexes of cols.
-func (s *Server) sgeoReadVector(uri string, cols []string) ([][]string, []int, string) {
-	files, err := s.pszReadS3(uri)
+const sgeoServicePrincipal = "sagemaker-geospatial.amazonaws.com"
+
+func (s *Server) sgeoReadVector(c s3Caller, uri string, cols []string) ([][]string, []int, string) {
+	files, err := s.pszReadS3As(c, sgeoServicePrincipal, uri)
 	if err != nil {
 		return nil, nil, err.Error()
 	}
@@ -79,7 +81,7 @@ func (s *Server) sgeoCheckVectorInput(in map[string]any) string {
 	if uri == "" {
 		return ""
 	}
-	_, _, failure := s.sgeoReadVector(uri, sgeoVectorColumns(fcObj(in, "JobConfig")))
+	_, _, failure := s.sgeoReadVector(s3CallerIn(in), uri, sgeoVectorColumns(fcObj(in, "JobConfig")))
 	return failure
 }
 
@@ -104,7 +106,7 @@ func (s *Server) sgeoPrepareVectorExport(in map[string]any, pre *sgeoPre) {
 		return // the export reports the job's state
 	}
 	cfg := fcObj(snap, "config")
-	rows, idx, failure := s.sgeoReadVector(fcStr(snap, "uri"), sgeoVectorColumns(cfg))
+	rows, idx, failure := s.sgeoReadVector(s3CallerIn(in), fcStr(snap, "uri"), sgeoVectorColumns(cfg))
 	if failure != "" {
 		pre.failure = failure
 		return

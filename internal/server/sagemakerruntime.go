@@ -472,16 +472,16 @@ func (s *Server) sagemakerRuntimeInvokeAsync(w http.ResponseWriter, r *http.Requ
 
 	input, readErr := body, ""
 	if len(input) == 0 {
-		input, readErr = s.sagemakerRuntimeReadS3(r.Header.Get("X-Amzn-SageMaker-InputLocation"))
+		input, readErr = s.sagemakerRuntimeReadS3(r, r.Header.Get("X-Amzn-SageMaker-InputLocation"))
 	}
 	contentType := sagemakerRuntimeResponseType(r.Header.Get("X-Amzn-SageMaker-Accept"), r.Header.Get("X-Amzn-SageMaker-Content-Type"))
 	if readErr == "" {
-		readErr = s.sagemakerRuntimeWriteS3(output, contentType, input)
+		readErr = s.sagemakerRuntimeWriteS3(r, output, contentType, input)
 	}
 	if readErr != "" && failure != "" {
 		// ponytail: a failure path that can't be written is dropped silently, as
 		// there is no notification channel to report it on.
-		_ = s.sagemakerRuntimeWriteS3(failure, "application/json", []byte(`{"error":`+strconv.Quote(readErr)+`}`))
+		_ = s.sagemakerRuntimeWriteS3(r, failure, "application/json", []byte(`{"error":`+strconv.Quote(readErr)+`}`))
 	}
 
 	h := w.Header()
@@ -511,10 +511,15 @@ func sagemakerRuntimeSplitS3(location string) (string, string, bool) {
 	return bucket, key, bucket != "" && key != ""
 }
 
-func (s *Server) sagemakerRuntimeReadS3(location string) ([]byte, string) {
+const sagemakerServicePrincipal = "sagemaker.amazonaws.com"
+
+func (s *Server) sagemakerRuntimeReadS3(r *http.Request, location string) ([]byte, string) {
 	bucket, key, ok := sagemakerRuntimeSplitS3(location)
 	if !ok {
 		return nil, fmt.Sprintf("InputLocation %s is not an s3:// object URI", location)
+	}
+	if !s.authorizeServiceS3(r, sagemakerServicePrincipal, bucket, key, "s3:GetObject") {
+		return nil, fmt.Sprintf("Access denied reading input from %s", location)
 	}
 	obj, err := s.s3.GetObject(bucket, key)
 	if err != nil {
@@ -523,10 +528,13 @@ func (s *Server) sagemakerRuntimeReadS3(location string) ([]byte, string) {
 	return bytes.Clone(obj.Body), ""
 }
 
-func (s *Server) sagemakerRuntimeWriteS3(location, contentType string, body []byte) string {
+func (s *Server) sagemakerRuntimeWriteS3(r *http.Request, location, contentType string, body []byte) string {
 	bucket, key, ok := sagemakerRuntimeSplitS3(location)
 	if !ok {
 		return fmt.Sprintf("Output location %s is not an s3:// object URI", location)
+	}
+	if !s.authorizeServiceS3(r, sagemakerServicePrincipal, bucket, key, "s3:PutObject") {
+		return fmt.Sprintf("Access denied writing output to %s", location)
 	}
 	if _, err := s.s3.PutObject(bucket, key, contentType, body, nil, "private", "STANDARD"); err != nil {
 		return fmt.Sprintf("Unable to write output to %s: %v", location, err)

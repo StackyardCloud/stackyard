@@ -151,7 +151,13 @@ func TestConnectStage0AllCatalogActionsDoNotReturnNotImplemented(t *testing.T) {
 	}
 	placeholder := regexp.MustCompile(`\{([^}]+)\}`)
 
+	// Chat operations validate their input for real (connectparticipant_connect.go);
+	// TestConnectParticipantStage1ChatFlow covers them.
+	chatOps := map[string]bool{"StartChatContact": true, "CreateParticipant": true}
 	for _, op := range connectOperations {
+		if chatOps[op.Name] {
+			continue
+		}
 		path := placeholder.ReplaceAllStringFunc(op.URI, func(token string) string {
 			name := strings.Trim(token, "{}")
 			value := replacements[name]

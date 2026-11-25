@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -336,7 +337,7 @@ func (st *wafRegionalStore) listActivatedRulesInRuleGroup(in map[string]any) (ma
 // wrMigrationStack writes a CloudFormation template for an AWS::WAFv2::WebACL
 // to the S3 store. The WAF store is read under its lock; S3 is written after.
 // ponytail: rules aren't translated; IgnoreUnsupportedType drops them.
-func (s *Server) wrMigrationStack(in map[string]any) (any, *wrErr) {
+func (s *Server) wrMigrationStack(r *http.Request, in map[string]any) (any, *wrErr) {
 	st := s.wafRegional
 	st.mu.Lock()
 	acl := st.res["WebACL"][wrStr(in["WebACLId"])]
@@ -375,6 +376,9 @@ func (s *Server) wrMigrationStack(in map[string]any) (any, *wrErr) {
 		}}},
 	})
 	key := "AWSWAF-Migration/" + wrStr(in["WebACLId"]) + ".json"
+	if !s.authorizeServiceS3(r, "waf-regional.amazonaws.com", bucket, key, "s3:PutObject") {
+		return nil, migrationErr("S3_BUCKET_NO_PERMISSION", "Access denied writing to the S3 bucket "+bucket+".")
+	}
 	if _, err := s.s3.PutObject(bucket, key, "application/json", template, nil, "", ""); err != nil {
 		return nil, migrationErr("S3_INTERNAL_ERROR", "Writing the template failed.")
 	}

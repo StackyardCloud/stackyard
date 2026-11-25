@@ -67,7 +67,7 @@ func amlCountRecords(files []pszS3File, header bool) int {
 }
 
 // amlReadSource reads an S3 data source's schema and data.
-func (s *Server) amlReadSource(spec map[string]any) amlPre {
+func (s *Server) amlReadSource(c s3Caller, spec map[string]any) amlPre {
 	var pre amlPre
 	pre.schema = fcStr(spec, "DataSchema")
 	if pre.schema == "" {
@@ -76,7 +76,7 @@ func (s *Server) amlReadSource(spec map[string]any) amlPre {
 			pre.inputErr = fcInvalid("DataSpec needs DataSchema or DataSchemaLocationS3")
 			return pre
 		}
-		files, err := s.pszReadS3(loc)
+		files, err := s.pszReadS3As(c, amlServicePrincipal, loc)
 		if err != nil || len(files) == 0 {
 			pre.failure = fmt.Sprintf("The schema at %s can't be read.", loc)
 			return pre
@@ -98,7 +98,7 @@ func (s *Server) amlReadSource(spec map[string]any) amlPre {
 		return pre
 	}
 	pre.header = sc.DataFileContainsHeader
-	files, err := s.pszReadS3(fcStr(spec, "DataLocationS3"))
+	files, err := s.pszReadS3As(c, amlServicePrincipal, fcStr(spec, "DataLocationS3"))
 	if err != nil {
 		pre.failure = err.Error()
 		return pre
@@ -119,8 +119,11 @@ type amlBatchSnapshot struct {
 }
 
 // amlPrepareBatch reads the batch's input and scores it, outside the lock.
+const amlServicePrincipal = "machinelearning.amazonaws.com"
+
 func (s *Server) amlPrepareBatch(in map[string]any) amlPre {
 	var pre amlPre
+	c := s3CallerIn(in)
 	snap, ok := s.machineLearning.batchSnapshot(fcStr(in, "MLModelId"), fcStr(in, "BatchPredictionDataSourceId"))
 	if !ok {
 		return pre // the create reports the missing resource
@@ -130,7 +133,7 @@ func (s *Server) amlPrepareBatch(in map[string]any) amlPre {
 		pre.failure = problem
 		return pre
 	}
-	files, err := s.pszReadS3(snap.location)
+	files, err := s.pszReadS3As(c, amlServicePrincipal, snap.location)
 	if err != nil {
 		pre.failure = err.Error()
 		return pre
@@ -271,12 +274,19 @@ func (s *Server) amlRun(op string, in map[string]any, base string) (any, *fcErr)
 	var pre amlPre
 	switch op {
 	case "CreateDataSourceFromS3":
-		pre = s.amlReadSource(fcObj(in, "DataSpec"))
+		pre = s.amlReadSource(s3CallerIn(in), fcObj(in, "DataSpec"))
 		if pre.inputErr != nil {
 			return nil, pre.inputErr
 		}
 	case "CreateBatchPrediction":
 		pre = s.amlPrepareBatch(in)
+		// Authorize the output object before the prediction is recorded, so a
+		// denied write settles the prediction FAILED instead of losing output.
+		if pre.failure == "" && pre.outBody != nil &&
+			!s.authorizeServiceS3As(s3CallerIn(in), amlServicePrincipal, pre.outBucket, pre.outKey, "s3:PutObject") {
+			pre.failure = fmt.Sprintf("access denied writing s3://%s/%s", pre.outBucket, pre.outKey)
+			pre.outBody = nil
+		}
 	}
 	out, write, err := s.machineLearning.run(op, in, base, &pre)
 	if err != nil {

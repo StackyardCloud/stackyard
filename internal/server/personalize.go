@@ -169,7 +169,7 @@ func (s *Server) handlePersonalizeJSONRouter(w http.ResponseWriter, r *http.Requ
 		respondPersonalizeError(w, http.StatusBadRequest, perr.code, perr.msg)
 		return true
 	}
-	out, perr := h(s, in)
+	out, perr := h(s, s.withS3Caller(in, r))
 	if perr != nil {
 		respondPersonalizeError(w, http.StatusBadRequest, perr.code, perr.msg)
 		return true

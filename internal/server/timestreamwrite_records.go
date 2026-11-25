@@ -328,6 +328,9 @@ func (st *tsmStore) createBatchLoadTask(call *tsmCall) (map[string]any, *tsmErro
 	if !call.buckets[tsmStr(report, "BucketName")] {
 		return nil, tsmValidation("The report S3 bucket %s does not exist.", tsmStr(report, "BucketName"))
 	}
+	if call.denied != "" {
+		return nil, &tsmError{code: "AccessDeniedException", msg: call.denied}
+	}
 	dm, derr := tsmDataModel(call)
 	if derr != nil {
 		return nil, derr

@@ -145,7 +145,7 @@ func (st *lkeStore) run(op string, in map[string]any, pre *lkeIngest) (any, *fcE
 func (s *Server) lkeRun(op string, in map[string]any) (any, *fcErr) {
 	var pre *lkeIngest
 	if op == "StartDataIngestionJob" {
-		res := s.lkeReadIngestion(fcObj(fcObj(in, "IngestionInputConfiguration"), "S3InputConfiguration"))
+		res := s.lkeReadIngestion(s3CallerIn(in), fcObj(fcObj(in, "IngestionInputConfiguration"), "S3InputConfiguration"))
 		pre = &res
 	}
 	return s.lookoutEquipment.run(op, in, pre)

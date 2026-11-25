@@ -71,7 +71,7 @@ func (s *Server) sgeoRun(op string, in map[string]any) (any, *fcErr) {
 	switch op {
 	case "StartEarthObservationJob":
 		if zone := fcStr(fcObj(fcObj(in, "JobConfig"), "ZonalStatisticsConfig"), "ZoneS3Path"); zone != "" {
-			if _, err := s.pszReadS3(zone); err != nil {
+			if _, err := s.pszReadS3As(s3CallerIn(in), sgeoServicePrincipal, zone); err != nil {
 				pre.failure = "ZoneS3Path " + zone + " can't be read: " + err.Error()
 			}
 		}
@@ -94,6 +94,14 @@ func (s *Server) sgeoRun(op string, in map[string]any) (any, *fcErr) {
 			break
 		}
 		pre.writes = append(pre.writes, sgeoWrite{pre.bucket, pre.prefix + "output/" + band + ".png", "image/png", sgeoTile(fcStr(in, "Arn")+band, 0, 0, 0)})
+	}
+	// Authorize every object before writing any; a denied export writes
+	// nothing and reports FAILED.
+	for _, w := range pre.writes {
+		if !s.authorizeServiceS3As(s3CallerIn(in), sgeoServicePrincipal, w.bucket, w.key, "s3:PutObject") {
+			s.sageMakerGeospatial.failExport(fcStr(in, "Arn"), fmt.Sprintf("access denied writing s3://%s/%s", w.bucket, w.key))
+			return out, nil
+		}
 	}
 	for _, w := range pre.writes {
 		_, _ = s.s3.PutObject(w.bucket, w.key, w.contentType, w.body, nil, "", "")
@@ -164,6 +172,16 @@ func sgeoISO(v any) string {
 }
 
 // job returns a job of kind, advancing its status and export.
+// failExport marks an export that couldn't write its output as failed; the
+// next read settles it FAILED with reason.
+func (st *sgeoStore) failExport(arn, reason string) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if j := st.jobs[arn]; j != nil {
+		j.exportFail = reason
+	}
+}
+
 func (st *sgeoStore) job(kind, arn string) (*sgeoJob, *fcErr) {
 	j := st.jobs[arn]
 	if j == nil || j.kind != kind {

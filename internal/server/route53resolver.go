@@ -153,6 +153,9 @@ func (s *Server) handleRoute53ResolverJSONRouter(w http.ResponseWriter, r *http.
 		respondRoute53ResolverError(w, http.StatusBadRequest, r53rValidationCode(action), p)
 		return true
 	}
+	if action == "ImportFirewallDomains" {
+		in = s.withS3Caller(in, r) // the import reads S3 for this caller
+	}
 	out, e := s.route53resolver.handle(action, op.Output, in)
 	if e != nil {
 		respondRoute53ResolverError(w, http.StatusBadRequest, e.code, e.msg)

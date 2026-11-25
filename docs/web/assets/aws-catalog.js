@@ -97,6 +97,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
   },
   {
+    id: "sagemaker-featurestore-runtime",
+    name: "Amazon SageMaker Feature Store Runtime",
+    category: "integration",
+    summary: "Put, update, get, list, delete and batch-read/write records in the online store of feature groups created with SageMaker, checked against the group's feature definitions, event times and TTLs.",
+    docsHref: "../../../index.html#sagemaker-featurestore-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-featurestore-runtime/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-metrics",
+    name: "Amazon SageMaker Metrics",
+    category: "integration",
+    summary: "Log training metrics to SageMaker trial components (including a training job's) and query them by iteration or time window.",
+    docsHref: "../../../index.html#sagemaker-metrics",
+    exampleHref: "../../../../examples/aws/sagemaker-metrics/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-edge",
+    name: "Amazon SageMaker Edge Manager",
+    category: "integration",
+    summary: "Edge agent API for devices registered with SageMaker: registration checks, deployments from in-progress edge deployment stages, and heartbeats that record agent versions, models and deployment results.",
+    docsHref: "../../../index.html#sagemaker-edge",
+    exampleHref: "../../../../examples/aws/sagemaker-edge/docker-compose.yml"
+  },
+  {
     id: "batch",
     name: "Batch",
     category: "compute",
@@ -277,6 +301,54 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
     docsHref: "../../../index.html#bcmdataexports",
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
+    id: "applicationcostprofiler",
+    name: "Application Cost Profiler",
+    category: "integration",
+    summary: "Emulate tenant cost reporting: report definitions delivering to S3, and usage imports that write each tenant's share of shared resources as CSV reports.",
+    docsHref: "../../../index.html#applicationcostprofiler",
+    exampleHref: "../../../../examples/aws/application-cost-profiler/docker-compose.yml"
+  },
+  {
+    id: "bcmdashboards",
+    name: "Billing and Cost Management Dashboards",
+    category: "integration",
+    summary: "Emulate billing dashboards: widgets with checked Cost Explorer-style queries, scheduled reports whose health follows their dashboard, resource policies and tags.",
+    docsHref: "../../../index.html#bcmdashboards",
+    exampleHref: "../../../../examples/aws/bcm-dashboards/docker-compose.yml"
+  },
+  {
+    id: "bcmpricingcalculator",
+    name: "Pricing Calculator",
+    category: "integration",
+    summary: "Emulate cost estimates from a deterministic price catalog: bill scenarios with usage and Reserved Instance or Savings Plans commitments, bill estimates with line items, and workload estimates.",
+    docsHref: "../../../index.html#bcmpricingcalculator",
+    exampleHref: "../../../../examples/aws/bcm-pricing-calculator/docker-compose.yml"
+  },
+  {
+    id: "account",
+    name: "Account",
+    category: "integration",
+    summary: "Emulate account name and state, alternate and contact information with phone verification, primary email updates with one-time codes, and Region opt-in status for the management and member accounts.",
+    docsHref: "../../../index.html#account",
+    exampleHref: "../../../../examples/aws/account/docker-compose.yml"
+  },
+  {
+    id: "freetier",
+    name: "Free Tier",
+    category: "integration",
+    summary: "Emulate the free account plan with credits and upgrade to paid, sign-up activities (the Budgets activity completes from Stackyard's Budgets), and a filterable free-tier usage catalog.",
+    docsHref: "../../../index.html#freetier",
+    exampleHref: "../../../../examples/aws/freetier/docker-compose.yml"
+  },
+  {
+    id: "taxsettings",
+    name: "Tax Settings",
+    category: "integration",
+    summary: "Emulate tax registrations for the caller and member accounts with S3-backed documents, supplemental VAT registrations, tax exemptions with Pending then Valid status, and tax inheritance.",
+    docsHref: "../../../index.html#taxsettings",
+    exampleHref: "../../../../examples/aws/taxsettings/docker-compose.yml"
   },
   {
     id: "geomaps",
@@ -557,6 +629,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan staged coverage for instance, user, flow, contact, workspace, search, and tagging APIs.",
     docsHref: "../../../index.html#connect",
     exampleHref: "../../../../examples/aws/connect/docker-compose.yml"
+  },
+  {
+    id: "connectcases",
+    name: "Connect Cases",
+    category: "integration",
+    summary: "Emulate Connect Cases domains, fields, layouts, templates, case rules, cases with audit history, related items, search and merges.",
+    docsHref: "../../../index.html#connectcases",
+    exampleHref: "../../../../examples/aws/connect-cases/docker-compose.yml"
+  },
+  {
+    id: "connectparticipant",
+    name: "Connect Participant",
+    category: "integration",
+    summary: "Emulate Connect customer chat: participant connections, messages, events, read receipts, attachments, transcripts and disconnects.",
+    docsHref: "../../../index.html#connectparticipant",
+    exampleHref: "../../../../examples/aws/connect-participant/docker-compose.yml"
+  },
+  {
+    id: "connectcontactlens",
+    name: "Connect Contact Lens",
+    category: "integration",
+    summary: "Emulate Contact Lens real-time analysis segments over Connect chat transcripts, with sentiment and issue detection.",
+    docsHref: "../../../index.html#connectcontactlens",
+    exampleHref: "../../../../examples/aws/connect-contact-lens/docker-compose.yml"
   },
   {
     id: "dlm",
@@ -1071,6 +1167,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/personalize-runtime/docker-compose.yml"
   },
   {
+    id: "pinpointemail",
+    name: "Amazon Pinpoint Email",
+    category: "integration",
+    summary: "Pinpoint Email on SESv2's account state: identities with DKIM, feedback and MAIL FROM settings, configuration sets with delivery, reputation, sending and tracking options and event destinations, dedicated IPs and pools, the deliverability dashboard with domain statistics and campaigns from sent mail, test reports, SendEmail (Simple, Raw or Template) with the send quota, and tags.",
+    docsHref: "../../../index.html#pinpointemail",
+    exampleHref: "../../../../examples/aws/pinpoint-email/docker-compose.yml"
+  },
+  {
+    id: "pinpointsmsvoice",
+    name: "Amazon Pinpoint SMS and Voice",
+    category: "integration",
+    summary: "Version 1 voice API: configuration sets with CloudWatch Logs, Kinesis Data Firehose or SNS event destinations, and voice messages (plain text, call instructions or SSML) validated against E.164 numbers and their configuration set.",
+    docsHref: "../../../index.html#pinpointsmsvoice",
+    exampleHref: "../../../../examples/aws/pinpoint-sms-voice/docker-compose.yml"
+  },
+  {
+    id: "mailmanager",
+    name: "Amazon SES Mail Manager",
+    category: "integration",
+    summary: "Archives filled by SESv2 and Pinpoint Email sends through configuration sets with archiving options, with searches, message content and downloads, and exports to S3; address lists with members and CSV/JSON imports through a pre-signed upload URL; ingress points, SMTP relays, rule sets and traffic policies with checked references; add-on subscriptions and instances; tags.",
+    docsHref: "../../../index.html#mailmanager",
+    exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
@@ -1485,6 +1605,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate Glacier vaults, tree-hash-checked archive and multipart uploads, retrieval and inventory jobs, vault locks, policies and notifications.",
     docsHref: "../../../index.html#glacier",
     exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
+  },
+  {
+    id: "outposts",
+    name: "Outposts",
+    category: "compute",
+    summary: "Emulate sites, outposts, quotes, orders that progress to FULFILLED and install assets, capacity tasks, billing and renewals, connections, decommissioning and tags.",
+    docsHref: "../../../index.html#outposts",
+    exampleHref: "../../../../examples/aws/outposts/docker-compose.yml"
+  },
+  {
+    id: "snow-device-management",
+    name: "Snow Device Management",
+    category: "storage",
+    summary: "Emulate managed devices backed by Snowball jobs, reboot and unlock tasks with per-device executions, device EC2 instances and tags.",
+    docsHref: "../../../index.html#snow-device-management",
+    exampleHref: "../../../../examples/aws/snow-device-management/docker-compose.yml"
+  },
+  {
+    id: "backup-gateway",
+    name: "Backup Gateway",
+    category: "storage",
+    summary: "Emulate gateways with maintenance and bandwidth schedules, hypervisor import and metadata sync, virtual machines that AWS Backup can back up, and tags.",
+    docsHref: "../../../index.html#backup-gateway",
+    exampleHref: "../../../../examples/aws/backup-gateway/docker-compose.yml"
   },
   {
     id: "backup",
