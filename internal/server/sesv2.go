@@ -55,9 +55,18 @@ func (s *Server) handleSESV2JSONRouter(w http.ResponseWriter, r *http.Request) b
 			respondSESV2Error(w, http.StatusNotFound, "NotFoundException", "configuration set not found")
 			return true
 		}
-		respondSESV2JSON(w, http.StatusOK, map[string]any{
-			"ConfigurationSetName": cfg.Name,
-		})
+		out := map[string]any{"ConfigurationSetName": cfg.Name}
+		if cfg.ArchiveArn != "" {
+			out["ArchivingOptions"] = map[string]any{"ArchiveArn": cfg.ArchiveArn}
+		}
+		respondSESV2JSON(w, http.StatusOK, out)
+		return true
+	case "PutConfigurationSetArchivingOptions":
+		if err := s.sesv2.PutConfigurationSetArchivingOptions(params["ConfigurationSetName"], sesv2String(payload["ArchiveArn"])); err != nil {
+			respondSESV2ErrorForErr(w, err)
+			return true
+		}
+		respondSESV2JSON(w, http.StatusOK, map[string]any{})
 		return true
 	case "DeleteConfigurationSet":
 		if !s.sesv2.DeleteConfigurationSet(params["ConfigurationSetName"]) {
@@ -362,6 +371,7 @@ func (s *Server) handleSESV2JSONRouter(w http.ResponseWriter, r *http.Request) b
 			respondSESV2ErrorForErr(w, err)
 			return true
 		}
+		s.mmgrArchiveSESSend(payload, sesv2String(payload["FromEmailAddressIdentityArn"]))
 		respondSESV2JSON(w, http.StatusOK, map[string]any{"MessageId": messageID})
 		return true
 	case "SendBulkEmail":
