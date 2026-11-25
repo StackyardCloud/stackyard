@@ -569,6 +569,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "route53domains": {"cli": "route53domains", "ops_file": REPO_ROOT / "internal/server/route53domains_ops.go"},
     "textract": {"cli": "textract", "ops_file": REPO_ROOT / "internal/server/textract_ops.go"},
     "wafregional": {"cli": "waf-regional", "ops_file": REPO_ROOT / "internal/server/wafregional_ops.go"},
+    "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
+    "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
+    "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "servicecatalog": {"cli": "servicecatalog", "ops_file": REPO_ROOT / "internal/server/servicecatalog_ops.go"},
     "migrationhub": {"cli": "mgh", "ops_file": REPO_ROOT / "internal/server/migrationhub_ops.go"},
@@ -2264,6 +2267,12 @@ SERVICE_ALIASES = {
     "aws migration hub": "migrationhub",
     "amazontextract": "textract",
     "wafregional": "wafregional",
+    "forecast": "forecast",
+    "amazonforecast": "forecast",
+    "forecastquery": "forecastquery",
+    "amazonforecastquery": "forecastquery",
+    "frauddetector": "frauddetector",
+    "amazonfrauddetector": "frauddetector",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -3245,6 +3254,8 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "route53domains": {},
     "textract": {},
     "wafregional": {},
+    "forecast": {},
+    "frauddetector": {},
     "pi": {},
     "servicecatalog": {},
     "migrationhub": {},
@@ -37912,6 +37923,330 @@ def pcaconnectorad_hydrate_payload(
     return payload
 
 
+FC_ROLE = "arn:aws:iam::123456789012:role/stackyard-forecast"
+FC_DEST = {"S3Config": {"Path": "s3://stackyard-forecast-cov/out/", "RoleArn": FC_ROLE}}
+FC_SCHEMA = {"Attributes": [{"AttributeName": "item_id", "AttributeType": "string"},
+                            {"AttributeName": "timestamp", "AttributeType": "timestamp"},
+                            {"AttributeName": "demand", "AttributeType": "float"}]}
+
+
+def fc_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict, cli: str = "forecast") -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, cli, pascal_to_kebab(op), env, ["--cli-input-json", json.dumps(args)])
+    return data if isinstance(data, dict) else {}
+
+
+def fc_unique(prefix: str) -> str:
+    return f"{prefix}_{time.time_ns()}"
+
+
+def fc_wait(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, arn: str) -> str:
+    """Describe an async resource until it reports ACTIVE (the second read)."""
+    describe = "DescribeAutoPredictor" if kind == "Predictor" else "Describe" + kind
+    for _ in range(3):
+        if fc_call(aws_bin, endpoint_url, region, env, describe, {kind + "Arn": arn}).get("Status") == "ACTIVE":
+            break
+    return arn
+
+
+def fc_create_args(kind: str, fx: dict) -> tuple[str, dict]:
+    """The create operation and arguments for a new resource of kind."""
+    name = fc_unique("cov")
+    if kind == "Dataset":
+        return "CreateDataset", {"DatasetName": name, "Domain": "RETAIL", "DatasetType": "TARGET_TIME_SERIES", "DataFrequency": "D", "Schema": FC_SCHEMA}
+    if kind == "DatasetGroup":
+        return "CreateDatasetGroup", {"DatasetGroupName": name, "Domain": "RETAIL"}
+    if kind == "DatasetImportJob":
+        return "CreateDatasetImportJob", {"DatasetImportJobName": name, "DatasetArn": fx["Dataset"],
+                                          "DataSource": {"S3Config": {"Path": "s3://stackyard-forecast-cov/demand.csv", "RoleArn": FC_ROLE}}}
+    if kind == "Predictor":
+        return "CreateAutoPredictor", {"PredictorName": name, "ForecastHorizon": 7, "ForecastFrequency": "D",
+                                       "DataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}}
+    if kind == "Forecast":
+        return "CreateForecast", {"ForecastName": name, "PredictorArn": fx["Predictor"]}
+    if kind == "ForecastExportJob":
+        return "CreateForecastExportJob", {"ForecastExportJobName": name, "ForecastArn": fx["Forecast"], "Destination": FC_DEST}
+    if kind == "PredictorBacktestExportJob":
+        return "CreatePredictorBacktestExportJob", {"PredictorBacktestExportJobName": name, "PredictorArn": fx["Predictor"], "Destination": FC_DEST}
+    if kind == "Explainability":
+        return "CreateExplainability", {"ExplainabilityName": name, "ResourceArn": fx["Forecast"],
+                                        "ExplainabilityConfig": {"TimeSeriesGranularity": "ALL", "TimePointGranularity": "ALL"}}
+    if kind == "ExplainabilityExport":
+        return "CreateExplainabilityExport", {"ExplainabilityExportName": name, "ExplainabilityArn": fx["Explainability"], "Destination": FC_DEST}
+    if kind == "Monitor":
+        return "CreateMonitor", {"MonitorName": name, "ResourceArn": fx["own_predictor"]()}
+    if kind == "WhatIfAnalysis":
+        return "CreateWhatIfAnalysis", {"WhatIfAnalysisName": name, "ForecastArn": fx["Forecast"]}
+    if kind == "WhatIfForecast":
+        return "CreateWhatIfForecast", {"WhatIfForecastName": name, "WhatIfAnalysisArn": fx["WhatIfAnalysis"],
+                                        "TimeSeriesTransformations": [{"Action": {"AttributeName": "price", "Operation": "MULTIPLY", "Value": 0.9}}]}
+    return "CreateWhatIfForecastExport", {"WhatIfForecastExportName": name, "WhatIfForecastArns": [fx["WhatIfForecast"]], "Destination": FC_DEST}
+
+
+FC_KINDS = ["Dataset", "DatasetGroup", "DatasetImportJob", "Predictor", "Forecast", "ForecastExportJob",
+            "PredictorBacktestExportJob", "Explainability", "ExplainabilityExport", "Monitor", "WhatIfAnalysis",
+            "WhatIfForecast", "WhatIfForecastExport"]
+FC_FIXTURE_KINDS = ["Dataset", "DatasetImportJob", "DatasetGroup", "Predictor", "Forecast", "Explainability", "Monitor",
+                    "WhatIfAnalysis", "WhatIfForecast"]
+
+
+def fc_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ACTIVE pipeline: dataset with data, group, auto predictor, forecast,
+    explainability, monitor, what-if analysis and what-if forecast."""
+    state = RUNTIME_STATE.setdefault("forecast", {})
+    if state.get("WhatIfForecast"):
+        return state
+
+    def make(kind: str) -> str:
+        op, args = fc_create_args(kind, state)
+        if kind == "DatasetGroup":
+            args["DatasetArns"] = [state["Dataset"]]
+        arn = str(fc_call(aws_bin, endpoint_url, region, env, op, args).get(kind + "Arn") or "")
+        return fc_wait(aws_bin, endpoint_url, region, env, kind, arn) if arn and kind not in ("Dataset", "DatasetGroup") else arn
+
+    state["own_predictor"] = lambda: make("Predictor")
+    state["make"] = make
+    for kind in FC_FIXTURE_KINDS:
+        state[kind] = make(kind)
+    return state
+
+
+def forecast_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates and describes get fixtures; deletes, stops and updates get
+    resources of their own."""
+    op = endpoint.operation
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if op == "CreatePredictor":
+        return {"PredictorName": fc_unique("cov"), "AlgorithmArn": "arn:aws:forecast:::algorithm/ETS", "ForecastHorizon": 7,
+                "InputDataConfig": {"DatasetGroupArn": fx["DatasetGroup"]}, "FeaturizationConfig": {"ForecastFrequency": "D"}}
+    if op == "CreateAutoPredictor":
+        return fc_create_args("Predictor", fx)[1]
+    if op == "DescribeAutoPredictor" or op == "DescribePredictor" or op == "GetAccuracyMetrics":
+        return {"PredictorArn": fx["Predictor"]}
+    for prefix in ("Create", "Describe", "Delete"):
+        kind = op[len(prefix):]
+        if not op.startswith(prefix) or kind not in FC_KINDS:
+            continue
+        if prefix == "Create":
+            return fc_create_args(kind, fx)[1]
+        if prefix == "Describe" and kind in fx:
+            return {kind + "Arn": fx[kind]}
+        return {kind + "Arn": fx["make"](kind)}
+    if op == "DeleteResourceTree":
+        return {"ResourceArn": fx["make"]("DatasetGroup")}
+    if op == "UpdateDatasetGroup":
+        return {"DatasetGroupArn": fx["make"]("DatasetGroup"), "DatasetArns": [fx["Dataset"]]}
+    if op == "StopResource":
+        # An ACTIVE monitor stops deterministically; an in-progress job may
+        # settle before a slow CLI call reaches it.
+        return {"ResourceArn": fx["make"]("Monitor")}
+    if op == "ResumeResource":
+        monitor = fx["make"]("Monitor")
+        fc_call(aws_bin, endpoint_url, region, env, "StopResource", {"ResourceArn": monitor})
+        return {"ResourceArn": monitor}
+    if op == "ListMonitorEvaluations":
+        return {"MonitorArn": fx["Monitor"]}
+    if op == "TagResource":
+        return {"ResourceArn": fx["Dataset"], "Tags": [{"Key": "env", "Value": "cov"}]}
+    if op == "UntagResource":
+        return {"ResourceArn": fx["Dataset"], "TagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"ResourceArn": fx["Dataset"]}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+def forecastquery_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Queries read the Forecast checks' ACTIVE forecast and what-if forecast."""
+    fx = fc_fixture(aws_bin, endpoint_url, region, env)
+    if endpoint.operation == "QueryWhatIfForecast":
+        return {"WhatIfForecastArn": fx["WhatIfForecast"], "Filters": {"item_id": "sku_1"}}
+    return {"ForecastArn": fx["Forecast"], "Filters": {"item_id": "sku_1"}}
+
+
+FRD_ROLE = "arn:aws:iam::123456789012:role/stackyard-frauddetector"
+
+
+def frd_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="frauddetector")
+
+
+def frd_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """Variables, entity type, labels, outcome, event type, detector with an
+    ACTIVE version, an ACTIVE model version, external model, list, a sent
+    event, a scored prediction and batch jobs. Names are unique per run."""
+    state = RUNTIME_STATE.setdefault("frauddetector", {})
+    if state.get("detector"):
+        return state
+    call = lambda op, args: frd_call(aws_bin, endpoint_url, region, env, op, args)
+    s = str(time.time_ns())
+    fx = {"s": s, "amount": f"amount_{s}", "email": f"email_{s}", "entity": f"cust_{s}", "fraud": f"fraud_{s}",
+          "outcome": f"block_{s}", "event_type": f"payment_{s}", "detector": f"det_{s}", "rule": f"big_{s}",
+          "model": f"mdl_{s}", "endpoint": f"ep_{s}", "list": f"lst_{s}", "event": f"ev_{s}"}
+    call("CreateVariable", {"name": fx["amount"], "dataType": "FLOAT", "dataSource": "EVENT", "defaultValue": "0.0"})
+    call("CreateVariable", {"name": fx["email"], "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "unknown"})
+    call("PutEntityType", {"name": fx["entity"]})
+    call("PutLabel", {"name": fx["fraud"]})
+    call("PutOutcome", {"name": fx["outcome"]})
+    call("PutEventType", {"name": fx["event_type"], "eventVariables": [fx["amount"], fx["email"]], "labels": [fx["fraud"]], "entityTypes": [fx["entity"]]})
+    call("PutDetector", {"detectorId": fx["detector"], "eventTypeName": fx["event_type"]})
+    call("CreateRule", {"ruleId": fx["rule"], "detectorId": fx["detector"], "expression": f"${fx['amount']} > 100",
+                        "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+    fx["rule_ref"] = {"detectorId": fx["detector"], "ruleId": fx["rule"], "ruleVersion": "1"}
+    call("CreateDetectorVersion", {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]})
+    call("UpdateDetectorVersionStatus", {"detectorId": fx["detector"], "detectorVersionId": "1", "status": "ACTIVE"})
+    call("CreateModel", {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+    fx["model_ref"] = {"modelId": fx["model"], "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    call("CreateModelVersion", frd_model_version_args(fx))
+    for _ in range(2):
+        call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": "1.0"})
+    call("UpdateModelVersionStatus", {**fx["model_ref"], "modelVersionNumber": "1.0", "status": "ACTIVE"})
+    call("PutExternalModel", frd_external_model_args(fx, fx["endpoint"]))
+    call("CreateList", {"name": fx["list"], "elements": ["a@example.com"]})
+    call("SendEvent", frd_event_args(fx, fx["event"]))
+    call("GetEventPrediction", {**frd_event_args(fx, fc_unique("pred")), "detectorId": fx["detector"]})
+    preds = call("ListEventPredictions", {"detectorId": {"value": fx["detector"]}}).get("eventPredictionSummaries") or [{}]
+    fx["prediction"] = preds[0]
+    fx["detector_arn"] = f"arn:aws:frauddetector:{region}:123456789012:detector/{fx['detector']}"
+    state.update(fx)
+    return state
+
+
+def frd_model_version_args(fx: dict) -> dict:
+    return {**fx["model_ref"], "trainingDataSource": "EXTERNAL_EVENTS",
+            "trainingDataSchema": {"modelVariables": [fx["amount"], fx["email"]]},
+            "externalEventsDetail": {"dataLocation": "s3://stackyard-fd-cov/train.csv", "dataAccessRoleArn": FRD_ROLE}}
+
+
+def frd_external_model_args(fx: dict, endpoint_name: str) -> dict:
+    return {"modelEndpoint": endpoint_name, "modelSource": "SAGEMAKER", "invokeModelEndpointRoleArn": FRD_ROLE,
+            "inputConfiguration": {"useEventVariables": True, "eventTypeName": fx["event_type"], "format": "APPLICATION_JSON"},
+            "outputConfiguration": {"format": "APPLICATION_JSONLINES", "jsonKeyToVariableMap": {"score": fx["amount"]}},
+            "modelEndpointStatus": "ASSOCIATED"}
+
+
+def frd_event_args(fx: dict, event_id: str) -> dict:
+    return {"eventId": event_id, "eventTypeName": fx["event_type"], "eventTimestamp": "2026-11-24T10:00:00Z",
+            "entities": [{"entityType": fx["entity"], "entityId": "c1"}], "eventVariables": {fx["amount"]: "250"}}
+
+
+def frauddetector_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = frd_fixture(aws_bin, endpoint_url, region, env)
+    call = lambda o, args: frd_call(aws_bin, endpoint_url, region, env, o, args)
+    new = fc_unique("cov")
+    job = lambda kind: {"jobId": new, "inputPath": "s3://stackyard-fd-cov/in.csv", "outputPath": "s3://stackyard-fd-cov/out/",
+                        "eventTypeName": fx["event_type"], "iamRoleArn": FRD_ROLE,
+                        **({"detectorName": fx["detector"]} if kind == "BatchPredictionJob" else {})}
+
+    def own_event_type() -> str:
+        call("PutEventType", {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]]})
+        return new
+
+    def own_draft(detector: str) -> str:
+        return str(call("CreateDetectorVersion", {"detectorId": detector, "rules": []}).get("detectorVersionId") or "")
+
+    simple = {
+        "CreateVariable": lambda: {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"},
+        "BatchCreateVariable": lambda: {"variableEntries": [{"name": new, "dataType": "INTEGER", "dataSource": "EVENT", "defaultValue": "0"}]},
+        "BatchGetVariable": lambda: {"names": [fx["amount"], fx["email"]]},
+        "UpdateVariable": lambda: {"name": fx["email"], "description": "customer email"},
+        "GetVariables": lambda: {},
+        "PutEntityType": lambda: {"name": new}, "PutLabel": lambda: {"name": new}, "PutOutcome": lambda: {"name": new},
+        "PutEventType": lambda: {"name": new, "eventVariables": [fx["amount"]], "entityTypes": [fx["entity"]], "labels": [fx["fraud"]]},
+        "PutDetector": lambda: {"detectorId": new, "eventTypeName": fx["event_type"]},
+        "DescribeDetector": lambda: {"detectorId": fx["detector"]},
+        "CreateDetectorVersion": lambda: {"detectorId": fx["detector"], "rules": [fx["rule_ref"]]},
+        "GetDetectorVersion": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1"},
+        "UpdateDetectorVersionMetadata": lambda: {"detectorId": fx["detector"], "detectorVersionId": "1", "description": "coverage"},
+        "CreateRule": lambda: {"ruleId": new, "detectorId": fx["detector"], "expression": f"${fx['email']} == \"x\"", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleVersion": lambda: {"rule": fx["rule_ref"], "expression": f"${fx['amount']} > 200", "language": "DETECTORPL", "outcomes": [fx["outcome"]]},
+        "UpdateRuleMetadata": lambda: {"rule": fx["rule_ref"], "description": "coverage"},
+        "GetRules": lambda: {"detectorId": fx["detector"]},
+        "CreateModel": lambda: {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]},
+        "UpdateModel": lambda: {**fx["model_ref"], "description": "coverage"},
+        "CreateModelVersion": lambda: frd_model_version_args(fx),
+        "UpdateModelVersion": lambda: {**fx["model_ref"], "majorVersionNumber": "1"},
+        "GetModelVersion": lambda: {**fx["model_ref"], "modelVersionNumber": "1.0"},
+        "PutExternalModel": lambda: frd_external_model_args(fx, new),
+        "CreateList": lambda: {"name": new, "elements": ["b@example.com"]},
+        "UpdateList": lambda: {"name": fx["list"], "elements": ["c@example.com"], "updateMode": "APPEND"},
+        "GetListElements": lambda: {"name": fx["list"]},
+        "PutKMSEncryptionKey": lambda: {"kmsEncryptionKeyArn": "DEFAULT"},
+        "SendEvent": lambda: frd_event_args(fx, new),
+        "GetEvent": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"]},
+        "UpdateEventLabel": lambda: {"eventId": fx["event"], "eventTypeName": fx["event_type"], "assignedLabel": fx["fraud"], "labelTimestamp": "2026-11-24T11:00:00Z"},
+        "GetEventPrediction": lambda: {**frd_event_args(fx, new), "detectorId": fx["detector"]},
+        "GetEventPredictionMetadata": lambda: {k: fx["prediction"].get(k, "") for k in ("eventId", "eventTypeName", "detectorId", "detectorVersionId", "predictionTimestamp")},
+        "CreateBatchImportJob": lambda: job("BatchImportJob"),
+        "CreateBatchPredictionJob": lambda: job("BatchPredictionJob"),
+        "TagResource": lambda: {"resourceARN": fx["detector_arn"], "tags": [{"key": "env", "value": "cov"}]},
+        "UntagResource": lambda: {"resourceARN": fx["detector_arn"], "tagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"resourceARN": fx["detector_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op in ("DeleteVariable",):
+        call("CreateVariable", {"name": new, "dataType": "STRING", "dataSource": "EVENT", "defaultValue": "x"})
+        return {"name": new}
+    if op in ("DeleteEntityType", "DeleteLabel", "DeleteOutcome"):
+        call("Put" + op[len("Delete"):], {"name": new})
+        return {"name": new}
+    if op == "DeleteEventType":
+        return {"name": own_event_type()}
+    if op in ("DeleteEventsByEventType", "GetDeleteEventsByEventTypeStatus"):
+        name = own_event_type()
+        if op == "GetDeleteEventsByEventTypeStatus":
+            call("DeleteEventsByEventType", {"eventTypeName": name})
+        return {"eventTypeName": name}
+    if op == "DeleteDetector":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new}
+    if op in ("DeleteDetectorVersion", "UpdateDetectorVersion"):
+        ver = own_draft(fx["detector"])
+        if op == "UpdateDetectorVersion":
+            return {"detectorId": fx["detector"], "detectorVersionId": ver, "externalModelEndpoints": [fx["endpoint"]], "rules": [fx["rule_ref"]]}
+        return {"detectorId": fx["detector"], "detectorVersionId": ver}
+    if op == "UpdateDetectorVersionStatus":
+        call("PutDetector", {"detectorId": new, "eventTypeName": fx["event_type"]})
+        return {"detectorId": new, "detectorVersionId": own_draft(new), "status": "ACTIVE"}
+    if op == "DeleteRule":
+        call("CreateRule", {"ruleId": new, "detectorId": fx["detector"], "expression": "1 == 1", "language": "DETECTORPL", "outcomes": [fx["outcome"]]})
+        return {"rule": {"detectorId": fx["detector"], "ruleId": new, "ruleVersion": "1"}}
+    if op == "DeleteModel":
+        call("CreateModel", {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS", "eventTypeName": fx["event_type"]})
+        return {"modelId": new, "modelType": "ONLINE_FRAUD_INSIGHTS"}
+    if op in ("DeleteModelVersion", "UpdateModelVersionStatus"):
+        ver = str(call("CreateModelVersion", frd_model_version_args(fx)).get("modelVersionNumber") or "")
+        if op == "DeleteModelVersion":
+            return {**fx["model_ref"], "modelVersionNumber": ver}
+        for _ in range(2):
+            call("GetModelVersion", {**fx["model_ref"], "modelVersionNumber": ver})
+        return {**fx["model_ref"], "modelVersionNumber": ver, "status": "ACTIVE"}
+    if op == "DeleteExternalModel":
+        call("PutExternalModel", frd_external_model_args(fx, new))
+        return {"modelEndpoint": new}
+    if op == "DeleteList":
+        call("CreateList", {"name": new})
+        return {"name": new}
+    if op == "DeleteEvent":
+        call("SendEvent", frd_event_args(fx, new))
+        return {"eventId": new, "eventTypeName": fx["event_type"]}
+    for kind in ("BatchImportJob", "BatchPredictionJob"):
+        if op in ("Cancel" + kind, "Delete" + kind):
+            call("Create" + kind, job(kind))
+            return {"jobId": new}
+    if op.startswith("Get") or op.startswith("List") or op.startswith("Describe"):
+        return {}
+    return payload
+
+
 def hydrate_payload_with_service_state(
     aws_bin: str,
     endpoint: Endpoint,
@@ -37923,6 +38258,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "forecast":
+        return forecast_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "forecastquery":
+        return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "frauddetector":
+        return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "pcaconnectorad":
         return pcaconnectorad_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "verifiedpermissions":
