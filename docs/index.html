@@ -66,6 +66,9 @@
         <a href="#braket">Braket</a>
         <a href="#chime">Chime</a>
         <a href="#connect">Connect</a>
+        <a href="#connectcases">Connect Cases</a>
+        <a href="#connectparticipant">Connect Participant</a>
+        <a href="#connectcontactlens">Connect Contact Lens</a>
         <a href="#cleanrooms">Clean Rooms</a>
         <a href="#cleanrooms-ml">Clean Rooms ML</a>
         <a href="#dlm">Data Lifecycle Manager</a>
@@ -189,6 +192,9 @@
         <a href="#personalize">Amazon Personalize</a>
         <a href="#personalizeevents">Amazon Personalize Events</a>
         <a href="#personalizeruntime">Amazon Personalize Runtime</a>
+        <a href="#pinpointemail">Amazon Pinpoint Email</a>
+        <a href="#pinpointsmsvoice">Amazon Pinpoint SMS and Voice</a>
+        <a href="#mailmanager">Amazon SES Mail Manager</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -319,6 +325,9 @@
         <a href="#applicationcostprofiler">Application Cost Profiler</a>
         <a href="#bcmdashboards">Billing and Cost Management Dashboards</a>
         <a href="#bcmpricingcalculator">Pricing Calculator</a>
+        <a href="#account">Account</a>
+        <a href="#freetier">Free Tier</a>
+        <a href="#taxsettings">Tax Settings</a>
         <a href="#pi">Performance Insights</a>
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
@@ -2531,6 +2540,137 @@
         <li><code>connect</code>: <code>docker compose -f examples/aws/connect/docker-compose.yml up --build</code></li>
         <li><code>connect</code>: <code>docker compose -f examples/aws/connect/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="connectcases" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Cases</h2>
+        <p>SigV4 signed with service <code>cases</code>. REST JSON. Domains are seeded with system fields (title, status with open/closed options, customer_id, reference_number, summary and the created/updated/closed date-times). Custom fields, SingleSelect options, layouts, templates (required fields, case rules, tag propagation) and case rules are checked against each other; deletes are refused while something references them. Cases get reference numbers, typed field values, client-token idempotency and an audit history; closing stamps last_closed_datetime. Related items are comments, files, SLAs (Active, Met once the case field reaches the target, Overdue past the target time), linked cases, custom field sets and contacts, which must be chat contacts started with Connect's StartChatContact. SearchCases takes a search term, field and tag filters (at most 20 conditions, 5 deep), sorts and paging; StartMergeCases copies chosen fields and moves related items onto the primary case. Stored case bytes are bounded per case (512 KiB) and store-wide (16 MiB).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cases</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Cases API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateRelatedItem</code></td></tr>
+        <tr><td><code>BatchGetCaseRule</code></td></tr>
+        <tr><td><code>BatchGetField</code></td></tr>
+        <tr><td><code>BatchPutFieldOptions</code></td></tr>
+        <tr><td><code>BatchUpdateCase</code></td></tr>
+        <tr><td><code>CreateCase</code></td></tr>
+        <tr><td><code>CreateCaseRule</code></td></tr>
+        <tr><td><code>CreateDomain</code></td></tr>
+        <tr><td><code>CreateField</code></td></tr>
+        <tr><td><code>CreateLayout</code></td></tr>
+        <tr><td><code>CreateRelatedItem</code></td></tr>
+        <tr><td><code>CreateTemplate</code></td></tr>
+        <tr><td><code>DeleteCase</code></td></tr>
+        <tr><td><code>DeleteCaseRule</code></td></tr>
+        <tr><td><code>DeleteDomain</code></td></tr>
+        <tr><td><code>DeleteField</code></td></tr>
+        <tr><td><code>DeleteLayout</code></td></tr>
+        <tr><td><code>DeleteRelatedItem</code></td></tr>
+        <tr><td><code>DeleteTemplate</code></td></tr>
+        <tr><td><code>GetCase</code></td></tr>
+        <tr><td><code>GetCaseAuditEvents</code></td></tr>
+        <tr><td><code>GetCaseEventConfiguration</code></td></tr>
+        <tr><td><code>GetDomain</code></td></tr>
+        <tr><td><code>GetLayout</code></td></tr>
+        <tr><td><code>GetMergeCasesStatus</code></td></tr>
+        <tr><td><code>GetTemplate</code></td></tr>
+        <tr><td><code>ListCaseRules</code></td></tr>
+        <tr><td><code>ListCasesForContact</code></td></tr>
+        <tr><td><code>ListDomains</code></td></tr>
+        <tr><td><code>ListFieldOptions</code></td></tr>
+        <tr><td><code>ListFields</code></td></tr>
+        <tr><td><code>ListLayouts</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTemplates</code></td></tr>
+        <tr><td><code>PutCaseEventConfiguration</code></td></tr>
+        <tr><td><code>SearchAllRelatedItems</code></td></tr>
+        <tr><td><code>SearchCases</code></td></tr>
+        <tr><td><code>SearchRelatedItems</code></td></tr>
+        <tr><td><code>StartMergeCases</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateCase</code></td></tr>
+        <tr><td><code>UpdateCaseRule</code></td></tr>
+        <tr><td><code>UpdateField</code></td></tr>
+        <tr><td><code>UpdateLayout</code></td></tr>
+        <tr><td><code>UpdateRelatedItem</code></td></tr>
+        <tr><td><code>UpdateTemplate</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="connectparticipant" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Participant Service</h2>
+        <p>REST JSON. The CLI signs these calls for <code>execute-api</code>, but the service authenticates with the participant or connection token in <code>X-Amz-Bearer</code>; unsigned calls carrying a token are accepted too. Chats start with Connect's StartChatContact (CreateParticipant adds a bot or supervisor). CreateParticipantConnection issues connection credentials (WebSocket streaming isn't emulated; poll GetTranscript). Messages and typing/receipt events land in a paged transcript; read and delivered receipts attach to the message. Attachments upload to a one-time URL on Stackyard, exactly the declared size, and download as <code>application/octet-stream</code>. Authentication sessions, the AWS managed views (DescribeView takes the view ARN as its token) and DisconnectParticipant, which ends the chat when the customer leaves. Tokens are never returned by describes or transcripts. Transcripts are bounded per chat and store-wide.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: execute-api (bearer token)</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Participant Service API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelParticipantAuthentication</code></td></tr>
+        <tr><td><code>CompleteAttachmentUpload</code></td></tr>
+        <tr><td><code>CreateParticipantConnection</code></td></tr>
+        <tr><td><code>DescribeView</code></td></tr>
+        <tr><td><code>DisconnectParticipant</code></td></tr>
+        <tr><td><code>GetAttachment</code></td></tr>
+        <tr><td><code>GetAuthenticationUrl</code></td></tr>
+        <tr><td><code>GetTranscript</code></td></tr>
+        <tr><td><code>SendEvent</code></td></tr>
+        <tr><td><code>SendMessage</code></td></tr>
+        <tr><td><code>StartAttachmentUpload</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="connectcontactlens" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Connect Contact Lens</h2>
+        <p>SigV4 signed with service <code>connect</code>; the router claims only <code>POST /realtime-contact-analysis/analysis-segments</code> so Connect keeps the rest. ListRealtimeContactAnalysisSegments analyzes the text messages of chat contacts started with Connect: one Transcript segment per message, with offsets from the start of the contact, lexicon sentiment and detected issues. No Contact Lens rules exist, so no Categories segments are produced.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: connect</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Connect Contact Lens API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>ListRealtimeContactAnalysisSegments</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -13551,6 +13691,204 @@
         <summary>Examples</summary>
         <ul>
         <li><code>personalize-runtime</code>: <code>docker compose -f examples/aws/personalize-runtime/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+
+        <section id="pinpointemail" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Pinpoint Email</h2>
+        <p>SigV4 signed with service <code>ses</code>. Pinpoint Email on SESv2's account state: identities with DKIM, feedback and MAIL FROM settings, configuration sets with delivery, reputation, sending and tracking options and event destinations, dedicated IPs and pools, the deliverability dashboard with domain statistics and campaigns from sent mail, test reports, SendEmail (Simple, Raw or Template) with the send quota, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ses</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Pinpoint Email action catalog (42 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConfigurationSet</code></td></tr>
+        <tr><td><code>CreateConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>CreateDedicatedIpPool</code></td></tr>
+        <tr><td><code>CreateDeliverabilityTestReport</code></td></tr>
+        <tr><td><code>CreateEmailIdentity</code></td></tr>
+        <tr><td><code>DeleteConfigurationSet</code></td></tr>
+        <tr><td><code>DeleteConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>DeleteDedicatedIpPool</code></td></tr>
+        <tr><td><code>DeleteEmailIdentity</code></td></tr>
+        <tr><td><code>GetAccount</code></td></tr>
+        <tr><td><code>GetBlacklistReports</code></td></tr>
+        <tr><td><code>GetConfigurationSet</code></td></tr>
+        <tr><td><code>GetConfigurationSetEventDestinations</code></td></tr>
+        <tr><td><code>GetDedicatedIp</code></td></tr>
+        <tr><td><code>GetDedicatedIps</code></td></tr>
+        <tr><td><code>GetDeliverabilityDashboardOptions</code></td></tr>
+        <tr><td><code>GetDeliverabilityTestReport</code></td></tr>
+        <tr><td><code>GetDomainDeliverabilityCampaign</code></td></tr>
+        <tr><td><code>GetDomainStatisticsReport</code></td></tr>
+        <tr><td><code>GetEmailIdentity</code></td></tr>
+        <tr><td><code>ListConfigurationSets</code></td></tr>
+        <tr><td><code>ListDedicatedIpPools</code></td></tr>
+        <tr><td><code>ListDeliverabilityTestReports</code></td></tr>
+        <tr><td><code>ListDomainDeliverabilityCampaigns</code></td></tr>
+        <tr><td><code>ListEmailIdentities</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutAccountDedicatedIpWarmupAttributes</code></td></tr>
+        <tr><td><code>PutAccountSendingAttributes</code></td></tr>
+        <tr><td><code>PutConfigurationSetDeliveryOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetReputationOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetSendingOptions</code></td></tr>
+        <tr><td><code>PutConfigurationSetTrackingOptions</code></td></tr>
+        <tr><td><code>PutDedicatedIpInPool</code></td></tr>
+        <tr><td><code>PutDedicatedIpWarmupAttributes</code></td></tr>
+        <tr><td><code>PutDeliverabilityDashboardOption</code></td></tr>
+        <tr><td><code>PutEmailIdentityDkimAttributes</code></td></tr>
+        <tr><td><code>PutEmailIdentityFeedbackAttributes</code></td></tr>
+        <tr><td><code>PutEmailIdentityMailFromAttributes</code></td></tr>
+        <tr><td><code>SendEmail</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateConfigurationSetEventDestination</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pinpoint-email</code>: <code>docker compose -f examples/aws/pinpoint-email/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="pinpointsmsvoice" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Pinpoint SMS and Voice</h2>
+        <p>SigV4 signed with service <code>sms-voice</code>. Version 1 voice API: configuration sets with CloudWatch Logs, Kinesis Data Firehose or SNS event destinations, and voice messages (plain text, call instructions or SSML) validated against E.164 numbers and their configuration set.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sms-voice</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Pinpoint SMS and Voice action catalog (8 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateConfigurationSet</code></td></tr>
+        <tr><td><code>CreateConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>DeleteConfigurationSet</code></td></tr>
+        <tr><td><code>DeleteConfigurationSetEventDestination</code></td></tr>
+        <tr><td><code>GetConfigurationSetEventDestinations</code></td></tr>
+        <tr><td><code>ListConfigurationSets</code></td></tr>
+        <tr><td><code>SendVoiceMessage</code></td></tr>
+        <tr><td><code>UpdateConfigurationSetEventDestination</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>pinpoint-sms-voice</code>: <code>docker compose -f examples/aws/pinpoint-sms-voice/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="mailmanager" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SES Mail Manager</h2>
+        <p>SigV4 signed with service <code>ses</code>. Archives filled by SESv2 and Pinpoint Email sends through configuration sets with archiving options, with searches, message content and downloads, and exports to S3; address lists with members and CSV/JSON imports through a pre-signed upload URL; ingress points, SMTP relays, rule sets and traffic policies with checked references; add-on subscriptions and instances; tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: ses</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon SES Mail Manager action catalog (60 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateAddonInstance</code></td></tr>
+        <tr><td><code>CreateAddonSubscription</code></td></tr>
+        <tr><td><code>CreateAddressList</code></td></tr>
+        <tr><td><code>CreateAddressListImportJob</code></td></tr>
+        <tr><td><code>CreateArchive</code></td></tr>
+        <tr><td><code>CreateIngressPoint</code></td></tr>
+        <tr><td><code>CreateRelay</code></td></tr>
+        <tr><td><code>CreateRuleSet</code></td></tr>
+        <tr><td><code>CreateTrafficPolicy</code></td></tr>
+        <tr><td><code>DeleteAddonInstance</code></td></tr>
+        <tr><td><code>DeleteAddonSubscription</code></td></tr>
+        <tr><td><code>DeleteAddressList</code></td></tr>
+        <tr><td><code>DeleteArchive</code></td></tr>
+        <tr><td><code>DeleteIngressPoint</code></td></tr>
+        <tr><td><code>DeleteRelay</code></td></tr>
+        <tr><td><code>DeleteRuleSet</code></td></tr>
+        <tr><td><code>DeleteTrafficPolicy</code></td></tr>
+        <tr><td><code>DeregisterMemberFromAddressList</code></td></tr>
+        <tr><td><code>GetAddonInstance</code></td></tr>
+        <tr><td><code>GetAddonSubscription</code></td></tr>
+        <tr><td><code>GetAddressList</code></td></tr>
+        <tr><td><code>GetAddressListImportJob</code></td></tr>
+        <tr><td><code>GetArchive</code></td></tr>
+        <tr><td><code>GetArchiveExport</code></td></tr>
+        <tr><td><code>GetArchiveMessage</code></td></tr>
+        <tr><td><code>GetArchiveMessageContent</code></td></tr>
+        <tr><td><code>GetArchiveSearch</code></td></tr>
+        <tr><td><code>GetArchiveSearchResults</code></td></tr>
+        <tr><td><code>GetIngressPoint</code></td></tr>
+        <tr><td><code>GetMemberOfAddressList</code></td></tr>
+        <tr><td><code>GetRelay</code></td></tr>
+        <tr><td><code>GetRuleSet</code></td></tr>
+        <tr><td><code>GetTrafficPolicy</code></td></tr>
+        <tr><td><code>ListAddonInstances</code></td></tr>
+        <tr><td><code>ListAddonSubscriptions</code></td></tr>
+        <tr><td><code>ListAddressListImportJobs</code></td></tr>
+        <tr><td><code>ListAddressLists</code></td></tr>
+        <tr><td><code>ListArchiveExports</code></td></tr>
+        <tr><td><code>ListArchiveSearches</code></td></tr>
+        <tr><td><code>ListArchives</code></td></tr>
+        <tr><td><code>ListIngressPoints</code></td></tr>
+        <tr><td><code>ListMembersOfAddressList</code></td></tr>
+        <tr><td><code>ListRelays</code></td></tr>
+        <tr><td><code>ListRuleSets</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTrafficPolicies</code></td></tr>
+        <tr><td><code>RegisterMemberToAddressList</code></td></tr>
+        <tr><td><code>StartAddressListImportJob</code></td></tr>
+        <tr><td><code>StartArchiveExport</code></td></tr>
+        <tr><td><code>StartArchiveSearch</code></td></tr>
+        <tr><td><code>StopAddressListImportJob</code></td></tr>
+        <tr><td><code>StopArchiveExport</code></td></tr>
+        <tr><td><code>StopArchiveSearch</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateArchive</code></td></tr>
+        <tr><td><code>UpdateIngressPoint</code></td></tr>
+        <tr><td><code>UpdateRelay</code></td></tr>
+        <tr><td><code>UpdateRuleSet</code></td></tr>
+        <tr><td><code>UpdateTrafficPolicy</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mailmanager</code>: <code>docker compose -f examples/aws/mailmanager/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>
@@ -26210,7 +26548,6 @@
         </table>
         </details>
         </section>
-
         <section id="applicationcostprofiler" class="service">
 
         <div class="service-header">
@@ -26240,7 +26577,6 @@
         </table>
         </details>
         </section>
-
         <section id="bcmdashboards" class="service">
 
         <div class="service-header">
@@ -26279,7 +26615,6 @@
         </table>
         </details>
         </section>
-
         <section id="bcmpricingcalculator" class="service">
 
         <div class="service-header">
@@ -26336,6 +26671,117 @@
         <tr><td><code>UpdateBillScenario</code></td></tr>
         <tr><td><code>UpdatePreferences</code></td></tr>
         <tr><td><code>UpdateWorkloadEstimate</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="account" class="service">
+
+        <div class="service-header">
+        <h2>AWS Account</h2>
+        <p>SigV4 signed with service <code>account</code>. REST JSON API; every operation is <code>POST /&lt;operation&gt;</code> in lower camel case (for example <code>POST /getAccountInformation</code>). The caller (123456789012) is the Organizations management account; an AccountId parameter is resolved against the Organizations store's accounts (member 210987654321); the caller's own ID is refused with ValidationException and accounts outside the organization with AccessDeniedException. Account name, state and creation date; alternate contacts (BILLING, OPERATIONS, SECURITY); contact information with phone verification; primary email update for member accounts (StartPrimaryEmailUpdate -&gt; PENDING, AcceptPrimaryEmailUpdate with the one-time code -&gt; ACCEPTED, then COMPLETED); opt-in Regions move through ENABLING / DISABLING and report ENABLED / DISABLED on the following read; default Regions are ENABLED_BY_DEFAULT and can't be changed. Stackyard sends no email or SMS: the one-time code is the first 6 characters, upper-case hex, of SHA-256 of <code>&lt;accountId&gt;:&lt;new email&gt;</code> (email) or <code>&lt;accountId&gt;:&lt;phone number&gt;</code> (phone).</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: account</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Account API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>DeleteAlternateContact</code></td></tr>
+        <tr><td><code>DisableRegion</code></td></tr>
+        <tr><td><code>EnableRegion</code></td></tr>
+        <tr><td><code>GetAccountInformation</code></td></tr>
+        <tr><td><code>GetAlternateContact</code></td></tr>
+        <tr><td><code>GetContactInformation</code></td></tr>
+        <tr><td><code>GetGovCloudAccountInformation</code></td></tr>
+        <tr><td><code>GetPrimaryEmail</code></td></tr>
+        <tr><td><code>GetPrimaryEmailUpdateStatus</code></td></tr>
+        <tr><td><code>GetRegionOptStatus</code></td></tr>
+        <tr><td><code>ListRegions</code></td></tr>
+        <tr><td><code>PutAccountName</code></td></tr>
+        <tr><td><code>PutAlternateContact</code></td></tr>
+        <tr><td><code>PutContactInformation</code></td></tr>
+        <tr><td><code>SendPhoneNumberVerification</code></td></tr>
+        <tr><td><code>StartPrimaryEmailUpdate</code></td></tr>
+        <tr><td><code>VerifyPhoneNumber</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="freetier" class="service">
+
+        <div class="service-header">
+        <h2>AWS Free Tier</h2>
+        <p>SigV4 signed with service <code>freetier</code>. JSON 1.0 API with <code>X-Amz-Target: AWSFreeTierService.*</code>. The account starts on the FREE plan with USD 100 of credits expiring six months after first use; UpgradeAccountPlan moves it to PAID (no downgrade). Five sign-up activities worth USD 20 each; the AWS Budgets activity completes when the account has a budget in Stackyard's Budgets and adds its credit. A fixed free-tier usage catalog filtered by Dimensions/And/Or/Not expressions, with pagination.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: freetier</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Free Tier API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetAccountActivity</code></td></tr>
+        <tr><td><code>GetAccountPlanState</code></td></tr>
+        <tr><td><code>GetFreeTierUsage</code></td></tr>
+        <tr><td><code>ListAccountActivities</code></td></tr>
+        <tr><td><code>UpgradeAccountPlan</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="taxsettings" class="service">
+
+        <div class="service-header">
+        <h2>Tax Settings</h2>
+        <p>SigV4 signed with service <code>tax</code>. REST JSON API; every operation is <code>POST /&lt;Operation&gt;</code>. Tax registrations for the caller and the Organizations member accounts (batch put/delete report per-account errors); verification documents supplied inline or read from Stackyard S3 are stored and GetTaxRegistrationDocument writes them to an S3 bucket; supplemental (VAT) registrations; tax exemptions against a fixed exemption-type catalog with Pending then Valid status; tax inheritance (OptIn/OptOut) that member accounts' exemption details report.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: tax</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Tax Settings API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchDeleteTaxRegistration</code></td></tr>
+        <tr><td><code>BatchGetTaxExemptions</code></td></tr>
+        <tr><td><code>BatchPutTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>DeleteTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxExemptionTypes</code></td></tr>
+        <tr><td><code>GetTaxInheritance</code></td></tr>
+        <tr><td><code>GetTaxRegistration</code></td></tr>
+        <tr><td><code>GetTaxRegistrationDocument</code></td></tr>
+        <tr><td><code>ListSupplementalTaxRegistrations</code></td></tr>
+        <tr><td><code>ListTaxExemptions</code></td></tr>
+        <tr><td><code>ListTaxRegistrations</code></td></tr>
+        <tr><td><code>PutSupplementalTaxRegistration</code></td></tr>
+        <tr><td><code>PutTaxExemption</code></td></tr>
+        <tr><td><code>PutTaxInheritance</code></td></tr>
+        <tr><td><code>PutTaxRegistration</code></td></tr>
         </tbody>
         </table>
         </details>

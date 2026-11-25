@@ -229,15 +229,23 @@ type Server struct {
 	pi                                                  *piStore
 	cloudSearch                                         *csStore
 	kendraRanking                                       *kdrStore
+	connectParticipant                                  *cnpStore
+	connectCases                                        *cncStore
 	budgets                                             *budStore
 	costOptimizationHub                                 *cohStore
 	bcmDataExports                                      *bcmdeStore
 	applicationCostProfiler                             *acpStore
 	bcmDashboards                                       *bcmdStore
 	bcmPricingCalculator                                *bcmpcStore
+	account                                             *acctStore
+	freeTier                                            *ftierStore
+	taxSettings                                         *taxsStore
 	serviceCatalog                                      *serviceCatalogStore
 	migrationHub                                        *migrationHubStore
 	personalize                                         *personalizeStore
+	mailmanager                                         *mmgrStore
+	pinpointEmail                                       *ppeStore
+	pinpointSMSVoice                                    *ppsvStore
 	iotSecureTunneling                                  *istStore
 	iotDeviceAdvisor                                    *idaStore
 	iotThingsGraph                                      *itgStore
@@ -820,15 +828,22 @@ func New(cfg Config) *Server {
 		pi:                            newPIStore(),
 		cloudSearch:                   newCloudSearchStore(),
 		kendraRanking:                 newKendraRankingStore(),
+		connectParticipant:            newConnectParticipantStore(),
 		budgets:                       newBudgetsStore(),
 		costOptimizationHub:           newCostOptimizationHubStore(),
 		bcmDataExports:                newBCMDataExportsStore(),
 		applicationCostProfiler:       newApplicationCostProfilerStore(),
 		bcmDashboards:                 newBCMDashboardsStore(),
 		bcmPricingCalculator:          newBCMPricingCalculatorStore(),
+		account:                       newAccountStore(),
+		freeTier:                      newFreeTierStore(),
+		taxSettings:                   newTaxSettingsStore(),
 		serviceCatalog:                newServiceCatalogStore(),
 		migrationHub:                  newMigrationHubStore(),
 		personalize:                   newPersonalizeStore(),
+		mailmanager:                   newMailManagerStore(),
+		pinpointEmail:                 newPinpointEmailStore(),
+		pinpointSMSVoice:              newPinpointSMSVoiceStore(),
 		iotSecureTunneling:            newIoTSecureTunnelingStore(),
 		iotDeviceAdvisor:              newIoTDeviceAdvisorStore(),
 		iotThingsGraph:                newIoTThingsGraphStore(),
@@ -1207,6 +1222,7 @@ func New(cfg Config) *Server {
 	s.appAutoScaling = newApplicationAutoScalingStore(s.aasPutAlarm, s.aasDeleteAlarm)
 	s.ec2InstanceConnect = newEC2InstanceConnectStore()
 	s.glue = newGlueStore(s.athena)
+	s.connectCases = newConnectCasesStore(s.connectParticipant)
 	s.dax = newDAXStore(s.ec2)
 	s.route53resolver = newRoute53ResolverStore(s.ec2, s.s3)
 	s.openSearchServerless = newOpenSearchServerlessStore(s.ec2)
@@ -1224,6 +1240,8 @@ func New(cfg Config) *Server {
 	mux.HandleFunc("POST /_stackyard/state/snapshots/{name}/restore", s.handleStateSnapshotRestore)
 	mux.HandleFunc("DELETE /_stackyard/state/snapshots/{name}", s.handleStateSnapshotDelete)
 	mux.HandleFunc("POST /_stackyard/apigatewaymanagementapi/connections", s.handleAPIGatewayManagementConnect)
+	mux.HandleFunc("PUT /_stackyard/connectparticipant/attachments/{id}", s.handleConnectParticipantUpload)
+	mux.HandleFunc("GET /_stackyard/connectparticipant/attachments/{id}", s.handleConnectParticipantDownload)
 	mux.HandleFunc("GET /_stackyard/apigatewaymanagementapi/connections/{connectionId}/messages", s.handleAPIGatewayManagementMessages)
 
 	mux.HandleFunc("PUT /s3/buckets/{bucket}", s.handleS3CreateBucket)
@@ -1470,7 +1488,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		"status":    "ok",
 		"timestamp": time.Now().UTC(),
 		"providers": s.enabledProviders,
-		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "awscostmanagement", "applicationcostprofiler", "bcmdashboards", "bcmdataexports", "bcmpricingcalculator", "billingconductor", "budgets", "costoptimizationhub", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "forecast", "forecastquery", "frauddetector", "flink", "kinesis", "kendra", "kendraranking", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakerruntime", "simspaceweaver", "savingsplans", "tnb", "pi", "pcaconnectorad", "personalize", "personalizeevents", "personalizeruntime", "pinpoint", "pipes", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "geomaps", "geoplaces", "georoutes", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudsearch", "cloudsearchdomain", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediapackagevod", "mediastore", "mediastoredata", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafregional", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotdeviceadvisor", "iotsecuretunneling", "iotthingsgraph", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "schemas", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite"},
+		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "awscostmanagement", "applicationcostprofiler", "bcmdashboards", "bcmdataexports", "bcmpricingcalculator", "billingconductor", "budgets", "costoptimizationhub", "freetier", "taxsettings", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "connectcases", "connectcontactlens", "connectparticipant", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "forecast", "forecastquery", "frauddetector", "flink", "kinesis", "kendra", "kendraranking", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakerruntime", "simspaceweaver", "savingsplans", "tnb", "pi", "pcaconnectorad", "personalize", "personalizeevents", "personalizeruntime", "pinpoint", "pinpointemail", "pinpointsmsvoice", "pipes", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "geomaps", "geoplaces", "georoutes", "mailmanager", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudsearch", "cloudsearchdomain", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediapackagevod", "mediastore", "mediastoredata", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafregional", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotdeviceadvisor", "iotsecuretunneling", "iotthingsgraph", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "schemas", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite", "account"},
 	})
 }
 
@@ -2989,6 +3007,19 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	if s.handleDataBrewRESTRouter(w, r) {
 		return
 	}
+	// Mail Manager, Pinpoint Email, SESv2 and SES all sign as ses: Mail
+	// Manager is claimed by X-Amz-Target and Pinpoint Email by its /v1/email
+	// operation paths (SESv2 keeps /v1/email/.../dkim/signing). Pinpoint SMS
+	// Voice (v1) shares sms-voice with SMS Voice v2 and claims /v1/sms-voice.
+	if s.handleMailManagerJSONRouter(w, r) {
+		return
+	}
+	if s.handlePinpointEmailRESTRouter(w, r) {
+		return
+	}
+	if s.handlePinpointSMSVoiceRESTRouter(w, r) {
+		return
+	}
 	// Personalize, Personalize Events and Personalize Runtime all sign as
 	// personalize; the control plane is claimed by X-Amz-Target, the other two
 	// by their REST paths.
@@ -3065,6 +3096,15 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleCloudSearchDomainRESTRouter(w, r) {
+		return
+	}
+	if s.handleConnectCasesRESTRouter(w, r) {
+		return
+	}
+	if s.handleConnectParticipantRESTRouter(w, r) {
+		return
+	}
+	if s.handleConnectContactLensRESTRouter(w, r) {
 		return
 	}
 	if s.handleServiceCatalogJSONRouter(w, r) {
@@ -3155,6 +3195,18 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleBudgetsJSONRouter(w, r) {
+		return
+	}
+	// Free Tier and Tax Settings also go before the cost-management router,
+	// which claims the freetier signing name and taxsettings CLI traffic.
+	if s.handleFreeTierJSONRouter(w, r) {
+		return
+	}
+	if s.handleTaxSettingsRESTRouter(w, r) {
+		return
+	}
+	// Account claims only POSTs to its own paths signed for account.
+	if s.handleAccountRESTRouter(w, r) {
 		return
 	}
 	if s.handleCostOptimizationHubJSONRouter(w, r) {

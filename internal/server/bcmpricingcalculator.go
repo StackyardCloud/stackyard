@@ -40,7 +40,7 @@ const (
 var bcmpcAPI = &budJSONAPI{
 	prefix: bcmpcTargetPrefix, signing: "bcm-pricing-calculator", contentType: bcmpcContentType,
 	invalidCode: "ValidationException", model: awsmodels.BCMPricingCalculatorModel,
-	write: bcmpcRespond, writeError: bcmpcRespondError,
+	write: bcmpcRespond, respondError: bcmpcRespondError,
 }
 
 func init() {
@@ -99,11 +99,11 @@ func bcmpcRespond(w http.ResponseWriter, body []byte) {
 // error shapes require: resourceId and resourceType on not-found, conflict
 // and quota errors, a reason on validation errors.
 func bcmpcRespondError(w http.ResponseWriter, e *budErr) {
-	body := map[string]string{"__type": e.code, "message": e.msg}
+	body := map[string]any{"__type": e.code, "message": e.msg}
 	for k, v := range e.extra {
 		body[k] = v
 	}
-	if e.code == "ValidationException" && body["reason"] == "" {
+	if e.code == "ValidationException" && body["reason"] == nil {
 		body["reason"] = "fieldValidationFailed"
 	}
 	raw, _ := json.Marshal(body)
@@ -125,7 +125,7 @@ func bcmpcResourceErr(code, id, kind, format string, args ...any) *budErr {
 		"ServiceQuotaExceededException": http.StatusPaymentRequired,
 	}[code]
 	return &budErr{status: status, code: code, msg: fmt.Sprintf(format, args...),
-		extra: map[string]string{"resourceId": id, "resourceType": kind}}
+		extra: map[string]any{"resourceId": id, "resourceType": kind}}
 }
 
 func bcmpcNotFound(id, kind string) *budErr {
@@ -257,7 +257,7 @@ func (st *bcmpcStore) allowRate(rate string) *budErr {
 		}
 	}
 	return &budErr{status: http.StatusBadRequest, code: "ValidationException",
-		msg: "rate type " + rate + " is not enabled in the account's preferences", extra: map[string]string{"reason": "disallowedRate"}}
+		msg: "rate type " + rate + " is not enabled in the account's preferences", extra: map[string]any{"reason": "disallowedRate"}}
 }
 
 // ---- tags ----

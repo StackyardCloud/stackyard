@@ -33,7 +33,7 @@ const (
 var bcmdAPI = &budJSONAPI{
 	prefix: bcmdTargetPrefix, signing: "bcm-dashboards", contentType: bcmdContentType,
 	invalidCode: "ValidationException", model: awsmodels.BCMDashboardsModel,
-	write: bcmdRespond, writeError: bcmdRespondError,
+	write: bcmdRespond, respondError: bcmdRespondError,
 }
 
 func init() {
