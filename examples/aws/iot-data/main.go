@@ -51,7 +51,7 @@ func main() {
 	clientID := fmt.Sprintf("dev-%d", run)
 	topic := fmt.Sprintf("plant/%d/speed", run)
 	c.call("Publish", signingName, http.MethodPost, "/topics/"+escape(topic)+"?qos=1&retain=true", []byte(`{"rpm":900}`), nil)
-	connect(c, clientID, topic)
+	token := connect(c, clientID, topic)
 	c.call("Publish", signingName, http.MethodPost, "/topics/"+escape(topic)+"?qos=1", []byte(`{"rpm":950}`), nil)
 	retained := c.call("GetRetainedMessage", signingName, http.MethodGet, "/retainedMessage/"+escape(topic), nil, nil)
 	fmt.Printf("retained on %v (qos %v)\n", retained["topic"], retained["qos"])
@@ -60,7 +60,7 @@ func main() {
 	subs := c.call("ListSubscriptions", signingName, http.MethodGet, "/connections/"+clientID+"/subscriptions", nil, nil)
 	fmt.Println("subscriptions:", len(subs["subscriptions"].([]any)))
 	c.call("SendDirectMessage", signingName, http.MethodPost, "/connections/"+clientID+"/messages?topic=cmd%2Fping", []byte("ping"), nil)
-	for _, m := range inbox(c, clientID) {
+	for _, m := range inbox(c, clientID, token) {
 		fmt.Println("client received on", m.(map[string]any)["topic"])
 	}
 
@@ -71,8 +71,9 @@ func main() {
 
 func escape(topic string) string { return strings.ReplaceAll(topic, "/", "%2F") }
 
-// connect opens a simulated MQTT client subscribed to topic.
-func connect(c client, id, topic string) {
+// connect opens a simulated MQTT client subscribed to topic and returns the
+// session token that reading its inbox requires.
+func connect(c client, id, topic string) string {
 	body := mustJSON(map[string]any{"clientId": id, "cleanSession": false,
 		"subscriptions": []any{map[string]any{"topicFilter": topic, "qos": 1}}})
 	resp, err := http.Post(c.endpoint+"/_stackyard/iot-data/connections", "application/json", bytes.NewReader(body))
@@ -84,11 +85,20 @@ func connect(c client, id, topic string) {
 		raw, _ := io.ReadAll(resp.Body)
 		exitf("connect: HTTP %d: %s", resp.StatusCode, raw)
 	}
+	var out struct {
+		Token string `json:"sessionToken"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		exitf("connect: %v", err)
+	}
+	return out.Token
 }
 
 // inbox drains the messages delivered to a simulated client.
-func inbox(c client, id string) []any {
-	resp, err := http.Get(c.endpoint + "/_stackyard/iot-data/connections/" + id + "/messages")
+func inbox(c client, id, token string) []any {
+	req, _ := http.NewRequest(http.MethodGet, c.endpoint+"/_stackyard/iot-data/connections/"+id+"/messages", nil)
+	req.Header.Set("X-Stackyard-Session-Token", token)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		exitf("inbox: %v", err)
 	}

@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -19,7 +20,7 @@ import (
 // apigatewaymanagementapi does for WebSocket clients):
 //
 //	POST /_stackyard/iot-data/connections           connect a client with subscriptions
-//	GET  /_stackyard/iot-data/connections/{id}/messages   drain its inbox
+//	GET  /_stackyard/iot-data/connections/{id}/messages   drain its inbox (X-Stackyard-Session-Token)
 //
 // Publish delivers to every connected client whose subscription matches (and
 // queues QoS 1 messages for disconnected persistent sessions), keeps retained
@@ -65,6 +66,22 @@ type iotdClient struct {
 	disconnectReason                  string
 	subs                              map[string]int // topic filter -> qos
 	inbox                             []iotdMessage
+	// token is the secret returned at connect. Reading the inbox and
+	// resuming a persistent session need it, so knowing a client ID alone
+	// doesn't let another caller read or take over its messages.
+	token string
+}
+
+const iotdSessionTokenHeader = "X-Stackyard-Session-Token"
+
+func iotdNewToken() string {
+	b := make([]byte, 24)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func iotdTokenOK(c *iotdClient, got string) bool {
+	return c.token != "" && subtle.ConstantTimeCompare([]byte(c.token), []byte(got)) == 1
 }
 
 // iotdValidTopic checks a topic name for publishing (no wildcards).
@@ -422,6 +439,7 @@ type iotdConnectRequest struct {
 	ClientID          string `json:"clientId"`
 	ThingName         string `json:"thingName"`
 	CleanSession      *bool  `json:"cleanSession"`
+	SessionToken      string `json:"sessionToken"` // required to resume a persistent session
 	KeepAliveDuration int    `json:"keepAliveDuration"`
 	SessionExpiry     int64  `json:"sessionExpiry"`
 	Subscriptions     []struct {
@@ -474,7 +492,12 @@ func (s *Server) handleIoTDataConnect(w http.ResponseWriter, r *http.Request) {
 		iotdRespondError(w, iotdErrorf("ThrottlingException", "at most %d clients can be connected", iotdMaxClients))
 		return
 	}
-	next := &iotdClient{subs: map[string]int{}}
+	if c != nil && !clean && !iotdTokenOK(c, req.SessionToken) {
+		st.mu.Unlock()
+		iotdRespondError(w, iotdErrorf("ForbiddenException", "resuming client %s's session needs its sessionToken", req.ClientID))
+		return
+	}
+	next := &iotdClient{subs: map[string]int{}, token: iotdNewToken()}
 	if c != nil && !clean {
 		next.inbox = c.inbox
 		for f, q := range c.subs {
@@ -506,9 +529,9 @@ func (s *Server) handleIoTDataConnect(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	st.clients[req.ClientID] = next
-	since := next.connectedSince
+	since, token := next.connectedSince, next.token
 	st.mu.Unlock()
-	body, _ := json.Marshal(map[string]any{"clientId": req.ClientID, "connectedSince": since.UnixMilli()})
+	body, _ := json.Marshal(map[string]any{"clientId": req.ClientID, "connectedSince": since.UnixMilli(), "sessionToken": token})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write(body)
@@ -521,12 +544,17 @@ func (s *Server) handleIoTDataMessages(w http.ResponseWriter, r *http.Request) {
 	st.mu.Lock()
 	c := st.clients[r.PathValue("clientId")]
 	var msgs []iotdMessage
-	if c != nil {
+	allowed := c != nil && iotdTokenOK(c, r.Header.Get(iotdSessionTokenHeader))
+	if allowed {
 		msgs, c.inbox = c.inbox, nil
 	}
 	st.mu.Unlock()
 	if c == nil {
 		iotdRespondError(w, iotdNoClient(r.PathValue("clientId")))
+		return
+	}
+	if !allowed {
+		iotdRespondError(w, iotdErrorf("ForbiddenException", "reading client %s's messages needs its %s header", c.id, iotdSessionTokenHeader))
 		return
 	}
 	if msgs == nil {

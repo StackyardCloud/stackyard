@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -93,19 +94,39 @@ func TestIoTDataPlaneStage1NamedShadows(t *testing.T) {
 	}
 }
 
+// iotdpTokens holds each simulated client's session token, keyed by server
+// URL and client ID, so the inbox helper can authenticate.
+var iotdpTokens sync.Map
+
 func iotdpConnect(t *testing.T, ts *httptest.Server, body string) int {
 	t.Helper()
+	var req struct {
+		ClientID string `json:"clientId"`
+	}
+	_ = json.Unmarshal([]byte(body), &req)
+	if tok, ok := iotdpTokens.Load(ts.URL + "|" + req.ClientID); ok {
+		body = strings.Replace(body, "{", `{"sessionToken":"`+tok.(string)+`",`, 1)
+	}
 	resp, err := http.Post(ts.URL+"/_stackyard/iot-data/connections", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
-	mustBody(t, resp)
+	var out struct {
+		Token string `json:"sessionToken"`
+	}
+	if json.Unmarshal(mustBody(t, resp), &out) == nil && out.Token != "" {
+		iotdpTokens.Store(ts.URL+"|"+req.ClientID, out.Token)
+	}
 	return resp.StatusCode
 }
 
 func iotdpInbox(t *testing.T, ts *httptest.Server, client string) []map[string]any {
 	t.Helper()
-	resp, err := http.Get(ts.URL + "/_stackyard/iot-data/connections/" + client + "/messages")
+	req, _ := http.NewRequest(http.MethodGet, ts.URL+"/_stackyard/iot-data/connections/"+client+"/messages", nil)
+	if tok, ok := iotdpTokens.Load(ts.URL + "|" + client); ok {
+		req.Header.Set(iotdSessionTokenHeader, tok.(string))
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,6 +168,14 @@ func TestIoTDataPlaneStage1PublishRetainAndConnections(t *testing.T) {
 	}
 	if s := iotdpConnect(t, ts, `{"clientId":"dev-2","subscriptions":[{"topicFilter":"a/#/b","qos":0}]}`); s != http.StatusBadRequest {
 		t.Fatalf("bad filter accepted: %d", s)
+	}
+	// Knowing a client ID isn't enough: the inbox and session resumption
+	// need the token returned at connect.
+	if resp, err := http.Get(ts.URL + "/_stackyard/iot-data/connections/dev-1/messages"); err != nil || resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("inbox without token: %v %v", resp, err)
+	}
+	if resp, err := http.Post(ts.URL+"/_stackyard/iot-data/connections", "application/json", strings.NewReader(`{"clientId":"dev-1","cleanSession":false,"sessionToken":"guess"}`)); err != nil || resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("session takeover without token: %v %v", resp, err)
 	}
 	if msgs := iotdpInbox(t, ts, "dev-1"); len(msgs) != 1 || msgs[0]["topic"] != "plant/line1/temp" {
 		t.Fatalf("retained on subscribe: %v", msgs)
