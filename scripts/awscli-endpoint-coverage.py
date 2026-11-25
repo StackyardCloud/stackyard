@@ -40432,6 +40432,7 @@ def bcmpricingcalculator_hydrate_payload(
         return {"arn": arn, "tagKeys": ["env"]}
     if op == "ListTagsForResource":
         return {"arn": arn}
+    return payload
 
 
 SMX_ROLE = "arn:aws:iam::123456789012:role/stackyard-sagemaker"
