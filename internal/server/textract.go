@@ -135,7 +135,7 @@ func (s *Server) txS3Bytes(c s3Caller, obj map[string]any, limit int) ([]byte, *
 	if bucket == "" || name == "" {
 		return nil, txInvalid("S3Object needs a Bucket and a Name")
 	}
-	if !s.authorizeServiceS3As(c, txServicePrincipal, bucket, name, "s3:GetObject") {
+	if !authorizeServiceS3Version(s.s3, c, txServicePrincipal, bucket, name, version, "s3:GetObject") {
 		return nil, txError("AccessDeniedException", "Access denied reading s3://"+bucket+"/"+name)
 	}
 	o, err := s.s3.GetObject(bucket, name)

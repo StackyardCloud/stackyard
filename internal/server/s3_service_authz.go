@@ -63,6 +63,12 @@ func (s *Server) authorizeServiceS3As(c s3Caller, servicePrincipal, bucket, key,
 // authorizeServiceS3On is authorizeServiceS3As for stores that hold the S3
 // service rather than the Server.
 func authorizeServiceS3On(svc *s3.Service, c s3Caller, servicePrincipal, bucket, key, action string) bool {
+	return authorizeServiceS3Version(svc, c, servicePrincipal, bucket, key, "", action)
+}
+
+// authorizeServiceS3Version authorizes access to one object version: an
+// unsigned caller's ACL fallback uses that version's ACL, not the current one.
+func authorizeServiceS3Version(svc *s3.Service, c s3Caller, servicePrincipal, bucket, key, version, action string) bool {
 	if policy, err := svc.GetBucketPolicy(bucket); err == nil && strings.TrimSpace(policy) != "" {
 		requester := c.requester
 		if requester == "" {
@@ -87,7 +93,11 @@ func authorizeServiceS3On(svc *s3.Service, c s3Caller, servicePrincipal, bucket,
 		acl = b.ACL
 	}
 	if strings.EqualFold(action, "s3:GetObject") {
-		if o, err := svc.GetObject(bucket, key); err == nil {
+		o, err := svc.GetObject(bucket, key)
+		if version != "" {
+			o, err = svc.GetObjectVersion(bucket, key, version)
+		}
+		if err == nil {
 			acl = o.ACL
 		}
 	}

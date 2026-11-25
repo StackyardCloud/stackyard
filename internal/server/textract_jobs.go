@@ -94,6 +94,13 @@ func (s *Server) txStart(api string, in map[string]any, compute func(*txAnalysis
 			return nil, txError("InvalidS3ObjectException", "OutputConfig bucket "+job.outBucket+" does not exist")
 		}
 	}
+	// Read (and authorize) the input before the idempotency short-circuit:
+	// a retried token must not hand back a job whose input this caller
+	// can't read.
+	raw, err := s.txS3Bytes(job.caller, obj, txAsyncMaxBytes)
+	if err != nil {
+		return nil, err
+	}
 	token := txStr(in, "ClientRequestToken")
 	hash := txParamHash(in)
 	if id, err := s.textract.jobForToken(api, token, hash); err != nil || id != "" {
@@ -101,10 +108,6 @@ func (s *Server) txStart(api string, in map[string]any, compute func(*txAnalysis
 			return nil, err
 		}
 		return map[string]any{"JobId": id}, nil
-	}
-	raw, err := s.txS3Bytes(job.caller, obj, txAsyncMaxBytes)
-	if err != nil {
-		return nil, err
 	}
 	doc, err := txParseDocument(raw)
 	if err != nil {

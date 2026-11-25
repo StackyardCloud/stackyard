@@ -256,3 +256,45 @@ func TestRoute53ResolverServiceS3Authz(t *testing.T) {
 		})
 	}
 }
+
+// An unsigned caller's ACL fallback must use the ACL of the version actually
+// read, not the current version's.
+func TestAuthorizeServiceS3VersionACL(t *testing.T) {
+	srv, _ := newTextractTestServer(t)
+	if _, err := srv.s3.CreateBucket("tx-ver"); err != nil {
+		t.Fatal(err)
+	}
+	if err := srv.s3.SetBucketVersioning("tx-ver", "Enabled"); err != nil {
+		t.Fatal(err)
+	}
+	old, err := srv.s3.PutObject("tx-ver", "doc.txt", "text/plain", []byte("private"), nil, "private", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := srv.s3.PutObject("tx-ver", "doc.txt", "text/plain", []byte("public"), nil, "public-read", ""); err != nil {
+		t.Fatal(err)
+	}
+	anon := s3Caller{}
+	if !authorizeServiceS3Version(srv.s3, anon, txServicePrincipal, "tx-ver", "doc.txt", "", "s3:GetObject") {
+		t.Fatal("current public-read version should be readable")
+	}
+	if authorizeServiceS3Version(srv.s3, anon, txServicePrincipal, "tx-ver", "doc.txt", old.VersionID, "s3:GetObject") {
+		t.Fatal("private old version must not be readable through the current version's ACL")
+	}
+}
+
+// A retried ClientRequestToken must not return the job to a caller who
+// can't read its input.
+func TestTextractJobTokenRetryRechecksInput(t *testing.T) {
+	srv, ts := newTextractTestServer(t)
+	svcAuthzBucket(t, srv, "tx-tok", "", "doc.txt")
+	req := `{"ClientRequestToken":"tok-1","DocumentLocation":{"S3Object":{"Bucket":"tx-tok","Name":"doc.txt"}}}`
+	txOK(t, ts, "StartDocumentTextDetection", req)
+	if err := srv.s3.SetBucketPolicy("tx-tok", svcAuthzPolicy("Deny", `{"AWS":"`+testAccessKey+`"}`, "tx-tok")); err != nil {
+		t.Fatal(err)
+	}
+	status, out := txCall(t, ts, "StartDocumentTextDetection", req)
+	if status != http.StatusBadRequest || out["__type"] != "AccessDeniedException" {
+		t.Fatalf("retry after deny: want AccessDeniedException, got %d %v", status, out)
+	}
+}
