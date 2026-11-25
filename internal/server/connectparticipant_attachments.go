@@ -2,6 +2,7 @@ package server
 
 import (
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"net/url"
@@ -34,9 +35,11 @@ func (st *cnpStore) startAttachmentUpload(req cnpRequest) (map[string]any, *cnpE
 	if !cnpAttachmentTypes[ct] {
 		return nil, cnpValidation("attachments of type %q aren't supported", ct)
 	}
+	// The size feeds the store-wide byte budget, so it must be a positive
+	// whole number: a negative or fractional value would shrink the budget.
 	size, _ := req.in["AttachmentSizeInBytes"].(float64)
-	if size > cnpMaxAttachment {
-		return nil, cnpValidation("attachments are at most %d bytes", cnpMaxAttachment)
+	if size < 1 || size != math.Trunc(size) || size > cnpMaxAttachment {
+		return nil, cnpValidation("AttachmentSizeInBytes must be a whole number from 1 to %d", cnpMaxAttachment)
 	}
 	st.mu.Lock()
 	defer st.mu.Unlock()

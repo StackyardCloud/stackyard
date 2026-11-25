@@ -276,6 +276,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
   },
   {
+    id: "applicationcostprofiler",
+    name: "Application Cost Profiler",
+    category: "integration",
+    summary: "Emulate tenant cost reporting: report definitions delivering to S3, and usage imports that write each tenant's share of shared resources as CSV reports.",
+    docsHref: "../../../index.html#applicationcostprofiler",
+    exampleHref: "../../../../examples/aws/application-cost-profiler/docker-compose.yml"
+  },
+  {
+    id: "bcmdashboards",
+    name: "Billing and Cost Management Dashboards",
+    category: "integration",
+    summary: "Emulate billing dashboards: widgets with checked Cost Explorer-style queries, scheduled reports whose health follows their dashboard, resource policies and tags.",
+    docsHref: "../../../index.html#bcmdashboards",
+    exampleHref: "../../../../examples/aws/bcm-dashboards/docker-compose.yml"
+  },
+  {
+    id: "bcmpricingcalculator",
+    name: "Pricing Calculator",
+    category: "integration",
+    summary: "Emulate cost estimates from a deterministic price catalog: bill scenarios with usage and Reserved Instance or Savings Plans commitments, bill estimates with line items, and workload estimates.",
+    docsHref: "../../../index.html#bcmpricingcalculator",
+    exampleHref: "../../../../examples/aws/bcm-pricing-calculator/docker-compose.yml"
+  },
+  {
     id: "account",
     name: "Account",
     category: "integration",
@@ -1554,6 +1578,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate Glacier vaults, tree-hash-checked archive and multipart uploads, retrieval and inventory jobs, vault locks, policies and notifications.",
     docsHref: "../../../index.html#glacier",
     exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
+  },
+  {
+    id: "outposts",
+    name: "Outposts",
+    category: "compute",
+    summary: "Emulate sites, outposts, quotes, orders that progress to FULFILLED and install assets, capacity tasks, billing and renewals, connections, decommissioning and tags.",
+    docsHref: "../../../index.html#outposts",
+    exampleHref: "../../../../examples/aws/outposts/docker-compose.yml"
+  },
+  {
+    id: "snow-device-management",
+    name: "Snow Device Management",
+    category: "storage",
+    summary: "Emulate managed devices backed by Snowball jobs, reboot and unlock tasks with per-device executions, device EC2 instances and tags.",
+    docsHref: "../../../index.html#snow-device-management",
+    exampleHref: "../../../../examples/aws/snow-device-management/docker-compose.yml"
+  },
+  {
+    id: "backup-gateway",
+    name: "Backup Gateway",
+    category: "storage",
+    summary: "Emulate gateways with maintenance and bandwidth schedules, hypervisor import and metadata sync, virtual machines that AWS Backup can back up, and tags.",
+    docsHref: "../../../index.html#backup-gateway",
+    exampleHref: "../../../../examples/aws/backup-gateway/docker-compose.yml"
   },
   {
     id: "backup",

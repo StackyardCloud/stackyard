@@ -116,6 +116,9 @@
         <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrockagent">Agents for Amazon Bedrock</a>
         <a href="#backup">AWS Backup</a>
+        <a href="#outposts">AWS Outposts</a>
+        <a href="#snow-device-management">AWS Snow Device Management</a>
+        <a href="#backup-gateway">AWS Backup gateway</a>
         <a href="#bedrockagentruntime">Agents for Amazon Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
@@ -322,6 +325,9 @@
         <a href="#budgets">Budgets</a>
         <a href="#costoptimizationhub">Cost Optimization Hub</a>
         <a href="#bcmdataexports">Data Exports</a>
+        <a href="#applicationcostprofiler">Application Cost Profiler</a>
+        <a href="#bcmdashboards">Billing and Cost Management Dashboards</a>
+        <a href="#bcmpricingcalculator">Pricing Calculator</a>
         <a href="#account">Account</a>
         <a href="#freetier">Free Tier</a>
         <a href="#taxsettings">Tax Settings</a>
@@ -4872,6 +4878,161 @@
         <ul>
                 <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="outposts" class="service">
+
+        <div class="service-header">
+        <h2>AWS Outposts</h2>
+        <p>SigV4 signed with service <code>outposts</code>. REST JSON API. Sites keep operating and shipping addresses and rack physical properties; outposts belong to a site. Quotes size racks or servers from requested EC2 capacity (vCPUs per family) against a five-item catalog, price every requested term and payment option, and report ordering requirements (outpost, addresses, country). Orders, from a quote option or line items, advance RECEIVED, PENDING, PROCESSING, INSTALLING, FULFILLED one step per GetOrder; fulfilment installs one compute asset per unit and starts the subscription. Capacity tasks re-slot instance pools on the assets (REQUESTED, IN_PROGRESS, COMPLETED per read; FAILED when the pools don't fit) and can be cancelled. Billing lists subscriptions and renewals; private connectivity, connections to assets, decommissioning (blocked by orders in flight) and tags on site and outpost ARNs. Address and rack changes are refused while hardware ships.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: outposts</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Outposts API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelCapacityTask</code></td></tr>
+        <tr><td><code>CancelOrder</code></td></tr>
+        <tr><td><code>CreateOrder</code></td></tr>
+        <tr><td><code>CreateOutpost</code></td></tr>
+        <tr><td><code>CreatePrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>CreateQuote</code></td></tr>
+        <tr><td><code>CreateRenewal</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>DeleteOutpost</code></td></tr>
+        <tr><td><code>DeleteQuote</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>GetCapacityTask</code></td></tr>
+        <tr><td><code>GetCatalogItem</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetOrder</code></td></tr>
+        <tr><td><code>GetOutpost</code></td></tr>
+        <tr><td><code>GetOutpostBillingInformation</code></td></tr>
+        <tr><td><code>GetOutpostInstanceTypes</code></td></tr>
+        <tr><td><code>GetOutpostSupportedInstanceTypes</code></td></tr>
+        <tr><td><code>GetPrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>GetQuote</code></td></tr>
+        <tr><td><code>GetRenewalPricing</code></td></tr>
+        <tr><td><code>GetSite</code></td></tr>
+        <tr><td><code>GetSiteAddress</code></td></tr>
+        <tr><td><code>ListAssetInstances</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListBlockingInstancesForCapacityTask</code></td></tr>
+        <tr><td><code>ListCapacityTasks</code></td></tr>
+        <tr><td><code>ListCatalogItems</code></td></tr>
+        <tr><td><code>ListOrderableInstanceTypes</code></td></tr>
+        <tr><td><code>ListOrders</code></td></tr>
+        <tr><td><code>ListOutposts</code></td></tr>
+        <tr><td><code>ListQuotes</code></td></tr>
+        <tr><td><code>ListSites</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartCapacityTask</code></td></tr>
+        <tr><td><code>StartConnection</code></td></tr>
+        <tr><td><code>StartOutpostDecommission</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateOutpost</code></td></tr>
+        <tr><td><code>UpdateQuote</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateSiteAddress</code></td></tr>
+        <tr><td><code>UpdateSiteRackPhysicalProperties</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="snow-device-management" class="service">
+
+        <div class="service-header">
+        <h2>AWS Snow Device Management</h2>
+        <p>SigV4 signed with service <code>snow-device-management</code>. REST JSON API. Managed devices are the Snowball jobs that are not cancelled (one device per job, typed from the job's Snowball type), each with capacities, network interfaces and one EC2 instance. Tasks run <code>reboot</code> or <code>unlock</code> on their targets: every execution goes QUEUED, IN_PROGRESS, SUCCEEDED one step per read (FAILED if the device leaves management), an unlock moves the device through UNLOCKING to UNLOCKED, and the task completes when all executions finish. CancelTask cancels open executions; client tokens are idempotent. Tags on task and managed device ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: snow-device-management</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Snow Device Management API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTask</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DescribeDevice</code></td></tr>
+        <tr><td><code>DescribeDeviceEc2Instances</code></td></tr>
+        <tr><td><code>DescribeExecution</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>ListDeviceResources</code></td></tr>
+        <tr><td><code>ListDevices</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="backup-gateway" class="service">
+
+        <div class="service-header">
+        <h2>AWS Backup gateway</h2>
+        <p>SigV4 signed with service <code>backup-gateway</code>. JSON 1.0 API with <code>X-Amz-Target: BackupOnPremises_v20210101.*</code>. Gateways associate with one imported hypervisor (and block its deletion), keep a maintenance window (weekly or monthly), a bandwidth rate limit schedule (overlaps refused) and a software version that UpdateGatewaySoftwareNow advances. Imported hypervisors go PENDING to ONLINE on their next read; a metadata sync runs CREATED, RUNNING, SUCCEEDED one step per GetHypervisor and discovers the host's virtual machines, which carry the hypervisor's VMware tag mappings. VMs are AWS Backup resources: StartBackupJob takes their names from here and LastBackupDate comes from their latest completed recovery point. Hypervisor credentials are never stored or returned.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: backup-gateway</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Backup gateway API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateGatewayToServer</code></td></tr>
+        <tr><td><code>CreateGateway</code></td></tr>
+        <tr><td><code>DeleteGateway</code></td></tr>
+        <tr><td><code>DeleteHypervisor</code></td></tr>
+        <tr><td><code>DisassociateGatewayFromServer</code></td></tr>
+        <tr><td><code>GetBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>GetGateway</code></td></tr>
+        <tr><td><code>GetHypervisor</code></td></tr>
+        <tr><td><code>GetHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>GetVirtualMachine</code></td></tr>
+        <tr><td><code>ImportHypervisorConfiguration</code></td></tr>
+        <tr><td><code>ListGateways</code></td></tr>
+        <tr><td><code>ListHypervisors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVirtualMachines</code></td></tr>
+        <tr><td><code>PutBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>PutHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>PutMaintenanceStartTime</code></td></tr>
+        <tr><td><code>StartVirtualMachinesMetadataSync</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>TestHypervisorConfiguration</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateGatewayInformation</code></td></tr>
+        <tr><td><code>UpdateGatewaySoftwareNow</code></td></tr>
+        <tr><td><code>UpdateHypervisor</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -26640,6 +26801,133 @@
         <tr><td><code>TagResource</code></td></tr>
         <tr><td><code>UntagResource</code></td></tr>
         <tr><td><code>UpdateExport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="applicationcostprofiler" class="service">
+
+        <div class="service-header">
+        <h2>AWS Application Cost Profiler</h2>
+        <p>SigV4 signed with service <code>application-cost-profiler</code>. REST JSON API under <code>/reportDefinition</code> and <code>/importApplicationUsage</code>. Report definitions (at most 50) name a destination bucket and prefix in Stackyard's S3; the bucket must exist. ImportApplicationUsage reads a CSV usage file (ApplicationId, TenantId, TenantDesc, ResourceId, StartTime, EndTime; at most 1 MiB and 10,000 rows) from S3 and writes, for every definition, each tenant's usage hours and share of each resource to <code>prefix/reportId/YYYY/MM/DD/importId.csv</code> (MONTHLY: <code>YYYY/MM</code>) plus a JSON manifest. PARQUET definitions get the manifest only.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: application-cost-profiler</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Application Cost Profiler API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteReportDefinition</code></td></tr>
+        <tr><td><code>GetReportDefinition</code></td></tr>
+        <tr><td><code>ImportApplicationUsage</code></td></tr>
+        <tr><td><code>ListReportDefinitions</code></td></tr>
+        <tr><td><code>PutReportDefinition</code></td></tr>
+        <tr><td><code>UpdateReportDefinition</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="bcmdashboards" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Dashboards</h2>
+        <p>SigV4 signed with service <code>bcm-dashboards</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMDashboardsService.*</code>. Dashboards hold up to 20 widgets on a six-column grid; each widget's Cost Explorer-style query (cost and usage, Savings Plans and reservation coverage or utilization) is checked and stored: one query kind and one display per config, ABSOLUTE ISO 8601 or RELATIVE ISO 8601 duration time ranges in order, at most two group-bys on real dimensions, filters with one operator per level. Stackyard does not compute costs. Scheduled reports take cron or rate schedules, idempotent client tokens and unique names; their health is derived on every read (DASHBOARD_NOT_FOUND, WIDGET_ID_NOT_FOUND) and an unhealthy report is not triggered by ExecuteScheduledReport. Resource policies and tags on dashboard and report ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-dashboards</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Dashboards API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDashboard</code></td></tr>
+        <tr><td><code>CreateScheduledReport</code></td></tr>
+        <tr><td><code>DeleteDashboard</code></td></tr>
+        <tr><td><code>DeleteScheduledReport</code></td></tr>
+        <tr><td><code>ExecuteScheduledReport</code></td></tr>
+        <tr><td><code>GetDashboard</code></td></tr>
+        <tr><td><code>GetResourcePolicy</code></td></tr>
+        <tr><td><code>GetScheduledReport</code></td></tr>
+        <tr><td><code>ListDashboards</code></td></tr>
+        <tr><td><code>ListScheduledReports</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateDashboard</code></td></tr>
+        <tr><td><code>UpdateScheduledReport</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+        <section id="bcmpricingcalculator" class="service">
+
+        <div class="service-header">
+        <h2>AWS Billing and Cost Management Pricing Calculator</h2>
+        <p>SigV4 signed with service <code>bcm-pricing-calculator</code>. JSON 1.0 API with <code>X-Amz-Target: AWSBCMPricingCalculator.*</code>. Prices come from a small built-in us-east-1 catalog (EC2, EBS, S3, Lambda, RDS, DynamoDB, CloudWatch) plus three Reserved Instance offerings, so estimates are deterministic. Bill scenarios cover the current month and hold usage modifications (hourly amounts from a start hour) and commitment modifications; batch entries fail individually (unknown price, foreign account, duplicate key). A bill estimate snapshots its scenario and prices it: on-demand usage, Reserved Instances covering matching instance hours, Compute Savings Plans covering eligible spend at a 28% discount. It is IN_PROGRESS, with its scenario LOCKED, until the next request. Workload estimates price usage lines and are UPDATING until the next request after a change. Rate types follow the account's preferences (disallowedRate otherwise). Tags on scenario, estimate and workload ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: bcm-pricing-calculator</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Billing and Cost Management Pricing Calculator API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchCreateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchCreateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchDeleteBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchDeleteWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioCommitmentModification</code></td></tr>
+        <tr><td><code>BatchUpdateBillScenarioUsageModification</code></td></tr>
+        <tr><td><code>BatchUpdateWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>CreateBillEstimate</code></td></tr>
+        <tr><td><code>CreateBillScenario</code></td></tr>
+        <tr><td><code>CreateWorkloadEstimate</code></td></tr>
+        <tr><td><code>DeleteBillEstimate</code></td></tr>
+        <tr><td><code>DeleteBillScenario</code></td></tr>
+        <tr><td><code>DeleteWorkloadEstimate</code></td></tr>
+        <tr><td><code>GetBillEstimate</code></td></tr>
+        <tr><td><code>GetBillScenario</code></td></tr>
+        <tr><td><code>GetPreferences</code></td></tr>
+        <tr><td><code>GetUsageLinesEstimatedCost</code></td></tr>
+        <tr><td><code>GetWorkloadEstimate</code></td></tr>
+        <tr><td><code>ListBillEstimateCommitments</code></td></tr>
+        <tr><td><code>ListBillEstimateInputCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateInputUsageModifications</code></td></tr>
+        <tr><td><code>ListBillEstimateLineItems</code></td></tr>
+        <tr><td><code>ListBillEstimates</code></td></tr>
+        <tr><td><code>ListBillScenarioCommitmentModifications</code></td></tr>
+        <tr><td><code>ListBillScenarioUsageModifications</code></td></tr>
+        <tr><td><code>ListBillScenarios</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListWorkloadEstimateUsage</code></td></tr>
+        <tr><td><code>ListWorkloadEstimates</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateBillEstimate</code></td></tr>
+        <tr><td><code>UpdateBillScenario</code></td></tr>
+        <tr><td><code>UpdatePreferences</code></td></tr>
+        <tr><td><code>UpdateWorkloadEstimate</code></td></tr>
         </tbody>
         </table>
         </details>

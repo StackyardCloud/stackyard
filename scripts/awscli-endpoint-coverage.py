@@ -581,6 +581,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
+    "outposts": {"cli": "outposts", "ops_file": REPO_ROOT / "internal/server/outposts_ops.go"},
+    "snowdevicemanagement": {"cli": "snow-device-management", "ops_file": REPO_ROOT / "internal/server/snowdevicemanagement_ops.go"},
+    "backupgateway": {"cli": "backup-gateway", "ops_file": REPO_ROOT / "internal/server/backupgateway_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "cloudsearch": {"cli": "cloudsearch", "ops_file": REPO_ROOT / "internal/server/cloudsearch_ops.go"},
     "cloudsearchdomain": {"cli": "cloudsearchdomain", "ops_file": REPO_ROOT / "internal/server/cloudsearchdomain_ops.go"},
@@ -591,6 +594,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "budgets": {"cli": "budgets", "ops_file": REPO_ROOT / "internal/server/budgets_ops.go"},
     "costoptimizationhub": {"cli": "cost-optimization-hub", "ops_file": REPO_ROOT / "internal/server/costoptimizationhub_ops.go"},
     "bcmdataexports": {"cli": "bcm-data-exports", "ops_file": REPO_ROOT / "internal/server/bcmdataexports_ops.go"},
+    "applicationcostprofiler": {"cli": "applicationcostprofiler", "ops_file": REPO_ROOT / "internal/server/applicationcostprofiler_ops.go"},
+    "bcmdashboards": {"cli": "bcm-dashboards", "ops_file": REPO_ROOT / "internal/server/bcmdashboards_ops.go"},
+    "bcmpricingcalculator": {"cli": "bcm-pricing-calculator", "ops_file": REPO_ROOT / "internal/server/bcmpricingcalculator_ops.go"},
     "account": {"cli": "account", "ops_file": REPO_ROOT / "internal/server/account_ops.go"},
     "freetier": {"cli": "freetier", "ops_file": REPO_ROOT / "internal/server/freetier_ops.go"},
     "taxsettings": {"cli": "taxsettings", "ops_file": REPO_ROOT / "internal/server/taxsettings_ops.go"},
@@ -2349,6 +2355,12 @@ SERVICE_ALIASES = {
     "amazonforecastquery": "forecastquery",
     "frauddetector": "frauddetector",
     "amazonfrauddetector": "frauddetector",
+    "outposts": "outposts",
+    "awsoutposts": "outposts",
+    "snowdevicemanagement": "snowdevicemanagement",
+    "snow-device-management": "snowdevicemanagement",
+    "backupgateway": "backupgateway",
+    "backup-gateway": "backupgateway",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -2377,6 +2389,12 @@ SERVICE_ALIASES = {
     "bcmdataexports": "bcmdataexports",
     "bcm-data-exports": "bcmdataexports",
     "dataexports": "bcmdataexports",
+    "applicationcostprofiler": "applicationcostprofiler",
+    "application-cost-profiler": "applicationcostprofiler",
+    "bcmdashboards": "bcmdashboards",
+    "bcm-dashboards": "bcmdashboards",
+    "bcmpricingcalculator": "bcmpricingcalculator",
+    "bcm-pricing-calculator": "bcmpricingcalculator",
     "account": "account",
     "awsaccount": "account",
     "accountmanagement": "account",
@@ -3367,6 +3385,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "forecast": {},
     "frauddetector": {},
+    "outposts": {},
+    "snowdevicemanagement": {},
+    "backupgateway": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
@@ -3377,6 +3398,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "budgets": {},
     "costoptimizationhub": {},
     "bcmdataexports": {},
+    "applicationcostprofiler": {},
+    "bcmdashboards": {},
+    "bcmpricingcalculator": {},
     "account": {},
     "freetier": {},
     "taxsettings": {},
@@ -40148,6 +40172,503 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+EDGE_ACCOUNT = "123456789012"
+EDGE_ADDRESS = {"ContactName": "Stackyard Ops", "ContactPhoneNumber": "+15555550100", "AddressLine1": "1 Main St",
+                "City": "Seattle", "StateOrRegion": "WA", "PostalCode": "98101", "CountryCode": "US"}
+
+
+def edge_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def outposts_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Outposts operations at a fixture site and outpost with installed
+    hardware; creates, deletes and capacity tasks get resources of their own.
+    Names are run-unique because servers are reused between runs."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "outposts", name, args)
+
+    def site() -> str:
+        counter[0] += 1
+        return call("CreateSite", {"Name": f"sy-site-{run}-{counter[0]}", "OperatingAddress": EDGE_ADDRESS,
+                                   "ShippingAddress": EDGE_ADDRESS}).get("Site", {}).get("SiteId", "")
+
+    def outpost(site_id: str) -> str:
+        return call("CreateOutpost", {"Name": f"sy-outpost-{run}", "SiteId": site_id}).get("Outpost", {}).get("OutpostId", "")
+
+    def order(outpost_id: str) -> str:
+        return call("CreateOrder", {"OutpostIdentifier": outpost_id, "PaymentOption": "ALL_UPFRONT",
+                                    "LineItems": [{"CatalogItemId": "OR-RACKM5A", "Quantity": 1}]}).get("Order", {}).get("OrderId", "")
+
+    def fulfilled(site_id: str) -> str:
+        oid = outpost(site_id)
+        order_id = order(oid)
+        for _ in range(4):  # RECEIVED -> ... -> FULFILLED
+            call("GetOrder", {"OrderId": order_id})
+        return oid
+
+    state = RUNTIME_STATE.setdefault("outposts", {})
+    if not state.get("outpost"):
+        sid = site()
+        oid = outpost(sid)
+        order_id = order(oid)
+        for _ in range(4):
+            call("GetOrder", {"OrderId": order_id})
+        asset = (call("ListAssets", {"OutpostIdentifier": oid}).get("Assets") or [{}])[0].get("AssetId", "")
+        task = call("StartCapacityTask", {"OutpostIdentifier": oid, "InstancePools": [{"InstanceType": "m5.xlarge", "Count": 8}]})
+        tid = task.get("CapacityTaskId", "")
+        for _ in range(2):  # REQUESTED -> IN_PROGRESS -> COMPLETED
+            call("GetCapacityTask", {"OutpostIdentifier": oid, "CapacityTaskId": tid})
+        call("CreatePrivateConnectivityConfig", {"OutpostId": oid, "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]})
+        quote = call("CreateQuote", {"OutpostIdentifier": oid, "CountryCode": "US",
+                                     "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "m5", "Quantity": 96}]}).get("Quote", {})
+        conn = call("StartConnection", {"AssetId": asset, "ClientPublicKey": "A" * 43 + "=", "NetworkInterfaceDeviceIndex": 0})
+        state.update({"site": sid, "outpost": oid, "order": order_id, "asset": asset, "task": tid,
+                      "quote": quote.get("QuoteId", ""), "connection": conn.get("ConnectionId", "")})
+    sid, oid = state["site"], state["outpost"]
+    arn = f"arn:aws:outposts:us-east-1:{EDGE_ACCOUNT}:outpost/{oid}"
+    rack = {"PowerDrawKva": "POWER_10_KVA", "PowerPhase": "THREE_PHASE", "PowerConnector": "IEC309", "PowerFeedDrop": "ABOVE_RACK",
+            "UplinkGbps": "UPLINK_10G", "UplinkCount": "UPLINK_COUNT_2", "FiberOpticCableType": "SINGLE_MODE",
+            "OpticalStandard": "OPTIC_10GBASE_LR", "MaximumSupportedWeightLbs": "MAX_1400_LBS"}
+    fixed = {
+        "CreateSite": lambda: {"Name": f"sy-created-{run}", "Description": "coverage", "OperatingAddress": EDGE_ADDRESS,
+                               "RackPhysicalProperties": rack, "Tags": {"team": "coverage"}},
+        "GetSite": lambda: {"SiteId": sid},
+        "UpdateSite": lambda: {"SiteId": sid, "Notes": "updated by coverage"},
+        "DeleteSite": lambda: {"SiteId": site()},
+        "GetSiteAddress": lambda: {"SiteId": sid, "AddressType": "OPERATING_ADDRESS"},
+        "UpdateSiteAddress": lambda: {"SiteId": sid, "AddressType": "SHIPPING_ADDRESS", "Address": EDGE_ADDRESS},
+        "UpdateSiteRackPhysicalProperties": lambda: dict(rack, SiteId=sid),
+        "ListSites": lambda: {"MaxResults": 10},
+        "CreateOutpost": lambda: {"Name": f"sy-created-{run}", "SiteId": sid, "Tags": {"team": "coverage"}},
+        "GetOutpost": lambda: {"OutpostId": oid},
+        "UpdateOutpost": lambda: {"OutpostId": oid, "Description": "updated by coverage"},
+        "DeleteOutpost": lambda: {"OutpostId": outpost(sid)},
+        "StartOutpostDecommission": lambda: {"OutpostIdentifier": outpost(sid)},
+        "ListOutposts": lambda: {"MaxResults": 10},
+        "CreatePrivateConnectivityConfig": lambda: {"OutpostId": outpost(sid), "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]},
+        "GetPrivateConnectivityConfig": lambda: {"OutpostId": oid},
+        "CreateQuote": lambda: {"OutpostIdentifier": oid, "CountryCode": "US", "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "c5", "Quantity": 48}]},
+        "GetQuote": lambda: {"QuoteIdentifier": state["quote"]},
+        "UpdateQuote": lambda: {"QuoteIdentifier": state["quote"], "Description": "updated by coverage"},
+        "DeleteQuote": lambda: {"QuoteIdentifier": call("CreateQuote", {"CountryCode": "US", "RequestedCapacities": [
+            {"QuoteCapacityType": "EBS", "Unit": "TB", "Quantity": 10}]}).get("Quote", {}).get("QuoteId", "")},
+        "ListQuotes": lambda: {"MaxResults": 10},
+        "CreateOrder": lambda: {"OutpostIdentifier": oid, "PaymentOption": "NO_UPFRONT", "PaymentTerm": "ONE_YEAR",
+                                "LineItems": [{"CatalogItemId": "OR-RACKC5A", "Quantity": 1}]},
+        "GetOrder": lambda: {"OrderId": state["order"]},
+        "CancelOrder": lambda: {"OrderId": order(oid)},
+        "ListOrders": lambda: {"OutpostIdentifierFilter": oid},
+        "ListAssets": lambda: {"OutpostIdentifier": oid},
+        "ListAssetInstances": lambda: {"OutpostIdentifier": oid},
+        "GetOutpostInstanceTypes": lambda: {"OutpostId": oid},
+        "GetOutpostSupportedInstanceTypes": lambda: {"OutpostIdentifier": oid, "AssetId": state["asset"]},
+        "StartCapacityTask": lambda: {"OutpostIdentifier": fulfilled(sid), "InstancePools": [{"InstanceType": "m5.large", "Count": 4}]},
+        "CancelCapacityTask": lambda: (lambda o: {"OutpostIdentifier": o, "CapacityTaskId": call("StartCapacityTask", {
+            "OutpostIdentifier": o, "InstancePools": [{"InstanceType": "m5.large", "Count": 2}]}).get("CapacityTaskId", "")})(fulfilled(sid)),
+        "GetCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListBlockingInstancesForCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListCapacityTasks": lambda: {"OutpostIdentifierFilter": oid},
+        "StartConnection": lambda: {"AssetId": state["asset"], "ClientPublicKey": "B" * 43 + "=", "NetworkInterfaceDeviceIndex": 1},
+        "GetConnection": lambda: {"ConnectionId": state["connection"]},
+        "GetOutpostBillingInformation": lambda: {"OutpostIdentifier": oid},
+        "GetRenewalPricing": lambda: {"OutpostIdentifier": oid},
+        "CreateRenewal": lambda: {"OutpostIdentifier": oid, "PaymentOption": "ALL_UPFRONT", "PaymentTerm": "THREE_YEARS", "ClientToken": f"sy-{run}"},
+        "GetCatalogItem": lambda: {"CatalogItemId": "OR-RACKM5A"},
+        "ListCatalogItems": lambda: {"ItemClassFilter": ["RACK"]},
+        "ListOrderableInstanceTypes": lambda: {"OutpostGenerationFilter": "GENERATION_2"},
+        "ListTagsForResource": lambda: {"ResourceArn": arn},
+        "TagResource": lambda: {"ResourceArn": arn, "Tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"ResourceArn": arn, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def snowdevicemanagement_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Managed devices are Snowball jobs: create one, then point device and
+    task operations at it; CancelTask gets a task of its own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "snow-device-management", name, args)
+
+    def task() -> dict:
+        return call("CreateTask", {"command": {"reboot": {}}, "targets": [state["device"]], "tags": {"team": "coverage"}})
+
+    state = RUNTIME_STATE.setdefault("snowdevicemanagement", {})
+    if not state.get("device"):
+        job = edge_call(aws_bin, endpoint_url, region, env, "snowball", "CreateJob",
+                        {"JobType": "IMPORT", "SnowballType": "EDGE", "Description": "snow device management coverage"}).get("JobId", "")
+        device = (call("ListDevices", {"jobId": job}).get("devices") or [{}])[0].get("managedDeviceId", "")
+        state.update({"job": job, "device": device})
+        instance = (call("ListDeviceResources", {"managedDeviceId": device}).get("resources") or [{}])[0].get("id", "")
+        state.update({"instance": instance, "task": task()})
+    dev, tid, tarn = state["device"], state["task"].get("taskId", ""), state["task"].get("taskArn", "")
+    fixed = {
+        "ListDevices": lambda: {"jobId": state["job"], "maxResults": 10},
+        "DescribeDevice": lambda: {"managedDeviceId": dev},
+        "ListDeviceResources": lambda: {"managedDeviceId": dev, "type": "AWS::EC2::Instance"},
+        "DescribeDeviceEc2Instances": lambda: {"managedDeviceId": dev, "instanceIds": [state["instance"]]},
+        "CreateTask": lambda: {"command": {"unlock": {}}, "targets": [dev], "description": "coverage unlock"},
+        "DescribeTask": lambda: {"taskId": tid},
+        "CancelTask": lambda: {"taskId": task().get("taskId", "")},
+        "ListTasks": lambda: {"maxResults": 10},
+        "DescribeExecution": lambda: {"taskId": tid, "managedDeviceId": dev},
+        "ListExecutions": lambda: {"taskId": tid},
+        "ListTagsForResource": lambda: {"resourceArn": tarn},
+        "TagResource": lambda: {"resourceArn": tarn, "tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"resourceArn": tarn, "tagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def backupgateway_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Backup gateway operations at a fixture gateway associated with an
+    imported hypervisor whose VMs are synced; creates and deletes get their own."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "backup-gateway", name, args)
+
+    def gateway() -> str:
+        return call("CreateGateway", {"ActivationKey": f"SY-{run}", "GatewayDisplayName": f"sy-gw-{run}",
+                                      "GatewayType": "BACKUP_VM"}).get("GatewayArn", "")
+
+    def hypervisor() -> str:
+        counter[0] += 1
+        return call("ImportHypervisorConfiguration", {"Name": f"sy-hv-{run}", "Host": f"vcenter-{run}-{counter[0]}.example.com"}).get("HypervisorArn", "")
+
+    state = RUNTIME_STATE.setdefault("backupgateway", {})
+    if not state.get("gateway"):
+        gw, hv = gateway(), hypervisor()
+        for _ in range(3):  # PENDING -> ONLINE, sync CREATED -> RUNNING -> SUCCEEDED
+            call("GetHypervisor", {"HypervisorArn": hv})
+        vm = (call("ListVirtualMachines", {"HypervisorArn": hv}).get("VirtualMachines") or [{}])[0].get("ResourceArn", "")
+        call("AssociateGatewayToServer", {"GatewayArn": gw, "ServerArn": hv})
+        state.update({"gateway": gw, "hypervisor": hv, "vm": vm})
+    gw, hv = state["gateway"], state["hypervisor"]
+    fixed = {
+        "CreateGateway": lambda: {"ActivationKey": f"SY-NEW-{run}", "GatewayDisplayName": "sy-created", "GatewayType": "BACKUP_VM",
+                                  "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "DeleteGateway": lambda: {"GatewayArn": gateway()},
+        "GetGateway": lambda: {"GatewayArn": gw},
+        "ListGateways": lambda: {"MaxResults": 10},
+        "UpdateGatewayInformation": lambda: {"GatewayArn": gw, "GatewayDisplayName": "sy-renamed"},
+        "UpdateGatewaySoftwareNow": lambda: {"GatewayArn": gw},
+        "AssociateGatewayToServer": lambda: {"GatewayArn": gateway(), "ServerArn": hv},
+        "DisassociateGatewayFromServer": lambda: (lambda g: (call("AssociateGatewayToServer", {"GatewayArn": g, "ServerArn": hv}), {"GatewayArn": g})[1])(gateway()),
+        "PutMaintenanceStartTime": lambda: {"GatewayArn": gw, "HourOfDay": 3, "MinuteOfHour": 30, "DayOfWeek": 6},
+        "PutBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw, "BandwidthRateLimitIntervals": [
+            {"AverageUploadRateLimitInBitsPerSec": 104857600, "StartHourOfDay": 9, "StartMinuteOfHour": 0,
+             "EndHourOfDay": 17, "EndMinuteOfHour": 0, "DaysOfWeek": [1, 2, 3, 4, 5]}]},
+        "GetBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw},
+        "TestHypervisorConfiguration": lambda: {"GatewayArn": gw, "Host": "vcenter.example.com", "Username": "backup", "Password": "Coverage-Only-1"},
+        "ImportHypervisorConfiguration": lambda: {"Name": "sy-imported", "Host": f"esxi-{run}.example.com", "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "GetHypervisor": lambda: {"HypervisorArn": hv},
+        "ListHypervisors": lambda: {"MaxResults": 10},
+        "UpdateHypervisor": lambda: {"HypervisorArn": hv, "Name": "sy-renamed"},
+        "DeleteHypervisor": lambda: {"HypervisorArn": hypervisor()},
+        "PutHypervisorPropertyMappings": lambda: {"HypervisorArn": hv, "IamRoleArn": f"arn:aws:iam::{EDGE_ACCOUNT}:role/stackyard-bgw",
+                                                  "VmwareToAwsTagMappings": [{"VmwareCategory": "tier", "VmwareTagName": "gold", "AwsTagKey": "tier", "AwsTagValue": "gold"}]},
+        "GetHypervisorPropertyMappings": lambda: {"HypervisorArn": hv},
+        "StartVirtualMachinesMetadataSync": lambda: {"HypervisorArn": hv},
+        "GetVirtualMachine": lambda: {"ResourceArn": state["vm"]},
+        "ListVirtualMachines": lambda: {"HypervisorArn": hv},
+        "ListTagsForResource": lambda: {"ResourceArn": gw},
+        "TagResource": lambda: {"ResourceARN": gw, "Tags": [{"Key": "env", "Value": "coverage"}]},
+        "UntagResource": lambda: {"ResourceARN": gw, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def acp_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "applicationcostprofiler", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def acp_definition(report_id: str, bucket: str) -> dict:
+    return {
+        "reportId": report_id, "reportDescription": "Stackyard coverage report", "reportFrequency": "DAILY",
+        "format": "CSV", "destinationS3Location": {"bucket": bucket, "prefix": "tenant-reports"},
+    }
+
+
+def acp_new_definition(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], bucket: str) -> str:
+    report_id = f"stackyard-report-{time.time_ns()}"
+    acp_cli(aws_bin, endpoint_url, region, env, "put-report-definition", acp_definition(report_id, bucket))
+    return report_id
+
+
+def applicationcostprofiler_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A bucket holding a usage file and a shared report definition; DeleteReportDefinition gets its own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("applicationcostprofiler", {})
+    if not state.get("report"):
+        bucket = f"stackyard-acp-{time.time_ns()}"
+        run_aws_json(aws_bin, endpoint_url, region, "s3api", "create-bucket", env, ["--bucket", bucket])
+        usage = "ApplicationId,TenantId,TenantDesc,ResourceId,StartTime,EndTime\n" \
+                "app-1,tenant-a,Tenant A,i-0abc,2026-01-01T00:00:00Z,2026-01-01T06:00:00Z\n" \
+                "app-1,tenant-b,Tenant B,i-0abc,2026-01-01T00:00:00Z,2026-01-01T02:00:00Z\n"
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write(usage)
+            usage_path = fh.name
+        try:
+            run_aws_json(aws_bin, endpoint_url, region, "s3api", "put-object", env,
+                         ["--bucket", bucket, "--key", "usage/usage.csv", "--body", usage_path])
+        finally:
+            os.unlink(usage_path)
+        state["bucket"] = bucket
+        state["report"] = acp_new_definition(aws_bin, endpoint_url, region, env, bucket)
+    bucket, report = str(state["bucket"]), str(state["report"])
+    if op == "PutReportDefinition":
+        return acp_definition(f"stackyard-report-{time.time_ns()}", bucket)
+    if op == "UpdateReportDefinition":
+        updated = acp_definition(report, bucket)
+        updated["reportFrequency"] = "MONTHLY"
+        return updated
+    if op == "GetReportDefinition":
+        return {"reportId": report}
+    if op == "DeleteReportDefinition":
+        return {"reportId": acp_new_definition(aws_bin, endpoint_url, region, env, bucket)}
+    if op == "ListReportDefinitions":
+        return {}
+    if op == "ImportApplicationUsage":
+        return {"sourceS3Location": {"bucket": bucket, "key": "usage/usage.csv"}}
+    return payload
+
+
+def bcmd_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-dashboards", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+BCMD_WIDGET_ID = "0123456789abcdef0123456789abcdef"
+
+
+def bcmd_widgets() -> list:
+    return [{
+        "id": BCMD_WIDGET_ID, "title": "Monthly cost by service", "width": 4, "height": 4,
+        "configs": [{
+            "queryParameters": {"costAndUsage": {
+                "metrics": ["UnblendedCost"], "granularity": "MONTHLY",
+                "timeRange": {"startTime": {"type": "RELATIVE", "value": "-P3M"}, "endTime": {"type": "RELATIVE", "value": "P0D"}},
+                "groupBy": [{"key": "SERVICE", "type": "DIMENSION"}],
+                "filter": {"dimensions": {"key": "REGION", "values": ["us-east-1"]}},
+            }},
+            "displayConfig": {"graph": {"default": {"visualType": "BAR"}}},
+        }],
+    }]
+
+
+def bcmd_new_dashboard(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> str:
+    name = f"stackyard-dashboard-{time.time_ns()}"
+    return str(bcmd_cli(aws_bin, endpoint_url, region, env, "create-dashboard", {"name": name, "widgets": bcmd_widgets()}).get("arn") or "")
+
+
+def bcmd_report(dashboard: str) -> dict:
+    return {
+        "name": f"stackyard-report-{time.time_ns()}", "dashboardArn": dashboard,
+        "scheduledReportExecutionRoleArn": "arn:aws:iam::123456789012:role/stackyard-reports",
+        "scheduleConfig": {"scheduleExpression": "cron(0 8 ? * MON *)", "scheduleExpressionTimeZone": "UTC", "state": "ENABLED"},
+        "widgetIds": [BCMD_WIDGET_ID],
+    }
+
+
+def bcmd_new_report(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], dashboard: str) -> str:
+    return str(bcmd_cli(aws_bin, endpoint_url, region, env, "create-scheduled-report", {"scheduledReport": bcmd_report(dashboard)}).get("arn") or "")
+
+
+def bcmdashboards_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared dashboard and scheduled report; deletes get resources of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("bcmdashboards", {})
+    if not state.get("report"):
+        state["dashboard"] = bcmd_new_dashboard(aws_bin, endpoint_url, region, env)
+        state["report"] = bcmd_new_report(aws_bin, endpoint_url, region, env, str(state["dashboard"]))
+    dashboard, report = str(state["dashboard"]), str(state["report"])
+    if op == "CreateDashboard":
+        return {"name": f"stackyard-dashboard-{time.time_ns()}", "description": "Stackyard coverage dashboard",
+                "widgets": bcmd_widgets(), "resourceTags": [{"key": "team", "value": "finance"}]}
+    if op in {"GetDashboard"}:
+        return {"arn": dashboard}
+    if op == "UpdateDashboard":
+        return {"arn": dashboard, "name": f"stackyard-dashboard-{time.time_ns()}", "description": "updated", "widgets": bcmd_widgets()}
+    if op == "DeleteDashboard":
+        return {"arn": bcmd_new_dashboard(aws_bin, endpoint_url, region, env)}
+    if op == "GetResourcePolicy":
+        return {"resourceArn": dashboard}
+    if op in {"ListDashboards", "ListScheduledReports"}:
+        return {}
+    if op == "CreateScheduledReport":
+        return {"scheduledReport": bcmd_report(dashboard), "clientToken": f"stackyard-{time.time_ns()}"}
+    if op == "GetScheduledReport":
+        return {"arn": report}
+    if op == "UpdateScheduledReport":
+        return {"arn": report, "description": "updated by Stackyard coverage", "scheduleConfig": {"state": "DISABLED"}}
+    if op == "ExecuteScheduledReport":
+        return {"arn": report, "dryRun": False}
+    if op == "DeleteScheduledReport":
+        return {"arn": bcmd_new_report(aws_bin, endpoint_url, region, env, dashboard)}
+    if op == "TagResource":
+        return {"resourceArn": dashboard, "resourceTags": [{"key": "env", "value": "coverage"}]}
+    if op == "UntagResource":
+        return {"resourceArn": dashboard, "resourceTagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"resourceArn": dashboard}
+    return payload
+
+
+BCMPC_ACCOUNT = "123456789012"
+BCMPC_RI_OFFERING = "7d1e2f3a-4b5c-4d6e-8f9a-0b1c2d3e4f5a"
+
+
+def bcmpc_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
+    data = run_aws_json(aws_bin, endpoint_url, region, "bcm-pricing-calculator", op, env, ["--cli-input-json", json.dumps(payload)])
+    return data if isinstance(data, dict) else {}
+
+
+def bcmpc_month_start() -> str:
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now.strftime("%Y-%m-01T00:00:00Z")
+
+
+def bcmpc_usage_entry(key: str) -> dict:
+    return {"serviceCode": "AmazonEC2", "usageType": "BoxUsage:m5.large", "operation": "RunInstances", "key": key,
+            "usageAccountId": BCMPC_ACCOUNT, "amounts": [{"startHour": bcmpc_month_start(), "amount": 2.0}]}
+
+
+def bcmpc_commit_entry(key: str) -> dict:
+    return {"key": key, "usageAccountId": BCMPC_ACCOUNT, "commitmentAction": {
+        "addReservedInstanceAction": {"reservedInstancesOfferingId": BCMPC_RI_OFFERING, "instanceCount": 1}}}
+
+
+def bcmpc_workload_entry(key: str) -> dict:
+    return {"serviceCode": "AmazonS3", "usageType": "TimedStorage-ByteHrs", "operation": "StandardStorage", "key": key,
+            "usageAccountId": BCMPC_ACCOUNT, "amount": 500.0}
+
+
+def bcmpc_new(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> str:
+    return str(bcmpc_cli(aws_bin, endpoint_url, region, env, op, payload).get("id") or "")
+
+
+def bcmpc_new_item(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> str:
+    items = bcmpc_cli(aws_bin, endpoint_url, region, env, op, payload).get("items") or [{}]
+    return str(items[0].get("id") or "")
+
+
+def bcmpricingcalculator_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """A shared scenario (with usage and an RI), a bill estimate of it and a workload estimate.
+    Deletes get resources of their own; a new estimate completes on the next request."""
+    op = endpoint.operation
+    call = lambda o, p: bcmpc_new(aws_bin, endpoint_url, region, env, o, p)  # noqa: E731
+    item = lambda o, p: bcmpc_new_item(aws_bin, endpoint_url, region, env, o, p)  # noqa: E731
+    state = RUNTIME_STATE.setdefault("bcmpricingcalculator", {})
+    if not state.get("workload"):
+        scenario = call("create-bill-scenario", {"name": f"stackyard-scenario-{time.time_ns()}"})
+        item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("web")]})
+        item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("ri")]})
+        state["scenario"] = scenario
+        state["estimate"] = call("create-bill-estimate", {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"})
+        workload = call("create-workload-estimate", {"name": f"stackyard-workload-{time.time_ns()}"})
+        item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("s3")]})
+        state["workload"] = workload
+    scenario, estimate, workload = str(state["scenario"]), str(state["estimate"]), str(state["workload"])
+    arn = f"arn:aws:bcm-pricing-calculator::{BCMPC_ACCOUNT}:bill-scenario/{scenario}"
+    if op == "GetPreferences":
+        return {}
+    if op == "UpdatePreferences":
+        rates = ["BEFORE_DISCOUNTS", "AFTER_DISCOUNTS", "AFTER_DISCOUNTS_AND_COMMITMENTS"]
+        return {"standaloneAccountRateTypeSelections": rates, "managementAccountRateTypeSelections": rates}
+    if op == "CreateBillScenario":
+        return {"name": f"stackyard-scenario-{time.time_ns()}", "tags": {"team": "finance"}}
+    if op == "GetBillScenario":
+        return {"identifier": scenario}
+    if op == "UpdateBillScenario":
+        return {"identifier": scenario, "name": f"stackyard-scenario-{time.time_ns()}"}
+    if op == "DeleteBillScenario":
+        return {"identifier": call("create-bill-scenario", {"name": f"stackyard-scenario-{time.time_ns()}"})}
+    if op in {"ListBillScenarios", "ListBillEstimates", "ListWorkloadEstimates"}:
+        return {}
+    if op == "BatchCreateBillScenarioUsageModification":
+        return {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("api")]}
+    if op == "BatchUpdateBillScenarioUsageModification":
+        mod = item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("upd")]})
+        return {"billScenarioId": scenario, "usageModifications": [{"id": mod, "group": "web", "amounts": [{"startHour": bcmpc_month_start(), "amount": 3.0}]}]}
+    if op == "BatchDeleteBillScenarioUsageModification":
+        mod = item("batch-create-bill-scenario-usage-modification", {"billScenarioId": scenario, "usageModifications": [bcmpc_usage_entry("del")]})
+        return {"billScenarioId": scenario, "ids": [mod]}
+    if op in {"ListBillScenarioUsageModifications", "ListBillScenarioCommitmentModifications"}:
+        return {"billScenarioId": scenario}
+    if op == "BatchCreateBillScenarioCommitmentModification":
+        return {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("ri2")]}
+    if op == "BatchUpdateBillScenarioCommitmentModification":
+        mod = item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("upd")]})
+        return {"billScenarioId": scenario, "commitmentModifications": [{"id": mod, "group": "reserved"}]}
+    if op == "BatchDeleteBillScenarioCommitmentModification":
+        mod = item("batch-create-bill-scenario-commitment-modification", {"billScenarioId": scenario, "commitmentModifications": [bcmpc_commit_entry("del")]})
+        return {"billScenarioId": scenario, "ids": [mod]}
+    if op == "CreateBillEstimate":
+        return {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"}
+    if op == "GetBillEstimate":
+        return {"identifier": estimate}
+    if op == "UpdateBillEstimate":
+        return {"identifier": estimate, "name": f"stackyard-estimate-{time.time_ns()}"}
+    if op == "DeleteBillEstimate":
+        return {"identifier": call("create-bill-estimate", {"billScenarioId": scenario, "name": f"stackyard-estimate-{time.time_ns()}"})}
+    if op in {"ListBillEstimateLineItems", "ListBillEstimateCommitments", "ListBillEstimateInputUsageModifications",
+              "ListBillEstimateInputCommitmentModifications"}:
+        return {"billEstimateId": estimate}
+    if op == "CreateWorkloadEstimate":
+        return {"name": f"stackyard-workload-{time.time_ns()}", "rateType": "BEFORE_DISCOUNTS"}
+    if op == "GetWorkloadEstimate":
+        return {"identifier": workload}
+    if op == "UpdateWorkloadEstimate":
+        return {"identifier": workload, "name": f"stackyard-workload-{time.time_ns()}"}
+    if op == "DeleteWorkloadEstimate":
+        return {"identifier": call("create-workload-estimate", {"name": f"stackyard-workload-{time.time_ns()}"})}
+    if op == "BatchCreateWorkloadEstimateUsage":
+        return {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("s3b")]}
+    if op == "BatchUpdateWorkloadEstimateUsage":
+        line = item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("upd")]})
+        return {"workloadEstimateId": workload, "usage": [{"id": line, "amount": 750.0}]}
+    if op == "BatchDeleteWorkloadEstimateUsage":
+        line = item("batch-create-workload-estimate-usage", {"workloadEstimateId": workload, "usage": [bcmpc_workload_entry("del")]})
+        return {"workloadEstimateId": workload, "ids": [line]}
+    if op == "ListWorkloadEstimateUsage":
+        return {"workloadEstimateId": workload}
+    if op == "GetUsageLinesEstimatedCost":
+        return {"rateType": "BEFORE_DISCOUNTS", "usage": [
+            {"serviceCode": "AWSLambda", "usageType": "Request", "operation": "Invoke", "key": "lambda", "amount": 1000000.0},
+            {"serviceCode": "AmazonEC2", "usageType": "BoxUsage:t3.micro", "operation": "RunInstances", "key": "ec2", "amount": 730.0},
+        ]}
+    if op == "TagResource":
+        return {"arn": arn, "tags": {"env": "coverage"}}
+    if op == "UntagResource":
+        return {"arn": arn, "tagKeys": ["env"]}
+    if op == "ListTagsForResource":
+        return {"arn": arn}
+    return payload
+
+
 SMX_ROLE = "arn:aws:iam::123456789012:role/stackyard-sagemaker"
 SMX_FEATURES = [
     {"FeatureName": "customer_id", "FeatureType": "String"},
@@ -40520,6 +41041,18 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "outposts":
+        return outposts_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "snowdevicemanagement":
+        return snowdevicemanagement_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "backupgateway":
+        return backupgateway_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "applicationcostprofiler":
+        return applicationcostprofiler_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmdashboards":
+        return bcmdashboards_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "bcmpricingcalculator":
+        return bcmpricingcalculator_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemaker":
         payload = sagemaker_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "sagemakerfeaturestoreruntime":
