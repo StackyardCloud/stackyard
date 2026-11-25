@@ -201,6 +201,30 @@ window.AWS_SERVICE_CATALOG = [
   },
 
   {
+    id: "budgets",
+    name: "Budgets",
+    category: "integration",
+    summary: "Emulate budgets with limits, planned limits, filters and cost types, notifications with email and SNS subscribers, budget actions with approve/reverse/reset and history, performance history and tags.",
+    docsHref: "../../../index.html#budgets",
+    exampleHref: "../../../../examples/aws/budgets/docker-compose.yml"
+  },
+  {
+    id: "costoptimizationhub",
+    name: "Cost Optimization Hub",
+    category: "integration",
+    summary: "Emulate enrollment and preferences, a deterministic catalog of rightsizing, Graviton, Savings Plans and Reserved Instance recommendations with filters, ordering and summaries, and efficiency metrics.",
+    docsHref: "../../../index.html#costoptimizationhub",
+    exampleHref: "../../../../examples/aws/cost-optimization-hub/docker-compose.yml"
+  },
+  {
+    id: "bcmdataexports",
+    name: "Data Exports",
+    category: "integration",
+    summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
+    docsHref: "../../../index.html#bcmdataexports",
+    exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
     id: "pi",
     name: "Performance Insights",
     category: "integration",
@@ -1488,6 +1512,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Plan staged emulation for channel groups, channels, origin endpoints, harvest jobs, policy controls, resets, and tagging APIs.",
     docsHref: "../../../index.html#mediapackage",
     exampleHref: "../../../../examples/aws/mediapackage/docker-compose.yml"
+  },
+  {
+    id: "mediastore",
+    name: "Elemental MediaStore",
+    category: "integration",
+    summary: "Containers with endpoints, container/CORS/lifecycle/metric policies, access logging and tags.",
+    docsHref: "../../../index.html#mediastore",
+    exampleHref: "../../../../examples/aws/mediastore/docker-compose.yml"
+  },
+  {
+    id: "mediastoredata",
+    name: "Elemental MediaStore Data",
+    category: "integration",
+    summary: "Store and serve objects in MediaStore containers with byte ranges and folder listings.",
+    docsHref: "../../../index.html#mediastoredata",
+    exampleHref: "../../../../examples/aws/mediastore-data/docker-compose.yml"
+  },
+  {
+    id: "mediapackagevod",
+    name: "Elemental MediaPackage VOD",
+    category: "integration",
+    summary: "Packaging groups, CMAF/DASH/HLS/MSS packaging configurations and S3-sourced assets with egress endpoints.",
+    docsHref: "../../../index.html#mediapackagevod",
+    exampleHref: "../../../../examples/aws/mediapackage-vod/docker-compose.yml"
   },
   {
     id: "mediaconnect",
