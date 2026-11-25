@@ -42,8 +42,9 @@ var mmgrStatus = map[string]int{
 // mmgrReq is one decoded request; base is the server's own URL, used for
 // pre-signed import and download links.
 type mmgrReq struct {
-	in   map[string]any
-	base string
+	in     map[string]any
+	base   string
+	caller s3Caller // authorizes the S3 writes an export makes for the caller
 }
 
 type mmgrHandler func(s *Server, q mmgrReq) (map[string]any, *mmgrErr)
@@ -88,7 +89,7 @@ func (s *Server) handleMailManagerJSONRouter(w http.ResponseWriter, r *http.Requ
 		respondMailManagerError(w, mmgrError(code, "%s", problem))
 		return true
 	}
-	out, merr := h(s, mmgrReq{in: in, base: mmgrBaseURL(r)})
+	out, merr := h(s, mmgrReq{in: in, base: mmgrBaseURL(r), caller: s.s3CallerOf(r)})
 	if merr != nil {
 		respondMailManagerError(w, merr)
 		return true

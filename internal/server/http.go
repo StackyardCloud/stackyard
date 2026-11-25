@@ -24,7 +24,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -33228,6 +33227,12 @@ func (s *Server) authorizeS3Request(r *http.Request, bucket, key, action string,
 }
 
 func evaluatePolicy(policy, requester, action, bucket, key string) (bool, bool) {
+	return evaluatePolicyFor(policy, func(p any) bool { return principalMatches(p, requester) }, action, bucket, key)
+}
+
+// evaluatePolicyFor is evaluatePolicy with the principal test supplied, so
+// user and service principals are matched by separate rules.
+func evaluatePolicyFor(policy string, matches func(any) bool, action, bucket, key string) (bool, bool) {
 	statements := parsePolicyStatements(policy)
 	resource := "arn:aws:s3:::" + bucket
 	if key != "" {
@@ -33236,7 +33241,7 @@ func evaluatePolicy(policy, requester, action, bucket, key string) (bool, bool) 
 	allowed := false
 	denied := false
 	for _, stmt := range statements {
-		if !principalMatches(stmt.Principal, requester) {
+		if !matches(stmt.Principal) {
 			continue
 		}
 		if !actionMatches(stmt.Actions, action) {
@@ -33384,7 +33389,9 @@ func resourceMatches(resources []string, resource string) bool {
 		if candidate == "*" || candidate == resource {
 			return true
 		}
-		if ok, _ := path.Match(candidate, resource); ok {
+		// IAM wildcards cross "/" (path.Match's don't), so "bucket/*" covers
+		// nested keys.
+		if iscGlob(candidate, resource) {
 			return true
 		}
 	}

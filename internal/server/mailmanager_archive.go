@@ -479,7 +479,12 @@ func (s *Server) mmgrStartExport(q mmgrReq) (map[string]any, *mmgrErr) {
 	st.mu.Unlock()
 	// S3 is written after the Mail Manager lock is released.
 	for _, f := range files {
-		s.pszWriteS3(strings.TrimSuffix(dest, "/")+"/"+exportID, f.name, f.body)
+		if denied := s.pszWriteS3(q.caller, "ses.amazonaws.com", strings.TrimSuffix(dest, "/")+"/"+exportID, f.name, f.body); denied != "" {
+			st.mu.Lock()
+			r.errMsg = denied
+			st.mu.Unlock()
+			break
+		}
 	}
 	return map[string]any{"ExportId": exportID}, nil
 }

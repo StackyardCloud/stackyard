@@ -102,7 +102,7 @@ func (s *Server) handleTextractJSONRouter(w http.ResponseWriter, r *http.Request
 	// Conform drops members the input shape doesn't define, so callers can't
 	// reach the store's own fields.
 	conformed, _ := model.Conform(shapes.Input, in).(map[string]any)
-	out, terr := h(s, conformed)
+	out, terr := h(s, s.withS3Caller(conformed, r))
 	if terr != nil {
 		respondTextractError(w, http.StatusBadRequest, terr.code, terr.msg)
 		return true
@@ -125,13 +125,18 @@ func respondTextractError(w http.ResponseWriter, status int, code, msg string) {
 
 // ---- documents ----
 
+const txServicePrincipal = "textract.amazonaws.com"
+
 // txS3Bytes reads an S3Object {Bucket, Name, Version} from the S3 store.
-func (s *Server) txS3Bytes(obj map[string]any, limit int) ([]byte, *txErr) {
+func (s *Server) txS3Bytes(c s3Caller, obj map[string]any, limit int) ([]byte, *txErr) {
 	bucket, _ := obj["Bucket"].(string)
 	name, _ := obj["Name"].(string)
 	version, _ := obj["Version"].(string)
 	if bucket == "" || name == "" {
 		return nil, txInvalid("S3Object needs a Bucket and a Name")
+	}
+	if !s.authorizeServiceS3As(c, txServicePrincipal, bucket, name, "s3:GetObject") {
+		return nil, txError("AccessDeniedException", "Access denied reading s3://"+bucket+"/"+name)
 	}
 	o, err := s.s3.GetObject(bucket, name)
 	if version != "" {
@@ -147,7 +152,7 @@ func (s *Server) txS3Bytes(obj map[string]any, limit int) ([]byte, *txErr) {
 }
 
 // txLoadDocument reads a Document {Bytes | S3Object} and parses it.
-func (s *Server) txLoadDocument(doc map[string]any, limit int, singlePage bool) (*txDocument, *txErr) {
+func (s *Server) txLoadDocument(c s3Caller, doc map[string]any, limit int, singlePage bool) (*txDocument, *txErr) {
 	b64, hasBytes := doc["Bytes"].(string)
 	obj, hasS3 := doc["S3Object"].(map[string]any)
 	var raw []byte
@@ -166,7 +171,7 @@ func (s *Server) txLoadDocument(doc map[string]any, limit int, singlePage bool) 
 		}
 	case hasS3:
 		var terr *txErr
-		if raw, terr = s.txS3Bytes(obj, limit); terr != nil {
+		if raw, terr = s.txS3Bytes(c, obj, limit); terr != nil {
 			return nil, terr
 		}
 	default:
@@ -211,7 +216,7 @@ func txQueries(in map[string]any) []any {
 // ---- synchronous analysis ----
 
 func (s *Server) txDetectDocumentText(in map[string]any) (map[string]any, *txErr) {
-	doc, err := s.txLoadDocument(txMap(in, "Document"), txSyncMaxBytes, true)
+	doc, err := s.txLoadDocument(s3CallerIn(in), txMap(in, "Document"), txSyncMaxBytes, true)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +232,7 @@ func (s *Server) txAnalyzeDocument(in map[string]any) (map[string]any, *txErr) {
 	if err := s.textract.checkAdapters(in); err != nil {
 		return nil, err
 	}
-	doc, err := s.txLoadDocument(txMap(in, "Document"), txSyncMaxBytes, true)
+	doc, err := s.txLoadDocument(s3CallerIn(in), txMap(in, "Document"), txSyncMaxBytes, true)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +245,7 @@ func (s *Server) txAnalyzeDocument(in map[string]any) (map[string]any, *txErr) {
 }
 
 func (s *Server) txAnalyzeExpense(in map[string]any) (map[string]any, *txErr) {
-	doc, err := s.txLoadDocument(txMap(in, "Document"), txSyncMaxBytes, true)
+	doc, err := s.txLoadDocument(s3CallerIn(in), txMap(in, "Document"), txSyncMaxBytes, true)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +258,7 @@ func (s *Server) txAnalyzeID(in map[string]any) (map[string]any, *txErr) {
 	var docs []any
 	for i, p := range pages {
 		pm, _ := p.(map[string]any)
-		doc, err := s.txLoadDocument(pm, txSyncMaxBytes, true)
+		doc, err := s.txLoadDocument(s3CallerIn(in), pm, txSyncMaxBytes, true)
 		if err != nil {
 			return nil, err
 		}

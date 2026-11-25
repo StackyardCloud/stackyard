@@ -64,6 +64,9 @@ type budJSONAPI struct {
 	// respondError writes errors in the service's own exception shape
 	// (nil: budRespondError).
 	respondError func(http.ResponseWriter, *budErr)
+	// s3Caller passes the request's caller to handlers (s3CallerIn) that
+	// touch S3 on the caller's behalf.
+	s3Caller bool
 }
 
 func (api *budJSONAPI) fail(w http.ResponseWriter, e *budErr) {
@@ -168,6 +171,9 @@ func (s *Server) budRun(w http.ResponseWriter, r *http.Request, api *budJSONAPI,
 	// Conform drops members the input shape doesn't define, so callers can't
 	// reach the store's own fields.
 	conformed, _ := model.Conform(shapes.Input, in).(map[string]any)
+	if api.s3Caller {
+		conformed = s.withS3Caller(conformed, r)
+	}
 	out, berr := h(s, conformed)
 	if berr != nil {
 		api.fail(w, berr)

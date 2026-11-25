@@ -160,7 +160,10 @@ func (s *Server) brtStartAsyncInvoke(w http.ResponseWriter, req *brtRequest) *br
 	// S3; the job completes at once.
 	key := strings.TrimPrefix(prefix+"/"+id, "/")
 	manifest, _ := json.Marshal(map[string]any{"schemaVersion": "1.0", "invocationArn": a.arn, "outputs": []string{uri + "/" + id + "/output.mp4"}})
-	if _, err := s.s3.PutObject(bucket, key+"/output.mp4", "video/mp4", []byte("stackyard placeholder video"), nil, "", ""); err != nil {
+	if !s.authorizeServiceS3(req.r, "bedrock.amazonaws.com", bucket, key+"/output.mp4", "s3:PutObject") ||
+		!s.authorizeServiceS3(req.r, "bedrock.amazonaws.com", bucket, key+"/manifest.json", "s3:PutObject") {
+		a.status, a.failure = "Failed", fmt.Sprintf("Access denied writing output to %s.", uri)
+	} else if _, err := s.s3.PutObject(bucket, key+"/output.mp4", "video/mp4", []byte("stackyard placeholder video"), nil, "", ""); err != nil {
 		a.status, a.failure = "Failed", fmt.Sprintf("Unable to write output to %s: the bucket does not exist or is not accessible.", uri)
 	} else {
 		_, _ = s.s3.PutObject(bucket, key+"/manifest.json", "application/json", manifest, nil, "", "")

@@ -230,7 +230,7 @@ func (s *Server) dataBrewRoute(r *http.Request) (any, *dbwError) {
 			if err != nil {
 				return nil, err
 			}
-			return s.dbwSessionAction(name, in)
+			return s.dbwSessionAction(r, name, in)
 		}
 	case "profileJobs", "recipeJobs":
 		kind := "PROFILE"
@@ -254,7 +254,7 @@ func (s *Server) dataBrewRoute(r *http.Request) (any, *dbwError) {
 		case n == 2 && m == http.MethodDelete:
 			return st.deleteJob(name)
 		case n == 3 && segs[2] == "startJobRun" && m == http.MethodPost:
-			return s.dbwStartJobRun(name)
+			return s.dbwStartJobRun(r, name)
 		case n == 3 && segs[2] == "jobRuns" && m == http.MethodGet:
 			return st.listRuns(name, q)
 		case n == 4 && segs[2] == "jobRun" && m == http.MethodGet:

@@ -89,6 +89,10 @@ func (s *Server) handleDataSyncJSONRouter(w http.ResponseWriter, r *http.Request
 	// Conforming the input keeps model members only, so callers can't reach
 	// fields the store keeps for itself.
 	in, _ = modelConform(dm, model.Input, in).(map[string]any)
+	if op == "StartTaskExecution" {
+		// The execution copies objects for this caller later.
+		in = s.withS3Caller(in, r)
+	}
 	out, derr := s.datasync.handle(s, handler, model.Output, in)
 	if derr != nil {
 		respondDataSyncError(w, derr)

@@ -49,6 +49,8 @@ type txJob struct {
 	hasOutput       bool
 	location        map[string]any
 	notified        bool
+	caller          s3Caller // who started the job; authorizes the OutputConfig write
+	failure         string   // set (under the store lock) when completion fails
 }
 
 func txJobID() string {
@@ -79,7 +81,7 @@ func (s *Server) txStart(api string, in map[string]any, compute func(*txAnalysis
 	if obj == nil {
 		return nil, txInvalid("DocumentLocation needs an S3Object")
 	}
-	job := &txJob{api: api, tag: txStr(in, "JobTag"), location: obj}
+	job := &txJob{api: api, tag: txStr(in, "JobTag"), location: obj, caller: s3CallerIn(in)}
 	if nc := txMap(in, "NotificationChannel"); nc != nil {
 		job.topicARN = txStr(nc, "SNSTopicArn")
 		if _, err := s.sns.GetTopic(job.topicARN); err != nil {
@@ -100,7 +102,7 @@ func (s *Server) txStart(api string, in map[string]any, compute func(*txAnalysis
 		}
 		return map[string]any{"JobId": id}, nil
 	}
-	raw, err := s.txS3Bytes(obj, txAsyncMaxBytes)
+	raw, err := s.txS3Bytes(job.caller, obj, txAsyncMaxBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -163,15 +165,22 @@ func (s *Server) txStartLendingAnalysis(in map[string]any) (map[string]any, *txE
 // GetLendingAnalysisSummary.
 func txGetJob(api string, summary bool) txHandler {
 	return func(s *Server, in map[string]any) (map[string]any, *txErr) {
-		job, status, err := s.textract.readJob(api, txStr(in, "JobId"))
+		job, status, failure, err := s.textract.readJob(api, txStr(in, "JobId"))
 		if err != nil {
 			return nil, err
 		}
+		if status == "SUCCEEDED" {
+			if failure = s.txComplete(job); failure != "" {
+				status = "FAILED"
+			}
+		}
 		out := map[string]any{"JobStatus": status}
+		if status == "FAILED" {
+			out["StatusMessage"] = failure
+		}
 		if status != "SUCCEEDED" {
 			return out, nil
 		}
-		s.txComplete(job)
 		r := job.result
 		out["DocumentMetadata"] = map[string]any{"Pages": r.pages}
 		out[r.modelKey] = r.modelVersion
@@ -208,10 +217,19 @@ func txPageToken(token string, n int) (int, *txErr) {
 }
 
 // txComplete publishes the completion notification and writes OutputConfig
-// once per job. It runs without the store lock held.
-func (s *Server) txComplete(job *txJob) {
+// once per job. It runs without the store lock held. It returns why the job
+// failed, if the OutputConfig write is denied.
+func (s *Server) txComplete(job *txJob) string {
 	if !s.textract.markNotified(job) {
-		return
+		return ""
+	}
+	prefix := strings.Trim(job.outP, "/")
+	if prefix == "" {
+		prefix = "textract_output"
+	}
+	outKey := prefix + "/" + job.id + "/1"
+	if job.hasOutput && !s.authorizeServiceS3As(job.caller, txServicePrincipal, job.outBucket, outKey, "s3:PutObject") {
+		return s.textract.failJob(job, "Access denied writing OutputConfig to s3://"+job.outBucket+"/"+outKey)
 	}
 	if job.topicARN != "" {
 		msg, _ := json.Marshal(map[string]any{
@@ -230,10 +248,7 @@ func (s *Server) txComplete(job *txJob) {
 		}[job.api]
 		model := awsmodels.TextractModel()
 		body, _ := json.Marshal(model.Conform(model.Operations[getOp].Output, full))
-		prefix := strings.Trim(job.outP, "/")
-		if prefix == "" {
-			prefix = "textract_output"
-		}
-		_, _ = s.s3.PutObject(job.outBucket, prefix+"/"+job.id+"/1", "application/json", body, nil, "", "")
+		_, _ = s.s3.PutObject(job.outBucket, outKey, "application/json", body, nil, "", "")
 	}
+	return ""
 }

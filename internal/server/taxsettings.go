@@ -32,8 +32,10 @@ const (
 var taxsAPI = &budJSONAPI{
 	signing: "tax", contentType: "application/json",
 	invalidCode: "ValidationException", model: awsmodels.TaxSettingsModel, maxBody: taxsMaxBody,
-	respondError: taxsRespondError,
+	respondError: taxsRespondError, s3Caller: true,
 }
+
+const taxsServicePrincipal = "tax.amazonaws.com"
 
 // taxsRespondError writes a REST JSON error in the Tax Settings model's
 // shape: lower-case message plus the errorCode its exceptions require.
@@ -109,7 +111,7 @@ func (s *Server) taxsAccount(id string) (string, *budErr) {
 
 // taxsLoadDocs turns verificationDetails.taxRegistrationDocuments into
 // stored documents, reading S3 sources now (S3's lock, never ours).
-func (s *Server) taxsLoadDocs(entry map[string]any) ([]taxsDoc, *budErr) {
+func (s *Server) taxsLoadDocs(c s3Caller, entry map[string]any) ([]taxsDoc, *budErr) {
 	var docs []taxsDoc
 	for _, item := range budList(budMap(entry, "verificationDetails"), "taxRegistrationDocuments") {
 		d, _ := item.(map[string]any)
@@ -122,6 +124,9 @@ func (s *Server) taxsLoadDocs(entry map[string]any) ([]taxsDoc, *budErr) {
 			}
 			name, body = budStr(f, "fileName"), raw
 		} else if loc := budMap(d, "s3Location"); loc != nil {
+			if !s.authorizeServiceS3As(c, taxsServicePrincipal, budStr(loc, "bucket"), budStr(loc, "key"), "s3:GetObject") {
+				return nil, budErrorf("AccessDeniedException", "Access denied reading s3://%s/%s", budStr(loc, "bucket"), budStr(loc, "key"))
+			}
 			obj, err := s.s3.GetObject(budStr(loc, "bucket"), budStr(loc, "key"))
 			if err != nil {
 				return nil, taxsInvalid("s3://%s/%s can't be read", budStr(loc, "bucket"), budStr(loc, "key"))
@@ -158,7 +163,7 @@ func (s *Server) taxsPutTaxRegistration(in map[string]any) (map[string]any, *bud
 	if err != nil {
 		return nil, err
 	}
-	docs, err := s.taxsLoadDocs(budMap(in, "taxRegistrationEntry"))
+	docs, err := s.taxsLoadDocs(s3CallerIn(in), budMap(in, "taxRegistrationEntry"))
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +182,7 @@ func (s *Server) taxsBatchPutTaxRegistration(in map[string]any) (map[string]any,
 	if err != nil {
 		return nil, err
 	}
-	docs, err := s.taxsLoadDocs(budMap(in, "taxRegistrationEntry"))
+	docs, err := s.taxsLoadDocs(s3CallerIn(in), budMap(in, "taxRegistrationEntry"))
 	if err != nil {
 		return nil, err
 	}
@@ -322,6 +327,9 @@ func (s *Server) taxsGetTaxRegistrationDocument(in map[string]any) (map[string]a
 	key := doc.name
 	if prefix := strings.Trim(budStr(dest, "prefix"), "/"); prefix != "" {
 		key = prefix + "/" + doc.name
+	}
+	if !s.authorizeServiceS3As(s3CallerIn(in), taxsServicePrincipal, bucket, key, "s3:PutObject") {
+		return nil, budErrorf("AccessDeniedException", "Access denied writing s3://%s/%s", bucket, key)
 	}
 	// doc.body is never mutated once stored, so writing it unlocked is safe.
 	if _, err := s.s3.PutObject(bucket, key, "application/octet-stream", doc.body, nil, "", ""); err != nil {

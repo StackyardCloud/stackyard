@@ -260,7 +260,7 @@ func (st *pollyStore) missingLexicon(names []string) string {
 
 // pollyStartTask renders the audio, writes it to the S3 store and records
 // the task. Tasks report scheduled, then advance one step per read.
-func (s *Server) pollyStartTask(in map[string]any) (map[string]any, *pollyError) {
+func (s *Server) pollyStartTask(r *http.Request, in map[string]any) (map[string]any, *pollyError) {
 	bucket := pollyStr(in, "OutputS3BucketName")
 	if _, err := s.s3.GetBucket(bucket); err != nil {
 		return nil, pollyBad("InvalidS3BucketException", "The bucket %s doesn't exist.", bucket)
@@ -291,6 +291,9 @@ func (s *Server) pollyStartTask(in map[string]any) (map[string]any, *pollyError)
 		chars: res.chars, created: time.Now().UTC(),
 	}
 	key := pollyStr(in, "OutputS3KeyPrefix") + t.id + "." + pollyAudioExt(res.format)
+	if !s.authorizeServiceS3(r, pollyServicePrincipal, bucket, key, "s3:PutObject") {
+		return nil, pollyAccessDenied(bucket, key)
+	}
 	if _, err := s.s3.PutObject(bucket, key, pollyObjectType(res.format), res.audio, nil, "", ""); err != nil {
 		return nil, pollyBad("InvalidS3KeyException", "The output object can't be written: %v", err)
 	}
@@ -383,7 +386,7 @@ func (s *Server) pollyListTasks(q url.Values) (map[string]any, *pollyError) {
 
 // pollyCreateVoice records a custom voice. Recordings must name an S3 object
 // that exists or carry inline bytes; only their format and S3 location are kept.
-func (s *Server) pollyCreateVoice(in map[string]any) (map[string]any, *pollyError) {
+func (s *Server) pollyCreateVoice(req *http.Request, in map[string]any) (map[string]any, *pollyError) {
 	if accepted, _ := in["TermsAccepted"].(bool); !accepted {
 		return nil, pollyValidation("TermsAccepted must be true to create a voice.")
 	}
@@ -401,6 +404,9 @@ func (s *Server) pollyCreateVoice(in map[string]any) (map[string]any, *pollyErro
 		out := map[string]any{"Format": rec["Format"]}
 		if hasURL {
 			bucket, key, _ := strings.Cut(strings.TrimPrefix(s3url, "s3://"), "/")
+			if !s.authorizeServiceS3(req, pollyServicePrincipal, bucket, key, "s3:GetObject") {
+				return nil, pollyAccessDenied(bucket, key)
+			}
 			if _, err := s.s3.GetObject(bucket, key); err != nil {
 				return nil, pollyValidation("Recordings[%d]: the object %s doesn't exist.", i, s3url)
 			}
