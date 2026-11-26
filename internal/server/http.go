@@ -19849,7 +19849,24 @@ func (s *Server) handleS3OptionsAWS(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// authenticateS3Helper applies the S3 API's SigV4 check to the /s3 JSON helper
+// routes. A present but invalid signature is always rejected; an unsigned
+// request is rejected only when requireSigned is set (the S3 API requires a
+// signature for that operation), otherwise it proceeds as anonymous and the
+// bucket policy/ACL check in authorizeS3Request decides.
+func (s *Server) authenticateS3Helper(w http.ResponseWriter, r *http.Request, requireSigned bool) bool {
+	ok, status, _, msg, authPresent := s.validateSigV4(r)
+	if ok || (!authPresent && !requireSigned) {
+		return true
+	}
+	respondError(w, status, msg)
+	return false
+}
+
 func (s *Server) handleS3CreateBucket(w http.ResponseWriter, r *http.Request) {
+	if !s.authenticateS3Helper(w, r, true) {
+		return
+	}
 	bucket := r.PathValue("bucket")
 	acl := r.Header.Get("x-amz-acl")
 	if acl != "" && !awsmodels.IsValidS3BucketCannedACL(acl) {
@@ -19868,13 +19885,33 @@ func (s *Server) handleS3CreateBucket(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, created)
 }
 
-func (s *Server) handleS3ListBuckets(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleS3ListBuckets(w http.ResponseWriter, r *http.Request) {
+	// Unsigned ListBuckets is allowed, matching the S3 API's GET /.
+	if !s.authenticateS3Helper(w, r, false) {
+		return
+	}
 	respondJSON(w, http.StatusOK, map[string]any{"buckets": s.s3.ListBuckets()})
 }
 
 func (s *Server) handleS3PutObject(w http.ResponseWriter, r *http.Request) {
+	if !s.authenticateS3Helper(w, r, true) {
+		return
+	}
 	bucket := r.PathValue("bucket")
 	key := r.PathValue("key")
+	bucketInfo, err := s.s3.GetBucket(bucket)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, s3.ErrBucketNotFound) {
+			status = http.StatusNotFound
+		}
+		respondError(w, status, err.Error())
+		return
+	}
+	if !s.authorizeS3Request(r, bucket, key, "s3:PutObject", bucketInfo.ACL) {
+		respondError(w, http.StatusForbidden, "access denied")
+		return
+	}
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 25<<20))
 	if err != nil {
@@ -19913,6 +19950,9 @@ func (s *Server) handleS3PutObject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleS3GetObject(w http.ResponseWriter, r *http.Request) {
+	if !s.authenticateS3Helper(w, r, false) {
+		return
+	}
 	bucket := r.PathValue("bucket")
 	key := r.PathValue("key")
 	versionID := r.URL.Query().Get("versionId")
@@ -19931,6 +19971,10 @@ func (s *Server) handleS3GetObject(w http.ResponseWriter, r *http.Request) {
 		respondError(w, status, err.Error())
 		return
 	}
+	if !s.authorizeS3Request(r, bucket, key, "s3:GetObject", obj.ACL) {
+		respondError(w, http.StatusForbidden, "access denied")
+		return
+	}
 
 	for k, v := range obj.Metadata {
 		w.Header().Set("x-amz-meta-"+k, v)
@@ -19944,7 +19988,23 @@ func (s *Server) handleS3GetObject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleS3ListObjects(w http.ResponseWriter, r *http.Request) {
+	if !s.authenticateS3Helper(w, r, false) {
+		return
+	}
 	bucket := r.PathValue("bucket")
+	bucketInfo, err := s.s3.GetBucket(bucket)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, s3.ErrBucketNotFound) {
+			status = http.StatusNotFound
+		}
+		respondError(w, status, err.Error())
+		return
+	}
+	if !s.authorizeS3Request(r, bucket, "", "s3:ListBucket", bucketInfo.ACL) {
+		respondError(w, http.StatusForbidden, "access denied")
+		return
+	}
 	objects, err := s.s3.ListObjects(bucket, r.URL.Query().Get("prefix"))
 	if err != nil {
 		if errors.Is(err, s3.ErrBucketNotFound) {

@@ -115,15 +115,19 @@ fi
 
 wait_for_health
 
-curl_check "Create bucket..." 201 409 -X PUT "${base_url}/s3/buckets/demo"
+# The /s3 helper routes follow S3 authorization, so sign them like any S3 call.
+s3_sign=(--aws-sigv4 "aws:amz:${AWS_REGION:-us-east-1}:s3"
+  --user "${AWS_ACCESS_KEY_ID:-stackyard}:${AWS_SECRET_ACCESS_KEY:-stackyard}")
 
-curl_check "List buckets..." 200 "${base_url}/s3/buckets"
+curl_check "Create bucket..." 201 409 "${s3_sign[@]}" -X PUT "${base_url}/s3/buckets/demo"
 
-curl_check "Put object..." 201 -X PUT --data "hello stackyard" \
+curl_check "List buckets..." 200 "${s3_sign[@]}" "${base_url}/s3/buckets"
+
+curl_check "Put object..." 201 "${s3_sign[@]}" -X PUT --data "hello stackyard" \
   -H "Content-Type: text/plain" \
   "${base_url}/s3/objects/demo/notes/hello.txt"
 
-curl_check "Get object..." 200 "${base_url}/s3/objects/demo/notes/hello.txt"
+curl_check "Get object..." 200 "${s3_sign[@]}" "${base_url}/s3/objects/demo/notes/hello.txt"
 
 curl_check "Create queue..." 201 409 -X PUT "${base_url}/sqs/queues/jobs"
 

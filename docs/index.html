@@ -23754,6 +23754,7 @@
         <span class="meta-pill">Also: /s3 JSON</span>
         </div>
         <h3>Stackyard Convenience JSON API</h3>
+        <p class="note">The <code>/s3/buckets</code> and <code>/s3/objects</code> routes follow the same authorization as the S3 API: a present SigV4 signature must be valid, <code>PUT</code> requests must be signed, and object and list requests are checked against the bucket policy and ACLs. Unsigned requests are anonymous: they can read public-read objects, list the objects of public buckets and, as with the S3 API's <code>GET /</code>, list bucket names. Denials return <code>403</code> with a JSON <code>{"error": ...}</code> body.</p>
         <details class="details">
         <summary>Supported Actions</summary>
         <p class="note">Action Type: HTTP request action</p>
