@@ -110,13 +110,19 @@ function Wait-ForHealth {
 
 Wait-ForHealth -Url "$baseUrl/_stackyard/health" -Attempts $healthAttempts -DelaySeconds $healthDelaySeconds
 
-Invoke-CurlStatus "Create bucket..." @(201, 409) @("-X", "PUT", "$baseUrl/s3/buckets/demo") ""
+# The /s3 helper routes follow S3 authorization, so sign them like any S3 call.
+$s3Region = if ($env:AWS_REGION) { $env:AWS_REGION } else { "us-east-1" }
+$s3AccessKey = if ($env:AWS_ACCESS_KEY_ID) { $env:AWS_ACCESS_KEY_ID } else { "stackyard" }
+$s3SecretKey = if ($env:AWS_SECRET_ACCESS_KEY) { $env:AWS_SECRET_ACCESS_KEY } else { "stackyard" }
+$s3Sign = @("--aws-sigv4", "aws:amz:${s3Region}:s3", "--user", "${s3AccessKey}:${s3SecretKey}")
 
-Invoke-CurlStatus "List buckets..." @(200) @("$baseUrl/s3/buckets") ""
+Invoke-CurlStatus "Create bucket..." @(201, 409) ($s3Sign + @("-X", "PUT", "$baseUrl/s3/buckets/demo")) ""
 
-Invoke-CurlStatus "Put object..." @(201) @("-X", "PUT", "--data", "hello stackyard", "-H", "Content-Type: text/plain", "$baseUrl/s3/objects/demo/notes/hello.txt") ""
+Invoke-CurlStatus "List buckets..." @(200) ($s3Sign + @("$baseUrl/s3/buckets")) ""
 
-Invoke-CurlStatus "Get object..." @(200) @("$baseUrl/s3/objects/demo/notes/hello.txt") ""
+Invoke-CurlStatus "Put object..." @(201) ($s3Sign + @("-X", "PUT", "--data", "hello stackyard", "-H", "Content-Type: text/plain", "$baseUrl/s3/objects/demo/notes/hello.txt")) ""
+
+Invoke-CurlStatus "Get object..." @(200) ($s3Sign + @("$baseUrl/s3/objects/demo/notes/hello.txt")) ""
 
 Invoke-CurlStatus "Create queue..." @(201, 409) @("-X", "PUT", "$baseUrl/sqs/queues/jobs") ""
 
