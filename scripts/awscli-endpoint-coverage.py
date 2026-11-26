@@ -5709,7 +5709,9 @@ def invoke_raw_endpoint(
             elif placeholder == "versionId":
                 value = "1"
             elif placeholder == "jobId":
-                value = "stackyard-job"
+                # CreateJob refuses an id in use, and servers are reused between runs.
+                iot_state = RUNTIME_STATE.setdefault("iot", {})
+                value = iot_state.setdefault("job_id", f"stackyard-job-{time.time_ns():x}")
             elif placeholder == "jobTemplateId":
                 value = "stackyard-job-template"
             elif placeholder == "streamId":

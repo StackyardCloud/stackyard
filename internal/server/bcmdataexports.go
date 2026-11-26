@@ -16,8 +16,7 @@ import (
 )
 
 // AWS Billing and Cost Management Data Exports: awsJson1_1, X-Amz-Target
-// AWSBillingAndCostManagementDataExports.*, signed bcm-data-exports. budServe
-// writes responses with Content-Type application/x-amz-json-1.1.
+// AWSBillingAndCostManagementDataExports.*, signed bcm-data-exports.
 //
 // Every create and update runs one execution synchronously: it writes the
 // manifest (and, for CSV, a header-only data file) to the export's bucket in

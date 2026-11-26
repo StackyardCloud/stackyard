@@ -57,9 +57,12 @@ func (s *iotStore) record(action string, payload map[string]any, pathParams map[
 		if id == "" {
 			return "", ""
 		}
-		// The IoT control plane answers every CreateJob with success, so a
-		// repeated id re-creates the job (new Seq: its executions restart).
-		if _, exists := reg.jobs[id]; !exists && len(reg.jobs) >= iotMaxRegisteredJobs {
+		// AWS refuses an id that is in use; DeleteJob frees it again (a
+		// re-created job gets a new Seq, so its executions restart).
+		if _, exists := reg.jobs[id]; exists {
+			return "ResourceAlreadyExistsException", fmt.Sprintf("job %s already exists", id)
+		}
+		if len(reg.jobs) >= iotMaxRegisteredJobs {
 			return "LimitExceededException", fmt.Sprintf("at most %d jobs can exist", iotMaxRegisteredJobs)
 		}
 		rawTargets, _ := payload["targets"].([]any)
