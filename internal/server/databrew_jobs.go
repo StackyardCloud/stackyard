@@ -255,14 +255,14 @@ type dbwJobSpec struct {
 	steps   []any
 }
 
-func (s *Server) dbwStartJobRun(name string) (any, *dbwError) {
+func (s *Server) dbwStartJobRun(r *http.Request, name string) (any, *dbwError) {
 	spec, err := s.dataBrew.jobSpec(name)
 	if err != nil {
 		return nil, err
 	}
 	started := time.Now().UTC()
 	runID := "db_" + dbwRandomID(16)
-	runErr := s.dbwRunJob(spec, runID, started)
+	runErr := s.dbwRunJob(s.s3CallerOf(r), spec, runID, started)
 	return s.dataBrew.addRun(name, spec, runID, started, runErr)
 }
 
@@ -420,7 +420,7 @@ func (st *dataBrewStore) stopRun(name, runID string) (any, *dbwError) {
 
 // dbwSessionAction previews (or, without Preview, appends) a recipe step on a
 // sample of the project's dataset.
-func (s *Server) dbwSessionAction(name string, in map[string]any) (any, *dbwError) {
+func (s *Server) dbwSessionAction(r *http.Request, name string, in map[string]any) (any, *dbwError) {
 	st := s.dataBrew
 	st.mu.Lock()
 	project, err := st.getLocked("project", name)
@@ -459,7 +459,7 @@ func (s *Server) dbwSessionAction(name string, in map[string]any) (any, *dbwErro
 		return nil, dbwValidation("The project's dataset no longer exists.")
 	}
 	size, _ := sample["Size"].(float64)
-	table, lerr := s.dbwLoadTable(dataset, max(1, int(size)), dbwStr(sample, "Type") == "LAST_N")
+	table, lerr := s.dbwLoadTable(s.s3CallerOf(r), dataset, max(1, int(size)), dbwStr(sample, "Type") == "LAST_N")
 	if lerr != nil {
 		return nil, dbwValidation("%s", lerr.Error())
 	}

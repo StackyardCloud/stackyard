@@ -40,6 +40,10 @@ func (s *Server) handleIoTRESTRouter(w http.ResponseWriter, r *http.Request) boo
 		return true
 	}
 
+	if code, msg := s.iot.record(action, payload, pathParams, r.URL.Query()); code != "" {
+		respondIoTError(w, http.StatusBadRequest, code, msg)
+		return true
+	}
 	response := s.iot.Handle(action, payload, pathParams, r.URL.Query())
 	if response == nil {
 		response = map[string]any{}

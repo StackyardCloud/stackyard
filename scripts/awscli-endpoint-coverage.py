@@ -583,6 +583,12 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "forecast": {"cli": "forecast", "ops_file": REPO_ROOT / "internal/server/forecast_ops.go"},
     "forecastquery": {"cli": "forecastquery", "ops_file": REPO_ROOT / "internal/server/forecastquery_ops.go"},
     "frauddetector": {"cli": "frauddetector", "ops_file": REPO_ROOT / "internal/server/frauddetector_ops.go"},
+    "lookoutequipment": {"cli": "lookoutequipment", "ops_file": REPO_ROOT / "internal/server/lookoutequipment_ops.go"},
+    "machinelearning": {"cli": "machinelearning", "ops_file": REPO_ROOT / "internal/server/machinelearning_ops.go"},
+    "sagemakergeospatial": {"cli": "sagemaker-geospatial", "ops_file": REPO_ROOT / "internal/server/sagemakergeospatial_ops.go"},
+    "outposts": {"cli": "outposts", "ops_file": REPO_ROOT / "internal/server/outposts_ops.go"},
+    "snowdevicemanagement": {"cli": "snow-device-management", "ops_file": REPO_ROOT / "internal/server/snowdevicemanagement_ops.go"},
+    "backupgateway": {"cli": "backup-gateway", "ops_file": REPO_ROOT / "internal/server/backupgateway_ops.go"},
     "pi": {"cli": "pi", "ops_file": REPO_ROOT / "internal/server/pi_ops.go"},
     "codegurusecurity": {"cli": "codeguru-security", "ops_file": REPO_ROOT / "internal/server/codegurusecurity_ops.go"},
     "cloud9": {"cli": "cloud9", "ops_file": REPO_ROOT / "internal/server/cloud9_ops.go"},
@@ -610,9 +616,18 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
     "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
     "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
+    "mturk": {"cli": "mturk", "ops_file": REPO_ROOT / "internal/server/mturk_ops.go"},
+    "workdocs": {"cli": "workdocs", "ops_file": REPO_ROOT / "internal/server/workdocs_ops.go"},
+    "repostspace": {"cli": "repostspace", "ops_file": REPO_ROOT / "internal/server/repostspace_ops.go"},
+    "chimesdkmeetings": {"cli": "chime-sdk-meetings", "ops_file": REPO_ROOT / "internal/server/chimesdkmeetings_ops.go"},
+    "chimesdkmessaging": {"cli": "chime-sdk-messaging", "ops_file": REPO_ROOT / "internal/server/chimesdkmessaging_ops.go"},
+    "chimesdkmediapipelines": {"cli": "chime-sdk-media-pipelines", "ops_file": REPO_ROOT / "internal/server/chimesdkmediapipelines_ops.go"},
     "iotsecuretunneling": {"cli": "iotsecuretunneling", "ops_file": REPO_ROOT / "internal/server/iotsecuretunneling_ops.go"},
     "iotdeviceadvisor": {"cli": "iotdeviceadvisor", "ops_file": REPO_ROOT / "internal/server/iotdeviceadvisor_ops.go"},
     "iotthingsgraph": {"cli": "iotthingsgraph", "ops_file": REPO_ROOT / "internal/server/iotthingsgraph_ops.go"},
+    "iotdataplane": {"cli": "iot-data", "ops_file": REPO_ROOT / "internal/server/iotdataplane_ops.go"},
+    "iotjobsdataplane": {"cli": "iot-jobs-data", "ops_file": REPO_ROOT / "internal/server/iotjobsdataplane_ops.go"},
+    "keyspacesstreams": {"cli": "keyspacesstreams", "ops_file": REPO_ROOT / "internal/server/keyspacesstreams_ops.go"},
     "opensearchserverless": {"cli": "opensearchserverless", "ops_file": REPO_ROOT / "internal/server/opensearchserverless_ops.go"},
     "verifiedpermissions": {"cli": "verifiedpermissions", "ops_file": REPO_ROOT / "internal/server/verifiedpermissions_ops.go"},
     "codestarconnections": {"cli": "codestar-connections", "ops_file": REPO_ROOT / "internal/server/codestarconnections_ops.go"},
@@ -2343,12 +2358,36 @@ SERVICE_ALIASES = {
     "mailmanager": "mailmanager",
     "mail-manager": "mailmanager",
     "sesmailmanager": "mailmanager",
+    "mturk": "mturk",
+    "mechanicalturk": "mturk",
+    "mturk-requester": "mturk",
+    "workdocs": "workdocs",
+    "amazonworkdocs": "workdocs",
+    "repostspace": "repostspace",
+    "repost-space": "repostspace",
+    "repostprivate": "repostspace",
+    "chimesdkmeetings": "chimesdkmeetings",
+    "chime-sdk-meetings": "chimesdkmeetings",
+    "amazonchimesdkmeetings": "chimesdkmeetings",
+    "chimesdkmessaging": "chimesdkmessaging",
+    "chime-sdk-messaging": "chimesdkmessaging",
+    "amazonchimesdkmessaging": "chimesdkmessaging",
+    "chimesdkmediapipelines": "chimesdkmediapipelines",
+    "chime-sdk-media-pipelines": "chimesdkmediapipelines",
+    "amazonchimesdkmediapipelines": "chimesdkmediapipelines",
     "iotsecuretunneling": "iotsecuretunneling",
     "iot-secure-tunneling": "iotsecuretunneling",
     "iotdeviceadvisor": "iotdeviceadvisor",
     "iot-device-advisor": "iotdeviceadvisor",
     "iotthingsgraph": "iotthingsgraph",
     "iot-things-graph": "iotthingsgraph",
+    "iotdataplane": "iotdataplane",
+    "iot-data": "iotdataplane",
+    "iotdata": "iotdataplane",
+    "iotjobsdataplane": "iotjobsdataplane",
+    "iot-jobs-data": "iotjobsdataplane",
+    "keyspacesstreams": "keyspacesstreams",
+    "keyspaces-streams": "keyspacesstreams",
     "amazontextract": "textract",
     "wafregional": "wafregional",
     "forecast": "forecast",
@@ -2357,6 +2396,20 @@ SERVICE_ALIASES = {
     "amazonforecastquery": "forecastquery",
     "frauddetector": "frauddetector",
     "amazonfrauddetector": "frauddetector",
+    "lookoutequipment": "lookoutequipment",
+    "amazonlookoutforequipment": "lookoutequipment",
+    "machinelearning": "machinelearning",
+    "machine learning": "machinelearning",
+    "amazonmachinelearning": "machinelearning",
+    "sagemakergeospatial": "sagemakergeospatial",
+    "sagemaker-geospatial": "sagemakergeospatial",
+    "sagemaker geospatial": "sagemakergeospatial",
+    "outposts": "outposts",
+    "awsoutposts": "outposts",
+    "snowdevicemanagement": "snowdevicemanagement",
+    "snow-device-management": "snowdevicemanagement",
+    "backupgateway": "backupgateway",
+    "backup-gateway": "backupgateway",
     "waf-regional": "wafregional",
     "awswafregional": "wafregional",
     "pi": "pi",
@@ -3387,6 +3440,12 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "wafregional": {},
     "forecast": {},
     "frauddetector": {},
+    "lookoutequipment": {},
+    "machinelearning": {},
+    "sagemakergeospatial": {},
+    "outposts": {},
+    "snowdevicemanagement": {},
+    "backupgateway": {},
     "pi": {},
     "cloudsearch": {},
     "cloudsearchdomain": {},
@@ -3417,9 +3476,18 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pinpointemail": {},
     "pinpointsmsvoice": {},
     "mailmanager": {},
+    "mturk": {},
+    "workdocs": {},
+    "repostspace": {},
+    "chimesdkmeetings": {},
+    "chimesdkmessaging": {},
+    "chimesdkmediapipelines": {},
     "iotsecuretunneling": {},
     "iotdeviceadvisor": {},
     "iotthingsgraph": {},
+    "iotdataplane": {},
+    "iotjobsdataplane": {},
+    "keyspacesstreams": {},
     "opensearchserverless": {},
     "verifiedpermissions": {},
     "codestarconnections": {},
@@ -13694,6 +13762,10 @@ def generate_cli_input_payload(
         # get-object needs --path plus an outfile even to print a skeleton;
         # hydration points it at a real object.
         return {"Path": "stackyard"}, None
+    if (endpoint.service, endpoint.operation) in IOT_DATA_SHADOW_OPERATIONS:
+        # The shadow commands write their document to an outfile, so the CLI
+        # needs --thing-name (and --payload) as flags even to print a skeleton.
+        return {"thingName": "stackyard"}, None
     if (endpoint.service, endpoint.operation) == ("glacier", "GetJobOutput"):
         # get-job-output needs its ids as flags plus an outfile even to print a
         # skeleton; hydration fills in a completed job.
@@ -13702,6 +13774,10 @@ def generate_cli_input_payload(
         # get-code-binding-source streams a zip, so the CLI needs its members as
         # flags plus an outfile even to print a skeleton.
         return {"RegistryName": "", "SchemaName": "", "Language": "Python36"}, None
+    if (endpoint.service, endpoint.operation) == ("sagemakergeospatial", "GetTile"):
+        # get-tile streams a PNG to an outfile, so the CLI needs its members as
+        # flags even to print a skeleton; hydration points it at a real job.
+        return {"Arn": "", "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0}, None
     if (endpoint.service, endpoint.operation) == ("polly", "SynthesizeSpeech"):
         # synthesize-speech needs its members as flags plus an outfile even to
         # print a skeleton; hydration fills in a real request.
@@ -38610,6 +38686,357 @@ def frauddetector_hydrate_payload(
     return payload
 
 
+AML_BUCKET = "stackyard-ml-cov"
+AML_ROLE = "arn:aws:iam::123456789012:role/stackyard-ml"
+AML_SCHEMA = json.dumps({"version": "1.0", "targetAttributeName": "y", "dataFormat": "CSV", "dataFileContainsHeader": True,
+                         "attributes": [{"attributeName": "x", "attributeType": "NUMERIC"}, {"attributeName": "y", "attributeType": "BINARY"}]})
+AML_KINDS = {"DataSource": "DataSourceId", "MLModel": "MLModelId", "Evaluation": "EvaluationId", "BatchPrediction": "BatchPredictionId"}
+
+
+def aml_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="machinelearning")
+
+
+class AmlFixture:
+    """Amazon ML resources created through the CLI; each settles on read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return aml_call(*self.args, op, args)
+
+    def make(self, kind: str, wait: bool = True, **refs: str) -> str:
+        new = fc_unique("cov")
+        args = {AML_KINDS[kind]: new}
+        if kind == "DataSource":
+            self.call("CreateDataSourceFromS3", {**args, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}})
+        elif kind == "MLModel":
+            self.call("CreateMLModel", {**args, "MLModelType": "BINARY", "TrainingDataSourceId": refs["ds"]})
+        elif kind == "Evaluation":
+            self.call("CreateEvaluation", {**args, "MLModelId": refs["model"], "EvaluationDataSourceId": refs["ds"]})
+        else:
+            self.call("CreateBatchPrediction", {**args, "MLModelId": refs["model"], "BatchPredictionDataSourceId": refs["ds"],
+                                                "OutputUri": f"s3://{AML_BUCKET}/out/"})
+        for _ in range(3 if wait else 0):
+            if self.call("Get" + kind, args).get("Status") == "COMPLETED":
+                break
+        return new
+
+
+def aml_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED data source, model (with a READY realtime endpoint),
+    evaluation and batch prediction."""
+    state = RUNTIME_STATE.setdefault("machinelearning", {})
+    if state.get("model"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, AML_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, AML_BUCKET, "train.csv", b"x,y\n1,0\n2,1\n3,1\n")
+    fx = AmlFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["ds"] = fx.make("DataSource")
+    state["model"] = fx.make("MLModel", ds=state["ds"])
+    fx.call("CreateRealtimeEndpoint", {"MLModelId": state["model"]})
+    state["evaluation"] = fx.make("Evaluation", ds=state["ds"], model=state["model"])
+    state["batch"] = fx.make("BatchPrediction", ds=state["ds"], model=state["model"])
+    return state
+
+
+def machinelearning_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Creates get fresh IDs over the fixture; deletes get resources of their own."""
+    op = endpoint.operation
+    fx = aml_fixture(aws_bin, endpoint_url, region, env)
+    make = fx["fx"].make
+    new = fc_unique("cov")
+    db = {"Username": "stackyard", "Password": "stackyard-pw"}
+    simple = {
+        "CreateDataSourceFromS3": lambda: {"DataSourceId": new, "DataSpec": {"DataLocationS3": f"s3://{AML_BUCKET}/train.csv", "DataSchema": AML_SCHEMA}},
+        "CreateDataSourceFromRDS": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "RDSData": {
+            "DatabaseInformation": {"InstanceIdentifier": "stackyard-db", "DatabaseName": "ml"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/", "ResourceRole": "DataPipelineDefaultResourceRole",
+            "ServiceRole": "DataPipelineDefaultRole", "SubnetId": "subnet-0123456789", "SecurityGroupIds": ["sg-0123456789"]}},
+        "CreateDataSourceFromRedshift": lambda: {"DataSourceId": new, "RoleARN": AML_ROLE, "DataSpec": {
+            "DatabaseInformation": {"DatabaseName": "ml", "ClusterIdentifier": "stackyard"}, "SelectSqlQuery": "select x, y from t",
+            "DatabaseCredentials": db, "S3StagingLocation": f"s3://{AML_BUCKET}/staging/"}},
+        "CreateMLModel": lambda: {"MLModelId": new, "MLModelType": "REGRESSION", "TrainingDataSourceId": fx["ds"]},
+        "CreateEvaluation": lambda: {"EvaluationId": new, "MLModelId": fx["model"], "EvaluationDataSourceId": fx["ds"]},
+        "CreateBatchPrediction": lambda: {"BatchPredictionId": new, "MLModelId": fx["model"], "BatchPredictionDataSourceId": fx["ds"],
+                                          "OutputUri": f"s3://{AML_BUCKET}/out/"},
+        "CreateRealtimeEndpoint": lambda: {"MLModelId": fx["model"]},
+        "Predict": lambda: {"MLModelId": fx["model"], "Record": {"x": "2"}, "PredictEndpoint": endpoint_url},
+        "UpdateMLModel": lambda: {"MLModelId": fx["model"], "MLModelName": "coverage", "ScoreThreshold": 0.6},
+        "UpdateDataSource": lambda: {"DataSourceId": fx["ds"], "DataSourceName": "coverage"},
+        "UpdateEvaluation": lambda: {"EvaluationId": fx["evaluation"], "EvaluationName": "coverage"},
+        "UpdateBatchPrediction": lambda: {"BatchPredictionId": fx["batch"], "BatchPredictionName": "coverage"},
+        "AddTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "Tags": [{"Key": "env", "Value": "cov"}]},
+        "DeleteTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel", "TagKeys": ["env"]},
+        "DescribeTags": lambda: {"ResourceId": fx["model"], "ResourceType": "MLModel"},
+        "GetDataSource": lambda: {"DataSourceId": fx["ds"], "Verbose": True},
+        "GetMLModel": lambda: {"MLModelId": fx["model"], "Verbose": True},
+        "GetEvaluation": lambda: {"EvaluationId": fx["evaluation"]},
+        "GetBatchPrediction": lambda: {"BatchPredictionId": fx["batch"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteRealtimeEndpoint":
+        model = make("MLModel", ds=fx["ds"])
+        fx["fx"].call("CreateRealtimeEndpoint", {"MLModelId": model})
+        return {"MLModelId": model}
+    if op == "DeleteDataSource":
+        return {"DataSourceId": make("DataSource")}
+    if op == "DeleteMLModel":
+        return {"MLModelId": make("MLModel", wait=False, ds=fx["ds"])}
+    if op in ("DeleteEvaluation", "DeleteBatchPrediction"):
+        kind = op[len("Delete"):]
+        return {AML_KINDS[kind]: make(kind, wait=False, ds=fx["ds"], model=fx["model"])}
+    if op.startswith("Describe"):
+        return {}
+    return payload
+
+
+LKE_BUCKET = "stackyard-lookout-cov"
+LKE_ROLE = "arn:aws:iam::123456789012:role/stackyard-lookout"
+LKE_CSV = b"Timestamp,temp,pressure\n2024-01-01T00:00:00Z,1.5,3\n2024-01-01T00:05:00Z,1.7,4\n2024-01-01T00:10:00Z,1.6,4\n"
+
+
+def lke_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="lookoutequipment")
+
+
+class LkeFixture:
+    """Lookout for Equipment resources created through the CLI; async work
+    settles on the second read."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        self.args = (aws_bin, endpoint_url, region, env)
+
+    def call(self, op: str, args: dict) -> dict:
+        return lke_call(*self.args, op, {**args, "ClientToken": fc_unique("tok")} if op.startswith(("Create", "Start", "Import", "Put")) and op not in ("StartInferenceScheduler", "StartRetrainingScheduler") else args)
+
+    def wait(self, op: str, args: dict, key: str, want: str) -> None:
+        for _ in range(3):
+            if self.call(op, args).get(key) == want:
+                return
+
+    def dataset(self) -> tuple[str, str, str]:
+        name = fc_unique("ds")
+        arn = str(self.call("CreateDataset", {"DatasetName": name}).get("DatasetArn") or "")
+        job = str(self.call("StartDataIngestionJob", {"DatasetName": name, "RoleArn": LKE_ROLE,
+                                                      "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}}).get("JobId") or "")
+        self.wait("DescribeDataIngestionJob", {"JobId": job}, "Status", "SUCCESS")
+        return name, arn, job
+
+    def model(self, dataset: str) -> str:
+        name = fc_unique("model")
+        self.call("CreateModel", {"ModelName": name, "DatasetName": dataset, "RoleArn": LKE_ROLE})
+        self.wait("DescribeModel", {"ModelName": name}, "Status", "SUCCESS")
+        return name
+
+    def retrainer(self, model: str, stopped: bool) -> str:
+        self.call("CreateRetrainingScheduler", {"ModelName": model, "RetrainingFrequency": "P30D", "LookbackWindow": "P360D"})
+        self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopRetrainingScheduler", {"ModelName": model})
+            self.wait("DescribeRetrainingScheduler", {"ModelName": model}, "Status", "STOPPED")
+        return model
+
+    def scheduler(self, model: str, stopped: bool) -> str:
+        name = fc_unique("sched")
+        self.call("CreateInferenceScheduler", {"ModelName": model, "InferenceSchedulerName": name, "DataUploadFrequency": "PT5M",
+                                               "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                               "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                               "RoleArn": LKE_ROLE})
+        self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "RUNNING")
+        if stopped:
+            self.call("StopInferenceScheduler", {"InferenceSchedulerName": name})
+            self.wait("DescribeInferenceScheduler", {"InferenceSchedulerName": name}, "Status", "STOPPED")
+        return name
+
+
+def lke_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An ingested dataset, a label group with a label, a trained model with a
+    resource policy and a retraining scheduler, and a RUNNING inference scheduler."""
+    state = RUNTIME_STATE.setdefault("lookoutequipment", {})
+    if state.get("scheduler"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, LKE_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, LKE_BUCKET, "pump/pump1/sensors.csv", LKE_CSV)
+    fx = LkeFixture(aws_bin, endpoint_url, region, env)
+    state["fx"] = fx
+    state["dataset"], state["dataset_arn"], state["job"] = fx.dataset()
+    state["group"] = fc_unique("labels")
+    fx.call("CreateLabelGroup", {"LabelGroupName": state["group"], "FaultCodes": ["F1"]})
+    state["label"] = str(fx.call("CreateLabel", {"LabelGroupName": state["group"], "StartTime": 1704067200, "EndTime": 1704070800,
+                                                 "Rating": "ANOMALY", "FaultCode": "F1"}).get("LabelId") or "")
+    state["model"] = fx.model(state["dataset"])
+    model = fx.call("DescribeModel", {"ModelName": state["model"]})
+    state["model_arn"], state["version_arn"] = model.get("ModelArn", ""), model.get("ActiveModelVersionArn", "")
+    fx.call("PutResourcePolicy", {"ResourceArn": state["model_arn"], "ResourcePolicy": json.dumps({"Version": "2012-10-17", "Statement": []})})
+    fx.retrainer(state["model"], stopped=False)
+    state["scheduler"] = fx.scheduler(state["model"], stopped=False)
+    return state
+
+
+def lookoutequipment_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Reads use the fixture; creates get fresh names; deletes, starts and
+    stops get resources of their own."""
+    op = endpoint.operation
+    fx = lke_fixture(aws_bin, endpoint_url, region, env)
+    f = fx["fx"]
+    new = fc_unique("cov")
+    token = {"ClientToken": fc_unique("tok")}
+    policy = json.dumps({"Version": "2012-10-17", "Statement": []})
+    simple = {
+        "CreateDataset": lambda: {"DatasetName": new, **token},
+        "DescribeDataset": lambda: {"DatasetName": fx["dataset"]},
+        "ImportDataset": lambda: {"SourceDatasetArn": fx["dataset_arn"], "DatasetName": new, **token},
+        "StartDataIngestionJob": lambda: {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new), "RoleArn": LKE_ROLE,
+                                          "IngestionInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "pump/"}}, **token},
+        "DescribeDataIngestionJob": lambda: {"JobId": fx["job"]},
+        "ListSensorStatistics": lambda: {"DatasetName": fx["dataset"]},
+        "CreateLabelGroup": lambda: {"LabelGroupName": new, "FaultCodes": ["F1"], **token},
+        "DescribeLabelGroup": lambda: {"LabelGroupName": fx["group"]},
+        "UpdateLabelGroup": lambda: {"LabelGroupName": fx["group"], "FaultCodes": ["F1", "F2"]},
+        "CreateLabel": lambda: {"LabelGroupName": fx["group"], "StartTime": 1704074400, "EndTime": 1704078000, "Rating": "NO_ANOMALY", **token},
+        "DescribeLabel": lambda: {"LabelGroupName": fx["group"], "LabelId": fx["label"]},
+        "ListLabels": lambda: {"LabelGroupName": fx["group"]},
+        "CreateModel": lambda: {"ModelName": new, "DatasetName": fx["dataset"], "RoleArn": LKE_ROLE, **token},
+        "DescribeModel": lambda: {"ModelName": fx["model"]},
+        "UpdateModel": lambda: {"ModelName": fx["model"], "RoleArn": LKE_ROLE},
+        "DescribeModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "ListModelVersions": lambda: {"ModelName": fx["model"]},
+        "ImportModelVersion": lambda: {"SourceModelVersionArn": fx["version_arn"], "ModelName": new, "DatasetName": fx["dataset"], **token},
+        "UpdateActiveModelVersion": lambda: {"ModelName": fx["model"], "ModelVersion": 1},
+        "PutResourcePolicy": lambda: {"ResourceArn": fx["model_arn"], "ResourcePolicy": policy, **token},
+        "DescribeResourcePolicy": lambda: {"ResourceArn": fx["model_arn"]},
+        "DescribeRetrainingScheduler": lambda: {"ModelName": fx["model"]},
+        "UpdateRetrainingScheduler": lambda: {"ModelName": fx["model"], "PromoteMode": "MANUAL"},
+        "CreateInferenceScheduler": lambda: {"ModelName": fx["model"], "InferenceSchedulerName": new, "DataUploadFrequency": "PT10M",
+                                             "DataInputConfiguration": {"S3InputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "in/"}},
+                                             "DataOutputConfiguration": {"S3OutputConfiguration": {"Bucket": LKE_BUCKET, "Prefix": "out/"}},
+                                             "RoleArn": LKE_ROLE, **token},
+        "DescribeInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "UpdateInferenceScheduler": lambda: {"InferenceSchedulerName": fx["scheduler"], "DataDelayOffsetInMinutes": 2},
+        "ListInferenceExecutions": lambda: {"InferenceSchedulerName": fx["scheduler"]},
+        "ListInferenceEvents": lambda: {"InferenceSchedulerName": fx["scheduler"], "IntervalStartTime": 1704067200, "IntervalEndTime": 4102444800},
+        "TagResource": lambda: {"ResourceArn": fx["dataset_arn"], "Tags": [{"Key": "env", "Value": "cov"}]},
+        "UntagResource": lambda: {"ResourceArn": fx["dataset_arn"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["dataset_arn"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op == "DeleteDataset":
+        return {"DatasetName": f.call("CreateDataset", {"DatasetName": new}).get("DatasetName", new)}
+    if op == "DeleteLabelGroup":
+        f.call("CreateLabelGroup", {"LabelGroupName": new})
+        return {"LabelGroupName": new}
+    if op == "DeleteLabel":
+        label = f.call("CreateLabel", {"LabelGroupName": fx["group"], "StartTime": 1704081600, "EndTime": 1704085200, "Rating": "NEUTRAL"})
+        return {"LabelGroupName": fx["group"], "LabelId": label.get("LabelId", "")}
+    if op == "DeleteModel":
+        return {"ModelName": f.model(fx["dataset"])}
+    if op == "DeleteResourcePolicy":
+        model = f.model(fx["dataset"])
+        arn = f.call("DescribeModel", {"ModelName": model}).get("ModelArn", "")
+        f.call("PutResourcePolicy", {"ResourceArn": arn, "ResourcePolicy": policy})
+        return {"ResourceArn": arn}
+    if op == "CreateRetrainingScheduler":
+        return {"ModelName": f.model(fx["dataset"]), "RetrainingFrequency": "P30D", "LookbackWindow": "P180D", **token}
+    if op in ("StartRetrainingScheduler", "DeleteRetrainingScheduler"):
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=True)}
+    if op == "StopRetrainingScheduler":
+        return {"ModelName": f.retrainer(f.model(fx["dataset"]), stopped=False)}
+    if op in ("StartInferenceScheduler", "DeleteInferenceScheduler"):
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=True)}
+    if op == "StopInferenceScheduler":
+        return {"InferenceSchedulerName": f.scheduler(fx["model"], stopped=False)}
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
+SGEO_BUCKET = "stackyard-geospatial-cov"
+SGEO_ROLE = "arn:aws:iam::123456789012:role/stackyard-geospatial"
+SGEO_SENTINEL = "arn:aws:sagemaker-geospatial:us-west-2:378778860802:raster-data-collection/public/nmqj48dcu3g7ayw8"
+SGEO_AOI = {"AreaOfInterestGeometry": {"PolygonGeometry": {"Coordinates": [[[-122.4, 47.5], [-122.2, 47.5], [-122.2, 47.7], [-122.4, 47.7], [-122.4, 47.5]]]}}}
+SGEO_RANGE = {"StartTime": 1672531200, "EndTime": 1675209600}
+
+
+def sgeo_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, args: dict) -> dict:
+    return fc_call(aws_bin, endpoint_url, region, env, op, args, cli="sagemaker-geospatial")
+
+
+def sgeo_eoj_args() -> dict:
+    return {"Name": fc_unique("eo"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"RasterDataCollectionQuery": {"RasterDataCollectionArn": SGEO_SENTINEL, "TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+            "JobConfig": {"BandMathConfig": {"PredefinedIndices": ["ndvi"]}}}
+
+
+def sgeo_vej_args() -> dict:
+    return {"Name": fc_unique("ve"), "ExecutionRoleArn": SGEO_ROLE,
+            "InputConfig": {"DocumentType": "CSV", "DataSourceConfig": {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/in/points.csv"}}},
+            "JobConfig": {"ReverseGeocodingConfig": {"XAttributeName": "lon", "YAttributeName": "lat"}}}
+
+
+def sgeo_job(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], kind: str, settle: bool = True) -> str:
+    """Starts an earth observation (eo) or vector enrichment (ve) job and reads it until COMPLETED."""
+    call = lambda op, args: sgeo_call(aws_bin, endpoint_url, region, env, op, args)
+    name = "EarthObservationJob" if kind == "eo" else "VectorEnrichmentJob"
+    arn = str(call("Start" + name, sgeo_eoj_args() if kind == "eo" else sgeo_vej_args()).get("Arn") or "")
+    for _ in range(3 if settle else 0):
+        if call("Get" + name, {"Arn": arn}).get("Status") == "COMPLETED":
+            break
+    return arn
+
+
+def sgeo_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A COMPLETED earth observation job and vector enrichment job, with an export bucket."""
+    state = RUNTIME_STATE.setdefault("sagemakergeospatial", {})
+    if state.get("ve"):
+        return state
+    s3_ensure_bucket(aws_bin, endpoint_url, region, env, SGEO_BUCKET, track_as_primary=False)
+    s3_put_object_bytes(aws_bin, endpoint_url, region, env, SGEO_BUCKET, "in/points.csv", b"id,lon,lat\n1,-122.33,47.61\n2,-122.30,47.60\n")
+    state["eo"] = sgeo_job(aws_bin, endpoint_url, region, env, "eo")
+    state["ve"] = sgeo_job(aws_bin, endpoint_url, region, env, "ve")
+    return state
+
+
+def sagemakergeospatial_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    op = endpoint.operation
+    fx = sgeo_fixture(aws_bin, endpoint_url, region, env)
+    job = lambda kind, settle=True: sgeo_job(aws_bin, endpoint_url, region, env, kind, settle)
+    out = {"S3Data": {"S3Uri": f"s3://{SGEO_BUCKET}/export/"}}
+    simple = {
+        "StartEarthObservationJob": sgeo_eoj_args,
+        "StartVectorEnrichmentJob": sgeo_vej_args,
+        "GetEarthObservationJob": lambda: {"Arn": fx["eo"]},
+        "GetVectorEnrichmentJob": lambda: {"Arn": fx["ve"]},
+        "ExportEarthObservationJob": lambda: {"Arn": fx["eo"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "ExportVectorEnrichmentJob": lambda: {"Arn": fx["ve"], "ExecutionRoleArn": SGEO_ROLE, "OutputConfig": out},
+        "StopEarthObservationJob": lambda: {"Arn": job("eo", False)},
+        "StopVectorEnrichmentJob": lambda: {"Arn": job("ve", False)},
+        "DeleteEarthObservationJob": lambda: {"Arn": job("eo")},
+        "DeleteVectorEnrichmentJob": lambda: {"Arn": job("ve")},
+        "GetRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL},
+        "SearchRasterDataCollection": lambda: {"Arn": SGEO_SENTINEL, "RasterDataCollectionQuery": {"TimeRangeFilter": SGEO_RANGE, "AreaOfInterest": SGEO_AOI}},
+        "GetTile": lambda: {"Arn": fx["eo"], "ImageAssets": ["ndvi"], "Target": "OUTPUT", "x": 0, "y": 0, "z": 0},
+        "TagResource": lambda: {"ResourceArn": fx["eo"], "Tags": {"env": "cov"}},
+        "UntagResource": lambda: {"ResourceArn": fx["eo"], "TagKeys": ["env"]},
+        "ListTagsForResource": lambda: {"ResourceArn": fx["eo"]},
+    }
+    if op in simple:
+        return simple[op]()
+    if op.startswith("List"):
+        return {}
+    return payload
+
+
 CS_POLICY = json.dumps({"Statement": [{"Effect": "Allow", "Principal": {"AWS": ["123456789012"]}, "Action": ["cloudsearch:search"]}]})
 CS_DOCS = [
     {"type": "add", "id": "doc1", "fields": {"title": "Star Wars", "genre": "scifi", "year": 1977}},
@@ -39697,6 +40124,162 @@ def iotthingsgraph_hydrate_payload(
     return payload
 
 
+IOT_DATA_ACCOUNT = "123456789012"
+
+
+def iot_data_b64(value) -> str:
+    raw = value if isinstance(value, bytes) else json.dumps(value).encode("utf-8")
+    return base64.b64encode(raw).decode("ascii")
+
+
+def iot_data_connect(endpoint_url: str, client_id: str, subscriptions: list[dict]) -> bool:
+    """Connect a simulated MQTT client through Stackyard's stand-in for an MQTT
+    CONNECT, since no CLI call opens one."""
+    body = json.dumps({"clientId": client_id, "cleanSession": False, "keepAliveDuration": 60,
+                       "subscriptions": subscriptions}).encode("utf-8")
+    req = urlrequest.Request(endpoint_url.rstrip("/") + "/_stackyard/iot-data/connections", data=body,
+                             headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urlrequest.urlopen(req, timeout=10) as resp:
+            return resp.status == 201
+    except (urlerror.URLError, OSError):
+        return False
+
+
+def iotdataplane_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point IoT Data operations at a run-unique thing, retained topic and
+    simulated client; destructive operations get resources of their own.
+    Shadows are seeded by publishing to their MQTT update topic."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotdataplane", {})
+
+    def publish(topic: str, doc, retain: bool = False) -> None:
+        args = {"topic": topic, "qos": 1, "retain": retain, "payload": iot_data_b64(doc)}
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot-data", "Publish", args)
+
+    if not state.get("run"):
+        run = f"{time.time_ns():x}"[-10:]
+        state.update({"run": run, "count": 0, "thing": f"sy-thing-{run}", "client": f"sy-client-{run}",
+                      "retained": f"sy/{run}/status"})
+        publish(f"$aws/things/{state['thing']}/shadow/update", {"state": {"desired": {"on": True}, "reported": {"on": False}}})
+        publish(f"$aws/things/{state['thing']}/shadow/name/config/update", {"state": {"reported": {"rate": 5}}})
+        publish(state["retained"], {"temperature": 21}, retain=True)
+        iot_data_connect(endpoint_url, state["client"], [{"topicFilter": f"sy/{run}/#", "qos": 1}])
+    state["count"] += 1
+    fresh = f"{state['run']}x{state['count']}"
+    thing, client = state["thing"], state["client"]
+    if op == "UpdateThingShadow":
+        return {"thingName": thing, "shadowName": "config", "payload": iot_data_b64({"state": {"desired": {"rate": 10}}})}
+    if op == "GetThingShadow":
+        return {"thingName": thing}
+    if op == "DeleteThingShadow":
+        doomed = f"sy-delete-{fresh}"
+        publish(f"$aws/things/{doomed}/shadow/update", {"state": {"reported": {"on": True}}})
+        return {"thingName": doomed}
+    if op == "ListNamedShadowsForThing":
+        return {"thingName": thing, "pageSize": 10}
+    if op == "Publish":
+        return {"topic": f"sy/{state['run']}/events", "qos": 1, "payload": iot_data_b64({"event": "boot"}),
+                "contentType": "application/json"}
+    if op == "GetRetainedMessage":
+        return {"topic": state["retained"]}
+    if op == "ListRetainedMessages":
+        return {"maxResults": 10}
+    if op == "GetConnection":
+        return {"clientId": client, "includeSocketInformation": True}
+    if op == "ListSubscriptions":
+        return {"clientId": client, "maxResults": 10}
+    if op == "SendDirectMessage":
+        return {"clientId": client, "topic": f"sy/{state['run']}/direct", "payload": iot_data_b64({"cmd": "ping"})}
+    if op == "DeleteConnection":
+        doomed = f"sy-client-{fresh}"
+        iot_data_connect(endpoint_url, doomed, [])
+        return {"clientId": doomed, "cleanSession": True}
+    return payload
+
+
+def iotjobsdataplane_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Create IoT jobs (and a command) through the IoT control plane for
+    run-unique things; operations that change an execution get a job of
+    their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("iotjobsdataplane", {})
+    if not state.get("run"):
+        state.update({"run": f"{time.time_ns():x}"[-10:], "count": 0})
+    state["count"] += 1
+    fresh = f"{state['run']}x{state['count']}"
+
+    def thing_arn(thing: str) -> str:
+        return f"arn:aws:iot:{region}:{IOT_DATA_ACCOUNT}:thing/{thing}"
+
+    def job(thing: str) -> str:
+        job_id = f"sy-job-{fresh}"
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot", "CreateJob", {
+            "jobId": job_id, "targets": [thing_arn(thing)], "document": json.dumps({"operation": "reboot"}),
+            "timeoutConfig": {"inProgressTimeoutInMinutes": 60}})
+        return job_id
+
+    thing = f"sy-device-{fresh}"
+    if op == "GetPendingJobExecutions":
+        job(thing)
+        return {"thingName": thing}
+    if op == "StartNextPendingJobExecution":
+        job(thing)
+        return {"thingName": thing, "statusDetails": {"step": "download"}, "stepTimeoutInMinutes": 10}
+    if op == "DescribeJobExecution":
+        return {"thingName": thing, "jobId": job(thing), "includeJobDocument": True}
+    if op == "UpdateJobExecution":
+        return {"thingName": thing, "jobId": job(thing), "status": "IN_PROGRESS", "statusDetails": {"step": "install"},
+                "expectedVersion": 1, "includeJobExecutionState": True, "includeJobDocument": True}
+    if op == "StartCommandExecution":
+        command = f"sy-command-{fresh}"
+        iot_batch_call(aws_bin, endpoint_url, region, env, "iot", "CreateCommand", {
+            "commandId": command, "payload": {"content": iot_data_b64({"action": "blink"}), "contentType": "application/json"}})
+        return {"targetArn": thing_arn(thing), "commandArn": f"arn:aws:iot:{region}:{IOT_DATA_ACCOUNT}:command/{command}",
+                "executionTimeoutSeconds": 60, "clientToken": f"sy-token-{fresh}"}
+    return payload
+
+
+def keyspacesstreams_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Create a Keyspaces table with CDC enabled and point the stream
+    operations at its stream, shard and a fresh iterator."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("keyspacesstreams", {})
+
+    def call(cli_service: str, name: str, args: dict) -> dict:
+        return iot_batch_call(aws_bin, endpoint_url, region, env, cli_service, name, args)
+
+    if not state.get("stream"):
+        keyspace = f"sy_kss_{time.time_ns():x}"[-20:].lstrip("_")
+        call("keyspaces", "CreateKeyspace", {"keyspaceName": keyspace})
+        call("keyspaces", "CreateTable", {
+            "keyspaceName": keyspace, "tableName": "readings",
+            "schemaDefinition": {"allColumns": [{"name": "id", "type": "text"}, {"name": "value", "type": "int"}],
+                                 "partitionKeys": [{"name": "id"}]},
+            "cdcSpecification": {"status": "ENABLED", "viewType": "NEW_AND_OLD_IMAGES"}})
+        stream = call("keyspaces", "GetTable", {"keyspaceName": keyspace, "tableName": "readings"}).get("latestStreamArn", "")
+        shards = call("keyspacesstreams", "GetStream", {"streamArn": stream}).get("shards") or [{}]
+        state.update({"keyspace": keyspace, "stream": stream, "shard": shards[0].get("shardId", "")})
+    stream, shard = state["stream"], state["shard"]
+    if op == "ListStreams":
+        return {"keyspaceName": state["keyspace"], "maxResults": 10}
+    if op == "GetStream":
+        return {"streamArn": stream, "maxResults": 10}
+    if op == "GetShardIterator":
+        return {"streamArn": stream, "shardId": shard, "shardIteratorType": "TRIM_HORIZON"}
+    if op == "GetRecords":
+        it = call("keyspacesstreams", "GetShardIterator", {"streamArn": stream, "shardId": shard,
+                                                           "shardIteratorType": "LATEST"}).get("shardIterator", "")
+        return {"shardIterator": it, "maxResults": 100}
+    return payload
+
+
 BUD_ACCOUNT = "123456789012"
 BUD_EMAIL = {"SubscriptionType": "EMAIL", "Address": "finance@example.com"}
 
@@ -40182,6 +40765,941 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 }
 
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
+
+
+COLLAB_SNS = f"arn:aws:sns:us-east-1:{MSG_ACCOUNT}:turk-events"
+MTK_QUESTION = ('<HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">'
+                "<HTMLContent><![CDATA[<p>Tag the photo</p>]]></HTMLContent><FrameHeight>400</FrameHeight></HTMLQuestion>")
+
+
+def collab_post(url: str, body: bytes, content_type: str, method: str = "POST") -> dict:
+    """Sends a Stackyard link request (simulated MTurk worker or WorkDocs upload)."""
+    req = urlrequest.Request(url, data=body, method=method, headers={"Content-Type": content_type})
+    with urlrequest.urlopen(req, timeout=10) as resp:
+        raw = resp.read()
+    return json.loads(raw) if raw.strip() else {}
+
+
+class MtkFixture(MsgFixture):
+    """MTurk requester calls plus simulated workers at /_stackyard/mturk/."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        super().__init__(aws_bin, endpoint_url, region, env, "mturk")
+        self.endpoint_url = endpoint_url.rstrip("/")
+
+    def call(self, op: str, args: dict, cli_service: str = "") -> dict:
+        # psz_call's kebab-casing splits acronyms (CreateHITType); keep them whole.
+        cli = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "-", op).lower()
+        aws_bin, endpoint_url, region, env = self.args
+        return run_aws_json(aws_bin, endpoint_url, region, cli_service or self.cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+    def worker_id(self) -> str:
+        self.count += 1
+        return f"A{self.run.upper()}{self.count}"
+
+    def worker(self, action: str, body: dict) -> dict:
+        return collab_post(f"{self.endpoint_url}/_stackyard/mturk/{action}", json.dumps(body).encode(), "application/json")
+
+    def hit(self, max_assignments: int = 1) -> str:
+        out = self.call("CreateHIT", {"MaxAssignments": max_assignments, "LifetimeInSeconds": 3600, "AssignmentDurationInSeconds": 600,
+                                      "Reward": "0.25", "Title": self.name("hit"), "Description": "Tag the animal in the photo",
+                                      "Question": MTK_QUESTION})
+        return (out.get("HIT") or {}).get("HITId", "")
+
+    def submitted(self, hit: str = "") -> tuple[str, str]:
+        """A submitted assignment (with an uploaded file) and its worker."""
+        hit = hit or self.hit()
+        worker = self.worker_id()
+        assignment = self.worker("accept", {"HITId": hit, "WorkerId": worker}).get("AssignmentId", "")
+        self.worker("submit", {"AssignmentId": assignment, "Answer": "<QuestionFormAnswers/>",
+                               "Files": {"photo": base64.b64encode(b"jpeg bytes").decode()}})
+        return assignment, worker
+
+    def expired_hit(self) -> str:
+        hit = self.hit()
+        self.call("UpdateExpirationForHIT", {"HITId": hit, "ExpireAt": 0})
+        return hit
+
+    def qual_type(self) -> str:
+        out = self.call("CreateQualificationType", {"Name": self.name("qual"), "Description": "Photo tagging skill",
+                                                    "QualificationTypeStatus": "Active", "RetryDelayInSeconds": 60})
+        return (out.get("QualificationType") or {}).get("QualificationTypeId", "")
+
+    def qual_request(self, qual: str) -> str:
+        return self.worker("request-qualification", {"QualificationTypeId": qual, "WorkerId": self.worker_id(), "Answer": "<a/>"}).get("QualificationRequestId", "")
+
+
+def mtk_notification(transport: str = "SNS") -> dict:
+    return {"Destination": COLLAB_SNS, "Transport": transport, "Version": "2006-05-05", "EventTypes": ["AssignmentSubmitted", "HITReviewable"]}
+
+
+def mturk_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A qualification type with a granted worker, a HIT type, and a HIT with a
+    submitted assignment carrying an uploaded file."""
+    state = RUNTIME_STATE.setdefault("mturk", {})
+    if state.get("fx"):
+        return state
+    fx = MtkFixture(aws_bin, endpoint_url, region, env)
+    qual = fx.qual_type()
+    hit_type = fx.call("CreateHITType", {"AssignmentDurationInSeconds": 600, "Reward": "0.10", "Title": fx.name("type"),
+                                         "Description": "Transcribe the receipt"}).get("HITTypeId", "")
+    hit = fx.hit(3)
+    assignment, worker = fx.submitted(hit)
+    fx.call("AssociateQualificationWithWorker", {"QualificationTypeId": qual, "WorkerId": worker, "IntegerValue": 90})
+    state.update({"fx": fx, "qual": qual, "type": hit_type, "hit": hit, "assignment": assignment, "worker": worker})
+    return state
+
+
+def mturk_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MTurk operations at the cached fixture; reviews, deletes and
+    qualification requests get resources of their own."""
+    op = endpoint.operation
+    st = mturk_fixture(aws_bin, endpoint_url, region, env)
+    fx: MtkFixture = st["fx"]
+    hit, qual, assignment, worker = st["hit"], st["qual"], st["assignment"], st["worker"]
+    fixed = {
+        "GetAccountBalance": {}, "ListHITs": {"MaxResults": 10}, "ListReviewableHITs": {"MaxResults": 10}, "ListWorkerBlocks": {"MaxResults": 10},
+        "ListQualificationTypes": {"MustBeRequestable": False, "MaxResults": 10},
+        "GetHIT": {"HITId": hit}, "GetAssignment": {"AssignmentId": assignment},
+        "ListAssignmentsForHIT": {"HITId": hit, "AssignmentStatuses": ["Submitted", "Approved"]},
+        "ListBonusPayments": {"AssignmentId": assignment}, "ListReviewPolicyResultsForHIT": {"HITId": hit},
+        "GetFileUploadURL": {"AssignmentId": assignment, "QuestionIdentifier": "photo"},
+        "GetQualificationType": {"QualificationTypeId": qual}, "GetQualificationScore": {"QualificationTypeId": qual, "WorkerId": worker},
+        "ListHITsForQualificationType": {"QualificationTypeId": qual}, "ListQualificationRequests": {"QualificationTypeId": qual},
+        "ListWorkersWithQualificationType": {"QualificationTypeId": qual, "Status": "Granted"},
+        "UpdateQualificationType": {"QualificationTypeId": qual, "Description": "Photo tagging skill, updated"},
+        "AssociateQualificationWithWorker": {"QualificationTypeId": qual, "WorkerId": fx.worker_id(), "IntegerValue": 80},
+        "CreateAdditionalAssignmentsForHIT": {"HITId": hit, "NumberOfAdditionalAssignments": 1},
+        "UpdateExpirationForHIT": {"HITId": hit, "ExpireAt": int(time.time()) + 7200},
+        "UpdateHITTypeOfHIT": {"HITId": hit, "HITTypeId": st["type"]},
+        "UpdateNotificationSettings": {"HITTypeId": st["type"], "Notification": mtk_notification(), "Active": True},
+        "SendTestEventNotification": {"Notification": mtk_notification(), "TestEventType": "Ping"},
+        "NotifyWorkers": {"Subject": "New HITs", "MessageText": "More photos are ready.", "WorkerIds": [worker]},
+        "SendBonus": {"WorkerId": worker, "BonusAmount": "0.50", "AssignmentId": assignment, "Reason": "Careful work",
+                      "UniqueRequestToken": fx.name("bonus")},
+        "CreateWorkerBlock": {"WorkerId": fx.worker_id(), "Reason": "Spam answers"},
+        "CreateHITType": {"AssignmentDurationInSeconds": 300, "Reward": "0.05", "Title": fx.name("type"), "Description": "Rate the image"},
+        "CreateHITWithHITType": {"HITTypeId": st["type"], "MaxAssignments": 2, "LifetimeInSeconds": 3600, "Question": MTK_QUESTION},
+        "CreateHIT": {"MaxAssignments": 2, "LifetimeInSeconds": 3600, "AssignmentDurationInSeconds": 600, "Reward": "0.25",
+                      "Title": fx.name("hit"), "Description": "Tag the animal", "Question": MTK_QUESTION, "Keywords": "photo,tag"},
+        "CreateQualificationType": {"Name": fx.name("qual"), "Description": "Auto-granted skill", "QualificationTypeStatus": "Active",
+                                    "AutoGranted": True, "AutoGrantedValue": 1},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "ApproveAssignment":
+        return {"AssignmentId": fx.submitted()[0], "RequesterFeedback": "Thanks"}
+    if op == "RejectAssignment":
+        return {"AssignmentId": fx.submitted()[0], "RequesterFeedback": "Wrong animal"}
+    if op == "DeleteHIT":
+        return {"HITId": fx.expired_hit()}
+    if op == "UpdateHITReviewStatus":
+        return {"HITId": fx.expired_hit(), "Revert": False}
+    if op == "AcceptQualificationRequest":
+        return {"QualificationRequestId": fx.qual_request(qual), "IntegerValue": 95}
+    if op == "RejectQualificationRequest":
+        return {"QualificationRequestId": fx.qual_request(qual), "Reason": "Score too low"}
+    if op == "DisassociateQualificationFromWorker":
+        other = fx.worker_id()
+        fx.call("AssociateQualificationWithWorker", {"QualificationTypeId": qual, "WorkerId": other})
+        return {"QualificationTypeId": qual, "WorkerId": other, "Reason": "Expired"}
+    if op == "DeleteWorkerBlock":
+        other = fx.worker_id()
+        fx.call("CreateWorkerBlock", {"WorkerId": other, "Reason": "Spam answers"})
+        return {"WorkerId": other, "Reason": "Appeal accepted"}
+    if op == "DeleteQualificationType":
+        return {"QualificationTypeId": fx.qual_type()}
+    return payload
+
+
+class WdocFixture(MsgFixture):
+    """WorkDocs calls plus document uploads to Stackyard's pre-signed URLs."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        super().__init__(aws_bin, endpoint_url, region, env, "workdocs")
+        users = self.call("DescribeUsers", {"Query": "stackyard-admin"}).get("Users") or [{}]
+        self.admin, self.root = users[0].get("Id", ""), users[0].get("RootFolderId", "")
+
+    def folder(self, parent: str = "") -> str:
+        out = self.call("CreateFolder", {"Name": self.name("folder"), "ParentFolderId": parent or self.root})
+        return (out.get("Metadata") or {}).get("Id", "")
+
+    def initiate(self, parent: str, doc: str = "", body: bytes = b"quarterly numbers") -> tuple[str, str]:
+        """Starts an upload (a new document, or a new version of doc) and PUTs body."""
+        args = {"ContentType": "text/plain", "DocumentSizeInBytes": len(body)}
+        args.update({"Id": doc} if doc else {"Name": self.name("doc") + ".txt", "ParentFolderId": parent})
+        out = self.call("InitiateDocumentVersionUpload", args)
+        meta = out.get("Metadata") or {}
+        doc = meta.get("Id", doc)
+        upload = (out.get("UploadMetadata") or {}).get("UploadUrl", "")
+        if upload:
+            collab_post(upload, body, "text/plain", "PUT")
+        versions = self.call("DescribeDocumentVersions", {"DocumentId": doc, "Include": "INITIALIZED"}).get("DocumentVersions") or [{}]
+        pending = [v.get("Id", "") for v in versions if v.get("Status") == "INITIALIZED"]
+        return doc, (pending or [""])[0]
+
+    def document(self, parent: str, versions: int = 1) -> tuple[str, list[str]]:
+        doc, ids = "", []
+        for _ in range(versions):
+            doc, version = self.initiate(parent, doc)
+            self.call("UpdateDocumentVersion", {"DocumentId": doc, "VersionId": version, "VersionStatus": "ACTIVE"})
+            ids.append(version)
+        return doc, ids
+
+    def user(self) -> str:
+        out = self.call("CreateUser", {"Username": self.name("user"), "GivenName": "Coverage", "Surname": "User", "Password": "Stackyard-pass1"})
+        return (out.get("User") or {}).get("Id", "")
+
+
+def workdocs_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A folder holding an active document with a comment, labels and custom
+    metadata, shared with a second user."""
+    state = RUNTIME_STATE.setdefault("workdocs", {})
+    if state.get("fx"):
+        return state
+    fx = WdocFixture(aws_bin, endpoint_url, region, env)
+    folder = fx.folder()
+    doc, versions = fx.document(folder)
+    comment = (fx.call("CreateComment", {"DocumentId": doc, "VersionId": versions[0], "Text": "Looks right"}).get("Comment") or {}).get("CommentId", "")
+    user = fx.user()
+    fx.call("AddResourcePermissions", {"ResourceId": doc, "Principals": [{"Id": user, "Type": "USER", "Role": "VIEWER"}]})
+    fx.call("CreateLabels", {"ResourceId": doc, "Labels": ["finance"]})
+    fx.call("CreateCustomMetadata", {"ResourceId": doc, "CustomMetadata": {"owner": "finance"}})
+    state.update({"fx": fx, "folder": folder, "doc": doc, "version": versions[0], "comment": comment, "user": user})
+    return state
+
+
+def workdocs_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point WorkDocs operations at the cached fixture; deletes and uploads get
+    resources of their own."""
+    op = endpoint.operation
+    st = workdocs_fixture(aws_bin, endpoint_url, region, env)
+    fx: WdocFixture = st["fx"]
+    folder, doc, version, user = st["folder"], st["doc"], st["version"], st["user"]
+    org = "d-90670a1b2c"
+    fixed = {
+        "GetCurrentUser": {"AuthenticationToken": fx.admin}, "DescribeRootFolders": {"AuthenticationToken": fx.admin, "Limit": 10},
+        "DescribeUsers": {"OrganizationId": org, "Query": "stackyard", "Limit": 10}, "DescribeGroups": {"SearchQuery": "Domain", "OrganizationId": org},
+        "DescribeActivities": {"ResourceId": doc, "Limit": 20}, "GetResources": {"UserId": user, "CollectionType": "SHARED_WITH_ME"},
+        "SearchResources": {"QueryText": "doc", "Filters": {"ResourceTypes": ["DOCUMENT"], "Labels": ["finance"]}, "Limit": 10},
+        "GetFolder": {"FolderId": folder, "IncludeCustomMetadata": True}, "GetFolderPath": {"FolderId": folder, "Fields": "NAME"},
+        "DescribeFolderContents": {"FolderId": folder, "Sort": "NAME", "Order": "ASCENDING", "Type": "ALL"},
+        "GetDocument": {"DocumentId": doc, "IncludeCustomMetadata": True}, "GetDocumentPath": {"DocumentId": doc, "Fields": "NAME"},
+        "GetDocumentVersion": {"DocumentId": doc, "VersionId": version, "Fields": "SOURCE"},
+        "DescribeDocumentVersions": {"DocumentId": doc, "Fields": "SOURCE"},
+        "DescribeComments": {"DocumentId": doc, "VersionId": version},
+        "CreateComment": {"DocumentId": doc, "VersionId": version, "Text": "Second look", "Visibility": "PUBLIC"},
+        "DescribeResourcePermissions": {"ResourceId": doc}, "CreateLabels": {"ResourceId": doc, "Labels": ["q3"]},
+        "CreateCustomMetadata": {"ResourceId": doc, "CustomMetadata": {"region": "emea"}},
+        "AddResourcePermissions": {"ResourceId": doc, "Principals": [{"Id": user, "Type": "USER", "Role": "CONTRIBUTOR"}],
+                                   "NotificationOptions": {"SendEmail": False}},
+        "UpdateFolder": {"FolderId": folder, "Name": fx.name("folder")}, "UpdateDocument": {"DocumentId": doc, "Name": fx.name("doc") + ".txt"},
+        "UpdateUser": {"UserId": user, "GivenName": "Updated", "TimeZoneId": "America/New_York"},
+        "CreateFolder": {"Name": fx.name("folder"), "ParentFolderId": folder},
+        "CreateUser": {"Username": fx.name("user"), "GivenName": "New", "Surname": "User", "Password": "Stackyard-pass1", "OrganizationId": org},
+        "InitiateDocumentVersionUpload": {"Name": fx.name("doc") + ".csv", "ParentFolderId": folder, "ContentType": "text/csv"},
+        "CreateNotificationSubscription": {"OrganizationId": org, "Endpoint": "https://hooks.example.com/workdocs", "Protocol": "HTTPS",
+                                           "SubscriptionType": "ALL"},
+        "DescribeNotificationSubscriptions": {"OrganizationId": org},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "ActivateUser":
+        other = fx.user()
+        fx.call("DeactivateUser", {"UserId": other})
+        return {"UserId": other}
+    if op in ("DeactivateUser", "DeleteUser"):
+        return {"UserId": fx.user()}
+    if op == "DeleteFolder":
+        return {"FolderId": fx.folder(folder)}
+    if op == "DeleteFolderContents":
+        fresh = fx.folder(folder)
+        fx.folder(fresh)
+        return {"FolderId": fresh}
+    if op == "DeleteDocument":
+        return {"DocumentId": fx.document(folder)[0]}
+    if op == "UpdateDocumentVersion":
+        fresh, pending = fx.initiate(folder)
+        return {"DocumentId": fresh, "VersionId": pending, "VersionStatus": "ACTIVE"}
+    if op == "AbortDocumentVersionUpload":
+        fresh, pending = fx.initiate(folder)
+        return {"DocumentId": fresh, "VersionId": pending}
+    if op == "DeleteDocumentVersion":
+        fresh, ids = fx.document(folder, 2)
+        return {"DocumentId": fresh, "VersionId": ids[0], "DeletePriorVersions": False}
+    if op == "RestoreDocumentVersions":
+        fresh, ids = fx.document(folder, 2)
+        fx.call("DeleteDocumentVersion", {"DocumentId": fresh, "VersionId": ids[0], "DeletePriorVersions": False})
+        return {"DocumentId": fresh}
+    if op == "DeleteComment":
+        cid = (fx.call("CreateComment", {"DocumentId": doc, "VersionId": version, "Text": "Temporary"}).get("Comment") or {}).get("CommentId", "")
+        return {"DocumentId": doc, "VersionId": version, "CommentId": cid}
+    if op == "DeleteLabels":
+        fx.call("CreateLabels", {"ResourceId": doc, "Labels": ["draft"]})
+        return {"ResourceId": doc, "Labels": ["draft"]}
+    if op == "DeleteCustomMetadata":
+        fx.call("CreateCustomMetadata", {"ResourceId": doc, "CustomMetadata": {"stage": "draft"}})
+        return {"ResourceId": doc, "Keys": ["stage"]}
+    if op == "RemoveResourcePermission":
+        other = fx.user()
+        fx.call("AddResourcePermissions", {"ResourceId": doc, "Principals": [{"Id": other, "Type": "USER", "Role": "VIEWER"}]})
+        return {"ResourceId": doc, "PrincipalId": other, "PrincipalType": "USER"}
+    if op == "RemoveAllResourcePermissions":
+        fresh = fx.document(folder)[0]
+        fx.call("AddResourcePermissions", {"ResourceId": fresh, "Principals": [{"Id": user, "Type": "USER", "Role": "VIEWER"}]})
+        return {"ResourceId": fresh}
+    if op == "DeleteNotificationSubscription":
+        sub = fx.call("CreateNotificationSubscription", {"OrganizationId": org, "Endpoint": "https://hooks.example.com/temp",
+                                                         "Protocol": "HTTPS", "SubscriptionType": "ALL"})
+        return {"OrganizationId": org, "SubscriptionId": (sub.get("Subscription") or {}).get("SubscriptionId", "")}
+    return payload
+
+
+def repostspace_wait(fx: MsgFixture, space: str) -> None:
+    """Polls GetSpace until the space has finished provisioning (Stackyard takes ~2s)."""
+    for _ in range(20):
+        if fx.call("GetSpace", {"spaceId": space}).get("status") != "CREATING":
+            return
+        time.sleep(0.5)
+
+
+def repostspace_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A provisioned space with an administrator, an expert and a channel."""
+    state = RUNTIME_STATE.setdefault("repostspace", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "repostspace")
+    space = fx.call("CreateSpace", {"name": "Coverage", "subdomain": fx.name("space"), "tier": "BASIC", "tags": {"team": "coverage"}}).get("spaceId", "")
+    repostspace_wait(fx, space)
+    fx.call("RegisterAdmin", {"spaceId": space, "adminId": "admin-" + fx.run})
+    channel = fx.call("CreateChannel", {"spaceId": space, "channelName": fx.name("channel")}).get("channelId", "")
+    state.update({"fx": fx, "space": space, "channel": channel, "arn": fx.call("GetSpace", {"spaceId": space}).get("arn", "")})
+    return state
+
+
+def repostspace_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point re:Post Private operations at the cached space; creates and
+    deletes get resources of their own."""
+    op = endpoint.operation
+    st = repostspace_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    space, channel, arn = st["space"], st["channel"], st["arn"]
+    fixed = {
+        "GetSpace": {"spaceId": space}, "ListSpaces": {"maxResults": 10}, "ListChannels": {"spaceId": space, "maxResults": 10},
+        "GetChannel": {"spaceId": space, "channelId": channel},
+        "UpdateSpace": {"spaceId": space, "description": "Coverage space", "tier": "STANDARD"},
+        "UpdateChannel": {"spaceId": space, "channelId": channel, "channelName": fx.name("channel"), "channelDescription": "Questions"},
+        "CreateChannel": {"spaceId": space, "channelName": fx.name("channel"), "channelDescription": "New channel"},
+        "BatchAddRole": {"spaceId": space, "accessorIds": ["user-expert"], "role": "EXPERT"},
+        "BatchRemoveRole": {"spaceId": space, "accessorIds": ["user-expert"], "role": "EXPERT"},
+        "BatchAddChannelRoleToAccessors": {"spaceId": space, "channelId": channel, "accessorIds": ["user-mod"], "channelRole": "MODERATOR"},
+        "BatchRemoveChannelRoleFromAccessors": {"spaceId": space, "channelId": channel, "accessorIds": ["user-mod"], "channelRole": "MODERATOR"},
+        "RegisterAdmin": {"spaceId": space, "adminId": fx.name("admin")},
+        "SendInvites": {"spaceId": space, "accessorIds": ["user-new"], "title": "Join us", "body": "Welcome to the space"},
+        "ListTagsForResource": {"resourceArn": arn}, "TagResource": {"resourceArn": arn, "tags": {"env": "test"}},
+        "UntagResource": {"resourceArn": arn, "tagKeys": ["env"]},
+        "CreateSpace": {"name": "Coverage", "subdomain": fx.name("space"), "tier": "BASIC", "description": "Created by coverage"},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "DeregisterAdmin":
+        admin = fx.name("admin")
+        fx.call("RegisterAdmin", {"spaceId": space, "adminId": admin})
+        return {"spaceId": space, "adminId": admin}
+    if op == "DeleteSpace":
+        return {"spaceId": fx.call("CreateSpace", {"name": "Doomed", "subdomain": fx.name("space"), "tier": "BASIC"}).get("spaceId", "")}
+    return payload
+
+
+CHIME_ACCOUNT = "123456789012"
+CHIME_REGION_ARN = f"arn:aws:chime:us-east-1:{CHIME_ACCOUNT}:"
+
+
+def cmtg_meeting(fx: MsgFixture) -> dict:
+    name = fx.name("mtg")
+    return fx.call("CreateMeeting", {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name}, "chime-sdk-meetings").get("Meeting", {})
+
+
+def chimesdkmeetings_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Meetings: a cached meeting with one attendee; creates and
+    destructive operations get meetings or attendees of their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmeetings", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-meetings")
+        meeting = cmtg_meeting(fx)
+        attendee = fx.call("CreateAttendee", {"MeetingId": meeting.get("MeetingId", ""), "ExternalUserId": fx.name("user")}).get("Attendee", {})
+        state.update({"fx": fx, "meeting": meeting, "attendee": attendee.get("AttendeeId", "")})
+    fx: MsgFixture = state["fx"]
+    mid, arn, aid = state["meeting"].get("MeetingId", ""), state["meeting"].get("MeetingArn", ""), state["attendee"]
+    caps = {"Audio": "SendReceive", "Video": "Receive", "Content": "Receive"}
+    transcription = {"EngineTranscribeSettings": {"LanguageCode": "en-US"}}
+
+    def fresh_attendee() -> str:
+        return fx.call("CreateAttendee", {"MeetingId": mid, "ExternalUserId": fx.name("user")}).get("Attendee", {}).get("AttendeeId", "")
+
+    if op in ("CreateMeeting", "CreateMeetingWithAttendees"):
+        name = fx.name("mtg")
+        out = {"ClientRequestToken": name, "MediaRegion": "us-east-1", "ExternalMeetingId": name, "Tags": [{"Key": "team", "Value": "coverage"}]}
+        if op == "CreateMeetingWithAttendees":
+            out["Attendees"] = [{"ExternalUserId": fx.name("user")}]
+        return out
+    if op in ("GetMeeting", "ListAttendees"):
+        return {"MeetingId": mid}
+    if op == "DeleteMeeting":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", "")}
+    if op == "CreateAttendee":
+        return {"MeetingId": mid, "ExternalUserId": fx.name("user"), "Capabilities": caps}
+    if op == "BatchCreateAttendee":
+        return {"MeetingId": mid, "Attendees": [{"ExternalUserId": fx.name("user")}, {"ExternalUserId": fx.name("user")}]}
+    if op == "GetAttendee":
+        return {"MeetingId": mid, "AttendeeId": aid}
+    if op == "UpdateAttendeeCapabilities":
+        return {"MeetingId": mid, "AttendeeId": aid, "Capabilities": caps}
+    if op == "DeleteAttendee":
+        return {"MeetingId": mid, "AttendeeId": fresh_attendee()}
+    if op == "BatchUpdateAttendeeCapabilitiesExcept":
+        return {"MeetingId": mid, "ExcludedAttendeeIds": [{"AttendeeId": aid}], "Capabilities": caps}
+    if op == "StartMeetingTranscription":
+        return {"MeetingId": cmtg_meeting(fx).get("MeetingId", ""), "TranscriptionConfiguration": transcription}
+    if op == "StopMeetingTranscription":
+        other = cmtg_meeting(fx).get("MeetingId", "")
+        fx.call("StartMeetingTranscription", {"MeetingId": other, "TranscriptionConfiguration": transcription})
+        return {"MeetingId": other}
+    if op == "ListTagsForResource":
+        return {"ResourceARN": arn}
+    if op == "TagResource":
+        return {"ResourceARN": arn, "Tags": [{"Key": "owner", "Value": "coverage"}]}
+    if op == "UntagResource":
+        return {"ResourceARN": arn, "TagKeys": ["owner"]}
+    return payload
+
+
+def cmsg_processors() -> list:
+    return [{"Name": "filter", "ExecutionOrder": 1, "FallbackAction": "CONTINUE",
+             "Configuration": {"Lambda": {"ResourceArn": f"arn:aws:lambda:us-east-1:{CHIME_ACCOUNT}:function:filter", "InvocationType": "ASYNC"}}}]
+
+
+def chimesdkmessaging_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """An app instance of its own with users alice (moderator) and bob
+    (member), a channel holding one of bob's messages and a ban, an elastic
+    channel, a channel flow associated with a second channel, and streaming
+    configurations."""
+    state = RUNTIME_STATE.setdefault("chimesdkmessaging", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-messaging")
+    app = CHIME_REGION_ARN + "app-instance/" + fx.name("app")
+    alice, bob = app + "/user/alice", app + "/user/bob"
+    state.update({"fx": fx, "app": app, "alice": alice, "bob": bob})
+    state["channel"] = chimesdkmessaging_channel(state)
+    fx.call("CreateChannelBan", {"ChannelArn": state["channel"], "MemberArn": app + "/user/banned", "ChimeBearer": alice})
+    state["message"] = chimesdkmessaging_message(state, state["channel"])
+    state["elastic"] = fx.call("CreateChannel", {"AppInstanceArn": app, "Name": "elastic", "ClientRequestToken": fx.name("tok"), "ChimeBearer": alice,
+                                                  "ElasticChannelConfiguration": {"MaximumSubChannels": 2, "TargetMembershipsPerSubChannel": 2, "MinimumMembershipPercentage": 10}}).get("ChannelArn", "")
+    fx.call("CreateChannelMembership", {"ChannelArn": state["elastic"], "MemberArn": bob, "Type": "DEFAULT", "ChimeBearer": alice})
+    state["flow"] = chimesdkmessaging_flow(state)
+    state["flowed"] = chimesdkmessaging_channel(state)
+    fx.call("AssociateChannelFlow", {"ChannelArn": state["flowed"], "ChannelFlowArn": state["flow"], "ChimeBearer": alice})
+    fx.call("PutMessagingStreamingConfigurations", {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()})
+    return state
+
+
+def cmsg_streaming() -> list:
+    return [{"DataType": "ChannelMessage", "ResourceArn": f"arn:aws:kinesis:us-east-1:{CHIME_ACCOUNT}:stream/chat"}]
+
+
+def chimesdkmessaging_channel(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannel", {"AppInstanceArn": state["app"], "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"),
+                                     "MemberArns": [state["bob"]], "ChimeBearer": state["alice"]}).get("ChannelArn", "")
+
+
+def chimesdkmessaging_message(state: dict, channel: str) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("SendChannelMessage", {"ChannelArn": channel, "Content": "hello", "Type": "STANDARD", "Persistence": "PERSISTENT",
+                                          "ClientRequestToken": fx.name("tok"), "ChimeBearer": state["bob"]}).get("MessageId", "")
+
+
+def chimesdkmessaging_flow(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateChannelFlow", {"AppInstanceArn": state["app"], "Name": "filter", "Processors": cmsg_processors(),
+                                         "ClientRequestToken": fx.name("tok")}).get("ChannelFlowArn", "")
+
+
+def chimesdkmessaging_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Messaging: calls act as alice (the moderator) or bob (a
+    member) of the cached fixture; creates and destructive operations get
+    resources of their own."""
+    op = endpoint.operation
+    st = chimesdkmessaging_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    app, alice, bob, ch, flow = st["app"], st["alice"], st["bob"], st["channel"], st["flow"]
+
+    def newcomer() -> str:
+        return app + "/user/" + fx.name("user")
+
+    fixed = {
+        "DescribeChannel": {"ChannelArn": ch, "ChimeBearer": alice},
+        "UpdateChannel": {"ChannelArn": ch, "Name": "renamed", "Mode": "UNRESTRICTED", "Metadata": "coverage", "ChimeBearer": alice},
+        "ListChannels": {"AppInstanceArn": app, "ChimeBearer": alice},
+        "SearchChannels": {"Fields": [{"Key": "MEMBERS", "Values": [bob], "Operator": "INCLUDES"}], "ChimeBearer": alice},
+        "PutChannelExpirationSettings": {"ChannelArn": ch, "ChimeBearer": alice, "ExpirationSettings": {"ExpirationDays": 30, "ExpirationCriterion": "LAST_MESSAGE_TIMESTAMP"}},
+        "ListSubChannels": {"ChannelArn": st["elastic"], "ChimeBearer": alice},
+        "ListChannelMembershipsForAppInstanceUser": {"AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "DescribeChannelMembershipForAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": bob, "ChimeBearer": bob},
+        "ListChannelsModeratedByAppInstanceUser": {"AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelModeratedByAppInstanceUser": {"ChannelArn": ch, "AppInstanceUserArn": alice, "ChimeBearer": alice},
+        "DescribeChannelMembership": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": alice},
+        "ListChannelMemberships": {"ChannelArn": ch, "ChimeBearer": alice},
+        "GetChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob},
+        "PutChannelMembershipPreferences": {"ChannelArn": ch, "MemberArn": bob, "ChimeBearer": bob, "Preferences": {"PushNotifications": {"AllowNotifications": "ALL"}}},
+        "DescribeChannelModerator": {"ChannelArn": ch, "ChannelModeratorArn": alice, "ChimeBearer": alice},
+        "ListChannelModerators": {"ChannelArn": ch, "ChimeBearer": alice},
+        "DescribeChannelBan": {"ChannelArn": ch, "MemberArn": app + "/user/banned", "ChimeBearer": alice},
+        "ListChannelBans": {"ChannelArn": ch, "ChimeBearer": alice},
+        "SendChannelMessage": {"ChannelArn": ch, "Content": "hi", "Type": "STANDARD", "Persistence": "PERSISTENT", "ClientRequestToken": fx.name("tok"), "ChimeBearer": bob},
+        "GetChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "GetChannelMessageStatus": {"ChannelArn": ch, "MessageId": st["message"], "ChimeBearer": bob},
+        "ListChannelMessages": {"ChannelArn": ch, "ChimeBearer": bob},
+        "UpdateChannelMessage": {"ChannelArn": ch, "MessageId": st["message"], "Content": "hello again", "ChimeBearer": bob},
+        "UpdateChannelReadMarker": {"ChannelArn": ch, "ChimeBearer": bob},
+        "DescribeChannelFlow": {"ChannelFlowArn": flow},
+        "UpdateChannelFlow": {"ChannelFlowArn": flow, "Name": "filter-2", "Processors": cmsg_processors()},
+        "ListChannelFlows": {"AppInstanceArn": app},
+        "ListChannelsAssociatedWithChannelFlow": {"ChannelFlowArn": flow},
+        "PutMessagingStreamingConfigurations": {"AppInstanceArn": app, "StreamingConfigurations": cmsg_streaming()},
+        "GetMessagingStreamingConfigurations": {"AppInstanceArn": app},
+        "GetMessagingSessionEndpoint": {},
+        "ListTagsForResource": {"ResourceARN": ch},
+        "TagResource": {"ResourceARN": ch, "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": ch, "TagKeys": ["owner"]},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateChannel":
+        return {"AppInstanceArn": app, "Name": fx.name("chan"), "ClientRequestToken": fx.name("tok"), "Privacy": "PRIVATE",
+                "MemberArns": [bob], "Tags": [{"Key": "team", "Value": "coverage"}], "ChimeBearer": alice}
+    if op == "DeleteChannel":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChimeBearer": alice}
+    if op == "CreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "Type": "DEFAULT", "ChimeBearer": alice}
+    if op == "BatchCreateChannelMembership":
+        return {"ChannelArn": ch, "MemberArns": [newcomer(), newcomer()], "ChimeBearer": alice}
+    if op == "DeleteChannelMembership":
+        who = newcomer()
+        fx.call("CreateChannelMembership", {"ChannelArn": ch, "MemberArn": who, "Type": "DEFAULT", "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelModerator":
+        return {"ChannelArn": ch, "ChannelModeratorArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelModerator":
+        who = newcomer()
+        fx.call("CreateChannelModerator", {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "ChannelModeratorArn": who, "ChimeBearer": alice}
+    if op == "CreateChannelBan":
+        return {"ChannelArn": ch, "MemberArn": newcomer(), "ChimeBearer": alice}
+    if op == "DeleteChannelBan":
+        who = newcomer()
+        fx.call("CreateChannelBan", {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice})
+        return {"ChannelArn": ch, "MemberArn": who, "ChimeBearer": alice}
+    if op == "DeleteChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": alice}
+    if op == "RedactChannelMessage":
+        return {"ChannelArn": ch, "MessageId": chimesdkmessaging_message(st, ch), "ChimeBearer": bob}
+    if op == "CreateChannelFlow":
+        return {"AppInstanceArn": app, "Name": "filter", "Processors": cmsg_processors(), "ClientRequestToken": fx.name("tok"),
+                "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op == "DeleteChannelFlow":
+        return {"ChannelFlowArn": chimesdkmessaging_flow(st)}
+    if op == "AssociateChannelFlow":
+        return {"ChannelArn": chimesdkmessaging_channel(st), "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "DisassociateChannelFlow":
+        other = chimesdkmessaging_channel(st)
+        fx.call("AssociateChannelFlow", {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice})
+        return {"ChannelArn": other, "ChannelFlowArn": flow, "ChimeBearer": alice}
+    if op == "ChannelFlowCallback":
+        pending = chimesdkmessaging_message(st, st["flowed"])
+        return {"CallbackId": uuid.uuid4().hex, "ChannelArn": st["flowed"], "ChannelMessage": {"MessageId": pending, "Content": "processed"}}
+    if op == "DeleteMessagingStreamingConfigurations":
+        return {"AppInstanceArn": app}
+    return payload
+
+
+def cmpl_wait(fx: MsgFixture, op: str, args: dict, path: list, want: str) -> dict:
+    """Read a resource until the field at path reports want (Stackyard settles async state on read)."""
+    out: dict = {}
+    for _ in range(8):
+        out = fx.call(op, args)
+        value = out
+        for key in path:
+            value = value.get(key, {}) if isinstance(value, dict) else {}
+        if value == want:
+            break
+        time.sleep(0.5)
+    return out
+
+
+def cmpl_config(name: str) -> dict:
+    return {
+        "MediaInsightsPipelineConfigurationName": name, "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+        "Elements": cmpl_elements(), "Tags": [{"Key": "team", "Value": "coverage"}],
+    }
+
+
+def cmpl_elements() -> list:
+    return [{"Type": "VoiceAnalyticsProcessor", "VoiceAnalyticsProcessorConfiguration": {"SpeakerSearchStatus": "Enabled", "VoiceToneAnalysisStatus": "Enabled"}},
+            {"Type": "SnsTopicSink", "SnsTopicSinkConfiguration": {"InsightsTarget": f"arn:aws:sns:us-east-1:{CHIME_ACCOUNT}:insights"}}]
+
+
+def cmpl_kvs_source() -> dict:
+    return {"MediaEncoding": "pcm", "MediaSampleRate": 8000,
+            "Streams": [{"StreamArn": f"arn:aws:kinesisvideo:us-east-1:{CHIME_ACCOUNT}:stream/call/1", "StreamChannelDefinition": {"NumberOfChannels": 1}}]}
+
+
+def chimesdkmediapipelines_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Chime SDK Media Pipelines: a meeting created through chime-sdk-meetings,
+    a capture pipeline on it, an ACTIVE Kinesis video stream pool, a media
+    insights configuration with voice analytics, an insights pipeline and one
+    task of each kind; creates and destructive operations get their own."""
+    op = endpoint.operation
+    state = RUNTIME_STATE.setdefault("chimesdkmediapipelines", {})
+    if not state.get("fx"):
+        fx = MsgFixture(aws_bin, endpoint_url, region, env, "chime-sdk-media-pipelines")
+        state["fx"] = fx
+        state["meeting"] = cmtg_meeting(fx).get("MeetingArn", "")
+        state["capture"] = cmpl_capture(state)
+        state["pool"] = cmpl_pool(state)
+        state["config"] = fx.name("cfg")
+        state["config_arn"] = fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(state["config"])).get(
+            "MediaInsightsPipelineConfiguration", {}).get("MediaInsightsPipelineConfigurationArn", "")
+        state["insights"] = cmpl_insights(state)
+        state["speaker"] = cmpl_task(state, "StartSpeakerSearchTask")
+        state["voice"] = cmpl_task(state, "StartVoiceToneAnalysisTask")
+    fx: MsgFixture = state["fx"]
+    capture, pool, insights = state["capture"], state["pool"], state["insights"]
+    s3 = {"S3BucketSinkConfiguration": {"Destination": "arn:aws:s3:::coverage-artifacts"}, "Type": "S3Bucket"}
+
+    fixed = {
+        "GetMediaCapturePipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "GetMediaPipeline": {"MediaPipelineId": capture["MediaPipelineId"]},
+        "ListMediaCapturePipelines": {}, "ListMediaPipelines": {}, "ListMediaInsightsPipelineConfigurations": {},
+        "ListMediaPipelineKinesisVideoStreamPools": {},
+        "GetMediaInsightsPipelineConfiguration": {"Identifier": state["config"]},
+        "UpdateMediaInsightsPipelineConfiguration": {"Identifier": state["config"], "ResourceAccessRoleArn": f"arn:aws:iam::{CHIME_ACCOUNT}:role/insights",
+                                                     "Elements": cmpl_elements()},
+        "GetMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolName"]},
+        "UpdateMediaPipelineKinesisVideoStreamPool": {"Identifier": pool["PoolArn"], "StreamConfiguration": {"DataRetentionInHours": 48}},
+        "GetSpeakerSearchTask": {"Identifier": insights, "SpeakerSearchTaskId": state["speaker"]},
+        "GetVoiceToneAnalysisTask": {"Identifier": insights, "VoiceToneAnalysisTaskId": state["voice"]},
+        "StartSpeakerSearchTask": {"Identifier": insights, "VoiceProfileDomainArn": CHIME_REGION_ARN + "voice-profile-domain/coverage"},
+        "StartVoiceToneAnalysisTask": {"Identifier": insights, "LanguageCode": "en-US"},
+        "ListTagsForResource": {"ResourceARN": capture["MediaPipelineArn"]},
+        "TagResource": {"ResourceARN": capture["MediaPipelineArn"], "Tags": [{"Key": "owner", "Value": "coverage"}]},
+        "UntagResource": {"ResourceARN": capture["MediaPipelineArn"], "TagKeys": ["owner"]},
+        "CreateMediaConcatenationPipeline": {
+            "Sources": [{"Type": "MediaCapturePipeline", "MediaCapturePipelineSourceConfiguration": {
+                "MediaPipelineArn": capture["MediaPipelineArn"], "ChimeSdkMeetingConfiguration": {"ArtifactsConfiguration": {
+                    "Audio": {"State": "Enabled"}, "Video": {"State": "Enabled"}, "Content": {"State": "Disabled"}, "DataChannel": {"State": "Enabled"},
+                    "TranscriptionMessages": {"State": "Enabled"}, "MeetingEvents": {"State": "Enabled"}, "CompositedVideo": {"State": "Disabled"}}}}}],
+            "Sinks": [s3]},
+        "CreateMediaLiveConnectorPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "ChimeSdkMeetingLiveConnectorConfiguration": {"Arn": state["meeting"], "MuxType": "AudioWithActiveSpeakerVideo"}}],
+            "Sinks": [{"SinkType": "RTMP", "RTMPConfiguration": {"Url": "rtmps://live.example.com/app/key", "AudioChannels": "Stereo"}}]},
+        "CreateMediaStreamPipeline": {
+            "Sources": [{"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"]}],
+            "Sinks": [{"SinkArn": pool["PoolArn"], "SinkType": "KinesisVideoStreamPool", "ReservedStreamCapacity": 1, "MediaStreamType": "IndividualAudio"}]},
+        "CreateMediaInsightsPipeline": {"MediaInsightsPipelineConfigurationArn": state["config_arn"], "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "CreateMediaCapturePipeline":
+        return {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket", "SinkArn": "arn:aws:s3:::coverage-captures",
+                "ClientRequestToken": fx.name("tok"), "Tags": [{"Key": "team", "Value": "coverage"}]}
+    if op in ("DeleteMediaCapturePipeline", "DeleteMediaPipeline"):
+        return {"MediaPipelineId": cmpl_capture(state)["MediaPipelineId"]}
+    if op == "CreateMediaInsightsPipelineConfiguration":
+        return cmpl_config(fx.name("cfg"))
+    if op == "DeleteMediaInsightsPipelineConfiguration":
+        name = fx.name("cfg")
+        fx.call("CreateMediaInsightsPipelineConfiguration", cmpl_config(name))
+        return {"Identifier": name}
+    if op == "CreateMediaPipelineKinesisVideoStreamPool":
+        return {"PoolName": fx.name("pool"), "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}}
+    if op == "DeleteMediaPipelineKinesisVideoStreamPool":
+        return {"Identifier": cmpl_pool(state, wait=False)["PoolName"]}
+    if op == "UpdateMediaInsightsPipelineStatus":
+        return {"Identifier": cmpl_insights(state), "UpdateStatus": "Pause"}
+    if op == "StopSpeakerSearchTask":
+        return {"Identifier": insights, "SpeakerSearchTaskId": cmpl_task(state, "StartSpeakerSearchTask")}
+    if op == "StopVoiceToneAnalysisTask":
+        return {"Identifier": insights, "VoiceToneAnalysisTaskId": cmpl_task(state, "StartVoiceToneAnalysisTask")}
+    return payload
+
+
+def cmpl_capture(state: dict) -> dict:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaCapturePipeline", {"SourceType": "ChimeSdkMeeting", "SourceArn": state["meeting"], "SinkType": "S3Bucket",
+                                                   "SinkArn": "arn:aws:s3:::coverage-captures"}).get("MediaCapturePipeline", {})
+
+
+def cmpl_pool(state: dict, wait: bool = True) -> dict:
+    fx: MsgFixture = state["fx"]
+    name = fx.name("pool")
+    fx.call("CreateMediaPipelineKinesisVideoStreamPool", {"PoolName": name, "StreamConfiguration": {"Region": "us-east-1", "DataRetentionInHours": 24}})
+    if not wait:
+        return {"PoolName": name}
+    out = cmpl_wait(fx, "GetMediaPipelineKinesisVideoStreamPool", {"Identifier": name}, ["KinesisVideoStreamPoolConfiguration", "PoolStatus"], "ACTIVE")
+    return out.get("KinesisVideoStreamPoolConfiguration", {})
+
+
+def cmpl_insights(state: dict) -> str:
+    fx: MsgFixture = state["fx"]
+    return fx.call("CreateMediaInsightsPipeline", {"MediaInsightsPipelineConfigurationArn": state["config_arn"],
+                                                    "KinesisVideoStreamSourceRuntimeConfiguration": cmpl_kvs_source()}).get("MediaInsightsPipeline", {}).get("MediaPipelineId", "")
+
+
+def cmpl_task(state: dict, op: str) -> str:
+    fx: MsgFixture = state["fx"]
+    args = {"Identifier": state["insights"]}
+    if op == "StartSpeakerSearchTask":
+        args["VoiceProfileDomainArn"] = CHIME_REGION_ARN + "voice-profile-domain/coverage"
+        return fx.call(op, args).get("SpeakerSearchTask", {}).get("SpeakerSearchTaskId", "")
+    args["LanguageCode"] = "en-US"
+    return fx.call(op, args).get("VoiceToneAnalysisTask", {}).get("VoiceToneAnalysisTaskId", "")
+
+
+EDGE_ACCOUNT = "123456789012"
+EDGE_ADDRESS = {"ContactName": "Stackyard Ops", "ContactPhoneNumber": "+15555550100", "AddressLine1": "1 Main St",
+                "City": "Seattle", "StateOrRegion": "WA", "PostalCode": "98101", "CountryCode": "US"}
+
+
+def edge_call(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], cli_service: str, op: str, args: dict) -> dict:
+    cli = re.sub(r"(?<!^)(?=[A-Z])", "-", op).lower()
+    return run_aws_json(aws_bin, endpoint_url, region, cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+
+def outposts_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Outposts operations at a fixture site and outpost with installed
+    hardware; creates, deletes and capacity tasks get resources of their own.
+    Names are run-unique because servers are reused between runs."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "outposts", name, args)
+
+    def site() -> str:
+        counter[0] += 1
+        return call("CreateSite", {"Name": f"sy-site-{run}-{counter[0]}", "OperatingAddress": EDGE_ADDRESS,
+                                   "ShippingAddress": EDGE_ADDRESS}).get("Site", {}).get("SiteId", "")
+
+    def outpost(site_id: str) -> str:
+        return call("CreateOutpost", {"Name": f"sy-outpost-{run}", "SiteId": site_id}).get("Outpost", {}).get("OutpostId", "")
+
+    def order(outpost_id: str) -> str:
+        return call("CreateOrder", {"OutpostIdentifier": outpost_id, "PaymentOption": "ALL_UPFRONT",
+                                    "LineItems": [{"CatalogItemId": "OR-RACKM5A", "Quantity": 1}]}).get("Order", {}).get("OrderId", "")
+
+    def fulfilled(site_id: str) -> str:
+        oid = outpost(site_id)
+        order_id = order(oid)
+        for _ in range(4):  # RECEIVED -> ... -> FULFILLED
+            call("GetOrder", {"OrderId": order_id})
+        return oid
+
+    state = RUNTIME_STATE.setdefault("outposts", {})
+    if not state.get("outpost"):
+        sid = site()
+        oid = outpost(sid)
+        order_id = order(oid)
+        for _ in range(4):
+            call("GetOrder", {"OrderId": order_id})
+        asset = (call("ListAssets", {"OutpostIdentifier": oid}).get("Assets") or [{}])[0].get("AssetId", "")
+        task = call("StartCapacityTask", {"OutpostIdentifier": oid, "InstancePools": [{"InstanceType": "m5.xlarge", "Count": 8}]})
+        tid = task.get("CapacityTaskId", "")
+        for _ in range(2):  # REQUESTED -> IN_PROGRESS -> COMPLETED
+            call("GetCapacityTask", {"OutpostIdentifier": oid, "CapacityTaskId": tid})
+        call("CreatePrivateConnectivityConfig", {"OutpostId": oid, "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]})
+        quote = call("CreateQuote", {"OutpostIdentifier": oid, "CountryCode": "US",
+                                     "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "m5", "Quantity": 96}]}).get("Quote", {})
+        conn = call("StartConnection", {"AssetId": asset, "ClientPublicKey": "A" * 43 + "=", "NetworkInterfaceDeviceIndex": 0})
+        state.update({"site": sid, "outpost": oid, "order": order_id, "asset": asset, "task": tid,
+                      "quote": quote.get("QuoteId", ""), "connection": conn.get("ConnectionId", "")})
+    sid, oid = state["site"], state["outpost"]
+    arn = f"arn:aws:outposts:us-east-1:{EDGE_ACCOUNT}:outpost/{oid}"
+    rack = {"PowerDrawKva": "POWER_10_KVA", "PowerPhase": "THREE_PHASE", "PowerConnector": "IEC309", "PowerFeedDrop": "ABOVE_RACK",
+            "UplinkGbps": "UPLINK_10G", "UplinkCount": "UPLINK_COUNT_2", "FiberOpticCableType": "SINGLE_MODE",
+            "OpticalStandard": "OPTIC_10GBASE_LR", "MaximumSupportedWeightLbs": "MAX_1400_LBS"}
+    fixed = {
+        "CreateSite": lambda: {"Name": f"sy-created-{run}", "Description": "coverage", "OperatingAddress": EDGE_ADDRESS,
+                               "RackPhysicalProperties": rack, "Tags": {"team": "coverage"}},
+        "GetSite": lambda: {"SiteId": sid},
+        "UpdateSite": lambda: {"SiteId": sid, "Notes": "updated by coverage"},
+        "DeleteSite": lambda: {"SiteId": site()},
+        "GetSiteAddress": lambda: {"SiteId": sid, "AddressType": "OPERATING_ADDRESS"},
+        "UpdateSiteAddress": lambda: {"SiteId": sid, "AddressType": "SHIPPING_ADDRESS", "Address": EDGE_ADDRESS},
+        "UpdateSiteRackPhysicalProperties": lambda: dict(rack, SiteId=sid),
+        "ListSites": lambda: {"MaxResults": 10},
+        "CreateOutpost": lambda: {"Name": f"sy-created-{run}", "SiteId": sid, "Tags": {"team": "coverage"}},
+        "GetOutpost": lambda: {"OutpostId": oid},
+        "UpdateOutpost": lambda: {"OutpostId": oid, "Description": "updated by coverage"},
+        "DeleteOutpost": lambda: {"OutpostId": outpost(sid)},
+        "StartOutpostDecommission": lambda: {"OutpostIdentifier": outpost(sid)},
+        "ListOutposts": lambda: {"MaxResults": 10},
+        "CreatePrivateConnectivityConfig": lambda: {"OutpostId": outpost(sid), "VpcInformationList": [{"VpcId": "vpc-0a1b2c3d", "SubnetIds": ["subnet-0a1b2c3d"]}]},
+        "GetPrivateConnectivityConfig": lambda: {"OutpostId": oid},
+        "CreateQuote": lambda: {"OutpostIdentifier": oid, "CountryCode": "US", "RequestedCapacities": [{"QuoteCapacityType": "EC2", "Unit": "c5", "Quantity": 48}]},
+        "GetQuote": lambda: {"QuoteIdentifier": state["quote"]},
+        "UpdateQuote": lambda: {"QuoteIdentifier": state["quote"], "Description": "updated by coverage"},
+        "DeleteQuote": lambda: {"QuoteIdentifier": call("CreateQuote", {"CountryCode": "US", "RequestedCapacities": [
+            {"QuoteCapacityType": "EBS", "Unit": "TB", "Quantity": 10}]}).get("Quote", {}).get("QuoteId", "")},
+        "ListQuotes": lambda: {"MaxResults": 10},
+        "CreateOrder": lambda: {"OutpostIdentifier": oid, "PaymentOption": "NO_UPFRONT", "PaymentTerm": "ONE_YEAR",
+                                "LineItems": [{"CatalogItemId": "OR-RACKC5A", "Quantity": 1}]},
+        "GetOrder": lambda: {"OrderId": state["order"]},
+        "CancelOrder": lambda: {"OrderId": order(oid)},
+        "ListOrders": lambda: {"OutpostIdentifierFilter": oid},
+        "ListAssets": lambda: {"OutpostIdentifier": oid},
+        "ListAssetInstances": lambda: {"OutpostIdentifier": oid},
+        "GetOutpostInstanceTypes": lambda: {"OutpostId": oid},
+        "GetOutpostSupportedInstanceTypes": lambda: {"OutpostIdentifier": oid, "AssetId": state["asset"]},
+        "StartCapacityTask": lambda: {"OutpostIdentifier": fulfilled(sid), "InstancePools": [{"InstanceType": "m5.large", "Count": 4}]},
+        "CancelCapacityTask": lambda: (lambda o: {"OutpostIdentifier": o, "CapacityTaskId": call("StartCapacityTask", {
+            "OutpostIdentifier": o, "InstancePools": [{"InstanceType": "m5.large", "Count": 2}]}).get("CapacityTaskId", "")})(fulfilled(sid)),
+        "GetCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListBlockingInstancesForCapacityTask": lambda: {"OutpostIdentifier": oid, "CapacityTaskId": state["task"]},
+        "ListCapacityTasks": lambda: {"OutpostIdentifierFilter": oid},
+        "StartConnection": lambda: {"AssetId": state["asset"], "ClientPublicKey": "B" * 43 + "=", "NetworkInterfaceDeviceIndex": 1},
+        "GetConnection": lambda: {"ConnectionId": state["connection"]},
+        "GetOutpostBillingInformation": lambda: {"OutpostIdentifier": oid},
+        "GetRenewalPricing": lambda: {"OutpostIdentifier": oid},
+        "CreateRenewal": lambda: {"OutpostIdentifier": oid, "PaymentOption": "ALL_UPFRONT", "PaymentTerm": "THREE_YEARS", "ClientToken": f"sy-{run}"},
+        "GetCatalogItem": lambda: {"CatalogItemId": "OR-RACKM5A"},
+        "ListCatalogItems": lambda: {"ItemClassFilter": ["RACK"]},
+        "ListOrderableInstanceTypes": lambda: {"OutpostGenerationFilter": "GENERATION_2"},
+        "ListTagsForResource": lambda: {"ResourceArn": arn},
+        "TagResource": lambda: {"ResourceArn": arn, "Tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"ResourceArn": arn, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def snowdevicemanagement_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Managed devices are Snowball jobs: create one, then point device and
+    task operations at it; CancelTask gets a task of its own."""
+    op = endpoint.operation
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "snow-device-management", name, args)
+
+    def task() -> dict:
+        return call("CreateTask", {"command": {"reboot": {}}, "targets": [state["device"]], "tags": {"team": "coverage"}})
+
+    state = RUNTIME_STATE.setdefault("snowdevicemanagement", {})
+    if not state.get("device"):
+        job = edge_call(aws_bin, endpoint_url, region, env, "snowball", "CreateJob",
+                        {"JobType": "IMPORT", "SnowballType": "EDGE", "Description": "snow device management coverage"}).get("JobId", "")
+        device = (call("ListDevices", {"jobId": job}).get("devices") or [{}])[0].get("managedDeviceId", "")
+        state.update({"job": job, "device": device})
+        instance = (call("ListDeviceResources", {"managedDeviceId": device}).get("resources") or [{}])[0].get("id", "")
+        state.update({"instance": instance, "task": task()})
+    dev, tid, tarn = state["device"], state["task"].get("taskId", ""), state["task"].get("taskArn", "")
+    fixed = {
+        "ListDevices": lambda: {"jobId": state["job"], "maxResults": 10},
+        "DescribeDevice": lambda: {"managedDeviceId": dev},
+        "ListDeviceResources": lambda: {"managedDeviceId": dev, "type": "AWS::EC2::Instance"},
+        "DescribeDeviceEc2Instances": lambda: {"managedDeviceId": dev, "instanceIds": [state["instance"]]},
+        "CreateTask": lambda: {"command": {"unlock": {}}, "targets": [dev], "description": "coverage unlock"},
+        "DescribeTask": lambda: {"taskId": tid},
+        "CancelTask": lambda: {"taskId": task().get("taskId", "")},
+        "ListTasks": lambda: {"maxResults": 10},
+        "DescribeExecution": lambda: {"taskId": tid, "managedDeviceId": dev},
+        "ListExecutions": lambda: {"taskId": tid},
+        "ListTagsForResource": lambda: {"resourceArn": tarn},
+        "TagResource": lambda: {"resourceArn": tarn, "tags": {"env": "coverage"}},
+        "UntagResource": lambda: {"resourceArn": tarn, "tagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
+
+
+def backupgateway_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point Backup gateway operations at a fixture gateway associated with an
+    imported hypervisor whose VMs are synced; creates and deletes get their own."""
+    op = endpoint.operation
+    run = f"{time.time_ns():x}"[-10:]
+    counter = [0]
+
+    def call(name: str, args: dict) -> dict:
+        return edge_call(aws_bin, endpoint_url, region, env, "backup-gateway", name, args)
+
+    def gateway() -> str:
+        return call("CreateGateway", {"ActivationKey": f"SY-{run}", "GatewayDisplayName": f"sy-gw-{run}",
+                                      "GatewayType": "BACKUP_VM"}).get("GatewayArn", "")
+
+    def hypervisor() -> str:
+        counter[0] += 1
+        return call("ImportHypervisorConfiguration", {"Name": f"sy-hv-{run}", "Host": f"vcenter-{run}-{counter[0]}.example.com"}).get("HypervisorArn", "")
+
+    state = RUNTIME_STATE.setdefault("backupgateway", {})
+    if not state.get("gateway"):
+        gw, hv = gateway(), hypervisor()
+        for _ in range(3):  # PENDING -> ONLINE, sync CREATED -> RUNNING -> SUCCEEDED
+            call("GetHypervisor", {"HypervisorArn": hv})
+        vm = (call("ListVirtualMachines", {"HypervisorArn": hv}).get("VirtualMachines") or [{}])[0].get("ResourceArn", "")
+        call("AssociateGatewayToServer", {"GatewayArn": gw, "ServerArn": hv})
+        state.update({"gateway": gw, "hypervisor": hv, "vm": vm})
+    gw, hv = state["gateway"], state["hypervisor"]
+    fixed = {
+        "CreateGateway": lambda: {"ActivationKey": f"SY-NEW-{run}", "GatewayDisplayName": "sy-created", "GatewayType": "BACKUP_VM",
+                                  "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "DeleteGateway": lambda: {"GatewayArn": gateway()},
+        "GetGateway": lambda: {"GatewayArn": gw},
+        "ListGateways": lambda: {"MaxResults": 10},
+        "UpdateGatewayInformation": lambda: {"GatewayArn": gw, "GatewayDisplayName": "sy-renamed"},
+        "UpdateGatewaySoftwareNow": lambda: {"GatewayArn": gw},
+        "AssociateGatewayToServer": lambda: {"GatewayArn": gateway(), "ServerArn": hv},
+        "DisassociateGatewayFromServer": lambda: (lambda g: (call("AssociateGatewayToServer", {"GatewayArn": g, "ServerArn": hv}), {"GatewayArn": g})[1])(gateway()),
+        "PutMaintenanceStartTime": lambda: {"GatewayArn": gw, "HourOfDay": 3, "MinuteOfHour": 30, "DayOfWeek": 6},
+        "PutBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw, "BandwidthRateLimitIntervals": [
+            {"AverageUploadRateLimitInBitsPerSec": 104857600, "StartHourOfDay": 9, "StartMinuteOfHour": 0,
+             "EndHourOfDay": 17, "EndMinuteOfHour": 0, "DaysOfWeek": [1, 2, 3, 4, 5]}]},
+        "GetBandwidthRateLimitSchedule": lambda: {"GatewayArn": gw},
+        "TestHypervisorConfiguration": lambda: {"GatewayArn": gw, "Host": "vcenter.example.com", "Username": "backup", "Password": "Coverage-Only-1"},
+        "ImportHypervisorConfiguration": lambda: {"Name": "sy-imported", "Host": f"esxi-{run}.example.com", "Tags": [{"Key": "team", "Value": "coverage"}]},
+        "GetHypervisor": lambda: {"HypervisorArn": hv},
+        "ListHypervisors": lambda: {"MaxResults": 10},
+        "UpdateHypervisor": lambda: {"HypervisorArn": hv, "Name": "sy-renamed"},
+        "DeleteHypervisor": lambda: {"HypervisorArn": hypervisor()},
+        "PutHypervisorPropertyMappings": lambda: {"HypervisorArn": hv, "IamRoleArn": f"arn:aws:iam::{EDGE_ACCOUNT}:role/stackyard-bgw",
+                                                  "VmwareToAwsTagMappings": [{"VmwareCategory": "tier", "VmwareTagName": "gold", "AwsTagKey": "tier", "AwsTagValue": "gold"}]},
+        "GetHypervisorPropertyMappings": lambda: {"HypervisorArn": hv},
+        "StartVirtualMachinesMetadataSync": lambda: {"HypervisorArn": hv},
+        "GetVirtualMachine": lambda: {"ResourceArn": state["vm"]},
+        "ListVirtualMachines": lambda: {"HypervisorArn": hv},
+        "ListTagsForResource": lambda: {"ResourceArn": gw},
+        "TagResource": lambda: {"ResourceARN": gw, "Tags": [{"Key": "env", "Value": "coverage"}]},
+        "UntagResource": lambda: {"ResourceARN": gw, "TagKeys": ["env"]},
+    }
+    return fixed[op]() if op in fixed else payload
 
 
 def acp_cli(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str], op: str, payload: dict) -> dict:
@@ -41074,6 +42592,24 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "mturk":
+        return mturk_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "workdocs":
+        return workdocs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "repostspace":
+        return repostspace_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmeetings":
+        return chimesdkmeetings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmessaging":
+        return chimesdkmessaging_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "chimesdkmediapipelines":
+        return chimesdkmediapipelines_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "outposts":
+        return outposts_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "snowdevicemanagement":
+        return snowdevicemanagement_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "backupgateway":
+        return backupgateway_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "applicationcostprofiler":
         return applicationcostprofiler_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "bcmdashboards":
@@ -41109,6 +42645,18 @@ def hydrate_payload_with_service_state(
         return forecastquery_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "frauddetector":
         return frauddetector_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotdataplane":
+        return iotdataplane_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "iotjobsdataplane":
+        return iotjobsdataplane_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "keyspacesstreams":
+        return keyspacesstreams_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "machinelearning":
+        return machinelearning_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "lookoutequipment":
+        return lookoutequipment_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "sagemakergeospatial":
+        return sagemakergeospatial_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotsecuretunneling":
         return iotsecuretunneling_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "iotdeviceadvisor":
@@ -61737,6 +63285,13 @@ def run_appsync_outfile_operation(
     return cp, cmd, extra_output
 
 
+IOT_DATA_SHADOW_OPERATIONS = {
+    ("iotdataplane", "GetThingShadow"),
+    ("iotdataplane", "UpdateThingShadow"),
+    ("iotdataplane", "DeleteThingShadow"),
+}
+
+
 KVS_MEDIA_OUTFILE_OPERATIONS = {
     ("kinesisvideomedia", "GetMedia"),
     ("kinesisvideoarchivedmedia", "GetClip"),
@@ -63630,7 +65185,7 @@ def run_endpoint(
     elif endpoint.service == "appsync" and endpoint.operation in appsync_outfile_ops:
         cp, cmd, extra_output_text = run_appsync_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip(), extra_output_text.strip()] if part).strip()
-    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource")}:
+    elif endpoint.service == "geomaps" or (endpoint.service, endpoint.operation) in KVS_MEDIA_OUTFILE_OPERATIONS or (endpoint.service, endpoint.operation) in IOT_DATA_SHADOW_OPERATIONS or (endpoint.service, endpoint.operation) in {("glacier", "GetJobOutput"), ("mediastoredata", "GetObject"), ("polly", "SynthesizeSpeech"), ("schemas", "GetCodeBindingSource"), ("sagemakergeospatial", "GetTile")}:
         # Both take every member as a flag and write the body to an outfile.
         cp, cmd, extra_output_text = run_kvs_media_outfile_operation(endpoint, base_cmd, payload, env)
         text = "\n".join(part for part in [cp.stdout.strip(), cp.stderr.strip()] if part).strip()

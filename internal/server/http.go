@@ -24,7 +24,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -95,6 +94,9 @@ type Server struct {
 	blockchain                                          *blockchainStore
 	braket                                              *braketStore
 	chime                                               *chimeStore
+	chimeSDKMeetings                                    *cmtgStore
+	chimeSDKMessaging                                   *cmsgStore
+	chimeSDKPipelines                                   *cmplStore
 	connect                                             *connectStore
 	cleanrooms                                          *cleanRoomsStore
 	cleanroomsml                                        *cleanRoomsMLStore
@@ -225,6 +227,9 @@ type Server struct {
 	textract                                            *textractStore
 	wafRegional                                         *wafRegionalStore
 	forecast                                            *forecastStore
+	machineLearning                                     *machineLearningStore
+	lookoutEquipment                                    *lkeStore
+	sageMakerGeospatial                                 *sgeoStore
 	fraudDetector                                       *frdStore
 	pi                                                  *piStore
 	cloudSearch                                         *csStore
@@ -249,9 +254,17 @@ type Server struct {
 	mailmanager                                         *mmgrStore
 	pinpointEmail                                       *ppeStore
 	pinpointSMSVoice                                    *ppsvStore
+	repostSpace                                         *rpsStore
+	mturk                                               *mtkStore
+	workDocs                                            *wdocStore
 	iotSecureTunneling                                  *istStore
 	iotDeviceAdvisor                                    *idaStore
 	iotThingsGraph                                      *itgStore
+	iotData                                             *iotdStore
+	iotJobsData                                         *iotjStore
+	outposts                                            *opstStore
+	snowDeviceManagement                                *sdmStore
+	backupGateway                                       *bgwStore
 	openSearchServerless                                *openSearchServerlessStore
 	verifiedPermissions                                 *vpStore
 	scheduler                                           *schedulerStore
@@ -699,6 +712,9 @@ func New(cfg Config) *Server {
 		blockchain:                    newBlockchainStore(),
 		braket:                        newBraketStore(),
 		chime:                         newChimeStore(),
+		chimeSDKMeetings:              newChimeSDKMeetingsStore(),
+		chimeSDKMessaging:             newChimeSDKMessagingStore(),
+		chimeSDKPipelines:             newChimeSDKMediaPipelinesStore(),
 		connect:                       newConnectStore(),
 		cleanrooms:                    newCleanRoomsStore(),
 		cleanroomsml:                  newCleanRoomsMLStore(),
@@ -827,6 +843,9 @@ func New(cfg Config) *Server {
 		textract:                      newTextractStore(),
 		wafRegional:                   newWAFRegionalStore(),
 		forecast:                      newForecastStore(),
+		machineLearning:               newMachineLearningStore(),
+		lookoutEquipment:              newLookoutEquipmentStore(),
+		sageMakerGeospatial:           newSageMakerGeospatialStore(),
 		fraudDetector:                 newFraudDetectorStore(),
 		pi:                            newPIStore(),
 		cloudSearch:                   newCloudSearchStore(),
@@ -850,9 +869,17 @@ func New(cfg Config) *Server {
 		mailmanager:                   newMailManagerStore(),
 		pinpointEmail:                 newPinpointEmailStore(),
 		pinpointSMSVoice:              newPinpointSMSVoiceStore(),
+		repostSpace:                   newRepostSpaceStore(),
+		mturk:                         newMTurkStore(),
+		workDocs:                      newWorkDocsStore(),
 		iotSecureTunneling:            newIoTSecureTunnelingStore(),
 		iotDeviceAdvisor:              newIoTDeviceAdvisorStore(),
 		iotThingsGraph:                newIoTThingsGraphStore(),
+		iotData:                       newIoTDataPlaneStore(),
+		iotJobsData:                   newIoTJobsDataPlaneStore(),
+		outposts:                      newOutpostsStore(),
+		snowDeviceManagement:          newSnowDeviceManagementStore(),
+		backupGateway:                 newBackupGatewayStore(),
 		scheduler:                     newSchedulerStore(),
 		pipes:                         newPipesStore(),
 		datasync:                      newDataSyncStore(),
@@ -1251,6 +1278,8 @@ func New(cfg Config) *Server {
 	mux.HandleFunc("PUT /_stackyard/codegurusecurity/uploads/{id}", s.handleCodeGuruSecurityUpload)
 	mux.HandleFunc("GET /_stackyard/invoicing/invoices/{file}", s.handleInvoicingPDF)
 	mux.HandleFunc("GET /_stackyard/apigatewaymanagementapi/connections/{connectionId}/messages", s.handleAPIGatewayManagementMessages)
+	mux.HandleFunc("POST /_stackyard/iot-data/connections", s.handleIoTDataConnect)
+	mux.HandleFunc("GET /_stackyard/iot-data/connections/{clientId}/messages", s.handleIoTDataMessages)
 
 	mux.HandleFunc("PUT /s3/buckets/{bucket}", s.handleS3CreateBucket)
 	mux.HandleFunc("GET /s3/buckets", s.handleS3ListBuckets)
@@ -1496,7 +1525,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		"status":    "ok",
 		"timestamp": time.Now().UTC(),
 		"providers": s.enabledProviders,
-		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "awscostmanagement", "applicationcostprofiler", "bcmdashboards", "bcmdataexports", "bcmpricingcalculator", "billingconductor", "budgets", "costoptimizationhub", "invoicing", "freetier", "taxsettings", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "connect", "connectcases", "connectcontactlens", "connectparticipant", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "forecast", "forecastquery", "frauddetector", "flink", "kinesis", "kendra", "kendraranking", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakerruntime", "sagemakerfeaturestoreruntime", "sagemakermetrics", "sagemakeredge", "simspaceweaver", "savingsplans", "tnb", "pi", "pcaconnectorad", "personalize", "personalizeevents", "personalizeruntime", "pinpoint", "pinpointemail", "pinpointsmsvoice", "pipes", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "geomaps", "geoplaces", "georoutes", "mailmanager", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloud9", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudsearch", "cloudsearchdomain", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediapackagevod", "mediastore", "mediastoredata", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafregional", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codegurusecurity", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotdeviceadvisor", "iotsecuretunneling", "iotthingsgraph", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "schemas", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite", "account"},
+		"services":  []string{"acm", "apigateway", "apigatewayv2", "apigatewaymanagementapi", "applicationautoscaling", "appconfig", "appconfigdata", "amplify", "amplifyadminui", "amplifyuibuilder", "novaact", "appflow", "datapipeline", "b2bi", "backup", "backupgateway", "awscostmanagement", "applicationcostprofiler", "bcmdashboards", "bcmdataexports", "bcmpricingcalculator", "billingconductor", "budgets", "costoptimizationhub", "invoicing", "freetier", "taxsettings", "appfabric", "artifact", "discovery", "apprunner", "blockchain", "braket", "chime", "chimesdkmeetings", "chimesdkmessaging", "chimesdkmediapipelines", "connect", "connectcases", "connectcontactlens", "connectparticipant", "cleanrooms", "cleanroomsml", "dataexchange", "databrew", "dax", "datasync", "devicefarm", "fis", "firehose", "forecast", "forecastquery", "frauddetector", "lookoutequipment", "machinelearning", "flink", "kinesis", "kendra", "kendraranking", "odb", "imagebuilder", "entityresolution", "elementalinference", "rekognition", "textract", "transcribe", "transcribestreaming", "xray", "wellarchitected", "wickr", "translate", "verifiedpermissions", "workdocs", "workmail", "workspaces", "workspacesappstream2", "workspacesthinclient", "workspacesweb", "sagemaker", "sagemakergeospatial", "sagemakerruntime", "sagemakerfeaturestoreruntime", "sagemakermetrics", "sagemakeredge", "simspaceweaver", "savingsplans", "tnb", "pi", "pcaconnectorad", "personalize", "personalizeevents", "personalizeruntime", "pinpoint", "pinpointemail", "pinpointsmsvoice", "pipes", "repostspace", "polly", "quicksight", "smsvoicev2", "socialmessaging", "supplychain", "kinesisvideostreams", "kinesisvideomedia", "kinesisvideoarchivedmedia", "kinesisvideosignaling", "kinesisvideowebrtcstorage", "lexv2", "lexruntimev2", "location", "geomaps", "geoplaces", "georoutes", "mailmanager", "finspace", "finspacemanagement", "gameliftstreams", "diagnostictools", "emr", "emrcontainers", "emrserverless", "msk", "mskv1", "mskconnect", "mq", "mturk", "mwaa", "mwaaserverless", "codecatalyst", "bedrockagentcorecontrol", "bedrockagentcoredata", "appsync", "appmesh", "vpclattice", "globalaccelerator", "rtbfabric", "applicationsignals", "arczonalshift", "arcregionswitch", "recoveryreadiness", "recoverycluster", "routingcontrol", "athena", "augmentedai", "autoscalingplans", "batch", "bedrock", "bedrockagent", "bedrockagentruntime", "bedrockruntime", "cloud9", "cloudcontrolapi", "controlcatalog", "controltower", "cloudformation", "cloudfront", "cloudfrontkeyvaluestore", "route53", "route53profiles", "route53domains", "route53resolver", "directconnect", "cloudmap", "cloudhsm", "cloudsearch", "cloudsearchdomain", "cloudtrail", "cloudtraildata", "cloudwatch", "cloudwatchapplicationinsights", "cloudwatchinvestigations", "cloudwatchlogs", "cloudwatchobservabilityadmin", "cloudwatchrum", "cloudwatchsynthetics", "clouddirectory", "cognito", "cognitouserpools", "cognitosync", "codeartifact", "codeconnections", "codestarconnections", "codebuild", "config", "detective", "dms", "docdb", "docdbelastic", "drs", "accessanalyzer", "auditmanager", "rolesanywhere", "iam", "sts", "singlesignon", "singlesignonportal", "singlesignonoidc", "identitystore", "ivs", "ivschat", "ivschatmessaging", "ivsmultitrack", "ivsrealtime", "mediapackage", "mediapackagevod", "mediastore", "mediastoredata", "mediaconnect", "groundstation", "mediatailor", "deadline", "evs", "fms", "guardduty", "macie", "securityhub", "securityir", "securitylake", "wafregional", "wafv2", "shieldadvanced", "paymentcryptography", "paymentcryptographydata", "inspector", "inspectorscan", "inspectorv2", "m2", "mgn", "migrationhub", "migrationhuborchestrator", "migrationhubstrategy", "migrationhubrefactorspaces", "qbusiness", "grafana", "prometheus", "mpa", "proton", "qdeveloper", "resiliencehub", "recyclebin", "resourcegroups", "resourcegroupstaggingapi", "resourceexplorer2", "codeguru", "codeguruprofiler", "codegurusecurity", "codecommit", "codedeploy", "codepipeline", "codestarnotifications", "comprehend", "comprehendmedical", "computeoptimizer", "devopsguru", "dynamodb", "dynamodbstreams", "dsql", "rdsdata", "ebs", "ec2", "ec2autoscaling", "ec2instanceconnect", "ecs", "ecr", "ecrpublic", "efs", "eks", "eksauth", "elasticbeanstalk", "elasticsearchservice", "elasticloadbalancing", "elasticloadbalancingv2", "eventbridge", "fsx", "glacier", "glue", "snowball", "snowdevicemanagement", "storagegateway", "health", "healthimaging", "healthlake", "incidentmanager", "internetmonitor", "iot", "iotdataplane", "iotjobsdataplane", "iotdeviceadvisor", "iotsecuretunneling", "iotthingsgraph", "iotmi", "launchwizard", "managedservicescm", "iotfleetwise", "lakeformation", "iotevents", "iotgreengrass", "iotsitewise", "iottwinmaker", "iotwireless", "keyspaces", "keyspacesstreams", "kms", "lambda", "licensemanager", "licensemanagerlinuxsubscriptions", "licensemanagerusersubscriptions", "lightsail", "marketplace", "partnercentralselling", "memorydb", "networkfirewall", "networkflowmonitor", "networkmanager", "networkmonitor", "neptune", "neptuneanalytics", "neptunedata", "oam", "omics", "opensearch", "osis", "opensearchserverless", "organizations", "outposts", "quicksetup", "ram", "servicecatalogappregistry", "servicecatalog", "serverlessrepo", "servicequotas", "support", "supportapp", "ssmsap", "ssmguiconnect", "systemsmanager", "transfer", "stepfunctions", "trustedadvisor", "usernotifications", "notificationscontacts", "privateca", "pcaconnectorscep", "rds", "redshiftserverless", "redshiftdata", "s3", "scheduler", "schemas", "secretsmanager", "ses", "sesv2", "signer", "sns", "sqs", "swf", "timestreamquery", "timestreamwrite", "account"},
 	})
 }
 
@@ -3028,10 +3057,34 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	if s.handleDataBrewRESTRouter(w, r) {
 		return
 	}
+	// Chime SDK Meetings, Messaging and Media Pipelines sign as chime like
+	// the legacy Chime API: each claims only its own operation templates
+	// (and /tags requests naming its resources) ahead of the Chime router.
+	if s.handleChimeSDKMeetingsRESTRouter(w, r) {
+		return
+	}
+	if s.handleChimeSDKMessagingRESTRouter(w, r) {
+		return
+	}
+	if s.handleChimeSDKMediaPipelinesRESTRouter(w, r) {
+		return
+	}
 	// Mail Manager, Pinpoint Email, SESv2 and SES all sign as ses: Mail
 	// Manager is claimed by X-Amz-Target and Pinpoint Email by its /v1/email
 	// operation paths (SESv2 keeps /v1/email/.../dkim/signing). Pinpoint SMS
 	// Voice (v1) shares sms-voice with SMS Voice v2 and claims /v1/sms-voice.
+	// MTurk is claimed by its X-Amz-Target; WorkDocs (/api/v1) and re:Post
+	// Private (/spaces, /tags) only by their signing names, since those paths
+	// overlap other REST services. Each also serves its /_stackyard/<svc>/ links.
+	if s.handleMTurkJSONRouter(w, r) {
+		return
+	}
+	if s.handleWorkDocsRESTRouter(w, r) {
+		return
+	}
+	if s.handleRepostSpaceRESTRouter(w, r) {
+		return
+	}
 	if s.handleMailManagerJSONRouter(w, r) {
 		return
 	}
@@ -3056,6 +3109,18 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	// IoT Secure Tunneling and Things Graph are claimed by X-Amz-Target,
 	// Device Advisor by its signing name (or host); all three sit ahead of
 	// the IoT router, whose host match would take api.tunneling.iot.*.
+	// Outposts and Snow Device Management are claimed by signing name (or
+	// host) and Backup gateway by X-Amz-Target, ahead of the EC2, Snowball
+	// and Backup routers, which keep their own traffic.
+	if s.handleOutpostsRESTRouter(w, r) {
+		return
+	}
+	if s.handleSnowDeviceManagementRESTRouter(w, r) {
+		return
+	}
+	if s.handleBackupGatewayJSONRouter(w, r) {
+		return
+	}
 	if s.handleIoTSecureTunnelingJSONRouter(w, r) {
 		return
 	}
@@ -3065,6 +3130,19 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 	if s.handleIoTDeviceAdvisorRESTRouter(w, r) {
 		return
 	}
+	// The IoT data and jobs data planes share /things paths with the IoT
+	// router, so they claim only their signing names (or data hosts) first.
+	if s.handleIoTDataPlaneRESTRouter(w, r) {
+		return
+	}
+	if s.handleIoTJobsDataPlaneRESTRouter(w, r) {
+		return
+	}
+	// Keyspaces Streams signs as cassandra too; it is claimed by X-Amz-Target
+	// ahead of the Keyspaces router, which takes every cassandra request.
+	if s.handleKeyspacesStreamsJSONRouter(w, r) {
+		return
+	}
 	if s.handleRedshiftServerlessJSONRouter(w, r) {
 		return
 	}
@@ -3072,6 +3150,15 @@ func (s *Server) handleS3AWSRouter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.handleForecastJSONRouter(w, r) {
+		return
+	}
+	if s.handleMachineLearningJSONRouter(w, r) {
+		return
+	}
+	if s.handleLookoutEquipmentJSONRouter(w, r) {
+		return
+	}
+	if s.handleSageMakerGeospatialRESTRouter(w, r) {
 		return
 	}
 	if s.handleForecastQueryJSONRouter(w, r) {
@@ -33265,6 +33352,12 @@ func (s *Server) authorizeS3Request(r *http.Request, bucket, key, action string,
 }
 
 func evaluatePolicy(policy, requester, action, bucket, key string) (bool, bool) {
+	return evaluatePolicyFor(policy, func(p any) bool { return principalMatches(p, requester) }, action, bucket, key)
+}
+
+// evaluatePolicyFor is evaluatePolicy with the principal test supplied, so
+// user and service principals are matched by separate rules.
+func evaluatePolicyFor(policy string, matches func(any) bool, action, bucket, key string) (bool, bool) {
 	statements := parsePolicyStatements(policy)
 	resource := "arn:aws:s3:::" + bucket
 	if key != "" {
@@ -33273,7 +33366,7 @@ func evaluatePolicy(policy, requester, action, bucket, key string) (bool, bool) 
 	allowed := false
 	denied := false
 	for _, stmt := range statements {
-		if !principalMatches(stmt.Principal, requester) {
+		if !matches(stmt.Principal) {
 			continue
 		}
 		if !actionMatches(stmt.Actions, action) {
@@ -33421,7 +33514,9 @@ func resourceMatches(resources []string, resource string) bool {
 		if candidate == "*" || candidate == resource {
 			return true
 		}
-		if ok, _ := path.Match(candidate, resource); ok {
+		// IAM wildcards cross "/" (path.Match's don't), so "bucket/*" covers
+		// nested keys.
+		if iscGlob(candidate, resource) {
 			return true
 		}
 	}

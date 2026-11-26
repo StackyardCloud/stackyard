@@ -116,6 +116,9 @@
         <a href="#bedrockruntime">Bedrock Runtime</a>
         <a href="#bedrockagent">Agents for Amazon Bedrock</a>
         <a href="#backup">AWS Backup</a>
+        <a href="#outposts">AWS Outposts</a>
+        <a href="#snow-device-management">AWS Snow Device Management</a>
+        <a href="#backup-gateway">AWS Backup gateway</a>
         <a href="#bedrockagentruntime">Agents for Amazon Bedrock Runtime</a>
         <a href="#bedrock-agentcore-data">Bedrock AgentCore Data Plane</a>
         <a href="#bedrock-agentcore-control">Bedrock AgentCore Control Plane</a>
@@ -197,6 +200,12 @@
         <a href="#pinpointemail">Amazon Pinpoint Email</a>
         <a href="#pinpointsmsvoice">Amazon Pinpoint SMS and Voice</a>
         <a href="#mailmanager">Amazon SES Mail Manager</a>
+        <a href="#mturk">Amazon Mechanical Turk</a>
+        <a href="#workdocs">Amazon WorkDocs</a>
+        <a href="#repostspace">AWS re:Post Private</a>
+        <a href="#chimesdkmeetings">Amazon Chime SDK Meetings</a>
+        <a href="#chimesdkmessaging">Amazon Chime SDK Messaging</a>
+        <a href="#chimesdkmediapipelines">Amazon Chime SDK Media Pipelines</a>
         <a href="#polly">Amazon Polly</a>
         <a href="#scheduler">EventBridge Scheduler</a>
         <a href="#schemas">EventBridge Schemas</a>
@@ -218,8 +227,11 @@
         <a href="#iot-secure-tunneling">IoT Secure Tunneling</a>
         <a href="#iot-device-advisor">IoT Device Advisor</a>
         <a href="#iot-things-graph">IoT Things Graph</a>
+        <a href="#iot-data">IoT Data Plane</a>
+        <a href="#iot-jobs-data">IoT Jobs Data Plane</a>
         <a href="#glue">AWS Glue</a>
         <a href="#keyspaces">Keyspaces</a>
+        <a href="#keyspaces-streams">Keyspaces Streams</a>
         <a href="#kms">KMS</a>
         <a href="#lambda">Lambda</a>
         <a href="#license-manager">License Manager</a>
@@ -335,6 +347,9 @@
         <a href="#forecast">Forecast</a>
         <a href="#forecastquery">Forecast Query</a>
         <a href="#frauddetector">Fraud Detector</a>
+        <a href="#lookoutequipment">Lookout for Equipment</a>
+        <a href="#machinelearning">Machine Learning</a>
+        <a href="#sagemakergeospatial">SageMaker Geospatial</a>
         <a href="#cloudsearch">CloudSearch</a>
         <a href="#cloudsearchdomain">CloudSearch Domain</a>
         <a href="#kendraranking">Kendra Intelligent Ranking</a>
@@ -4878,6 +4893,161 @@
         <ul>
                 <li><code>bedrockagent</code>: <code>docker compose -f examples/aws/bedrock-agent/docker-compose.yml up --build</code></li>
         </ul>
+        </details>
+        </section>
+
+        <section id="outposts" class="service">
+
+        <div class="service-header">
+        <h2>AWS Outposts</h2>
+        <p>SigV4 signed with service <code>outposts</code>. REST JSON API. Sites keep operating and shipping addresses and rack physical properties; outposts belong to a site. Quotes size racks or servers from requested EC2 capacity (vCPUs per family) against a five-item catalog, price every requested term and payment option, and report ordering requirements (outpost, addresses, country). Orders, from a quote option or line items, advance RECEIVED, PENDING, PROCESSING, INSTALLING, FULFILLED one step per GetOrder; fulfilment installs one compute asset per unit and starts the subscription. Capacity tasks re-slot instance pools on the assets (REQUESTED, IN_PROGRESS, COMPLETED per read; FAILED when the pools don't fit) and can be cancelled. Billing lists subscriptions and renewals; private connectivity, connections to assets, decommissioning (blocked by orders in flight) and tags on site and outpost ARNs. Address and rack changes are refused while hardware ships.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: outposts</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Outposts API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelCapacityTask</code></td></tr>
+        <tr><td><code>CancelOrder</code></td></tr>
+        <tr><td><code>CreateOrder</code></td></tr>
+        <tr><td><code>CreateOutpost</code></td></tr>
+        <tr><td><code>CreatePrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>CreateQuote</code></td></tr>
+        <tr><td><code>CreateRenewal</code></td></tr>
+        <tr><td><code>CreateSite</code></td></tr>
+        <tr><td><code>DeleteOutpost</code></td></tr>
+        <tr><td><code>DeleteQuote</code></td></tr>
+        <tr><td><code>DeleteSite</code></td></tr>
+        <tr><td><code>GetCapacityTask</code></td></tr>
+        <tr><td><code>GetCatalogItem</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetOrder</code></td></tr>
+        <tr><td><code>GetOutpost</code></td></tr>
+        <tr><td><code>GetOutpostBillingInformation</code></td></tr>
+        <tr><td><code>GetOutpostInstanceTypes</code></td></tr>
+        <tr><td><code>GetOutpostSupportedInstanceTypes</code></td></tr>
+        <tr><td><code>GetPrivateConnectivityConfig</code></td></tr>
+        <tr><td><code>GetQuote</code></td></tr>
+        <tr><td><code>GetRenewalPricing</code></td></tr>
+        <tr><td><code>GetSite</code></td></tr>
+        <tr><td><code>GetSiteAddress</code></td></tr>
+        <tr><td><code>ListAssetInstances</code></td></tr>
+        <tr><td><code>ListAssets</code></td></tr>
+        <tr><td><code>ListBlockingInstancesForCapacityTask</code></td></tr>
+        <tr><td><code>ListCapacityTasks</code></td></tr>
+        <tr><td><code>ListCatalogItems</code></td></tr>
+        <tr><td><code>ListOrderableInstanceTypes</code></td></tr>
+        <tr><td><code>ListOrders</code></td></tr>
+        <tr><td><code>ListOutposts</code></td></tr>
+        <tr><td><code>ListQuotes</code></td></tr>
+        <tr><td><code>ListSites</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartCapacityTask</code></td></tr>
+        <tr><td><code>StartConnection</code></td></tr>
+        <tr><td><code>StartOutpostDecommission</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateOutpost</code></td></tr>
+        <tr><td><code>UpdateQuote</code></td></tr>
+        <tr><td><code>UpdateSite</code></td></tr>
+        <tr><td><code>UpdateSiteAddress</code></td></tr>
+        <tr><td><code>UpdateSiteRackPhysicalProperties</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="snow-device-management" class="service">
+
+        <div class="service-header">
+        <h2>AWS Snow Device Management</h2>
+        <p>SigV4 signed with service <code>snow-device-management</code>. REST JSON API. Managed devices are the Snowball jobs that are not cancelled (one device per job, typed from the job's Snowball type), each with capacities, network interfaces and one EC2 instance. Tasks run <code>reboot</code> or <code>unlock</code> on their targets: every execution goes QUEUED, IN_PROGRESS, SUCCEEDED one step per read (FAILED if the device leaves management), an unlock moves the device through UNLOCKING to UNLOCKED, and the task completes when all executions finish. CancelTask cancels open executions; client tokens are idempotent. Tags on task and managed device ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: snow-device-management</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Snow Device Management API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CancelTask</code></td></tr>
+        <tr><td><code>CreateTask</code></td></tr>
+        <tr><td><code>DescribeDevice</code></td></tr>
+        <tr><td><code>DescribeDeviceEc2Instances</code></td></tr>
+        <tr><td><code>DescribeExecution</code></td></tr>
+        <tr><td><code>DescribeTask</code></td></tr>
+        <tr><td><code>ListDeviceResources</code></td></tr>
+        <tr><td><code>ListDevices</code></td></tr>
+        <tr><td><code>ListExecutions</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListTasks</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details>
+        </section>
+
+        <section id="backup-gateway" class="service">
+
+        <div class="service-header">
+        <h2>AWS Backup gateway</h2>
+        <p>SigV4 signed with service <code>backup-gateway</code>. JSON 1.0 API with <code>X-Amz-Target: BackupOnPremises_v20210101.*</code>. Gateways associate with one imported hypervisor (and block its deletion), keep a maintenance window (weekly or monthly), a bandwidth rate limit schedule (overlaps refused) and a software version that UpdateGatewaySoftwareNow advances. Imported hypervisors go PENDING to ONLINE on their next read; a metadata sync runs CREATED, RUNNING, SUCCEEDED one step per GetHypervisor and discovers the host's virtual machines, which carry the hypervisor's VMware tag mappings. VMs are AWS Backup resources: StartBackupJob takes their names from here and LastBackupDate comes from their latest completed recovery point. Hypervisor credentials are never stored or returned.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: backup-gateway</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS Backup gateway API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateGatewayToServer</code></td></tr>
+        <tr><td><code>CreateGateway</code></td></tr>
+        <tr><td><code>DeleteGateway</code></td></tr>
+        <tr><td><code>DeleteHypervisor</code></td></tr>
+        <tr><td><code>DisassociateGatewayFromServer</code></td></tr>
+        <tr><td><code>GetBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>GetGateway</code></td></tr>
+        <tr><td><code>GetHypervisor</code></td></tr>
+        <tr><td><code>GetHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>GetVirtualMachine</code></td></tr>
+        <tr><td><code>ImportHypervisorConfiguration</code></td></tr>
+        <tr><td><code>ListGateways</code></td></tr>
+        <tr><td><code>ListHypervisors</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVirtualMachines</code></td></tr>
+        <tr><td><code>PutBandwidthRateLimitSchedule</code></td></tr>
+        <tr><td><code>PutHypervisorPropertyMappings</code></td></tr>
+        <tr><td><code>PutMaintenanceStartTime</code></td></tr>
+        <tr><td><code>StartVirtualMachinesMetadataSync</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>TestHypervisorConfiguration</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateGatewayInformation</code></td></tr>
+        <tr><td><code>UpdateGatewaySoftwareNow</code></td></tr>
+        <tr><td><code>UpdateHypervisor</code></td></tr>
+        </tbody>
+        </table>
         </details>
         </section>
 
@@ -13980,6 +14150,377 @@
         </ul>
         </details>
         </section>
+        <section id="mturk" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Mechanical Turk</h2>
+        <p>SigV4 signed with service <code>mturk-requester</code>. Requester API with sandbox semantics: HIT types, HITs with QuestionForm, ExternalQuestion or HTMLQuestion content, qualification requirements and review policies; a real lifecycle (Assignable, Unassignable, Reviewable, Reviewing) driven by simulated workers who accept, submit and return assignments at Stackyard&#x27;s /_stackyard/mturk/ links; assignment deadlines and auto-approval; approve, reject (and override), bonuses with idempotency tokens, uploaded answer files behind short-lived download URLs; qualification types, requests, grants and revocations, system qualifications (locale, approval rate); worker blocks, notifications and a constant sandbox balance.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: mturk-requester</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Mechanical Turk action catalog (39 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AcceptQualificationRequest</code></td></tr>
+        <tr><td><code>ApproveAssignment</code></td></tr>
+        <tr><td><code>AssociateQualificationWithWorker</code></td></tr>
+        <tr><td><code>CreateAdditionalAssignmentsForHIT</code></td></tr>
+        <tr><td><code>CreateHIT</code></td></tr>
+        <tr><td><code>CreateHITType</code></td></tr>
+        <tr><td><code>CreateHITWithHITType</code></td></tr>
+        <tr><td><code>CreateQualificationType</code></td></tr>
+        <tr><td><code>CreateWorkerBlock</code></td></tr>
+        <tr><td><code>DeleteHIT</code></td></tr>
+        <tr><td><code>DeleteQualificationType</code></td></tr>
+        <tr><td><code>DeleteWorkerBlock</code></td></tr>
+        <tr><td><code>DisassociateQualificationFromWorker</code></td></tr>
+        <tr><td><code>GetAccountBalance</code></td></tr>
+        <tr><td><code>GetAssignment</code></td></tr>
+        <tr><td><code>GetFileUploadURL</code></td></tr>
+        <tr><td><code>GetHIT</code></td></tr>
+        <tr><td><code>GetQualificationScore</code></td></tr>
+        <tr><td><code>GetQualificationType</code></td></tr>
+        <tr><td><code>ListAssignmentsForHIT</code></td></tr>
+        <tr><td><code>ListBonusPayments</code></td></tr>
+        <tr><td><code>ListHITs</code></td></tr>
+        <tr><td><code>ListHITsForQualificationType</code></td></tr>
+        <tr><td><code>ListQualificationRequests</code></td></tr>
+        <tr><td><code>ListQualificationTypes</code></td></tr>
+        <tr><td><code>ListReviewPolicyResultsForHIT</code></td></tr>
+        <tr><td><code>ListReviewableHITs</code></td></tr>
+        <tr><td><code>ListWorkerBlocks</code></td></tr>
+        <tr><td><code>ListWorkersWithQualificationType</code></td></tr>
+        <tr><td><code>NotifyWorkers</code></td></tr>
+        <tr><td><code>RejectAssignment</code></td></tr>
+        <tr><td><code>RejectQualificationRequest</code></td></tr>
+        <tr><td><code>SendBonus</code></td></tr>
+        <tr><td><code>SendTestEventNotification</code></td></tr>
+        <tr><td><code>UpdateExpirationForHIT</code></td></tr>
+        <tr><td><code>UpdateHITReviewStatus</code></td></tr>
+        <tr><td><code>UpdateHITTypeOfHIT</code></td></tr>
+        <tr><td><code>UpdateNotificationSettings</code></td></tr>
+        <tr><td><code>UpdateQualificationType</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>mturk</code>: <code>docker compose -f examples/aws/mturk/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="workdocs" class="service">
+
+        <div class="service-header">
+        <h2>Amazon WorkDocs</h2>
+        <p>SigV4 signed with service <code>workdocs</code>. One organization with an administrator and users (activation, power users, storage quotas), root folders, nested folders, documents uploaded to Stackyard-served pre-signed URLs and activated as versions (delete, restore, abort), downloads with constant content types, comments and replies, labels, custom metadata, sharing with users, groups and invites, shared-with-me listings, paths, search with filters, notification subscriptions and an activity feed.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: workdocs</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon WorkDocs action catalog (44 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AbortDocumentVersionUpload</code></td></tr>
+        <tr><td><code>ActivateUser</code></td></tr>
+        <tr><td><code>AddResourcePermissions</code></td></tr>
+        <tr><td><code>CreateComment</code></td></tr>
+        <tr><td><code>CreateCustomMetadata</code></td></tr>
+        <tr><td><code>CreateFolder</code></td></tr>
+        <tr><td><code>CreateLabels</code></td></tr>
+        <tr><td><code>CreateNotificationSubscription</code></td></tr>
+        <tr><td><code>CreateUser</code></td></tr>
+        <tr><td><code>DeactivateUser</code></td></tr>
+        <tr><td><code>DeleteComment</code></td></tr>
+        <tr><td><code>DeleteCustomMetadata</code></td></tr>
+        <tr><td><code>DeleteDocument</code></td></tr>
+        <tr><td><code>DeleteDocumentVersion</code></td></tr>
+        <tr><td><code>DeleteFolder</code></td></tr>
+        <tr><td><code>DeleteFolderContents</code></td></tr>
+        <tr><td><code>DeleteLabels</code></td></tr>
+        <tr><td><code>DeleteNotificationSubscription</code></td></tr>
+        <tr><td><code>DeleteUser</code></td></tr>
+        <tr><td><code>DescribeActivities</code></td></tr>
+        <tr><td><code>DescribeComments</code></td></tr>
+        <tr><td><code>DescribeDocumentVersions</code></td></tr>
+        <tr><td><code>DescribeFolderContents</code></td></tr>
+        <tr><td><code>DescribeGroups</code></td></tr>
+        <tr><td><code>DescribeNotificationSubscriptions</code></td></tr>
+        <tr><td><code>DescribeResourcePermissions</code></td></tr>
+        <tr><td><code>DescribeRootFolders</code></td></tr>
+        <tr><td><code>DescribeUsers</code></td></tr>
+        <tr><td><code>GetCurrentUser</code></td></tr>
+        <tr><td><code>GetDocument</code></td></tr>
+        <tr><td><code>GetDocumentPath</code></td></tr>
+        <tr><td><code>GetDocumentVersion</code></td></tr>
+        <tr><td><code>GetFolder</code></td></tr>
+        <tr><td><code>GetFolderPath</code></td></tr>
+        <tr><td><code>GetResources</code></td></tr>
+        <tr><td><code>InitiateDocumentVersionUpload</code></td></tr>
+        <tr><td><code>RemoveAllResourcePermissions</code></td></tr>
+        <tr><td><code>RemoveResourcePermission</code></td></tr>
+        <tr><td><code>RestoreDocumentVersions</code></td></tr>
+        <tr><td><code>SearchResources</code></td></tr>
+        <tr><td><code>UpdateDocument</code></td></tr>
+        <tr><td><code>UpdateDocumentVersion</code></td></tr>
+        <tr><td><code>UpdateFolder</code></td></tr>
+        <tr><td><code>UpdateUser</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>workdocs</code>: <code>docker compose -f examples/aws/workdocs/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="repostspace" class="service">
+
+        <div class="service-header">
+        <h2>AWS re:Post Private</h2>
+        <p>SigV4 signed with service <code>repostspace</code>. Private re:Post spaces that provision (CREATING to CREATED) and delete (DELETING, then gone) over time, with unique subdomains, BASIC and STANDARD tiers, administrators, space roles, invites, channels that provision the same way with channel roles, and tags on space ARNs.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: repostspace</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: AWS re:Post Private action catalog (19 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchAddChannelRoleToAccessors</code></td></tr>
+        <tr><td><code>BatchAddRole</code></td></tr>
+        <tr><td><code>BatchRemoveChannelRoleFromAccessors</code></td></tr>
+        <tr><td><code>BatchRemoveRole</code></td></tr>
+        <tr><td><code>CreateChannel</code></td></tr>
+        <tr><td><code>CreateSpace</code></td></tr>
+        <tr><td><code>DeleteSpace</code></td></tr>
+        <tr><td><code>DeregisterAdmin</code></td></tr>
+        <tr><td><code>GetChannel</code></td></tr>
+        <tr><td><code>GetSpace</code></td></tr>
+        <tr><td><code>ListChannels</code></td></tr>
+        <tr><td><code>ListSpaces</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>RegisterAdmin</code></td></tr>
+        <tr><td><code>SendInvites</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateChannel</code></td></tr>
+        <tr><td><code>UpdateSpace</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>repostspace</code>: <code>docker compose -f examples/aws/repostspace/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmeetings" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Meetings</h2>
+        <p>SigV4 signed with service <code>chime</code>. Meetings with media placement URLs, ClientRequestToken idempotency, replica meetings and meeting features (attendee caps, video/content resolution), attendees whose join tokens are returned only when created, capability rules, live transcription settings, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Meetings action catalog (16 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>BatchCreateAttendee</code></td></tr>
+        <tr><td><code>BatchUpdateAttendeeCapabilitiesExcept</code></td></tr>
+        <tr><td><code>CreateAttendee</code></td></tr>
+        <tr><td><code>CreateMeeting</code></td></tr>
+        <tr><td><code>CreateMeetingWithAttendees</code></td></tr>
+        <tr><td><code>DeleteAttendee</code></td></tr>
+        <tr><td><code>DeleteMeeting</code></td></tr>
+        <tr><td><code>GetAttendee</code></td></tr>
+        <tr><td><code>GetMeeting</code></td></tr>
+        <tr><td><code>ListAttendees</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartMeetingTranscription</code></td></tr>
+        <tr><td><code>StopMeetingTranscription</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateAttendeeCapabilities</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-meetings</code>: <code>docker compose -f examples/aws/chime-sdk-meetings/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmessaging" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Messaging</h2>
+        <p>SigV4 signed with service <code>chime</code>. App instance channels acting as the x-amz-chime-bearer user: public/private and restricted channels, moderators, memberships (hidden, elastic sub-channels), bans, preferences and read markers, messages with edits, redaction, targets and paging, channel flows that hold messages PENDING until their callback, expiration settings, streaming configurations and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Messaging action catalog (51 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AssociateChannelFlow</code></td></tr>
+        <tr><td><code>BatchCreateChannelMembership</code></td></tr>
+        <tr><td><code>ChannelFlowCallback</code></td></tr>
+        <tr><td><code>CreateChannel</code></td></tr>
+        <tr><td><code>CreateChannelBan</code></td></tr>
+        <tr><td><code>CreateChannelFlow</code></td></tr>
+        <tr><td><code>CreateChannelMembership</code></td></tr>
+        <tr><td><code>CreateChannelModerator</code></td></tr>
+        <tr><td><code>DeleteChannel</code></td></tr>
+        <tr><td><code>DeleteChannelBan</code></td></tr>
+        <tr><td><code>DeleteChannelFlow</code></td></tr>
+        <tr><td><code>DeleteChannelMembership</code></td></tr>
+        <tr><td><code>DeleteChannelMessage</code></td></tr>
+        <tr><td><code>DeleteChannelModerator</code></td></tr>
+        <tr><td><code>DeleteMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>DescribeChannel</code></td></tr>
+        <tr><td><code>DescribeChannelBan</code></td></tr>
+        <tr><td><code>DescribeChannelFlow</code></td></tr>
+        <tr><td><code>DescribeChannelMembership</code></td></tr>
+        <tr><td><code>DescribeChannelMembershipForAppInstanceUser</code></td></tr>
+        <tr><td><code>DescribeChannelModeratedByAppInstanceUser</code></td></tr>
+        <tr><td><code>DescribeChannelModerator</code></td></tr>
+        <tr><td><code>DisassociateChannelFlow</code></td></tr>
+        <tr><td><code>GetChannelMembershipPreferences</code></td></tr>
+        <tr><td><code>GetChannelMessage</code></td></tr>
+        <tr><td><code>GetChannelMessageStatus</code></td></tr>
+        <tr><td><code>GetMessagingSessionEndpoint</code></td></tr>
+        <tr><td><code>GetMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>ListChannelBans</code></td></tr>
+        <tr><td><code>ListChannelFlows</code></td></tr>
+        <tr><td><code>ListChannelMemberships</code></td></tr>
+        <tr><td><code>ListChannelMembershipsForAppInstanceUser</code></td></tr>
+        <tr><td><code>ListChannelMessages</code></td></tr>
+        <tr><td><code>ListChannelModerators</code></td></tr>
+        <tr><td><code>ListChannels</code></td></tr>
+        <tr><td><code>ListChannelsAssociatedWithChannelFlow</code></td></tr>
+        <tr><td><code>ListChannelsModeratedByAppInstanceUser</code></td></tr>
+        <tr><td><code>ListSubChannels</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutChannelExpirationSettings</code></td></tr>
+        <tr><td><code>PutChannelMembershipPreferences</code></td></tr>
+        <tr><td><code>PutMessagingStreamingConfigurations</code></td></tr>
+        <tr><td><code>RedactChannelMessage</code></td></tr>
+        <tr><td><code>SearchChannels</code></td></tr>
+        <tr><td><code>SendChannelMessage</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateChannel</code></td></tr>
+        <tr><td><code>UpdateChannelFlow</code></td></tr>
+        <tr><td><code>UpdateChannelMessage</code></td></tr>
+        <tr><td><code>UpdateChannelReadMarker</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-messaging</code>: <code>docker compose -f examples/aws/chime-sdk-messaging/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="chimesdkmediapipelines" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Chime SDK Media Pipelines</h2>
+        <p>SigV4 signed with service <code>chime</code>. Capture, concatenation, live connector (RTMP) and stream pipelines over Chime SDK meetings that stop when their meeting ends, Kinesis video stream pools with reserved capacity, media insights pipeline configurations and pipelines with pause/resume, speaker search and voice tone analysis tasks that settle asynchronously, and tags.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: chime</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action Type: Amazon Chime SDK Media Pipelines action catalog (31 actions).</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateMediaCapturePipeline</code></td></tr>
+        <tr><td><code>CreateMediaConcatenationPipeline</code></td></tr>
+        <tr><td><code>CreateMediaInsightsPipeline</code></td></tr>
+        <tr><td><code>CreateMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>CreateMediaLiveConnectorPipeline</code></td></tr>
+        <tr><td><code>CreateMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>CreateMediaStreamPipeline</code></td></tr>
+        <tr><td><code>DeleteMediaCapturePipeline</code></td></tr>
+        <tr><td><code>DeleteMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>DeleteMediaPipeline</code></td></tr>
+        <tr><td><code>DeleteMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>GetMediaCapturePipeline</code></td></tr>
+        <tr><td><code>GetMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>GetMediaPipeline</code></td></tr>
+        <tr><td><code>GetMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        <tr><td><code>GetSpeakerSearchTask</code></td></tr>
+        <tr><td><code>GetVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>ListMediaCapturePipelines</code></td></tr>
+        <tr><td><code>ListMediaInsightsPipelineConfigurations</code></td></tr>
+        <tr><td><code>ListMediaPipelineKinesisVideoStreamPools</code></td></tr>
+        <tr><td><code>ListMediaPipelines</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>StartSpeakerSearchTask</code></td></tr>
+        <tr><td><code>StartVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>StopSpeakerSearchTask</code></td></tr>
+        <tr><td><code>StopVoiceToneAnalysisTask</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateMediaInsightsPipelineConfiguration</code></td></tr>
+        <tr><td><code>UpdateMediaInsightsPipelineStatus</code></td></tr>
+        <tr><td><code>UpdateMediaPipelineKinesisVideoStreamPool</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>chime-sdk-media-pipelines</code>: <code>docker compose -f examples/aws/chime-sdk-media-pipelines/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
 
         <section id="polly" class="service">
 
@@ -16109,6 +16650,80 @@
         </details>
         </section>
 
+        <section id="iot-data" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Data Plane</h2>
+        <p>SigV4 signed with service <code>iotdata</code> (or unsigned to a <code>data-ats.iot.*</code> host); routed ahead of the IoT control plane, whose <code>/things</code> paths it shares. Device shadows: a classic shadow per thing plus named shadows (<code>?name=</code>); no registry entry is needed. Updates merge <code>desired</code> and <code>reported</code> (null deletes a key or section), keep per-field metadata timestamps and bump the version; a stale <code>version</code> is a ConflictException. Documents are capped at 8 KB (re-checked after every merge) and 6 levels of nesting. GetThingShadow adds the delta. Deleting a shadow keeps its version number. Publish (QoS 0/1, MQTT 5 properties) delivers to simulated clients, keeps retained messages (an empty retained payload clears the topic) and applies <code>$aws/things/{thing}/shadow[/name/{name}]/update|delete|get</code>, answering on <code>/accepted</code> or <code>/rejected</code>. Stackyard runs no MQTT broker: <code>POST /_stackyard/iot-data/connections</code> connects a simulated client (<code>clientId</code>, <code>thingName</code>, <code>cleanSession</code>, <code>subscriptions</code>) and <code>GET /_stackyard/iot-data/connections/{clientId}/messages</code> drains what it received. Connect returns a <code>sessionToken</code>: send it as <code>X-Stackyard-Session-Token</code> to read the inbox, and in the body to reconnect under the same <code>clientId</code> (or clear the session first with DeleteConnection). GetConnection, ListSubscriptions, SendDirectMessage and DeleteConnection act on those clients; persistent sessions survive a disconnect and queue QoS 1 messages. Bounds: 10,000 shadows and 32 MiB of shadow state, 1,000 retained messages (16 MiB), 1,000 clients with 50 subscriptions and 100 queued messages each.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotdata</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Data Plane API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteThingShadow</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetRetainedMessage</code></td></tr>
+        <tr><td><code>GetThingShadow</code></td></tr>
+        <tr><td><code>ListNamedShadowsForThing</code></td></tr>
+        <tr><td><code>ListRetainedMessages</code></td></tr>
+        <tr><td><code>ListSubscriptions</code></td></tr>
+        <tr><td><code>Publish</code></td></tr>
+        <tr><td><code>SendDirectMessage</code></td></tr>
+        <tr><td><code>UpdateThingShadow</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>iot-data</code>: <code>docker compose -f examples/aws/iot-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="iot-jobs-data" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Jobs Data Plane</h2>
+        <p>SigV4 signed with service <code>iot-jobs-data</code> (or unsigned to a <code>data.jobs.iot.*</code> host); routed ahead of the IoT control plane, whose <code>/things/{thingName}/jobs</code> paths it shares. Jobs and commands come from the IoT control plane: CreateJob records its thing targets, document and <code>timeoutConfig</code> (at most 100 targets, 32 KB documents), CancelJob and DeleteJob update them, CreateCommand and DeleteCommand manage commands. Every thing a job targets by thing ARN has an execution (thing groups are not expanded). Executions start QUEUED; devices move them to IN_PROGRESS, SUCCEEDED, FAILED or REJECTED, each change bumping <code>versionNumber</code> and optionally guarded by <code>expectedVersion</code>; terminal executions refuse updates (InvalidStateTransitionException). StartNextPendingJobExecution returns the in-progress execution or starts the oldest queued one. Step and job timeouts move in-progress executions to TIMED_OUT; canceling a job cancels queued executions (and in-progress ones with <code>force</code>); deleting or re-creating a job drops its executions. StartCommandExecution needs an existing command and a thing or client target, and is idempotent per <code>clientToken</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iot-jobs-data</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Jobs Data Plane API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DescribeJobExecution</code></td></tr>
+        <tr><td><code>GetPendingJobExecutions</code></td></tr>
+        <tr><td><code>StartCommandExecution</code></td></tr>
+        <tr><td><code>StartNextPendingJobExecution</code></td></tr>
+        <tr><td><code>UpdateJobExecution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>iot-jobs-data</code>: <code>docker compose -f examples/aws/iot-jobs-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="iot-things-graph" class="service">
 
         <div class="service-header">
@@ -16599,6 +17214,39 @@
                 </ul>
         </details>
         </section>
+        <section id="keyspaces-streams" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Keyspaces Streams</h2>
+        <p>SigV4 signed with service <code>cassandra</code>. JSON 1.0 API with <code>X-Amz-Target: KeyspacesStreams.*</code>, routed ahead of Keyspaces. Streams are the change data capture streams of Keyspaces tables: <code>cdcSpecification</code> on CreateTable or UpdateTable opens a stream (GetTable then reports <code>latestStreamArn</code>), disabling CDC marks it DISABLED and closes its shard, and re-enabling opens a new stream (10 kept per table). The view type of an enabled stream can't change. Each stream has one shard. Stackyard has no CQL endpoint, so no rows ever change: shards are empty, GetRecords returns no records at <code>AT_TIP</code> and, while the shard is open, a fresh iterator. Iterators expire after 15 minutes (ExpiredIterator); sequence numbers before the shard start are TrimmedDataAccess. Dropping the table drops its streams.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cassandra</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Keyspaces Streams API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetRecords</code></td></tr>
+        <tr><td><code>GetShardIterator</code></td></tr>
+        <tr><td><code>GetStream</code></td></tr>
+        <tr><td><code>ListStreams</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>keyspaces-streams</code>: <code>docker compose -f examples/aws/keyspaces-streams/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
 
         <section id="signer" class="service">
 
@@ -27276,6 +27924,186 @@
         <summary>Examples</summary>
         <ul>
         <li><code>frauddetector</code>: <code>docker compose -f examples/aws/frauddetector/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="lookoutequipment" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Lookout for Equipment</h2>
+        <p>SigV4 signed with service <code>lookoutequipment</code>. JSON 1.0 API with <code>X-Amz-Target: AWSLookoutEquipmentFrontendService.*</code>. Datasets with inline schemas, data ingestion jobs that read sensor CSVs from Stackyard's S3 (one sensor per column, with real missing, invalid and duplicate-timestamp counts in the data quality summary and per-sensor statistics), dataset imports, label groups and labels, models whose training creates version 1 and activates it, model version imports and UpdateActiveModelVersion, resource policies with revision checks, retraining schedulers and inference schedulers (PENDING -&gt; RUNNING, STOPPING -&gt; STOPPED; deletes need a stopped scheduler), inference executions derived from each RUNNING spell at the upload frequency and inference events for the anomalous ones, and tags. Async work settles on the read after it is first seen (or after three seconds). Model metrics and inference verdicts are deterministic placeholders. All 49 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: lookoutequipment</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Lookout for Equipment API action catalog. See <code>internal/server/lookoutequipment_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>CreateDataset</code></td></tr>
+        <tr><td><code>CreateInferenceScheduler</code></td></tr>
+        <tr><td><code>CreateLabel</code></td></tr>
+        <tr><td><code>CreateLabelGroup</code></td></tr>
+        <tr><td><code>CreateModel</code></td></tr>
+        <tr><td><code>CreateRetrainingScheduler</code></td></tr>
+        <tr><td><code>DeleteDataset</code></td></tr>
+        <tr><td><code>DeleteInferenceScheduler</code></td></tr>
+        <tr><td><code>DeleteLabel</code></td></tr>
+        <tr><td><code>DeleteLabelGroup</code></td></tr>
+        <tr><td><code>DeleteModel</code></td></tr>
+        <tr><td><code>DeleteResourcePolicy</code></td></tr>
+        <tr><td><code>DeleteRetrainingScheduler</code></td></tr>
+        <tr><td><code>DescribeDataIngestionJob</code></td></tr>
+        <tr><td><code>DescribeDataset</code></td></tr>
+        <tr><td><code>DescribeInferenceScheduler</code></td></tr>
+        <tr><td><code>DescribeLabel</code></td></tr>
+        <tr><td><code>DescribeLabelGroup</code></td></tr>
+        <tr><td><code>DescribeModel</code></td></tr>
+        <tr><td><code>DescribeModelVersion</code></td></tr>
+        <tr><td><code>DescribeResourcePolicy</code></td></tr>
+        <tr><td><code>DescribeRetrainingScheduler</code></td></tr>
+        <tr><td><code>ImportDataset</code></td></tr>
+        <tr><td><code>ImportModelVersion</code></td></tr>
+        <tr><td><code>ListDataIngestionJobs</code></td></tr>
+        <tr><td><code>ListDatasets</code></td></tr>
+        <tr><td><code>ListInferenceEvents</code></td></tr>
+        <tr><td><code>ListInferenceExecutions</code></td></tr>
+        <tr><td><code>ListInferenceSchedulers</code></td></tr>
+        <tr><td><code>ListLabelGroups</code></td></tr>
+        <tr><td><code>ListLabels</code></td></tr>
+        <tr><td><code>ListModelVersions</code></td></tr>
+        <tr><td><code>ListModels</code></td></tr>
+        <tr><td><code>ListRetrainingSchedulers</code></td></tr>
+        <tr><td><code>ListSensorStatistics</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>PutResourcePolicy</code></td></tr>
+        <tr><td><code>StartDataIngestionJob</code></td></tr>
+        <tr><td><code>StartInferenceScheduler</code></td></tr>
+        <tr><td><code>StartRetrainingScheduler</code></td></tr>
+        <tr><td><code>StopInferenceScheduler</code></td></tr>
+        <tr><td><code>StopRetrainingScheduler</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        <tr><td><code>UpdateActiveModelVersion</code></td></tr>
+        <tr><td><code>UpdateInferenceScheduler</code></td></tr>
+        <tr><td><code>UpdateLabelGroup</code></td></tr>
+        <tr><td><code>UpdateModel</code></td></tr>
+        <tr><td><code>UpdateRetrainingScheduler</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>lookoutequipment</code>: <code>docker compose -f examples/aws/lookoutequipment/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="machinelearning" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Machine Learning</h2>
+        <p>SigV4 signed with service <code>machinelearning</code>. JSON 1.1 API with <code>X-Amz-Target: AmazonML_20141212.*</code>. Data sources from S3 (size, file and record counts read from Stackyard's S3; the schema inline or from S3), RDS and Redshift; binary, regression and multiclass ML models; evaluations with performance metrics; batch predictions that score every input row and write gzipped results to the output S3 location; realtime endpoints whose URL is this server, and Predict through them. Resources go PENDING -&gt; INPROGRESS -&gt; COMPLETED one step per read (FAILED when an input is unusable), wait for what they read, and keep DELETED status after deletion. Repeated creates are idempotent; different parameters raise IdempotentParameterMismatchException. Describe* filters, sorts and pages; tags are limited to ten per resource. Scores are deterministic placeholders. All 28 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: machinelearning</span>
+        <span class="meta-pill">API: JSON 1.1</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Machine Learning API action catalog. See <code>internal/server/machinelearning_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>AddTags</code></td></tr>
+        <tr><td><code>CreateBatchPrediction</code></td></tr>
+        <tr><td><code>CreateDataSourceFromRDS</code></td></tr>
+        <tr><td><code>CreateDataSourceFromRedshift</code></td></tr>
+        <tr><td><code>CreateDataSourceFromS3</code></td></tr>
+        <tr><td><code>CreateEvaluation</code></td></tr>
+        <tr><td><code>CreateMLModel</code></td></tr>
+        <tr><td><code>CreateRealtimeEndpoint</code></td></tr>
+        <tr><td><code>DeleteBatchPrediction</code></td></tr>
+        <tr><td><code>DeleteDataSource</code></td></tr>
+        <tr><td><code>DeleteEvaluation</code></td></tr>
+        <tr><td><code>DeleteMLModel</code></td></tr>
+        <tr><td><code>DeleteRealtimeEndpoint</code></td></tr>
+        <tr><td><code>DeleteTags</code></td></tr>
+        <tr><td><code>DescribeBatchPredictions</code></td></tr>
+        <tr><td><code>DescribeDataSources</code></td></tr>
+        <tr><td><code>DescribeEvaluations</code></td></tr>
+        <tr><td><code>DescribeMLModels</code></td></tr>
+        <tr><td><code>DescribeTags</code></td></tr>
+        <tr><td><code>GetBatchPrediction</code></td></tr>
+        <tr><td><code>GetDataSource</code></td></tr>
+        <tr><td><code>GetEvaluation</code></td></tr>
+        <tr><td><code>GetMLModel</code></td></tr>
+        <tr><td><code>Predict</code></td></tr>
+        <tr><td><code>UpdateBatchPrediction</code></td></tr>
+        <tr><td><code>UpdateDataSource</code></td></tr>
+        <tr><td><code>UpdateEvaluation</code></td></tr>
+        <tr><td><code>UpdateMLModel</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>machinelearning</code>: <code>docker compose -f examples/aws/machinelearning/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+        <section id="sagemakergeospatial" class="service">
+
+        <div class="service-header">
+        <h2>Amazon SageMaker geospatial capabilities</h2>
+        <p>SigV4 signed with service <code>sagemaker-geospatial</code>. REST JSON API. The public raster data collections (Sentinel-2 L2A, Landsat Collection 2 Level-2, Copernicus DEM) and a deterministic scene catalog for SearchRasterDataCollection (one scene per revisit period, footprints over the area of interest, property filters and band filters, paging). Earth observation jobs over a collection or a previous job's output, with output bands derived from the job configuration; vector enrichment jobs (reverse geocoding, map matching) that check their CSV input in Stackyard's S3. Jobs go INITIALIZING -&gt; IN_PROGRESS -&gt; COMPLETED (or FAILED) one step per read, stop to STOPPED, and refuse deletion while busy. Exports write a manifest and band tiles (earth observation) or the enriched CSV (vector enrichment) to S3; GetTile returns PNG tiles. Only requests signed for sagemaker-geospatial are claimed, so SageMaker and SageMaker Runtime keep theirs. Imagery and geocoding results are deterministic placeholders. All 19 operations are implemented.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: sagemaker-geospatial</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon SageMaker geospatial capabilities API action catalog. See <code>internal/server/sagemakergeospatial_ops.go</code>.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteEarthObservationJob</code></td></tr>
+        <tr><td><code>DeleteVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>ExportEarthObservationJob</code></td></tr>
+        <tr><td><code>ExportVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>GetEarthObservationJob</code></td></tr>
+        <tr><td><code>GetRasterDataCollection</code></td></tr>
+        <tr><td><code>GetTile</code></td></tr>
+        <tr><td><code>GetVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>ListEarthObservationJobs</code></td></tr>
+        <tr><td><code>ListRasterDataCollections</code></td></tr>
+        <tr><td><code>ListTagsForResource</code></td></tr>
+        <tr><td><code>ListVectorEnrichmentJobs</code></td></tr>
+        <tr><td><code>SearchRasterDataCollection</code></td></tr>
+        <tr><td><code>StartEarthObservationJob</code></td></tr>
+        <tr><td><code>StartVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>StopEarthObservationJob</code></td></tr>
+        <tr><td><code>StopVectorEnrichmentJob</code></td></tr>
+        <tr><td><code>TagResource</code></td></tr>
+        <tr><td><code>UntagResource</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>sagemaker-geospatial</code>: <code>docker compose -f examples/aws/sagemaker-geospatial/docker-compose.yml up --build</code></li>
         </ul>
         </details>
         </section>

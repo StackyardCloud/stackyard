@@ -481,6 +481,9 @@ func init() {
 		if !strings.HasPrefix(url, "s3://") || !ok || bucket == "" || key == "" {
 			return nil, r53rE("ValidationException", "DomainFileUrl must be an s3://bucket/key URL")
 		}
+		if !authorizeServiceS3On(st.s3, s3CallerIn(in), "route53resolver.amazonaws.com", bucket, key, "s3:GetObject") {
+			return nil, r53rE("AccessDeniedException", "access denied reading %s", url)
+		}
 		obj, gerr := st.s3.GetObject(bucket, key)
 		if gerr != nil {
 			return nil, r53rE("ResourceNotFoundException", "can't read %s: %v", url, gerr)
