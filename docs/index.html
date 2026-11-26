@@ -225,8 +225,11 @@
         <a href="#iot-secure-tunneling">IoT Secure Tunneling</a>
         <a href="#iot-device-advisor">IoT Device Advisor</a>
         <a href="#iot-things-graph">IoT Things Graph</a>
+        <a href="#iot-data">IoT Data Plane</a>
+        <a href="#iot-jobs-data">IoT Jobs Data Plane</a>
         <a href="#glue">AWS Glue</a>
         <a href="#keyspaces">Keyspaces</a>
+        <a href="#keyspaces-streams">Keyspaces Streams</a>
         <a href="#kms">KMS</a>
         <a href="#lambda">Lambda</a>
         <a href="#license-manager">License Manager</a>
@@ -16562,6 +16565,80 @@
         </details>
         </section>
 
+        <section id="iot-data" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Data Plane</h2>
+        <p>SigV4 signed with service <code>iotdata</code> (or unsigned to a <code>data-ats.iot.*</code> host); routed ahead of the IoT control plane, whose <code>/things</code> paths it shares. Device shadows: a classic shadow per thing plus named shadows (<code>?name=</code>); no registry entry is needed. Updates merge <code>desired</code> and <code>reported</code> (null deletes a key or section), keep per-field metadata timestamps and bump the version; a stale <code>version</code> is a ConflictException. Documents are capped at 8 KB (re-checked after every merge) and 6 levels of nesting. GetThingShadow adds the delta. Deleting a shadow keeps its version number. Publish (QoS 0/1, MQTT 5 properties) delivers to simulated clients, keeps retained messages (an empty retained payload clears the topic) and applies <code>$aws/things/{thing}/shadow[/name/{name}]/update|delete|get</code>, answering on <code>/accepted</code> or <code>/rejected</code>. Stackyard runs no MQTT broker: <code>POST /_stackyard/iot-data/connections</code> connects a simulated client (<code>clientId</code>, <code>thingName</code>, <code>cleanSession</code>, <code>subscriptions</code>) and <code>GET /_stackyard/iot-data/connections/{clientId}/messages</code> drains what it received. Connect returns a <code>sessionToken</code>: send it as <code>X-Stackyard-Session-Token</code> to read the inbox, and in the body to reconnect under the same <code>clientId</code> (or clear the session first with DeleteConnection). GetConnection, ListSubscriptions, SendDirectMessage and DeleteConnection act on those clients; persistent sessions survive a disconnect and queue QoS 1 messages. Bounds: 10,000 shadows and 32 MiB of shadow state, 1,000 retained messages (16 MiB), 1,000 clients with 50 subscriptions and 100 queued messages each.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iotdata</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Data Plane API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DeleteConnection</code></td></tr>
+        <tr><td><code>DeleteThingShadow</code></td></tr>
+        <tr><td><code>GetConnection</code></td></tr>
+        <tr><td><code>GetRetainedMessage</code></td></tr>
+        <tr><td><code>GetThingShadow</code></td></tr>
+        <tr><td><code>ListNamedShadowsForThing</code></td></tr>
+        <tr><td><code>ListRetainedMessages</code></td></tr>
+        <tr><td><code>ListSubscriptions</code></td></tr>
+        <tr><td><code>Publish</code></td></tr>
+        <tr><td><code>SendDirectMessage</code></td></tr>
+        <tr><td><code>UpdateThingShadow</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>iot-data</code>: <code>docker compose -f examples/aws/iot-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
+        <section id="iot-jobs-data" class="service">
+
+        <div class="service-header">
+        <h2>AWS IoT Jobs Data Plane</h2>
+        <p>SigV4 signed with service <code>iot-jobs-data</code> (or unsigned to a <code>data.jobs.iot.*</code> host); routed ahead of the IoT control plane, whose <code>/things/{thingName}/jobs</code> paths it shares. Jobs and commands come from the IoT control plane: CreateJob records its thing targets, document and <code>timeoutConfig</code> (at most 100 targets, 32 KB documents), CancelJob and DeleteJob update them, CreateCommand and DeleteCommand manage commands. Every thing a job targets by thing ARN has an execution (thing groups are not expanded). Executions start QUEUED; devices move them to IN_PROGRESS, SUCCEEDED, FAILED or REJECTED, each change bumping <code>versionNumber</code> and optionally guarded by <code>expectedVersion</code>; terminal executions refuse updates (InvalidStateTransitionException). StartNextPendingJobExecution returns the in-progress execution or starts the oldest queued one. Step and job timeouts move in-progress executions to TIMED_OUT; canceling a job cancels queued executions (and in-progress ones with <code>force</code>); deleting or re-creating a job drops its executions. StartCommandExecution needs an existing command and a thing or client target, and is idempotent per <code>clientToken</code>.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: iot-jobs-data</span>
+        <span class="meta-pill">API: REST JSON</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: AWS IoT Jobs Data Plane API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>DescribeJobExecution</code></td></tr>
+        <tr><td><code>GetPendingJobExecutions</code></td></tr>
+        <tr><td><code>StartCommandExecution</code></td></tr>
+        <tr><td><code>StartNextPendingJobExecution</code></td></tr>
+        <tr><td><code>UpdateJobExecution</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>iot-jobs-data</code>: <code>docker compose -f examples/aws/iot-jobs-data/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
         <section id="iot-things-graph" class="service">
 
         <div class="service-header">
@@ -17052,6 +17129,39 @@
                 </ul>
         </details>
         </section>
+        <section id="keyspaces-streams" class="service">
+
+        <div class="service-header">
+        <h2>Amazon Keyspaces Streams</h2>
+        <p>SigV4 signed with service <code>cassandra</code>. JSON 1.0 API with <code>X-Amz-Target: KeyspacesStreams.*</code>, routed ahead of Keyspaces. Streams are the change data capture streams of Keyspaces tables: <code>cdcSpecification</code> on CreateTable or UpdateTable opens a stream (GetTable then reports <code>latestStreamArn</code>), disabling CDC marks it DISABLED and closes its shard, and re-enabling opens a new stream (10 kept per table). The view type of an enabled stream can't change. Each stream has one shard. Stackyard has no CQL endpoint, so no rows ever change: shards are empty, GetRecords returns no records at <code>AT_TIP</code> and, while the shard is open, a fresh iterator. Iterators expire after 15 minutes (ExpiredIterator); sequence numbers before the shard start are TrimmedDataAccess. Dropping the table drops its streams.</p>
+        </div>
+        <div class="service-meta">
+        <span class="meta-pill">SigV4: cassandra</span>
+        <span class="meta-pill">API: JSON 1.0</span>
+        </div><details class="details">
+        <summary>Supported Actions</summary>
+        <p class="note">Action source: Amazon Keyspaces Streams API action catalog.</p>
+        <table class="table">
+        <thead>
+        <tr>
+        <th>Action Name</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td><code>GetRecords</code></td></tr>
+        <tr><td><code>GetShardIterator</code></td></tr>
+        <tr><td><code>GetStream</code></td></tr>
+        <tr><td><code>ListStreams</code></td></tr>
+        </tbody>
+        </table>
+        </details><details class="details">
+        <summary>Examples</summary>
+        <ul>
+        <li><code>keyspaces-streams</code>: <code>docker compose -f examples/aws/keyspaces-streams/docker-compose.yml up --build</code></li>
+        </ul>
+        </details>
+        </section>
+
 
         <section id="signer" class="service">
 

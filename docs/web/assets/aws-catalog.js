@@ -1311,6 +1311,22 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/iot-device-advisor/docker-compose.yml"
   },
   {
+    id: "iot-data",
+    name: "IoT Data Plane",
+    category: "integration",
+    summary: "Emulate device shadows (classic and named, versioned, desired/reported with delta, 8 KB documents), Publish with retained messages and MQTT shadow topics, and simulated client connections with subscriptions and direct messages.",
+    docsHref: "../../../index.html#iot-data",
+    exampleHref: "../../../../examples/aws/iot-data/docker-compose.yml"
+  },
+  {
+    id: "iot-jobs-data",
+    name: "IoT Jobs Data Plane",
+    category: "integration",
+    summary: "Run job executions for jobs created through IoT: pending lists, start-next, status updates with expectedVersion, step and job timeouts, cancellation, and command executions for IoT commands.",
+    docsHref: "../../../index.html#iot-jobs-data",
+    exampleHref: "../../../../examples/aws/iot-jobs-data/docker-compose.yml"
+  },
+  {
     id: "iot-things-graph",
     name: "IoT Things Graph",
     category: "integration",
@@ -1325,6 +1341,14 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Use Cassandra-compatible control plane calls through AWS APIs.",
     docsHref: "../../../index.html#keyspaces",
     exampleHref: "../../../../examples/aws/keyspaces/docker-compose.yml"
+  },
+  {
+    id: "keyspaces-streams",
+    name: "Keyspaces Streams",
+    category: "database",
+    summary: "Read the CDC streams of Keyspaces tables with cdcSpecification enabled: stream listing, one shard per stream, shard iterators and GetRecords over empty shards.",
+    docsHref: "../../../index.html#keyspaces-streams",
+    exampleHref: "../../../../examples/aws/keyspaces-streams/docker-compose.yml"
   },
   {
     id: "inspector",
