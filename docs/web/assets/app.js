@@ -160,6 +160,14 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/bedrock-agent-runtime/docker-compose.yml"
   },
   {
+    id: "cloud9",
+    name: "Cloud9",
+    category: "integration",
+    summary: "Emulate Cloud9 EC2 environments running on EC2-store instances, with status that follows the instance, memberships and permissions, managed credentials and tags.",
+    docsHref: "../../../index.html#cloud9",
+    exampleHref: "../../../../examples/aws/cloud9/docker-compose.yml"
+  },
+  {
     id: "cloudcontrolapi",
     name: "Cloud Control API",
     category: "integration",
@@ -292,6 +300,14 @@ const SERVICE_CATALOG = [
     summary: "Emulate enrollment and preferences, a deterministic catalog of rightsizing, Graviton, Savings Plans and Reserved Instance recommendations with filters, ordering and summaries, and efficiency metrics.",
     docsHref: "../../../index.html#costoptimizationhub",
     exampleHref: "../../../../examples/aws/cost-optimization-hub/docker-compose.yml"
+  },
+  {
+    id: "invoicing",
+    name: "Invoicing",
+    category: "integration",
+    summary: "Emulate invoice units with versioned rules and AsOf reads, deterministic invoice summaries and downloadable PDFs, invoice profiles, and procurement portal preferences with code verification.",
+    docsHref: "../../../index.html#invoicing",
+    exampleHref: "../../../../examples/aws/invoicing/docker-compose.yml"
   },
   {
     id: "bcmdataexports",
@@ -852,6 +868,14 @@ const SERVICE_CATALOG = [
     summary: "Plan and validate profiling group, agent profile ingestion, findings, recommendation, and policy APIs.",
     docsHref: "../../../index.html#codeguru-profiler",
     exampleHref: "../../../../examples/aws/codeguru-profiler/docker-compose.yml"
+  },
+  {
+    id: "codegurusecurity",
+    name: "CodeGuru Security",
+    category: "integration",
+    summary: "Emulate CodeGuru Security scans over zips uploaded to Stackyard, with deterministic findings from built-in detectors, closed findings on rescans, metrics and account encryption settings.",
+    docsHref: "../../../index.html#codegurusecurity",
+    exampleHref: "../../../../examples/aws/codeguru-security/docker-compose.yml"
   },
   {
     id: "comprehend",
