@@ -1190,6 +1190,30 @@ const SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
   },
   {
+    id: "mturk",
+    name: "Amazon Mechanical Turk",
+    category: "integration",
+    summary: "Requester API with sandbox semantics: HIT types, HITs with QuestionForm, ExternalQuestion or HTMLQuestion content, qualification requirements and review policies; a real lifecycle (Assignable, Unassignable, Reviewable, Reviewing) driven by simulated workers who accept, submit and return assignments at Stackyard's /_stackyard/mturk/ links; assignment deadlines and auto-approval; approve, reject (and override), bonuses with idempotency tokens, uploaded answer files behind short-lived download URLs; qualification types, requests, grants and revocations, system qualifications (locale, approval rate); worker blocks, notifications and a constant sandbox balance.",
+    docsHref: "../../../index.html#mturk",
+    exampleHref: "../../../../examples/aws/mturk/docker-compose.yml"
+  },
+  {
+    id: "workdocs",
+    name: "Amazon WorkDocs",
+    category: "integration",
+    summary: "One organization with an administrator and users (activation, power users, storage quotas), root folders, nested folders, documents uploaded to Stackyard-served pre-signed URLs and activated as versions (delete, restore, abort), downloads with constant content types, comments and replies, labels, custom metadata, sharing with users, groups and invites, shared-with-me listings, paths, search with filters, notification subscriptions and an activity feed.",
+    docsHref: "../../../index.html#workdocs",
+    exampleHref: "../../../../examples/aws/workdocs/docker-compose.yml"
+  },
+  {
+    id: "repostspace",
+    name: "AWS re:Post Private",
+    category: "integration",
+    summary: "Private re:Post spaces that provision (CREATING to CREATED) and delete (DELETING, then gone) over time, with unique subdomains, BASIC and STANDARD tiers, administrators, space roles, invites, channels that provision the same way with channel roles, and tags on space ARNs.",
+    docsHref: "../../../index.html#repostspace",
+    exampleHref: "../../../../examples/aws/repostspace/docker-compose.yml"
+  },
+  {
     id: "chimesdkmeetings",
     name: "Amazon Chime SDK Meetings",
     category: "integration",

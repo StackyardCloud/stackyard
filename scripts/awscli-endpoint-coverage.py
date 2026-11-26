@@ -611,6 +611,9 @@ SERVICE_CONFIG: dict[str, dict[str, str | Path | None]] = {
     "pinpointemail": {"cli": "pinpoint-email", "ops_file": REPO_ROOT / "internal/server/pinpointemail_ops.go"},
     "pinpointsmsvoice": {"cli": "pinpoint-sms-voice", "ops_file": REPO_ROOT / "internal/server/pinpointsmsvoice_ops.go"},
     "mailmanager": {"cli": "mailmanager", "ops_file": REPO_ROOT / "internal/server/mailmanager_ops.go"},
+    "mturk": {"cli": "mturk", "ops_file": REPO_ROOT / "internal/server/mturk_ops.go"},
+    "workdocs": {"cli": "workdocs", "ops_file": REPO_ROOT / "internal/server/workdocs_ops.go"},
+    "repostspace": {"cli": "repostspace", "ops_file": REPO_ROOT / "internal/server/repostspace_ops.go"},
     "chimesdkmeetings": {"cli": "chime-sdk-meetings", "ops_file": REPO_ROOT / "internal/server/chimesdkmeetings_ops.go"},
     "chimesdkmessaging": {"cli": "chime-sdk-messaging", "ops_file": REPO_ROOT / "internal/server/chimesdkmessaging_ops.go"},
     "chimesdkmediapipelines": {"cli": "chime-sdk-media-pipelines", "ops_file": REPO_ROOT / "internal/server/chimesdkmediapipelines_ops.go"},
@@ -2347,6 +2350,14 @@ SERVICE_ALIASES = {
     "mailmanager": "mailmanager",
     "mail-manager": "mailmanager",
     "sesmailmanager": "mailmanager",
+    "mturk": "mturk",
+    "mechanicalturk": "mturk",
+    "mturk-requester": "mturk",
+    "workdocs": "workdocs",
+    "amazonworkdocs": "workdocs",
+    "repostspace": "repostspace",
+    "repost-space": "repostspace",
+    "repostprivate": "repostspace",
     "chimesdkmeetings": "chimesdkmeetings",
     "chime-sdk-meetings": "chimesdkmeetings",
     "amazonchimesdkmeetings": "chimesdkmeetings",
@@ -3441,6 +3452,9 @@ RUNTIME_STATE: dict[str, dict[str, object]] = {
     "pinpointemail": {},
     "pinpointsmsvoice": {},
     "mailmanager": {},
+    "mturk": {},
+    "workdocs": {},
+    "repostspace": {},
     "chimesdkmeetings": {},
     "chimesdkmessaging": {},
     "chimesdkmediapipelines": {},
@@ -40556,6 +40570,356 @@ GEOROUTES_PAYLOADS: dict[str, dict] = {
 GEO_STANDALONE_PAYLOADS = {"geomaps": GEOMAPS_PAYLOADS, "geoplaces": GEOPLACES_PAYLOADS, "georoutes": GEOROUTES_PAYLOADS}
 
 
+COLLAB_SNS = f"arn:aws:sns:us-east-1:{MSG_ACCOUNT}:turk-events"
+MTK_QUESTION = ('<HTMLQuestion xmlns="http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2011-11-11/HTMLQuestion.xsd">'
+                "<HTMLContent><![CDATA[<p>Tag the photo</p>]]></HTMLContent><FrameHeight>400</FrameHeight></HTMLQuestion>")
+
+
+def collab_post(url: str, body: bytes, content_type: str, method: str = "POST") -> dict:
+    """Sends a Stackyard link request (simulated MTurk worker or WorkDocs upload)."""
+    req = urlrequest.Request(url, data=body, method=method, headers={"Content-Type": content_type})
+    with urlrequest.urlopen(req, timeout=10) as resp:
+        raw = resp.read()
+    return json.loads(raw) if raw.strip() else {}
+
+
+class MtkFixture(MsgFixture):
+    """MTurk requester calls plus simulated workers at /_stackyard/mturk/."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        super().__init__(aws_bin, endpoint_url, region, env, "mturk")
+        self.endpoint_url = endpoint_url.rstrip("/")
+
+    def call(self, op: str, args: dict, cli_service: str = "") -> dict:
+        # psz_call's kebab-casing splits acronyms (CreateHITType); keep them whole.
+        cli = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "-", op).lower()
+        aws_bin, endpoint_url, region, env = self.args
+        return run_aws_json(aws_bin, endpoint_url, region, cli_service or self.cli_service, cli, env, ["--cli-input-json", json.dumps(args)]) or {}
+
+    def worker_id(self) -> str:
+        self.count += 1
+        return f"A{self.run.upper()}{self.count}"
+
+    def worker(self, action: str, body: dict) -> dict:
+        return collab_post(f"{self.endpoint_url}/_stackyard/mturk/{action}", json.dumps(body).encode(), "application/json")
+
+    def hit(self, max_assignments: int = 1) -> str:
+        out = self.call("CreateHIT", {"MaxAssignments": max_assignments, "LifetimeInSeconds": 3600, "AssignmentDurationInSeconds": 600,
+                                      "Reward": "0.25", "Title": self.name("hit"), "Description": "Tag the animal in the photo",
+                                      "Question": MTK_QUESTION})
+        return (out.get("HIT") or {}).get("HITId", "")
+
+    def submitted(self, hit: str = "") -> tuple[str, str]:
+        """A submitted assignment (with an uploaded file) and its worker."""
+        hit = hit or self.hit()
+        worker = self.worker_id()
+        assignment = self.worker("accept", {"HITId": hit, "WorkerId": worker}).get("AssignmentId", "")
+        self.worker("submit", {"AssignmentId": assignment, "Answer": "<QuestionFormAnswers/>",
+                               "Files": {"photo": base64.b64encode(b"jpeg bytes").decode()}})
+        return assignment, worker
+
+    def expired_hit(self) -> str:
+        hit = self.hit()
+        self.call("UpdateExpirationForHIT", {"HITId": hit, "ExpireAt": 0})
+        return hit
+
+    def qual_type(self) -> str:
+        out = self.call("CreateQualificationType", {"Name": self.name("qual"), "Description": "Photo tagging skill",
+                                                    "QualificationTypeStatus": "Active", "RetryDelayInSeconds": 60})
+        return (out.get("QualificationType") or {}).get("QualificationTypeId", "")
+
+    def qual_request(self, qual: str) -> str:
+        return self.worker("request-qualification", {"QualificationTypeId": qual, "WorkerId": self.worker_id(), "Answer": "<a/>"}).get("QualificationRequestId", "")
+
+
+def mtk_notification(transport: str = "SNS") -> dict:
+    return {"Destination": COLLAB_SNS, "Transport": transport, "Version": "2006-05-05", "EventTypes": ["AssignmentSubmitted", "HITReviewable"]}
+
+
+def mturk_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A qualification type with a granted worker, a HIT type, and a HIT with a
+    submitted assignment carrying an uploaded file."""
+    state = RUNTIME_STATE.setdefault("mturk", {})
+    if state.get("fx"):
+        return state
+    fx = MtkFixture(aws_bin, endpoint_url, region, env)
+    qual = fx.qual_type()
+    hit_type = fx.call("CreateHITType", {"AssignmentDurationInSeconds": 600, "Reward": "0.10", "Title": fx.name("type"),
+                                         "Description": "Transcribe the receipt"}).get("HITTypeId", "")
+    hit = fx.hit(3)
+    assignment, worker = fx.submitted(hit)
+    fx.call("AssociateQualificationWithWorker", {"QualificationTypeId": qual, "WorkerId": worker, "IntegerValue": 90})
+    state.update({"fx": fx, "qual": qual, "type": hit_type, "hit": hit, "assignment": assignment, "worker": worker})
+    return state
+
+
+def mturk_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point MTurk operations at the cached fixture; reviews, deletes and
+    qualification requests get resources of their own."""
+    op = endpoint.operation
+    st = mturk_fixture(aws_bin, endpoint_url, region, env)
+    fx: MtkFixture = st["fx"]
+    hit, qual, assignment, worker = st["hit"], st["qual"], st["assignment"], st["worker"]
+    fixed = {
+        "GetAccountBalance": {}, "ListHITs": {"MaxResults": 10}, "ListReviewableHITs": {"MaxResults": 10}, "ListWorkerBlocks": {"MaxResults": 10},
+        "ListQualificationTypes": {"MustBeRequestable": False, "MaxResults": 10},
+        "GetHIT": {"HITId": hit}, "GetAssignment": {"AssignmentId": assignment},
+        "ListAssignmentsForHIT": {"HITId": hit, "AssignmentStatuses": ["Submitted", "Approved"]},
+        "ListBonusPayments": {"AssignmentId": assignment}, "ListReviewPolicyResultsForHIT": {"HITId": hit},
+        "GetFileUploadURL": {"AssignmentId": assignment, "QuestionIdentifier": "photo"},
+        "GetQualificationType": {"QualificationTypeId": qual}, "GetQualificationScore": {"QualificationTypeId": qual, "WorkerId": worker},
+        "ListHITsForQualificationType": {"QualificationTypeId": qual}, "ListQualificationRequests": {"QualificationTypeId": qual},
+        "ListWorkersWithQualificationType": {"QualificationTypeId": qual, "Status": "Granted"},
+        "UpdateQualificationType": {"QualificationTypeId": qual, "Description": "Photo tagging skill, updated"},
+        "AssociateQualificationWithWorker": {"QualificationTypeId": qual, "WorkerId": fx.worker_id(), "IntegerValue": 80},
+        "CreateAdditionalAssignmentsForHIT": {"HITId": hit, "NumberOfAdditionalAssignments": 1},
+        "UpdateExpirationForHIT": {"HITId": hit, "ExpireAt": int(time.time()) + 7200},
+        "UpdateHITTypeOfHIT": {"HITId": hit, "HITTypeId": st["type"]},
+        "UpdateNotificationSettings": {"HITTypeId": st["type"], "Notification": mtk_notification(), "Active": True},
+        "SendTestEventNotification": {"Notification": mtk_notification(), "TestEventType": "Ping"},
+        "NotifyWorkers": {"Subject": "New HITs", "MessageText": "More photos are ready.", "WorkerIds": [worker]},
+        "SendBonus": {"WorkerId": worker, "BonusAmount": "0.50", "AssignmentId": assignment, "Reason": "Careful work",
+                      "UniqueRequestToken": fx.name("bonus")},
+        "CreateWorkerBlock": {"WorkerId": fx.worker_id(), "Reason": "Spam answers"},
+        "CreateHITType": {"AssignmentDurationInSeconds": 300, "Reward": "0.05", "Title": fx.name("type"), "Description": "Rate the image"},
+        "CreateHITWithHITType": {"HITTypeId": st["type"], "MaxAssignments": 2, "LifetimeInSeconds": 3600, "Question": MTK_QUESTION},
+        "CreateHIT": {"MaxAssignments": 2, "LifetimeInSeconds": 3600, "AssignmentDurationInSeconds": 600, "Reward": "0.25",
+                      "Title": fx.name("hit"), "Description": "Tag the animal", "Question": MTK_QUESTION, "Keywords": "photo,tag"},
+        "CreateQualificationType": {"Name": fx.name("qual"), "Description": "Auto-granted skill", "QualificationTypeStatus": "Active",
+                                    "AutoGranted": True, "AutoGrantedValue": 1},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "ApproveAssignment":
+        return {"AssignmentId": fx.submitted()[0], "RequesterFeedback": "Thanks"}
+    if op == "RejectAssignment":
+        return {"AssignmentId": fx.submitted()[0], "RequesterFeedback": "Wrong animal"}
+    if op == "DeleteHIT":
+        return {"HITId": fx.expired_hit()}
+    if op == "UpdateHITReviewStatus":
+        return {"HITId": fx.expired_hit(), "Revert": False}
+    if op == "AcceptQualificationRequest":
+        return {"QualificationRequestId": fx.qual_request(qual), "IntegerValue": 95}
+    if op == "RejectQualificationRequest":
+        return {"QualificationRequestId": fx.qual_request(qual), "Reason": "Score too low"}
+    if op == "DisassociateQualificationFromWorker":
+        other = fx.worker_id()
+        fx.call("AssociateQualificationWithWorker", {"QualificationTypeId": qual, "WorkerId": other})
+        return {"QualificationTypeId": qual, "WorkerId": other, "Reason": "Expired"}
+    if op == "DeleteWorkerBlock":
+        other = fx.worker_id()
+        fx.call("CreateWorkerBlock", {"WorkerId": other, "Reason": "Spam answers"})
+        return {"WorkerId": other, "Reason": "Appeal accepted"}
+    if op == "DeleteQualificationType":
+        return {"QualificationTypeId": fx.qual_type()}
+    return payload
+
+
+class WdocFixture(MsgFixture):
+    """WorkDocs calls plus document uploads to Stackyard's pre-signed URLs."""
+
+    def __init__(self, aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]):
+        super().__init__(aws_bin, endpoint_url, region, env, "workdocs")
+        users = self.call("DescribeUsers", {"Query": "stackyard-admin"}).get("Users") or [{}]
+        self.admin, self.root = users[0].get("Id", ""), users[0].get("RootFolderId", "")
+
+    def folder(self, parent: str = "") -> str:
+        out = self.call("CreateFolder", {"Name": self.name("folder"), "ParentFolderId": parent or self.root})
+        return (out.get("Metadata") or {}).get("Id", "")
+
+    def initiate(self, parent: str, doc: str = "", body: bytes = b"quarterly numbers") -> tuple[str, str]:
+        """Starts an upload (a new document, or a new version of doc) and PUTs body."""
+        args = {"ContentType": "text/plain", "DocumentSizeInBytes": len(body)}
+        args.update({"Id": doc} if doc else {"Name": self.name("doc") + ".txt", "ParentFolderId": parent})
+        out = self.call("InitiateDocumentVersionUpload", args)
+        meta = out.get("Metadata") or {}
+        doc = meta.get("Id", doc)
+        upload = (out.get("UploadMetadata") or {}).get("UploadUrl", "")
+        if upload:
+            collab_post(upload, body, "text/plain", "PUT")
+        versions = self.call("DescribeDocumentVersions", {"DocumentId": doc, "Include": "INITIALIZED"}).get("DocumentVersions") or [{}]
+        pending = [v.get("Id", "") for v in versions if v.get("Status") == "INITIALIZED"]
+        return doc, (pending or [""])[0]
+
+    def document(self, parent: str, versions: int = 1) -> tuple[str, list[str]]:
+        doc, ids = "", []
+        for _ in range(versions):
+            doc, version = self.initiate(parent, doc)
+            self.call("UpdateDocumentVersion", {"DocumentId": doc, "VersionId": version, "VersionStatus": "ACTIVE"})
+            ids.append(version)
+        return doc, ids
+
+    def user(self) -> str:
+        out = self.call("CreateUser", {"Username": self.name("user"), "GivenName": "Coverage", "Surname": "User", "Password": "Stackyard-pass1"})
+        return (out.get("User") or {}).get("Id", "")
+
+
+def workdocs_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A folder holding an active document with a comment, labels and custom
+    metadata, shared with a second user."""
+    state = RUNTIME_STATE.setdefault("workdocs", {})
+    if state.get("fx"):
+        return state
+    fx = WdocFixture(aws_bin, endpoint_url, region, env)
+    folder = fx.folder()
+    doc, versions = fx.document(folder)
+    comment = (fx.call("CreateComment", {"DocumentId": doc, "VersionId": versions[0], "Text": "Looks right"}).get("Comment") or {}).get("CommentId", "")
+    user = fx.user()
+    fx.call("AddResourcePermissions", {"ResourceId": doc, "Principals": [{"Id": user, "Type": "USER", "Role": "VIEWER"}]})
+    fx.call("CreateLabels", {"ResourceId": doc, "Labels": ["finance"]})
+    fx.call("CreateCustomMetadata", {"ResourceId": doc, "CustomMetadata": {"owner": "finance"}})
+    state.update({"fx": fx, "folder": folder, "doc": doc, "version": versions[0], "comment": comment, "user": user})
+    return state
+
+
+def workdocs_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point WorkDocs operations at the cached fixture; deletes and uploads get
+    resources of their own."""
+    op = endpoint.operation
+    st = workdocs_fixture(aws_bin, endpoint_url, region, env)
+    fx: WdocFixture = st["fx"]
+    folder, doc, version, user = st["folder"], st["doc"], st["version"], st["user"]
+    org = "d-90670a1b2c"
+    fixed = {
+        "GetCurrentUser": {"AuthenticationToken": fx.admin}, "DescribeRootFolders": {"AuthenticationToken": fx.admin, "Limit": 10},
+        "DescribeUsers": {"OrganizationId": org, "Query": "stackyard", "Limit": 10}, "DescribeGroups": {"SearchQuery": "Domain", "OrganizationId": org},
+        "DescribeActivities": {"ResourceId": doc, "Limit": 20}, "GetResources": {"UserId": user, "CollectionType": "SHARED_WITH_ME"},
+        "SearchResources": {"QueryText": "doc", "Filters": {"ResourceTypes": ["DOCUMENT"], "Labels": ["finance"]}, "Limit": 10},
+        "GetFolder": {"FolderId": folder, "IncludeCustomMetadata": True}, "GetFolderPath": {"FolderId": folder, "Fields": "NAME"},
+        "DescribeFolderContents": {"FolderId": folder, "Sort": "NAME", "Order": "ASCENDING", "Type": "ALL"},
+        "GetDocument": {"DocumentId": doc, "IncludeCustomMetadata": True}, "GetDocumentPath": {"DocumentId": doc, "Fields": "NAME"},
+        "GetDocumentVersion": {"DocumentId": doc, "VersionId": version, "Fields": "SOURCE"},
+        "DescribeDocumentVersions": {"DocumentId": doc, "Fields": "SOURCE"},
+        "DescribeComments": {"DocumentId": doc, "VersionId": version},
+        "CreateComment": {"DocumentId": doc, "VersionId": version, "Text": "Second look", "Visibility": "PUBLIC"},
+        "DescribeResourcePermissions": {"ResourceId": doc}, "CreateLabels": {"ResourceId": doc, "Labels": ["q3"]},
+        "CreateCustomMetadata": {"ResourceId": doc, "CustomMetadata": {"region": "emea"}},
+        "AddResourcePermissions": {"ResourceId": doc, "Principals": [{"Id": user, "Type": "USER", "Role": "CONTRIBUTOR"}],
+                                   "NotificationOptions": {"SendEmail": False}},
+        "UpdateFolder": {"FolderId": folder, "Name": fx.name("folder")}, "UpdateDocument": {"DocumentId": doc, "Name": fx.name("doc") + ".txt"},
+        "UpdateUser": {"UserId": user, "GivenName": "Updated", "TimeZoneId": "America/New_York"},
+        "CreateFolder": {"Name": fx.name("folder"), "ParentFolderId": folder},
+        "CreateUser": {"Username": fx.name("user"), "GivenName": "New", "Surname": "User", "Password": "Stackyard-pass1", "OrganizationId": org},
+        "InitiateDocumentVersionUpload": {"Name": fx.name("doc") + ".csv", "ParentFolderId": folder, "ContentType": "text/csv"},
+        "CreateNotificationSubscription": {"OrganizationId": org, "Endpoint": "https://hooks.example.com/workdocs", "Protocol": "HTTPS",
+                                           "SubscriptionType": "ALL"},
+        "DescribeNotificationSubscriptions": {"OrganizationId": org},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "ActivateUser":
+        other = fx.user()
+        fx.call("DeactivateUser", {"UserId": other})
+        return {"UserId": other}
+    if op in ("DeactivateUser", "DeleteUser"):
+        return {"UserId": fx.user()}
+    if op == "DeleteFolder":
+        return {"FolderId": fx.folder(folder)}
+    if op == "DeleteFolderContents":
+        fresh = fx.folder(folder)
+        fx.folder(fresh)
+        return {"FolderId": fresh}
+    if op == "DeleteDocument":
+        return {"DocumentId": fx.document(folder)[0]}
+    if op == "UpdateDocumentVersion":
+        fresh, pending = fx.initiate(folder)
+        return {"DocumentId": fresh, "VersionId": pending, "VersionStatus": "ACTIVE"}
+    if op == "AbortDocumentVersionUpload":
+        fresh, pending = fx.initiate(folder)
+        return {"DocumentId": fresh, "VersionId": pending}
+    if op == "DeleteDocumentVersion":
+        fresh, ids = fx.document(folder, 2)
+        return {"DocumentId": fresh, "VersionId": ids[0], "DeletePriorVersions": False}
+    if op == "RestoreDocumentVersions":
+        fresh, ids = fx.document(folder, 2)
+        fx.call("DeleteDocumentVersion", {"DocumentId": fresh, "VersionId": ids[0], "DeletePriorVersions": False})
+        return {"DocumentId": fresh}
+    if op == "DeleteComment":
+        cid = (fx.call("CreateComment", {"DocumentId": doc, "VersionId": version, "Text": "Temporary"}).get("Comment") or {}).get("CommentId", "")
+        return {"DocumentId": doc, "VersionId": version, "CommentId": cid}
+    if op == "DeleteLabels":
+        fx.call("CreateLabels", {"ResourceId": doc, "Labels": ["draft"]})
+        return {"ResourceId": doc, "Labels": ["draft"]}
+    if op == "DeleteCustomMetadata":
+        fx.call("CreateCustomMetadata", {"ResourceId": doc, "CustomMetadata": {"stage": "draft"}})
+        return {"ResourceId": doc, "Keys": ["stage"]}
+    if op == "RemoveResourcePermission":
+        other = fx.user()
+        fx.call("AddResourcePermissions", {"ResourceId": doc, "Principals": [{"Id": other, "Type": "USER", "Role": "VIEWER"}]})
+        return {"ResourceId": doc, "PrincipalId": other, "PrincipalType": "USER"}
+    if op == "RemoveAllResourcePermissions":
+        fresh = fx.document(folder)[0]
+        fx.call("AddResourcePermissions", {"ResourceId": fresh, "Principals": [{"Id": user, "Type": "USER", "Role": "VIEWER"}]})
+        return {"ResourceId": fresh}
+    if op == "DeleteNotificationSubscription":
+        sub = fx.call("CreateNotificationSubscription", {"OrganizationId": org, "Endpoint": "https://hooks.example.com/temp",
+                                                         "Protocol": "HTTPS", "SubscriptionType": "ALL"})
+        return {"OrganizationId": org, "SubscriptionId": (sub.get("Subscription") or {}).get("SubscriptionId", "")}
+    return payload
+
+
+def repostspace_wait(fx: MsgFixture, space: str) -> None:
+    """Polls GetSpace until the space has finished provisioning (Stackyard takes ~2s)."""
+    for _ in range(20):
+        if fx.call("GetSpace", {"spaceId": space}).get("status") != "CREATING":
+            return
+        time.sleep(0.5)
+
+
+def repostspace_fixture(aws_bin: str, endpoint_url: str, region: str, env: dict[str, str]) -> dict:
+    """A provisioned space with an administrator, an expert and a channel."""
+    state = RUNTIME_STATE.setdefault("repostspace", {})
+    if state.get("fx"):
+        return state
+    fx = MsgFixture(aws_bin, endpoint_url, region, env, "repostspace")
+    space = fx.call("CreateSpace", {"name": "Coverage", "subdomain": fx.name("space"), "tier": "BASIC", "tags": {"team": "coverage"}}).get("spaceId", "")
+    repostspace_wait(fx, space)
+    fx.call("RegisterAdmin", {"spaceId": space, "adminId": "admin-" + fx.run})
+    channel = fx.call("CreateChannel", {"spaceId": space, "channelName": fx.name("channel")}).get("channelId", "")
+    state.update({"fx": fx, "space": space, "channel": channel, "arn": fx.call("GetSpace", {"spaceId": space}).get("arn", "")})
+    return state
+
+
+def repostspace_hydrate_payload(
+    aws_bin: str, endpoint: Endpoint, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    """Point re:Post Private operations at the cached space; creates and
+    deletes get resources of their own."""
+    op = endpoint.operation
+    st = repostspace_fixture(aws_bin, endpoint_url, region, env)
+    fx: MsgFixture = st["fx"]
+    space, channel, arn = st["space"], st["channel"], st["arn"]
+    fixed = {
+        "GetSpace": {"spaceId": space}, "ListSpaces": {"maxResults": 10}, "ListChannels": {"spaceId": space, "maxResults": 10},
+        "GetChannel": {"spaceId": space, "channelId": channel},
+        "UpdateSpace": {"spaceId": space, "description": "Coverage space", "tier": "STANDARD"},
+        "UpdateChannel": {"spaceId": space, "channelId": channel, "channelName": fx.name("channel"), "channelDescription": "Questions"},
+        "CreateChannel": {"spaceId": space, "channelName": fx.name("channel"), "channelDescription": "New channel"},
+        "BatchAddRole": {"spaceId": space, "accessorIds": ["user-expert"], "role": "EXPERT"},
+        "BatchRemoveRole": {"spaceId": space, "accessorIds": ["user-expert"], "role": "EXPERT"},
+        "BatchAddChannelRoleToAccessors": {"spaceId": space, "channelId": channel, "accessorIds": ["user-mod"], "channelRole": "MODERATOR"},
+        "BatchRemoveChannelRoleFromAccessors": {"spaceId": space, "channelId": channel, "accessorIds": ["user-mod"], "channelRole": "MODERATOR"},
+        "RegisterAdmin": {"spaceId": space, "adminId": fx.name("admin")},
+        "SendInvites": {"spaceId": space, "accessorIds": ["user-new"], "title": "Join us", "body": "Welcome to the space"},
+        "ListTagsForResource": {"resourceArn": arn}, "TagResource": {"resourceArn": arn, "tags": {"env": "test"}},
+        "UntagResource": {"resourceArn": arn, "tagKeys": ["env"]},
+        "CreateSpace": {"name": "Coverage", "subdomain": fx.name("space"), "tier": "BASIC", "description": "Created by coverage"},
+    }
+    if op in fixed:
+        return fixed[op]
+    if op == "DeregisterAdmin":
+        admin = fx.name("admin")
+        fx.call("RegisterAdmin", {"spaceId": space, "adminId": admin})
+        return {"spaceId": space, "adminId": admin}
+    if op == "DeleteSpace":
+        return {"spaceId": fx.call("CreateSpace", {"name": "Doomed", "subdomain": fx.name("space"), "tier": "BASIC"}).get("spaceId", "")}
+    return payload
+
+
 CHIME_ACCOUNT = "123456789012"
 CHIME_REGION_ARN = f"arn:aws:chime:us-east-1:{CHIME_ACCOUNT}:"
 
@@ -41788,6 +42152,12 @@ def hydrate_payload_with_service_state(
     if not isinstance(payload, dict):
         return payload
 
+    if endpoint.service == "mturk":
+        return mturk_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "workdocs":
+        return workdocs_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
+    if endpoint.service == "repostspace":
+        return repostspace_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "chimesdkmeetings":
         return chimesdkmeetings_hydrate_payload(aws_bin, endpoint, payload, endpoint_url, region, env)
     if endpoint.service == "chimesdkmessaging":
