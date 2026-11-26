@@ -220,14 +220,14 @@ func (s *Server) sarCreateApplication(r *http.Request) (int, map[string]any, *sa
 	}
 	meta := &sarAppMeta{in: in}
 	var err *sarError
-	if meta.licenseURL, err = s.sarDocument("licenseUrl", in.LicenseURL, in.LicenseBody, in.Name, "LICENSE.txt"); err != nil {
+	if meta.licenseURL, err = s.sarDocument(r, "licenseUrl", in.LicenseURL, in.LicenseBody, in.Name, "LICENSE.txt"); err != nil {
 		return 0, nil, err
 	}
-	if meta.readmeURL, err = s.sarDocument("readmeUrl", in.ReadmeURL, in.ReadmeBody, in.Name, "README.md"); err != nil {
+	if meta.readmeURL, err = s.sarDocument(r, "readmeUrl", in.ReadmeURL, in.ReadmeBody, in.Name, "README.md"); err != nil {
 		return 0, nil, err
 	}
 	if in.SemanticVersion != "" {
-		if meta.version, err = s.sarNewVersion(in.Name, in.SemanticVersion, sarVersionInput{
+		if meta.version, err = s.sarNewVersion(r, in.Name, in.SemanticVersion, sarVersionInput{
 			SourceCodeArchiveURL: in.SourceCodeArchiveURL, SourceCodeURL: in.SourceCodeURL,
 			TemplateBody: in.TemplateBody, TemplateURL: in.TemplateURL,
 		}); err != nil {
@@ -271,7 +271,7 @@ func (s *Server) sarUpdateApplication(r *http.Request, app string) (int, map[str
 		}
 		name := app[strings.LastIndex(app, "/")+1:]
 		var err *sarError
-		if readme, err = s.sarDocument("readmeUrl", u, body, name, "README.md"); err != nil {
+		if readme, err = s.sarDocument(r, "readmeUrl", u, body, name, "README.md"); err != nil {
 			return 0, nil, err
 		}
 	}
@@ -295,7 +295,7 @@ func (s *Server) sarCreateVersion(r *http.Request, app, semver string) (int, map
 	if _, err := s.serverlessRepo.get(app, ""); err != nil {
 		return 0, nil, err
 	}
-	v, err := s.sarNewVersion(app[strings.LastIndex(app, "/")+1:], semver, in)
+	v, err := s.sarNewVersion(r, app[strings.LastIndex(app, "/")+1:], semver, in)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -305,13 +305,13 @@ func (s *Server) sarCreateVersion(r *http.Request, app, semver string) (int, map
 
 // sarNewVersion validates a version and loads its template. S3 is read here,
 // before the repository lock is taken.
-func (s *Server) sarNewVersion(appName, semver string, in sarVersionInput) (*sarVersion, *sarError) {
+func (s *Server) sarNewVersion(r *http.Request, appName, semver string, in sarVersionInput) (*sarVersion, *sarError) {
 	if !sarSemverRe.MatchString(semver) || len(semver) > 64 {
 		return nil, sarBadRequest("semanticVersion %q isn't a valid Semantic Version 2.0.0 string.", semver)
 	}
 	body, templateURL := in.TemplateBody, in.TemplateURL
 	if templateURL != "" {
-		raw, err := s.sarFetchS3("templateUrl", templateURL)
+		raw, err := s.sarFetchS3(r, "templateUrl", templateURL)
 		if err != nil {
 			return nil, err
 		}
@@ -327,7 +327,7 @@ func (s *Server) sarNewVersion(appName, semver string, in sarVersionInput) (*sar
 		}
 	}
 	if in.SourceCodeArchiveURL != "" {
-		if _, err := s.sarFetchS3("sourceCodeArchiveUrl", in.SourceCodeArchiveURL); err != nil {
+		if _, err := s.sarFetchS3(r, "sourceCodeArchiveUrl", in.SourceCodeArchiveURL); err != nil {
 			return nil, err
 		}
 	}
@@ -528,9 +528,9 @@ func (s *Server) sarRegisterChangeSet(stack, changeSet string) (string, string) 
 
 // sarDocument returns the URL of a readme or license: a given URL must name an
 // S3 object; a given body is stored in Stackyard's S3.
-func (s *Server) sarDocument(field, u, body, appName, file string) (string, *sarError) {
+func (s *Server) sarDocument(r *http.Request, field, u, body, appName, file string) (string, *sarError) {
 	if u != "" {
-		if _, err := s.sarFetchS3(field, u); err != nil {
+		if _, err := s.sarFetchS3(r, field, u); err != nil {
 			return "", err
 		}
 		return u, nil
@@ -546,7 +546,7 @@ func (s *Server) sarDocument(field, u, body, appName, file string) (string, *sar
 
 // sarFetchS3 reads an object named by a virtual-hosted, path-style or s3://
 // URL from Stackyard's S3 store.
-func (s *Server) sarFetchS3(field, raw string) ([]byte, *sarError) {
+func (s *Server) sarFetchS3(r *http.Request, field, raw string) ([]byte, *sarError) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return nil, sarBadRequest("%s %q isn't a URL.", field, raw)
@@ -563,6 +563,9 @@ func (s *Server) sarFetchS3(field, raw string) ([]byte, *sarError) {
 	}
 	if bucket == "" || key == "" {
 		return nil, sarBadRequest("%s %q doesn't name an S3 object.", field, raw)
+	}
+	if !s.authorizeServiceS3(r, "serverlessrepo.amazonaws.com", bucket, key, "s3:GetObject") {
+		return nil, &sarError{http.StatusForbidden, "ForbiddenException", field + ": access denied reading s3://" + bucket + "/" + key + "."}
 	}
 	obj, err := s.s3.GetObject(bucket, key)
 	if err != nil {

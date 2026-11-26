@@ -44,8 +44,11 @@ type tsmError struct {
 }
 
 func (e *tsmError) status() int {
-	if e.code == "InternalServerException" {
+	switch e.code {
+	case "InternalServerException":
 		return http.StatusInternalServerError
+	case "AccessDeniedException":
+		return http.StatusForbidden
 	}
 	return http.StatusBadRequest
 }
@@ -85,6 +88,7 @@ type tsmCall struct {
 	objects map[string][]byte // batch load source objects by key
 	model   []byte            // batch load data model object
 	topicOK bool
+	denied  string // why a batch load source couldn't be read, if access was denied
 	putS3   func(bucket, key string, body []byte)
 	publish func(topic, message string)
 	after   []func() // writes to other stores, run once the Timestream lock is released
@@ -133,7 +137,7 @@ func (s *Server) handleTimestreamJSONRouter(w http.ResponseWriter, r *http.Reque
 		in = map[string]any{}
 	}
 	call := &tsmCall{in: in, host: r.Host, now: time.Now().UTC(), buckets: map[string]bool{}}
-	s.tsmGather(op, call)
+	s.tsmGather(r, op, call)
 	out, terr := s.tsdb.dispatch(op, call)
 	for _, fn := range call.after {
 		fn()
@@ -148,7 +152,19 @@ func (s *Server) handleTimestreamJSONRouter(w http.ResponseWriter, r *http.Reque
 
 // tsmGather reads what an operation needs from the S3 and SNS stores before
 // the Timestream lock is taken.
-func (s *Server) tsmGather(op string, call *tsmCall) {
+const tsmServicePrincipal = "timestream.amazonaws.com"
+
+func (s *Server) tsmGather(r *http.Request, op string, call *tsmCall) {
+	caller := s.s3CallerOf(r)
+	allowed := func(action, bucket, key string) bool {
+		if s.authorizeServiceS3As(caller, tsmServicePrincipal, bucket, key, action) {
+			return true
+		}
+		if call.denied == "" {
+			call.denied = "Access denied: " + action + " on s3://" + bucket + "/" + key
+		}
+		return false
+	}
 	bucket := func(name string) {
 		if name == "" {
 			return
@@ -159,7 +175,13 @@ func (s *Server) tsmGather(op string, call *tsmCall) {
 		}
 	}
 	call.putS3 = func(b, key string, body []byte) {
-		call.after = append(call.after, func() { _, _ = s.s3.PutObject(b, key, "text/csv", body, nil, "", "") })
+		// ponytail: a denied report write is dropped, like a failed one; the
+		// check runs here, outside the Timestream lock, as the write does.
+		call.after = append(call.after, func() {
+			if s.authorizeServiceS3As(caller, tsmServicePrincipal, b, key, "s3:PutObject") {
+				_, _ = s.s3.PutObject(b, key, "text/csv", body, nil, "", "")
+			}
+		})
 	}
 	call.publish = func(topic, message string) {
 		call.after = append(call.after, func() { _, _ = s.sns.Publish(sns.PublishInput{TopicARN: topic, Message: message}) })
@@ -171,10 +193,13 @@ func (s *Server) tsmGather(op string, call *tsmCall) {
 		srcBucket := tsmStr(src, "BucketName")
 		bucket(srcBucket)
 		bucket(tsmStr(tsmPath(in, "ReportConfiguration", "ReportS3Configuration"), "BucketName"))
-		if call.buckets[srcBucket] {
-			call.objects = s.tsmReadObjects(srcBucket, tsmStr(src, "ObjectKeyPrefix"))
+		if call.buckets[srcBucket] && allowed("s3:ListBucket", srcBucket, "") {
+			call.objects = s.tsmReadObjects(srcBucket, tsmStr(src, "ObjectKeyPrefix"), func(key string) bool {
+				return allowed("s3:GetObject", srcBucket, key)
+			})
 		}
-		if dm := tsmPath(in, "DataModelConfiguration", "DataModelS3Configuration"); dm != nil {
+		if dm := tsmPath(in, "DataModelConfiguration", "DataModelS3Configuration"); dm != nil &&
+			allowed("s3:GetObject", tsmStr(dm, "BucketName"), tsmStr(dm, "ObjectKey")) {
 			if obj, err := s.s3.GetObject(tsmStr(dm, "BucketName"), tsmStr(dm, "ObjectKey")); err == nil && len(obj.Body) <= 1<<20 {
 				call.model = obj.Body
 			}
@@ -189,7 +214,7 @@ func (s *Server) tsmGather(op string, call *tsmCall) {
 }
 
 // tsmReadObjects loads the CSV objects under prefix, bounded in count and bytes.
-func (s *Server) tsmReadObjects(bucket, prefix string) map[string][]byte {
+func (s *Server) tsmReadObjects(bucket, prefix string, allowed func(key string) bool) map[string][]byte {
 	objs, err := s.s3.ListObjects(bucket, prefix)
 	if err != nil {
 		return nil
@@ -199,6 +224,9 @@ func (s *Server) tsmReadObjects(bucket, prefix string) map[string][]byte {
 	for _, o := range objs {
 		if len(out) >= tsmMaxBatchFiles || strings.HasSuffix(o.Key, "/") {
 			continue
+		}
+		if !allowed(o.Key) {
+			return nil
 		}
 		full, err := s.s3.GetObject(bucket, o.Key)
 		if err != nil || total+len(full.Body) > tsmMaxBatchBytes {

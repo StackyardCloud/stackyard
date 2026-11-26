@@ -157,7 +157,7 @@ func (s *Server) mpvodRoute(r *http.Request, seg []string) (int, map[string]any,
 		if err != nil {
 			return 0, nil, err
 		}
-		if err := s.mpvodCheckSource(mpvodStr(in, "sourceArn"), mpvodStr(in, "sourceRoleArn")); err != nil {
+		if err := s.mpvodCheckSource(r, mpvodStr(in, "sourceArn"), mpvodStr(in, "sourceRoleArn")); err != nil {
 			return 0, nil, err
 		}
 		return ok(st.createAsset(mpvodAssetInput{
@@ -279,13 +279,16 @@ func mpvodPackage(in map[string]any) (string, map[string]any, *mpvodErr) {
 
 // mpvodCheckSource requires an IAM role ARN and an existing .smil or .m3u8
 // object in Stackyard's S3. Runs before the VOD store lock.
-func (s *Server) mpvodCheckSource(source, role string) *mpvodErr {
+func (s *Server) mpvodCheckSource(r *http.Request, source, role string) *mpvodErr {
 	if !mpvodRoleARN.MatchString(role) {
 		return mpvodInvalid("sourceRoleArn must be an IAM role ARN")
 	}
 	m := mpvodS3ARN.FindStringSubmatch(source)
 	if m == nil {
 		return mpvodInvalid("sourceArn must be an S3 object ARN ending in .smil or .m3u8")
+	}
+	if !s.authorizeServiceS3(r, "mediapackage.amazonaws.com", m[1], m[2], "s3:GetObject") {
+		return &mpvodErr{http.StatusForbidden, "ForbiddenException", "Access denied reading " + source}
 	}
 	if _, err := s.s3.GetObject(m[1], m[2]); err != nil {
 		return mpvodInvalid("sourceArn %s does not exist", source)

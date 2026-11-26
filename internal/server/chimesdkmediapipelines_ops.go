@@ -1,0 +1,37 @@
+package server
+
+// Amazon Chime SDK Media Pipelines operations sourced from:
+// https://docs.aws.amazon.com/chime-sdk/latest/APIReference/API_Operations_Amazon_Chime_SDK_Media_Pipelines.html
+var chimeSDKMediaPipelinesOperations = []chimeOperation{
+	{Name: "CreateMediaCapturePipeline", Method: "POST", URI: "/sdk-media-capture-pipelines", Code: 201},
+	{Name: "CreateMediaConcatenationPipeline", Method: "POST", URI: "/sdk-media-concatenation-pipelines", Code: 201},
+	{Name: "CreateMediaInsightsPipeline", Method: "POST", URI: "/media-insights-pipelines", Code: 201},
+	{Name: "CreateMediaInsightsPipelineConfiguration", Method: "POST", URI: "/media-insights-pipeline-configurations", Code: 201},
+	{Name: "CreateMediaLiveConnectorPipeline", Method: "POST", URI: "/sdk-media-live-connector-pipelines", Code: 201},
+	{Name: "CreateMediaPipelineKinesisVideoStreamPool", Method: "POST", URI: "/media-pipeline-kinesis-video-stream-pools", Code: 201},
+	{Name: "CreateMediaStreamPipeline", Method: "POST", URI: "/sdk-media-stream-pipelines", Code: 201},
+	{Name: "DeleteMediaCapturePipeline", Method: "DELETE", URI: "/sdk-media-capture-pipelines/{mediaPipelineId}", Code: 204},
+	{Name: "DeleteMediaInsightsPipelineConfiguration", Method: "DELETE", URI: "/media-insights-pipeline-configurations/{identifier}", Code: 204},
+	{Name: "DeleteMediaPipeline", Method: "DELETE", URI: "/sdk-media-pipelines/{mediaPipelineId}", Code: 204},
+	{Name: "DeleteMediaPipelineKinesisVideoStreamPool", Method: "DELETE", URI: "/media-pipeline-kinesis-video-stream-pools/{identifier}", Code: 204},
+	{Name: "GetMediaCapturePipeline", Method: "GET", URI: "/sdk-media-capture-pipelines/{mediaPipelineId}"},
+	{Name: "GetMediaInsightsPipelineConfiguration", Method: "GET", URI: "/media-insights-pipeline-configurations/{identifier}"},
+	{Name: "GetMediaPipeline", Method: "GET", URI: "/sdk-media-pipelines/{mediaPipelineId}"},
+	{Name: "GetMediaPipelineKinesisVideoStreamPool", Method: "GET", URI: "/media-pipeline-kinesis-video-stream-pools/{identifier}"},
+	{Name: "GetSpeakerSearchTask", Method: "GET", URI: "/media-insights-pipelines/{identifier}/speaker-search-tasks/{speakerSearchTaskId}"},
+	{Name: "GetVoiceToneAnalysisTask", Method: "GET", URI: "/media-insights-pipelines/{identifier}/voice-tone-analysis-tasks/{voiceToneAnalysisTaskId}"},
+	{Name: "ListMediaCapturePipelines", Method: "GET", URI: "/sdk-media-capture-pipelines"},
+	{Name: "ListMediaInsightsPipelineConfigurations", Method: "GET", URI: "/media-insights-pipeline-configurations"},
+	{Name: "ListMediaPipelineKinesisVideoStreamPools", Method: "GET", URI: "/media-pipeline-kinesis-video-stream-pools"},
+	{Name: "ListMediaPipelines", Method: "GET", URI: "/sdk-media-pipelines"},
+	{Name: "ListTagsForResource", Method: "GET", URI: "/tags"},
+	{Name: "StartSpeakerSearchTask", Method: "POST", URI: "/media-insights-pipelines/{identifier}/speaker-search-tasks?operation=start", Code: 201},
+	{Name: "StartVoiceToneAnalysisTask", Method: "POST", URI: "/media-insights-pipelines/{identifier}/voice-tone-analysis-tasks?operation=start", Code: 201},
+	{Name: "StopSpeakerSearchTask", Method: "POST", URI: "/media-insights-pipelines/{identifier}/speaker-search-tasks/{speakerSearchTaskId}?operation=stop", Code: 204},
+	{Name: "StopVoiceToneAnalysisTask", Method: "POST", URI: "/media-insights-pipelines/{identifier}/voice-tone-analysis-tasks/{voiceToneAnalysisTaskId}?operation=stop", Code: 204},
+	{Name: "TagResource", Method: "POST", URI: "/tags?operation=tag-resource", Code: 204},
+	{Name: "UntagResource", Method: "POST", URI: "/tags?operation=untag-resource", Code: 204},
+	{Name: "UpdateMediaInsightsPipelineConfiguration", Method: "PUT", URI: "/media-insights-pipeline-configurations/{identifier}"},
+	{Name: "UpdateMediaInsightsPipelineStatus", Method: "PUT", URI: "/media-insights-pipeline-status/{identifier}"},
+	{Name: "UpdateMediaPipelineKinesisVideoStreamPool", Method: "PUT", URI: "/media-pipeline-kinesis-video-stream-pools/{identifier}"},
+}

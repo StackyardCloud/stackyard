@@ -37,6 +37,12 @@ func pollyBad(code, format string, args ...any) *pollyError {
 	return pollyErr(http.StatusBadRequest, code, format, args...)
 }
 
+const pollyServicePrincipal = "polly.amazonaws.com"
+
+func pollyAccessDenied(bucket, key string) *pollyError {
+	return pollyErr(http.StatusForbidden, "AccessDeniedException", "Access denied for s3://%s/%s", bucket, key)
+}
+
 func pollyValidation(format string, args ...any) *pollyError {
 	e := pollyBad("ValidationException", format, args...)
 	e.extra = map[string]any{"reason": "fieldValidationFailed"}
@@ -123,7 +129,7 @@ func (s *Server) pollyRoute(w http.ResponseWriter, r *http.Request, seg []string
 		if err != nil {
 			return err
 		}
-		return reply("CreateVoice")(s.pollyCreateVoice(in))
+		return reply("CreateVoice")(s.pollyCreateVoice(r, in))
 	case seg[0] == "voices" && n == 2 && m == http.MethodGet:
 		return reply("GetVoice")(s.polly.getVoice(seg[1]))
 	case seg[0] == "voices" && n == 2 && m == http.MethodDelete:
@@ -155,7 +161,7 @@ func (s *Server) pollyRoute(w http.ResponseWriter, r *http.Request, seg []string
 		if err != nil {
 			return err
 		}
-		return reply("StartSpeechSynthesisTask")(s.pollyStartTask(in))
+		return reply("StartSpeechSynthesisTask")(s.pollyStartTask(r, in))
 	case seg[0] == "synthesisTasks" && n == 1 && m == http.MethodGet:
 		return reply("ListSpeechSynthesisTasks")(s.pollyListTasks(q))
 	case seg[0] == "synthesisTasks" && n == 2 && m == http.MethodGet:

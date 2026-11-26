@@ -97,6 +97,30 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/sagemaker-runtime/docker-compose.yml"
   },
   {
+    id: "sagemaker-featurestore-runtime",
+    name: "Amazon SageMaker Feature Store Runtime",
+    category: "integration",
+    summary: "Put, update, get, list, delete and batch-read/write records in the online store of feature groups created with SageMaker, checked against the group's feature definitions, event times and TTLs.",
+    docsHref: "../../../index.html#sagemaker-featurestore-runtime",
+    exampleHref: "../../../../examples/aws/sagemaker-featurestore-runtime/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-metrics",
+    name: "Amazon SageMaker Metrics",
+    category: "integration",
+    summary: "Log training metrics to SageMaker trial components (including a training job's) and query them by iteration or time window.",
+    docsHref: "../../../index.html#sagemaker-metrics",
+    exampleHref: "../../../../examples/aws/sagemaker-metrics/docker-compose.yml"
+  },
+  {
+    id: "sagemaker-edge",
+    name: "Amazon SageMaker Edge Manager",
+    category: "integration",
+    summary: "Edge agent API for devices registered with SageMaker: registration checks, deployments from in-progress edge deployment stages, and heartbeats that record agent versions, models and deployment results.",
+    docsHref: "../../../index.html#sagemaker-edge",
+    exampleHref: "../../../../examples/aws/sagemaker-edge/docker-compose.yml"
+  },
+  {
     id: "batch",
     name: "Batch",
     category: "compute",
@@ -219,6 +243,33 @@ window.AWS_SERVICE_CATALOG = [
   },
 
   {
+    id: "lookoutequipment",
+    name: "Lookout for Equipment",
+    category: "integration",
+    summary: "Emulate Lookout for Equipment datasets with S3 sensor-data ingestion and sensor statistics, labels, model training and versions, resource policies, retraining and inference schedulers with executions and events, and tags.",
+    docsHref: "../../../index.html#lookoutequipment",
+    exampleHref: "../../../../examples/aws/lookoutequipment/docker-compose.yml"
+  },
+
+  {
+    id: "machinelearning",
+    name: "Machine Learning",
+    category: "integration",
+    summary: "Emulate Amazon Machine Learning data sources from S3, RDS and Redshift, model training, evaluations, batch predictions written to S3, realtime endpoints with Predict, and tags.",
+    docsHref: "../../../index.html#machinelearning",
+    exampleHref: "../../../../examples/aws/machinelearning/docker-compose.yml"
+  },
+
+  {
+    id: "sagemakergeospatial",
+    name: "SageMaker Geospatial",
+    category: "integration",
+    summary: "Emulate SageMaker geospatial raster collections and scene search, earth observation jobs with tiles and S3 exports, vector enrichment jobs over S3 CSVs, and tags.",
+    docsHref: "../../../index.html#sagemakergeospatial",
+    exampleHref: "../../../../examples/aws/sagemaker-geospatial/docker-compose.yml"
+  },
+
+  {
     id: "wafregional",
     name: "WAF Classic Regional",
     category: "security",
@@ -250,6 +301,54 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate billing data exports: SQL-checked queries over CUR 2.0, FOCUS, recommendation and carbon tables, executions that deliver manifests and CSV files to S3, table schemas and tags.",
     docsHref: "../../../index.html#bcmdataexports",
     exampleHref: "../../../../examples/aws/bcm-data-exports/docker-compose.yml"
+  },
+  {
+    id: "applicationcostprofiler",
+    name: "Application Cost Profiler",
+    category: "integration",
+    summary: "Emulate tenant cost reporting: report definitions delivering to S3, and usage imports that write each tenant's share of shared resources as CSV reports.",
+    docsHref: "../../../index.html#applicationcostprofiler",
+    exampleHref: "../../../../examples/aws/application-cost-profiler/docker-compose.yml"
+  },
+  {
+    id: "bcmdashboards",
+    name: "Billing and Cost Management Dashboards",
+    category: "integration",
+    summary: "Emulate billing dashboards: widgets with checked Cost Explorer-style queries, scheduled reports whose health follows their dashboard, resource policies and tags.",
+    docsHref: "../../../index.html#bcmdashboards",
+    exampleHref: "../../../../examples/aws/bcm-dashboards/docker-compose.yml"
+  },
+  {
+    id: "bcmpricingcalculator",
+    name: "Pricing Calculator",
+    category: "integration",
+    summary: "Emulate cost estimates from a deterministic price catalog: bill scenarios with usage and Reserved Instance or Savings Plans commitments, bill estimates with line items, and workload estimates.",
+    docsHref: "../../../index.html#bcmpricingcalculator",
+    exampleHref: "../../../../examples/aws/bcm-pricing-calculator/docker-compose.yml"
+  },
+  {
+    id: "account",
+    name: "Account",
+    category: "integration",
+    summary: "Emulate account name and state, alternate and contact information with phone verification, primary email updates with one-time codes, and Region opt-in status for the management and member accounts.",
+    docsHref: "../../../index.html#account",
+    exampleHref: "../../../../examples/aws/account/docker-compose.yml"
+  },
+  {
+    id: "freetier",
+    name: "Free Tier",
+    category: "integration",
+    summary: "Emulate the free account plan with credits and upgrade to paid, sign-up activities (the Budgets activity completes from Stackyard's Budgets), and a filterable free-tier usage catalog.",
+    docsHref: "../../../index.html#freetier",
+    exampleHref: "../../../../examples/aws/freetier/docker-compose.yml"
+  },
+  {
+    id: "taxsettings",
+    name: "Tax Settings",
+    category: "integration",
+    summary: "Emulate tax registrations for the caller and member accounts with S3-backed documents, supplemental VAT registrations, tax exemptions with Pending then Valid status, and tax inheritance.",
+    docsHref: "../../../index.html#taxsettings",
+    exampleHref: "../../../../examples/aws/taxsettings/docker-compose.yml"
   },
   {
     id: "geomaps",
@@ -1092,6 +1191,54 @@ window.AWS_SERVICE_CATALOG = [
     exampleHref: "../../../../examples/aws/mailmanager/docker-compose.yml"
   },
   {
+    id: "mturk",
+    name: "Amazon Mechanical Turk",
+    category: "integration",
+    summary: "Requester API with sandbox semantics: HIT types, HITs with QuestionForm, ExternalQuestion or HTMLQuestion content, qualification requirements and review policies; a real lifecycle (Assignable, Unassignable, Reviewable, Reviewing) driven by simulated workers who accept, submit and return assignments at Stackyard's /_stackyard/mturk/ links; assignment deadlines and auto-approval; approve, reject (and override), bonuses with idempotency tokens, uploaded answer files behind short-lived download URLs; qualification types, requests, grants and revocations, system qualifications (locale, approval rate); worker blocks, notifications and a constant sandbox balance.",
+    docsHref: "../../../index.html#mturk",
+    exampleHref: "../../../../examples/aws/mturk/docker-compose.yml"
+  },
+  {
+    id: "workdocs",
+    name: "Amazon WorkDocs",
+    category: "integration",
+    summary: "One organization with an administrator and users (activation, power users, storage quotas), root folders, nested folders, documents uploaded to Stackyard-served pre-signed URLs and activated as versions (delete, restore, abort), downloads with constant content types, comments and replies, labels, custom metadata, sharing with users, groups and invites, shared-with-me listings, paths, search with filters, notification subscriptions and an activity feed.",
+    docsHref: "../../../index.html#workdocs",
+    exampleHref: "../../../../examples/aws/workdocs/docker-compose.yml"
+  },
+  {
+    id: "repostspace",
+    name: "AWS re:Post Private",
+    category: "integration",
+    summary: "Private re:Post spaces that provision (CREATING to CREATED) and delete (DELETING, then gone) over time, with unique subdomains, BASIC and STANDARD tiers, administrators, space roles, invites, channels that provision the same way with channel roles, and tags on space ARNs.",
+    docsHref: "../../../index.html#repostspace",
+    exampleHref: "../../../../examples/aws/repostspace/docker-compose.yml"
+  },
+  {
+    id: "chimesdkmeetings",
+    name: "Amazon Chime SDK Meetings",
+    category: "integration",
+    summary: "Meetings with media placement URLs, ClientRequestToken idempotency, replica meetings and meeting features (attendee caps, video/content resolution), attendees whose join tokens are returned only when created, capability rules, live transcription settings, and tags.",
+    docsHref: "../../../index.html#chimesdkmeetings",
+    exampleHref: "../../../../examples/aws/chime-sdk-meetings/docker-compose.yml"
+  },
+  {
+    id: "chimesdkmessaging",
+    name: "Amazon Chime SDK Messaging",
+    category: "integration",
+    summary: "App instance channels acting as the x-amz-chime-bearer user: public/private and restricted channels, moderators, memberships (hidden, elastic sub-channels), bans, preferences and read markers, messages with edits, redaction, targets and paging, channel flows that hold messages PENDING until their callback, expiration settings, streaming configurations and tags.",
+    docsHref: "../../../index.html#chimesdkmessaging",
+    exampleHref: "../../../../examples/aws/chime-sdk-messaging/docker-compose.yml"
+  },
+  {
+    id: "chimesdkmediapipelines",
+    name: "Amazon Chime SDK Media Pipelines",
+    category: "integration",
+    summary: "Capture, concatenation, live connector (RTMP) and stream pipelines over Chime SDK meetings that stop when their meeting ends, Kinesis video stream pools with reserved capacity, media insights pipeline configurations and pipelines with pause/resume, speaker search and voice tone analysis tasks that settle asynchronously, and tags.",
+    docsHref: "../../../index.html#chimesdkmediapipelines",
+    exampleHref: "../../../../examples/aws/chime-sdk-media-pipelines/docker-compose.yml"
+  },
+  {
     id: "polly",
     name: "Amazon Polly",
     category: "integration",
@@ -1530,6 +1677,30 @@ window.AWS_SERVICE_CATALOG = [
     summary: "Emulate Glacier vaults, tree-hash-checked archive and multipart uploads, retrieval and inventory jobs, vault locks, policies and notifications.",
     docsHref: "../../../index.html#glacier",
     exampleHref: "../../../../examples/aws/glacier/docker-compose.yml"
+  },
+  {
+    id: "outposts",
+    name: "Outposts",
+    category: "compute",
+    summary: "Emulate sites, outposts, quotes, orders that progress to FULFILLED and install assets, capacity tasks, billing and renewals, connections, decommissioning and tags.",
+    docsHref: "../../../index.html#outposts",
+    exampleHref: "../../../../examples/aws/outposts/docker-compose.yml"
+  },
+  {
+    id: "snow-device-management",
+    name: "Snow Device Management",
+    category: "storage",
+    summary: "Emulate managed devices backed by Snowball jobs, reboot and unlock tasks with per-device executions, device EC2 instances and tags.",
+    docsHref: "../../../index.html#snow-device-management",
+    exampleHref: "../../../../examples/aws/snow-device-management/docker-compose.yml"
+  },
+  {
+    id: "backup-gateway",
+    name: "Backup Gateway",
+    category: "storage",
+    summary: "Emulate gateways with maintenance and bandwidth schedules, hypervisor import and metadata sync, virtual machines that AWS Backup can back up, and tags.",
+    docsHref: "../../../index.html#backup-gateway",
+    exampleHref: "../../../../examples/aws/backup-gateway/docker-compose.yml"
   },
   {
     id: "backup",

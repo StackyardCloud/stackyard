@@ -33,9 +33,11 @@ const (
 	bcmdeMaxTags       = 200
 )
 
+const bcmdeServicePrincipal = "bcm-data-exports.amazonaws.com"
+
 var bcmdeAPI = &budJSONAPI{
 	prefix: bcmdeTargetPrefix, signing: "bcm-data-exports", contentType: "application/x-amz-json-1.1",
-	invalidCode: "ValidationException", model: awsmodels.BCMDataExportsModel,
+	invalidCode: "ValidationException", model: awsmodels.BCMDataExportsModel, s3Caller: true,
 }
 
 func init() {
@@ -126,7 +128,7 @@ func bcmdeCheck(raw map[string]any) (*bcmdePlan, *budErr) {
 
 // bcmdeDeliver writes one execution's files to S3 and reports whether the
 // bucket accepted them. It takes the S3 store's lock, never ours.
-func (s *Server) bcmdeDeliver(plan *bcmdePlan, executionID string, now time.Time) bool {
+func (s *Server) bcmdeDeliver(c s3Caller, plan *bcmdePlan, executionID string, now time.Time) bool {
 	dest := budMap(budMap(plan.export, "DestinationConfigurations"), "S3Destination")
 	out := budMap(dest, "S3OutputConfigurations")
 	bucket, name := budStr(dest, "S3Bucket"), budStr(plan.export, "Name")
@@ -153,6 +155,9 @@ func (s *Server) bcmdeDeliver(plan *bcmdePlan, executionID string, now time.Time
 		if err != nil {
 			return false
 		}
+		if !s.authorizeServiceS3As(c, bcmdeServicePrincipal, bucket, key, "s3:PutObject") {
+			return false
+		}
 		if _, err := s.s3.PutObject(bucket, key, "application/octet-stream", body, nil, "", ""); err != nil {
 			return false
 		}
@@ -168,6 +173,9 @@ func (s *Server) bcmdeDeliver(plan *bcmdePlan, executionID string, now time.Time
 		"billingPeriod": now.Format("2006-01"), "columns": cols, "dataFiles": dataFiles, "deliveredAt": now.Format(time.RFC3339),
 	})
 	key := base + "/metadata/" + period + "/" + name + "-Manifest.json"
+	if !s.authorizeServiceS3As(c, bcmdeServicePrincipal, bucket, key, "s3:PutObject") {
+		return false
+	}
 	_, err := s.s3.PutObject(bucket, key, "application/json", manifest, nil, "", "")
 	return err == nil
 }
@@ -223,9 +231,10 @@ func (e *bcmdeExport) finishExecution(id string, ok bool, now time.Time) {
 
 // bcmdeRunDelivery delivers outside the store lock, then records the result
 // if the export still exists.
-func (s *Server) bcmdeRunDelivery(arn, execID string, plan *bcmdePlan) {
+// A denied write fails the delivery with INSUFFICIENT_PERMISSION.
+func (s *Server) bcmdeRunDelivery(c s3Caller, arn, execID string, plan *bcmdePlan) {
 	now := time.Now().UTC()
-	ok := s.bcmdeDeliver(plan, execID, now)
+	ok := s.bcmdeDeliver(c, plan, execID, now)
 	st := s.bcmDataExports
 	st.mu.Lock()
 	defer st.mu.Unlock()
@@ -263,7 +272,7 @@ func (s *Server) bcmdeCreateExport(in map[string]any) (map[string]any, *budErr) 
 	execID := e.startExecution(now)
 	st.exports[arn] = e
 	st.mu.Unlock()
-	s.bcmdeRunDelivery(arn, execID, plan)
+	s.bcmdeRunDelivery(s3CallerIn(in), arn, execID, plan)
 	return map[string]any{"ExportArn": arn}, nil
 }
 
@@ -294,7 +303,7 @@ func (s *Server) bcmdeUpdateExport(in map[string]any) (map[string]any, *budErr) 
 	e.export, e.updated = plan.export, now
 	execID := e.startExecution(now)
 	st.mu.Unlock()
-	s.bcmdeRunDelivery(arn, execID, plan)
+	s.bcmdeRunDelivery(s3CallerIn(in), arn, execID, plan)
 	return map[string]any{"ExportArn": arn}, nil
 }
 
