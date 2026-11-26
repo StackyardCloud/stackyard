@@ -14,7 +14,6 @@ import (
 // CostOptimizationHubService.*, signed cost-optimization-hub. Enrollment and
 // preferences are stored; recommendations come from a fixed catalog
 // (costoptimizationhub_catalog.go) and are served only while enrolled.
-// budServe writes responses with Content-Type application/x-amz-json-1.0.
 
 const (
 	cohTargetPrefix = "CostOptimizationHubService."

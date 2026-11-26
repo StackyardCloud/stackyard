@@ -41,7 +41,11 @@ func (s *Server) handleIoTRESTRouter(w http.ResponseWriter, r *http.Request) boo
 	}
 
 	if code, msg := s.iot.record(action, payload, pathParams, r.URL.Query()); code != "" {
-		respondIoTError(w, http.StatusBadRequest, code, msg)
+		status := http.StatusBadRequest
+		if code == "ResourceAlreadyExistsException" {
+			status = http.StatusConflict
+		}
+		respondIoTError(w, status, code, msg)
 		return true
 	}
 	response := s.iot.Handle(action, payload, pathParams, r.URL.Query())

@@ -43,9 +43,6 @@ type tsmSettings struct {
 	updated time.Time
 }
 
-// Query responses are written by respondTimestreamJSON (Content-Type
-// application/x-amz-json-1.0); errors carry the modeled exception names.
-
 func tsqQueryError(format string, args ...any) *tsmError {
 	return &tsmError{code: "ValidationException", msg: fmt.Sprintf("Query not supported by the Stackyard Timestream engine: "+format, args...)}
 }

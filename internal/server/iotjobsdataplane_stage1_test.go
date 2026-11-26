@@ -95,7 +95,13 @@ func TestIoTJobsDataPlaneStage1Cancel(t *testing.T) {
 		t.Fatalf("a after forced cancel: %v", s)
 	}
 	iotdpErr(t, ts, "iot-jobs-data", http.MethodPost, "/things/pump-1/jobs/a", `{"status":"SUCCEEDED"}`, http.StatusConflict, "InvalidStateTransitionException")
-	// Re-creating the job id restarts its execution.
+	// An id in use is refused; once deleted it can be created again, and
+	// the new job's execution starts over.
+	iotdpErr(t, ts, "iot", http.MethodPut, "/jobs/a", `{`+iotjPumpTarget+`}`, http.StatusConflict, "ResourceAlreadyExistsException")
+	if s := iotdpOK(t, ts, "iot-jobs-data", http.MethodGet, "/things/pump-1/jobs/a", "")["execution"].(map[string]any)["status"]; s != "CANCELED" {
+		t.Fatalf("refused duplicate changed the job: %v", s)
+	}
+	iotdpOK(t, ts, "iot", http.MethodDelete, "/jobs/a", "")
 	iotjCreateJob(t, ts, "a", `{`+iotjPumpTarget+`}`)
 	if s := iotdpOK(t, ts, "iot-jobs-data", http.MethodGet, "/things/pump-1/jobs/a", "")["execution"].(map[string]any)["status"]; s != "QUEUED" {
 		t.Fatalf("re-created job: %v", s)

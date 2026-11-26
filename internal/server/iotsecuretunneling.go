@@ -17,8 +17,6 @@ import (
 // destination access tokens that are returned once (OpenTunnel and
 // RotateTunnelAccessToken) and never stored, and closes itself when its
 // maximum lifetime runs out. No proxy runs, so both ends stay DISCONNECTED.
-// budServe writes responses and errors with Content-Type
-// application/x-amz-json-1.1.
 
 const (
 	istAccount = "123456789012"

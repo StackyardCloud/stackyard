@@ -120,11 +120,11 @@ func (s *smsVoiceV2Store) Handle(action string, payload map[string]any) map[stri
 		return map[string]any{"OptOutLists": smsVoiceV2ListMaps(s.optOutLists), "NextToken": ""}
 	case "PutOptedOutNumber":
 		numbers := s.ensureOptedOutNumbersLocked(optOutListName)
-		numbers[destinationPhoneNumber] = true
+		numbers[smsVoiceV2PayloadString(payload, "OptedOutNumber", destinationPhoneNumber)] = true
 		return map[string]any{}
 	case "DeleteOptedOutNumber":
 		numbers := s.ensureOptedOutNumbersLocked(optOutListName)
-		delete(numbers, destinationPhoneNumber)
+		delete(numbers, smsVoiceV2PayloadString(payload, "OptedOutNumber", destinationPhoneNumber))
 		return map[string]any{}
 	case "DescribeOptedOutNumbers":
 		numbers := s.ensureOptedOutNumbersLocked(optOutListName)

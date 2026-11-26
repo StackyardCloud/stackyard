@@ -82,6 +82,25 @@ def read_text(path: Path) -> str:
         return ""
 
 
+GO_STRING_OR_COMMENT_RE = re.compile(
+    r"(\"(?:\\.|[^\"\\\n])*\"|`[^`]*`|'(?:\\.|[^'\\\n])*')|//[^\n]*|/\*.*?\*/",
+    flags=re.DOTALL,
+)
+
+# Services that register with a shared server (its router validates the
+# request and writes the response) are checked against that server's code too.
+SHARED_SERVERS = (
+    (re.compile(r"\bbudServe\(|\bbudRun\("), "budgets.go"),
+    (re.compile(r"&cxnAPI\{"), "codeconnections.go"),
+    (re.compile(r"\*tsmStore\)"), "timestreamwrite.go"),
+)
+
+
+def strip_go_comments(text: str) -> str:
+    """Drop Go comments so a gate can't pass on prose alone."""
+    return GO_STRING_OR_COMMENT_RE.sub(lambda m: m.group(1) or "", text)
+
+
 def has_any(text: str, patterns: list[str]) -> bool:
     return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
 
@@ -135,8 +154,12 @@ def extract_urls_from_docs(plan_docs: list[Path]) -> list[str]:
 
 def analyze_service(service: str) -> DocContractCoverage:
     source_files = discover_source_files(service)
-    source_text = "\n".join(read_text(path) for path in source_files)
-    test_text = "\n".join(read_text(path) for path in discover_test_files(service))
+    source_text = strip_go_comments("\n".join(read_text(path) for path in source_files))
+    for uses_server, server_file in SHARED_SERVERS:
+        server_path = SERVER_DIR / server_file
+        if server_path not in source_files and uses_server.search(source_text):
+            source_text += "\n" + strip_go_comments(read_text(server_path))
+    test_text = strip_go_comments("\n".join(read_text(path) for path in discover_test_files(service)))
 
     plan_docs = matching_plan_docs(service)
     docs_urls = extract_urls_from_docs(plan_docs)

@@ -20,8 +20,7 @@ import (
 // IN_PROGRESS -> SUCCEEDED, deployments DEPLOY_IN_PROGRESS ->
 // DEPLOYED_IN_TARGET and undeployments UNDEPLOY_IN_PROGRESS -> NOT_DEPLOYED,
 // one step per read. Templates and instances live in
-// iotthingsgraph_templates.go. budServe writes responses and errors with
-// Content-Type application/x-amz-json-1.1.
+// iotthingsgraph_templates.go.
 
 const (
 	itgAccount = "123456789012"
