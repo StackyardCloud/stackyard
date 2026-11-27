@@ -187,6 +187,11 @@ func TestPollyStage1LexiconsTasksVoicesAndTags(t *testing.T) {
 	if voice["Status"] != "pending" || voice["Origin"] != "customer" {
 		t.Fatalf("voice: %v", voice)
 	}
+	// Recording.Data is required in responses, but Polly never returns the bytes.
+	rec := voice["VoiceCreationData"].(map[string]any)["Recordings"].([]any)[0].(map[string]any)
+	if data, ok := rec["Data"].(map[string]any); !ok || len(data) != 0 {
+		t.Fatalf("byte recording Data should be present and empty: %v", rec)
+	}
 	if again := pollyCall(t, ts, http.StatusOK, http.MethodPost, "/v1/voices", voiceBody)["Voice"].(map[string]any); again["Id"] != vid {
 		t.Fatalf("ClientToken isn't idempotent: %v", again)
 	}
