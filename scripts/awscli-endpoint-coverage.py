@@ -14996,6 +14996,91 @@ def ec2_get_primary_transit_gateway_id() -> str:
     return ec2_get_runtime_value("transitgatewayid")
 
 
+# Create operations whose fixed hydration collides with what an earlier run
+# on the same server left behind (a duplicate CIDR or route, a deleted
+# gateway or attachment, a detached volume, a report still running). Each call gets
+# run-unique values or resources of its own.
+EC2_RUN_ISOLATED_OPERATIONS = {
+    "CreateCoipCidr", "CreateLocalGatewayRoute", "CreateSnapshots",
+    "CreateVpnConnection", "StartDeclarativePoliciesReport",
+    "CreateTransitGatewayConnect", "CreateTransitGatewayConnectPeer",
+}
+
+
+def ec2_unique_cidr24() -> str:
+    """A /24 under 10.0.0.0/8 that differs per call (and per run)."""
+    n = time.time_ns() // 1000
+    return f"10.{(n >> 8) % 256}.{n % 256}.0/24"
+
+
+def ec2_isolate_run_payload(
+    aws_bin: str, op: str, payload: dict, endpoint_url: str, region: str, env: dict[str, str]
+) -> dict:
+    def ec2(cli_op: str, args: list[str]) -> dict:
+        data = run_aws_json(aws_bin, endpoint_url, region, "ec2", cli_op, env, args)
+        return data if isinstance(data, dict) else {}
+
+    def fresh_tgw_vpc_attachment() -> str:
+        # The most recently seen attachment may be one an earlier run deleted.
+        tgw = ec2("create-transit-gateway", ["--description", "stackyard-isolated"]).get("TransitGateway") or {}
+        vpc = ec2("create-vpc", ["--cidr-block", "10.0.0.0/16"]).get("Vpc") or {}
+        subnet = ec2("create-subnet", [
+            "--vpc-id", str(vpc.get("VpcId") or ""), "--cidr-block", "10.0.1.0/24",
+        ]).get("Subnet") or {}
+        attachment = ec2("create-transit-gateway-vpc-attachment", [
+            "--transit-gateway-id", str(tgw.get("TransitGatewayId") or ""),
+            "--vpc-id", str(vpc.get("VpcId") or ""), "--subnet-ids", str(subnet.get("SubnetId") or ""),
+        ]).get("TransitGatewayVpcAttachment") or {}
+        return str(attachment.get("TransitGatewayAttachmentId") or ec2_get_runtime_value("transitgatewayvpcattachmentid"))
+
+    if op == "CreateTransitGatewayConnect":
+        return {**payload, "TransportTransitGatewayAttachmentId": fresh_tgw_vpc_attachment()}
+    if op == "CreateTransitGatewayConnectPeer":
+        connect = ec2("create-transit-gateway-connect", [
+            "--transport-transit-gateway-attachment-id", fresh_tgw_vpc_attachment(), "--options", "Protocol=gre",
+        ]).get("TransitGatewayConnect") or {}
+        attachment_id = str(connect.get("TransitGatewayAttachmentId") or ec2_get_runtime_value("transitgatewayconnectid"))
+        return {**payload, "TransitGatewayAttachmentId": attachment_id}
+    if op == "CreateCoipCidr":
+        return {**payload, "Cidr": ec2_unique_cidr24()}
+    if op == "CreateLocalGatewayRoute":
+        # Without a destination the route defaults to 0.0.0.0/0, which a
+        # previous run already created in the shared route table.
+        out = {**payload, "DestinationCidrBlock": ec2_unique_cidr24()}
+        delete_key_if_present_case_insensitive(out, "DestinationPrefixListId")
+        return out
+    if op == "CreateSnapshots":
+        # A fresh instance with a volume attached: the seeded instance may be
+        # one whose volumes an earlier run detached.
+        instances = ec2("run-instances", [
+            "--image-id", ec2_get_runtime_value("imageid"), "--instance-type", "t3.micro", "--count", "1",
+            "--subnet-id", ec2_get_runtime_value("subnetid"), "--security-group-ids", ec2_get_runtime_value("groupid"),
+        ]).get("Instances") or [{}]
+        instance_id = str(instances[0].get("InstanceId") or ec2_get_runtime_value("instanceid"))
+        volume_id = str(ec2("create-volume", ["--availability-zone", "us-east-1a", "--size", "8"]).get("VolumeId") or "")
+        if volume_id:
+            ec2("attach-volume", ["--volume-id", volume_id, "--instance-id", instance_id, "--device", "/dev/sdf"])
+        return {**payload, "InstanceSpecification": {"InstanceId": instance_id}}
+    if op == "CreateVpnConnection":
+        # Fresh gateways: the seeded ones may have been deleted by an earlier run.
+        cgw = ec2("create-customer-gateway", [
+            "--type", "ipsec.1", "--public-ip", "198.51.100.10", "--bgp-asn", "65000",
+        ]).get("CustomerGateway") or {}
+        vgw = ec2("create-vpn-gateway", ["--type", "ipsec.1", "--amazon-side-asn", "64512"]).get("VpnGateway") or {}
+        return {
+            **payload,
+            "CustomerGatewayId": str(cgw.get("CustomerGatewayId") or ec2_get_runtime_value("customergatewayid")),
+            "VpnGatewayId": str(vgw.get("VpnGatewayId") or ec2_get_runtime_value("vpngatewayid")),
+        }
+    if op == "StartDeclarativePoliciesReport":
+        # Only one report may run at a time; cancel any an earlier run left running.
+        for report in ec2("describe-declarative-policies-reports", []).get("Reports") or []:
+            if report.get("Status") == "running" and report.get("ReportId"):
+                ec2("cancel-declarative-policies-report", ["--report-id", str(report["ReportId"])])
+        return payload
+    return payload
+
+
 def ec2_ensure_capacity_reservation_id(
     aws_bin: str,
     endpoint_url: str,
@@ -53300,6 +53385,8 @@ def hydrate_payload_with_service_state(
         hydrated = ec2_hydrate_payload(payload)
         if isinstance(hydrated, dict):
             op = endpoint.operation
+            if op in EC2_RUN_ISOLATED_OPERATIONS:
+                hydrated = ec2_isolate_run_payload(aws_bin, op, hydrated, endpoint_url, region, env)
 
             if op == "CreateImage":
                 instance_id = ec2_get_runtime_value("instanceid")

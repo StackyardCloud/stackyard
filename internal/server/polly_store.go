@@ -401,7 +401,9 @@ func (s *Server) pollyCreateVoice(req *http.Request, in map[string]any) (map[str
 		if hasURL == hasBytes {
 			return nil, pollyValidation("Recordings[%d].Data must set exactly one of S3Url or Bytes.", i)
 		}
-		out := map[string]any{"Format": rec["Format"]}
+		// Data is required, but Polly never returns recording bytes, so a
+		// byte recording comes back with an empty Data.
+		out := map[string]any{"Format": rec["Format"], "Data": map[string]any{}}
 		if hasURL {
 			bucket, key, _ := strings.Cut(strings.TrimPrefix(s3url, "s3://"), "/")
 			if !s.authorizeServiceS3(req, pollyServicePrincipal, bucket, key, "s3:GetObject") {
